@@ -349,3 +349,47 @@ chain now stays one; `test/lowering-string-places.test.ts` and
 `written-else-return-at-its-span` (`tidy/jumps/tails.ts`),
 `written-else-unelsed-though-followed` and
 `written-else-kept-at-the-end-too` (`prepare.ts`).
+
+## Amendment: a function's last `match` of arms that give `()` is its arms
+
+The user's decision (2026-10-27). React's commitLayoutEffectOnFiber
+writes `if (current === null) { if (shouldProfile) { .. } else { try {
+.. } catch (error) { .. } } } else { .. }`, no `return`. Its port, `match
+current { None => { if .. { .. } else if let Err(error) =
+catch_unwind(..) && .. { .. } } Some(prev) => .. }` at the function's
+end, printed `if (current == null) { if (..) { ..; return; } try { ..;
+return; } catch (error) { ..; return; } } ..`: MIR ends each way with
+the function's `return`, which `tail_returns` dropped only where an
+arm's own statements ended with it, not where they ended in an `if`
+each of whose branches did.
+
+**`tail_returns` takes what ends the function whole**: an `if` whose
+`then` ends with a `return;` the program didn't write each way, through
+its branches, is `if (c) { .. } else { rest }`, and the branches of the
+`if` that ends the function are tidied so too, each `return;` MIR made
+at their ends gone. A `return` the program wrote stays (`written`).
+Case N ([0262](0262-when-rust-and-js-disagree.md)): a `return;` where
+the function ends anyway does nothing, and the `else` runs where the
+`then` didn't, as the `return` made it.
+
+```js
+if (current == null) {
+  if (shouldProfile()) {
+    didMount();
+  } else {
+    try {
+      didMount();
+    } catch (error) {
+      capture(error);
+    }
+  }
+} else {
+  didUpdate(current);
+}
+```
+
+Held by `test/lowering-written-branches.test.ts`'s "a function's last
+match of arms that give () is its arms, no returns", run in JS; and the
+mutations `tail-returns-branch-else-after` and
+`tail-returns-of-branches-only-at-the-top` (`tidy/jumps.ts`).
+

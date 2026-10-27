@@ -1199,3 +1199,44 @@ pub fn last(key: u32) -> u32 {
   expect([lib.turned(0 as never, total as never), lib.turned(4 as never, total as never)]).toEqual([0, 7]);
   expect([1, 2, 3].map((k) => [lib.apart(k as never), lib.last(k as never)])).toEqual([[10, 10], [20, 20], [3, 4]]);
 });
+
+// The user's decision (2026-10-27), ADR 0879, amended: React's
+// commitLayoutEffectOnFiber's `if (current === null) { if (..) { .. } else
+// { try { .. } catch (error) { .. } } } else { .. }`. A function's last
+// `match` of arms that give `()` is its arms as written, an `if`'s and a
+// `try`'s branches too, with no `return;` MIR made at their ends.
+test("a function's last match of arms that give () is its arms, no returns", async () => {
+  const { js, lib } = await compiled(
+    "tail-match-arms",
+    `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn lifecycles(current: Option<u32>, profile: bool, log: &mut Vec<u32>) {
+    match current {
+        None => {
+            if profile {
+                log.push(1);
+            } else if let Err(error) = catch_unwind(AssertUnwindSafe(|| {
+                if log.len() > 2 {
+                    panic!("full");
+                }
+                log.push(2);
+            })) && let Some(error) = error.downcast_ref::<&'static str>()
+            {
+                log.push(error.len() as u32);
+            }
+        }
+        Some(prev) => log.push(prev),
+    }
+}
+`,
+  );
+  expect(js).toContain("  if (current == null) {\n    if (profile) {\n      log.push(1);\n    } else ");
+  expect(js).toContain("  } else {\n    log.push(current);\n  }\n}");
+  expect(js).not.toContain("return;");
+  const log: number[] = [];
+  lib.lifecycles(undefined as never, true as never, log as never);
+  lib.lifecycles(undefined as never, false as never, log as never);
+  lib.lifecycles(7 as never, false as never, log as never);
+  lib.lifecycles(undefined as never, false as never, log as never);
+  expect(log).toEqual([1, 2, 7, 4]);
+});

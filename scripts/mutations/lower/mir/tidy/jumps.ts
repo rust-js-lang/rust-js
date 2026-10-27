@@ -134,4 +134,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
     snapshots: true,
   },
+  {
+    name: "tail-returns-branch-else-after",
+    breaks: "an arm whose branches each return, made the `if`'s, runs what the other arm does after it, as its `else` isn't made",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        if !rest.is_empty() {\n            *otherwise = Some(rest);\n        }\n",
+    replace: "        stmts.extend(rest);\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "last match of arms"],
+  },
+  {
+    name: "tail-returns-of-branches-only-at-the-top",
+    breaks: "a function's last `match`'s arm whose branches each return keeps MIR's `return;`s, `if (c) { ..; return; } else ..`",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),\n",
+    replace: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "last match of arms"],
+  },
 ];

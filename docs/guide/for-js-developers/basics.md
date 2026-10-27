@@ -1067,7 +1067,9 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 A branch that returns needs no `else` after it where the `if` ends the
 function, as ESLint's `no-else-return` has it; but an `else` you wrote
 after it stays where statements follow the `if`, `place`'s, and an `else
-if` after an arm that goes on stays one chain
+if` after an arm that goes on stays one chain; a function's last `match`
+or `if` of arms that give `()` is its arms, `if (current == null) { ..
+} else { .. }`, with no `return;` at their ends
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended):
 
 ```rust

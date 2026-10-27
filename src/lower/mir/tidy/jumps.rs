@@ -268,11 +268,48 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
 /// Where a function ends, a `return;` the program didn't write, `written`
 /// where those it did are: nothing, as it falls off the end there; and
 /// `if (c) { s; return; } rest`, `if (c) { s } else { rest }`, as the
-/// program wrote it, `if (!c) { rest }` of no `s`.
+/// program wrote it, `if (!c) { rest }` of no `s`. So too in the branches
+/// of an `if` that ends the function, and of one whose `then` ends so each
+/// way: a function's last
+/// `match` or `if` of arms that give `()`, its arms as written, with no
+/// `return;` MIR made (ADR 0879, amended, the user's decision,
+/// 2026-10-27).
 pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     let unwritten = |s: &Stmt| matches!(s.kind, StmtKind::Return(None)) && !written(returns, s.span);
+    // Whether each way through `list` ends in such a `return;`.
+    fn returns_at_end(list: &[Stmt], unwritten: &dyn Fn(&Stmt) -> bool) -> bool {
+        list.last().is_some_and(|last| {
+            unwritten(last)
+                || match &last.kind {
+                    StmtKind::If(_, then, Some(otherwise)) => {
+                        returns_at_end(then, unwritten) && returns_at_end(otherwise, unwritten)
+                    }
+                    _ => false,
+                }
+        })
+    }
     while stmts.last().is_some_and(unwritten) {
         stmts.pop();
+    }
+    if let Some(at) = (stmts.iter()).position(
+        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),
+    ) {
+        // A `then` that ends so only in its branches: those, the `if`'s
+        // after it its `else`.
+        let rest = stmts.split_off(at + 1);
+        let StmtKind::If(_, then, otherwise) = &mut stmts[at].kind else {
+            unreachable!("found")
+        };
+        tail_returns(then, returns);
+        if !rest.is_empty() {
+            *otherwise = Some(rest);
+        }
+    }
+    if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|last| &mut last.kind) {
+        tail_returns(then, returns);
+        if let Some(otherwise) = otherwise {
+            tail_returns(otherwise, returns);
+        }
     }
     if let Some(at) = (stmts.iter())
         .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))
@@ -286,6 +323,9 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
             unreachable!("found")
         };
         then.pop();
+        tail_returns(&mut then, returns);
+        let mut rest = rest;
+        tail_returns(&mut rest, returns);
         match (then.is_empty(), rest.is_empty()) {
             (true, true) => {}
             (true, false) => stmts.push(StmtKind::If(test.negated_test(), rest, None).at(span)),
