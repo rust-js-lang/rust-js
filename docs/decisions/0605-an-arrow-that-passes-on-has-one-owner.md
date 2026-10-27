@@ -6,7 +6,9 @@ the question with each position's rule, and a binding's `FnOnce` callback
 is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
 library's function is passed on as the crate's is; and a closure that
 captures nothing as a `fn`, or lent as a `&dyn Fn`, is the function of
-the crate's it only adapts.
+the crate's it only adapts; and a closure that passes on what it took by
+value, then its parameters, is the crate's function bound, `g.bind(null,
+a)`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -222,3 +224,58 @@ calls the crate's function with what it's given is the function", run;
 mutations `closure-fn-pointer-kept-arrow` (`mir/rvalues.ts`),
 `fn-pointer-statement-kept`, `fn-pointer-wrapper-collapsed` and
 `fn-pointer-always-adapts` (`passed_on.ts`).
+
+## Amendment: a closure that passes on what it took is its function bound
+
+React's mountTransition makes its `start` by partial application:
+`const start = startTransition.bind(null, currentlyRenderingFiber, queue,
+true, false);`, later called `start(callback, options)`. Its port can't
+write `js::function::bind`: `Bound`'s rest is a `Box<dyn Fn(R..)>` of the
+parameter types as inferred, each of one lifetime, where a stored start is
+`dyn for<'a> Fn(&'a dyn Fn(), Option<&'a str>)`, and no generic impl makes
+a higher-ranked `dyn` of type parameters ("implementation of `From` is not
+general enough"). The port writes the closure, `move |callback, options|
+start_transition(&fiber, &queue, true, false, callback, options)`, which
+printed `(callback, options) => startTransition(fiber, queue, true, false,
+callback, options)`.
+
+The user decided (2026-10-27, h04c): **a closure that only passes what it
+took by value, then each of its own parameters in order, to a function
+item of the crate's (or of a library rust-js compiled) is that function
+bound, `g.bind(null, a, ..)`**, under the conditions of the rule above:
+
+- **The callee is a function item that reads no `this`** (`Forwarding`'s
+  `item`, of `forwarded_to`'s item arm, not a closure's `Fn` call), named
+  where it's called, `g(..)`, not a class's method, `x.m(..)`; and takes
+  no rest arguments, so what JS gives a bound function more than the
+  closure's parameters, `g` reads no more of than the arrow would.
+- **Each value bound is one the closure took by value, or a constant**:
+  `closures.rs` knows them where it makes the closure, `moved`, a capture
+  neither borrowed (its place), a `&mut` (its variable) nor changed by the
+  closure (a `let` of its own); one written again after it's taken is a
+  copy already. `bind` reads each once, where it's made, which is what a
+  closure that took it by value has, however the variable changes later.
+  One at least is taken: a closure that captures nothing, `|x|
+  noisy("take", x)`, stays the arrow a person writes. A value read when
+  the closure's called, a module's variable, `PENDING.get()`, isn't one.
+- **The closure has a parameter of its own**: `move || shown(&fiber)` is a
+  thunk, which JS writes as an arrow.
+- Only `.name` (`"bound startTransition"`) and `.length` tell them apart,
+  as of the function passed on itself above; each `bind` makes a function
+  of its own, as each arrow is, so `Rc::ptr_eq` compares two as before.
+  Case N ([0262](0262-when-rust-and-js-disagree.md)).
+
+`passed_on.rs`'s `binds` decides it where the closure is made (the fact's
+`binds`), and `bound` writes `g.bind(null, ..)` in tidy's last stage
+(`finish/bound captures`), once nothing calls the arrow in place any
+more: a closure an `Option`'s `map` calls where it's made is its body
+there, `x != null ? noisy("find", x) : undefined`, not a bound function
+called, `noisy.bind(null, "find")(x)`. `function::bind` stays the one way
+to bind a `this`.
+
+Held by `test/lowering-passed-on.test.ts`'s "a move closure that passes on
+what it captured, then what it's given, is the function bound", run: a
+borrow, a module's variable, a thunk, a closure called, a closure that
+captures nothing each stay the arrow; and the guide's `dispatcher`.
+Mutations `bound-any-variable`, `bound-thunk`, `bound-a-closure`,
+`bound-of-nothing-captured`, `bound-never` (`passed_on.ts`).

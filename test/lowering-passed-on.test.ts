@@ -320,3 +320,109 @@ pub fn owned_apart() -> bool {
   expect(lib.renderTransitionAware()).toBe(7);
   expect(lib.ownedApart()).toBe(false);
 });
+
+// React's mountTransition, `const start = startTransition.bind(null,
+// currentlyRenderingFiber, queue, true, false);`, ported as a `move`
+// closure that passes what it captured, then its own parameters, to the
+// crate's function: that function bound to what it captured, which a
+// `bind` reads once, where it's made, as a `move` closure does (ADR 0605,
+// amended). Not of a closure that borrows what it passes, one of a value
+// read when it's called, one with no parameters of its own, nor one that
+// calls a closure.
+test("a move closure that passes on what it captured, then what it's given, is the function bound", async () => {
+  const dir = fixture("bound-captures");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub name: String,
+}
+
+fn start_transition(fiber: &Rc<Fiber>, pending: bool, callback: &dyn Fn(), options: Option<&str>) {
+    println!("{} {} {}", fiber.name, pending, options.unwrap_or("-"));
+    callback();
+}
+
+pub type StartTransition = dyn Fn(&dyn Fn(), Option<&str>);
+
+pub fn mount_transition(fiber: Rc<Fiber>) -> Rc<StartTransition> {
+    Rc::new(move |callback, options| start_transition(&fiber, true, callback, options))
+}
+
+thread_local! {
+    static PENDING: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn read_when_called(fiber: Rc<Fiber>) -> Rc<StartTransition> {
+    Rc::new(move |callback, options| start_transition(&fiber, PENDING.get(), callback, options))
+}
+
+pub fn borrowed(fiber: Rc<Fiber>) {
+    let start = |callback: &dyn Fn(), options| start_transition(&fiber, false, callback, options);
+    start(&|| println!("lent"), Some("x"));
+}
+
+fn shown(fiber: &Rc<Fiber>) -> String {
+    fiber.name.clone()
+}
+
+pub fn thunk(fiber: Rc<Fiber>) -> Rc<dyn Fn() -> String> {
+    Rc::new(move || shown(&fiber))
+}
+
+pub fn of_a_closure(fiber: Rc<Fiber>) -> Rc<StartTransition> {
+    let start = |fiber: &Rc<Fiber>, pending: bool, callback: &dyn Fn(), options: Option<&str>| {
+        start_transition(fiber, pending, callback, options)
+    };
+    Rc::new(move |callback, options| start(&fiber, true, callback, options))
+}
+
+pub fn run(start: &StartTransition) {
+    start(&|| println!("called"), Some("opts"));
+    start(&|| println!("again"), None);
+}
+
+pub fn set_pending() {
+    PENDING.set(true);
+}
+
+fn tagged(tag: &str, x: u32) -> String {
+    format!("{tag} {x}")
+}
+
+pub fn tags(xs: Vec<u32>) -> Vec<String> {
+    xs.into_iter().map(|x| tagged("take", x)).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return startTransition.bind(null, fiber, true);");
+  expect(js).toContain("(callback, options) => startTransition(fiber, pending, callback, options)");
+  expect(js).toContain("(callback, options) => startTransition(fiber, false, callback, options)");
+  expect(js).toContain("return () => shown(fiber);");
+  expect(js).toContain('(x) => tagged("take", x)');
+  expect(js).toContain("(callback, options) => start(fiber, true, callback, options)");
+  const lib = await import(join(dir, "lib.js"));
+  const logs: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logs.push(line);
+  try {
+    const fiber = { name: "root" };
+    const later = lib.readWhenCalled(fiber);
+    lib.run(lib.mountTransition(fiber));
+    lib.setPending();
+    lib.run(later);
+    lib.run(lib.ofAClosure(fiber));
+    expect(lib.thunk(fiber)()).toBe("root");
+    lib.borrowed(fiber);
+    expect(lib.tags([1, 2])).toEqual(["take 1", "take 2"]);
+  } finally {
+    console.log = log;
+  }
+  expect(logs).toEqual([
+    "root true opts", "called", "root true -", "again",
+    "root true opts", "called", "root true -", "again",
+    "root true opts", "called", "root true -", "again",
+    "root false x", "lent",
+  ]);
+});

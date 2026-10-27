@@ -69,6 +69,14 @@ pub(in crate::lower) struct Forwarding {
     /// give where the closure goes, `|_, _| throw_invalid_hook_error()`
     /// of a `fn() -> !` (ADR 0605, amended).
     pub(in crate::lower) adapts: bool,
+    /// Whether what it calls is a function item, the crate's or a
+    /// library's rust-js compiled, not a closure: a function that reads no
+    /// `this`, which `binds` may bind (ADR 0605, amended).
+    pub(in crate::lower) item: bool,
+    /// Whether its arrow, as it's made, is that function bound to what it
+    /// captured by value (`binds`), which `bound` writes once the body is
+    /// tidied, where nothing calls the arrow in place any more.
+    pub(in crate::lower) binds: bool,
 }
 
 /// What a closure's one call calls.
@@ -186,6 +194,72 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
+/// Whether `f`, a closure the program wrote, `(x, ..) => g(a, .., x, ..)`,
+/// as it's made, passes on what it captured by value, `moved`, one at
+/// least, or a constant, then each of its own parameters, in order, to
+/// `g`, a function item (`fact`'s `item`): what `bound` writes as `g`
+/// bound to them, React's `startTransition.bind(null, fiber, queue, true,
+/// false)` (ADR 0605, amended). A `bind` reads what it binds once, where
+/// it's made, as a closure takes what it captures by value; and what JS
+/// gives it more than the closure's parameters, `g` reads no more of than
+/// the arrow would, a function of the crate's taking no rest. Only `.name`
+/// and `.length` tell them apart, as of the function passed on itself. Not
+/// of a closure of no parameters of its own, `() => g(a)`, a thunk as JS
+/// writes one, nor of one that captures nothing, `(x) => g("take", x)`.
+pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[String]) -> bool {
+    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));
+    fact.item
+        && fact.callee == Callee::Own
+        && bound_parts(f)
+            .is_some_and(|(_, bound)| bound.iter().any(taken) && bound.iter().all(|e| taken(e) || e.is_constant()))
+}
+
+/// `g.bind(null, a, ..)` of arrow `f`, `(x, ..) => g(a, .., x, ..)`, where
+/// its fact in `forwarding` says it `binds`, and it's still of that shape.
+pub(in crate::lower) fn bound(f: &Expr, forwarding: &[Forwarding]) -> Option<Expr> {
+    (forwarding.iter()).find(|fact| fact.binds && !f.span.is_none() && fact.span == f.span)?;
+    let (callee, bound) = bound_parts(f)?;
+    let values = std::iter::once(Expr::null()).chain(bound.iter().cloned()).collect();
+    Some(Expr {
+        span: f.span,
+        ..Expr::call(Expr::member(callee.clone(), "bind"), values)
+    })
+}
+
+/// Of arrow `f`, `(x, ..) => g(a, .., x, ..)`, of one parameter at least
+/// and one call of a named function, given values before each of its
+/// parameters in order: `g` and those values, each a variable or a
+/// constant.
+fn bound_parts(f: &Expr) -> Option<(&Expr, &[Expr])> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let call = match body.as_slice() {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(call)) | StmtKind::Expr(call),
+                ..
+            },
+        ] => call,
+        _ => return None,
+    };
+    let js::ExprKind::Call(callee, args) = &call.kind else {
+        return None;
+    };
+    let named = matches!(callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_));
+    let leading = (args.len().checked_sub(params.len())).filter(|&k| k > 0 && named && !params.is_empty())?;
+    let (bound, given) = args.split_at(leading);
+    let mut names = Vec::new();
+    for (param, arg) in params.iter().zip(given) {
+        match (param, &arg.kind) {
+            (js::Pattern::Name(name), js::ExprKind::Var(v)) if v == name => names.push(name.as_str()),
+            _ => return None,
+        }
+    }
+    let value = |e: &Expr| matches!(e.kind, js::ExprKind::Var(_)) || e.is_constant();
+    (bound.iter().all(value) && !names.iter().any(|name| callee.mentions_var(name))).then_some((&**callee, bound))
+}
+
 /// What arrow `f` passes on what it's given to (`js::passes_on`), and how
 /// many parameters it has.
 fn passed_to(f: &Expr, statement: bool) -> Option<(&Expr, usize)> {
@@ -241,8 +315,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// may read more than it's given, and of a function of rest arguments,
     /// which reads them all. And whether it adapts (`Forwarding`'s
     /// `adapts`): a function of the crate's whose signature isn't the
-    /// closure's.
-    pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>) -> Option<(Callee, bool)> {
+    /// closure's; and whether it's a function item (`item`). The closure is
+    /// written at `span`.
+    pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>, span: js::Span) -> Option<Forwarding> {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.root()?);
         if let ExprKind::Block { block } = thir[call].kind
@@ -266,14 +341,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => return None,
                 };
-                Some((callee, false))
+                Some(Forwarding {
+                    span,
+                    callee,
+                    adapts: false,
+                    item: false,
+                    binds: false,
+                })
             }
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
                 && !super::bindings::is_binding(self.tcx, def_id)
                 && !self.takes_rest(def_id))
-            .then(|| (Callee::Own, self.adapts(body.def_id, (def_id, generic_args)))),
+            .then(|| Forwarding {
+                span,
+                callee: Callee::Own,
+                adapts: self.adapts(body.def_id, (def_id, generic_args)),
+                item: true,
+                binds: false,
+            }),
         }
     }
 

@@ -114,6 +114,50 @@ export function tally(words) {
   variable is the closure's own, which is why `count` is copied to
   `count$1`.
 
+A closure that only passes what it took by value, then each of its own
+parameters, to a function of the crate's is that function bound to what
+it took, `bind`'s partial application, as React writes
+`startTransition.bind(null, fiber, queue, true, false)`
+([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
+amended). `bind` reads what it binds where it's made, as the closure takes
+it. One that borrows what it passes, reads a value when it's called, has
+no parameters of its own, `move || shown(&fiber)`, or calls a closure,
+stays an arrow:
+
+```rust
+use std::rc::Rc;
+
+pub struct Queue {
+    pub name: String,
+}
+
+fn dispatch(queue: &Rc<Queue>, eager: bool, action: u32) {
+    println!("{} {eager} {action}", queue.name);
+}
+
+pub fn dispatcher(queue: Rc<Queue>) -> Rc<dyn Fn(u32)> {
+    Rc::new(move |action| dispatch(&queue, true, action))
+}
+
+pub fn later(queue: Rc<Queue>) -> Rc<dyn Fn()> {
+    Rc::new(move || dispatch(&queue, false, 0))
+}
+```
+
+```js
+function dispatch(queue, eager, action) {
+  console.log(`${queue.name} ${eager} ${action}`);
+}
+
+export function dispatcher(queue) {
+  return dispatch.bind(null, queue, true);
+}
+
+export function later(queue) {
+  return () => dispatch(queue, false, 0);
+}
+```
+
 ## Classes
 
 A class is a `struct` for its fields and an `impl` block for its methods.

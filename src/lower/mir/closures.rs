@@ -103,6 +103,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => mir,
         };
         let mut captures = Vec::new();
+        // What it took by value and never changes, by its name: what a
+        // `bind` of it may bind (`passed_on::binds`). What it borrows is
+        // its place, above; a `&mut`, its variable; what it changes, a `let`
+        // of its own.
+        let mut moved = Vec::new();
         for (i, value) in captured.into_iter().enumerate() {
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
@@ -142,6 +147,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         self.flush(state, out)?;
                         self.spill("captured", e, out)
                     };
+                    if let js::ExprKind::Var(name) = &e.kind {
+                        moved.push(name.clone());
+                    }
                     (e, false)
                 }
             });
@@ -232,21 +240,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.place_written(written, &mut stmts);
         stmts.splice(0..0, directives);
-        let forwarded = self.forwarded_to(body);
+        let span = self.js_span(span);
+        let forwarded = self.forwarded_to(body, span);
         let concise = self.closure_calls_for_nothing(body);
         if forwarded.is_some() || concise.is_some() {
-            let span = self.js_span(span);
-            if let Some((callee, adapts)) = forwarded {
-                let fact = crate::lower::passed_on::Forwarding { span, callee, adapts };
+            let arrow = Expr {
+                span,
+                ..Expr::arrow(params, stmts)
+            };
+            if let Some(mut fact) = forwarded {
+                // Whether it's what it passes on its call to, bound to what
+                // it captured (ADR 0605, amended).
+                fact.binds = crate::lower::passed_on::binds(&arrow, &fact, &moved);
                 self.locals.mir.forwarding.push(fact);
             }
             if let Some(written) = concise {
                 self.locals.mir.concise.push((span, written));
             }
-            return Ok(Expr {
-                span,
-                ..Expr::arrow(params, stmts)
-            });
+            return Ok(arrow);
         }
         Ok(Expr::arrow(params, stmts))
     }

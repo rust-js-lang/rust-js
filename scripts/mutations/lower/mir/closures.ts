@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     "name": "mir-closure-forwarding-unmarked",
     "breaks": "a closure from MIR that passes on what it's given to Rust's function stays `(x) => double(x)`, not `double`",
     "file": "src/lower/mir/closures.rs",
-    "find": "        let forwarded = self.forwarded_to(body);\n",
-    "replace": "        let forwarded = None;\n",
+    "find": "        let forwarded = self.forwarded_to(body, span);\n",
+    "replace": "        let forwarded = None::<crate::lower::passed_on::Forwarding>;\n",
     "tests": ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"]
   },
   {

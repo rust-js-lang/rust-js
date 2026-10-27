@@ -567,6 +567,14 @@ What's refused is in [the limitations](limitations.md).
   Rust compares no two `fn`s reliably and the function reads no more than
   it's given ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
   amended).
+- **A closure that only passes what it took by value, then each of its
+  own parameters, to a function of the crate's is that function bound,**
+  `startTransition.bind(null, fiber, queue, true, false)`: `bind` reads
+  what it binds once, where it's made, as the closure took it, and the
+  function, which reads no `this`, no more than it's given; only `.name`
+  and `.length` tell them apart, as of a function passed on
+  ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
+  amended).
 
 Differences:
 

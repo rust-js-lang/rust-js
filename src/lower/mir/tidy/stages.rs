@@ -770,6 +770,17 @@ pub(super) const STAGES: &[Stage] = &[
             pass("appends", |b, h| {
                 crate::lower::std_types::text::appended(b, &h.named.text)
             }),
+            // A closure that passes on what it captured, then what it's
+            // given, to a function of the crate's: that function bound,
+            // `g.bind(null, a)`, once nothing calls it in place (ADR 0605,
+            // amended).
+            pass("bound captures", |b, h| {
+                js::each_expr_mut(b, &mut |e| {
+                    if let Some(bound) = crate::lower::passed_on::bound(e, h.forwarding) {
+                        *e = bound;
+                    }
+                })
+            }),
             // A nullable field's value a variable holds, stored in another
             // nullable place as it is, no `?? null` (ADR 0620, amended).
             pass("nulled as they are", |b, _| values::nulled_as_they_are(b)),
