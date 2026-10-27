@@ -1081,14 +1081,16 @@ pub fn values(x: u32) -> [u32; 3] {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
+    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt, $local } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
   );
   const at = (text: string) => {
     expect(js).toContain(text);
     return js.indexOf(text);
   };
   // What only holds `scaled` is where it's written; what calls it is after
-  // what it reads, through the array and the thread-local holding it.
+  // what it reads, through the array and the thread-local holding it, and
+  // made where it's first used, as a call through a function pointer may
+  // run any of the crate's code (ADR 0037, amended).
   expect(at("const pick = scaled;\nconst picked = [pick];\n")).toBeLessThan(at("const SCALE = 3;"));
   expect(at("const SCALE = 3;")).toBeLessThan(at("const USED ="));
   const { values } = await import(join(dir, "lib.js"));

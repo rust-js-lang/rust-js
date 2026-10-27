@@ -910,7 +910,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // Instrumentation, as Next.js reads it.
   expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("console.log(`instrumentation registered of ${ImageResponse.displayName}`);");
   expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("return await App.origGetInitialProps(context);");
-  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("getExpiration: async () => 0,");
+  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("    async getExpiration() {\n      return 0;\n    },\n");
   // next/cache's prefetch and navigation, and a segment's parameters' matching.
   const postJsx = readFileSync(join(dir, "app/post.jsx"), "utf8");
   expect(postJsx).toContain("await prefetch();\n  await navigation();");
