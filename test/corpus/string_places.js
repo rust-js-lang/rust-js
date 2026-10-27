@@ -20,9 +20,10 @@ function formatOwnerStack(stack) {
   idx = at !== -1 ? stack.slice(0, at).lastIndexOf("\n") : -1;
   if (idx !== -1) {
     stack = stack.slice(0, idx);
-    return stack;
+  } else {
+    return "";
   }
-  return "";
+  return stack;
 }
 
 function firstWord(s) {

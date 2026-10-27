@@ -256,7 +256,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0234 A component of an element's props is an `ElementType`, rendered as a tag](0234-element-type.md)
 - [0235 A child shown only if a test holds is `test && child`, where the test can't render](0235-children-shown-if.md)
 - [0236 What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`](0236-jsx-element.md)
-- [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say; amended by 0879: an `else` the program wrote that leaves a loop stays)*
+- [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say; amended by 0879: an `else` the program wrote that leaves a loop stays, and one after a branch that leaves where statements follow the `if`)*
 - [0238 A value kept for good is the value; children are kept as JS values](0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](0239-local-components.md)
 - [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused)*
@@ -663,7 +663,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0870 A let chain's value reads its binding first, then is a conditional](0870-a-let-chains-value-reads-its-binding-first.md) *(amended: an exported one's value of a test is a conditional)*
 - [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
-- [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md) *(amended: a returned value of branches MIR turned is as written; a written negation of a chain stays one; an `if` without an `else` keeps its body inside; a `let … else` before a written `return` is a guard first; a `!` of a chain the program didn't write is De Morgan's)*
+- [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md) *(amended: a returned value of branches MIR turned is as written; a written negation of a chain stays one; an `if` without an `else` keeps its body inside; a `let … else` before a written `return` is a guard first; a `!` of a chain the program didn't write is De Morgan's; an `else` after a branch that returns stays where statements follow)*
 - [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md) *(amended: the comments and blank line before it are before the method; a `let`'s closure of statements is a function declared)*
 - [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0885 A closure value is given to a JS helper as it is](0885-a-closure-value-is-given-as-it-is.md)

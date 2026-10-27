@@ -1,6 +1,6 @@
 # 0237. An `if` whose branch leaves has no `else`
 
-Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit.
+Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit; and an `else` the program wrote after a branch that leaves stays where statements follow the `if` (the user's decision, 2026-10-27), so this rule holds of an `if` that ends its block, or one MIR made.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

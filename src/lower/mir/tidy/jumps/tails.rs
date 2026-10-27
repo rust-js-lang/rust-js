@@ -652,17 +652,29 @@ pub(in crate::lower::mir::tidy) fn written_values(
 /// each of the `if`'s other branch, end the list, as the `if` did. A
 /// binding its condition makes, a let chain's `let Some(x) = e`, is its
 /// `then`'s, where it's in scope.
+/// Where statements the program wrote after the `if` follow its other
+/// branch's, the branch is those before them, `if (t) { exit } else {
+/// rest } more`, and its test says so (`Known::Else`), so preparation
+/// keeps the `else` (ADR 0879, amended).
 /// And `if (t) { b } else { a }` of `if !t { a } else { b }`, its branches
 /// MIR turned, a `switchInt` testing `t`: `if (!t) { a } else { b }`, as
 /// written (ADR 0879).
 pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // Where a statement after the guard is written: a `return` MIR made of
+    // a value, where the function ends, where its value is.
+    let place = |s: &Stmt| match &s.kind {
+        StmtKind::Return(Some(v)) if s.span.is_none() => v.span,
+        _ => s.span,
+    };
     // Each statement written in `branch`, one at least, or in `made`, the
-    // condition of the branch it's a `then` of: a binding the condition makes.
-    let of = |branch: &js::Span, made: Option<&js::Span>, stmts: &[Stmt]| {
-        stmts.iter().any(|s| within(branch, s.span))
+    // condition of the branch it's a `then` of: a binding the condition
+    // makes. Of what's after the guard, `placed`, each where `place` says.
+    let of = |branch: &js::Span, made: Option<&js::Span>, stmts: &[Stmt], placed: bool| {
+        let at = |s: &Stmt| if placed { place(s) } else { s.span };
+        stmts.iter().any(|s| within(branch, at(s)))
             && (stmts.iter())
-                .all(|s| s.span.is_none() || within(branch, s.span) || made.is_some_and(|c| within(c, s.span)))
+                .all(|s| at(s).is_none() || within(branch, at(s)) || made.is_some_and(|c| within(c, at(s))))
     };
     let mut at = 0;
     while at < stmts.len() {
@@ -672,8 +684,8 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
         if let StmtKind::If(_, first, Some(second)) = &stmts[at].kind
             && let Some((cond, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
             && otherwise.lo >= then.hi
-            && of(otherwise, None, first)
-            && of(then, Some(cond), second)
+            && of(otherwise, None, first, false)
+            && of(then, Some(cond), second, false)
         {
             let StmtKind::If(test, first, Some(second)) =
                 std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
@@ -690,22 +702,43 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
             // A jump alone each way, `if (t) { return a; } return;`, reads as
             // it is.
             let jump = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
-            let turned = match (of(then, Some(cond), exit), of(otherwise, None, exit)) {
+            // The statements after the guard that are the other branch's:
+            // those up to the last written in it, where what follows is
+            // written after the whole `if`, the statements the program
+            // wrote after it (ADR 0879, amended); or, where none follows,
+            // all of them.
+            let branch = |b: &js::Span, made: Option<&js::Span>| {
+                let end = otherwise.hi.max(then.hi);
+                let after = |s: &Stmt| place(s).is_none() || place(s).lo >= end;
+                let k = rest.iter().rposition(|s| within(b, place(s))).map_or(0, |k| k + 1);
+                let more = rest[k..].iter().any(|s| !place(s).is_none());
+                match more {
+                    true => (of(b, made, &rest[..k], true) && rest[k..].iter().all(after)).then_some(k),
+                    false => of(b, made, rest, false).then_some(rest.len()),
+                }
+            };
+            let turned = match (of(then, Some(cond), exit, false), of(otherwise, None, exit, false)) {
                 _ if matches!(rest, [s] if jump(s)) && matches!(exit.as_slice(), [s] if jump(s)) => None,
-                (true, false) if of(otherwise, None, rest) => Some(false),
-                (false, true) if of(then, Some(cond), rest) => Some(true),
+                (true, false) => branch(otherwise, None).map(|k| (false, k)),
+                (false, true) => branch(then, Some(cond)).map(|k| (true, k)),
                 _ => None,
             };
-            if let Some(turned) = turned {
+            if let Some((turned, k)) = turned {
+                let after = stmts.split_off(at + 1 + k);
                 let rest = stmts.split_off(at + 1);
+                stmts.extend(after);
                 let StmtKind::If(test, exit, None) =
                     std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
                 else {
                     unreachable!("matched")
                 };
+                let written = |t: Expr| Expr {
+                    facts: t.facts.with(js::Known::Else),
+                    ..t
+                };
                 stmts[at].kind = match turned {
-                    false => StmtKind::If(test, exit, Some(rest)),
-                    true => StmtKind::If(test.negated_test(), rest, Some(exit)),
+                    false => StmtKind::If(written(test), exit, Some(rest)),
+                    true => StmtKind::If(written(test.negated_test()), rest, Some(exit)),
                 };
             }
         }

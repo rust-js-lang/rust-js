@@ -186,9 +186,11 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
   expect(js).toContain("    case roleType:\n      return 2;\n    default:\n      return 3;\n  }\n}");
   expect(js).toContain("export function twoWays(selector, log) {\n  if (selector.typeof === componentType) {");
   expect(js).toContain("    case b:\n      return 2;\n    default:\n      return s !== c ? 3 : 4;\n  }\n}");
-  expect(js).toContain("    default:\n      if (s !== c) {\n        return 3;\n      }\n      log.push(4);\n      return 4;\n  }\n}");
+  // The `else` the program wrote, followed by its value: the `default`,
+  // the value after the `switch` (ADR 0879, amended).
+  expect(js).toContain("    default:\n      if (s !== c) {\n        return 3;\n      }\n      log.push(4);\n  }\n  return 4;\n}");
   expect(js).toContain(
-    "  if (s === a) {\n    return 1;\n  }\n  switch (s) {\n    case b:\n      log.push(2);\n      break;\n    case componentType:\n      log.push(3);\n      break;\n    default:\n      log.push(4);\n  }\n  log.push(5);\n  return 6;\n}",
+    "  if (s === a) {\n    return 1;\n  } else {\n    switch (s) {\n      case b:\n        log.push(2);\n        break;\n      case componentType:\n        log.push(3);\n        break;\n      default:\n        log.push(4);\n    }\n    log.push(5);\n  }\n  return 6;\n}",
   );
   const lib = await import(join(dir, "lib.js"));
   expect([0, 2, 3].map((t) => lib.selectorToString({ typeof: t }))).toEqual(["component", "role", "text"]);
@@ -212,8 +214,8 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
 // which the chain calls once a test; a case's value that does something,
 // which each test does where the one before fails, and a `switch` too, but
 // of a subject read once; a `break` of the loop the chain is in, which a
-// `switch` would take; and a chain whose `else` isn't what's after it,
-// whose guards MIR's structure made.
+// `switch` would take; and `if`s the program wrote apart, each a guard,
+// no chain.
 test("a chain of strict_equals tests a switch would change stays", async () => {
   const dir = fixture("strict-equals-ifs");
   writeFileSync(
@@ -272,9 +274,11 @@ pub fn looped(items: &[&'static Unknown], a: &'static Unknown, b: &'static Unkno
 pub fn guarded(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown) -> u8 {
     if js::strict_equals(s, a) {
         return 1;
-    } else if js::strict_equals(s, b) {
+    }
+    if js::strict_equals(s, b) {
         return 2;
-    } else if js::strict_equals(s, a) {
+    }
+    if js::strict_equals(s, a) {
         return 4;
     }
     log(3);

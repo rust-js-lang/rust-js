@@ -605,6 +605,11 @@ pub enum Known {
     /// A call that never returns, MIR's of a `-> !` function's, a panic's:
     /// what's after it is never run (`js::ends`, ADR 0954).
     Diverges,
+    /// The test of an `if` whose `else` the program wrote, its branches
+    /// each as written: an `else` after a `then` that leaves stays one
+    /// where statements follow the `if`, `if (a) { ..; return; } else if
+    /// (b) { return; } more` (ADR 0879, amended), not 0237's `if` after.
+    Else,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

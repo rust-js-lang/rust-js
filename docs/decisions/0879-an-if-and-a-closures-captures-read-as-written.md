@@ -280,3 +280,72 @@ the two the same value. Tested by `test/lowering-written-branches.test.ts`'s
 "a negated matches! of alternatives", run; its mutations are
 `unwritten-negation-kept`, `written-negation-de-morganed-in-a-value` and
 `unwritten-negation-of-inexact-tests` (`tidy/logicals.ts`).
+
+## Amendment: an `else` after a branch that returns stays where statements follow
+
+The user's decision (2026-10-27). React's insertOrAppendPlacementNode
+writes `if (isHost) { ..; return; } else if (tag === HostPortal) { //
+.. return; }` and goes on after it; its port, the same `if .. else if`,
+printed two `if`s, the `else` gone. MIR's structure makes a guard of
+the `then` that returns; `written_elses` made the `else` again only of
+every statement after the guard, so the program's statements after the
+`if` kept it a guard; and where it did make one, preparation's
+`unelsed` (ADR 0237) took it away again.
+
+**An `else` the program wrote after a branch that leaves stays an
+`else` where statements follow the `if`:**
+
+- `written_elses` makes the `else` of the statements after the guard up
+  to the last written in it, where a statement the program wrote after
+  the whole `if` follows them, and every one after them is written there
+  or nowhere. A `return` MIR made of the function's value is where its
+  value is written, not where the function ends. Where nothing written
+  follows, the `else` is all of what's after the guard, as before.
+- Its test says so, `Known::Else`, and `unelsed` keeps that `else`
+  where a statement follows the `if` in its block. A chain's `else
+  if`s inside it are links, kept as before.
+- **Where nothing follows**, the `if` the function ends with, ADR 0237
+  still holds: `if (a) { return 1; } if (b) { return 2; } return 3;` of
+  `if a { return 1; } else if b { return 2; } else { 3 }`, as ESLint's
+  `no-else-return` writes it. `if`s the program wrote apart stay apart.
+- A loop's `if x == 0 { continue; } else if .. { break; }` isn't
+  covered yet: MIR's jumps there are the loop's, which `written_elses`
+  doesn't see as a guard's exit.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): after a branch that
+leaves, what follows runs only where it didn't, `else` or not.
+
+```js
+if (isHost) {
+  log.push(tag);
+  return;
+} else if (tag === 4) {
+  // A portal's children are placed on their own.
+  return;
+}
+log.push(0);
+```
+
+So does an `else` that leaves after a `then` that goes on, as 0879
+already had it, where a statement follows: React's formatOwnerStack,
+`if let Some(idx) = idx { stack = &stack[..idx]; } else { return
+String::new(); } stack.to_string()`, is upstream's `if (idx !== -1) {
+stack = stack.slice(0, idx); } else { return ''; } return stack;`, where
+it read `stack = ..; return stack; } return "";`.
+
+ADR 0958's `switch` of a chain of `js::strict_equals` tests reads the
+chain so too: an `else` written after the chain's `return`s, statements
+after it, is the `default`, and what follows is after the `switch`,
+`default: if (s !== c) { return 3; } log.push(4); } return 4;`; `if`s
+written apart stay `if`s.
+
+Held by `test/lowering-written-branches.test.ts`'s "an else after a
+branch that returns stays where statements follow", run in JS, and "an
+else-if chain keeps its else past an arm that returns", whose `guarded`
+chain now stays one; `test/lowering-string-places.test.ts` and
+`test/lowering-shadows.test.ts`'s formatOwnerStack,
+`test/lowering-strict-switches.test.ts`; and the mutations
+`written-else-only-of-the-whole-rest`, `written-else-unmarked`,
+`written-else-return-at-its-span` (`tidy/jumps/tails.ts`),
+`written-else-unelsed-though-followed` and
+`written-else-kept-at-the-end-too` (`prepare.ts`).

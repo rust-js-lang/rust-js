@@ -65,8 +65,8 @@ pub fn described(parents: &HashSet<u32>, key: u32, items: &[u32]) -> String {
 // The same function's `else if` chain: an element, a client reference that
 // returns, JSX, an object. An arm that leaves keeps the chain's `else`
 // where an arm before it doesn't leave (ADR 0237, amended), as ESLint's
-// `no-else-return` allows; a chain whose arms each leave up to it is still
-// each `if` after the last.
+// `no-else-return` allows; and so does a chain whose arms each leave up to
+// it, where statements follow it (ADR 0879, amended).
 test("an else-if chain keeps its else past an arm that returns", async () => {
   const { js, lib } = await compiled("written-else-if-chains", `use std::collections::HashSet;
 
@@ -104,8 +104,9 @@ pub fn guarded(key: u32) -> u32 {
     '  if (key === 1) {\n    str = "element";\n  } else if (key === 2) {\n    return "client";\n  } else if (DEV && parents.has(key)) {\n    // Print JSX\n',
   );
   expect(js).toContain('  } else {\n    // Print Object\n    str = "{";\n');
-  // Each arm up to the last leaves: each `if` after the last (ADR 0237).
-  expect(js).toContain("  if (key === 1) {\n    return 10;\n  }\n  if (key === 2) {\n    return 20;\n  }\n  if (key > 5) {\n");
+  // Each arm up to the last leaves, and the function goes on after the
+  // chain: the chain as written (ADR 0879, amended).
+  expect(js).toContain("  if (key === 1) {\n    return 10;\n  } else if (key === 2) {\n    return 20;\n  } else if (key > 5) {\n");
   const parents = new Set([3]);
   expect([1, 2, 3, 4].map((key) => lib.described(parents as never, key as never))).toEqual(["element", "client", "<jsx>", "{}"]);
   expect([1, 2, 3].map((key) => lib.guarded(key as never))).toEqual([10, 20, 3]);
@@ -1118,4 +1119,83 @@ pub fn boundary_and(fiber: &Fiber) -> bool {
       expect([supports, tag, lib.boundaryIf({ tag } as never), lib.boundaryAnd({ tag } as never)]).toEqual([supports, tag, want, want]);
     }
   }
+});
+
+// The user's decision (2026-10-27), ADR 0879, amended: React's
+// insertOrAppendPlacementNode writes `if (isHost) { ..; return; } else if
+// (tag === HostPortal) { return; } ..more`. An `else` the program wrote
+// after a branch that returns stays, where statements follow the `if`; a
+// chain the function ends with is still each `if` after the last (ADR
+// 0237), and `if`s written apart stay apart.
+test("an else after a branch that returns stays where statements follow", async () => {
+  const { js, lib } = await compiled(
+    "else-after-return",
+    `pub fn place(tag: u8, log: &mut Vec<u8>) {
+    let is_host = tag == 5 || tag == 6;
+    if is_host {
+        log.push(tag);
+        return;
+    } else if tag == 4 {
+        // A portal's children are placed on their own.
+        return;
+    }
+    log.push(0);
+}
+
+pub fn counted(key: u32, total: &mut u32) -> u32 {
+    if key == 0 {
+        return 0;
+    } else {
+        *total += key;
+    }
+    *total
+}
+
+pub fn turned(key: u32, total: &mut u32) -> u32 {
+    if key != 0 {
+        *total += key;
+    } else {
+        return 0;
+    }
+    *total
+}
+
+pub fn apart(key: u32) -> u32 {
+    if key == 1 {
+        return 10;
+    }
+    if key == 2 {
+        return 20;
+    }
+    key
+}
+
+pub fn last(key: u32) -> u32 {
+    if key == 1 {
+        return 10;
+    } else if key == 2 {
+        return 20;
+    } else {
+        key + 1
+    }
+}
+`,
+  );
+  expect(js).toContain(
+    "  if (isHost) {\n    log.push(tag);\n    return;\n  } else if (tag === 4) {\n    // A portal's children are placed on their own.\n    return;\n  }\n  log.push(0);\n",
+  );
+  expect(js).toContain("  if (key === 0) {\n    return 0;\n  } else {\n    total.value = (total.value + key) >>> 0;\n  }\n  return total.value;\n");
+  expect(js).toContain("  if (key) {\n    total.value = (total.value + key) >>> 0;\n  } else {\n    return 0;\n  }\n  return total.value;\n");
+  expect(js).toContain("  if (key === 1) {\n    return 10;\n  }\n  if (key === 2) {\n    return 20;\n  }\n  return key;\n");
+  expect(js).toContain("  if (key === 1) {\n    return 10;\n  }\n  if (key === 2) {\n    return 20;\n  }\n  return (key + 1) >>> 0;\n");
+  const placed = [5, 4, 3].map((tag) => {
+    const log: number[] = [];
+    lib.place(tag as never, log as never);
+    return log;
+  });
+  expect(placed).toEqual([[5], [], [0]]);
+  const total = { value: 1 };
+  expect([lib.counted(0 as never, total as never), lib.counted(2 as never, total as never)]).toEqual([0, 3]);
+  expect([lib.turned(0 as never, total as never), lib.turned(4 as never, total as never)]).toEqual([0, 7]);
+  expect([1, 2, 3].map((k) => [lib.apart(k as never), lib.last(k as never)])).toEqual([[10, 10], [20, 20], [3, 4]]);
 });

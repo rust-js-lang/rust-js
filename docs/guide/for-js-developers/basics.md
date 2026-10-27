@@ -1064,9 +1064,11 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 && status !== "rejected"`; and so is an `if`'s value, `if a == 0 || a > b
 { a } else { b }` being `a === 0 || a > b ? a : b`
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
-A branch that returns needs no `else` after it,
-as ESLint's `no-else-return` has it, but an `else if` after an arm that
-goes on stays one chain:
+A branch that returns needs no `else` after it where the `if` ends the
+function, as ESLint's `no-else-return` has it; but an `else` you wrote
+after it stays where statements follow the `if`, `place`'s, and an `else
+if` after an arm that goes on stays one chain
+([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended):
 
 ```rust
 pub fn describe(kind: u32, ready: bool, dev: bool) -> String {
@@ -1082,6 +1084,17 @@ pub fn describe(kind: u32, ready: bool, dev: bool) -> String {
     }
     label
 }
+
+pub fn place(tag: u8, log: &mut Vec<u8>) {
+    if tag == 5 {
+        log.push(tag);
+        return;
+    } else if tag == 4 {
+        // A portal's children are placed on their own.
+        return;
+    }
+    log.push(0);
+}
 ```
 
 ```js
@@ -1095,6 +1108,17 @@ export function describe(kind, ready, dev) {
     label = dev && ready ? "<jsx>" : "{...}";
   }
   return label;
+}
+
+export function place(tag, log) {
+  if (tag === 5) {
+    log.push(tag);
+    return;
+  } else if (tag === 4) {
+    // A portal's children are placed on their own.
+    return;
+  }
+  log.push(0);
 }
 ```
 

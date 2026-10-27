@@ -69,9 +69,10 @@ pub fn format_owner_stack(error: &JsError) -> String {
   idx = at !== -1 ? stack.slice(0, at).lastIndexOf("\\n") : -1;
   if (idx !== -1) {
     stack = stack.slice(0, idx);
-    return stack;
+  } else {
+    return "";
   }
-  return "";
+  return stack;
 `);
   expect(js).not.toContain("$1");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');

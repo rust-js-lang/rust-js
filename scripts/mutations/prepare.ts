@@ -376,8 +376,8 @@ export const mutations: Mutation[] = [
     "name": "else-after-return-kept",
     "breaks": "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
     "file": "src/prepare.rs",
-    "find": "            && then.last().is_some_and(js::ends)\n        {\n            let els = els.take()",
-    "replace": "            && false\n        {\n            let els = els.take()",
+    "find": "            && then.last().is_some_and(js::ends)\n            && !(followed",
+    "replace": "            && false\n            && !(followed",
     "tests": ["test/snapshots.test.ts"],
     "snapshots": true
   },
@@ -385,8 +385,8 @@ export const mutations: Mutation[] = [
     "name": "else-dropped-of-any-branch",
     "breaks": "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
     "file": "src/prepare.rs",
-    "find": "            && then.last().is_some_and(js::ends)\n        {\n            let els = els.take()",
-    "replace": "            && true\n        {\n            let els = els.take()",
+    "find": "            && then.last().is_some_and(js::ends)\n            && !(followed",
+    "replace": "            && true\n            && !(followed",
     "tests": ["test/lowering-branches.test.ts", "-t", "branches from MIR read as a person writes them"]
   },
   {
@@ -737,5 +737,21 @@ export const mutations: Mutation[] = [
     find: "        let joined = Expr::bin(*op, a.clone(), b.clone());\n",
     replace: "        let joined = Expr::bin(js::Op::And, a.clone(), b.clone());\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "truths joined"],
+  },
+  {
+    name: "written-else-unelsed-though-followed",
+    breaks: "React's insertOrAppendPlacementNode's `if (isHost) { ..; return; } else if (tag === 4) { return; } more` is two `if`s, the `else` the program wrote gone (ADR 0879, amended)",
+    file: "src/prepare.rs",
+    find: "            && !(followed && test.facts.has(js::Known::Else))\n",
+    replace: "",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an else after a branch that returns stays"],
+  },
+  {
+    name: "written-else-kept-at-the-end-too",
+    breaks: "a written `else` after a `return` stays where nothing follows the `if`, `if (a) { return 1; } else { return 2; }`, against ADR 0237",
+    file: "src/prepare.rs",
+    find: "            && !(followed && test.facts.has(js::Known::Else))\n",
+    replace: "            && !test.facts.has(js::Known::Else)\n",
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an else after a branch that returns stays"],
   },
 ];

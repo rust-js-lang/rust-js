@@ -254,7 +254,10 @@ fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool 
 /// } else { .. }`: what's in its `else` would be the outer `else`'s, the
 /// chain broken, as ESLint's `no-else-return` allows it (ADR 0237,
 /// amended). Which `else` that is the walk says, `slot`: an `else` whose
-/// one statement is an `if`, a link of a chain.
+/// one statement is an `if`, a link of a chain. And an `else` the program
+/// wrote, its test's `Known::Else`, stays where statements follow the
+/// `if`, `if (a) { ..; return; } else if (b) { return; } more`, as
+/// written (ADR 0879, amended): the user's decision, 2026-10-27.
 fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
     let link = slot == js::Slot::Else
         && matches!(
@@ -266,9 +269,11 @@ fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
         );
     let mut i = 0;
     while i < stmts.len() {
-        if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
+        let followed = i + 1 < stmts.len();
+        if let StmtKind::If(test, then, els @ Some(_)) = &mut stmts[i].kind
             && !link
             && then.last().is_some_and(js::ends)
+            && !(followed && test.facts.has(js::Known::Else))
         {
             let els = els.take().expect("matched");
             stmts.splice(i + 1..i + 1, els);

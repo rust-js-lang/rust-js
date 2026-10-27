@@ -56,9 +56,10 @@ test("React's owner stack reads as upstream's", async () => {
   idx = at !== -1 ? stack.slice(0, at).lastIndexOf("\\n") : -1;
   if (idx !== -1) {
     stack = stack.slice(0, idx);
-    return stack;
+  } else {
+    return "";
   }
-  return "";
+  return stack;
 }`);
   expect(js).not.toContain("@rust-js/runtime");
   const stack = "Error: react-stack-top-frame\n    at jsx\n    at é (a.js:1)\n    at 🦀 (b.js:2)\n    at react_stack_bottom_frame (r.js:3)";
