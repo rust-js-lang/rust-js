@@ -646,8 +646,10 @@ test("a constructor's statements set this, of a class named apart from its struc
     pub struct Fiber {
         pub tag: Cell<u8>,
         pub memoized_state: Cell<Option<&'static Unknown>>,
+        #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
         pub actual_duration: Cell<Option<f64>>,
         #[cfg_attr(rust_js, rust_js::name = "_debugOwner")]
+        #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
         pub debug_owner: Cell<Option<&'static Unknown>>,
         pub reads: Cell<u32>,
     }
