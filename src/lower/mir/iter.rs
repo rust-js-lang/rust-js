@@ -734,6 +734,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_given_iterable(receiver_ty) {
             return Some(crate::lower::iterators::given_into_iter(value));
         }
+        // A `char`'s or a `str`'s escape, its text, stepped as JS's iterator
+        // of it, by code point as Rust's `char`s are: `$next` steps no text.
+        if crate::lower::recognition::is_text_escape(self.tcx, iter_ty) {
+            return Some(self.js_iterator(value));
+        }
         if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
             return Some(value);
         }

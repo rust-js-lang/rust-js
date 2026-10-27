@@ -32,6 +32,8 @@ const few = [
   "calculator.rs",
   "catch_unwind_drops.rs",
   "conditional_regions.rs",
+  // A `for` over a text escape, stepped by `$next` until `for…of` is made.
+  "escape_iterators.rs",
   "interpreter.rs",
   "labeled_blocks.rs",
 ];

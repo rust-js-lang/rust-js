@@ -416,4 +416,12 @@ export const mutations: Mutation[] = [
     replace: "        let own_count = false && matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "text-escape-into-iter-itself",
+    breaks: "a `for` over a `char`'s or a `str`'s escape steps its text by `$next`, which a string has no `next` for, until tidy's `for…of` is made of it",
+    file: "src/lower/mir/iter.rs",
+    find: "        if crate::lower::recognition::is_text_escape(self.tcx, iter_ty) {\n            return Some(self.js_iterator(value));\n        }\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "^escape_iterators after"],
+  },
 ];
