@@ -45,3 +45,15 @@ which neither a dictionary nor what a use site gives std's struct asked.
 - Mutations: `range-hint-unknown`, `lazy-range-hint-unknown`,
   `inclusive-range-hint-unknown`, `inclusive-range-len-refused`,
   `default-len-refused`, `held-default-len-unknown`.
+
+## Amendment: a range's `step_by` knows it too
+
+A wrong answer: a range's `step_by` given to generic code as `$stepBy`, a
+range held in a variable, `r.step_by(3)`, or of bounds tidy can't read,
+said `(0, None)` of its size where std's `StepBy` says its range's exact
+length stepped, `(4, Some(4))` of ten by three. `$stepBy`'s `hint` is
+std's now, of its source's: before its first item is taken, that one and
+each `step`th after, then each `step`th. Found by tidy's stages (ADR
+0659): `range_hints_given`'s `(0..10).step_by(3)` is `$stepBy` until the
+`range steps` pass folds it. Held by `step_by_range_size_hint.rs`,
+`range_hints_given.rs` at every stage, and `step-by-hint-unknown`.

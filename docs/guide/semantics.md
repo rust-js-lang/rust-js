@@ -899,7 +899,8 @@ React and JSX are [their own pages](README.md#react).
     0873).
 13. A writer of the crate's is given each `write!`'s text in one `write_str`.
 14. A generic iterator's `size_hint()` is its array's or its range's length
-    ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), or `(0, None)`:
+    ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), a range's
+    `step_by`'s of it, or `(0, None)`:
     an endless `n..`'s too, Rust's `(usize::MAX, None)`.
 15. `zip` makes one more of its first side's items where its second ends
     first, as `Zip::next` does, also where std's wouldn't: where both sides

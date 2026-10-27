@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "  return { TAG: \"Ok\" };\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
   },
+  {
+    name: "step-by-hint-unknown",
+    breaks: "a `step_by` given to generic code says `(0, None)` of its size, though std's `StepBy` knows it of its range's exact length",
+    file: "src/runtime/back_steps.js",
+    find: "    const [low, high] = $sizeHint(it);\n",
+    replace: "    return [0, undefined];\n",
+    tests: ["test/corpus.test.ts", "-t", "^(step_by_range_size_hint|range_hints_given).rs$"],
+  },
 ];

@@ -2563,6 +2563,13 @@ export function $stepBy(it, step, drop) {
   );
   stepped.first = true;
   stepped.skip = skip;
+  // Its size hint, std's `StepBy`'s of its source's: before its first item
+  // is taken, that one and each `step`th after; then each `step`th.
+  stepped.hint = () => {
+    const [low, high] = $sizeHint(it);
+    const left = (n) => (stepped.first ? (n === 0 ? 0 : 1 + Math.floor((n - 1) / step)) : Math.floor(n / step));
+    return [left(low), high == null ? undefined : left(high)];
+  };
   // Its `nth` its source's, which drops what it passes over itself, a
   // reversed `Vec`'s as one slice (#234).
   if (it.ownNth) stepped.ownNth = true;
