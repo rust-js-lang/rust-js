@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     breaks: "an arrow MIR made no fact of, one calling a binding, `xs.map((x) => parseFloat(x))`, is the function, `xs.map(parseFloat)`, which reads the index",
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
-    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own });\n",
+    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true });\n",
     tests: callback,
   },
   {
@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     name: "generic-callback-kept",
     breaks: "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
     file: "src/lower/passed_on.rs",
-    find: "                    ty::Param(_) => Some(Callee::Generic),\n",
-    replace: "                    ty::Param(_) => None,\n",
+    find: "                    ty::Param(_) => Callee::Generic,\n",
+    replace: "                    ty::Param(_) => return None,\n",
     tests: callback,
   },
   {
@@ -168,6 +168,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/passed_on.rs",
     find: "            matches!(taker, Taker::Handler | Taker::OnceCallback | Taker::FnPointer)\n",
     replace: "            matches!(taker, Taker::Handler | Taker::OnceCallback)\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+  },
+  {
+    name: "fn-pointer-wrapper-collapsed",
+    breaks: "a closure as a `fn` of a function Rust could name there, a DEV dispatcher's wrapper `|context| read_context(context)`, is the function, not the function of its own the program wrote (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            if taker == Taker::FnPointer && !fact.adapts {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+  },
+  {
+    name: "fn-pointer-always-adapts",
+    breaks: "every function a closure calls is taken to have a signature other than the closure's, so a wrapper of one Rust could name is the function (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "        inputs.len() != called.inputs().len()\n",
+    replace: "        true || inputs.len() != called.inputs().len()\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
   },
 ];

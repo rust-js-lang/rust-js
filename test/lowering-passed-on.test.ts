@@ -212,8 +212,10 @@ pub fn callbacks(queue: &js::Unknown, value: u32) -> u32 {
 // closure that captures nothing as a `fn`, that only calls a function of
 // the crate's with what it's given, or none of it, is that function: Rust
 // compares no two `fn`s reliably, and what JS gives it more, the function
-// never reads (ADR 0605, amended). One that keeps its call's result back,
-// or calls a binding, whose JS function may read more, stays an arrow.
+// never reads (ADR 0605, amended). One of a function Rust could name there,
+// of the closure's own signature, is a function of its own as written; one
+// that keeps its call's result back, or calls a binding, whose JS function
+// may read more, stays an arrow.
 test("a closure as a fn that only calls the crate's function with what it's given is the function", async () => {
   const dir = fixture("fn-pointer-passed-on");
   writeFileSync(join(dir, "lib.rs"), `pub struct Dispatcher {
@@ -247,6 +249,16 @@ pub static RUNNING: Dispatcher = Dispatcher {
     },
 };
 
+// A function Rust could name here, wrapped as upstream's DEV dispatchers
+// wrap theirs, \`readContext(context) { return readContext(context); }\`:
+// a function of its own, as written.
+pub static WRAPPED: Dispatcher = Dispatcher {
+    use_callback: |a, _| first(a),
+    use_id: || 3,
+    use_state: |a| first(a),
+    use_log: |_| throw_invalid_hook_error(),
+};
+
 pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
     (dispatcher.use_callback)(1, 2);
     (dispatcher.use_log)(9);
@@ -263,6 +275,7 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
 };`);
   expect(js).toContain("useCallback: first,");
   expect(js).toContain("useState: (a) => (first(a) + 1) >>> 0,");
+  expect(js).toContain("useState: (a) => first(a),");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.call(lib.RUNNING)).toEqual([4, 3, 7]);
   expect(lib.RUNNING.useLog(9)).toBe(undefined);

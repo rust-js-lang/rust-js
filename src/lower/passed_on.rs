@@ -64,6 +64,11 @@ pub(in crate::lower) enum Taker {
 pub(in crate::lower) struct Forwarding {
     pub(in crate::lower) span: js::Span,
     pub(in crate::lower) callee: Callee,
+    /// Whether what it calls has a signature of its own, not the
+    /// closure's: of other parameters or another result, which Rust can't
+    /// give where the closure goes, `|_, _| throw_invalid_hook_error()`
+    /// of a `fn() -> !` (ADR 0605, amended).
+    pub(in crate::lower) adapts: bool,
 }
 
 /// What a closure's one call calls.
@@ -154,6 +159,11 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
             if !taker.takes(fact.callee) {
                 return None;
             }
+            // A closure as a `fn` of a function Rust could have named there
+            // is one the program wrote to be a function of its own.
+            if taker == Taker::FnPointer && !fact.adapts {
+                return None;
+            }
             matches!(taker, Taker::Handler | Taker::OnceCallback | Taker::FnPointer)
         }
     };
@@ -229,8 +239,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate's, a closure, a generic `impl Fn`'s or a `dyn Fn`'s: its
     /// `Forwarding`'s callee. `None` of a binding's, whose JS function
     /// may read more than it's given, and of a function of rest arguments,
-    /// which reads them all.
-    pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>) -> Option<Callee> {
+    /// which reads them all. And whether it adapts (`Forwarding`'s
+    /// `adapts`): a function of the crate's whose signature isn't the
+    /// closure's.
+    pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>) -> Option<(Callee, bool)> {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.root()?);
         if let ExprKind::Block { block } = thir[call].kind
@@ -242,25 +254,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
             return None;
         };
-        let (def_id, _) = fn_def(thir[fun].ty)?;
+        let (def_id, generic_args) = fn_def(thir[fun].ty)?;
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
-                match thir[args[0]].ty.peel_refs().kind() {
-                    ty::Closure(..) => Some(Callee::Own),
-                    ty::Param(_) => Some(Callee::Generic),
-                    ty::Dynamic(..) => Some(Callee::Dyn),
+                let callee = match thir[args[0]].ty.peel_refs().kind() {
+                    ty::Closure(..) => Callee::Own,
+                    ty::Param(_) => Callee::Generic,
+                    ty::Dynamic(..) => Callee::Dyn,
                     ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)) => {
-                        Some(Callee::Dyn)
+                        Callee::Dyn
                     }
-                    _ => None,
-                }
+                    _ => return None,
+                };
+                Some((callee, false))
             }
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
                 && !super::bindings::is_binding(self.tcx, def_id)
                 && !self.takes_rest(def_id))
-            .then_some(Callee::Own),
+            .then(|| (Callee::Own, self.adapts(body.def_id, (def_id, generic_args)))),
         }
+    }
+
+    /// Whether `callee`'s signature isn't closure `closure`'s, as Rust
+    /// would have it where the closure goes: other parameters, or another
+    /// result, `!` of a `u32`'s.
+    fn adapts(&self, closure: DefId, (callee, args): (DefId, ty::GenericArgsRef<'tcx>)) -> bool {
+        let tcx = self.tcx;
+        let ty::Closure(_, closure_args) = *tcx.type_of(closure).instantiate_identity().skip_normalization().kind()
+        else {
+            return true;
+        };
+        let theirs = tcx.instantiate_bound_regions_with_erased(closure_args.as_closure().sig());
+        let called =
+            tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate(tcx, args).skip_normalization());
+        let inputs = match theirs.inputs() {
+            [tupled] => match tupled.kind() {
+                ty::Tuple(items) => items.to_vec(),
+                _ => return true,
+            },
+            other => other.to_vec(),
+        };
+        let erased = |ty: ty::Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
+        inputs.len() != called.inputs().len()
+            || (inputs.iter().zip(called.inputs())).any(|(&a, &b)| erased(a) != erased(b))
+            || erased(theirs.output()) != erased(called.output())
     }
 }

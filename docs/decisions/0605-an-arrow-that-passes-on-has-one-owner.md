@@ -172,7 +172,8 @@ throw_invalid_hook_error()`, and its JS was a method of each, `useCallback()
 
 **A closure that captures nothing, as a `fn` (ADR 0125), that only calls a
 function of the crate's, or one rust-js compiled of a library's, with what
-it's given, in order, or with none of it, is that function**
+it's given, in order, or with none of it, where that function's signature
+isn't the closure's, is that function**
 (`Taker::FnPointer`, asked where `rvalues.rs` lowers the coercion): the
 closure's MIR fact says its one call is the crate's (`Callee::Own`), whose
 JS reads no more than it's given, so a caller's arguments it leaves out are
@@ -191,12 +192,20 @@ export const CONTEXT_ONLY = {
 };
 ```
 
+**Only where the function's signature isn't the closure's**, other
+parameters or another result (`Forwarding`'s `adapts`, which
+`forwarded_to` reads off MIR's call): there Rust can't name the function
+where the closure goes, and the closure only adapts it. Where Rust could,
+`|context| read_context(context)`, the closure is a function the program
+wrote to be its own, as upstream's DEV dispatchers wrap each of theirs,
+`readContext(context) { return readContext(context); }`: it stays.
+
 A closure whose call's value it doesn't give, `|a| { first(a); }`, a
 binding's call, whose JS may read more than it's given, or a call with
-anything else, stays the arrow; a written `|a| first(a)` clippy calls a
-redundant closure, which `first` itself is anyway.
+anything else, stays the arrow too.
 
 Held by `test/lowering-passed-on.test.ts`, "a closure as a fn that only
 calls the crate's function with what it's given is the function", run;
-mutations `closure-fn-pointer-kept-arrow` (`mir/rvalues.ts`) and
-`fn-pointer-statement-kept` (`passed_on.ts`).
+mutations `closure-fn-pointer-kept-arrow` (`mir/rvalues.ts`),
+`fn-pointer-statement-kept`, `fn-pointer-wrapper-collapsed` and
+`fn-pointer-always-adapts` (`passed_on.ts`).

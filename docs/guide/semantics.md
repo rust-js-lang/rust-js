@@ -548,7 +548,9 @@ What's refused is in [the limitations](limitations.md).
   [0151](../decisions/0151-called-function-values.md)), one taking a
   `&mut` included, `iter_mut().for_each(bump)`.
 - **A closure that captures nothing as a `fn`, that only calls a function
-  of the crate's with what it's given, or none of it, is that function**:
+  of the crate's with what it's given, or none of it, is that function**
+  where Rust couldn't name the function there, of other parameters or
+  another result:
   React's `ContextOnlyDispatcher`'s `use_callback: |_, _|
   throw_invalid_hook_error()` is `useCallback: throwInvalidHookError`, as
   Rust compares no two `fn`s reliably and the function reads no more than

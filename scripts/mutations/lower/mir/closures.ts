@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     "breaks": "a closure of one call that gives nothing isn't marked, so a held handler keeps its block",
     "file": "src/lower/mir/closures.rs",
     "find": "        let concise = self.closure_calls_for_nothing(body);\n",
-    "replace": "        let concise = false;\n",
+    "replace": "        let concise = None;\n",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {

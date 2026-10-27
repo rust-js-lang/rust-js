@@ -236,8 +236,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let concise = self.closure_calls_for_nothing(body);
         if forwarded.is_some() || concise.is_some() {
             let span = self.js_span(span);
-            if let Some(callee) = forwarded {
-                let fact = crate::lower::passed_on::Forwarding { span, callee };
+            if let Some((callee, adapts)) = forwarded {
+                let fact = crate::lower::passed_on::Forwarding { span, callee, adapts };
                 self.locals.mir.forwarding.push(fact);
             }
             if let Some(written) = concise {
