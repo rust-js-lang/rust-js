@@ -377,7 +377,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || tail.last().is_some_and(ends)\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|written returns MIR jumps out"],
+    tests: ["test/corpus.test.ts", "-t", "^(drop_scopes|scope_temporaries).rs$"],
+    snapshots: true,
   },
   {
     name: "emptied-if-kept-as-test",
