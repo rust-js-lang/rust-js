@@ -1,6 +1,6 @@
 # 0967. An object spread, a splice and a set by any key
 
-Status: Accepted.
+Status: Accepted. Amended: `js::array::join` (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, JS's own
 operation on a JS value, as TypeScript has it of an `any`'s.
@@ -95,3 +95,19 @@ const updated = Array.isArray(obj) ? obj.slice() : { ...obj };
   key are JS's", copyWithDelete run in JS, a `__proto__` key's copy too;
   the guide's example, compiled.
 - Mutation `object-binding-spread-a-field` (`mir/calls.ts`).
+
+## Amendment: `js::array::join` of any values
+
+React's hook-deps warning writes `[${prevDeps.join(', ')}]` of any values.
+Its port mapped each `Option<&Unknown>` to text, `None` to `""`, then
+joined: `deps.map((dep) => (dep != null ? String(dep) : "")).join(", ")`.
+
+**`js::array::join(values, separator)` is `values.join(separator)`** of a
+slice of any values, `&[Option<&Unknown>]`: JS's own operation, each
+value's text as `String()` gives it, `undefined` and `null` none, a
+symbol's `TypeError` a panic. Case N, JS's own on a JS value. Text Rust
+owns is joined by `[String]::join`, as before.
+
+Held by `test/js-collections.test.ts`'s "js::array::join is an array of
+any values' join", run in Node, and the guide's `deps_text`.
+

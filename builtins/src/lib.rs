@@ -293,6 +293,17 @@ pub mod array {
     pub fn splice(this: &Unknown, start: u32, delete_count: u32) -> Vec<Option<&'static Unknown>> {
         unreachable!()
     }
+
+    /// [`array.join(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/join):
+    /// the text of each of any values, as JS's `String()` gives it, between
+    /// `separator`s, `undefined` and `null` none: React's
+    /// `prevDeps.join(', ')`. Of a symbol, JS's `TypeError`, a panic. Text
+    /// Rust owns is joined by `[String]::join`.
+    #[cfg_attr(rust_js, rust_js::link_name = "join")]
+    #[allow(unused_variables)]
+    pub fn join(this: &[Option<&Unknown>], separator: &str) -> String {
+        unreachable!()
+    }
 }
 
 /// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,

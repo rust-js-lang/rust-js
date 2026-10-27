@@ -347,3 +347,16 @@ console.log(JSON.stringify([lib.removedProps({ children: 1, className: "x", ID: 
 `);
   expect(out).toBe('["- className\\n- ID\\n",["a:1","bc:2"],["A","BC","a=1","bc=2","1","2"]]\n');
 });
+
+// React's `[${prevDeps.join(', ')}]`: `js::array::join` of any values, each
+// one's text as JS's `String()` gives it, `undefined` and `null` none.
+test("js::array::join is an array of any values' join", () => {
+  const { dir, js } = compiled("js-array-join", `use js::Unknown;
+
+pub fn text(deps: &[Option<&'static Unknown>]) -> String {
+    format!("[{}]", js::array::join(deps, ", "))
+}
+`);
+  expect(js).toContain('  return `[${deps.join(", ")}]`;\n');
+  expect(ran(dir, `import { text } from "./lib.js"; console.log(text([1, null, "a", undefined, true]));`)).toBe("[1, , a, , true]\n");
+});

@@ -1872,6 +1872,24 @@ export function copyWithDelete(obj, key) {
   return updated;
 }
 ```
+- `js::array::join(values, separator)` is `values.join(separator)` of a
+  slice of any values, each one's text as JS's `String()` gives it,
+  `undefined` and `null` none, as React writes its deps
+  ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md), amended):
+
+```rust
+use js::Unknown;
+
+pub fn deps_text(deps: &[Option<&'static Unknown>]) -> String {
+    format!("[{}]", js::array::join(deps, ", "))
+}
+```
+
+```js
+export function depsText(deps) {
+  return `[${deps.join(", ")}]`;
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it
