@@ -34,6 +34,15 @@ function enabled(config) {
   return on ? 1 : 2;
 }
 
+function watched(watched) {
+  watched.reads = (watched.reads + 1) >>> 0;
+  if (!watched.enabled) {
+    return 0;
+  }
+  const on = watched.enabled;
+  return on ? 1 : 2;
+}
+
 function main() {
   const configs = [
     {
@@ -48,6 +57,13 @@ function main() {
   ];
   for (const config of configs) {
     console.log(`${label(config)} ${kept(config)} ${enabled(config)}`);
+  }
+  for (const enabled of [true, false, undefined]) {
+    const w = {
+      enabled,
+      reads: 0,
+    };
+    console.log(`${watched(w)} ${w.reads}`);
   }
 }
 //# sourceMappingURL=case.js.map

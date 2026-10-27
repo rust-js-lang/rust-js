@@ -112,7 +112,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "            self.locals.mir.plain.extend(fields);\n",
     "replace": "            drop(fields);\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    "tests": ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
+    "snapshots": true
   },
   {
     "name": "mir-plain-through-mut",
