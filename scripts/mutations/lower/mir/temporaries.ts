@@ -134,11 +134,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-flush-discriminant",
-    breaks: "a discriminant pending when MIR flushes, a loop's `next()` under a drop flag's unwind, is read as a value and refused",
+    breaks: "a discriminant pending when MIR flushes, a loop's `next()` under a drop flag's unwind, is read as a value: the range's `for` is a `while (true)` of `$rangeNext`",
     file: "src/lower/mir/temporaries.rs",
     find: "            if let Value::Discriminant(subject, ..) = &mut value {\n",
     replace: "            if let Value::Discriminant(subject, ..) = &mut value\n                && false\n            {\n",
-    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrows.rs$"],
+    snapshots: true,
   },
   {
     name: "unit-mut-ref-refused",
