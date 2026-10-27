@@ -32,6 +32,8 @@ const few = [
   "calculator.rs",
   "catch_unwind_drops.rs",
   "conditional_regions.rs",
+  // A drop's guard inlined while it's a temporary, `_3`, named by no number.
+  "drop_guard_name_shared.rs",
   // A `for` over a text escape, stepped by `$next` until `for…of` is made.
   "escape_iterators.rs",
   "interpreter.rs",

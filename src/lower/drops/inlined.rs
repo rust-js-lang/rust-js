@@ -605,10 +605,18 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
     };
     let mut names = HashSet::new();
     js::names_in(body, &mut names);
-    // Not a word JS keeps, `_in`'s `in`.
+    // Not a word JS keeps, `_in`'s `in`, nor a temporary's number, `_9`'s
+    // `9`, which names nothing.
     let read = match (&variable, guard.trim_start_matches('_')) {
         (Some(v), _) => v.clone(),
-        (None, free) if !free.is_empty() && !names.contains(free) && !crate::names::kept_word(free) => free.to_string(),
+        (None, free)
+            if !free.is_empty()
+                && !free.starts_with(|c: char| c.is_ascii_digit())
+                && !names.contains(free)
+                && !crate::names::kept_word(free) =>
+        {
+            free.to_string()
+        }
         _ => guard.to_string(),
     };
     // A copy of it, `const old = _restore[0];`, is what it reads as too.

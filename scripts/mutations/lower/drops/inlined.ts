@@ -302,4 +302,12 @@ export const mutations: Mutation[] = [
     replace: "        Item::Statements(_) => {}\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard in a closure of what a module runs as it loads"],
   },
+  {
+    name: "inlined-guard-named-by-number",
+    breaks: "a drop's guard inlined while it's a temporary, `_3`, is read by its number, `const 3 = ..`, which JS can't read, at every tidy stage before its names",
+    file: "src/lower/drops/inlined.rs",
+    find: "                && !free.starts_with(|c: char| c.is_ascii_digit())\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
+  },
 ];
