@@ -170,3 +170,22 @@ it's bound, then `value = other;`, the same answer with no test that
 can't fail. The check went, and its mutation, `held-guard-of-a-changed-value`,
 which survived every run; `test/lowering-labels.test.ts` holds the copy
 and the answers.
+
+## Amendment: the branch written first stays first
+
+React's throwException writes `if get_is_hydrating() && (DISABLE_LEGACY_MODE
+|| ..) { ..hydration..; return false; } else { // Otherwise, fall through
+.. }` and the error path after it. MIR's `l: { if (a) { if (!b) { break l;
+} r } } s` is the shape `or_blocks` read as `if (!a || b) { s } r`, the
+branch after the block taken for the one the program wrote, so the error
+path printed first, inside `if (!getIsHydrating() || ..)`, and the
+hydration path after it. **Where `r`, the `if`'s own statements, is
+written before `s`, the `if` is `if (a && !b) { r } s`**, as written; where
+`s` is first, the `||` the program wrote, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the
+paths are the same either way. The `// Otherwise, fall through ..`
+comment of the written empty `else` is placed after the function's last
+statement (left to comment placement). Held by
+`test/corpus/or_guard_written_first.rs`, against native Rust; mutation
+`or-block-written-then-last`.

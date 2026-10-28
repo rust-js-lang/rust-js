@@ -412,4 +412,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
+  {
+    name: "or-block-written-then-last",
+    breaks: "an `if` of `a && (b || c)` whose branch leaves, written before what follows, is printed inverted, the rest in `if (!a || ..)` first, React's throwException's error path before its hydration path (ADR 0790, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "                (Some(r), Some(s)) if r < s => {\n",
+    replace: "                (Some(r), Some(s)) if r < s && false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_guard_written_first.rs$"],
+    snapshots: true,
+  },
 ];

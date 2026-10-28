@@ -686,8 +686,20 @@ pub(super) fn or_blocks(stmts: &mut Vec<Stmt>, logicals: &[js::Span]) {
         };
         if let Some((test, span, rest)) = made {
             let after: Vec<Stmt> = stmts.drain(i + 1..).collect();
-            stmts[i] = StmtKind::If(test, after, None).at(span);
-            stmts.extend(rest);
+            // Of `if a && !b { r } else { .. } s`, its `then` written first,
+            // `r`: that branch, as written, React's throwException's
+            // hydration path before the error path (ADR 0790, amended).
+            let first = |list: &[Stmt]| list.iter().map(|s| s.span).find(|s| !s.is_none()).map(|s| s.lo);
+            match (first(&rest), first(&after)) {
+                (Some(r), Some(s)) if r < s => {
+                    stmts[i] = StmtKind::If(test.negated_test(), rest, None).at(span);
+                    stmts.extend(after);
+                }
+                _ => {
+                    stmts[i] = StmtKind::If(test, after, None).at(span);
+                    stmts.extend(rest);
+                }
+            }
         }
         i += 1;
     }
