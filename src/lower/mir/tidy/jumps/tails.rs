@@ -375,7 +375,8 @@ pub(in crate::lower::mir::tidy) fn tail_jumps(stmts: &mut [Stmt]) {
 /// `t` goes on to, its end: `if (c) { s } else { t }`, a `match`'s arms
 /// as a person writes them, the `break`s then ending the branches; and a
 /// block that ends it, one with it. Of `if (!a) { if (!b) { s; break l; }
-/// } t`, an or-pattern's, `if (a || b) { t } else { s }`.
+/// } t`, an or-pattern's, `if (!a && !b) { s } else { t }`, which the
+/// passes after turn as the program wrote it.
 pub(in crate::lower::mir::tidy) fn branch_ends(stmts: &mut [Stmt]) {
     for stmt in stmts {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
@@ -451,20 +452,11 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     let mut rest = rest;
     ending(&mut then, label);
     ending(&mut rest, label);
-    let tests: Vec<Expr> = std::iter::once(test).chain(tests).collect();
-    let negated = tests.len() > 1
-        && tests
-            .iter()
-            .all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _) | ExprKind::Binary(Op::Ne, ..)));
-    let test = (tests.into_iter())
+    let test = (std::iter::once(test).chain(tests))
         .rev()
         .reduce(|b, a| Expr::bin(Op::And, a, b))
         .expect("one");
-    stmts.push(match (rest.is_empty(), negated) {
-        (true, _) => StmtKind::If(test, then, None).at(span),
-        (false, true) => StmtKind::If(test.negated_test(), rest, Some(then)).at(span),
-        (false, false) => StmtKind::If(test, then, Some(rest)).at(span),
-    });
+    stmts.push(StmtKind::If(test, then, (!rest.is_empty()).then_some(rest)).at(span));
 }
 
 /// A block MIR made that ends `if (c) { a } else { b } return v;`, a

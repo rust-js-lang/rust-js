@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
-    name: "mir-tidy-or-pattern-negated",
-    breaks: "an or-pattern's arm is `if (a !== x && a !== y) { t } else { s }`, not `if (a === x || a === y) { s }`",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        (false, true) => StmtKind::If(test.negated_test(), rest, Some(then)).at(span),\n",
-    replace: "        (false, true) => StmtKind::If(test, then, Some(rest)).at(span),\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
-  },
-  {
     name: "mir-tidy-let-else-branch-ends",
     breaks: "a `let … else`'s block takes its `throw` as an `else`, not a guard",
     file: "src/lower/mir/tidy/jumps/tails.rs",
