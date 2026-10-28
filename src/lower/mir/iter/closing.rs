@@ -78,12 +78,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to
     /// drop what it hasn't given, `$closing(it, drop)`, where `closing_drop`
-    /// says (ADRs 0422, 0465); else itself, as of one closed already, an
-    /// owning source `rev()` is given, which would drop it twice (#225).
+    /// says (ADRs 0422, 0465); else itself.
     pub(in crate::lower) fn closing(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        if crate::lower::iterators::closed_parts(&it).is_some() {
-            return Ok(it);
-        }
         Ok(match self.closing_drop(ty, span)? {
             Some(drop) => self.closed_by(it, drop, ty),
             None => it,

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    closing.advanceBy = (m, drop) => it.advanceBy(m, drop);\n",
     replace: "    closing.unforwarded = (m, drop) => it.advanceBy(m, drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(chain_sides_own_steps|generic_skip_of_owned_rev).rs$"],
   },
   {
     name: "closing-own-nth-unsaid",
