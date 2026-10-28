@@ -354,14 +354,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
-    name: "held-map-hint-refused",
-    breaks: "a held map of the crate's iterator has its size_hint",
-    file: "src/lower/mir/iter.rs",
-    find: "            || self.maps_the_crates_own(iter_ty)\n",
-    replace: "\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
-  },
-  {
     name: "identity-map-dropped-over-own-steps",
     breaks: "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "src/lower/mir/iter.rs",

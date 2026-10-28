@@ -769,14 +769,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `$sizeHint` finds an `iter_ty`'s size: a `$iter`'s, exact, a
     /// generic one's, as it finds it (ADR 0170), and a compiled std
-    /// iterator's, its struct's own hint (ADR 0561).
+    /// iterator's, its struct's own hint (ADR 0561), a held map's of the
+    /// crate's own iterator too.
     fn hints_its_size(&self, iter_ty: Ty<'tcx>) -> bool {
         // One a struct holds, its own of its source's (ADR 0542).
         self.array_source(iter_ty).is_some()
             || self.is_unknown(iter_ty)
             || self.explicit_adapter(iter_ty)
             || self.struct_hint_known(iter_ty)
-            || self.maps_the_crates_own(iter_ty)
     }
 
     /// Whether `iter_ty` is a `map` of the crate's own iterator, or of one
