@@ -33,7 +33,11 @@ fn main() {
     let same = *held == done;
     held.step = 3;
     println!("{same} {}", *held == done);
+    // A cell asked whether it's borrowed counts its borrows: compared
+    // through its guard, it's still the value, not borrowed again.
+    println!("{}", state.try_borrow().is_err());
     drop(held);
+    println!("{}", state.try_borrow().is_err());
     let outer = RefCell::new(vec![RefCell::new(1), RefCell::new(2)]);
     let inner = outer.borrow();
     let guard = inner[0].borrow_mut();
