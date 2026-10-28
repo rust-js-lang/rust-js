@@ -156,7 +156,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/moves.rs",
     find: "    if read != Read::Target {\n",
     replace: "    if false {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "drop glue is left out"],
+    tests: ["test/corpus.test.ts", "-t", "^(cell_const|ref_cell_field_const).rs$"],
+    snapshots: true,
   },
   {
     name: "made-cell-target-folded",

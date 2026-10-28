@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"while heads\", |b, h| {\n                js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))\n            }),\n",
     replace: "",
-    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a while's continues of the loop around are where the program wrote them"],
   },
   {
     name: "mir-tidy-headed-labels-kept",
