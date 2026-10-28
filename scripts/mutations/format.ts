@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
   },
   {
-    name: "function-mark-apart",
-    breaks: "`disabledLog.__reactDisabledLog = true;` is a blank line apart from the function it marks",
-    file: "src/format.rs",
-    find: "            let marked = marks(&pair[0], &pair[1]);\n",
-    replace: "            let marked = false && marks(&pair[0], &pair[1]);\n",
-    tests: ["test/js-object.test.ts", "-t", "a function's property is set where its module loads it"],
-  },
-  {
     name: "transform-map-unmoved",
     breaks: "a transform's text is written with the map of the text it was given, which points at other lines",
     file: "src/format.rs",
@@ -72,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            (apart && !imports && last + 1 == next).then_some(next)\n",
     replace: "            (false && apart && !imports && last + 1 == next).then_some(next)\n",
-    tests: ["test/corpus.test.ts", "-t", "static_fns"],
+    tests: ["test/corpus.test.ts", "-t", "^(wrapping|weak_debug).rs$"],
     snapshots: true,
   },
   {
@@ -90,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "|| !declared_only && (first < last || next < next_last);\n",
     replace: "|| true;\n",
-    tests: ["test/corpus.test.ts", "-t", "statics"],
+    tests: ["test/corpus.test.ts", "-t", "^(let_chain_values|thread_local_reads_another_set).rs$"],
     snapshots: true,
   },
   {
@@ -107,7 +99,8 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "            let next = top(next);\n",
     replace: "            let next = next.max(top(next));\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
+    tests: ["test/corpus.test.ts", "-t", "^(ref_mut_of_mut_payload|thread_local_made_where_used).rs$"],
+    snapshots: true,
   },
   {
     name: "moved-tokens-unsorted",

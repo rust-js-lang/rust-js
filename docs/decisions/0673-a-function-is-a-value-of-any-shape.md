@@ -117,4 +117,9 @@ disabledLog.__reactDisabledLog = true;
   closure. "console is a value, its functions read as values": React's
   `ConsolePatchingDev` as the port writes it, marked.
 - Mutation `function-mark-apart`: the mark a blank line below its
-  function.
+  function. Later (2026-10-28) gone, with the formatter's rule it mutated:
+  since ADR 0865 a blank line is where the Rust has one, so a mark the
+  program writes right after its function is right after it in the JS by
+  that rule, and the formatter's own spacing only meets statements the
+  Rust tells nothing of, where an `on_load!` body's mark comes before its
+  function, a macro's too.

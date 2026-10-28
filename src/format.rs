@@ -514,41 +514,10 @@ fn blank_lines_before(code: &str, told: &[bool]) -> std::collections::HashSet<us
                 if d.declarations.iter().all(|d| d.init.is_none()));
             let apart =
                 function(&pair[0]) || function(&pair[1]) || !declared_only && (first < last || next < next_last);
-            // So are a function and what sets a property of it,
-            // `disabledLog.__reactDisabledLog = true;` (ADR 0673).
-            let marked = marks(&pair[0], &pair[1]);
-            let apart = apart && !marked;
             let next = top(next);
             (apart && !imports && last + 1 == next).then_some(next)
         })
         .collect()
-}
-
-/// Whether `next` is a statement that sets a property of the function
-/// `statement` declares, `f.marked = true;`, which a person writes right
-/// after it (`blank_lines_before`).
-fn marks(statement: &Statement<'_>, next: &Statement<'_>) -> bool {
-    use oxc_ast::ast::{AssignmentTarget, Expression};
-    let declared = match statement {
-        Statement::FunctionDeclaration(f) => f.id.as_ref(),
-        Statement::ExportDeclaration(export) => match &export.declaration {
-            Declaration::FunctionDeclaration(f) => f.id.as_ref(),
-            _ => None,
-        },
-        _ => None,
-    };
-    let Statement::ExpressionStatement(set) = next else {
-        return false;
-    };
-    let Expression::AssignmentExpression(assign) = &set.expression else {
-        return false;
-    };
-    let object = match &assign.left {
-        AssignmentTarget::StaticMemberExpression(member) => &member.object,
-        AssignmentTarget::ComputedMemberExpression(member) => &member.object,
-        _ => return false,
-    };
-    matches!((declared, object), (Some(id), Expression::Identifier(of)) if of.name == id.name)
 }
 
 /// `map` of code each of whose lines `lines` moves, line `i` to `lines[i]`;
