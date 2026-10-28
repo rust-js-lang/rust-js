@@ -4,6 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26. Amends
 [0871](0871-rev-is-stds.md): a value given as it is to a std body that
 steps it from its back is made knowing its back only where its dictionary
 is a JS iterator's, `{ next_back: $nextBack }`.
+Amended by [0993](0993-what-compiled-rev-is-given-is-made-where-its-made.md):
+the rule it narrowed is gone.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none, no observable
 difference. The compiled body steps the value by the dictionary it's

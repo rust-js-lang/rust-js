@@ -116,7 +116,7 @@ function main() {
     iterator_peekable(
       iterator_fuse(
         iterator_rev(
-          $iter($iter(louds(40, 2))),
+          $iter(louds(40, 2)),
           { next: $next },
           { next_back: $nextBack },
           $dropEach(loudDrop_drop),

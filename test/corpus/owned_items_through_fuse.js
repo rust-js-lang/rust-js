@@ -188,7 +188,7 @@ function main() {
   const held = $held(
     iterator_fuse(
       iterator_rev(
-        $iter($iter(louds(5))),
+        $iter(louds(5)),
         { next: $next },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),

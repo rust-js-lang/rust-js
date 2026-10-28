@@ -338,7 +338,7 @@ function main() {
   // a `Vec`'s `advance_back_by`, one slice, front to back (#286).
   const value$19 = iterator_fuse(
     iterator_rev(
-      $iter($iter(louds(55, 3))),
+      $iter(louds(55, 3)),
       { next: $next },
       { next_back: $nextBack },
       $dropEach(loudDrop_drop),
@@ -505,7 +505,7 @@ function main() {
   const iter$1 = iterator_peekable(
     iterator_take(
       iterator_rev(
-        $iter($iter(louds(73, 2))),
+        $iter(louds(73, 2)),
         { next: $next },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),
@@ -529,7 +529,7 @@ function main() {
   const iter$2 = iterator_fuse(
     iterator_take(
       iterator_rev(
-        $iter($iter(louds(75, 2))),
+        $iter(louds(75, 2)),
         { next: $next },
         { next_back: $nextBack },
         $dropEach(loudDrop_drop),

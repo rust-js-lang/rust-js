@@ -12,6 +12,9 @@ over a slice's items reversed, or a range's, counts down, no
 `toReversed()` copy.
 Amended by [0980](0980-std-s-struct-given-to-rev-is-given-as-it-is.md):
 std's compiled struct given to `rev()` is given as it is.
+Amended by [0993](0993-what-compiled-rev-is-given-is-made-where-its-made.md):
+what it's given is made knowing its back where it's made, not again where
+it's given.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what a held `Rev`
 steps, from either end, what it counts, drops, clones and shows is std's,

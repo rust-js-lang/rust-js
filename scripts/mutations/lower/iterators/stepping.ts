@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "compiled-struct-made-knowing",
-    breaks: "std's compiled struct given to std's `rev()` is wrapped in `$knowing` of the compiled back methods its dictionary already carries (ADR 0980)",
-    file: "src/lower/iterators/stepping.rs",
-    find: "                && !self.compiled_struct_at(given, span)\n            {\n",
-    replace: "            {\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
-    snapshots: true,
-  },
-  {
     name: "result-items-unstepped",
     breaks: "a `Result` given to `chain` or `extend` is spread as the object it is: `TypeError: ... is not iterable` where Rust steps its `Ok` value (ADR 0923)",
     file: "src/lower/iterators/stepping.rs",
@@ -254,13 +245,5 @@ export const mutations: Mutation[] = [
     find: "                fold: folded(\"rfold\", true)?,\n                nth: own(\"nth_back\", true)?,\n",
     replace: "                fold: folded(\"fold\", false)?,\n                nth: own(\"nth\", false)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
-  },
-  {
-    name: "adapter-given-to-rev-unknowing",
-    breaks: "a std adapter given as it is to compiled `rev()` isn't made knowing its back",
-    file: "src/lower/iterators/stepping.rs",
-    find: "            } else if crate::lower::recognition::is_compiled_std(self.tcx, callee)\n                && matches!(",
-    replace: "            } else if false\n                && crate::lower::recognition::is_compiled_std(self.tcx, callee)\n                && matches!(",
-    tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
 ];

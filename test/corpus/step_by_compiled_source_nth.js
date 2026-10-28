@@ -90,7 +90,7 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = iterator_peekable(
     iterator_rev(
-      $iter($iter(louds(20, 3))),
+      $iter(louds(20, 3)),
       { next: $next },
       { next_back: $nextBack },
       $dropEach(loudDrop_drop),
@@ -151,7 +151,7 @@ function main() {
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = iterator_fuse(
     iterator_rev(
-      $iter($iter(louds(30, 5))),
+      $iter(louds(30, 5)),
       { next: $next },
       { next_back: $nextBack },
       $dropEach(loudDrop_drop),

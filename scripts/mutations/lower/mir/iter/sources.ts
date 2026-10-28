@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/sources.rs",
     find: "        } else if made_array(&value) || self.steps_an_array(ty) {\n",
     replace: "        } else if self.steps_an_array(ty) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_array_iter|calculator).rs$"],
     snapshots: true,
   },
   {
