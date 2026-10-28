@@ -176,6 +176,13 @@ filtered by its truth is tested by its truth", run, `module_text_truth.rs`
 against native Rust, and the mutations `truth-tested-kept` and
 `truth-tested-past-code` (`prepare.ts`).
 
+Later (2026-10-28): the two places are one. A module's own thread-local's
+`with_borrow` is now its variable read where it's lowered (ADR 0866's
+`QuietCells`), so tidy's `filtered_guards` meets `x` as the variable and
+gives each of these its JS; `prepare::truth_tested` changed nothing of
+the corpus, its snapshots or the suites, its mutations survived the
+Nightly, and it's gone with them. The test above still holds the JS.
+
 ## Amendment: a let-else of a read kept by its truth, and an exit that reads the `Option` (2026-10-26)
 
 React's `ReactFiberLegacyContext.js` reads a type's `contextTypes` once:

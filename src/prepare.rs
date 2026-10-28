@@ -14,7 +14,6 @@ mod initializers;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
-mod truths;
 mod typeofs;
 
 /// A closure's parameter given its name back, preparation's, which a body
@@ -827,7 +826,6 @@ fn block(body: &mut Vec<Stmt>) {
             | StmtKind::Comments => {}
         }
     }
-    truths::truth_tested(body);
     fallen_held(body);
     fallen_declared(body);
 }
