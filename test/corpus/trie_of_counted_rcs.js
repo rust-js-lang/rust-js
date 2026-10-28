@@ -288,7 +288,7 @@ function depth(node) {
     try {
       $unborrow(borrow);
     } catch (error) {
-      if (parent) {
+      if (parent != null) {
         function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
@@ -308,7 +308,7 @@ function depth(node) {
       $rcDrop(cur, dropNode);
       throw error;
     }
-    if (parent) {
+    if (parent != null) {
       function dropNode(node) {
         console.log(`drop ${$debugStr(node.label[0])}`);
         for (const [, value] of $sortedEntries(node.children, $cmp)) {
@@ -335,7 +335,7 @@ function depth(node) {
       continue;
     }
     try {
-      if (parent) {
+      if (parent != null) {
         function dropNode(node) {
           console.log(`drop ${$debugStr(node.label[0])}`);
           for (const [, value] of $sortedEntries(node.children, $cmp)) {
@@ -777,7 +777,7 @@ function main() {
     }
     throw error;
   }
-  console.log(`taken ${!!taken}`);
+  console.log(`taken ${taken != null}`);
   function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {
@@ -899,7 +899,7 @@ function main() {
     $rcDrop(ab, dropNode);
     throw error;
   }
-  console.log(`ab's parent is gone: ${!upgrade}`);
+  console.log(`ab's parent is gone: ${upgrade == null}`);
   function dropNode$3(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
     for (const [, value] of $sortedEntries(node.children, $cmp)) {

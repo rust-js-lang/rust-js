@@ -257,13 +257,6 @@ pub(super) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
     )
 }
 
-/// Whether `#[rust_js::types]` says a value of `did` may be falsy in JS,
-/// `js::Unknown`'s `unknown` (`Written::may_be_falsy`): an `Option` of one
-/// is then tested against `null`, never by its truth (ADR 0298).
-pub(super) fn written_falsy(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    written_types(tcx, did).is_some_and(|written| written.may_be_falsy())
-}
-
 /// What a type's name imports: the name, or a namespace's, `JSX` of
 /// `JSX.Element` (ADR 0236).
 fn imported(name: &str) -> String {

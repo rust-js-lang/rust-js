@@ -43,7 +43,7 @@ function main() {
     $unborrow(borrow);
     throw error;
   }
-  if (tmp) {
+  if (tmp != null) {
     const x = tmp[0];
     const free = tmp[1];
     $unborrow(borrow);

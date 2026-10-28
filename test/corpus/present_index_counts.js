@@ -24,7 +24,7 @@ function second(endTime) {
 function flush(endTime) {
   let i = 0;
   let callback;
-  while ((callback = callbacks[i])) {
+  while ((callback = callbacks[i]) != null) {
     callback(endTime);
     i++;
   }

@@ -25,7 +25,7 @@ export const nodeClone = {
 };
 function nodeClone_clone(node) {
   const list = $upgrade(node.list);
-  if (list) {
+  if (list != null) {
     try {
       flip(list.value);
     } finally {

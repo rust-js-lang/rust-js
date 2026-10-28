@@ -81,18 +81,18 @@ function flagPresent(f) {
 }
 
 function pointBranch(p) {
-  if (p) {
+  if (p != null) {
     return p.x === 0 ? "origin" : "point";
   }
   return "none";
 }
 
 function listBranch(list) {
-  return !list ? "none" : list.length === 0 ? "empty" : "list";
+  return list == null ? "none" : list.length === 0 ? "empty" : "list";
 }
 
 function called(f) {
-  return f ? f() : 7;
+  return f != null ? f() : 7;
 }
 
 function firstPoint(points) {
@@ -101,7 +101,7 @@ function firstPoint(points) {
     return;
   }
   const p = $someValue(value);
-  if (!p) {
+  if (p == null) {
     return;
   }
   return p.x;
@@ -130,7 +130,7 @@ function poppedText(stack) {
 function poppedPoints(stack) {
   let n = 0;
   let p;
-  while ((p = stack.pop())) {
+  while ((p = stack.pop()) != null) {
     n = (n + ((p.x + 1) | 0)) | 0;
   }
   return n;

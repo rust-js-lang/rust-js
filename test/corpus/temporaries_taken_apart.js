@@ -117,7 +117,7 @@ function main() {
   try {
     try {
       try {
-        if (z) {
+        if (z != null) {
           console.log(`if ${z[0]}`);
           loudDrop_drop(z);
         }

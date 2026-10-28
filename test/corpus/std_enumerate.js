@@ -113,7 +113,7 @@ function main() {
   const chars = Array.from("abc").entries();
   while (true) {
     const value = $next(chars);
-    if (value) {
+    if (value != null) {
       const i = value[0];
       const c = value[1];
       $print(`${i}${c} `);

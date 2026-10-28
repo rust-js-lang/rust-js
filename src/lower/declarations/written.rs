@@ -82,20 +82,6 @@ impl Written {
             _ => None,
         }
     }
-
-    /// Whether a value of it may be falsy in JS, `0`, `""`, `false`, `NaN`,
-    /// `0n`, `null` or `undefined`: a keyword's but `object`'s and
-    /// `symbol`'s, the empty string's, and a union's of one; never an
-    /// object's, an array's, a function's, nor a type named, an interface
-    /// or a class (ADR 0298).
-    pub(in crate::lower) fn may_be_falsy(&self) -> bool {
-        match self {
-            Written::Keyword(keyword) => !matches!(keyword.as_str(), "object" | "symbol" | "never"),
-            Written::Literal(text) => text.is_empty(),
-            Written::Union(parts) => parts.iter().any(Written::may_be_falsy),
-            Written::Reference { .. } | Written::Array { .. } | Written::Function(_) | Written::Object(_) => false,
-        }
-    }
 }
 
 /// TypeScript's keyword types, and `null`.

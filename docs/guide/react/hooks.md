@@ -180,7 +180,7 @@ export function Search() {
   const input = useRef(undefined);
   function focus() {
     const element = input.current;
-    if (element) {
+    if (element != null) {
       element.focus();
     }
   }

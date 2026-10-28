@@ -70,7 +70,7 @@ function main() {
         keyDrop_drop(k);
         return result;
       }
-      const value = removeEntry ? map(removeEntry) : undefined;
+      const value = removeEntry != null ? map(removeEntry) : undefined;
       console.log(`removed ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     } finally {
       keyDrop_drop(value$4);
@@ -110,7 +110,7 @@ function main() {
       keyDrop_drop(k);
       return result;
     }
-    const value$1 = replace ? map(replace) : undefined;
+    const value$1 = replace != null ? map(replace) : undefined;
     console.log(`replace ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = [4];
     try {
@@ -120,7 +120,7 @@ function main() {
         keyDrop_drop(k);
         return result;
       }
-      const value = take ? map(take) : undefined;
+      const value = take != null ? map(take) : undefined;
       console.log(`take ${value == null ? "None" : `Some(${value})`}`);
     } finally {
       keyDrop_drop(value$2);

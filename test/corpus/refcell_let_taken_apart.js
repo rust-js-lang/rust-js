@@ -17,7 +17,7 @@ function transition(types) {
 
 function finish(prev, current) {
   const currentTypes = current.types;
-  if (prev && currentTypes != null) {
+  if (prev != null && currentTypes != null) {
     if (DEV && prev.types != null && prev.types !== currentTypes) {
       console.log(
         `overriding ${prev.types == null ? "None" : `Some(RefCell { value: ${$showBorrowed(prev.types, (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]`, true)} })`}`,

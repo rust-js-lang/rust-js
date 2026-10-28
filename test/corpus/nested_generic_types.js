@@ -11,7 +11,7 @@ function noisyDrop_drop(noisy) {
 function main() {
   const deep = 7;
   const held = [undefined, undefined, [1]];
-  console.log(`${deep == null ? "None" : `Some(${deep})`} ${!!held[2]}`);
+  console.log(`${deep == null ? "None" : `Some(${deep})`} ${held[2] != null}`);
   function dropS0(s0) {
     if (s0[0][0] != null) {
       noisyDrop_drop(s0[0][0][0][0]);

@@ -308,7 +308,7 @@ function main() {
       $rcDrop(converted);
       throw error;
     }
-    if (!tmp) {
+    if (tmp == null) {
       break;
     }
     const list = tmp;

@@ -13,15 +13,6 @@ export const mutations: Mutation[] = [
     tests: ["test/js-object.test.ts", "-t", "one weak key"],
   },
   {
-    name: "negated-presence-untested",
-    breaks: "an `Option`'s presence negated, `!x`, is no presence test, so a `let .. else` of `then_some` keeps its `Option` (ADR 0910)",
-    file: "src/js/make.rs",
-    find: "                if self.facts.has(Known::Presence) && matches!(inner.kind, ExprKind::Unary(UnaryOp::Not, _)) =>\n",
-    replace: "                if false =>\n",
-    tests: ["test/corpus.test.ts", "-t", "tested_options"],
-    snapshots: true,
-  },
-  {
     name: "template-piece-break-at-start",
     breaks: "a template's piece of `concat!`'s starts at its text's start, not where the one before ends",
     file: "src/js/make.rs",
@@ -142,14 +133,6 @@ export const mutations: Mutation[] = [
     find: "            across: Across::of(kept_across),\n",
     replace: "            across: Across::default(),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
-  },
-  {
-    name: "presence-unmarked",
-    breaks: "an object's `Option` tested by its truth, `p ? p.x : undefined`, is no `p?.x`: its test isn't known as one of being set",
-    file: "src/js/make.rs",
-    find: "            Some(_) => marked,\n",
-    replace: "            Some(_) => test,\n",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "read in a conditional is an optional chain"],
   },
   {
     name: "text-joined-twice",
@@ -476,5 +459,13 @@ export const mutations: Mutation[] = [
     replace: "                && callee.helper_name() == Some(\"$fieldCell \")\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_dyn_listeners.rs$"],
     snapshots: true,
+  },
+  {
+    name: "option-presence-by-truth",
+    breaks: "an `Option` is tested by its truth, `if (!retryQueue)`, where its one form is `retryQueue == null` (ADR 0298, amended by the user)",
+    file: "src/js/make.rs",
+    find: "        Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null())\n",
+    replace: "        let not = Expr::unary(UnaryOp::Not, option);\n        if set { Expr::unary(UnaryOp::Not, not) } else { not }\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "an Option of a value of any shape is tested against null, of an object too"],
   },
 ];

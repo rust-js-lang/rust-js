@@ -31,7 +31,7 @@ function main() {
   const slot$3 = { value: slot };
   const c = front(outer, slot$3, (inner) => $next(inner), intoIterator);
   slot = slot$3.value;
-  const value = slot ? slot.end - slot.at : undefined;
+  const value = slot != null ? slot.end - slot.at : undefined;
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} ${c == null ? "None" : `Some(${c})`} ${value == null ? "None" : `Some(${value})`}`,
   );

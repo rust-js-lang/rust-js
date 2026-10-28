@@ -31,7 +31,7 @@ function firstLong(items) {
       }
       throw error;
     }
-    if (!noisy) {
+    if (noisy == null) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -64,7 +64,7 @@ function main() {
       }
       throw error;
     }
-    if (noisy) {
+    if (noisy != null) {
       const n = noisy;
       if (n[0] === "b") {
         noisyDrop_drop(n);
@@ -96,7 +96,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp) {
+    if (tmp == null) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -118,7 +118,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp$1) {
+    if (tmp$1 == null) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -140,7 +140,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp$2) {
+    if (tmp$2 == null) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -161,7 +161,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp) {
+    if (tmp == null) {
       try {
         if (tmp != null) {
           noisyDrop_drop(tmp);
@@ -199,7 +199,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp$3) {
+    if (tmp$3 == null) {
       for (const item of iter) {
         noisyDrop_drop(item[1]);
       }
@@ -221,7 +221,7 @@ function main() {
       }
       throw error;
     }
-    if (!tmp$4) {
+    if (tmp$4 == null) {
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -253,7 +253,7 @@ function main() {
       }
       throw error;
     }
-    if (tmp$5) {
+    if (tmp$5 != null) {
       const row = tmp$5;
       const value = [["x1"], ["x2"]];
       try {
@@ -278,7 +278,7 @@ function main() {
           }
           throw error;
         }
-        if (!tmp$6) {
+        if (tmp$6 == null) {
           try {
             for (const item of iter$1) {
               noisyDrop_drop(item);
@@ -323,7 +323,7 @@ function main() {
   iter$1 = [3];
   while (true) {
     const n = countdownIterator_next(iter$1);
-    if (n) {
+    if (n != null) {
       if (n[0] === "c1") {
         noisyDrop_drop(n);
       } else {

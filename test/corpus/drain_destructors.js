@@ -33,7 +33,7 @@ function main() {
           }
           throw error;
         }
-        if (tmp) {
+        if (tmp != null) {
           const n = tmp;
           console.log(`got ${n[0]}`);
           if (n[0] === 4) {

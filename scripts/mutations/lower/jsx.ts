@@ -251,22 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
   },
   {
-    name: "jsx-truthy-shown-tested",
-    breaks: "JSX shows an Option of an object by `!!error && ..`, where the original writes `error && ..`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && self.maps_never_falsy(child) =>",
-    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
-    tests: ["test/jsx-children.test.ts", "-t", "JSX tests an Option of an object"],
-  },
-  {
-    name: "jsx-js-object-never-falsy",
-    breaks: "any JS object's struct is never falsy to JSX, `js::Unknown`'s too, so its `!!value && <i />` is `value && <i />`, which renders `0`",
-    file: "src/lower/jsx.rs",
-    find: "                .is_some_and(|inner| self.never_falsy(inner))))",
-    replace: "                .is_some_and(|inner| self.is_js_object(inner.peel_refs()) || self.never_falsy(inner))))",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "JSX shows an Option of a value of any shape"],
-  },
-  {
     name: "component-child-shown-ternary",
     breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
     file: "src/lower/jsx.rs",

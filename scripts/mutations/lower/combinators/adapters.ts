@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
   },
   {
-    name: "filter-map-null-test",
-    breaks: "`filter_map` of a value never falsy keeps `(item) => item != null`, not `Boolean`",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                Some(kept) => self.present(Expr::var(\"item\"), kept),\n",
-    replace: "                Some(_) => Expr::bin(Op::LooseNe, Expr::var(\"item\"), Expr::null()),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
-  },
-  {
     name: "items-never-cells",
     breaks: "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
     file: "src/lower/combinators/adapters.rs",

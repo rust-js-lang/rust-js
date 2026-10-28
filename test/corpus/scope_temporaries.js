@@ -113,20 +113,20 @@ function main() {
   }
   console.log(`drop ${value$4[0]}`);
   const value$5 = early(true);
-  console.log(`early ${!value$5}`);
+  console.log(`early ${value$5 == null}`);
   if (value$5 != null) {
     console.log(`drop ${value$5.a[0]}`);
   }
   let pair = early(false);
   let pair$0$live = true;
-  if (pair) {
+  if (pair != null) {
     pair$0$live = false;
     console.log(`late ${pair.b}`);
     console.log(`drop ${pair.a[0]}`);
   } else {
     console.log("late none");
   }
-  if (pair) {
+  if (pair != null) {
     if (pair$0$live) {
       console.log(`drop ${pair.a[0]}`);
     }
@@ -153,12 +153,12 @@ function main() {
     };
   };
   const value$6 = pair(true);
-  console.log(`pair ${!value$6}`);
+  console.log(`pair ${value$6 == null}`);
   if (value$6 != null) {
     console.log(`drop ${value$6.a[0]}`);
   }
   const value$7 = keptEarly(true);
-  console.log(`kept ${!value$7}`);
+  console.log(`kept ${value$7 == null}`);
   if (value$7 != null) {
     console.log(`drop ${value$7.a[0]}`);
   }

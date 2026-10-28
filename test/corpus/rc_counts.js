@@ -90,7 +90,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = upgrade ? map(upgrade) : undefined;
+    tmp$1 = upgrade != null ? map(upgrade) : undefined;
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
@@ -226,7 +226,7 @@ function main() {
     }
     let tmp$1;
     try {
-      tmp$1 = tmp ? map(tmp) : undefined;
+      tmp$1 = tmp != null ? map(tmp) : undefined;
     } catch (error) {
       $unborrow(borrow);
       function dropNode(node) {
@@ -410,7 +410,7 @@ function main() {
     }
     let tmp$7;
     try {
-      tmp$7 = tmp$6 ? map$1(tmp$6) : undefined;
+      tmp$7 = tmp$6 != null ? map$1(tmp$6) : undefined;
     } catch (error) {
       $unborrow(tmp$5);
       function dropNode(node) {
@@ -553,7 +553,7 @@ function main() {
     }
     let tmp$11;
     try {
-      tmp$11 = tmp$10 ? map$2(tmp$10) : undefined;
+      tmp$11 = tmp$10 != null ? map$2(tmp$10) : undefined;
     } catch (error) {
       $unborrow(tmp$9);
       function dropNode(node) {

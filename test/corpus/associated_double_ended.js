@@ -38,7 +38,7 @@ function revAll(iterable, IIntoIterator, IIntoIterDoubleEndedIterator) {
 
 function sliceIterator_next(slice) {
   const value = slice[0].length === 0 ? undefined : [slice[0][0], slice[0].slice(1)];
-  if (!value) {
+  if (value == null) {
     return;
   }
   const [first, rest] = value;
@@ -49,7 +49,7 @@ function sliceIterator_next(slice) {
 function sliceDoubleEndedIterator_nextBack(slice) {
   const value =
     slice[0].length === 0 ? undefined : [slice[0][slice[0].length - 1], slice[0].slice(0, -1)];
-  if (!value) {
+  if (value == null) {
     return;
   }
   const [last, rest] = value;

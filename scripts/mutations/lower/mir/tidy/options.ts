@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     replace: "        let at = i + 1 + 0 * stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
     tests: ["test/js-object.test.ts", "-t", "an object.s property read where its test holds is one conditional"],
   },
+  {
+    name: "tested-option-null-unread",
+    breaks: "`const x = t ? v : undefined; if (x != null) { ..x.. }` keeps its const, where it's `if (t) { ..v.. }` (ADR 0298, amended)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "        (Some(option), _) if of_x(option) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "tested_options"],
+    snapshots: true,
+  },
 ];

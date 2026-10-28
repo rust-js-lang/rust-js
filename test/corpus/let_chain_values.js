@@ -81,7 +81,7 @@ export function either(a, b, n) {
 // A payload never falsy, tested by its truth.
 export function counted(on, n) {
   const words$1 = on ? words(n) : undefined;
-  const count = words$1 ? words$1.length : 99;
+  const count = words$1 != null ? words$1.length : 99;
   return count + 1;
 }
 

@@ -49,7 +49,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   }
-  const value = l ? map(l) : undefined;
+  const value = l != null ? map(l) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log("--");
   const chain = $held(
@@ -65,7 +65,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = nth ? map(nth) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     chain.return();
@@ -84,7 +84,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = loud ? map(loud) : undefined;
+    const value = loud != null ? map(loud) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$1.return();
@@ -106,7 +106,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   }
-  const value$2 = l$1 ? map$1(l$1) : undefined;
+  const value$2 = l$1 != null ? map$1(l$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log("--");
   const l$2 = $next(
@@ -124,7 +124,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   }
-  const value$3 = l$2 ? map$2(l$2) : undefined;
+  const value$3 = l$2 != null ? map$2(l$2) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log("--");
   const skip = $skipping($closing($iter(louds(20, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
@@ -143,7 +143,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     value$4.return();
@@ -165,7 +165,7 @@ function main() {
     loudDrop_drop(l);
     return result;
   }
-  const value$5 = l$3 ? map$3(l$3) : undefined;
+  const value$5 = l$3 != null ? map$3(l$3) : undefined;
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }
 //# sourceMappingURL=case.js.map

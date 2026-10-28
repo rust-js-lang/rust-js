@@ -61,11 +61,11 @@ function splitWords(s) {
     let mode = "Boundary";
     while (true) {
       const value = $next(charIndices);
-      if (value) {
+      if (value != null) {
         const i = value[0];
         const c = value[1];
         const peek = $peek(charIndices);
-        if (peek) {
+        if (peek != null) {
           const nextI = peek[0];
           const next = peek[1];
           const nextMode = /^\p{Lowercase}$/u.test(c)
@@ -89,8 +89,9 @@ function splitWords(s) {
             mode = nextMode;
           }
           continue;
+        } else {
+          words.push($strSlice(word, init));
         }
-        words.push($strSlice(word, init));
       }
       break;
     }

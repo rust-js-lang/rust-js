@@ -26,7 +26,7 @@ let enqueueTaskImpl;
 
 function enqueueTask(task, host) {
   let task$1$live = true;
-  if (!enqueueTaskImpl) {
+  if (enqueueTaskImpl == null) {
     try {
       if (host === "node") {
         enqueueTaskImpl = (box) => box.call();
@@ -51,7 +51,7 @@ function enqueueTask(task, host) {
     $dispose(task);
     throw new Error("no host");
   }
-  if (enqueueTaskImpl) {
+  if (enqueueTaskImpl != null) {
     task$1$live = false;
     enqueueTaskImpl(task);
   }

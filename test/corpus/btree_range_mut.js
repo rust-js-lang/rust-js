@@ -71,7 +71,7 @@ function main() {
       ),
     ),
   );
-  if (nextBack) {
+  if (nextBack != null) {
     const k = nextBack[0];
     const v = nextBack[1];
     v.value = $insertStr(v.value, 0, ">");
@@ -91,7 +91,7 @@ function main() {
     ),
   );
   const next = $next(last);
-  if (next) {
+  if (next != null) {
     const v = next[1];
     v.value = v.value.toUpperCase();
   }

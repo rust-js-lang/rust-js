@@ -25,7 +25,7 @@ export const nodeClone = {
 };
 function nodeClone_clone(node) {
   const me = $upgrade(node.me);
-  if (me) {
+  if (me != null) {
     try {
       const borrowMut = $borrowMut(me.value, true);
       borrowMut.visits = (borrowMut.visits + 1) >>> 0;

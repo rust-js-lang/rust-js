@@ -19,13 +19,13 @@ export function entry() {
 function main() {
   const names = new Map($lazyRange(1, 5).map((i) => [i, String(i)]));
   let first = $endEntry(names, $cmp, false);
-  if (first) {
+  if (first != null) {
     const value = $entryGet(first, true);
     value.value += "!";
     console.log(`${first[1]} ${$entryGet(first)}`);
   }
   const last = $endEntry(names, $cmp, true);
-  if (last) {
+  if (last != null) {
     const value = $entryRemove(last, true);
     console.log(`(${value[0]}, ${$debugStr(value[1])})`);
   }
@@ -41,7 +41,7 @@ function main() {
     ["c", 3],
   ]);
   first = $endEntry(counts, $cmp, false);
-  if (first) {
+  if (first != null) {
     const getMut = $entryGet(first, true);
     getMut.value = (getMut.value + 10) | 0;
     const old = $entryInsert(first, 100);
@@ -56,7 +56,7 @@ function main() {
       .join(", ")}}`,
   );
   const e = $endEntry(counts, $cmp, false);
-  const value$1 = e ? $entryRemove(e) : undefined;
+  const value$1 = e != null ? $entryRemove(e) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
@@ -64,6 +64,6 @@ function main() {
       .join(", ")}}`,
   );
   const empty = new Map();
-  console.log(`${!$endEntry(empty, $cmp, false)} ${!$endEntry(empty, $cmp, true)}`);
+  console.log(`${$endEntry(empty, $cmp, false) == null} ${$endEntry(empty, $cmp, true) == null}`);
 }
 //# sourceMappingURL=case.js.map

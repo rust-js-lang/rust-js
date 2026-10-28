@@ -63,7 +63,7 @@ function main() {
       loudDrop_drop(f$1);
     }
   }
-  console.log(`b ${!b}`);
+  console.log(`b ${b == null}`);
   const c = { TAG: "Ok", _0: [4] };
   const f$2 = { TAG: "Ok", _0: [5] };
   try {
@@ -128,7 +128,7 @@ function main() {
         }
         console.log(`e ${e != null ? map(e) : 0}`);
         const f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
-        console.log(`f ${!f}`);
+        console.log(`f ${f == null}`);
         try {
           const value$1 = 1 == null ? undefined : 2;
           console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);

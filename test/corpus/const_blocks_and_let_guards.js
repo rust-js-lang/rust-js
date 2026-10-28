@@ -16,7 +16,7 @@ function genericSize() {
 
 function classify(input) {
   const splitOnce = $splitOnce(input, "=");
-  if (splitOnce) {
+  if (splitOnce != null) {
     const parse = $parseInt(splitOnce[1], -2147483648, 2147483647);
     if (parse.TAG === "Ok") {
       const key = splitOnce[0];

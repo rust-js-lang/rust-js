@@ -85,7 +85,7 @@ function taken() {
       loudDrop_drop(l);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -136,7 +136,7 @@ function counted() {
       loudDrop_drop(l);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -166,7 +166,7 @@ function fused() {
       loudDrop_drop(l);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -195,7 +195,7 @@ function peeked() {
       loudDrop_drop(l);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }

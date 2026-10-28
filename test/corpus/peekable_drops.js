@@ -67,7 +67,7 @@ function main() {
     it.return();
     throw error;
   }
-  console.log(`next_if ${!none}`);
+  console.log(`next_if ${none == null}`);
   try {
     it.return();
     const lazy = iterator_peekable(
@@ -108,7 +108,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value = nextBack ? map(nextBack) : undefined;
+      const value = nextBack != null ? map(nextBack) : undefined;
       console.log(`${value == null ? "None" : `Some(${value})`}`);
       const loud = peekableDoubleEndedIterator_nextBack(
         back,
@@ -121,7 +121,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = loud ? map$1(loud) : undefined;
+      const value$1 = loud != null ? map$1(loud) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       const value$2 = peekableDoubleEndedIterator_nextBack(
         back,
@@ -134,7 +134,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value$3 = value$2 ? map$2(value$2) : undefined;
+      const value$3 = value$2 != null ? map$2(value$2) : undefined;
       console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
       more();
       console.log("end");

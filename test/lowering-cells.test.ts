@@ -1411,7 +1411,7 @@ pub fn busy() -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (cache) {\n");
+  expect(js).toContain("  if (cache != null) {\n");
   expect(js).not.toContain("=> cache");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.describe("a"), lib.describe("b"), lib.busy()]).toEqual([1, 2, false]);

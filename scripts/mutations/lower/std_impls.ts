@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {",
     replace: "        if false {",
-    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested by its truth"],
+    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested against null, as of any value"],
   },
   {
     name: "flattened-default-nested",

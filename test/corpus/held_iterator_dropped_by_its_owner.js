@@ -47,7 +47,7 @@ function main() {
   );
   try {
     let d;
-    while ((d = $next(it))) {
+    while ((d = $next(it)) != null) {
       console.log(`got ${d[0]}`);
       dDrop_drop(d);
     }
@@ -58,7 +58,7 @@ function main() {
   it = $held($closing($iter(ds(10)), $dropEach(dDrop_drop)).take(1));
   try {
     let d;
-    while ((d = $next(it))) {
+    while ((d = $next(it)) != null) {
       console.log(`got ${d[0]}`);
       dDrop_drop(d);
     }
@@ -103,7 +103,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const value = nth ? map(nth) : undefined;
+    const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     takeWhile.return();
@@ -145,7 +145,7 @@ function main() {
     }
     let tmp;
     try {
-      tmp = next ? map(next) : undefined;
+      tmp = next != null ? map(next) : undefined;
     } catch (error) {
       some.return();
       throw error;

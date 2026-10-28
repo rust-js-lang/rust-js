@@ -13,10 +13,10 @@ export function f(p) {
   let result;
   bb10: {
     let t;
-    if (p[0]) {
+    if (p[0] != null) {
       p$0$0$live = false;
       t = p[0];
-    } else if (p[1]) {
+    } else if (p[1] != null) {
       p$1$0$live = false;
       t = p[1];
     } else {
@@ -25,12 +25,12 @@ export function f(p) {
     }
     result = t;
   }
-  if (p[0]) {
+  if (p[0] != null) {
     if (p$0$0$live) {
       dDrop_drop(p[0]);
     }
   }
-  if (p[1]) {
+  if (p[1] != null) {
     if (p$1$0$live) {
       dDrop_drop(p[1]);
     }

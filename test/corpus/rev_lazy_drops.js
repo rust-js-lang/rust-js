@@ -34,7 +34,7 @@ function main() {
   );
   try {
     const l = $next(scaled);
-    if (l) {
+    if (l != null) {
       console.log(`scaled ${l[0]}`);
       loudDrop_drop(l);
     }

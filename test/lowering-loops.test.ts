@@ -240,7 +240,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain(`  for (const route of routes) {
-    if (route.title != null && route.routes && route.routes.length !== 0) {
+    if (route.title != null && route.routes != null && route.routes.length !== 0) {
       out.push(\`\${route.title}:\${route.routes.length}\`);
     } else if (route.title != null && route.path != null) {
       out.push(\`\${route.title}=\${route.path}\`);
@@ -251,7 +251,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
     if (route.path != null && route.path.startsWith("http")) {
       continue;
     }
-    if (route.title != null && route.routes && route.routes.length !== 0) {
+    if (route.title != null && route.routes != null && route.routes.length !== 0) {
       for (const child of route.routes) {
         if (child.title != null) {
           out.push(\`\${route.title}/\${child.title}\`);
@@ -1332,7 +1332,7 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (!current) {\n      continue;\n    }\n    if (item > 10) {\n");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (current == null) {\n      continue;\n    }\n    if (item > 10) {\n");
   expect((await import(join(dir, "mir.js"))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
 });
 

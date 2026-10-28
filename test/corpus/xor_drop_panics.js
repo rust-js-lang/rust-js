@@ -21,7 +21,7 @@ function main() {
       }
     }
   }
-  console.log(`calm ${!calm}`);
+  console.log(`calm ${calm == null}`);
   const option$1 = [1, true];
   const other$1 = [2, false];
   const value = option$1 != null ? (other$1 == null ? option$1 : undefined) : other$1;
@@ -40,7 +40,7 @@ function main() {
       }
     }
     const x = value;
-    console.log(`unreached ${!x}`);
+    console.log(`unreached ${x == null}`);
     if (x != null) {
       console.log(`drop ${x[0]}`);
       if (x[1]) {

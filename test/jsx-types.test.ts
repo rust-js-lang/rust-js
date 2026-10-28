@@ -117,8 +117,8 @@ pub fn Badged() -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("icon = IconNote;");
-  expect(jsx).toContain('{variant.Icon && <variant.Icon className="inline" />}');
-  expect(jsx).toContain('{variant.Icon && <variant.Icon className="tabled" />}');
+  expect(jsx).toContain('{variant.Icon != null && <variant.Icon className="inline" />}');
+  expect(jsx).toContain('{variant.Icon != null && <variant.Icon className="tabled" />}');
   const { Callout } = await import(join(dir, "lib.jsx"));
   expect([0, 1, 2].map((which) => renderToStaticMarkup(Callout(which)))).toEqual([
     '<h3><svg class="inline"></svg>t</h3>',

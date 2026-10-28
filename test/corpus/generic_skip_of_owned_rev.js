@@ -40,7 +40,7 @@ function nthOf(it, dropI) {
       noisyDrop_drop(n);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     dropI?.(it);
   }
@@ -57,7 +57,7 @@ function chainedNth(a, b, dropI) {
       noisyDrop_drop(n);
       return result;
     }
-    return nth ? map(nth) : undefined;
+    return nth != null ? map(nth) : undefined;
   } finally {
     chain.return();
   }

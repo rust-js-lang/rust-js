@@ -87,7 +87,7 @@ export function Todos() {
           ))}
         </ul>
         {todos.length === 0 && <p className="empty">Nothing to do</p>}
-        {t && <p className="latest">{t.text}</p>}
+        {t != null && <p className="latest">{t.text}</p>}
         <span className="left">{left} left</span>
       </>
     </Card>

@@ -284,20 +284,11 @@ fn concise_arrows(e: &mut Expr, concise: &[(js::Span, crate::lower::jsx::OneCall
 }
 
 /// `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
-/// `Expr::unary` makes it, `t !== "pre"`. One that's an `Option`'s presence
-/// still, `!!o`, is still known as one (`Known::Presence`).
+/// `Expr::unary` makes it, `t !== "pre"`.
 fn negations(e: &mut Expr) {
     if let ExprKind::Unary(op, arg) = &e.kind {
         let made = Expr::unary(*op, (**arg).clone());
-        let presence = e.facts.has(js::Known::Presence) && matches!(made.kind, ExprKind::Unary(o, _) if o == *op);
-        *e = Expr {
-            span: e.span,
-            facts: match presence {
-                true => made.facts.with(js::Known::Presence),
-                false => made.facts,
-            },
-            ..made
-        };
+        *e = Expr { span: e.span, ..made };
     }
 }
 

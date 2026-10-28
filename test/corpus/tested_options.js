@@ -21,7 +21,7 @@ function firstName(items, wanted) {
 // `v` may be `None`: the `Option`'s test is its own.
 function maybe(value, wanted) {
   const chosen = wanted ? value : undefined;
-  if (chosen) {
+  if (chosen != null) {
     return chosen.name;
   }
   return "nothing";
@@ -33,7 +33,7 @@ function changed(wanted) {
   const later = { name: "after" };
   let current = before;
   const item = wanted ? current : undefined;
-  if (item) {
+  if (item != null) {
     current = later;
     return `${item.name} then ${current.name}`;
   }
@@ -52,10 +52,10 @@ function counted(items, wanted) {
 
 function reread(item, wanted) {
   const found = wanted ? item : undefined;
-  if (found) {
+  if (found != null) {
     console.log(`read ${found.name}`);
   }
-  return !!found;
+  return found != null;
 }
 
 function main() {

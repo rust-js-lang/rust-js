@@ -253,7 +253,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | Ambiguous Option payload boxing | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
-| Whether an Option's payload may be falsy in JS, and so whether it's there, by its truth or against `null` (ADR 0298), and what `#[rust_js::types]` says may be | `std_types/option.rs`; `declarations.rs` | `never_falsy`, `present`, `absent` (a test of being set, `presence`, which `null_test` reads); `written_falsy` |
+| Whether an `Option` is there, its test against `null` whatever it holds (ADR 0298, amended by the user), and what a test of being set tests | `js/make.rs`; `js/stmt_walk.rs` | `presence`; `null_test` |
 | Copy policy, and the coarse question whether a value may hold what the crate changes in place, a library's function compiled here by (ADR 0914, amended) | `copies.rs` | `copy_if_needed`, `contains_mutated`, `may_hold_changed` |
 | Which std functions and constants are JS's `Math`'s, for a call, a `fn`, `js::is_defined` and a constant's read (ADR 0887) | `std_types/number/math.rs` | `function`, `math_function`, `constant`, `written_constant` |
 | Which `Rc`s are counted, by the type each points at and what may be it (ADR 0852), an `Rc<dyn Fn>` compared by identity where one may be made of a function made apart (ADR 0959) | `analysis/rc_counts.rs` | `counted_rcs`, `counts`, `may_be`, `head` |

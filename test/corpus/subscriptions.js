@@ -65,7 +65,7 @@ const Component = {
       });
     } catch (error) {
       const bus = $upgrade(first.bus);
-      if (bus) {
+      if (bus != null) {
         try {
           const borrowMut = $borrowMut(bus.value, true);
           try {
@@ -105,7 +105,7 @@ function main() {
     } catch (error) {
       for (const item of a.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -127,7 +127,7 @@ function main() {
     } catch (error) {
       for (const item of b.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -144,7 +144,7 @@ function main() {
       }
       for (const item of a.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -165,7 +165,7 @@ function main() {
     try {
       for (const item of b.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -183,7 +183,7 @@ function main() {
     } catch (error) {
       for (const item of a.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -205,7 +205,7 @@ function main() {
     } catch (error) {
       for (const item of a.subs) {
         const bus = $upgrade(item.bus);
-        if (bus) {
+        if (bus != null) {
           try {
             const borrowMut = $borrowMut(bus.value, true);
             try {
@@ -230,7 +230,7 @@ function main() {
         (component) => {
           for (const item of component.subs) {
             const bus = $upgrade(item.bus);
-            if (bus) {
+            if (bus != null) {
               try {
                 const borrowMut = $borrowMut(bus.value, true);
                 try {
@@ -255,7 +255,7 @@ function main() {
       for (const item of comps) {
         for (const item$1 of item.subs) {
           const bus = $upgrade(item$1.bus);
-          if (bus) {
+          if (bus != null) {
             try {
               const borrowMut = $borrowMut(bus.value, true);
               try {

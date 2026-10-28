@@ -125,7 +125,7 @@ export function Refs() {
     globalThis.log("layout");
   }, []);
   useEffect(() => {
-    globalThis.log(element.current ? "element set" : "no element");
+    globalThis.log(element.current != null ? "element set" : "no element");
     globalThis.log(handle.current ?? "no handle");
   }, []);
   const onLog = useEffectEvent(() => {
@@ -139,7 +139,7 @@ export function Refs() {
       {shown && (
         <b
           ref={(node) => {
-            globalThis.log(node ? "attached" : "null");
+            globalThis.log(node != null ? "attached" : "null");
             return () => {
               globalThis.log("detached");
             };
@@ -225,7 +225,7 @@ export function Misc() {
           <Fragment
             key={n}
             ref={(fragment) => {
-              if (fragment) {
+              if (fragment != null) {
                 fragment.addEventListener("click", () => {
                   globalThis.log(`fragment ${n} clicked`);
                 });

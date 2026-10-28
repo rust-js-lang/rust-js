@@ -162,11 +162,11 @@ function lend() {
     throw error;
   }
   const first = d[0];
-  if (first) {
+  if (first != null) {
     first[0] = 20;
   }
   const last = d.at(-1);
-  if (last) {
+  if (last != null) {
     let old;
     try {
       old = $take(last, [21]);
@@ -207,14 +207,14 @@ function lend() {
   try {
     $exchange(a[0], b[0]);
     const splitFirstMut = $splitEndMut(d, false);
-    if (splitFirstMut) {
+    if (splitFirstMut != null) {
       const head = splitFirstMut[0];
       const rest = splitFirstMut[1];
       head[0] = (head[0] + (rest.length & 255)) & 255;
     }
     const iter = $iter($chunksMut(d, 2));
     let chunk;
-    while ((chunk = $next(iter))) {
+    while ((chunk = $next(iter)) != null) {
       chunk.reverse();
     }
     console.log(`edited [${ids(d).join(", ")}]`);

@@ -8,7 +8,7 @@ export function entry() {
 
 function sum(at) {
   let total = 0;
-  while (at) {
+  while (at != null) {
     const node = at.value;
     total = (total + node.value) | 0;
     at = node.next;

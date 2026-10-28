@@ -109,7 +109,7 @@ function main() {
   const raw = $ptrSliceMut($ptr(bytes, 0), 2);
   raw[$at(raw, 1)] = 7;
   const front = raw === null ? undefined : raw;
-  if (front) {
+  if (front != null) {
     front[$at(front, 0)] = 8;
   }
   console.log(`[${bytes.join(", ")}]`);

@@ -1001,7 +1001,7 @@ pub fn contains(scope: &ScopeInstance, fiber: &Fiber) -> bool {
 ```js
 /** Whether `fiber` is in this scope. */
 function containsNode(fiber) {
-  while (fiber) {
+  while (fiber != null) {
     if (fiber.stateNode === this) {
       return true;
     }

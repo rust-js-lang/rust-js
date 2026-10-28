@@ -66,7 +66,7 @@ function main() {
       undefined,
       dDrop_drop,
     );
-    console.log(`none ${!o}`);
+    console.log(`none ${o == null}`);
     const value$1 = [{ TAG: "Ok", _0: [5] }];
     try {
       const all = $collectResults(

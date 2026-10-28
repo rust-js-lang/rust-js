@@ -21,7 +21,7 @@ function main() {
     true,
   );
   const value = $someValue(noneLast);
-  console.log(`${noneLast != null} ${noneLast != null && !value}`);
+  console.log(`${noneLast != null} ${noneLast != null && value == null}`);
 
   const value$1 = [undefined, [2]];
   try {

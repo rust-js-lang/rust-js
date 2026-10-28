@@ -40,8 +40,8 @@ function gesture(n, onFinish) {
   depth = (previous + 1) >>> 0;
   try {
     const picked = scope(n);
-    const finish = onFinish ? onFinish(picked) : undefined;
-    if (finish) {
+    const finish = onFinish != null ? onFinish(picked) : undefined;
+    if (finish != null) {
       return finish;
     }
   } catch (thrown) {
@@ -65,8 +65,8 @@ function gesture(n, onFinish) {
 function finished(n, finish) {
   const previous = depth;
   try {
-    const catchUnwind = finish ? finish(scope(n)) : undefined;
-    if (catchUnwind) {
+    const catchUnwind = finish != null ? finish(scope(n)) : undefined;
+    if (catchUnwind != null) {
       const finish = catchUnwind;
       return finish;
     }
@@ -86,13 +86,13 @@ function main() {
       if (given.TAG === "Ok") {
         const f = given._0;
         const arg = f();
-        console.log(`gesture ${n} ${!!finish} gave ${arg}`);
+        console.log(`gesture ${n} ${finish != null} gave ${arg}`);
       } else {
-        console.log(`gesture ${n} ${!!finish} panicked`);
+        console.log(`gesture ${n} ${finish != null} panicked`);
       }
       console.log(`depth ${depth}`);
       const arg = finished(n, finish)();
-      console.log(`finished ${n} ${!!finish} gave ${arg}`);
+      console.log(`finished ${n} ${finish != null} gave ${arg}`);
     }
   }
 }

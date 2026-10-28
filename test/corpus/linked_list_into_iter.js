@@ -31,7 +31,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    first = next ? map(next) : undefined;
+    first = next != null ? map(next) : undefined;
   } finally {
     for (const item of value) {
       loudDrop_drop(item);
@@ -48,7 +48,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    found = find ? map(find) : undefined;
+    found = find != null ? map(find) : undefined;
   } finally {
     for (const item of value$1) {
       loudDrop_drop(item);
@@ -73,7 +73,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    back = loud ? map(loud) : undefined;
+    back = loud != null ? map(loud) : undefined;
   } finally {
     rev.return();
   }

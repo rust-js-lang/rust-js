@@ -218,7 +218,7 @@ js::export_default! {
     }
 }
 `);
-  expect(js).toContain("  if (enqueueTaskImpl) {\n    enqueueTaskImpl(task);\n  }\n}\n");
+  expect(js).toContain("  if (enqueueTaskImpl != null) {\n    enqueueTaskImpl(task);\n  }\n}\n");
   expect(js).not.toMatch(/\{\n\s*\} else \{/);
   const enqueueTask = lib.default as (task: () => void) => void;
   const ran: string[] = [];

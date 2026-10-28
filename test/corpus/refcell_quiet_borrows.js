@@ -45,7 +45,7 @@ function main() {
   );
 
   const seen = inner.seen;
-  if (seen) {
+  if (seen != null) {
     seen.add(3);
     seen.add(3);
     const count = seen.size;

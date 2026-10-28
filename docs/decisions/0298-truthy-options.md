@@ -11,7 +11,11 @@ first decision and keeps that one's readability: an `Option` is tested by
 what its payload's JS value may be, by its truth where that's never falsy,
 against `null` where it may be** (below, "An `Option` is tested by what
 its payload may be"). Amended last: a `const` of one `Option`'s presence
-alone, read only by tests, is `x != null` (below).
+alone, read only by tests, is `x != null` (below). **Amended by the
+user (2026-10-28), which supersedes the decisions that test an `Option`
+by its truth: an `Option` is tested against `null`, whatever it holds,
+one output form** (below, "One form: an `Option` is tested against
+`null`"). An `Option<bool>`'s `Some(true)`, the value's truth, is kept.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -343,3 +347,69 @@ reaches preparation.
 Held by `test/lowering-options.test.ts`'s "a const only tests read",
 `const failed = error != null;`; mutations `tested-const-presence-truth`
 (`prepare.ts`) and `negation-presence-dropped` (`lower/mir/tidy.ts`).
+
+## Amendment: one form, an `Option` is tested against `null` (2026-10-28)
+
+The user's decision (React port gap tr1). React's ports printed `if
+(!retryQueue)`, `if (offscreenState)` and `if (updateQueue &&
+updateQueue.events)` where upstream writes `retryQueue === null`, and two
+forms of one test, by truth of an object and against `null` of a number,
+were one rule's two outputs. **An `Option` is tested against `null`,
+whatever its payload: `is_some()` is `o != null`, `is_none()` `o ==
+null`**, and so is each test of one, an `if let Some(..)`'s, a `while let
+Some(..)`'s, `?`'s, a `map`'s, a pattern's `None`, what `filter_map` keeps,
+`(item) => item != null`, a codec's, a `Hash`'s and JSX's shown child,
+`{error != null && <div />}`.
+
+```rust
+pub fn retry(retry_queue: Option<&Queue>) -> u32 {
+    let Some(queue) = retry_queue else { return 0 };
+    queue.size
+}
+```
+```js
+export function retry(retryQueue) {
+  if (retryQueue == null) {
+    return 0;
+  }
+  return retryQueue.size;
+}
+```
+
+- **One owner, `Expr::presence`** (`js/make.rs`), which every test of
+  being set is made by and `null_test` reads; `std_types/option.rs`'s
+  `never_falsy`, `present` and `absent`, which asked what the payload
+  may be, are gone, and so are `declarations::written_falsy`,
+  `Written::may_be_falsy`, JSX's reading of `!!error` as `error`, and
+  `Known::Presence`, the mark that read `!!o` as `o != null`. Tidy's
+  `tested_options` reads `x != null` of `const x = t ? v : undefined` as
+  `t`, as it read `!!x`.
+- **What a value's truth still is, is kept**: an `Option<bool>`'s
+  `Some(true)`, `o == Some(true)` and `is_some_and(|&w| w)`, `!!o`, and
+  in a test `o`, the value's truth, not its presence (above); and
+  `js::truthy(v)`'s `!!v`, `filter(|v| js::truthy(Some(*v)))`, which says
+  "truthy" in the program.
+- `x != null ? x : y` is `x ?? y`, of every `Option` now, where `x ? x :
+  y` was `x || y` of an object's: `state ?? blank`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Of an object, an
+array or a function, `!o` and `o == null` hold alike of every value its
+type has; of every other payload `o == null` was the form already. A JS
+caller's `false` where an `Option<&dyn Fn()>` is asked is now `Some`, as
+Rust's `None` is only `null` and `undefined` (ADR 0030), where it was
+`None`: a value its type doesn't have, given past its declaration.
+
+### What it costs
+
+The corpus, the snapshots, the guide's examples and `docs/readability.txt`
+read `x != null` and `x == null` where an object's `Option` was tested by
+its truth, about 170 files, each corpus case run against native Rust
+again. React's ports read upstream's `!== null` as `!= null`, its test
+still, the form for `null` and `undefined` alike.
+
+### What holds it
+
+`test/lowering-option-truth.test.ts`, its tests now of one form, run in
+Node; `test/corpus/option_falsy_payloads.rs` against native Rust; and the
+mutations `option-presence-by-truth` (`js/make.ts`) and
+`tested-option-null-unread` (`lower/mir/tidy/options.ts`).

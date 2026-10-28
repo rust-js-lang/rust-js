@@ -5,13 +5,13 @@ export function entry() {
 }
 
 function update(transition, fiber) {
-  if (transition.updatedFibers) {
+  if (transition.updatedFibers != null) {
     transition.updatedFibers.add(fiber);
   }
 }
 
 function finish(transition) {
-  if (transition.updatedFibers) {
+  if (transition.updatedFibers != null) {
     const count = transition.updatedFibers.size;
     transition.updatedFibers.clear();
     return count;

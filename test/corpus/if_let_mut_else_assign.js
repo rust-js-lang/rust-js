@@ -10,7 +10,7 @@ function collect(values) {
   let found;
   for (const value of values) {
     if (value > 1) {
-      if (found) {
+      if (found != null) {
         found.push(value);
       } else {
         found = [value];
@@ -68,7 +68,7 @@ function rematched(c) {
       p = value;
     },
   };
-  if (x.value) {
+  if (x.value != null) {
     const v = x.value;
     if (!c) {
       const v = x.value;

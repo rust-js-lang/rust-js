@@ -264,7 +264,7 @@ test("a binding of what take() gives names it", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane) {\n    for (const update of hiddenUpdatesForLane) {\n");
+  expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane != null) {\n    for (const update of hiddenUpdatesForLane) {\n");
   expect(js).not.toContain("old");
   const lib = await import(join(dir, "lib.js"));
   const hidden = [[1, 2], undefined];
@@ -559,11 +559,11 @@ pub fn reset() {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`export function needsRemount(fiber, alternate) {
   if (
-    failedBoundaries &&
+    failedBoundaries != null &&
     (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
   ) {`);
-  expect(js).toContain("  if (failedBoundaries) {\n    return failedBoundaries.has(fiber) && checked(failedBoundaries, fiber);\n  }\n");
-  expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1) {\n    before.call();\n");
+  expect(js).toContain("  if (failedBoundaries != null) {\n    return failedBoundaries.has(fiber) && checked(failedBoundaries, fiber);\n  }\n");
+  expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1 != null) {\n    before.call();\n");
   const lib = await import(join(dir, "lib.js"));
   const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];
   expect(lib.needsRemount(fiber, undefined)).toBe(false);

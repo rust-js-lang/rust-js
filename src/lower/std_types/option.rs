@@ -9,7 +9,6 @@ use crate::js::result;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -127,8 +126,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = if boxed { self.some(value) } else { value };
                 Expr::cond(ok, value, otherwise)
             }
-            Std::IsSome => self.present(arg(), generic_args.type_at(0)),
-            Std::IsNone => self.absent(arg(), generic_args.type_at(0)),
+            Std::IsSome => Expr::presence(arg(), true),
+            Std::IsNone => Expr::presence(arg(), false),
             Std::Unwrap => {
                 // `expect` has a message too.
                 let list = (0..tys.len()).map(|_| arg()).collect();
@@ -235,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             _ => self.spill(&base, option, out),
                         };
-                        let present = self.present(option.clone(), generic_args.type_at(0));
+                        let present = Expr::presence(option.clone(), true);
                         (option, present)
                     }
                 };
@@ -684,71 +683,6 @@ pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
     match filtered(&option) {
         Some((kept, value)) => Expr::cond(kept, value, fallback),
         None => Expr::bin(Op::Coalesce, option, fallback),
-    }
-}
-
-impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether a `ty`'s JS value is never falsy, an object, an array, a
-    /// function, a class's instance or a symbol, so an `Option<ty>`'s truth
-    /// is whether it's there (ADR 0298, amended): the one answer to "may
-    /// this payload be falsy". Not a value of any shape, `js::Unknown` or a
-    /// `dyn IntoUnknown`, nor a number, text, a bigint or a `bool`, which
-    /// may be `0`, `NaN`, `""`, `0n` or `false`, as a `Some` of one is.
-    pub(in crate::lower) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
-        self.never_falsy_within(ty, &mut Vec::new())
-    }
-
-    /// `never_falsy`, of untagged enums `within` one another: one that holds
-    /// itself, through a reference, may be.
-    fn never_falsy_within(&self, ty: Ty<'tcx>, within: &mut Vec<DefId>) -> bool {
-        let ty = ty.peel_refs();
-        // What `#[rust_js::types]` says may be falsy, `js::Unknown`'s
-        // `unknown` (ADR 0612), is, though it's a JS object's struct.
-        let written_falsy =
-            matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::declarations::written_falsy(self.tcx, adt.did()));
-        // An untagged enum is its payload (ADR 0214): never falsy where each
-        // variant's is, an array's or a JS object's; not where one may be
-        // text, `""`.
-        if let Some((adt, args)) = self.untagged(ty) {
-            if within.contains(&adt.did()) {
-                return false;
-            }
-            within.push(adt.did());
-            let each = adt.variants().iter().all(|variant| {
-                matches!(&variant.fields.raw[..], [field] if self.never_falsy_within(self.field_ty(field, args), within))
-            });
-            within.pop();
-            return each;
-        }
-        // A `NonZero` is its number (ADR 0177), never `0`, `NaN` or `0n`; a
-        // serde_json `Value` an object or `"Null"` (ADR 0083).
-        crate::lower::recognition::is_non_zero_ty(ty)
-            || self.recognition().is_json_value(ty)
-            || self.option_of(ty).is_none()
-                && !written_falsy
-                && (self.is_object(ty)
-                    || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
-                    // A `dyn Fn`, the JS function it is (ADR 0653).
-                    || matches!(ty.kind(), ty::Dynamic(..)) && self.is_callable(ty))
-    }
-
-    /// Whether an `Option<ty>` is `Some`: `o != null`, or `!!o` of a value
-    /// never falsy, which a test reads as `o` (ADR 0298, amended). The one
-    /// test of it, what `is_some()`, `if let Some(..)`, `?` and a
-    /// `filter_map`'s kept item ask.
-    pub(in crate::lower) fn present(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.never_falsy(ty) {
-            true => Expr::presence(option, true),
-            false => Expr::bin(Op::LooseNe, option, Expr::null()),
-        }
-    }
-
-    /// Whether it's `None`: `o == null`, or `!o`.
-    pub(in crate::lower) fn absent(&self, option: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.never_falsy(ty) {
-            true => Expr::presence(option, false),
-            false => Expr::bin(Op::LooseEq, option, Expr::null()),
-        }
     }
 }
 

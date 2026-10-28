@@ -60,7 +60,7 @@ function main() {
     try {
       const iter = $iter(sinks);
       let sink;
-      while ((sink = $next(iter))) {
+      while ((sink = $next(iter)) != null) {
         const receiver = $borrowMut(sink.value, true);
         try {
           receiver.impl.take(receiver, 2);

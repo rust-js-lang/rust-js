@@ -44,7 +44,7 @@ function storeDisplay_fmt(store) {
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const iter = $iter(items);
   let value;
-  while ((value = $next(iter))) {
+  while ((value = $next(iter)) != null) {
     const name = value[0];
     const qty = value[1];
     f += `${name}=${qty} `;

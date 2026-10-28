@@ -377,7 +377,7 @@ export const Zip = {
                 dropBItem,
               )
             : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
-      if (!x) {
+      if (x == null) {
         return;
       }
       if (n === 0) {
@@ -946,7 +946,7 @@ export function fuseFuseImplI_advanceBy(fuse, n, IIterator = { next: $next }, dr
     return res;
   }
   n = n === 0 ? undefined : n;
-  if (n) {
+  if (n != null) {
     return { TAG: "Err", _0: n };
   }
   return { TAG: "Ok" };
@@ -964,7 +964,7 @@ export function fuseFuseImplIFusedIterator_advanceBy(
     return $advanceBy($lent($given(iter, IIterator, true)), n, dropIItem);
   }
   n = n === 0 ? undefined : n;
-  if (n) {
+  if (n != null) {
     return { TAG: "Err", _0: n };
   }
   return { TAG: "Ok" };
@@ -4413,7 +4413,7 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     b = false;
   }
   const option = n === 0 ? undefined : n;
-  if (option) {
+  if (option != null) {
     return { TAG: "Err", _0: option };
   }
   return { TAG: "Ok" };
@@ -4707,7 +4707,7 @@ export function takeIterator_advanceBy(take, n, IIterator = { next: $next }, dro
   take.n = (take.n - advanced) >>> 0;
   n = (n - advanced) >>> 0;
   const option = n === 0 ? undefined : n;
-  if (option) {
+  if (option != null) {
     return { TAG: "Err", _0: option };
   }
   return { TAG: "Ok" };
@@ -5356,7 +5356,7 @@ export function chainIterator_advanceBy(
     return $advanceBy($lent($given(b, BIterator, true)), n, dropAItem);
   }
   const option = n === 0 ? undefined : n;
-  if (option) {
+  if (option != null) {
     return { TAG: "Err", _0: option };
   }
   return { TAG: "Ok" };
@@ -9352,7 +9352,7 @@ export function zipSpecFold_specFold(
               dropBItem,
             )
           : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
-    if (!x) {
+    if (x == null) {
       const result = init;
       dropF?.(f);
       zip.return();

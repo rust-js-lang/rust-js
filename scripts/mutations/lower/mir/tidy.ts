@@ -264,12 +264,4 @@ export const mutations: Mutation[] = [
     replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
     tests: ["test/lowering-arrows.test.ts"],
   },
-  {
-    "name": "negation-presence-dropped",
-    "breaks": "an `Option`'s presence read in place, `!!error`, isn't known as one after `negations`, so a const only tests read of it is `const failed = error;`, not `error != null` (ADR 0298, amended)",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        let presence = e.facts.has(js::Known::Presence) && ",
-    "replace": "        let presence = false && ",
-    "tests": ["test/lowering-options.test.ts", "-t", "a const only tests read"]
-  },
 ];

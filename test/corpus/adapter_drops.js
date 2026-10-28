@@ -142,7 +142,7 @@ function main() {
   try {
     pair = $next(zipped);
     try {
-      const value = pair ? [pair[0][0], pair[1][0]] : undefined;
+      const value = pair != null ? [pair[0][0], pair[1][0]] : undefined;
       console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
       pair$live = false;
     } finally {
@@ -158,7 +158,7 @@ function main() {
       loudDrop_drop(a);
       return result;
     }
-    const value = next ? map(next) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
     const value$1 = $next(zipped);
     function map$1([a, b]) {
@@ -167,7 +167,7 @@ function main() {
       loudDrop_drop(a);
       return result;
     }
-    const value$2 = value$1 ? map$1(value$1) : undefined;
+    const value$2 = value$1 != null ? map$1(value$1) : undefined;
     console.log(`zip ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
   } finally {
     zipped.return();
@@ -195,7 +195,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = loud ? map(loud) : undefined;
+    const value = loud != null ? map(loud) : undefined;
     console.log(`chain ${value == null ? "None" : `Some(${value})`}`);
     chained$live = false;
   } finally {
@@ -225,7 +225,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`filter ${value$1 == null ? "None" : `Some(${value$1})`}`);
     kept$live = false;
   } finally {
@@ -241,7 +241,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`enumerate ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     numbered$live = false;
   } finally {
@@ -267,7 +267,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`skip_while ${value$1 == null ? "None" : `Some(${value$1})`}`);
     skipping$live = false;
   } finally {
@@ -291,10 +291,10 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`take_while ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = $next(taking);
-    ended = !value$2;
+    ended = value$2 == null;
     if (value$2 != null) {
       loudDrop_drop(value$2);
     }
@@ -319,7 +319,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`step_by ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const value$2 = $next(stepped);
     function map$1(l) {
@@ -327,7 +327,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$3 = value$2 ? map$1(value$2) : undefined;
+    const value$3 = value$2 != null ? map$1(value$2) : undefined;
     console.log(`step_by ${value$3 == null ? "None" : `Some(${value$3})`}`);
     stepped$live = false;
   } finally {
@@ -365,7 +365,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = value ? map(value) : undefined;
+    const value$1 = value != null ? map(value) : undefined;
     console.log(`fuse ${value$1 == null ? "None" : `Some(${value$1})`}`);
     fused$live = false;
   } finally {
@@ -408,7 +408,7 @@ function main() {
       }
       throw error;
     }
-    if (tmp$2) {
+    if (tmp$2 != null) {
       const i = tmp$2[0];
       const l = tmp$2[1];
       if (i !== 1) {
@@ -596,7 +596,7 @@ function main() {
   }
   let tmp$6;
   try {
-    tmp$6 = tmp$5 ? map(tmp$5) : undefined;
+    tmp$6 = tmp$5 != null ? map(tmp$5) : undefined;
   } catch (error) {
     z.return();
     if (fused$live) {
@@ -813,7 +813,7 @@ function main() {
   }
   let tmp$10;
   try {
-    tmp$10 = tmp$9 ? map$1(tmp$9) : undefined;
+    tmp$10 = tmp$9 != null ? map$1(tmp$9) : undefined;
   } catch (error) {
     c.return();
     if (fused$live) {
@@ -998,7 +998,7 @@ function main() {
   }
   let tmp$13;
   try {
-    tmp$13 = tmp$12 ? map$2(tmp$12) : undefined;
+    tmp$13 = tmp$12 != null ? map$2(tmp$12) : undefined;
   } catch (error) {
     counted.return();
     if (fused$live) {
@@ -1177,7 +1177,7 @@ function main() {
   }
   let tmp$16;
   try {
-    tmp$16 = tmp$15 ? map$3(tmp$15) : undefined;
+    tmp$16 = tmp$15 != null ? map$3(tmp$15) : undefined;
   } catch (error) {
     own.return();
     if (fused$live) {
@@ -1349,7 +1349,7 @@ function main() {
   }
   let tmp$19;
   try {
-    tmp$19 = tmp$18 ? map$4(tmp$18) : undefined;
+    tmp$19 = tmp$18 != null ? map$4(tmp$18) : undefined;
   } catch (error) {
     t.return();
     if (fused$live) {

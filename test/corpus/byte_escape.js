@@ -26,7 +26,7 @@ function debugByteDebug_fmt(debugByte) {
   let len = 0;
   const iter = $escapeAscii([debugByte[0]]).entries();
   let value;
-  while ((value = $next(iter))) {
+  while ((value = $next(iter)) != null) {
     const i = value[0];
     let b = value[1];
     if (i >= 2 && 97 <= b && b <= 102) {

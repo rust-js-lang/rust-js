@@ -65,7 +65,7 @@ function main() {
   const item$1 = held();
   const old$1 = item$1.value;
   item$1.value = undefined;
-  console.log(`${!old$1}`);
+  console.log(`${old$1 == null}`);
   if (old$1 != null) {
     console.log(`drop ${old$1[0]}`);
   }

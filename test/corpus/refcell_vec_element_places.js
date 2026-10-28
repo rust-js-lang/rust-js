@@ -43,7 +43,7 @@ function entangleHeld(root, lanes) {
 function hide(root, index, update) {
   const hidden = root.hidden;
   $index(hidden, index);
-  if (!hidden[index]) {
+  if (hidden[index] == null) {
     hidden[index] = [update];
   } else {
     const list = hidden[index];
@@ -55,7 +55,7 @@ function hideAsMut(root, index, update) {
   const hidden = root.hidden;
   $index(hidden, index);
   const list = hidden[index];
-  if (!list) {
+  if (list == null) {
     hidden[index] = [update, update];
   } else {
     list.push(update);

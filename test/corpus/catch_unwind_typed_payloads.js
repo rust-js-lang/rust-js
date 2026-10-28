@@ -25,7 +25,7 @@ function describe(payload) {
     return `an i32, ${n}`;
   }
   const code = payload.impl.typeId() === "lib::Code" ? payload.value : undefined;
-  if (code) {
+  if (code != null) {
     return `a Code, ${codeDebug_fmt(code)}`;
   }
   return payload.impl.typeId() === "f64" ? "an f64" : "something else";

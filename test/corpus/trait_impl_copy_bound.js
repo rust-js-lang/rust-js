@@ -49,7 +49,7 @@ function main() {
   const pointCopy = { copy: (value) => ({ ...value }) };
   const p = { x: 4 };
   const q = getIt(p, tGet(optionAgain(pointCopy)));
-  if (q) {
+  if (q != null) {
     q.x = (q.x + 1) >>> 0;
   }
   console.log(

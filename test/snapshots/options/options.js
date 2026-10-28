@@ -124,7 +124,7 @@ export function mappedMore(n) {
   }
   const counted = h != null ? map(h) : undefined;
   const option = pair(n);
-  const value = option ? Math.imul(option[0], option[1]) : undefined;
+  const value = option != null ? Math.imul(option[0], option[1]) : undefined;
   const get = calls;
   const option$1 = half(n);
   return [value, counted, get, option$1 != null ? 7 : undefined];
@@ -181,7 +181,7 @@ export function chainedStatement(n) {
   const h = half(n);
   if (h != null) {
     const value = h > 0 ? [h, (h + 1) | 0] : undefined;
-    if (value && value[0] < 10) {
+    if (value != null && value[0] < 10) {
       const a = value[0];
       const b = value[1];
       total = (a + b) | 0;

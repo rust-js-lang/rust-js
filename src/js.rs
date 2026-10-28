@@ -626,10 +626,6 @@ pub enum Known {
     /// `LocalKey::set` of one not made yet makes it of the value given,
     /// `key.initWith?.(cell)` (#252).
     LocalRead,
-    /// A test of an `Option` of a value never falsy by its truth, `!!o` or
-    /// `!o` (`Expr::presence`, ADR 0298, amended): true exactly where `o`
-    /// is set, or isn't, as `o != null` is, which `null_test` reads it as.
-    Presence,
     /// A `Rev`, an `Enumerate` or a `Map` made in place, the recognizers'
     /// JS iterator, not std's struct, as the call that takes it says
     /// (`mir_iter_call`, ADR 0871): a step past that call, which takes its

@@ -137,7 +137,7 @@ function pick(n) {
 }
 function matched() {
   const w = [[3], 1];
-  if (W.r(w)) {
+  if (W.r(w) != null) {
     console.log("some");
   } else {
     console.log("none");
@@ -151,7 +151,7 @@ function matched() {
     }
     throw error;
   }
-  if (take) {
+  if (take != null) {
     console.log("took");
   } else {
     console.log("empty");
@@ -166,7 +166,7 @@ function matched() {
     }
     throw error;
   }
-  if (W.r(w)) {
+  if (W.r(w) != null) {
     console.log("some");
   } else {
     console.log("none");

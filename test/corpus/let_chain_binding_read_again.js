@@ -15,14 +15,14 @@ const Task = {
 };
 
 function once(fiber) {
-  if (fiber && fiber.task) {
+  if (fiber != null && fiber.task != null) {
     return Task.run(fiber.task, fiber, false);
   }
   return 0;
 }
 
 function twice(fiber) {
-  if (fiber && fiber.task) {
+  if (fiber != null && fiber.task != null) {
     const task = fiber.task;
     return (Task.run(task, fiber, true) + Task.run(task, fiber, false)) >>> 0;
   }
@@ -30,7 +30,7 @@ function twice(fiber) {
 }
 
 function clearedFirst(fiber) {
-  if (fiber && fiber.task) {
+  if (fiber != null && fiber.task != null) {
     const task = fiber.task;
     fiber.task = undefined;
     return (Task.run(task, fiber, false) * 10) >>> 0;
@@ -42,8 +42,8 @@ function main() {
   const task = { runs: 0 };
   const fiber = { task };
   console.log(`${once(fiber)} ${once(fiber)} ${once(undefined)}`);
-  console.log(`${twice(fiber)} ${!fiber.task}`);
+  console.log(`${twice(fiber)} ${fiber.task == null}`);
   fiber.task = task;
-  console.log(`${clearedFirst(fiber)} ${!fiber.task} ${once(fiber)}`);
+  console.log(`${clearedFirst(fiber)} ${fiber.task == null} ${once(fiber)}`);
 }
 //# sourceMappingURL=case.js.map

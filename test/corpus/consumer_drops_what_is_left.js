@@ -120,7 +120,7 @@ function consume(n) {
     loudDrop_drop(value[0]);
     loudDrop_drop(value[1]);
   });
-  const last = !!value$2;
+  const last = value$2 != null;
   if (value$2 != null) {
     loudDrop_drop(value$2[0]);
     loudDrop_drop(value$2[1]);
@@ -350,10 +350,10 @@ function consume(n) {
       loudDrop_drop(l);
       return result;
     }
-    const value = next ? map(next) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const loud = $next(stepped);
-    console.log(`${!loud}`);
+    console.log(`${loud == null}`);
     if (loud != null) {
       loudDrop_drop(loud);
     }

@@ -190,18 +190,20 @@ function main() {
   console.log(`${a.value} ${z.value}`);
   console.log(`${pair}`);
   console.log(
-    `${!$strSplitAtMut(
-      {
-        get value() {
-          return pair;
+    `${
+      $strSplitAtMut(
+        {
+          get value() {
+            return pair;
+          },
+          set value(value) {
+            pair = value;
+          },
         },
-        set value(value) {
-          pair = value;
-        },
-      },
-      11,
-      true,
-    )}`,
+        11,
+        true,
+      ) == null
+    }`,
   );
   const splitAtMutChecked = $strSplitAtMut(
     {
@@ -215,7 +217,7 @@ function main() {
     4,
     true,
   );
-  if (splitAtMutChecked) {
+  if (splitAtMutChecked != null) {
     const rest = splitAtMutChecked[1];
     rest.value = $asciiCase(rest.value, false);
   }

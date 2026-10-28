@@ -86,7 +86,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$1 = nth ? map(nth) : undefined;
+  const value$1 = nth != null ? map(nth) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = iterator_peekable(
     iterator_rev(
@@ -147,7 +147,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$3 = nth ? map$1(nth) : undefined;
+  const value$3 = nth != null ? map$1(nth) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = iterator_fuse(
     iterator_rev(
@@ -192,7 +192,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$6 = nth ? map$2(nth) : undefined;
+  const value$6 = nth != null ? map$2(nth) : undefined;
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   // And an `enumerate()`'s, its source's `nth`, counted (#277).
   const enumerate = $enumerate($rev($closing($iter(louds(40, 5)), $dropEach(loudDrop_drop))));
@@ -235,7 +235,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$8 = nth ? map$3(nth) : undefined;
+  const value$8 = nth != null ? map$3(nth) : undefined;
   console.log(`${value$8 == null ? "None" : `Some((${value$8[0]}, ${value$8[1]}))`}`);
   // A `step_by` over a `take` past its end: the item its source's `nth`
   // gives there, dropped by the drop the `take`'s `nth` is given (#289).
@@ -397,7 +397,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$17 = last ? map$4(last) : undefined;
+  const value$17 = last != null ? map$4(last) : undefined;
   console.log(`${value$17 == null ? "None" : `Some(${value$17})`}`);
   // An `inspect`'s `nth`, std's default: `advance_by` by its `try_fold`,
   // its `skip`'s `nth(n - 1)`, then the next (#302).
@@ -439,7 +439,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$20 = nth ? map$5(nth) : undefined;
+  const value$20 = nth != null ? map$5(nth) : undefined;
   console.log(`${value$20 == null ? "None" : `Some(${value$20})`}`);
 }
 //# sourceMappingURL=case.js.map

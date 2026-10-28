@@ -31,7 +31,7 @@ function raise() {
 }
 
 function start() {
-  if (indicator && pending == null) {
+  if (indicator != null && pending == null) {
     try {
       pending = indicator();
     } catch {
@@ -42,7 +42,7 @@ function start() {
 
 function startTwice() {
   const indicator$1 = indicator;
-  if (!indicator$1) {
+  if (indicator$1 == null) {
     return 0;
   }
   try {

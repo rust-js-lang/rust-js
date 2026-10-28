@@ -46,21 +46,14 @@ impl Module {
 }
 
 /// `x` of `x != null`, whether `x` is set, or of `x == null` where `set`
-/// isn't: `undefined` as `null`, which `==` holds alike; and of `!!x` and
-/// `!x`, an `Option` never falsy's test by its truth, which is the same
-/// (`Expr::presence`, ADR 0298, amended). The one answer to what a test of
-/// being set is.
+/// isn't: `undefined` as `null`, which `==` holds alike (`Expr::presence`,
+/// ADR 0298). The one answer to what a test of being set is.
 pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
     let op = if set { Op::LooseNe } else { Op::LooseEq };
     match &test.kind {
         ExprKind::Binary(o, x, null) if *o == op && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) => {
             Some(x)
         }
-        ExprKind::Unary(UnaryOp::Not, not) if test.facts.has(Known::Presence) => match (&not.kind, set) {
-            (ExprKind::Unary(UnaryOp::Not, x), true) => Some(x),
-            (ExprKind::Unary(UnaryOp::Not, _), false) => None,
-            (_, set) => (!set).then_some(&**not),
-        },
         _ => None,
     }
 }

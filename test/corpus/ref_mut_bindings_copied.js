@@ -31,7 +31,7 @@ function main() {
 
   const maybe = { x: 0, y: 0 };
   const saved = maybe == null ? maybe : { ...maybe };
-  if (maybe) {
+  if (maybe != null) {
     maybe.y = 9;
   }
   point.x = (point.x + point.y) | 0;
@@ -47,7 +47,7 @@ function main() {
   const firstPoint = [value[0], value[1]];
   const iter = $iter(points);
   let value$1;
-  while ((value$1 = $next(iter))) {
+  while ((value$1 = $next(iter)) != null) {
     value$1[0] = (value$1[0] * 10) | 0;
   }
   console.log(

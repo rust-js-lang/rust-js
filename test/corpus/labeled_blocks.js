@@ -22,7 +22,7 @@ function firstEven(rows) {
   while (true) {
     const value = $next(iter);
     search: {
-      if (value) {
+      if (value != null) {
         const i = value[0];
         const row = value[1];
         for (const x of row) {

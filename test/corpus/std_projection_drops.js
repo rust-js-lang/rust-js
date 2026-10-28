@@ -67,7 +67,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     dropIIntoIter?.(it);
     throw error;
   }
-  if (next) {
+  if (next != null) {
     const item = next;
     try {
       bag[0].push(item);
@@ -77,7 +77,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     }
   } else {
     try {
-      if (next) {
+      if (next != null) {
         loudDrop_drop(next);
       }
     } catch (error) {
@@ -98,7 +98,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       }
       throw error;
     }
-    if (!loud) {
+    if (loud == null) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {

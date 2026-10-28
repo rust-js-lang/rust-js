@@ -127,7 +127,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = loud ? map(loud) : undefined;
+    const value = loud != null ? map(loud) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     held.return();

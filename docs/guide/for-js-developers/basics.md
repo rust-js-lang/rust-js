@@ -2318,18 +2318,14 @@ export function isAdult(p) {
   is the conditional you wrote, `?:`, its `else { false }` too; what you
   write with `&&`, or `p.age.is_some_and(|a| a >= 18)`, is `&&`
   ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
-- An `Option` is tested by what it holds: by its truth where that's never
-  falsy, an object, an array, a function, a class's instance or a symbol,
-  `if (!owner)` and `while (owner)`; against `null` where it may be, a
-  number, text, a bigint or a `js::Unknown` of any value, `x != null` and
-  `x == null`, so `Some(0)`, `Some("")` and `Some(false)` are there
+- An `Option` is tested against `null`, whatever it holds: `x != null`
+  and `x == null`, `if (owner == null)` and `while (owner != null)`, never
+  by its truth, so `Some(0)`, `Some("")` and `Some(false)` are there
   ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
-  `is_some()`, `if let Some(..)`, `while let Some(..)` and `?` all test
-  it so. A `let` of `is_some()` alone that only tests read is `const
-  failed = error != null;`, a `bool` as its name says; one of more,
-  `error.is_some() || !ready`, is read by its parts' truth, `const hide =
-  error || !ready;`
-  ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
+  `is_some()`, `if let Some(..)`, `while let Some(..)`, `?` and what
+  `filter_map` keeps all test it so. A `let` of `is_some()` that only
+  tests read is `const failed = error != null;`, a `bool` as its name
+  says ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
 - A let chain after a test of its own, `if debug && let Some(value) =
   info.value.get()`, which clippy asks for over two `if`s, reads the place
   once, as a person writes it: `if (debug) { const value = info.value; if

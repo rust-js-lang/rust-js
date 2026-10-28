@@ -8,7 +8,7 @@
   "library": {
     "version": 9,
     "name": "rust_js_std",
-    "crate_hash": "3919a46dba354053358faa15be376418",
+    "crate_hash": "275cb32f6ada4b994861155b764545d8",
     "items": [
       {
         "key": "608f92abc48d28dac5a4dece6c13d6e7",
@@ -12196,7 +12196,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "2aaa1e567520bffa"
+      "hash": "34a3c0569c169f5d"
     },
     {
       "file": "iter.js.map",

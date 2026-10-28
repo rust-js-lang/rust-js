@@ -12,7 +12,7 @@ function probe(fiber) {
 }
 
 function probed(fiber) {
-  if (fiber) {
+  if (fiber != null) {
     const task = fiber.task;
     if (task != null && probe(fiber)) {
       return $byteLen(task);
@@ -22,7 +22,7 @@ function probed(fiber) {
 }
 
 function kept(fiber, min) {
-  if (fiber && fiber.task != null && $byteLen(fiber.task) > min) {
+  if (fiber != null && fiber.task != null && $byteLen(fiber.task) > min) {
     const task = fiber.task;
     fiber.task = undefined;
     return $byteLen(task);

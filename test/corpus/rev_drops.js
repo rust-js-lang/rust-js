@@ -19,7 +19,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = next ? map(next) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     r.return();
@@ -69,7 +69,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      const value$1 = value ? map(value) : undefined;
+      const value$1 = value != null ? map(value) : undefined;
       console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     } finally {
       back.return();

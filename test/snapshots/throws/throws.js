@@ -84,7 +84,7 @@ export async function settleEither(fail) {
 export function kept(key) {
   const result = $try(() => window.localStorage);
   const storage = result.TAG === "Ok" ? result._0 : undefined;
-  if (!storage) {
+  if (storage == null) {
     return;
   }
   return storage.getItem(key);

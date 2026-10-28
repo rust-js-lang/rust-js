@@ -123,7 +123,7 @@ const Inventory = {
         // Put back what this order took before failing.
         for (const line of lines) {
           const item = inventory.items.get(line.sku);
-          if (item) {
+          if (item != null) {
             item.stock = (item.stock + line.quantity) >>> 0;
           }
         }
@@ -299,7 +299,7 @@ function main() {
       item.stock = (item.stock + more) >>> 0;
       return [sku, item.stock];
     })
-    .filter(Boolean);
+    .filter((item) => item != null);
   restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const arg = money(Inventory.valueCents(inventory));
   console.log(

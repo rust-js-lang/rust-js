@@ -150,10 +150,10 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const css = [];
   const iter = $iter(sources);
   let value;
-  while ((value = $next(iter))) {
+  while ((value = $next(iter)) != null) {
     for (const [, specifier] of Array.from(value[1].matchAll(cssImports))) {
       const find = styles.find(([name]) => name === specifier);
-      if (find && !css.includes(find[1])) {
+      if (find != null && !css.includes(find[1])) {
         css.push(find[1]);
       }
     }
@@ -222,7 +222,7 @@ export function outcome(report) {
     return { TAG: "Failed", _0: report.error };
   } else if (report.ran) {
     return "Ran";
-  } else if (report.tested) {
+  } else if (report.tested != null) {
     return { TAG: "Tested", _0: report.tested };
   }
 }

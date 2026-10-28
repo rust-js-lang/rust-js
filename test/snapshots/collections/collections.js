@@ -291,7 +291,7 @@ export function grouped(n) {
   }
   const copy = new Map(Array.from(groups).map(([key, value]) => [key, value.slice()]));
   const zero = groups.get(0);
-  if (zero) {
+  if (zero != null) {
     zero.push(99);
   }
   const all = Array.from(copy);

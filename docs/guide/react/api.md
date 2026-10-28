@@ -232,7 +232,7 @@ export function Player({ src, ref }) {
     () => ({
       play() {
         const element = video.current;
-        if (element) {
+        if (element != null) {
           element.play();
         }
       },
@@ -246,7 +246,7 @@ export function Screen() {
   const player = useRef(undefined);
   function play() {
     const handle = player.current;
-    if (handle) {
+    if (handle != null) {
       handle.play();
     }
   }
@@ -456,7 +456,7 @@ import { App } from "./app.jsx";
 
 export function Modal({ children }) {
   const body = window.document.body;
-  if (!body) {
+  if (body == null) {
     return;
   }
   const content = <div className="modal">{children}</div>;

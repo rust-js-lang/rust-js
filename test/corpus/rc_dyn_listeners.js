@@ -71,7 +71,7 @@ function main() {
           });
           return result;
         }
-        parent = (upgrade ? map(upgrade) : undefined) ?? "";
+        parent = (upgrade != null ? map(upgrade) : undefined) ?? "";
       } finally {
         $unborrow(borrow);
       }

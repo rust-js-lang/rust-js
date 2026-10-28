@@ -110,7 +110,7 @@ function main() {
   const value$1 = owners.get(task(4, 0, ""));
   console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
   const option = $getKeyValue(owners, task(1, 0, ""));
-  const value$2 = option ? [option[0].name, option[1]] : undefined;
+  const value$2 = option != null ? [option[0].name, option[1]] : undefined;
   console.log(
     `${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
   );
@@ -122,7 +122,7 @@ function main() {
       .join(", ")}]`,
   );
   const option$1 = $treeEnd(owners, taskOrd_cmp, false, false, false);
-  const value$3 = option$1 ? option$1[0].id : undefined;
+  const value$3 = option$1 != null ? option$1[0].id : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const key = task(2, 5, "ship");
   $orInsert(owners, key, "dee");

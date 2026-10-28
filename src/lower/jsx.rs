@@ -679,31 +679,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !matches!(none.kind, js::ExprKind::Undefined) {
             return value;
         }
-        let test = match &test.kind {
-            // `!!error` of a value never falsy (ADR 0298): `error`, which
-            // renders nothing when it isn't there.
-            js::ExprKind::Unary(js::UnaryOp::Not, not)
-                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind
-                    && self.maps_never_falsy(child) =>
-            {
-                (**x).clone()
-            }
-            _ => (**test).clone(),
-        };
+        let test = (**test).clone();
         Expr {
             facts: js::Facts::NONE,
             kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
             span: value.span,
         }
-    }
-
-    /// Is `child` a call of an `Option` of a value never falsy, a JS
-    /// object's `variant.icon.map(..)` (ADR 0298, amended)?
-    fn maps_never_falsy(&self, child: ExprId) -> bool {
-        matches!(self.frame.thir[self.strip(child)].kind, ExprKind::Call { ref args, .. }
-            if args.first().is_some_and(|&receiver| self
-                .option_of(self.frame.thir[receiver].ty)
-                .is_some_and(|inner| self.never_falsy(inner))))
     }
 
     /// A tuple of children is several, `("Count is ", count)`: `Count is {count}`.

@@ -71,13 +71,13 @@ function main() {
   const length = left.length;
   right[$at(right, 2)] = length | 0;
   console.log(`[${v.join(", ")}]`);
-  console.log(`${!$splitAtMut(v, 7, true)}`);
+  console.log(`${$splitAtMut(v, 7, true) == null}`);
   const [a, b] = $sliceSplitAt(v, 4);
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   const [, b$1] = $splitAtMut(v, 5);
   b$1[0] = (b$1[$at(b$1, 0)] + 1) | 0;
   const splitAtMutChecked = $splitAtMut(v, 6, true);
-  if (splitAtMutChecked) {
+  if (splitAtMutChecked != null) {
     const a = splitAtMutChecked[0];
     const b = splitAtMutChecked[1];
     const value = b.length;
@@ -86,14 +86,14 @@ function main() {
   console.log(`[${v.join(", ")}]`);
 
   const splitFirstMut = $splitEndMut(v, false, true);
-  if (splitFirstMut) {
+  if (splitFirstMut != null) {
     const first = splitFirstMut[0];
     const rest = splitFirstMut[1];
     first.value = 10;
     rest[$at(rest, 0)] = 11;
   }
   const splitLastMut = $splitEndMut(v, true, true);
-  if (splitLastMut) {
+  if (splitLastMut != null) {
     const last = splitLastMut[0];
     const rest = splitLastMut[1];
     last.value = rest.length | 0;
@@ -147,32 +147,32 @@ function main() {
   console.log(`[${words.join(", ")}]`);
 
   part = $viewGet(words, 1, 3);
-  if (part) {
+  if (part != null) {
     part.fill(5);
   }
-  console.log(`${!$viewGet(words, 5, 9)} [${words.join(", ")}]`);
+  console.log(`${$viewGet(words, 5, 9) == null} [${words.join(", ")}]`);
   $view(words, 0, 2).fill(6);
   const getUncheckedMut = $mutAt(words, 2);
   getUncheckedMut.value = (getUncheckedMut.value + 1) | 0;
   console.log(`[${words.join(", ")}]`);
 
   let head = words.length >= 2 ? $view(words, 0, 2) : undefined;
-  if (head) {
+  if (head != null) {
     head[1] = 0;
   }
   const end = words.length >= 2 ? $view(words, words.length - 2) : undefined;
-  if (end) {
+  if (end != null) {
     end[0] = 0;
   }
   console.log(`[${words.join(", ")}]`);
   const splitFirstChunkMut = $splitChunkMut(words, 2, false);
-  if (splitFirstChunkMut) {
+  if (splitFirstChunkMut != null) {
     const head = splitFirstChunkMut[0];
     const rest = splitFirstChunkMut[1];
     head[0] = rest.length | 0;
   }
   const splitLastChunkMut = $splitChunkMut(words, 2, true);
-  if (splitLastChunkMut) {
+  if (splitLastChunkMut != null) {
     const rest = splitLastChunkMut[0];
     const end = splitLastChunkMut[1];
     end[1] = rest.length | 0;
@@ -193,7 +193,7 @@ function main() {
   );
 
   head = runs.length >= 2 ? $view(runs, 0, 2) : undefined;
-  if (head) {
+  if (head != null) {
     $assign(head, [7, 8]);
   }
   console.log(`[${runs.join(", ")}]`);

@@ -53,12 +53,12 @@ function main() {
   noisyDrop_drop(tuple[1]);
   const opt = ["o"];
   let opt$0$live = true;
-  if (opt) {
+  if (opt != null) {
     opt$0$live = false;
     consume(opt);
   }
   console.log("matched");
-  if (opt) {
+  if (opt != null) {
     if (opt$0$live) {
       noisyDrop_drop(opt);
     }

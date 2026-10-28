@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function check(m) {
-  const value = m.TAG === "Rows" && m._0[0] && m._0[0].TAG === "Rows";
+  const value = m.TAG === "Rows" && m._0[0] != null && m._0[0].TAG === "Rows";
   if (!value) {
     return "not a matrix";
   }

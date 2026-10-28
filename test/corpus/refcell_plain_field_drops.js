@@ -9,7 +9,7 @@ export function entry() {
 function fill(slot, name) {
   const old = slot.held;
   slot.held = [name];
-  const result = !!old;
+  const result = old != null;
   if (old != null) {
     console.log(`drop ${old[0]}`);
   }
@@ -29,15 +29,15 @@ function main() {
     } finally {
       slot.held = loud;
     }
-    console.log(`set ${!!slot.held}`);
+    console.log(`set ${slot.held != null}`);
     console.log(`filled ${fill(slot, "c")}`);
     const taken = slot.held;
     slot.held = undefined;
-    console.log(`taken ${!!taken}`);
+    console.log(`taken ${taken != null}`);
     if (taken != null) {
       console.log(`drop ${taken[0]}`);
     }
-    console.log(`empty ${!slot.held}`);
+    console.log(`empty ${slot.held == null}`);
     fill(slot, "d");
     const slots = [
       {

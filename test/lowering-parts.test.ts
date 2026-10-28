@@ -142,7 +142,7 @@ pub fn is_hidden(node: &Node) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const instance = node.stateNode;\n  if (instance && !(instance._visibility & 1)) {\n");
+  expect(js).toContain("  const instance = node.stateNode;\n  if (instance != null && !(instance._visibility & 1)) {\n");
   const lib = await import(join(dir, "lib.js"));
   const hidden = [{ stateNode: null }, { stateNode: { _visibility: 1 } }, { stateNode: { _visibility: 2 } }];
   expect(hidden.map((n) => lib.isHidden(n))).toEqual([false, false, true]);

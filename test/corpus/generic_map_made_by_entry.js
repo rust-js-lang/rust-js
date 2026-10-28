@@ -41,7 +41,7 @@ function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
   const all = new VMap();
   const iter = $iter(edges);
   let value;
-  while ((value = $next(iter))) {
+  while ((value = $next(iter)) != null) {
     const a = VCopy ? VCopy.copy(value[0]) : value[0];
     const b = VCopy ? VCopy.copy(value[1]) : value[1];
     const key = VCopy ? VCopy.copy(a) : a;

@@ -10,12 +10,4 @@ export const mutations: Mutation[] = [
     replace: "            Conversion::Dyn(_) => error,\n            #[allow(unreachable_patterns)]\n            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
-  {
-    name: "question-null-test",
-    breaks: "`?` of an Option never falsy tests `item == null`, not `!item`",
-    file: "src/lower/std_types/result.rs",
-    find: "            Some(inner) => self.absent(subject, inner),\n",
-    replace: "            Some(_) => Expr::bin(js::Op::LooseEq, subject, Expr::null()),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "of an Option never falsy tests its truth"],
-  },
 ];

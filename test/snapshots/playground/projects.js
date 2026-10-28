@@ -57,7 +57,7 @@ export const Project = {
   /** The open file's state, as it was stored: its editor has the latest. */
   currentState(project) {
     const file = project.files.find((f) => f.path === project.current);
-    if (file) {
+    if (file != null) {
       return file.state;
     }
   },
@@ -65,7 +65,7 @@ export const Project = {
   /** With the open file's `live` state kept, since the editor has it. */
   keeping(project, live) {
     const files = copy(project.files);
-    if (live) {
+    if (live != null) {
       for (const file of files) {
         if (file.path === project.current) {
           file.state = live;

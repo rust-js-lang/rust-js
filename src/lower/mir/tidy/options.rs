@@ -54,17 +54,11 @@ fn tested_option(
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {
         return None;
     };
-    if !presence.facts.has(js::Known::Presence) {
-        return None;
-    }
     let of_x = |e: &Expr| matches!(&e.kind, ExprKind::Var(o) if o == x);
-    // `!!x`, where it's set, or `!x`, where it isn't.
-    let set = match &presence.kind {
-        ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {
-            ExprKind::Unary(UnaryOp::Not, option) if of_x(option) => true,
-            _ if of_x(not) => false,
-            _ => return None,
-        },
+    // `x != null`, where it's set, or `x == null`, where it isn't.
+    let set = match (js::null_test(presence, true), js::null_test(presence, false)) {
+        (Some(option), _) if of_x(option) => true,
+        (_, Some(option)) if of_x(option) => false,
         _ => return None,
     };
     // What reads `x`, and what mustn't: of `if (!x) { b } rest`, `rest`,

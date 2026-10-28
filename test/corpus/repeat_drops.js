@@ -101,7 +101,7 @@ function main() {
         }
         throw error;
       }
-      if (!loud) {
+      if (loud == null) {
         try {
           iter.return();
         } catch (error) {

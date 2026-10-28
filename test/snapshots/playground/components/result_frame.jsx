@@ -13,7 +13,7 @@ import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  const [run, page] = program ? [program.run, program.page] : [0, ""];
+  const [run, page] = program != null ? [program.run, program.page] : [0, ""];
   // Listen for this run's report. If there's none, say so: something
   // stopped its script.
   useEffect(() => {
@@ -25,14 +25,14 @@ export function ResultFrame({ program, onOutcome }) {
         "message",
         (e) => {
           const frame$1 = frame.current;
-          const fromFrame = frame$1 && Object.is(e.source, frame$1.contentWindow);
+          const fromFrame = frame$1 != null && Object.is(e.source, frame$1.contentWindow);
           const report = readReport(e);
-          if (report && fromFrame) {
+          if (report != null && fromFrame) {
             if (report.run === run) {
               // As tall as its page, from the height it starts with.
               const height = report.height;
               const frame$1 = frame.current;
-              if (height != null && frame$1) {
+              if (height != null && frame$1 != null) {
                 const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
                 frame$1.setAttribute("style", style);
                 return;
@@ -58,7 +58,7 @@ export function ResultFrame({ program, onOutcome }) {
     return () => controller.abort();
   }, [run]);
   return (
-    <section id="result-section" className="mt-3" hidden={!program}>
+    <section id="result-section" className="mt-3" hidden={program == null}>
       <h2 className={HEADING}>
         Result{" "}
         <span className="font-normal">

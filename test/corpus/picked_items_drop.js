@@ -48,7 +48,7 @@ function main() {
     const value = [["s"]];
     try {
       const z = third($iter(value), $dropEach(noisyDrop_drop));
-      console.log(`none ${!z}`);
+      console.log(`none ${z == null}`);
       const value$1 = [["e"], ["f"], ["g"]];
       try {
         const value = $iter(value$1);

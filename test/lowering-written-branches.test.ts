@@ -194,7 +194,7 @@ pub fn is_simple_object(object: &Unknown) -> bool {
 }
 `);
   expect(js).toContain(
-    '      if ((name === "key" || name === "ref") && descriptor.get) {\n        // React adds key and ref getters to props objects to issue warnings.\n        continue;\n      }\n      return false;\n    }\n  }\n  return true;\n',
+    '      if ((name === "key" || name === "ref") && descriptor.get != null) {\n        // React adds key and ref getters to props objects to issue warnings.\n        continue;\n      }\n      return false;\n    }\n  }\n  return true;\n',
   );
   const props = Object.defineProperty({ a: 1 }, "key", { get: () => 1, enumerable: false });
   const hidden = Object.defineProperty({}, "b", { value: 1, enumerable: false });
@@ -356,8 +356,8 @@ pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
   expect(js).toContain("return !!v;");
   expect(js).toContain('return !v ? globalThis.supportsIt("b") : true;');
   expect(js).toContain('return !!v || globalThis.supportsIt("b");');
-  // A `match`'s, MIR's test of `None` first: `!!o`, not the array.
-  expect(js).toContain("return !!o || f();");
+  // A `match`'s, MIR's test of `None` first: `o != null`, not the array.
+  expect(js).toContain("return o != null || f();");
   expect(js).toContain('return !v && n ? globalThis.supportsIt("d") : true;');
   // A chain's part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
   expect(js).toContain('return !!v || n === 0 || globalThis.supportsIt("d");');
@@ -744,7 +744,7 @@ pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (fiber != null && fiber._debugTask) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
+  expect(js).toContain("  if (fiber != null && fiber._debugTask != null) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
   expect(js.match(/const task = fiber\._debugTask;/g)).toHaveLength(4);
   expect(js).not.toContain("const debugTask");
   const lib = await import(join(dir, "lib.js"));

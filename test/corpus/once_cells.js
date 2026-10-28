@@ -52,17 +52,17 @@ function main() {
   const taken = {};
   const old = taken.value;
   taken.value = undefined;
-  console.log(`${!old}`);
+  console.log(`${old == null}`);
   $getOrInit(taken, () => ({ name: "a" }));
   const config = taken.value;
-  if (config) {
+  if (config != null) {
     config.name += "b";
   }
   console.log(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}`);
   const old$1 = taken.value;
   taken.value = undefined;
   const name = old$1?.name;
-  console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${!taken.value}`);
+  console.log(`${name == null ? "None" : `Some(${$debugStr(name)})`} ${taken.value == null}`);
 
   const count = { value: 5 };
   const value$3 = $unwrap(count.value == null ? undefined : count);

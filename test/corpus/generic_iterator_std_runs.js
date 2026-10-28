@@ -25,7 +25,7 @@ function main() {
   const iter = chunks(items, 3, i32Debug);
   while (true) {
     const chunk = chunksIterator_next(iter, 3, i32Debug);
-    if (!chunk) {
+    if (chunk == null) {
       return;
     }
     console.log(`[${chunk.join(", ")}]`);

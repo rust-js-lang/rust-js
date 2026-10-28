@@ -97,7 +97,7 @@ function render(state, view) {
     let left = 0;
     const iter = $iter(s.todos);
     let todo;
-    while ((todo = $next(iter))) {
+    while ((todo = $next(iter)) != null) {
       if (!todo.done) {
         left = (left + 1) | 0;
       }

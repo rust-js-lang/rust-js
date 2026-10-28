@@ -71,7 +71,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$1 = last ? map(last) : undefined;
+  const value$1 = last != null ? map(last) : undefined;
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   // `Rev::nth`: a `Vec`'s `nth_back`, what it passes dropped as one slice.
   const peekable = $held(
@@ -110,7 +110,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$2 = nth ? map$1(nth) : undefined;
+  const value$2 = nth != null ? map$1(nth) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = $held(
     iterator_peekable(
@@ -155,7 +155,7 @@ function main() {
     loudDrop_drop(loud);
     return result;
   }
-  const value$4 = nth ? map$2(nth) : undefined;
+  const value$4 = nth != null ? map$2(nth) : undefined;
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 }
 //# sourceMappingURL=case.js.map

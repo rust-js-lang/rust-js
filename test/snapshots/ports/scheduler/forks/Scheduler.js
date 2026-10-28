@@ -407,7 +407,7 @@ const localSetImmediate = typeof setImmediate !== "undefined" ? setImmediate : u
 let taskTimeoutId;
 
 let schedulePerformWorkUntilDeadline;
-if (localSetImmediate) {
+if (localSetImmediate != null) {
   // Node.js and old IE.
   // There's a few reasons for why we prefer setImmediate.
   //
@@ -432,7 +432,7 @@ if (localSetImmediate) {
 } else {
   // We should only fallback here in non-browser environments.
   schedulePerformWorkUntilDeadline = () => {
-    if (localSetTimeout) {
+    if (localSetTimeout != null) {
       localSetTimeout(performWorkUntilDeadline, 0);
     }
   };
@@ -446,7 +446,7 @@ function requestHostCallback() {
 }
 
 function requestHostTimeout(callback, ms) {
-  if (localSetTimeout) {
+  if (localSetTimeout != null) {
     taskTimeoutId = localSetTimeout(() => {
       callback(getCurrentTime());
     }, ms);
@@ -454,7 +454,7 @@ function requestHostTimeout(callback, ms) {
 }
 
 function cancelHostTimeout() {
-  if (localClearTimeout) {
+  if (localClearTimeout != null) {
     localClearTimeout(taskTimeoutId);
   }
   taskTimeoutId = undefined;

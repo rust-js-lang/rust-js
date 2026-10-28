@@ -193,7 +193,7 @@ export function restore() {
     value: saved,
   };
   Object.defineProperty(console, "log", restored);
-  if (saved) {
+  if (saved != null) {
     saved("restored", 1);
   }
 }

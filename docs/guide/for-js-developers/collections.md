@@ -1238,7 +1238,7 @@ export function fromJson(text) {
 export function titleOf(text) {
   const result = $fromJson(text, $json.value);
   const value = result.TAG === "Ok" ? result._0 : undefined;
-  if (value) {
+  if (value != null) {
     return $jsonValueAs($jsonIndex(value, "title"), "String");
   }
 }

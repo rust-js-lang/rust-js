@@ -28,7 +28,7 @@ function clear(root, index) {
 function hide(root, index, update) {
   const hidden = root.hiddenUpdates;
   $index(hidden, index);
-  if (hidden[index]) {
+  if (hidden[index] != null) {
     const updates = hidden[index];
     updates.push(update);
   } else {
@@ -41,7 +41,7 @@ function takeHidden(root, index) {
   $index(hidden, index);
   const updates = hidden[index];
   hidden[index] = null;
-  if (updates) {
+  if (updates != null) {
     return updates.length;
   }
   return 0;

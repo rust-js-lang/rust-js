@@ -90,14 +90,14 @@ function main() {
           try {
             try {
               const value = rebuild({ x: [10], y: [11], n: 4 }, true);
-              console.log(`stopped ${!value}`);
+              console.log(`stopped ${value == null}`);
               if (value != null) {
                 console.log(`drop ${value.x[0]}`);
                 console.log(`drop ${value.y[0]}`);
               }
               const built = rebuild({ x: [12], y: [13], n: 5 }, false);
               let built$0$live = true;
-              if (built) {
+              if (built != null) {
                 built$0$live = false;
                 console.log(`built ${built.x[0]} ${built.y[0]}`);
                 console.log(`drop ${built.x[0]}`);
@@ -105,7 +105,7 @@ function main() {
               } else {
                 console.log("none");
               }
-              if (built) {
+              if (built != null) {
                 if (built$0$live) {
                   console.log(`drop ${built.x[0]}`);
                   console.log(`drop ${built.y[0]}`);

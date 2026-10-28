@@ -675,7 +675,7 @@ function main() {
         loudDrop_drop(l);
         return result;
       }
-      second = nth ? map(nth) : undefined;
+      second = nth != null ? map(nth) : undefined;
     } finally {
       value.return();
     }

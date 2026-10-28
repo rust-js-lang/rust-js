@@ -1,5 +1,5 @@
 // What the compiler writes of an `Option`: `null` of a nullable, an optional
-// chain where it's `None`, a field of `None` left out, a test by its truth,
+// chain where it's `None`, a field of `None` left out, a test against `null`,
 // and `unwrap_or_else` and the rest of its methods. Each test is a program of
 // its own, compiled and run.
 
@@ -147,7 +147,7 @@ pub fn or_not(o: Option<&js::RegExp>, x: &str) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return o?.test(x);");
   expect(js).toContain("  o?.test(x);");
-  expect(js).toContain("return o ? Node.add(o, x) : undefined;");
+  expect(js).toContain("return o != null ? Node.add(o, x) : undefined;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.tested(/a/, "a"), lib.tested(undefined, "a"), lib.ran(undefined, "a"), lib.added({ n: 1 }, 2), lib.added(undefined, 2), lib.orNot(undefined, "a")])
     .toEqual([true, undefined, undefined, 3, undefined, false]);
@@ -690,12 +690,11 @@ pub fn guarded() -> u32 {
   expect([lib.first("a"), lib.inner(), lib.guarded()]).toEqual(["a", [undefined, 3], 5]);
 });
 
-// ADR 0298: an Option whose value is never falsy, an object, an array or a
-// function, is tested by its truth, as react.dev's Preview writes `{error &&
-// ..}`, `!error` and `rawError && rawError.message`; and `o == Some(true)` of
-// an `Option<bool>` is `o` in a test, `if (message.firstLoad)`. A number's
-// or a string's, which can be falsy, is tested against null still.
-test("an Option of an object is tested by its truth", async () => {
+// ADR 0298, amended by the user: an Option is tested against null,
+// whatever it holds, an object's, a number's and a string's alike; `o ==
+// Some(true)` of an `Option<bool>`, the value's truth, is `o` in a test,
+// `if (message.firstLoad)`.
+test("an Option of an object is tested against null, as of any value", async () => {
   const dir = fixture("truthy-options");
   writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
     pub message: String,
@@ -744,8 +743,8 @@ pub fn first_value(f: Option<bool>) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  for (const written of ["return !!error;", "return !error;", "return error ? 1 : 0;", "if (error && error.message === \"x\") {",
-    "return error ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "return f ? 1 : 0;", "return !!f;"]) {
+  for (const written of ["return error != null;", "return error == null;", "return error != null ? 1 : 0;", "if (error != null && error.message === \"x\") {",
+    "return error != null ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "return f ? 1 : 0;", "return !!f;"]) {
     expect(js).toContain(written);
   }
   const lib = await import(join(dir, "lib.js"));
@@ -768,10 +767,9 @@ pub fn has(value: Option<&Unknown>) -> bool {
 
 // ADR 0298: a `const` only tests read is a test itself, as react.dev's
 // Preview has `const hideContent = error || !iframeComputedHeight ||
-// !bundlerIsReady;`: what it's made of is read by its truth. One read as a
-// value keeps its boolean. One that's one \`Option\`'s presence alone is
-// \`x != null\`, a \`bool\` still, as React's completeWork writes \`const
-// isTimedOutSuspense = nextState !== null;\` (amended).
+// !bundlerIsReady;`. An `Option`'s part of it is its test against `null`,
+// `error != null || !ready`, as React's completeWork writes `const
+// isTimedOutSuspense = nextState !== null;` (amended).
 test("a const only tests read is read by its truth", async () => {
   const dir = fixture("tested-consts");
   writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
@@ -801,8 +799,8 @@ pub fn kept(error: Option<&Failure>, ready: bool) -> (bool, u32) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const hide = error || !ready;");
-  expect(js).toContain("const has = !!error || !ready;");
+  expect(js).toContain("const hide = error != null || !ready;");
+  expect(js).toContain("const has = error != null || !ready;");
   expect(js).toContain("const failed = error != null;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown({ message: "" }, true), lib.shown(undefined, true), lib.shown(undefined, false), lib.kept({ message: "" }, true)])
@@ -837,8 +835,9 @@ pub fn both(p: Option<u32>, q: Option<u32>) -> bool {
 });
 
 // A callback that tests its argument's truth is `Boolean`, as react.dev
-// writes `.filter(Boolean)`: what `filter_map` keeps of a value never falsy
-// (ADR 0298), and `!s.is_empty()` of a string. A number's keeps `!= null`.
+// writes `.filter(Boolean)`: `!s.is_empty()` of a string. What `filter_map`
+// keeps is tested against `null`, an object's and a number's alike (ADR
+// 0298, amended).
 test("a truth test as a callback is Boolean", async () => {
   const dir = fixture("filter-boolean");
   writeFileSync(join(dir, "lib.rs"), `pub struct Item {
@@ -856,7 +855,7 @@ pub fn less(xs: &[u32]) -> Vec<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return xs.map((x) => (x > 1 ? { n: x } : undefined)).filter(Boolean);");
+  expect(js).toContain("return xs.map((x) => (x > 1 ? { n: x } : undefined)).filter((item) => item != null);");
   expect(js).not.toContain("(g) => !!g");
   expect(js).toContain(".filter(Boolean);");
   expect(js).toContain(".filter((item) => item != null)");
@@ -864,10 +863,9 @@ pub fn less(xs: &[u32]) -> Vec<u32> {
   expect([lib.items([1, 2]), lib.words("a, ,b"), lib.less([0, 2])]).toEqual([[{ n: 2 }], ["a", "b"], [1]]);
 });
 
-// `?` of an Option of a value never falsy tests it by its truth, as
-// react.dev's runESLint writes `if (!error) return undefined;` (ADR 0298).
-// A number's tests it against `null`.
-test("? of an Option never falsy tests its truth", async () => {
+// `?` of an Option tests it against `null`, an object's and a number's
+// alike (ADR 0298, amended).
+test("? of an Option tests it against null", async () => {
   const dir = fixture("question-truth");
   writeFileSync(join(dir, "lib.rs"), `pub struct Item {
     pub n: u32,
@@ -883,7 +881,7 @@ pub fn counted(n: Option<u32>) -> Option<u32> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("if (!item) {\n    return;\n  }");
+  expect(js).toContain("if (item == null) {\n    return;\n  }");
   expect(js).toContain("if (n == null) {\n    return;\n  }");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first({ n: 1 }), lib.first(undefined), lib.counted(0), lib.counted(undefined)]).toEqual([2, undefined, 1, undefined]);
@@ -1011,11 +1009,11 @@ pub fn later(code: Option<&str>) -> Props {
   expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
 });
 
-// ADR 0298: `is_some()` of an `Option` never falsy, `!!o`, given as a
-// value, a `bool`'s: `!!o && f()` is `false` where it's `None`, never the
+// ADR 0298: `is_some()` of an `Option`, `o != null`, given as a value, a
+// `bool`'s: `o != null && f()` is `false` where it's `None`, never the
 // `undefined` of `o && f()`, as react.dev's DownloadButton keeps whether
 // import maps are supported.
-test("a truthy option's is_some given as a value is a boolean", async () => {
+test("an option's is_some given as a value is a boolean", async () => {
   const dir = fixture("is-some-value");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 use js::JsObject;
@@ -1048,7 +1046,7 @@ pub fn or_none() -> bool {
   try {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
     const js = readFileSync(join(dir, "mir.js"), "utf8");
-    expect(js).toContain('  supported = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
+    expect(js).toContain('  supported = globalThis.maybeSupports != null && globalThis.supportsIt("importmap");\n');
     const lib = await import(join(dir, "mir.js"));
     delete globals.maybeSupports;
     const absent = [lib.update(), lib.negated(), lib.orNone()];
@@ -1109,11 +1107,11 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
   expect([lib.text(true, "a"), lib.text(true, undefined), lib.text(true, 3), lib.text(false, "a")]).toEqual(["a", "none", "none", "none"]);
 });
 
-// An untagged enum is its payload (ADR 0214): an `Option` of one whose every
-// payload is never falsy, an array or a JS object, as react.dev's
-// NavigationBar's `contentBoxSize` is, is there where it's truthy, `if
-// (size)`; of one that may be text, `""`, it's `size != null`.
-test("an option of an untagged enum never falsy is tested by its truth", async () => {
+// An untagged enum is its payload (ADR 0214): an `Option` of one is tested
+// against `null`, as every `Option` is (ADR 0298, amended), of arrays and
+// JS objects, as react.dev's NavigationBar's `contentBoxSize` is, `if (size
+// != null)`, and of text, whose `""` is there.
+test("an option of an untagged enum is tested against null", async () => {
   const dir = fixture("untagged-never-falsy");
   writeFileSync(join(dir, "lib.rs"), `pub struct Size { pub w: u32 }
 #[cfg_attr(rust_js, rust_js::untagged)]
@@ -1141,7 +1139,7 @@ pub fn labeled(label: Option<Label>) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  if (size) {\n");
+  expect(js).toContain("  if (size != null) {\n");
   expect(js).toContain("return label != null;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.width([{ w: 3 }]), lib.width({ w: 4 }), lib.width(undefined), lib.labeled(""), lib.labeled(undefined)]).toEqual([3, 4, 0, true, false]);

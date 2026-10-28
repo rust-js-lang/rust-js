@@ -341,11 +341,11 @@ pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u3
 ```js
 export function debugTask(name) {
   const createTask = console.createTask;
-  return createTask ? createTask(name) : undefined;
+  return createTask != null ? createTask(name) : undefined;
 }
 
 export function renderIn(task, render) {
-  return task ? task.run(render) : render();
+  return task != null ? task.run(render) : render();
 }
 ```
 
@@ -1038,7 +1038,7 @@ if (__DEV__) {
 }
 
 export function checked(tag) {
-  return checkTag ? checkTag(tag) : undefined;
+  return checkTag != null ? checkTag(tag) : undefined;
 }
 ```
 
@@ -1082,7 +1082,7 @@ function noTask(name) {
 
 const createTask$1 = DEV ? console.createTask : undefined;
 
-const createTask = createTask$1 ? (name) => createTask$1(name) : noTask;
+const createTask = createTask$1 != null ? (name) => createTask$1(name) : noTask;
 
 export function task(name) {
   return createTask(name);

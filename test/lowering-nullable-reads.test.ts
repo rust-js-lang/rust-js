@@ -52,7 +52,7 @@ pub fn set_current(value: Option<&'static Unknown>) {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (memoizedState) {\n    return memoizedState.dehydrated;\n  }\n  return null;\n");
+  expect(js).toContain("  if (memoizedState != null) {\n    return memoizedState.dehydrated;\n  }\n  return null;\n");
   expect(js).toContain("export function current() {\n  return CURRENT;\n}");
   expect(js).toContain("  CURRENT = value ?? null;\n");
   const lib = await import(join(dir, "lib.js"));

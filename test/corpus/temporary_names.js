@@ -17,13 +17,13 @@ function main() {
     ["cy", 40],
   ]);
   const firstKeyValue = $treeEnd(ages, $cmp, false, false, false);
-  if (firstKeyValue) {
+  if (firstKeyValue != null) {
     const name = firstKeyValue[0];
     const age = firstKeyValue[1];
     console.log(`first ${name} ${age}`);
   }
   const lastKeyValue = $treeEnd(ages, $cmp, true, false, false);
-  if (lastKeyValue) {
+  if (lastKeyValue != null) {
     const name = lastKeyValue[0];
     const age = lastKeyValue[1];
     console.log(`last ${name} ${age}`);
@@ -40,11 +40,11 @@ function main() {
     { x: 3, y: 4 },
   ];
   const point = find(points, 3);
-  if (point) {
+  if (point != null) {
     console.log(`at ${point.x} ${point.y}`);
   }
   const value$1 = find(points, 1);
-  if (value$1) {
+  if (value$1 != null) {
     console.log(`at ${value$1.x} ${value$1.y}`);
   }
   let count = 0;

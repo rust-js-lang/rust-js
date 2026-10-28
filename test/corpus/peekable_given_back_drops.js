@@ -49,7 +49,7 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    console.log(`${(next ? map(next) : undefined) ?? 0}`);
+    console.log(`${(next != null ? map(next) : undefined) ?? 0}`);
     console.log("end");
   } finally {
     p.return();

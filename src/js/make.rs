@@ -38,10 +38,10 @@ impl Expr {
         }
     }
 
-    /// Whether `option`, an `Option` of a value never falsy, is `set`:
-    /// `!!option`, or `!option` where it's not, by its truth (ADR 0298,
-    /// amended), which is `option != null`'s, or `== null`'s, answer, as
-    /// `null_test` reads it (`Known::Presence`).
+    /// Whether `option`, an `Option`, is `set`: `option != null`, or `==
+    /// null` where it's not, whatever it holds (ADR 0298, amended by the
+    /// user, 2026-10-28: one form, never its truth). The one test of an
+    /// `Option`'s being there, which `null_test` reads.
     pub fn presence(option: Expr, set: bool) -> Expr {
         // Of one made where it's tested, `t ? v : undefined` of a `v`
         // that's there, the test it's made by, `t` (ADR 0910).
@@ -52,17 +52,7 @@ impl Expr {
             let test = (**test).clone();
             return if set { test } else { test.negated_test() };
         }
-        let not = Expr::unary(UnaryOp::Not, option);
-        let test = if set { Expr::unary(UnaryOp::Not, not) } else { not };
-        // Of the option, not a constant's `true` it folded to.
-        let marked = Expr {
-            facts: Facts::of(Known::Presence),
-            ..test.clone()
-        };
-        match null_test(&marked, set) {
-            Some(_) => marked,
-            None => test,
-        }
+        Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null())
     }
 
     /// This, the property a binding's write assigns, which a setter may
@@ -607,16 +597,6 @@ impl Expr {
             ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {
                 let flipped = if op == Op::And { Op::Or } else { Op::And };
                 Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)
-            }
-            // An `Option`'s presence, `!!o`, negated, is its absence, `!o`,
-            // a test of it still (`Known::Presence`).
-            ExprKind::Unary(UnaryOp::Not, inner)
-                if self.facts.has(Known::Presence) && matches!(inner.kind, ExprKind::Unary(UnaryOp::Not, _)) =>
-            {
-                Expr {
-                    facts: Facts::of(Known::Presence),
-                    ..*inner
-                }
             }
             ExprKind::Unary(UnaryOp::Not, inner) => *inner,
             kind => Expr::unary(

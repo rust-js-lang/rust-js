@@ -83,7 +83,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = next ? map(next) : undefined;
+    const value = next != null ? map(next) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
     function map$1(l) {
@@ -91,7 +91,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = nth ? map$1(nth) : undefined;
+    const value$1 = nth != null ? map$1(nth) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     f.return();
@@ -209,7 +209,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value = loud ? map(loud) : undefined;
+    const value = loud != null ? map(loud) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
     const nextBack = fuseDoubleEndedIterator_nextBack(
       held,
@@ -265,7 +265,7 @@ function main() {
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = nextBack ? map$1(nextBack) : undefined;
+    const value$1 = nextBack != null ? map$1(nextBack) : undefined;
     console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     held.return();

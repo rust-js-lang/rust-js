@@ -520,7 +520,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.write_json(payload, json, inner, span, &mut some)?;
             let mut none = Vec::new();
             self.emit(json, "null", Vec::new(), &mut none);
-            let test = self.absent(value, inner);
+            let test = Expr::presence(value, false);
             out.push(StmtKind::If(test, none, Some(some)).at(js::Span::NONE));
             return Ok(());
         }

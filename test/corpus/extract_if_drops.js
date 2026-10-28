@@ -97,7 +97,7 @@ function fromMaps() {
       ),
     );
     let value;
-    while ((value = $next(iter))) {
+    while ((value = $next(iter)) != null) {
       const k = value[0];
       const l = value[1];
       console.log(`map took ${k} ${l[0]}`);

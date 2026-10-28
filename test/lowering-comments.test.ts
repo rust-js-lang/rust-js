@@ -321,12 +321,12 @@ pub fn branched(prev: Option<&Transition>) -> u32 {
 }
 `);
   expect(js).toContain("  // A nested one shares the parent's,\n  // as they're entangled.\n  let current = prev?.types;\n");
-  expect(js).toContain("  let current = prev\n    ? // One more than the parent's,\n      // as they're entangled.\n      ((prev.types ?? 0) + 1) >>> 0\n    : undefined;\n");
+  expect(js).toContain("  let current =\n    prev != null\n      ? // One more than the parent's,\n        // as they're entangled.\n        ((prev.types ?? 0) + 1) >>> 0\n      : undefined;\n");
   expect(js).toContain("  // Its own, where it has one,\n  // else the one given.\n  let current = n ?? given;\n");
   expect(js).toContain("      ? // Its count,\n        // told.\n        String(n)\n");
-  expect(js).toContain("  // One more than the parent's,\n  // as it's inside it.\n  if (prev) {\n");
-  expect(js).toContain("  if (prev) {\n    // The parent's,\n    // as it is.\n    return prev.types;\n");
-  expect(js).toContain("  // A nested one's,\n  // its parent's.\n  if (prev) {\n");
+  expect(js).toContain("  // One more than the parent's,\n  // as it's inside it.\n  if (prev != null) {\n");
+  expect(js).toContain("  if (prev != null) {\n    // The parent's,\n    // as it is.\n    return prev.types;\n");
+  expect(js).toContain("  // A nested one's,\n  // its parent's.\n  if (prev != null) {\n");
   expect([lib.shared({ types: 3 } as never), lib.shared(undefined as never), lib.grown({ types: 3 } as never), lib.grown(undefined as never), lib.counted({ types: 3 } as never), lib.branched(undefined as never)]).toEqual([3, undefined, 4, undefined, 4, 0]);
   expect([lib.kept(0 as never, 5 as never), lib.kept(undefined as never, 5 as never), lib.told(0 as never), lib.told(undefined as never)]).toEqual([0, 5, "0", ""]);
 });
@@ -1033,7 +1033,7 @@ test("a blank line before an if let is before what its test's take() prints firs
 }
 `);
   expect(js).toContain("  out.push(index);\n\n  const length = slots.length;\n");
-  expect(js).toContain("  slots[index] = undefined;\n  if (values) {\n");
+  expect(js).toContain("  slots[index] = undefined;\n  if (values != null) {\n");
   expect(js).toMatch(/\n  }\n\n  \/\/ Then the rest\.\n  const \w+ = \(index \+ 1\)/);
   expect(js).not.toMatch(/undefined;\n\n  (\/\/ Then the rest\.\n  )?if/);
   const slots: (number[] | undefined)[] = [[1, 2], [3]];

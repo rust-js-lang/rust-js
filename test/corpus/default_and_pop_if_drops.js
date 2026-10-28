@@ -74,10 +74,10 @@ function popped() {
       loudDrop_drop(l);
       return result;
     }
-    const value = popped ? map(popped) : undefined;
+    const value = popped != null ? map(popped) : undefined;
     console.log(`popped ${value == null ? "None" : `Some(${value})`}`);
     const none = $popIf(v, (l) => l[0] === 0);
-    console.log(`none ${!none}`);
+    console.log(`none ${none == null}`);
     const q = [[9], [10]];
     try {
       try {
@@ -86,7 +86,7 @@ function popped() {
           const value = front?.[0];
           console.log(`front ${value == null ? "None" : `Some(${value})`}`);
           const o = [11];
-          if (o) {
+          if (o != null) {
             o[0] = (o[0] + 1) & 255;
           }
           try {

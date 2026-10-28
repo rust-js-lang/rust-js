@@ -1,10 +1,10 @@
-// How an `Option` is tested, by what its payload's JS value may be (ADR
-// 0298, amended): by its truth, `o` and `!o`, where that's never falsy, an
-// object, an array, a function, a class's instance or a symbol; against
-// `null`, `o != null`, where it may be, a value of any shape, a number,
-// text or a bigint, whose `Some(0)`, `Some("")`, `Some(false)`, `Some(NaN)`
-// and `Some(0n)` are there. Each test is a program of its own, compiled and
-// run with those values given.
+// How an `Option` is tested: against `null`, `o != null` and `o == null`,
+// whatever it holds (ADR 0298, amended by the user, 2026-10-28), a value
+// of any shape, a number, text, a bigint, an object, an array or a
+// function, so `Some(0)`, `Some("")`, `Some(false)`, `Some(NaN)` and
+// `Some(0n)` are there. What's still tested by its truth is a value's
+// truth the program asks for, `js::truthy`. Each test is a program of its
+// own, compiled and run with those values given.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -20,8 +20,8 @@ const externs = (...crates: string[]) => ["--", ...crates.flatMap((c) => ["--ext
 // A JS value of any shape, `js::Unknown` or what `dyn IntoUnknown` is given,
 // may be falsy: `Some(0)`, `Some("")`, `Some(false)`, `Some(NaN)` and
 // `Some(0n)` are there, so each is tested against `null`, never by its
-// truth. A JS object, `&JsObject`, and a symbol never are: by their truth.
-test("an Option of a value of any shape is tested against null, of an object by its truth", async () => {
+// truth. A JS object, `&JsObject`, and a symbol, which never are, too.
+test("an Option of a value of any shape is tested against null, of an object too", async () => {
   const dir = fixture("any-shape-truth");
   writeFileSync(join(dir, "lib.rs"), `use js::{IntoUnknown, JsObject, Symbol, Unknown};
 
@@ -61,7 +61,7 @@ pub fn symbol(value: Option<&Symbol>) -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const written of ["return value != null;", "return value == null;", "return value != null ? 1 : 0;", "if (value == null) {\n    return;\n  }",
-    ".filter((item) => item != null)", "return !!value;", "return !value;"]) {
+    ".filter((item) => item != null)"]) {
     expect(js).toContain(written);
   }
   const lib = await import(join(dir, "lib.js"));
@@ -74,10 +74,10 @@ pub fn symbol(value: Option<&Symbol>) -> bool {
   expect([lib.object({}), lib.object(undefined), lib.symbol(Symbol("s")), lib.symbol(undefined)]).toEqual([true, false, false, true]);
 });
 
-// What `#[rust_js::types]` says may be falsy, a keyword's `number`, a
-// union's `string | URL`, the empty string's `""`, is tested against `null` though the type is a JS
-// object's struct; an interface's name is an object, tested by its truth.
-test("an Option of a binding whose written type may be falsy is tested against null", async () => {
+// What `#[rust_js::types]` says a JS object's struct is, a keyword's
+// `number`, a union's `string | URL`, the empty string's `""` or an
+// interface's name, is tested against `null`, as every `Option` is.
+test("an Option of a binding of any written type is tested against null", async () => {
   const dir = fixture("written-falsy");
   writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;
 use js::JsObject;
@@ -115,16 +115,15 @@ pub fn noded(n: Option<&Node>) -> bool {
   expect(js).toContain("export function counted(n) {\n  return n != null;\n}");
   expect(js).toContain("export function placed(p) {\n  return p == null;\n}");
   expect(js).toContain("export function moded(m) {\n  return m != null;\n}");
-  expect(js).toContain("export function noded(n) {\n  return !!n;\n}");
+  expect(js).toContain("export function noded(n) {\n  return n != null;\n}");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.counted(0), lib.counted(undefined), lib.placed(""), lib.placed(null), lib.moded(""), lib.noded({}), lib.noded(undefined)])
     .toEqual([true, false, false, true, true, true, false]);
 });
 
-// JSX shows an `Option` of an object mapped to an element as `error && <b
-// />`, which renders nothing where it's missing; one of a value of any
-// shape, which may be `0`, is `value != null && <b />`: `value && ..`
-// would render `0` where Rust shows the element.
+// JSX shows an `Option` mapped to an element as `value != null && <b />`,
+// whatever it holds: `value && ..` would render `0` where Rust shows the
+// element.
 test("JSX shows an Option of a value of any shape where it's not null", async () => {
   const dir = fixture("jsx-any-shape");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
@@ -202,10 +201,9 @@ pub fn Preview(is_expanded: bool, rawHeight: Option<f64>) -> JSX::Element {
 });
 
 // React's startTransition: `match prev { Some(prev) => prev.types, None =>
-// None }`, an object's `Option`, tested by its truth, `prev ? prev.types :
-// undefined`, is `prev?.types`, as it was of `prev != null`: a value never
-// falsy is set where it's truthy. Text's, which may be `""`, keeps its test,
-// `s != null ? $byteLen(s) : undefined`, as `""`'s length is `0`.
+// None }`, an object's `Option`, `prev != null ? prev.types : undefined`,
+// is `prev?.types`. Text's keeps its test, `s != null ? $byteLen(s) :
+// undefined`, as `""`'s length is `0`.
 test("an Option of an object read in a conditional is an optional chain", async () => {
   const dir = fixture("present-chain");
   writeFileSync(join(dir, "lib.rs"), `pub struct Point {

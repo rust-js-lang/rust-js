@@ -15,13 +15,13 @@ export function Editor({ state, view, onSubmit }) {
   useEffect(() => {
     const editor = openView($unwrap(parent.current, "the editor's element is mounted"), state);
     made.current = editor;
-    if (view) {
+    if (view != null) {
       view.current = editor;
     }
     return () => {
       editor.destroy();
       made.current = undefined;
-      if (view) {
+      if (view != null) {
         view.current = undefined;
       }
     };
@@ -29,7 +29,7 @@ export function Editor({ state, view, onSubmit }) {
   // Another file, a new compile, or the system's theme changing.
   useEffect(() => {
     const editor = made.current;
-    if (editor) {
+    if (editor != null) {
       show(editor, state);
       setTheme(editor, dark);
     }

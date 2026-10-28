@@ -133,7 +133,7 @@ function main() {
       loudDrop_drop(loud);
       return result;
     }
-    first = find ? map(find) : undefined;
+    first = find != null ? map(find) : undefined;
   } finally {
     value$4.return();
   }
@@ -178,7 +178,7 @@ function main() {
       loudDrop_drop(loud);
       return result;
     }
-    const value = loud ? map(loud) : undefined;
+    const value = loud != null ? map(loud) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$6.return();
