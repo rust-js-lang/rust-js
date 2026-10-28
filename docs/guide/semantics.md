@@ -990,3 +990,11 @@ React and JSX are [their own pages](README.md#react).
     `p.then(ping)`, not a fresh closure: only comparing the callback's
     identity tells them apart, which JS doesn't do to a callback it calls
     once (ADR 0262, amended).
+28. A `RegExp`'s `test` and `reg_exp::replace` take text, as TypeScript
+    types them, so a port of code that gives them any value converts it
+    first, `pattern.test(&js::string(value))`, `pattern.test(String(value))`:
+    of a symbol it's the symbol's name, where the regular expression's own
+    conversion throws a `TypeError`, and of an object whose `replace` isn't
+    String's, String's is called. React's warnValidStyle, given a style
+    value, is the one port it's accepted in (ADR 0262, amended, the user's
+    decision).

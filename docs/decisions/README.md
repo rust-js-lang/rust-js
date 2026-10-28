@@ -281,7 +281,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`; amended by 0869: one the API calls once is an `FnOnce`)*
 - [0261 Defaults that do nothing don't move what's made beside them](0261-defaults-made-in-place.md)
-- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function)*
+- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function; a `RegExp`'s `test` and `replace` take text)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](0263-with-router.md)
 - [0264 A variant's own name is the variant](0264-enum-own-names.md)
 - [0265 A component a thread_local! holds takes props of any lifetime](0265-held-component-lifetimes.md)

@@ -87,6 +87,16 @@ react.dev's TopNav passes the same closure instead.
   `p.then(ping, ping)`. Only the callback's identity tells it from a fresh
   closure's, which JS doesn't compare of a callback it calls once. Listed
   in the guide's differences (`semantics.md`, 27), below.
+- **A `RegExp`'s `test` and `replace` take text, as TypeScript types
+  them**, the second case's, which the user decided (2026-10-28, gap rd33):
+  React's warnValidStyle tests `badStyleValueWithSemicolonPattern.test(value)`
+  of any style value, and a port converts it first,
+  `pattern.test(&js::string(value))`, `String(value)`. Only a symbol, whose
+  `String` is its name where the regular expression's own conversion
+  throws, and an object whose `replace` isn't String's tell them apart,
+  neither a style value React is given. No binding takes any value: one
+  looser than TypeScript would be a second form. Listed in the guide's
+  differences (`semantics.md`, 28).
 
 ## Amendment: the stack's depth
 
