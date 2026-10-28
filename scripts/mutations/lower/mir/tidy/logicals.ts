@@ -346,14 +346,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
   },
   {
-    name: "last-or-chain-of-conditionals",
-    breaks: "a chain of `if`s whose folding gives `?:`s is nested `?:`s, `o != null ? (o > 3 ? o : n) : n`, not the `if`s or the `&&` (ADR 0947, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if matches!(value.kind, ExprKind::Cond(..)) {\n                return None;\n",
-    replace: "            if false {\n                return None;\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a typeof test after a null check"],
-  },
-  {
     name: "chain-binding-between-tests-kept",
     breaks: "a let chain's binding between its tests keeps the chain a labeled block, `bb11: { if (lanes == null) { break bb11; } .. }`, not React's `if (lanes != null && root != null) { .. } else { .. }` (ADR 0946, amended)",
     file: "src/lower/mir/tidy/logicals.rs",

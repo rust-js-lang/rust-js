@@ -61,9 +61,7 @@ how it reads:
   `strict-switch-taking-a-loops-break`,
   `strict-switch-of-mixed-subjects-part`, `strict-switch-of-two-ways`,
   `strict-switch-guard-not-written-with-else`,
-  `strict-switch-negated-test-as-written`,
   `strict-switch-dropping-what-follows-an-else`,
-  `strict-switch-of-negated-guards`,
   `strict-switch-of-a-returned-conditional`,
   `strict-switch-returned-value-where-written`.
 - The guide's `js::strict_equals` example, `docs/guide/interop/types.md`.
@@ -72,3 +70,19 @@ how it reads:
 
 A chain of values assigned, `let k = if eq(s, a) { 1 } else if .. `, is
 `?:`s still, an expression's, not a `switch`.
+
+## Amendment: a guard's `!==` isn't read as a negated test (2026-10-28)
+
+`if (s !== C) { throw .. } rest` was read as `s === C`'s test negated,
+so React's `selectorToString` was a `switch`. The chain now reaches this
+pass as the program wrote it, `else if s === C { .. } else { panic!() }`,
+before it's a guard: `written chains` puts each `if` back with its `else`.
+Under the mutation `strict-switch-of-negated-guards`, which took out the
+reading of `!==`, the JS was unchanged everywhere: the corpus with its
+snapshots, and the lowering, snapshot, JSX, port, compiler and tidy-stage
+suites. A program's own `else if !js::strict_equals(s, c) { 3 } else { 4 }`
+was never made a case either way, as its `if` isn't written with its
+branches turned. So a chain's test is `s === value` alone
+(`strict_switches::tested`). The reading of a negated test went, and so
+did its mutations, `strict-switch-of-negated-guards` and
+`strict-switch-negated-test-as-written`.

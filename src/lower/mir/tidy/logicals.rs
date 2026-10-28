@@ -147,13 +147,10 @@ pub(super) fn returned_logicals(
             return None;
         }
         // Each test folded into an `&&` or an `||`, as the logical is
-        // written: not a `?:` of what was an `if` (ADR 0947, amended).
+        // written (ADR 0947, amended).
         let mut value = yes;
         for (test, _) in tests.into_iter().rev() {
             value = conditional(test, value, no.clone(), booleans, false);
-            if matches!(value.kind, ExprKind::Cond(..)) {
-                return None;
-            }
         }
         Some(value)
     };

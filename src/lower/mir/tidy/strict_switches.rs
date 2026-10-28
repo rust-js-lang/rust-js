@@ -122,7 +122,7 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
             },
         ] = rest
             && let ExprKind::Cond(test, yes, no) = &returned.kind
-            && let Some((s, value, true)) = tested(test, strict_tests)
+            && let Some((s, value)) = tested(test, strict_tests)
             && (elses.iter()).any(|(cond, ..)| test.span.lo <= cond.lo && cond.hi == test.span.hi)
         {
             let ret = |value: &Expr| vec![StmtKind::Return(Some(value.clone())).at(*span)];
@@ -141,7 +141,7 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
         else {
             break (!rest.is_empty()).then_some(Cow::Borrowed(rest));
         };
-        let Some((s, value, positive)) = tested(test, strict_tests) else {
+        let Some((s, value)) = tested(test, strict_tests) else {
             break Some(Cow::Borrowed(rest));
         };
         let written = || elses.iter().find(|(cond, ..)| within(cond, *span));
@@ -152,16 +152,11 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
         let (case, next, consumed) = match otherwise.as_deref() {
             // `else if`, of the chain the `switch` is, or the last `if` of
             // an `else`'s statements.
-            Some(next) if positive && (first || after.is_empty()) => ((value, Cow::Borrowed(&then[..])), Ok(next), 1),
-            None if positive && ending && written().is_some_and(|(_, t, o)| of(t, then) && of(o, after)) => {
+            Some(next) if first || after.is_empty() => ((value, Cow::Borrowed(&then[..])), Ok(next), 1),
+            None if ending && written().is_some_and(|(_, t, o)| of(t, then) && of(o, after)) => {
                 ((value, Cow::Borrowed(&then[..])), Ok(after), stmts.len())
             }
-            None if !positive && ending && written().is_some_and(|(_, t, o)| of(o, then) && of(t, after)) => (
-                (value, Cow::Borrowed(after)),
-                Err(Some(Cow::Borrowed(&then[..]))),
-                stmts.len(),
-            ),
-            None if positive && after.is_empty() => ((value, Cow::Borrowed(&then[..])), Err(None), 1),
+            None if after.is_empty() => ((value, Cow::Borrowed(&then[..])), Err(None), 1),
             _ => break Some(Cow::Borrowed(rest)),
         };
         chain.subjects.push(s);
@@ -178,20 +173,17 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
     chain
 }
 
-/// A test's subject and value, and whether it's `===`, of a
-/// `js::strict_equals` the program wrote, which ends where the test does.
-fn tested<'a>(test: &'a Expr, strict_tests: &[js::Span]) -> Option<(&'a Expr, &'a Expr, bool)> {
-    let (positive, eq) = match &test.kind {
-        ExprKind::Unary(js::UnaryOp::Not, inner) => (false, &**inner),
-        _ => (true, test),
+/// A test's subject and value, `s === value`, of a `js::strict_equals` the
+/// program wrote, which ends where the test does. Not one negated, `s !==
+/// value`: a chain reaches `strict switches` as it's written, each `if`
+/// with its `else` (ADR 0958, amended).
+fn tested<'a>(test: &'a Expr, strict_tests: &[js::Span]) -> Option<(&'a Expr, &'a Expr)> {
+    let ExprKind::Binary(Op::Eq, s, value) = &test.kind else {
+        return None;
     };
-    let (positive, s, value) = match &eq.kind {
-        ExprKind::Binary(Op::Eq, s, value) => (positive, s, value),
-        ExprKind::Binary(Op::Ne, s, value) if positive => (false, s, value),
-        _ => return None,
-    };
-    let strict = [test.span, eq.span]
-        .iter()
-        .any(|e| !e.is_none() && strict_tests.iter().any(|t| e.lo <= t.lo && t.hi == e.hi));
-    (strict && s.reads_same() && !value.has_effects()).then_some((&**s, &**value, positive))
+    let strict = !test.span.is_none()
+        && strict_tests
+            .iter()
+            .any(|t| test.span.lo <= t.lo && t.hi == test.span.hi);
+    (strict && s.reads_same() && !value.has_effects()).then_some((&**s, &**value))
 }

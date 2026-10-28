@@ -82,3 +82,16 @@ snapshot, JSX, port, compiler and tidy-stage suites, and its test, "a
 function's last || of an if's value is one return", passes without it.
 That arm and its mutation went: the fold is of a chain whose tests a
 written `return` is around, as before 2026-10-27.
+
+## Amendment: no refusal of a fold that's a `?:` (2026-10-28)
+
+The fold returned nothing where a test folded into a `?:`, so that
+`o != null ? (o > 3 ? o : n) : n` would stay `if`s. That never decides
+any more. A let chain's value, `if let Some(o) = opt && o > 3 { o } else
+{ n }`, and an `if a && b { x } else { y }` reach this pass already one
+`opt != null && opt > 3 ? opt : n` from the passes before it. Under the
+mutation `last-or-chain-of-conditionals`, which took the refusal out, the
+JS was unchanged everywhere: the corpus with its snapshots, and the
+lowering, snapshot, JSX, port, compiler and tidy-stage suites. Its one
+test, "a typeof test after a null check", passes either way. The refusal
+and its mutation went.
