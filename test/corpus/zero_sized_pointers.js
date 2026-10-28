@@ -40,6 +40,11 @@ function main() {
 
   // An empty Vec allocates nothing: its pointer is its items' dangling
   // address, as every empty Vec of them is.
+  // An empty slice made at an address is at that address, whatever it is.
+  const at = $ptrFrom(16, 1);
+  const empty = $ptrSlice(at, 0);
+  console.log(`${$ptrEq($ptr(empty, 0), at, 1)} ${$ptrEq($ptr(empty, 0), DANGLING, 1)}`);
+
   const none = [];
   const other = [];
   console.log(

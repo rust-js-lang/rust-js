@@ -55,6 +55,11 @@ fn main() {
 
     // An empty Vec allocates nothing: its pointer is its items' dangling
     // address, as every empty Vec of them is.
+    // An empty slice made at an address is at that address, whatever it is.
+    let at: *const u8 = std::ptr::without_provenance(16);
+    let empty = unsafe { from_raw_parts(at, 0) };
+    println!("{} {}", empty.as_ptr() == at, empty.as_ptr() == DANGLING);
+
     let none: Vec<u16> = Vec::new();
     let other: Vec<u16> = Vec::with_capacity(0);
     println!(
