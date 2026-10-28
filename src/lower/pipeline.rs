@@ -387,6 +387,7 @@ pub fn lower_crate<'tcx>(
                 .filter(|&id| super::bindings::is_on_load(tcx, id)),
         )
         .collect();
+    let struct_literals = super::aggregates::struct_literals(tcx);
     let crate_facts = CrateFacts {
         foreign: &foreign,
         library: export_library,
@@ -433,6 +434,7 @@ pub fn lower_crate<'tcx>(
         named_expressions: &named_expressions,
         local_functions: &local_functions,
         local_consts: &local_consts,
+        struct_literals: &struct_literals,
         loads_in_cycles: Default::default(),
     };
     // What a library's manifest says of its writers (ADR 0137).

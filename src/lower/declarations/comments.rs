@@ -12,6 +12,19 @@ use serde_json::Value;
 /// then its doc comment as JSDoc, which a TypeScript caller's editor shows:
 /// a function's, a type's, a field's.
 pub(in crate::lower) fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_id: DefId) -> Value {
+    let jsdoc = jsdoc_of(tcx, def_id);
+    let written = leading_comments(tcx, def_id);
+    let all: Vec<String> = written.into_iter().chain(jsdoc).collect();
+    if !all.is_empty() {
+        declaration["docs"] = all.join("\n").into();
+    }
+    declaration
+}
+
+/// `def_id`'s doc comment as JSDoc, `/** .. */`, as `comments::jsdoc`
+/// writes it: a declaration's, and a field's in its struct's one literal
+/// (ADR 0444, amended). None where it has none.
+pub(in crate::lower) fn jsdoc_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     use rustc_hir::attrs::AttributeKind;
     let docs: Vec<String> = (rustc_hir::attrs::HasAttrs::get_attrs(def_id, &tcx).iter())
         .filter_map(|attr| match attr {
@@ -34,13 +47,7 @@ pub(in crate::lower) fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_
         .flat_map(|doc| doc.split('\n').map(str::to_string).collect::<Vec<_>>())
         .collect();
     let lines: Vec<&str> = docs.iter().map(String::as_str).collect();
-    let jsdoc = crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty());
-    let written = leading_comments(tcx, def_id);
-    let all: Vec<String> = written.into_iter().chain(jsdoc).collect();
-    if !all.is_empty() {
-        declaration["docs"] = all.join("\n").into();
-    }
-    declaration
+    crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty())
 }
 
 /// The `//` and `/* */` comments written right before `def_id`'s item, past

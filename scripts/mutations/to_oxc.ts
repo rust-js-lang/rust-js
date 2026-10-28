@@ -661,4 +661,12 @@ export const mutations: Mutation[] = [
     replace: "                    None => break false,",
     tests: ["test/lowering-comments-items.test.ts", "-t", "doc comment of an item with no JS"],
   },
+  {
+    name: "field-doc-after-blank-line",
+    breaks: "a field's doc comment is printed above the blank line before its field, `/** .. */\\n\\n    isPersistent: yes`, not right before it (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                let blanks = pieces.iter().take_while(|&&(lo, hi)| lo == hi).count();\n                pieces.insert(blanks, (lo, text.len() as u32));\n",
+    replace: "                pieces.insert(0, (lo, text.len() as u32));\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "doc comment is before it"],
+  },
 ];

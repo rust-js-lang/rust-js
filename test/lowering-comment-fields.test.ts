@@ -240,3 +240,66 @@ pub fn pair(x: u32, a: u32, b: u32) -> Pair {
   expect([(lib.suspended(2 as never) as { parent: string }).parent, lib.suspended(1 as never)]).toEqual(["a", undefined]);
   expect(lib.pair(3 as never, 5 as never, 6 as never)).toEqual({ first: 4, second: 5 });
 });
+
+// ADR 0444, amended (React port gap rd64e, the user's decision): React DOM's
+// SyntheticEvent documents its prototype object's fields, `/** Checks if
+// this event should be released back into the pool. .. */ isPersistent:
+// functionThatReturnsTrue`. The port's fields are a struct's, documented
+// where it's declared, which has no JS: a field's `///` is printed before
+// that field in the struct's literal where the crate writes one literal of
+// it, the one object it describes; a struct made in two places keeps them
+// on its declaration alone, as a `//` before a `let` stays `//`.
+test("a field's doc comment is before it in its struct's one literal", async () => {
+  const { js, lib } = await compiled("field-docs-one-literal", `pub struct Prototype {
+    pub prevent_default: fn() -> bool,
+    /// We release all dispatched \`SyntheticEvent\`s after each event loop.
+    pub persist: fn() -> bool,
+    /// Checks if this event should be released back into the pool.
+    ///
+    /// @return {boolean} True if this should not be released, false otherwise.
+    pub is_persistent: fn() -> bool,
+}
+
+pub struct Twice {
+    /// Made in two places.
+    pub count: u32,
+}
+
+fn yes() -> bool {
+    true
+}
+
+pub fn prototype() -> Prototype {
+    // A plain comment.
+    let made = Prototype {
+        prevent_default: yes,
+        persist: yes,
+
+        is_persistent: yes,
+    };
+    made
+}
+
+pub fn one() -> Twice {
+    Twice { count: 1 }
+}
+
+pub fn two() -> Twice {
+    Twice { count: 2 }
+}
+`);
+  expect(js).toContain(`    preventDefault: yes,
+    /** We release all dispatched \`SyntheticEvent\`s after each event loop. */
+    persist: yes,
+
+    /**
+     * Checks if this event should be released back into the pool.
+     *
+     * @return {boolean} True if this should not be released, false otherwise.
+     */
+    isPersistent: yes,
+`);
+  expect(js).toContain("  // A plain comment.\n");
+  expect(js).not.toContain("Made in two places");
+  expect((lib.prototype() as unknown as { isPersistent: () => boolean }).isPersistent()).toBe(true);
+});

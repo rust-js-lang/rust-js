@@ -811,7 +811,17 @@ pub struct ObjectLayout {
     /// kept only where no key after it is, the comment's place then (ADR
     /// 0280, amended again).
     pub led: Vec<String>,
+    /// Each key's JSDoc, its struct's field's doc comment, where the crate
+    /// writes one literal of the struct, the one object it describes (ADR
+    /// 0444, amended): printed before the field. Boxed, as few objects
+    /// have any, so an expression is no larger.
+    pub docs: Option<Box<FieldDocs>>,
 }
+
+/// Each key's JSDoc, of an object a struct's one literal makes
+/// (`ObjectLayout::docs`).
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct FieldDocs(pub Vec<(String, String)>);
 
 /// A piece of a template as its format string is written, `concat!`'s
 /// (`Expr::template_pieces`): its texts and values, as `Expr::template`

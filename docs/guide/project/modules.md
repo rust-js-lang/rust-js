@@ -766,6 +766,46 @@ does (`empty_line_after_doc_comments`); write a plain comment there, `//`
 or `/* */` as rustc says, which the JS keeps as written ([ADR
 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
+A struct's field's doc comment documents the object its literal makes
+where the crate writes one literal of the struct: it's that field's
+JSDoc there, as a JS object documents its fields. A struct made in more
+than one place keeps them on its declaration, its `.d.ts`'s, as std's
+`Range` does of `a..b` ([ADR
+0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+pub struct Prototype {
+    pub prevent_default: fn() -> bool,
+    /// Checks if this event should be released back into the pool.
+    pub is_persistent: fn() -> bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+pub fn prototype() -> Prototype {
+    Prototype {
+        prevent_default: yes,
+        is_persistent: yes,
+    }
+}
+```
+
+```js
+function yes() {
+  return true;
+}
+
+export function prototype() {
+  return {
+    preventDefault: yes,
+    /** Checks if this event should be released back into the pool. */
+    isPersistent: yes,
+  };
+}
+```
+
 A blank line is where your Rust has one between the code of the JS's
 lines, and nowhere else: two functions, or a `static` and the
 `js::on_load!` it's frozen in, written right below each other are right

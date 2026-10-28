@@ -431,6 +431,9 @@ struct CrateFacts<'a, 'tcx> {
     /// by the block they're in and the bodies that read them (ADR 0031,
     /// amended).
     local_consts: &'a analysis::LocalConsts,
+    /// How many literals the crate writes of each struct: one's fields'
+    /// doc comments are its object's (ADR 0444, amended).
+    struct_literals: &'a HashMap<DefId, usize>,
     /// Each body run where its module loads, a thread-local's value, a
     /// static's or constant's initializer lowered as code, a `js::on_load!`,
     /// that reads another of the crate's modules' `const` that may load

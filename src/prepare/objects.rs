@@ -84,6 +84,9 @@ pub(super) fn spread_written_out(props: &mut Vec<Prop>, layout: &mut ObjectLayou
                 layout.lines |= inner_layout.lines;
                 layout.kept.extend(inner_layout.kept);
                 layout.led.extend(inner_layout.led);
+                if let Some(docs) = inner_layout.docs {
+                    layout.docs.get_or_insert_default().0.extend(docs.0);
+                }
                 flat.extend(inner);
             }
             (_, prop) => flat.push(prop),

@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -543,3 +543,56 @@ comment's each line, an empty `///`'s too, which a paragraph break is
 (`declarations/comments.rs`). Held by `test/declarations-comments.test.ts`,
 "a block doc comment is its lines' JSDoc", and the mutations
 `block-doc-starred-again` and `empty-doc-line-dropped`.
+
+## Amendment: a field's doc comment is its struct's one literal's (2026-10-28, React port gap rd64e)
+
+The user's decision. Case ([0262](0262-when-rust-and-js-disagree.md)): N,
+where comments are written.
+
+React DOM's SyntheticEvent documents its prototype object's fields:
+
+```js
+assign(SyntheticBaseEvent.prototype, {
+  ..
+  /**
+   * Checks if this event should be released back into the pool.
+   *
+   * @return {boolean} True if this should not be released, false otherwise.
+   */
+  isPersistent: functionThatReturnsTrue,
+});
+```
+
+The port's object is a struct's literal, `SyntheticEventPrototype { ..
+}`, whose fields are documented where it's declared, `///` on each; the
+struct has no JS, so the docs were printed nowhere but its `.d.ts`.
+
+**A struct's field's doc comment is printed as JSDoc before that field
+in the struct's literal, where the crate writes one literal of it**: the
+one object the struct describes. The literal's own comments come after
+it, and a blank line the literal has before the field before it.
+
+- **One literal only** (`aggregates::struct_literals`, a count of each of
+  the crate's structs' literals): a struct made in several places keeps
+  its docs on its declaration, not a copy at each.
+- **The crate's own structs**: std's `Range`, `a..b`'s literal, documents
+  its fields for Rust's readers.
+- **Carried as a fact of the object** (`ObjectLayout::docs`, each key's
+  JSDoc, made where the literal is lowered), printed by `to_oxc` before the
+  field's value, as a doc comment before an item is; a spread of the
+  object written out keeps them (`prepare::objects`).
+- **A `//` before a `let` stays `//`**, the user's decision too: rustc
+  warns of a `///` there (`unused_doc_comments`), and a comment's kind
+  doesn't change by what follows it. Upstream's `/** .. */` before its
+  `function SyntheticBaseEvent` is `//` lines in the port's JS.
+
+The playground's compiler's snapshot gains its structs' field docs where
+each is made once, `/** WASI's own name for its imports. */`.
+
+Held by `test/lowering-comment-fields.test.ts`'s "a field's doc comment is
+before it in its struct's one literal" (a struct of one literal, one of
+two, a blank line before a field, a `//` before a `let`), and
+`test/lowering-structs-enums.test.ts`'s "across lines where" (a range's
+`start` and `end` undocumented); mutations `field-docs-of-any-literal`,
+`field-docs-of-std`, `field-docs-left-out` (`lower/aggregates.ts`) and
+`field-doc-after-blank-line` (`to_oxc.ts`); the guide's `prototype`.

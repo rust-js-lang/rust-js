@@ -432,6 +432,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
+    let field_docs = field_docs(module);
     let argument_ends = arguments::argument_ends(module);
     let object_ends = closing::object_ends(module);
     let mut closing = Vec::new();
@@ -935,6 +936,16 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             {
                 pieces.push(blank(&text));
             }
+            // A field's doc comment, its struct's, where the crate writes
+            // one literal of it: right before the field, after the blank
+            // line before it and before the literal's own comments (ADR
+            // 0444, amended).
+            if let Some(jsdoc) = field_docs.get(&at) {
+                let lo = text.len() as u32;
+                text.push_str(jsdoc);
+                let blanks = pieces.iter().take_while(|&&(lo, hi)| lo == hi).count();
+                pieces.insert(blanks, (lo, text.len() as u32));
+            }
             if noinline && !said {
                 let lo = text.len() as u32;
                 text.push_str(&format!("/** {NOINLINE} */"));
@@ -1141,6 +1152,41 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
         }
     }
     starts
+}
+
+/// Where each object literal's field's value starts whose struct's field
+/// has a doc comment, the crate's one literal of it, and its JSDoc
+/// (`ObjectLayout::docs`, ADR 0444, amended).
+fn field_docs(module: &Module) -> std::collections::HashMap<u32, String> {
+    let mut docs = std::collections::HashMap::new();
+    let mut of = |mut stmts: Vec<js::Stmt>| {
+        js::each_expr_mut(&mut stmts, &mut |e| {
+            let ExprKind::Object(props, layout) = &e.kind else {
+                return;
+            };
+            for prop in props {
+                if let js::Prop::Field(key, value) | js::Prop::Method(key, value) = prop
+                    && !value.span.is_none()
+                    && let Some((_, jsdoc)) = layout
+                        .docs
+                        .iter()
+                        .flat_map(|docs| docs.0.iter())
+                        .find(|(k, _)| k == key)
+                {
+                    docs.entry(value.span.lo).or_insert_with(|| jsdoc.clone());
+                }
+            }
+        });
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Statements(stmts) => of(stmts.clone()),
+            js::Item::Function(f) => of(f.body.clone()),
+            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
+        }
+    }
+    docs
 }
 
 /// The span of each of `list`'s statements that has one: a temporary

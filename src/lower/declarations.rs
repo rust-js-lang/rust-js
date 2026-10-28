@@ -31,6 +31,7 @@ mod parts;
 mod written;
 
 use comments::documented;
+pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
 
 pub use written::validate_types;

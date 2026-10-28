@@ -50,6 +50,44 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
     }
 }
 
+/// How many literals the crate writes of each struct, `P { .. }`, by its
+/// definition: where it writes one, that literal is the one object the
+/// struct describes, and its fields' doc comments are its fields' (ADR
+/// 0444, amended), as React's prototype object documents `isPersistent`.
+/// Of the crate's own structs: std's `Range`, `a..b`'s, documents its
+/// fields for Rust's readers, not for any object a program writes.
+pub(super) fn struct_literals(tcx: ty::TyCtxt<'_>) -> std::collections::HashMap<DefId, usize> {
+    use rustc_hir::intravisit::{self, Visitor};
+    struct Literals<'a, 'tcx> {
+        typeck: &'tcx ty::TypeckResults<'tcx>,
+        counts: &'a mut std::collections::HashMap<DefId, usize>,
+    }
+    impl<'tcx> Visitor<'tcx> for Literals<'_, 'tcx> {
+        fn visit_expr(&mut self, e: &'tcx rustc_hir::Expr<'tcx>) {
+            if let rustc_hir::ExprKind::Struct(..) = e.kind
+                && let Some(ty) = self.typeck.expr_ty_opt(e)
+                && let ty::Adt(adt, _) = ty.kind()
+                && adt.is_struct()
+                && adt.did().is_local()
+            {
+                *self.counts.entry(adt.did()).or_default() += 1;
+            }
+            intravisit::walk_expr(self, e);
+        }
+    }
+    let mut counts = std::collections::HashMap::new();
+    for owner in tcx.hir_body_owners() {
+        let body = tcx.hir_body_owned_by(owner);
+        let typeck = tcx.typeck(owner);
+        Literals {
+            typeck,
+            counts: &mut counts,
+        }
+        .visit_body(body);
+    }
+    counts
+}
+
 /// A `const`'s or a `static`'s object, of the value rustc computed, as its
 /// struct literal is written, as one written in place is (ADR 0835); its
 /// objects within, as rustc's value has no literal of theirs, on one line
@@ -205,15 +243,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         variant_index: VariantIdx,
         span: Span,
     ) -> js::ObjectLayout {
-        let written = adt.variant(variant_index).ctor_kind().is_none()
-            && (self.frame.thir.exprs.iter()).any(|e| {
-                matches!(&e.kind, thir::ExprKind::Adt(made)
-                    if e.span == span && made.adt_def == *adt && made.variant_index == variant_index)
-            });
-        match written {
+        match self.written_literal(adt, variant_index, span) {
             true => literal_layout(self.tcx, span),
             false => js::ObjectLayout::default(),
         }
+    }
+
+    /// Whether the struct or variant made at `span` is a literal written
+    /// there, as THIR has it, not a tuple struct's or variant's call.
+    fn written_literal(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> bool {
+        adt.variant(variant_index).ctor_kind().is_none()
+            && (self.frame.thir.exprs.iter()).any(|e| {
+                matches!(&e.kind, thir::ExprKind::Adt(made)
+                    if e.span == span && made.adt_def == *adt && made.variant_index == variant_index)
+            })
     }
 
     /// A struct's or a variant's value, of its fields' values in the order
@@ -348,7 +391,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
         // written on, the comment's place (ADR 0280, amended).
-        let (mut kept, mut led) = (Vec::new(), Vec::new());
+        let (mut kept, mut led, mut docs) = (Vec::new(), Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
@@ -360,6 +403,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 kept = keys(on);
                 led = keys(before);
+                // Its fields' doc comments, where it's the struct's one
+                // literal (ADR 0444, amended).
+                if adt_def.is_struct() && self.krate.struct_literals.get(&adt_def.did()) == Some(&1) {
+                    docs = (names.iter().zip(&variant.fields))
+                        .filter_map(|((name, _), field)| {
+                            Some((name.clone(), super::declarations::jsdoc_of(self.tcx, field.did)?))
+                        })
+                        .collect();
+                }
                 // A field that holds a cell, set later, keeps its key where
                 // it's made `None`, but one declared optional, absent until
                 // it's set (ADR 0280, amended).
@@ -394,9 +446,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
+            let written = self.written_literal(&adt_def, variant_index, span);
             *layout = js::ObjectLayout {
                 kept,
                 led,
+                docs: (written && !docs.is_empty()).then(|| Box::new(js::FieldDocs(docs))),
                 ..self.object_layout(&adt_def, variant_index, span)
             };
         }

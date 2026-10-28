@@ -55,8 +55,14 @@ export async function load(stat) {
   const loaded = {
     module: await module,
     sysroot: await sysroot,
+    /** Each crate a program may use, by its library's name, its metadata. */
     crates: crateFiles,
+    /**
+     * What the programs it compiles import of the page's, by specifier:
+     * `@rust-js/runtime` (ADR 0103), and React's modules.
+     */
     modules,
+    /** The stylesheets a program may import, TodoMVC's, by specifier. */
     styles,
     examples: await examples,
   };
@@ -244,6 +250,7 @@ export async function compile(loaded, sources, rootFile, test) {
 
   const t0 = performance.now();
   const imports = {
+    /** WASI's own name for its imports. */
     wasi_snapshot_preview1: wasi.wasiImport,
   };
   const instance = await WebAssembly.instantiate(loaded.module, imports);
@@ -297,9 +304,13 @@ export async function compile(loaded, sources, rootFile, test) {
   return {
     exit,
     ok,
+    /** The JS files, `path → text`. */
     files,
+    /** The root module's, `lib.js` or `lib.jsx`. */
     root,
+    /** Whether it exports `main`, what running the program calls. */
     main,
+    /** The `#[test]` functions' runner, of a compile with `test`. */
     tests,
     stderr: stderr.join("\n"),
     instantiate: t1 - t0,
