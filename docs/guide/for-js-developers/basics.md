@@ -2232,6 +2232,11 @@ export function sum(first, skip) {
 }
 ```
 
+A way that advances inside an `if` of the turn and goes on, its other
+path falling to the loop's last advance, is `update = update.next;
+continue;` in the `do`, whose `continue` goes on to its test, as React's
+updateReducerImpl skips an update (ADR 0978, amended).
+
 ## `null` and `undefined`: `Option`
 
 Rust has no `null`. A value that may be missing is an `Option<T>`: `Some(v)`

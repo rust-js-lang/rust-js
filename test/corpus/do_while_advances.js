@@ -46,16 +46,13 @@ function lastLane(first) {
 function below(first, limit) {
   let count = 0;
   let update = first;
-  while (true) {
+  do {
     if (update.lane >= limit) {
       break;
     }
     count = (count + 1) >>> 0;
-    if (update.next == null || update.next === first) {
-      break;
-    }
     update = update.next;
-  }
+  } while (update != null && update !== first);
   return count;
 }
 
@@ -163,6 +160,84 @@ function capped(first, skip, cap) {
   return total;
 }
 
+function skipping(first, skip, flag) {
+  let total = 0;
+  let update = first;
+  do {
+    let shouldSkip = update.lane === skip;
+    if (flag && update.lane === 3) {
+      if (update.lane > 1) {
+        // Clean up.
+        update = update.next;
+        continue;
+      }
+      shouldSkip = true;
+    }
+    if (shouldSkip) {
+      total = (total + 100) >>> 0;
+    } else if (update.lane === 4) {
+      if (flag) {
+        total = (total + 1000) >>> 0;
+      }
+      update = update.next;
+      continue;
+    } else {
+      total = (total + update.lane) >>> 0;
+    }
+    update = update.next;
+  } while (update != null && update !== first);
+  return total;
+}
+
+function skippingOnce(first, skip) {
+  let total = 0;
+  let seen = false;
+  let update = first;
+  while (true) {
+    if (update.lane === skip && !seen) {
+      seen = true;
+      continue;
+    }
+    if (update.lane === 2) {
+      if (update.next != null && update.next !== first) {
+        update = update.next;
+        continue;
+      }
+    } else {
+      total = (total + update.lane) >>> 0;
+      const next = update.next;
+      if (next != null && next !== first) {
+        update = next;
+        continue;
+      }
+    }
+    break;
+  }
+  return total;
+}
+
+function skippingLow(first) {
+  let total = 0;
+  let update = first;
+  while (true) {
+    if (update.lane === 2) {
+      if (update.next != null && update.next.lane > 1) {
+        update = update.next;
+        continue;
+      }
+    } else {
+      total = (total + update.lane) >>> 0;
+      const next = update.next;
+      if (next != null && next !== first) {
+        update = next;
+        continue;
+      }
+    }
+    break;
+  }
+  return total;
+}
+
 function main() {
   const first = ring([1, 2, 3, 4]);
   console.log(`${sum(first, 2)} ${sum(first, 9)}`);
@@ -174,5 +249,9 @@ function main() {
   );
   const lone = ring([7]);
   console.log(`${sum(lone, 0)} ${rising(lone)}`);
+  console.log(
+    `${skipping(first, 2, true)} ${skipping(first, 9, false)} ${skipping(lone, 7, true)}`,
+  );
+  console.log(`${skippingOnce(first, 3)} ${skippingLow(first)}`);
 }
 //# sourceMappingURL=case.js.map

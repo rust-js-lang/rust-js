@@ -1491,7 +1491,7 @@ pub fn appended(first: &std::rc::Rc<Update>, captured: &std::rc::Rc<Update>) -> 
 }
 `);
   expect(js).toContain("  let total = 0;\n  // Pick by option, none first.\n  if (x == null) {\n");
-  expect(js).toContain("      break;\n    }\n    update = next;\n  }\n\n  // Append the captured update.\n  if (newLast == null) {\n");
+  expect(js).toContain("    update = update.next;\n  } while (update != null);\n\n  // Append the captured update.\n  if (newLast == null) {\n");
   const log: number[] = [];
   expect([lib.pick(undefined as never, log as never), lib.pick(4 as never, log as never), log]).toEqual([2, 4, [1, 4]]);
   const [captured, second] = [{ lane: 9, next: null }, { lane: 2, next: null }];

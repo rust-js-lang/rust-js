@@ -2,7 +2,10 @@
 // is one and it isn't the first, else `break`, is a `do { .. } while`, as
 // React's updateReducerImpl walks its circular queue (ADR 0978). Not where
 // the variable is read after it, a way ends otherwise, or the test reads
-// the variable apart from what it's given.
+// the variable apart from what it's given. A way may advance inside an
+// `if` and go on, its other path falling to the loop's last advance, as
+// updateReducerImpl skips an update: `update = update.next; continue;`
+// (ADR 0978, amended); not beside another `continue`, nor of another test.
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -183,6 +186,98 @@ fn capped(first: &Rc<Update>, skip: u32, cap: u32) -> u32 {
     total
 }
 
+fn skipping(first: &Rc<Update>, skip: u32, flag: bool) -> u32 {
+    let mut total = 0;
+    let mut update = Rc::clone(first);
+    loop {
+        let mut should_skip = update.lane == skip;
+        if flag && update.lane == 3 {
+            if update.lane > 1 {
+                // Clean up.
+                let next = update.next.borrow().clone();
+                match next {
+                    Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+                    _ => break,
+                }
+                continue;
+            } else {
+                should_skip = true;
+            }
+        }
+        if should_skip {
+            total += 100;
+        } else {
+            if update.lane == 4 {
+                if flag {
+                    total += 1000;
+                }
+                let next = update.next.borrow().clone();
+                match next {
+                    Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+                    _ => break,
+                }
+                continue;
+            }
+            total += update.lane;
+        }
+        let next = update.next.borrow().clone();
+        match next {
+            Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+            _ => break,
+        }
+    }
+    total
+}
+
+fn skipping_once(first: &Rc<Update>, skip: u32) -> u32 {
+    let mut total = 0;
+    let mut seen = false;
+    let mut update = Rc::clone(first);
+    loop {
+        if update.lane == skip && !seen {
+            seen = true;
+            continue;
+        }
+        if update.lane == 2 {
+            let next = update.next.borrow().clone();
+            match next {
+                Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+                _ => break,
+            }
+            continue;
+        }
+        total += update.lane;
+        let next = update.next.borrow().clone();
+        match next {
+            Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+            _ => break,
+        }
+    }
+    total
+}
+
+fn skipping_low(first: &Rc<Update>) -> u32 {
+    let mut total = 0;
+    let mut update = Rc::clone(first);
+    loop {
+        if update.lane == 2 {
+            let next = update.next.borrow().clone();
+            match next {
+                Some(next) if next.lane > 1 => update = next,
+                _ => break,
+            }
+            continue;
+        }
+        total += update.lane;
+        let next = update.next.borrow().clone();
+        match next {
+            Some(next) if !Rc::ptr_eq(&next, first) => update = next,
+            _ => break,
+        }
+    }
+    total
+}
+
 fn main() {
     let first = ring(&[1, 2, 3, 4]);
     println!("{} {}", sum(&first, 2), sum(&first, 9));
@@ -192,4 +287,6 @@ fn main() {
     println!("{} {} {} {}", sum_then_last(&first, 2), tested_apart(&first, 1), rising_sum(&first, 1), capped(&first, 2, 4));
     let lone = ring(&[7]);
     println!("{} {}", sum(&lone, 0), rising(&lone));
+    println!("{} {} {}", skipping(&first, 2, true), skipping(&first, 9, false), skipping(&lone, 7, true));
+    println!("{} {}", skipping_once(&first, 3), skipping_low(&first));
 }

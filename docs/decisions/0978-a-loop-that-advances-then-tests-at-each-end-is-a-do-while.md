@@ -1,6 +1,7 @@
 # 0978. A `loop` that advances, then tests, at each way's end is a `do … while`
 
-Status: Accepted.
+Status: Accepted. Amended below: an advance inside a way, and one past
+the loop's last test, are advances too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference, under the conditions below: each turn runs what's before its
@@ -69,3 +70,36 @@ preparation's, read by nothing that reasons about a loop's test.
 - Held by `test/corpus/do_while_advances.rs`, run against native Rust,
   with mutations in `scripts/mutations/prepare/do_whiles.ts`; the guide
   shows the walk (Loops).
+
+## Amendment: an advance inside a way, and one past the loop's last test (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+React's updateReducerImpl skips an update inside an `if`, `if (..) {
+update = update.next; continue; }`, and its other path falls to the
+loop's last advance (h09b of the port's gaps). Its port writes each
+advance as ADR 0978 asks, `match next { Some(n) if !Rc::ptr_eq(&n, first)
+=> update = n, _ => break }`, and the loop printed `while (true) { .. if
+(T) { update = next; continue; } break; .. const next = update.next; if
+(next == null || next === first) { break; } update = next; }`: no way's
+end but the last was an advance, and the last was a test of leaving
+before it.
+
+**A loop's body that ends `if (!T(next)) { break; } x = next;` ends in
+the advance `if (T(next)) { x = next; continue; } break;`** (`ended_by_advance`),
+its test negated; **and an advance before a way's end, `if (T(e)) { x =
+e; continue; } break;`, in the branches of `if`s the body is made of, not
+a loop's or a `switch`'s of their own, is `x = e; continue;`** (`turned`),
+its `continue` going on to the `do`'s test, which is the advance's: each
+is one of the loop's advances, whose `T` must be the others', as any is,
+and no other `continue` may be in the loop. So updateReducerImpl's walk is
+upstream's: `do { .. if (..) { // Clean up. update = update.next;
+continue; } .. update = update.next; } while (update != null && update
+!== first);`. `do_while_advances`' `below`, which tested its leaving
+before its last advance, is a `do` too.
+
+Held by `test/corpus/do_while_advances.rs`' `skipping`, against native
+Rust, with `skipping_once` (another `continue`) and `skipping_low`
+(another test) staying `while (true)`; mutations
+`do-while-end-unturned`, `do-while-inner-advance-unturned` and
+`do-while-inner-advance-continued` (`prepare/do_whiles.ts`).

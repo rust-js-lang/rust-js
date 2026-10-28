@@ -45,14 +45,20 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
     if !matches!(cond.kind, ExprKind::Bool(true)) {
         return None;
     }
-    let (last, turn) = body.split_last()?;
     let ours = |l: &Option<String>| l.is_none() || l == label;
+    let mut body = body.clone();
+    ended_by_advance(&mut body, label.as_deref());
+    let (last, turn) = body.split_last()?;
     if !matches!(&last.kind, StmtKind::Break(l) if ours(l)) {
         return None;
     }
     let mut turn = turn.to_vec();
     let mut advances = Vec::new();
     advanced(&mut turn, label.as_deref(), &mut advances)?;
+    // An advance before a way's end, `if (T(e)) { x = e; continue; }
+    // break;`: `x = e; continue;`, whose `continue` goes on to the `do`'s
+    // test, the advance's (ADR 0978, amended).
+    turned(&mut turn, label.as_deref(), &mut advances)?;
     let (first, others) = advances.split_first()?;
     let variable = &first.variable;
     let same = |a: &Expr, b: &Expr| {
@@ -74,11 +80,76 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
     {
         return None;
     }
+    js::statement_lists(&mut turn, &mut |list| {
+        for stmt in list.iter_mut() {
+            if matches!(&stmt.kind, StmtKind::Directive(d) if d == ADVANCED) {
+                stmt.kind = StmtKind::Continue(None);
+            }
+        }
+    });
     Some(StmtKind::DoWhile {
         label: label.clone(),
         body: turn,
         cond: first.test.clone(),
     })
+}
+
+/// Where an advance before a way's end goes on to the `do`'s test, while
+/// the others' `continue`s are checked: its `continue`, once they are.
+const ADVANCED: &str = "an advance's continue";
+
+/// A loop's body that ends advancing past a test of what it leaves on,
+/// `if (next == null || next === first) { break; } x = next;`: `if (next
+/// != null && next !== first) { x = next; continue; } break;`, as each way
+/// that advances inside it is written (ADR 0978, amended).
+fn ended_by_advance(body: &mut Vec<Stmt>, label: Option<&str>) {
+    let [.., left, given] = &body[..] else {
+        return;
+    };
+    let StmtKind::If(test, then, None) = &left.kind else {
+        return;
+    };
+    let ours = |l: &Option<String>| l.is_none() || l.as_deref() == label;
+    if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
+        || !matches!(&given.kind, StmtKind::Assign(target, _) if matches!(target.kind, ExprKind::Var(_)))
+    {
+        return;
+    }
+    let (test, span) = (test.clone().negated_test(), left.span);
+    let given = body.pop().expect("its advance");
+    let last = body.len() - 1;
+    let advance = vec![given, StmtKind::Continue(None).at(js::Span::NONE)];
+    body[last] = StmtKind::If(test, advance, None).at(span);
+    body.push(StmtKind::Break(None).at(js::Span::NONE));
+}
+
+/// Each advance of `stmts` before a way's end, `if (T(e)) { x = e;
+/// continue; } break;`, in their branches, not a loop's or a `switch`'s of
+/// their own, whose `break` is theirs: `x = e;` and the `continue` it goes
+/// on to the test by, `ADVANCED` until the others are checked.
+fn turned(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advance>) -> Option<()> {
+    let ours = |l: &Option<String>| l.is_none() || l.as_deref() == label;
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind {
+            turned(then, label, advances)?;
+            if let Some(otherwise) = otherwise {
+                turned(otherwise, label, advances)?;
+            }
+        }
+        let advancing = matches!(&stmts[i].kind, StmtKind::If(_, then, None)
+            if matches!(&then[..], [Stmt { kind: StmtKind::Assign(..), .. }, Stmt { kind: StmtKind::Continue(l), .. }] if ours(l)));
+        if advancing && matches!(stmts.get(i + 1).map(|s| &s.kind), Some(StmtKind::Break(l)) if ours(l)) {
+            let mut way = stmts[..=i].to_vec();
+            advanced(&mut way, label, advances)?;
+            let at = way.len();
+            way.push(StmtKind::Directive(ADVANCED.to_string()).at(js::Span::NONE));
+            stmts.splice(..i + 2, way);
+            i = at;
+        }
+        i += 1;
+    }
+    Some(())
 }
 
 /// Of `stmts`, a way through the loop, each advance it ends in, written as
