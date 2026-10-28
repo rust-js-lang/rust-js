@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))",
     replace: "StmtKind::If(_, then, None) if false && then.last().is_some_and(unwritten)))",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if"],
   },
   {
     name: "mir-tidy-tail-return-branch-kept",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))\n",
     replace: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if"],
   },
   {
     name: "mir-tidy-tail-return-else-lost",
@@ -117,22 +117,6 @@ export const mutations: Mutation[] = [
     replace: "    if in_else && written_else(&rest[0], elses) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
     snapshots: true,
-  },
-  {
-    name: "tail-returns-branch-else-after",
-    breaks: "an arm whose branches each return, made the `if`'s, runs what the other arm does after it, as its `else` isn't made",
-    file: "src/lower/mir/tidy/jumps.rs",
-    find: "        if !rest.is_empty() {\n            *otherwise = Some(rest);\n        }\n",
-    replace: "        stmts.extend(rest);\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "last match of arms"],
-  },
-  {
-    name: "tail-returns-of-branches-only-at-the-top",
-    breaks: "a function's last `match`'s arm whose branches each return keeps MIR's `return;`s, `if (c) { ..; return; } else ..`",
-    file: "src/lower/mir/tidy/jumps.rs",
-    find: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),\n",
-    replace: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "last match of arms"],
   },
   {
     name: "branch-undefined-return-kept",

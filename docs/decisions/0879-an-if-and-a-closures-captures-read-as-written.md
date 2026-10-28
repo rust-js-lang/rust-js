@@ -668,3 +668,26 @@ of no value ends, falling off it and `return;` both give `undefined`.
 Held by `test/lowering-early-exits.test.ts`' "a let-else's return in a
 block that ends the function leaves no return at its end" (the JS run)
 and mutation `copied-let-else-return-kept`.
+
+## Amendment: a branch's own ending `return`s are tidied where its `if` is, not first (2026-10-29)
+
+Main's check at 67225f2de found `tail-returns-branch-else-after` and
+`tail-returns-of-branches-only-at-the-top` surviving. `ending_returns`
+had an `if` whose `then` ended each way, through its branches, in a
+`return;` MIR made, turned into `if (c) { .. } else { rest }`. That
+was the user's decision of 2026-10-27, React's commitLayoutEffectOnFiber.
+Since then, two later passes of `ending_returns` write that shape
+already: the branches of the `if` that ends the function are tidied, and
+an `if` whose `then` ends in such a `return;` becomes an `if … else`.
+The first pass was never taken, which the sweep below shows. With it gone, the whole corpus
+and its snapshots, and the lowering written-branches, matches, branches,
+early-exits, switch-ends, returned-chains, loops, switches,
+strict-switches, collections, iterators and options suites, tidy-stages,
+snapshots, JSX, ports, pilot and compiler suites, write the same JS. "a
+function's last match of arms that give () is its arms, no returns"
+still holds the decision. The pass goes, and its two mutations with it.
+
+`mir-tidy-tail-guard-kept` and `mir-tidy-tail-return-branch-kept`
+survived too. Their test, "strings from MIR is the", no longer reaches
+the `if` they change, though three tests of `lowering-matches.test.ts`
+do. They now name those three, and each is caught.
