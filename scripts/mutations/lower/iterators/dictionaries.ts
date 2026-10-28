@@ -165,14 +165,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
-    name: "back-dictionary-adapter-rfold-unlisted",
-    breaks: "an adapter's `DoubleEndedIterator` dictionary gives no `rfold`, so a compiled `fuse()` of a `map` of the crate's iterator folds it by `next_back` (#224)",
-    file: "src/lower/iterators/dictionaries.rs",
-    find: "                false => self.recognition().rfolds_its_own(ty).then(|| Expr::helper(\"$foldBack\")),\n",
-    replace: "                false => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-  },
-  {
     name: "given-back-entry-alone",
     breaks: "a type parameter's iterator is given its `DoubleEndedIterator` dictionary's `next_back` alone, not the dictionary (#224)",
     file: "src/lower/iterators/dictionaries.rs",

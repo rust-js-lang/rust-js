@@ -131,9 +131,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         } else if double_ended {
+            // The crate's own `rfold`; of another, none: one a filter of the
+            // crate's iterator holds is folded by its own `rfold` without it
+            // (#224, #382).
             let rfold = match self.is_user_iterator(ty) {
                 true => self.own_methods(ty, false, span)?.rfold,
-                false => self.recognition().rfolds_its_own(ty).then(|| Expr::helper("$foldBack")),
+                false => None,
             };
             // A range's of numbers, of its bounds, std's own (#163), so what
             // steps it from its back by `nth_back`, a held `Rev`'s `nth`
