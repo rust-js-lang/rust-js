@@ -262,7 +262,8 @@ for (const [name, source, diagnostic] of [
   // `rposition` of a map over a slice, which knows its back and its
   // length, steps it from its back, its closure run there (#184).
   ["rposition of a lazy chain", `pub fn f(v: &[i32]) -> Option<usize> { v.iter().map(|x| { println!("{}", x); *x }).rposition(|x| x > 1) }`, null],
-  ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, "as a `DoubleEndedIterator`, which rust-js can't step from its back"],
+  // Its enumerate made knowing its back and length steps it from there (ADR 0528, amended).
+  ["rev of an index after a closure with effects", `pub fn f(v: &[i32]) -> Vec<(usize, i32)> { v.iter().map(|x| { println!("{}", x); *x }).enumerate().rev().collect() }`, null],
   // A closure's drop drops the variables it took, where it's made (ADR 0098):
   // not part of one, nor where JS can't see them, nor given away by value
   // where a call may consume it without its body dropping them.

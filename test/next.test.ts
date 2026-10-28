@@ -893,7 +893,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // next/web-vitals, next/offline, next/form and next/error.
   // next/navigation's router's experimental gesture push, where it has one.
   // A function is never falsy: tested by its truth (ADR 0298).
-  expect(linkedJsx).toContain('const push = router.experimental_gesturePush;\n          if (push) {\n            push("/about", undefined);');
+  expect(linkedJsx).toContain('const push = router.experimental_gesturePush;\n          if (push != null) {\n            push("/about", undefined);');
   expect(linkedJsx).toContain("useReportWebVitals((metric) => {");
   expect(linkedJsx).toContain('<Form action="/search" className="search">\n      <input name="query" disabled={offline} />\n    </Form>');
   // Next.js's error page, `Error` as its docs import it, where the module reads no global `Error` (ADR 0352).
@@ -915,7 +915,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   const postJsx = readFileSync(join(dir, "app/post.jsx"), "utf8");
   expect(postJsx).toContain("await prefetch();\n  await navigation();");
   expect(postJsx).toContain('export const unstable_paramMatching = { slug: "blocking" };');
-  expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event) {');
+  expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event != null) {');
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
   expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');

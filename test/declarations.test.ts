@@ -758,7 +758,7 @@ pub fn hooks(reducer: Reducer<i32, i32>, effect: EffectCallback) -> u32 {
     let _ = (reducer, effect);
     2
 }
-pub fn lists(elements: &NodeList<HTMLElement>, nodes: &NodeList) -> u32 {
+pub fn lists(elements: &NodeList<HTMLElement>, nodes: &NodeList) -> f64 {
     elements.length() + nodes.length()
 }
 `);

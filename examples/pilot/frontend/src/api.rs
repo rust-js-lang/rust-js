@@ -34,7 +34,7 @@ async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failu
         Err(_) if signal.is_some_and(AbortSignal::aborted) => return Err(Failure::Aborted),
         Err(_) => return Err(Failure::Network),
     };
-    let status = response.status();
+    let status = response.status() as u16;
     let text = response.text().await;
     if status == ok {
         return Ok(text);

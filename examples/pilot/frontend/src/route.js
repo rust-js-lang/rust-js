@@ -18,10 +18,7 @@ export function parse(hash) {
         return result.TAG === "Ok" ? result._0 : undefined;
       }
       const id = option != null ? then(option) : undefined;
-      if (id != null) {
-        return { TAG: "Contact", _0: id };
-      }
-      return "NotFound";
+      return id != null ? { TAG: "Contact", _0: id } : "NotFound";
     }
   }
 }
