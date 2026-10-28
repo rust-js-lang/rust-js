@@ -1259,13 +1259,16 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
         true => test,
         false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
     };
-    // A chain's negation, `a || b` of `!a && !b`, each part a `bool` still,
-    // `!!a` of a value's `!a`.
-    let negate = |test: Expr| match test.kind {
-        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
-        _ => test.negated_test(),
+    // The test's negation, as a `bool`: a chain's, `a || b` of `!a && !b`,
+    // each part a `bool` still; `!!a` of a value's `!a`, whose negation
+    // alone is the value.
+    let negate = |test: Expr| {
+        truth(match test.kind {
+            ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
+            _ => test.negated_test(),
+        })
     };
-    // `!x ? y : x`, and `x ? x : y`, `!!x`'s too, of an `x` that does nothing:
+    // `!x ? y : x`, and `x ? x : y`, of an `x` that does nothing:
     // `x || y`, which reads it once (ADR 0744); `x != null ? x : y`, and `x ==
     // null ? y : x`, an `Option`'s value or another's, `x ?? y` (ADR 0298).
     let coalesced =
@@ -1274,7 +1277,7 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
         ExprKind::Unary(UnaryOp::Not, x) if !x.has_effects() && js::same_path(x, &no) => {
             return Expr::bin(Op::Or, no, yes);
         }
-        _ if !test.has_effects() && js::same_path(&test.tested(), &yes) => return Expr::bin(Op::Or, yes, no),
+        _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),
         _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),
         _ if coalesced(false, &no) => return Expr::bin(Op::Coalesce, no, yes),
         _ => {}
@@ -1283,13 +1286,13 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
     let bool_of = |branch: &Expr| written_if && is_boolean(&test, booleans) && is_boolean(branch, booleans);
     match (&yes.kind, &no.kind) {
         (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
-        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),
+        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),
         (ExprKind::Bool(true), _) if bool_of(&no) => Expr::bin(Op::Or, test, no),
         (_, ExprKind::Bool(false)) if bool_of(&yes) => Expr::bin(Op::And, test, yes),
         _ if written_if => Expr::cond(test, yes, no),
         (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
-        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),
-        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),
+        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),
+        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),
         (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),
         _ => Expr::cond(test, yes, no),
     }

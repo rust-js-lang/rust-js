@@ -447,3 +447,18 @@ stays. Case A: the same answer, one read fewer of a plain property.
 function needs no test that it's there"; mutations
 `typeof-then-present-kept`, `typeof-object-implies-present`.
 
+
+## Amendment: `x ? x : y` asks its test as it is
+
+Since 4b30cd7cd an `Option` is tested `!= null` whatever it holds, so no
+conditional is given `!!state ? state : blank` any more: `conditional`'s
+`x ? x : y` asked `test.tested()`, `!!x` read as `x`, and the mutation
+`truth-or-coalesced`, which asks the test as it is, changed no JS the
+corpus, the snapshots, the lowering, JSX and port suites make. It asks
+the test as it is now, and the mutation is gone with the code. `x ? x :
+y` of a truth test of `x` alone is still `x || y` (ADR 0744). Likewise
+the negation of `conditional`'s test is a `bool` in one place, `negate`
+itself, `!!o` of a value's `!o`, so the three branches that negate it no
+longer each take its truth: `negated-and-untruthed` holds it for all three
+(`negated-value-untruthed` and `negated-or-untruthed`, of the branch no
+test reached, `o ? f() : true`, gone with them).
