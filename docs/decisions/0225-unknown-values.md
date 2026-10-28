@@ -18,7 +18,9 @@ an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`. Amended by
 [0677](0677-a-weak-key-is-what-kind-holds.md): `Kind::Object` holds a
 `&JsObject`, which derefs to the `Unknown` it is. Amended below: `()` is a
 structured clone's `undefined`, which a binding is given as one, and
-`Kind::Array`'s slice is the array itself, `js::unknown(items)` its value.
+`Kind::Array`'s slice is the array itself, `js::unknown(items)` its value;
+and each of the js crate's objects, a `Set`, a `Map`, a `Promise`, is
+`Defined`, so a value of any shape.
 Extended by [0884](0884-a-maps-value-is-any-value.md): a `Dict<Option<_>>`'s
 `get`, `Some(None)` of a `null` apart from `None` of a missing key, is a
 keyed read's rule, a `js::Map`'s `get` of an `Option` told by `has`,
@@ -255,3 +257,29 @@ of `json::stringify_with(js::unknown(items), None, 0)`. So no second
 binding, `Some(v)`, is needed to hold it; a second payload, the slice and
 an `Unknown` of it, would be two ways to read one value. `test/webapi-bindings.test.ts`
 holds it too.
+
+## Amendment: each of the js crate's objects is `Defined` (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a value given as it
+is.
+
+React's throwException stores a `Set` in a field of any value,
+`suspenseBoundary.updateQueue = new Set([wakeable]);` (st1 of the port's
+gaps). Its port couldn't write `js::unknown(js::set::new(Some(&[wakeable])))`:
+`js::unknown` takes a value of any shape, `AnyShape`, which a `Defined`
+value is, and a `js::Set` wasn't one, so it wrote
+`js::new(js::unknown(js::class::<js::Set<Unknown>>()), (&[wakeable],))`,
+the class read as a value and constructed, which reads as upstream only
+by accident of what it prints.
+
+**Each of the js crate's objects is `js::Defined`**, never `undefined` nor
+`null`, as a `Date`, a `Symbol`, a `Dict` and a `JsObject` already were: a
+`RegExp`, an `Error`, an `AggregateError`, a `Promise`, an `Iterator`, a
+`Map`, a `Set`, a `WeakMap`, a `WeakSet`, a `WeakRef` and a
+`FinalizationRegistry` (`builtins/src/lib.rs`). So each is a value of any
+shape, `js::unknown(set)` the set itself, and an `Option` of one the value
+or `undefined`, as any `Defined` value's is (ADR 0051). Not a `JsError`,
+whatever a `throw` threw, `undefined` too.
+
+Held by `test/lowering-any-shape.test.ts`, run, whose program doesn't
+compile without them, E0277 of `js::Set<js::Unknown>: js::AnyShape<_>`.

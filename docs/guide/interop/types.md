@@ -1898,6 +1898,34 @@ export function depsText(deps) {
   return `[${deps.join(", ")}]`;
 }
 ```
+- **Each of the js crate's objects is a value of any shape**, a `Set`, a
+  `Map`, a `Promise`, an `Error`, a `RegExp`, the weak ones, as a `Date`
+  is: `js::unknown(js::set::new(Some(&[wakeable])))` is `new
+  Set([wakeable])`, as React's throwException stores one in an `any`
+  field. Not a `JsError`, whatever was thrown, which may be `undefined`
+  ([ADR 0225](../../decisions/0225-unknown-values.md), amended):
+
+```rust
+use std::cell::Cell;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub update_queue: Cell<Option<&'static Unknown>>,
+}
+
+pub fn attach(fiber: &Fiber, wakeable: &'static Unknown) {
+    fiber
+        .update_queue
+        .set(Some(js::unknown(js::set::new(Some(&[wakeable])))));
+}
+```
+
+```js
+export function attach(fiber, wakeable) {
+  fiber.updateQueue = new Set([wakeable]);
+}
+```
 - **A function is a value of any shape too**, a function item, a closure,
   a `fn` pointer or a `dyn Fn`: `js::unknown(&f)` is `f`, whose
   property `js::set` writes, here when its module loads, right after it

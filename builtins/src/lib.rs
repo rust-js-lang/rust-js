@@ -2289,3 +2289,19 @@ unsafe impl<B> WeakKey for BigInt64Array<B> {}
 unsafe impl<B> WeakKey for BigUint64Array<B> {}
 unsafe impl<T> WeakKey for Dict<T> {}
 unsafe impl<T> WeakKey for Promise<T> {}
+
+// The crate's objects, never `undefined` nor `null`: each a value of any
+// shape, `js::unknown(js::set::new(Some(&[wakeable])))`, `new
+// Set([wakeable])` where React stores one in an `any` field. Not a
+// `JsError`, which is whatever was thrown, `undefined` too.
+unsafe impl Defined for RegExp {}
+unsafe impl Defined for Error {}
+unsafe impl Defined for AggregateError {}
+unsafe impl<T> Defined for Promise<T> {}
+unsafe impl<T> Defined for Iterator<T> {}
+unsafe impl<K: ?Sized, V> Defined for Map<K, V> {}
+unsafe impl<T: ?Sized> Defined for Set<T> {}
+unsafe impl<K: WeakKey + ?Sized, V> Defined for WeakMap<K, V> {}
+unsafe impl<T: WeakKey + ?Sized> Defined for WeakSet<T> {}
+unsafe impl<T: WeakKey + ?Sized + 'static> Defined for WeakRef<T> {}
+unsafe impl<T> Defined for FinalizationRegistry<T> {}
