@@ -23,9 +23,9 @@ pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(super) use imports::{Export, js_import, module_binding, namespace_name};
 pub(super) use nullable::{
-    is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init,
-    nullable_items, nullable_local, nullable_option, nullable_params, nullable_result, of_type_parameter,
-    optional_result,
+    is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_bindings, nullable_const_refused,
+    nullable_init, nullable_items, nullable_local, nullable_option, nullable_params, nullable_result,
+    of_type_parameter, optional_result,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 pub(in crate::lower) use whole::whole_range;
@@ -35,6 +35,14 @@ use whole::whole_refused;
 /// must not silently become an ordinary Rust function with an unreachable body.
 pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
     let mut valid = given_names_differ(tcx);
+    // A closure's parameter's `#[rust_js::nullable(..)]` names its own
+    // `Option`s; a function's is on the function (ADR 0861, amended).
+    for owner in tcx.hir_body_owners() {
+        for (span, message) in nullable::nullable_parameters_refused(tcx, owner) {
+            tcx.dcx().span_err(span, message);
+            valid = false;
+        }
+    }
     for def in tcx.hir_crate_items(()).definitions() {
         // A derive of a discriminated union with an `otherwise` would take
         // the object it holds for a variant of its own (ADR 0284).

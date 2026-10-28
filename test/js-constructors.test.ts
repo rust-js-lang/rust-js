@@ -277,3 +277,117 @@ pub fn made() -> &'static Unknown {
   );
   expect(arrow).toContain("a closure is an arrow function, which `new` throws of");
 });
+
+// ADR 0861, amended (React port gap rd64d): a `function::with_this`
+// closure's tuple of parameters takes `#[rust_js::nullable(..)]`, naming the
+// bindings that are `T | null`, as a function's own does: React's
+// SyntheticBaseEvent stores `reactName`, `targetInst` and `nativeEventTarget`
+// as they're given, `this._reactName = reactName;`, not `?? null`; one not
+// named is `?? null` still, and one set `None` in the body is `null`.
+test("a with_this closure's nullable parameters are stored as they're given", async () => {
+  const { js, lib } = await compiled(
+    "constructor-nullable-parameters",
+    `use std::cell::Cell;
+
+use js::{Class, Unknown, function};
+
+pub struct Event {
+    #[cfg_attr(rust_js, rust_js::name = "_reactName", rust_js::nullable)]
+    pub react_name: Cell<Option<&'static str>>,
+    pub r#type: Cell<&'static str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub target: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current_target: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Event {}
+
+pub type EventClass = Class<
+    fn(Option<&'static str>, &'static str, Option<&'static Unknown>, Option<&'static Unknown>, Option<&'static Unknown>) -> Event,
+>;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "SyntheticEvent")]
+    pub static SYNTHETIC_EVENT: &'static EventClass = Class::of(function::with_this(
+        |this,
+         #[cfg_attr(rust_js, rust_js::nullable(react_name, native_event_target, current))] (
+            react_name,
+            react_event_type,
+            native_event_target,
+            mut current,
+            related,
+        ): (
+            Option<&'static str>,
+            &'static str,
+            Option<&'static Unknown>,
+            Option<&'static Unknown>,
+            Option<&'static Unknown>,
+        )| {
+            // Safety: \`new\` gives its constructor the event it makes.
+            let this: &'static Event = unsafe { js::cast(this) };
+            this.react_name.set(react_name);
+            this.r#type.set(react_event_type);
+            this.target.set(native_event_target);
+            if react_event_type == "none" {
+                current = None;
+            }
+            this.current_target.set(current);
+            this.related.set(related);
+            this
+        },
+    ));
+}
+
+thread_local! {
+    pub static UNMARKED: &'static Class<fn(Option<&'static str>) -> Event> = Class::of(function::with_this(
+        |this, (react_name,): (Option<&'static str>,)| {
+            // Safety: \`new\` gives its constructor the event it makes.
+            let this: &'static Event = unsafe { js::cast(this) };
+            this.react_name.set(react_name);
+            this
+        },
+    ));
+}
+`,
+  );
+  expect(js).toContain("  this._reactName = reactName;\n");
+  expect(js).toContain("  this.target = nativeEventTarget;\n");
+  expect(js).toContain("    current = null;\n");
+  expect(js).toContain("  this.currentTarget = current;\n");
+  expect(js).toContain("  this.related = related ?? null;\n");
+  expect(js).toContain("  this._reactName = reactName ?? null;\n");
+  const event = new lib.SyntheticEvent(null, "none", null, 3, undefined);
+  expect([event._reactName, event.type, event.target, event.currentTarget, event.related]).toEqual([null, "none", null, null, null]);
+  const named = new lib.SyntheticEvent("onClick", "click", 1, 2);
+  expect([named._reactName, named.target, named.currentTarget]).toEqual(["onClick", 1, 2]);
+});
+
+// What a closure's `#[rust_js::nullable(..)]` names is a binding of its own
+// parameter that's an `Option`; on a function's parameter it's the
+// function's, `#[rust_js::nullable(name)]` on the function.
+test("a closure's nullable parameter names its own Option bindings", () => {
+  const error = refused(
+    "closure-nullable-not-an-option",
+    `pub fn made() -> &'static js::Class<fn(&'static str) -> js::Unknown> {
+    js::Class::of(js::function::with_this(
+        |_, #[cfg_attr(rust_js, rust_js::nullable(name, other))] (name,): (&'static str,)| {
+            let _ = name;
+        },
+    ))
+}
+`,
+  );
+  expect(error).toContain("`#[rust_js::nullable(name)]` names no binding of this parameter that's an `Option`");
+  expect(error).toContain("`#[rust_js::nullable(other)]` names no binding of this parameter that's an `Option`");
+  const onFunction = refused(
+    "fn-param-nullable",
+    `pub fn given(#[cfg_attr(rust_js, rust_js::nullable)] value: Option<&'static str>) -> Option<&'static str> {
+    value
+}
+`,
+  );
+  expect(onFunction).toContain("a function's parameter is `#[rust_js::nullable(value)]` on the function");
+});

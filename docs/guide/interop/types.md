@@ -883,6 +883,12 @@ export function ratio(a, b) {
   it is, `captureCommitPhaseError(current, nearestMountedAncestor)`,
   `searchTarget = target`
   ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md), amended).
+  A closure's, `function::with_this`'s tuple, says so on the parameter,
+  naming its bindings, `#[cfg_attr(rust_js, rust_js::nullable(react_name,
+  target_inst))] (react_name, react_event_type, target_inst): (..)`, each
+  stored as it's given, `this._reactName = reactName;`; a function's own
+  parameter says so on the function, an error on the parameter (ADR 0861,
+  amended).
   A nullable thread-local's whole value cloned,
   `SEARCH_TARGET.with_borrow(Clone::clone)`, is returned as it is,
   `return searchTarget;`, and so is a `let` of `None` a nullable function

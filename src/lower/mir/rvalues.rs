@@ -1119,6 +1119,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(place) = operand.place() else {
             return Given::Unknown;
         };
+        // A `#[rust_js::nullable(..)]` parameter of the function's own, `T |
+        // null` as declared: what each caller gives it and the body sets it
+        // to, `null` for `None` (ADR 0861, amended), the user's decision
+        // (2026-10-27); a closure's binding its parameter names so too,
+        // `function::with_this`'s tuple's, read where it's the tuple's item.
+        if self.own_nullable_param(state, place) {
+            return Given::Nulled;
+        }
         if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
             return match self.place_field(state, place) {
                 Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,
@@ -1130,13 +1138,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Given::Unknown;
         }
         if state.facts.options().null_nones.contains(&place.local) {
-            return Given::Nulled;
-        }
-        // A `#[rust_js::nullable(..)]` parameter of the function's own, `T |
-        // null` as declared: what each caller gives it and the body sets it
-        // to, `null` for `None` (ADR 0861, amended), the user's decision
-        // (2026-10-27).
-        if self.own_nullable_param(state, place) {
             return Given::Nulled;
         }
         // Any other parameter holds what its caller gave as well as what

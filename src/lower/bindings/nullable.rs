@@ -94,6 +94,97 @@ pub(in crate::lower) fn nullable_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<S
         .collect()
 }
 
+/// Each binding of `owner`'s parameters, a closure's, that its parameter's
+/// own `#[rust_js::nullable(..)]` names, `T | null` as a function's own
+/// nullable parameter is (ADR 0861, amended): `function::with_this`'s
+/// tuple, `#[rust_js::nullable(react_name, target_inst)] (react_name, ..):
+/// (..)`, as a closure takes no attribute of its own. Its name and its
+/// pattern's span, which MIR's debug info has. Read from the body, as a
+/// parameter's `#[rust_js::name]` is.
+pub(in crate::lower) fn nullable_bindings(
+    tcx: TyCtxt<'_>,
+    owner: rustc_span::def_id::LocalDefId,
+) -> Vec<(Symbol, rustc_span::Span)> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
+    let mut found = Vec::new();
+    for param in params {
+        let named: Vec<Symbol> = (tcx.hir_attrs(param.hir_id).iter())
+            .filter(|attr| attr.path_matches(&path))
+            .filter_map(|attr| attr.meta_item_list())
+            .flatten()
+            .filter_map(|item| item.ident().map(|ident| ident.name))
+            .collect();
+        if named.is_empty() {
+            continue;
+        }
+        param.pat.walk_always(|pat| {
+            if let rustc_hir::PatKind::Binding(_, _, ident, _) = pat.kind
+                && named.contains(&ident.name)
+            {
+                found.push((ident.name, pat.span));
+            }
+        });
+    }
+    found
+}
+
+/// What's wrong with a `#[rust_js::nullable]` on a parameter of `owner`'s:
+/// on a closure's, each name it gives is a binding of that parameter that's
+/// an `Option`; a function's says so on the function, as a binding's does,
+/// whose parameter's attributes no crate's metadata keeps (ADR 0861,
+/// amended).
+pub(in crate::lower) fn nullable_parameters_refused(
+    tcx: TyCtxt<'_>,
+    owner: rustc_span::def_id::LocalDefId,
+) -> Vec<(rustc_span::Span, String)> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    let Some(body) = tcx.hir_maybe_body_owned_by(owner) else {
+        return Vec::new();
+    };
+    let closure = tcx.is_closure_like(owner.to_def_id());
+    let mut refused = Vec::new();
+    for param in body.params {
+        for attr in tcx
+            .hir_attrs(param.hir_id)
+            .iter()
+            .filter(|attr| attr.path_matches(&path))
+        {
+            if !closure {
+                let name = match param.pat.kind {
+                    rustc_hir::PatKind::Binding(_, _, ident, None) => ident.name.to_string(),
+                    _ => "..".to_string(),
+                };
+                let message = format!(
+                    "rust-js: a function's parameter is `#[rust_js::nullable({name})]` on the function, as a binding's is; a closure's is on its parameter"
+                );
+                refused.push((attr.span(), message));
+                continue;
+            }
+            let names = (attr.meta_item_list().into_iter().flatten()).filter_map(|item| item.ident());
+            for ident in names {
+                let mut option = false;
+                param.pat.walk_always(|pat| {
+                    if let rustc_hir::PatKind::Binding(_, hir_id, bound, _) = pat.kind
+                        && bound.name == ident.name
+                    {
+                        let ty = tcx.typeck(owner).node_type(hir_id);
+                        option |= matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+                    }
+                });
+                if !option {
+                    let message = format!(
+                        "rust-js: `#[rust_js::nullable({})]` names no binding of this parameter that's an `Option`",
+                        ident.name
+                    );
+                    refused.push((attr.span(), message));
+                }
+            }
+        }
+    }
+    refused
+}
+
 /// Whether a function says its result's `None` is `null`,
 /// `#[rust_js::nullable]` alone on it, TypeScript's `T | null`, as a JS
 /// caller of it tests `!== null`: React's scheduler's `peek(queue)`.

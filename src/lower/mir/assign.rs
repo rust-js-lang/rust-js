@@ -255,6 +255,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn own_nullable_param(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
         let def_id = state.body.source.def_id();
         let arg = place.local.as_usize();
+        if self.nullable_binding(state, place) {
+            return true;
+        }
         place.projection.is_empty()
             && (1..=state.body.arg_count).contains(&arg)
             && matches!(
@@ -263,6 +266,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
             && (self.tcx.fn_arg_idents(def_id).get(arg - 1).copied().flatten())
                 .is_some_and(|ident| bindings::nullable_params(self.tcx, def_id).contains(&ident.name))
+    }
+
+    /// Whether `place` is a binding of a closure's parameter that its
+    /// `#[rust_js::nullable(..)]` names, `function::with_this`'s
+    /// `react_name` of `(react_name, ..)`, `T | null` as a function's own
+    /// nullable parameter is (ADR 0861, amended): by its debug info, the
+    /// binding's place, a variable or the tuple's item.
+    fn nullable_binding(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let Some(owner) = state.body.source.def_id().as_local() else {
+            return false;
+        };
+        if !self.tcx.is_closure_like(owner.to_def_id()) {
+            return false;
+        }
+        let bindings = bindings::nullable_bindings(self.tcx, owner);
+        !bindings.is_empty()
+            && state.body.var_debug_info.iter().any(|info| {
+                matches!(info.value, mir::VarDebugInfoContents::Place(p) if p == place)
+                    && bindings
+                        .iter()
+                        .any(|&(name, span)| name == info.name && span == info.source_info.span)
+            })
     }
 
     /// What's written to a `#[rust_js::nullable]` function's result, where

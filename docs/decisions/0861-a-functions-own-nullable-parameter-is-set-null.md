@@ -4,7 +4,8 @@ Status: Accepted. Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
-nullable places to it.
+nullable places to it. Amended (2026-10-28): a closure's parameter names
+its own nullable bindings.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, decided by the user
 (2026-10-25): an `Option<&Unknown>`'s `None` given to a place typed `T |
@@ -154,3 +155,77 @@ thread-local's None is null where it's made and set", its `.d.ts`
 (`mir/patterns.ts`) and `nullable-param-declared-optional`
 (`declarations/functions.ts`).
 
+
+## Amendment: a closure's parameter names its own nullable bindings (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the user's decision
+above, extended: a binding declared `T | null` is taken as `null` or a
+value, as a function's own parameter is.
+
+React DOM's `SyntheticBaseEvent` (React port gap rd64d) is a
+`function::with_this` closure (ADR 1009), its parameters a tuple:
+
+```js
+function SyntheticBaseEvent(reactName, reactEventType, targetInst, nativeEvent, nativeEventTarget) {
+  this._reactName = reactName;
+  this._targetInst = targetInst;
+  ..
+  this.target = nativeEventTarget;
+```
+
+Upstream types `reactName: string | null`, `targetInst: Fiber | null`
+and `nativeEventTarget: null | EventTarget`. Each stored in a nullable
+field was `reactName ?? null`: a closure takes no attribute (an
+attribute on an expression is unstable), so nothing could say so, and a
+closure's parameter may be what JS gave.
+
+**A closure's parameter takes `#[rust_js::nullable(..)]`, naming the
+bindings of its pattern that are `T | null`**, as a function's own does
+on the function: each is `null` or a value already, stored in a nullable
+place as it is, and `null` where the body sets it `None`.
+
+```rust
+let synthetic_base_event = Class::of(function::with_this(
+    move |this,
+          #[cfg_attr(rust_js, rust_js::nullable(react_name, target_inst, native_event_target))] (
+        react_name,
+        react_event_type,
+        target_inst,
+        native_event,
+        native_event_target,
+    ): (Option<&'static str>, &'static str, Option<&'static Fiber>, &'static Event, Option<&'static EventTarget>)| {
+        ..
+        this.react_name.set(react_name);
+```
+
+```js
+this._reactName = reactName;
+```
+
+- **On the parameter, of a closure only**: a closure's parameter is the
+  one place an attribute can say it, and no other crate calls a closure
+  by its name, whose metadata would lose it. A function's own parameter
+  says so on the function, as a binding's does; on its parameter it's an
+  error naming that form, `a function's parameter is
+  #[rust_js::nullable(value)] on the function`, so there's one place for
+  each.
+- **Each name is a binding of that parameter that's an `Option`**, else
+  an error (`nullable_parameters_refused`); read by the binding's debug
+  info, its variable or the tuple's item (`nullable_bindings`,
+  `nullable_binding`).
+- **What gives it `undefined` breaks the declaration**, as a JS caller of
+  a function's own does (above). A Rust caller constructs it through the
+  class it's held as, `js::new(class, (None, ..))`, whose `None` is
+  `undefined`, as `js::new` can't know which function the class holds:
+  where upstream passes `null`, the port writes `js::null()`, `new
+  SyntheticEventCtor(reactName, reactEventType, null, ..)`, which is
+  upstream's JS too. An unnamed binding is `?? null` still.
+
+Held by `test/js-constructors.test.ts`'s "a with_this closure's nullable
+parameters are stored as they're given" (named ones stored as given, one
+set `None` `null`, one not named `?? null`, run in JS) and "a closure's
+nullable parameter names its own Option bindings" (the two errors);
+mutations `closure-nullable-binding-coalesced`,
+`closure-nullable-binding-any-name` (`mir/assign.ts`),
+`closure-nullable-not-an-option-allowed` and `fn-param-nullable-allowed`
+(`bindings/nullable.ts`).

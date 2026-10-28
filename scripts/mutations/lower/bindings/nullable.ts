@@ -90,4 +90,20 @@ export const mutations: Mutation[] = [
     replace: "    let holds_option = false && output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "an array's and a tuple's js::null"],
   },
+  {
+    name: "closure-nullable-not-an-option-allowed",
+    breaks: "a closure's `#[rust_js::nullable(name)]` of a binding that's no `Option`, or of none, is taken without a word (ADR 0861, amended)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "                if !option {\n",
+    replace: "                if false && !option {\n",
+    tests: ["test/js-constructors.test.ts", "-t", "nullable"],
+  },
+  {
+    name: "fn-param-nullable-allowed",
+    breaks: "a function's parameter marked `#[rust_js::nullable]` is taken without a word, where the function says it, `#[rust_js::nullable(value)]` (ADR 0861, amended)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "            if !closure {\n",
+    replace: "            if false && !closure {\n",
+    tests: ["test/js-constructors.test.ts", "-t", "nullable"],
+  },
 ];

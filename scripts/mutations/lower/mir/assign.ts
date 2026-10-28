@@ -631,4 +631,20 @@ export const mutations: Mutation[] = [
     replace: "                let nulled = false;\n",
     tests: ["test/lowering-nullable-reads.test.ts"],
   },
+  {
+    name: "closure-nullable-binding-coalesced",
+    breaks: "React's SyntheticBaseEvent stores `this._reactName = reactName ?? null;` of a `with_this` closure's binding its `#[rust_js::nullable(react_name)]` names, where upstream stores it as given (ADR 0861, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "        !bindings.is_empty()\n",
+    replace: "        false && !bindings.is_empty()\n",
+    tests: ["test/js-constructors.test.ts", "-t", "nullable"],
+  },
+  {
+    name: "closure-nullable-binding-any-name",
+    breaks: "a `with_this` closure's binding its `#[rust_js::nullable(..)]` doesn't name is stored as given, `this._reactName = reactName;`, though a Rust caller may give `undefined` (ADR 0861, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "                        .any(|&(name, span)| name == info.name && span == info.source_info.span)\n",
+    replace: "                        .any(|_| true)\n",
+    tests: ["test/js-constructors.test.ts", "-t", "nullable"],
+  },
 ];
