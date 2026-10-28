@@ -16,6 +16,7 @@ import {
   $fromFn,
   $getUnchecked,
   $given,
+  $held,
   $lastDropping,
   $lent,
   $neverShortCircuitTry,
@@ -7489,7 +7490,7 @@ export function flattenCompatIUIterator2_next(
       return;
     }
     const inner = $someValue(value);
-    const value$1 = IItemIntoIterator.intoIter(inner);
+    const value$1 = $held(IItemIntoIterator.intoIter(inner));
     const item = UIterator.next(value$1);
     if (item != null) {
       dropU?.(value$1);
@@ -7724,7 +7725,7 @@ export function flattenCompatIUIterator2_fold(
   const option = flattenCompat.iter.iter;
   const fold$1 = $dropping(
     (acc, inner) => {
-      const value = IItemIntoIterator.intoIter(inner);
+      const value = $held(IItemIntoIterator.intoIter(inner));
       const next = IItemIntoIterator.IntoIterIterator().next(value);
       let result;
       if (next != null) {
@@ -7822,7 +7823,7 @@ export function flattenCompatIUIterator2_tryFold(
   const fuse = flattenCompat.iter;
   const fold$1 = $dropping(
     (acc, inner) => {
-      const value = IItemIntoIterator.intoIter(inner);
+      const value = $held(IItemIntoIterator.intoIter(inner));
       const next = IItemIntoIterator.IntoIterIterator().next(value);
       let result;
       if (next != null) {
@@ -7932,7 +7933,7 @@ export function flattenCompatIUDoubleEndedIterator2_nextBack(
       return;
     }
     const inner = $someValue(value);
-    const value$1 = IItemIntoIterator.intoIter(inner);
+    const value$1 = $held(IItemIntoIterator.intoIter(inner));
     const item = UIterator.next(value$1);
     if (item != null) {
       dropU?.(value$1);
@@ -7996,7 +7997,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
   const option = flattenCompat.iter.iter;
   const fold$1 = $dropping(
     (acc, inner) => {
-      const value = IItemIntoIterator.intoIter(inner);
+      const value = $held(IItemIntoIterator.intoIter(inner));
       const next = IItemIntoIterator.IntoIterIterator().next(value);
       let result;
       if (next != null) {
@@ -8101,7 +8102,7 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
   const fuse = flattenCompat.iter;
   const fold$1 = $dropping(
     (acc, inner) => {
-      const value = IItemIntoIterator.intoIter(inner);
+      const value = $held(IItemIntoIterator.intoIter(inner));
       const next = IItemIntoIterator.IntoIterIterator().next(value);
       let result;
       if (next != null) {

@@ -1107,7 +1107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.locals.mir.plain.insert(format!("...{name}"));
             }
         }
-        let mut out = Vec::new();
+        let mut out = self.held_parameters(&state);
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
         let mut flagged = vec![false; mir_body.local_decls.len()];

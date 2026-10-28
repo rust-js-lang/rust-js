@@ -28,11 +28,8 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function more() {
-  const it = iterator_peekable(
-    $iter([[1], [2]]),
-    { next: $next },
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
+  const it = $held(
+    iterator_peekable($iter([[1], [2]]), { next: $next }, $dropEach(loudDrop_drop), loudDrop_drop),
   );
   try {
     console.log(`len ${$exactLen($sizeHint(it))}`);
@@ -43,11 +40,13 @@ function more() {
   }
 }
 function main() {
-  let it = iterator_peekable(
-    $iter([[1], [2], [3]]),
-    { next: $next },
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
+  let it = $held(
+    iterator_peekable(
+      $iter([[1], [2], [3]]),
+      { next: $next },
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    ),
   );
   try {
     $peek(it);
@@ -55,11 +54,13 @@ function main() {
   } finally {
     it.return();
   }
-  it = iterator_peekable(
-    $iter([[4], [5], [6]]),
-    { next: $next },
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
+  it = $held(
+    iterator_peekable(
+      $iter([[4], [5], [6]]),
+      { next: $next },
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    ),
   );
   let none;
   try {
@@ -71,22 +72,24 @@ function main() {
   console.log(`next_if ${none == null}`);
   try {
     it.return();
-    const lazy = iterator_peekable(
-      iterator_map(
-        { start: 7, end: 10 },
-        (value) => [value],
-        { next: $rangeNext },
+    const lazy = $held(
+      iterator_peekable(
+        iterator_map(
+          { start: 7, end: 10 },
+          (value) => [value],
+          { next: $rangeNext },
+          undefined,
+          loudDrop_drop,
+        ),
+        {
+          next: $next,
+          fold: $foldOf,
+          getUnchecked: (iterator, i) =>
+            mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }, loudDrop_drop),
+        },
         undefined,
         loudDrop_drop,
       ),
-      {
-        next: $next,
-        fold: $foldOf,
-        getUnchecked: (iterator, i) =>
-          mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }, loudDrop_drop),
-      },
-      undefined,
-      loudDrop_drop,
     );
     try {
       $peek(lazy);

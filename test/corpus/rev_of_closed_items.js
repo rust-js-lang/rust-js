@@ -4,6 +4,7 @@ import {
   $closing,
   $dropEach,
   $filterEnds,
+  $held,
   $iter,
   $mapEnds,
   $next,
@@ -38,11 +39,13 @@ function main() {
     loudDrop_drop(item);
   }
 
-  const back = $rev(
-    $filterEnds(
-      $closing($iter(louds(5)), $dropEach(loudDrop_drop)),
-      (l) => l[0] % 2 === 1,
-      loudDrop_drop,
+  const back = $held(
+    $rev(
+      $filterEnds(
+        $closing($iter(louds(5)), $dropEach(loudDrop_drop)),
+        (l) => l[0] % 2 === 1,
+        loudDrop_drop,
+      ),
     ),
   );
   let lastOdd;
@@ -61,7 +64,7 @@ function main() {
     }
   }
 
-  const twice = $closing($iter(louds(3)), $dropEach(loudDrop_drop));
+  const twice = $held($closing($iter(louds(3)), $dropEach(loudDrop_drop)));
   let first;
   try {
     first = $next(twice);

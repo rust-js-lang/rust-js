@@ -14,6 +14,7 @@ import {
   $closing,
   $dropEach,
   $foldToArray,
+  $held,
   $iter,
   $iterator,
   $mapEnds,
@@ -120,7 +121,7 @@ function main() {
   );
 
   const louds = [[1], [2], [3]];
-  const held = $rev($closing($iter(louds), $dropEach(loudDrop_drop)));
+  const held = $held($rev($closing($iter(louds), $dropEach(loudDrop_drop))));
   try {
     const loud = $next(held);
     function map(l) {

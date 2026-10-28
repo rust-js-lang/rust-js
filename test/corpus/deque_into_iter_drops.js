@@ -7,6 +7,7 @@ import {
   $count,
   $dropEach,
   $heapFrom,
+  $held,
   $iter,
   $lazySkipWhile,
   $lazyTakeWhile,
@@ -52,11 +53,13 @@ function main() {
     loudDrop_drop(item);
   }
 
-  const peeked = iterator_peekable(
-    $iter(deque([5, 6, 7])),
-    { next: $next },
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
+  const peeked = $held(
+    iterator_peekable(
+      $iter(deque([5, 6, 7])),
+      { next: $next },
+      $dropEach(loudDrop_drop),
+      loudDrop_drop,
+    ),
   );
   let first;
   try {

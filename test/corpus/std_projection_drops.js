@@ -2,6 +2,7 @@
 
 import {
   $dropEach,
+  $held,
   $intoIter,
   $iter,
   $iterator,
@@ -24,7 +25,7 @@ function drainIterator_next(drain) {
 
 /** Its first, and the iterator dropped, with what it hasn't given. */
 function first(items, dropIIntoIter) {
-  const it = $intoIter(items);
+  const it = $held($intoIter(items));
   try {
     return $nextSome(it);
   } finally {
@@ -40,6 +41,7 @@ function relay(items, dropIIntoIter) {
 
 /** Its first item dropped, and the iterator given back. */
 function skipOne(it, IIterator, dropI, dropIItem) {
+  $held(it);
   let next;
   try {
     next = IIterator.next(it);
@@ -59,7 +61,7 @@ function skipOne(it, IIterator, dropI, dropIItem) {
 }
 
 function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
-  const it = $intoIter(items);
+  const it = $held($intoIter(items));
   let next;
   try {
     next = $next(it);

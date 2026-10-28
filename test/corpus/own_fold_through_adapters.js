@@ -13,6 +13,7 @@ import {
   $count,
   $foldOf,
   $given,
+  $held,
   $iter,
   $iterator,
   $next,
@@ -94,10 +95,12 @@ function main() {
       ),
     )}`,
   );
-  let peeked = iterator_peekable(
-    ["b", 0],
-    { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-    ownDrop_drop,
+  let peeked = $held(
+    iterator_peekable(
+      ["b", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      ownDrop_drop,
+    ),
   );
   try {
     const value = $peek(peeked);
@@ -164,10 +167,12 @@ function main() {
       .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  peeked = iterator_peekable(
-    ["l", 0],
-    { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-    ownDrop_drop,
+  peeked = $held(
+    iterator_peekable(
+      ["l", 0],
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      ownDrop_drop,
+    ),
   );
   try {
     $peek(peeked);
@@ -215,7 +220,7 @@ function main() {
   console.log(
     `[${Array.from(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
   );
-  const stepped = iterator_peekable(["s", 0], { next: plainIterator_next }, plainDrop_drop);
+  const stepped = $held(iterator_peekable(["s", 0], { next: plainIterator_next }, plainDrop_drop));
   try {
     $peek(stepped);
   } catch (error) {

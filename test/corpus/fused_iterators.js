@@ -3,6 +3,7 @@
 import { fuseClone_clone, fuseDebug_fmt, iterator_fuse } from "@rust-js/std/iter.js";
 import {
   $foldToArray,
+  $held,
   $iter,
   $iterator,
   $lent,
@@ -103,7 +104,7 @@ function main() {
   );
   console.log(`${pairDebug_fmt(again, flipDebug)}`);
   console.log(`[${Array.from($iterator(again, pairIterator_next, true).take(3)).join(", ")}]`);
-  const loud = iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop);
+  const loud = $held(iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop));
   let loud$live;
   try {
     const value = $next(loud);
@@ -118,7 +119,7 @@ function main() {
   } finally {
     loud.return();
   }
-  const steady = iterator_fuse([2], { next: steadyIterator_next }, true, steadyDrop_drop);
+  const steady = $held(iterator_fuse([2], { next: steadyIterator_next }, true, steadyDrop_drop));
   let steady$live;
   try {
     const value = $next(steady);

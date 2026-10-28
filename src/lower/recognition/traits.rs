@@ -197,6 +197,34 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
             Ok(ImplSource::UserDefined(imp)) if known_derive(self.tcx, imp.impl_def_id))
     }
+
+    /// Whether `ty`, known here only by its bounds (`known_by_bounds`), is
+    /// an iterator by them: a `T: Iterator`'s, a subtrait's, or an
+    /// associated type bounded so, `IntoIterator::IntoIter`. What it is
+    /// then is its caller's, which may be one dropped by closing (#392).
+    pub(in crate::lower) fn bounded_iterator(&self, ty: Ty<'tcx>) -> bool {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        let bound = |clause: ty::Clause<'tcx>, of: Ty<'tcx>| {
+            clause
+                .as_trait_clause()
+                .is_some_and(|tr| tr.def_id() == iterator && tr.skip_binder().self_ty() == of)
+        };
+        match ty.kind() {
+            ty::Param(_) => (self.typing_env.param_env.caller_bounds().iter()).any(|clause| bound(clause, ty)),
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) => {
+                (self.tcx.item_bounds(*def_id).skip_binder().iter())
+                    .any(|clause| clause.as_trait_clause().is_some_and(|tr| tr.def_id() == iterator))
+                    || (self.typing_env.param_env.caller_bounds().iter()).any(|clause| bound(clause, ty))
+            }
+            _ => false,
+        }
+    }
 }
 
 /// Whether `ty` is known here only by its bounds: a type parameter, or an

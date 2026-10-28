@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable, iterator_zip } from "@rust-js/std/ite
 import {
   $dropEach,
   $fromFn,
+  $held,
   $iter,
   $iterator,
   $lazyChain,
@@ -168,22 +169,24 @@ function main() {
   // A zip isn't done with at its first end: its other side, which drops
   // what it holds, is still stepped after (#279).
   const louds = $range(20, 25).map((value) => [value]);
-  const zipped = iterator_zip(
-    f(),
-    louds,
-    { next: flakyIterator_next },
-    { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-    false,
-    false,
-    false,
-    false,
-    false,
-    true,
-    undefined,
-    $dropEach(loudDrop_drop),
-    undefined,
-    loudDrop_drop,
-    $dropEach(loudDrop_drop),
+  const zipped = $held(
+    iterator_zip(
+      f(),
+      louds,
+      { next: flakyIterator_next },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      undefined,
+      $dropEach(loudDrop_drop),
+      undefined,
+      loudDrop_drop,
+      $dropEach(loudDrop_drop),
+    ),
   );
   let first;
   try {

@@ -198,3 +198,44 @@ again, since the adapter's `hold()` holds it. The readability baseline's
 `$iter` share grows by 1.5 and its renamed `x$1` share by 3.2 in 10,000
 lines. Both come from the new case alone: 20 `$iter(three())` sources,
 and its shadowing `let taken`s, renamed apart in the `try`s that drop each.
+
+## Amendment: what's stepped by reference, or given, is held (#392)
+
+An adapter a variable held, stepped to its end by `next()` and then moved
+into `drop(zipped)`, dropped its `$closing` source at its first `None`,
+before the code between the loop and the `drop` ran. #206's rule held
+only what the body drops, not what it moves, since a consumer that takes
+a chain drops it at its end, which is where it's done. A variable the
+body steps by reference first can be done long before what takes it.
+Two more of the same: a function's parameter it steps by `next()` and
+drops at its end was never held, as only a call's value was, and a
+generic body's iterator of a type it's given, `items.into_iter()` in a
+`FromIterator`, wasn't held either, since its type said nothing of a
+closing source. And `$intoIter` of a `$Steps` stepped it by JS's own
+protocol, `Iterator.from`, which closes it at its end, so even a held
+one was dropped at its `None`.
+
+Case **Results change** of ADR 0262: Rust's order is kept.
+
+- **A local the body steps by reference is held** (`owned_where_run`'s
+  `lent`): a `&mut it` or `&it` of the local itself, whatever takes it
+  after.
+- **A parameter is held as a local is** (`held_parameters`), with
+  `$held(it);` at the function's start, the function owning what it's
+  given: of a type dropped by closing, or of a type parameter or an
+  associated type bounded as an `Iterator`
+  (`Recognition::bounded_iterator`), which may be one. Not std's struct,
+  compiled, which steps what it holds as Rust does and has no `hold()`.
+- **`$intoIter` gives a `$Steps` as it is**, as `$stepsOf` does.
+
+Considered: holding the argument in the caller wherever a crate's
+function takes it. The caller can't tell a consumer from a function that
+runs on after its argument is done, and `collect()` into the crate's own
+`FromIterator` reaches the same body through std. The callee owns what
+it's given, and says so. Held by
+`test/corpus/held_adapters_stepped_to_their_end.rs` and four mutations.
+std's compiled flatten holds its inner iterator, which it drops itself.
+The readability baseline's `while (true)` share grows 10.4 to 10.5 in
+10,000 lines, the new case's alone: its `zipped`, moved after its loop,
+is stepped in the `while (true)` a variable's `$live` flag has had since
+ADR 0570.

@@ -11,7 +11,9 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  const same = $rev($mapEnds($closing($iter([[1], [2], [3]]), $dropEach(loudDrop_drop)), (l) => l));
+  const same = $held(
+    $rev($mapEnds($closing($iter([[1], [2], [3]]), $dropEach(loudDrop_drop)), (l) => l)),
+  );
   try {
     const last = $next(same);
     console.log(`same ${last?.[0] ?? 0}`);

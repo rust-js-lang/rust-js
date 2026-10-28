@@ -5,6 +5,7 @@ import {
   $checked,
   $debugParseError,
   $dropEach,
+  $held,
   $iter,
   $iterator,
   $parseBig,
@@ -48,6 +49,7 @@ function loudDrop_drop(loud) {
 // Each item it's given is the closure's, dropped there; what it leaves is
 // the iterator's, dropped with it.
 function sumBelow(it, limit, dropI) {
+  $held(it);
   let sum;
   try {
     sum = $tryFoldSome(Iterator.from(it), 0, (sum, loud) => {

@@ -4,6 +4,7 @@ import {
   $byteLen,
   $dropEach,
   $findDropping,
+  $held,
   $iter,
   $lent,
   $nthDropping,
@@ -19,6 +20,7 @@ function noisyDrop_drop(noisy) {
 }
 
 function third(it, dropI) {
+  $held(it);
   try {
     return $nthDropping($lent(Iterator.from(it)), 2, noisyDrop_drop, false);
   } finally {
@@ -27,6 +29,7 @@ function third(it, dropI) {
 }
 
 function named(it, name, dropI) {
+  $held(it);
   try {
     return $findDropping($lent(Iterator.from(it)), (n) => n[0] === name, noisyDrop_drop, false);
   } finally {

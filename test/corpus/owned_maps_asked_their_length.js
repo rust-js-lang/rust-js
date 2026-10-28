@@ -10,6 +10,7 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function ends(it, dropI) {
+  $held(it);
   try {
     const a = it.len();
     const b = $nextBack(it);

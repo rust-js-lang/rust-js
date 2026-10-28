@@ -5,6 +5,7 @@ import {
   $dropEach,
   $extend,
   $given,
+  $held,
   $intoIter,
   $iter,
   $next,
@@ -66,7 +67,7 @@ function firsts(
     }
     const inner = $someValue(tmp);
     try {
-      it = IItemIntoIterator.intoIter(inner);
+      it = $held(IItemIntoIterator.intoIter(inner));
     } catch (error) {
       dropIIntoIter?.(iter);
       for (const item of out) {
@@ -202,7 +203,7 @@ function groupsFirstOfNext_firstOfNext(
   if (next != null) {
     next$0$live = false;
     const inner = $someValue(next);
-    const value$1 = IItemIntoIterator.intoIter(inner);
+    const value$1 = $held(IItemIntoIterator.intoIter(inner));
     try {
       const value$2 = IItemIntoIterator.IntoIterIterator().next(value$1);
       const value = $someValue(value$2);

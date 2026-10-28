@@ -33,6 +33,7 @@ function skipped(it, dropI) {
 }
 
 function nthOf(it, dropI) {
+  $held(it);
   try {
     const nth = $nthDropping($lent(Iterator.from(it)), 1, noisyDrop_drop, false);
     function map(n) {

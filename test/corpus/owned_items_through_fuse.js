@@ -69,12 +69,8 @@ function backs(it, dropI) {
   }
 }
 function main() {
-  const f = iterator_fuse(
-    $iter(louds(4)),
-    { next: $next },
-    true,
-    $dropEach(loudDrop_drop),
-    loudDrop_drop,
+  const f = $held(
+    iterator_fuse($iter(louds(4)), { next: $next }, true, $dropEach(loudDrop_drop), loudDrop_drop),
   );
   try {
     const next = $next(f);

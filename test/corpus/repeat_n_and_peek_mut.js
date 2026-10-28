@@ -9,6 +9,7 @@ import {
   $debugStr,
   $foldOf,
   $foldToArray,
+  $held,
   $iter,
   $next,
   $peekCell,
@@ -39,7 +40,7 @@ function repeated() {
     const none = $repeatingN([2], 0, (value) => loudClone_clone(value), loudDrop_drop);
     console.log("none made");
     none.return();
-    const some = $repeatingN([3], 3, (value) => loudClone_clone(value), loudDrop_drop);
+    const some = $held($repeatingN([3], 3, (value) => loudClone_clone(value), loudDrop_drop));
     let first;
     try {
       first = $next(some);

@@ -3,6 +3,7 @@
 import {
   $closing,
   $given,
+  $held,
   $iter,
   $lent,
   $next,
@@ -48,6 +49,7 @@ function tSkipping(TIterator, dropT, dropTItem) {
       tSkipping(TIterator, dropT, dropTItem).skipOne(self);
     },
     second(self) {
+      $held(self);
       try {
         const next = TIterator.next(self);
         if (next != null) {

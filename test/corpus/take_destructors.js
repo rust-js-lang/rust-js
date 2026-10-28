@@ -5,6 +5,7 @@ import {
   $closing,
   $count,
   $dropEach,
+  $held,
   $iter,
   $lent,
   $next,
@@ -21,6 +22,7 @@ function nDrop_drop(n) {
   console.log(`drop ${n[0]}`);
 }
 function splitFirst(iter, k, dropI, dropIItem) {
+  $held(iter);
   let first;
   try {
     first = Array.from($lent(Iterator.from(iter)).take(k));
@@ -90,7 +92,7 @@ function main() {
   console.log(`collected ${firsts.length}`);
   try {
     const y = $range(20, 23).map((value) => [value]);
-    const t = $closing($iter(y), $dropEach(nDrop_drop)).take(2);
+    const t = $held($closing($iter(y), $dropEach(nDrop_drop)).take(2));
     let one;
     try {
       one = $next(t);

@@ -135,16 +135,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// where Rust does, at its scope's or its statement's end, not as it's
     /// done or an adapter in it ends (ADR 0570 amended, #206). Not one only
     /// moved, into a consumer that takes it, which drops it at its end.
+    /// Of a generic body, an iterator of a type it's given, which may be
+    /// one: a function's `impl Iterator` stepped by `next()` (#392).
     pub(super) fn holds_dropped_iterator(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> bool {
+        let ty = state.body.local_decls[place.local].ty;
         place.projection.is_empty()
-            && self.dropped_by_closing(state.body.local_decls[place.local].ty)
+            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))
             && self.owned_where_run(state, place.local, 0)
+    }
+
+    /// `$held(it);` of each parameter that holds an iterator dropped by
+    /// closing it the body drops, as a variable's is held where it's
+    /// made: the function owns what it's given, and drops it where Rust
+    /// does, not as it's done (#392). Not std's struct, compiled, which
+    /// steps what it holds as Rust does, and has no `hold()`.
+    pub(super) fn held_parameters(&self, state: &State<'_, 'tcx>) -> Vec<Stmt> {
+        let mut out = Vec::new();
+        for local in state.body.args_iter() {
+            let ty = self.reveal(state.body.local_decls[local].ty);
+            if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+                && self.holds_dropped_iterator(state, local.into())
+                && !state.locals.names[local].is_empty()
+            {
+                let name = Expr::var(&state.locals.names[local]);
+                out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));
+            }
+        }
+        out
     }
 
     /// Whether the body drops `local` where it runs on, not only as a panic
     /// unwinds past it; or moves it into a call whose value it drops so,
     /// of a type holding it that its drop glue drops, `Peekable<Take<..>>`'s,
-    /// which drops it there (#243). Not one moved into a consumer,
+    /// which drops it there (#243); or steps it by reference before what
+    /// takes it drops it (#392). Not one only moved into a consumer,
     /// `collect`'s, whose value holds no iterator; nor into an adapter
     /// dropped by closing, held itself, whose `hold()` holds it.
     fn owned_where_run(&self, state: &State<'_, 'tcx>, local: mir::Local, depth: usize) -> bool {
@@ -157,6 +181,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && matches!(&data.terminator().kind, TerminatorKind::Drop { place: dropped, .. }
                     if dropped.local == local && dropped.projection.is_empty() && drops.drops(block, *dropped))
         });
+        // Stepped by reference, `it.next()`'s `&mut it`, it may reach its end
+        // well before what takes it, `drop(it)` or a consumer, drops it
+        // (#392). Of what drops something JS sees.
+        let lent = self.drops(body.local_decls[local].ty) != Drops::Nothing
+            && (body.basic_blocks.iter()).any(|data| {
+                !data.is_cleanup
+                    && data.statements.iter().any(|statement| {
+                        matches!(&statement.kind, mir::StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Ref(_, _, lent) | mir::Rvalue::RawPtr(_, lent)
+                            if lent.local == local && lent.projection.is_empty()))
+                    })
+            });
         let moved = |arg: &mir::Operand<'tcx>| matches!(arg, mir::Operand::Move(p) if p.local == local && p.projection.is_empty());
         dropped
             || depth < 4
@@ -171,6 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 && !self.dropped_by_closing(body.local_decls[destination.local].ty)
                                 && self.owned_where_run(state, destination.local, depth + 1))
                 })
+            || lent
     }
 
     /// What `body`'s drops drop, `None` if none drops anything JS sees.

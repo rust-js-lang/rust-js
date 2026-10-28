@@ -12,6 +12,7 @@ import {
   $dropEach,
   $flatMap,
   $flattenEnds,
+  $held,
   $iter,
   $knowing,
   $next,
@@ -248,15 +249,17 @@ function main() {
   );
 
   // Its items dropped as it steps past them, the rest with it.
-  const loud = $flatMap(
-    $closing($iter([[["a"], ["b"]], [["c"]]]), (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
+  const loud = $held(
+    $flatMap(
+      $closing($iter([[["a"], ["b"]], [["c"]]]), (intoIter) => {
+        for (const item of intoIter) {
+          for (const item$1 of item) {
+            loudDrop_drop(item$1);
+          }
         }
-      }
-    }),
-    (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+      }),
+      (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+    ),
   );
   try {
     const first = $next(loud);
