@@ -29,6 +29,9 @@ pub(super) struct JsUses {
     /// `const` a library's module holds a binding as (ADR 0633), or its
     /// item, its default's too (ADR 0773).
     pub(super) named: HashMap<Export, String>,
+    /// The bindings a module holds as its `const`, whose `#[rust_js::name]`
+    /// names that `const` (ADR 0633), not their import.
+    pub(super) held: HashSet<DefId>,
 }
 
 pub(super) fn js_uses<'tcx>(
@@ -43,6 +46,9 @@ pub(super) fn js_uses<'tcx>(
         bound_to: HashMap::new(),
         required: HashSet::new(),
         named: HashMap::new(),
+        held: (held.modules.values().flatten())
+            .map(|binding| binding.binding)
+            .collect(),
     };
     // What a module's `const` of a binding reads (ADR 0633), `import * as
     // react from "react"` of `react.__CLIENT_INTERNALS..`.
@@ -113,6 +119,17 @@ pub(super) fn js_uses<'tcx>(
                     uses.imported.entry(export).or_default().insert(module);
                 }
                 Some((path, None)) => {
+                    // A global's name is its own, which no import names.
+                    if let Some(name) = bindings::given_name(tcx, def_id)
+                        && !uses.held.contains(&def_id)
+                    {
+                        tcx.dcx().span_err(
+                            tcx.def_span(def_id),
+                            format!(
+                                "rust-js: `#[rust_js::name = {name:?}]` names a binding's import, and `{path}` is a global's, which is read by its own name (ADR 0028, amended)"
+                            ),
+                        );
+                    }
                     uses.globals
                         .insert(path.split('.').next().unwrap_or_default().to_string());
                 }
@@ -152,6 +169,7 @@ pub(super) fn js_uses<'tcx>(
             }
         }
     }
+    given_imports(tcx, &uses);
     // A namespace named as `import * as Scheduler` writes it, where each
     // path of its module names it so; one that names it otherwise, or
     // doesn't, refused (ADR 0256, amended).
@@ -304,9 +322,16 @@ pub(super) fn name_imports(
                                 .filter(|&&id| default || binds_itself(tcx, id))
                                 .filter_map(|id| renamed.get(id))
                                 .min()
+                                .cloned()
                         })
-                        .or_else(|| library_renamed.get(*export).copied());
-                    ((*export).clone(), fresh_in(&mut reserved, alias.unwrap_or(base)))
+                        // Or as a binding of it the module declares names
+                        // it, its `#[rust_js::name]` (ADR 0028, amended).
+                        .or_else(|| given_in(tcx, uses, export, module))
+                        .or_else(|| library_renamed.get(*export).map(|alias| (*alias).clone()));
+                    (
+                        (*export).clone(),
+                        fresh_in(&mut reserved, alias.as_ref().unwrap_or(base)),
+                    )
                 })
                 .collect();
             (module, names)
@@ -362,6 +387,71 @@ fn holds_only(tcx: TyCtxt<'_>, module: DefId, from: &str) -> bool {
 
 /// Whether a binding holds a JS module's export itself, `next/app#default`,
 /// not one of its members, `next/app#default.getInitialProps`.
+/// Whether each binding's `#[rust_js::name]` names its import, `import {
+/// NotPendingTransition as NoPendingHostTransition }` (ADR 0028, amended):
+/// one of an export itself, a name or a default, each binding of the
+/// export a module declares naming it the same. One of a global, a member of an export or a
+/// namespace, which no import of it names, is rust-js's error, as is a
+/// second name of one import. Not one a module holds as its `const`,
+/// which its name names (ADR 0633).
+fn given_imports(tcx: TyCtxt<'_>, uses: &JsUses) {
+    // Each import as each module that declares a binding of it names it.
+    type Declared<'a> = (&'a Export, Option<LocalModId>);
+    let mut named: HashMap<Declared<'_>, Vec<(String, DefId)>> = HashMap::new();
+    for (export, held) in &uses.bound_to {
+        for &id in held.iter().filter(|id| !uses.held.contains(*id)) {
+            let Some(name) = bindings::given_name(tcx, id) else {
+                continue;
+            };
+            if export.1 == "*" || !binds_itself(tcx, id) {
+                let path = js_path(tcx, id).unwrap_or_default();
+                tcx.dcx().span_err(
+                    tcx.def_span(id),
+                    format!(
+                        "rust-js: `#[rust_js::name = {name:?}]` names a binding's import, and `{path}` imports no export of its own name: name a namespace by its path, `#* as Name.path`, or the export a member is of (ADR 0028, amended)"
+                    ),
+                );
+                continue;
+            }
+            named
+                .entry((export, declared_in(tcx, id)))
+                .or_default()
+                .push((name, id));
+        }
+    }
+    for ((export, _), mut names) in named {
+        // In the order they're written, which the error names them in.
+        names.sort_by_key(|(_, id)| tcx.def_span(*id).lo());
+        if let Some((name, id)) = names.iter().find(|(name, _)| *name != names[0].0) {
+            tcx.dcx().span_err(
+                tcx.def_span(*id),
+                format!(
+                    "rust-js: `{}#{}` is imported as `{}` and as `{name}`: each binding of one import names it the same (ADR 0028, amended)",
+                    export.0, export.1, names[0].0
+                ),
+            );
+        }
+    }
+}
+
+/// The module a binding is declared in, of the crate's.
+fn declared_in(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalModId> {
+    id.as_local().map(|id| tcx.parent_module_from_def_id(id))
+}
+
+/// What `module` imports `export` by where a binding of the export itself
+/// it declares says, its `#[rust_js::name]`, `import { NotPendingTransition
+/// as NoPendingHostTransition }`: of each module that declares one, its
+/// own (ADR 0028, amended). Not of one the module holds as its `const`.
+fn given_in(tcx: TyCtxt<'_>, uses: &JsUses, export: &Export, module: LocalModId) -> Option<String> {
+    let default = export.1 == "default";
+    (uses.bound_to.get(export).into_iter().flatten())
+        .filter(|&&id| (default || binds_itself(tcx, id)) && !uses.held.contains(&id))
+        .filter(|&&id| declared_in(tcx, id) == Some(module))
+        .filter_map(|&id| bindings::given_name(tcx, id))
+        .min()
+}
+
 fn binds_itself(tcx: TyCtxt<'_>, id: DefId) -> bool {
     js_path(tcx, id)
         .as_deref()

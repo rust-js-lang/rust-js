@@ -285,6 +285,35 @@ export function yielded(value) {
 }
 ```
 
+- **A binding's `#[rust_js::name]` names its import**, `import {
+  NotPendingTransition as NoPendingHostTransition }`, as React's
+  ReactFiberHooks imports it: the name it's read by in the module that
+  imports it, of a name or a default export. A global's, or a member's,
+  which no import of its name holds, is an error
+  ([ADR 0028](../../decisions/0028-js-module-imports.md), amended):
+
+```rust
+use js::Unknown;
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "NoPendingHostTransition")]
+    #[link_name = "./config.js#NotPendingTransition"]
+    safe static NO_PENDING_HOST_TRANSITION: Option<&'static Unknown>;
+}
+
+pub fn initial() -> Option<&'static Unknown> {
+    NO_PENDING_HOST_TRANSITION
+}
+```
+
+```js
+import { NotPendingTransition as NoPendingHostTransition } from "./config.js";
+
+export function initial() {
+  return NoPendingHostTransition;
+}
+```
+
 - **`js::import!(f)` loads a binding's module when it's asked for**:
   `js::import!(highlight).await` is `const { highlight } = await
   import("./highlight.js")`, and nothing imports it statically

@@ -3,7 +3,7 @@
 Status: Accepted. Extends [0021](0021-js-interop.md) and the `#[link_name]`
 forms of [0024](0024-web-crate.md). [0039](0039-generic-bindings.md) adds
 imports for their side effects, and names a default import after the `static`
-that holds it.
+that holds it. Amended below: a binding's `#[rust_js::name]` names its import.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -149,3 +149,50 @@ EditorState.create(config);
 - [0202](0202-imports-named-around-importers.md): An import is named in each file that imports it
 - [0305](0305-require.md): A binding marked `require` is read through `require(module)`
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+
+## Amendment: a binding's `#[rust_js::name]` names its import (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a name.
+
+React's ReactFiberHooks imports `{NotPendingTransition as
+NoPendingHostTransition} from './ReactFiberConfig'` (nm1 of the port's
+gaps). Its port binds it where it's read, by the name it reads it by:
+
+```rust
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "NoPendingHostTransition")]
+    #[link_name = "./ReactFiberConfig.js#NotPendingTransition"]
+    safe static NO_PENDING_HOST_TRANSITION: Option<&'static Unknown>;
+}
+```
+
+The `#[rust_js::name]` was read by nothing: the import was the export's
+name, `import { NotPendingTransition }`, and a person reading the Rust
+would think it named the JS. An attribute that silently does nothing is
+a second way to write nothing.
+
+**A binding's `#[rust_js::name]` is the name its import is given in the
+module that declares it**, another module's own binding of the export
+imported by its own, as ReactFiberHostContext imports `NotPendingTransition`
+as it is, `import { NotPendingTransition as
+NoPendingHostTransition }`, of a function's binding too, `ping as
+pingHost`, and of a default's, which it names before the `static` holding
+it does (`analysis/naming.rs`, `name_imports`), as `#[rust_js::name]` on
+a `use` of one name names its import (ADR 0874, amended): what the item
+is called in JS. **One of a global's binding, of a member of an export,
+`chart.js#Chart.register`, or of a namespace's, `#*.path`, whose import
+no name of its own holds, is rust-js's error**, naming the namespace's own
+form, `#* as Name.path` (ADR 0256, amended); so is a second name of one
+import (`given_imports`). A binding a module holds as its `const` is
+named by its `#[rust_js::name]` there, `const ReactSharedInternals =
+react.__CLIENT_INTERNALS..`, as before (ADR 0633), and names no import.
+
+The alternative, `#NotPendingTransition as NoPendingHostTransition` in
+the `link_name` as `* as Name` names a namespace, would be a second way to
+give a binding the JS name `#[rust_js::name]` gives every other item.
+
+Held by `test/modules.test.ts`, "a binding's rust_js::name names its
+import"; mutations `binding-given-name-unread`,
+`global-given-name-ignored`, `member-given-name-ignored`,
+`two-given-import-names`, `held-binding-name-refused` and
+`given-import-name-of-another-module` (`analysis/naming.ts`).

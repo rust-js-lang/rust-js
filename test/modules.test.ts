@@ -1345,3 +1345,70 @@ pub fn yielded(value: u32) {
     );
   }
 });
+
+// nm1, React's ReactFiberHooks: `import { NotPendingTransition as
+// NoPendingHostTransition } from './ReactFiberConfig'`. A binding's
+// `#[rust_js::name]` names its import, ADR 0028, amended; one of a global
+// or a member, which no import of its name holds, or a second name of one
+// import, is an error.
+test("a binding's rust_js::name names its import", () => {
+  const dir = fixture("binding-named");
+  const source = (name: string, path: string) => `use js::Unknown;
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "NoPendingHostTransition")]
+    #[link_name = "./config.js#NotPendingTransition"]
+    safe static NO_PENDING_HOST_TRANSITION: Option<&'static Unknown>;
+}
+
+#[cfg_attr(rust_js, rust_js::name = "${name}")]
+#[cfg_attr(rust_js, rust_js::link_name = "${path}")]
+fn ping_it() {
+    unreachable!()
+}
+
+pub fn initial() -> Option<&'static Unknown> {
+    ping_it();
+    NO_PENDING_HOST_TRANSITION
+}
+`;
+  const compile = () =>
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  writeFileSync(join(dir, "lib.rs"), source("pingHost", "./config.js#ping"));
+  compile();
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { NotPendingTransition as NoPendingHostTransition, ping as pingHost } from "./config.js";\n');
+  expect(js).toContain("  pingHost();\n  return NoPendingHostTransition;\n");
+  // Another module's binding of it, with no name, its own import: React's
+  // ReactFiberHostContext imports `NotPendingTransition` as it is.
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub mod host;\n${source("pingHost", "./config.js#ping")}`,
+  );
+  writeFileSync(
+    join(dir, "host.rs"),
+    `use js::Unknown;
+
+unsafe extern "Rust" {
+    #[link_name = "./config.js#NotPendingTransition"]
+    safe static NOT_PENDING_TRANSITION: Option<&'static Unknown>;
+}
+
+pub fn reset() -> Option<&'static Unknown> {
+    NOT_PENDING_TRANSITION
+}
+`,
+  );
+  compile();
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("import { NotPendingTransition as NoPendingHostTransition, ping as pingHost }");
+  expect(readFileSync(join(dir, "host.js"), "utf8")).toContain('import { NotPendingTransition } from "./config.js";\n');
+  for (const [name, path, error] of [
+    ["pingHost", "globalPing", "is a global's, which is read by its own name"],
+    ["pingHost", "./config.js#host.ping", "imports no export of its own name"],
+    ["pingHost", "./config.js#* as Config.ping", "imports no export of its own name"],
+    ["Other", "./config.js#NotPendingTransition", "is imported as `NoPendingHostTransition` and as `Other`"],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), source(name, path));
+    expect(compile).toThrow(error);
+  }
+});
