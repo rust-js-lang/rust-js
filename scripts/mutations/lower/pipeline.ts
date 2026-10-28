@@ -3,11 +3,19 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "types-only-root-unwritten",
+    breaks: "a crate whose root has no JS, `pub trait Marker {} impl Marker for u32 {}`, writes no `lib.js`, the entry a host and a package import (ADR 1005)",
+    file: "src/lower/pipeline.rs",
+    find: "            lowered.types_only = module != CRATE_MOD_ID\n",
+    replace: "            lowered.types_only = true\n",
+    tests: ["test/traits.test.ts", "-t", "an empty trait implementation needs no function body"],
+  },
+  {
     name: "types-only-module-written-as-js",
     breaks: "a module of types alone writes a JS file of nothing and its map beside its `.d.ts`, where the user decided it's Rust and a `.d.ts` (ADR 1005)",
     file: "src/lower/pipeline.rs",
-    find: "            lowered.types_only = lowered.items.is_empty()\n",
-    replace: "            lowered.types_only = false && lowered.items.is_empty()\n",
+    find: "            lowered.types_only = module != CRATE_MOD_ID\n                && lowered.items.is_empty()\n",
+    replace: "            lowered.types_only = false\n                && lowered.items.is_empty()\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
   },
   {
@@ -329,22 +337,6 @@ export const mutations: Mutation[] = [
     find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
     replace: "                    export: (tcx.visibility(key).is_public())",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
-  },
-  {
-    name: "path-directory-ignored",
-    breaks: "a module in a `#[path]` directory has its JS where its module path says",
-    file: "src/lower/pipeline.rs",
-    find: "        at = tcx.parent_module_from_def_id(at.to_local_def_id());\n",
-    replace: "        return false;\n",
-    tests: ["test/modules.test.ts", "-t", "path"],
-  },
-  {
-    name: "path-inline-located",
-    breaks: "an inline module in a `#[path]` directory is placed as if it had a file",
-    file: "src/lower/pipeline.rs",
-    find: "    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {\n        return false;\n    }\n",
-    replace: "",
-    tests: ["test/modules.test.ts", "-t", "path"],
   },
   {
     "name": "named-import-alias-dropped",

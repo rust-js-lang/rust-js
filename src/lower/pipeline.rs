@@ -10,16 +10,14 @@ use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
+use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, located, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
-use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::Arc;
 
 /// Retained functions and their dependencies, grouped for output.
 #[derive(Default)]
@@ -1226,8 +1224,10 @@ pub fn lower_crate<'tcx>(
             };
             // One of types alone has no JS of its own: what it imports is
             // what its items read, of which it has none (the user's
-            // decision, ADR 1005).
-            lowered.types_only = lowered.items.is_empty()
+            // decision, ADR 1005). Not the crate's root, its entry, which a
+            // host and a package import: a JS file of nothing, as before.
+            lowered.types_only = module != CRATE_MOD_ID
+                && lowered.items.is_empty()
                 && lowered.packages.is_empty()
                 && lowered.reexports.is_empty()
                 && lowered.default_export.is_none()
@@ -1472,29 +1472,5 @@ fn declared(statement: &js::Stmt) -> Vec<String> {
         StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
         StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
         _ => Vec::new(),
-    }
-}
-
-/// Whether a `#[path]` placed `module`'s file (ADR 0273), its own or an
-/// enclosing module's, `sandpack-rsc/bridge.rs` of `#[path = "sandpack-rsc"]
-/// mod sandpack_rsc { mod bridge; }`: where no module path can name it. Not
-/// an inline module's, which is its parent's file.
-fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
-    if module == CRATE_MOD_ID {
-        return false;
-    }
-    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
-    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {
-        return false;
-    }
-    let mut at = module;
-    loop {
-        if find_attr!(tcx, at.to_def_id(), Path(..)) {
-            return true;
-        }
-        if at == CRATE_MOD_ID {
-            return false;
-        }
-        at = tcx.parent_module_from_def_id(at.to_local_def_id());
     }
 }

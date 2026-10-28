@@ -22,6 +22,7 @@ use std::sync::Arc;
 
 use rustc_ast::LitKind;
 use rustc_hir::def::{CtorKind, DefKind};
+use rustc_hir::find_attr;
 
 use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
 
@@ -194,6 +195,30 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
 fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
     let inner = tcx.hir_get_module(module).0.spans.inner_span;
     tcx.sess.source_map().lookup_source_file(inner.lo())
+}
+
+/// Whether a `#[path]` placed `module`'s file (ADR 0273), its own or an
+/// enclosing module's, `sandpack-rsc/bridge.rs` of `#[path = "sandpack-rsc"]
+/// mod sandpack_rsc { mod bridge; }`: where no module path can name it. Not
+/// an inline module's, which is its parent's file.
+pub(super) fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+    if module == CRATE_MOD_ID {
+        return false;
+    }
+    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
+    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {
+        return false;
+    }
+    let mut at = module;
+    loop {
+        if find_attr!(tcx, at.to_def_id(), Path(..)) {
+            return true;
+        }
+        if at == CRATE_MOD_ID {
+            return false;
+        }
+        at = tcx.parent_module_from_def_id(at.to_local_def_id());
+    }
 }
 
 /// A function item's type: the function, and its generic args. rustc 1.99

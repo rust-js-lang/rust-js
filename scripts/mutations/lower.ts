@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "path-directory-ignored",
+    breaks: "a module in a `#[path]` directory has its JS where its module path says",
+    file: "src/lower.rs",
+    find: "        at = tcx.parent_module_from_def_id(at.to_local_def_id());\n",
+    replace: "        return false;\n",
+    tests: ["test/modules.test.ts", "-t", "path"],
+  },
+  {
+    name: "path-inline-located",
+    breaks: "an inline module in a `#[path]` directory is placed as if it had a file",
+    file: "src/lower.rs",
+    find: "    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {\n        return false;\n    }\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "path"],
+  },
+  {
     name: "bool-const-unknown",
     breaks: "a `bool` constant read by its name isn't known a boolean, `!!ENABLED && count > 0` (ADR 0031, amended)",
     file: "src/lower.rs",

@@ -1,6 +1,6 @@
 # 1005. A module of types alone is its declarations
 
-Status: Accepted. The user's decision. Extends
+Status: Accepted. The user's decision. Amended: not the crate's root. Extends
 [0196](0196-typescript-declarations.md), whose `.d.ts` was written beside each
 module's JS.
 
@@ -37,6 +37,12 @@ TypeScript finds the `.d.ts` of, as it does of any module's.
   it. A consumer of a library reads its types from it as it does of any
   module's declarations.
 - **Without `--declarations`** nothing is written of it, as before.
+- **Not the crate's root** (amended): its entry, which a host runs and a
+  package's `main` names, is its JS, a file of nothing where it has no
+  JS, as before. `pub trait Marker {} impl Marker for u32 {}` wrote no
+  `lib.js` at all, and `test/traits.test.ts`' "an empty trait
+  implementation needs no function body" failed on main; its mutation is
+  `types-only-root-unwritten`.
 
 ## Why
 
