@@ -107,6 +107,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "            let held_rev = Some(callee) == rev",
     replace: "            let held_rev = false && Some(callee) == rev",
-    tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(range_mapped_by_a_function|held_revs_of_lazy_sources).rs$"],
   },
 ];

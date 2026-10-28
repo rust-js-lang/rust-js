@@ -221,8 +221,8 @@ export const mutations: Mutation[] = [
     "name": "collected-runtime-arrayed",
     "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
     "file": "src/lower/iterators/eager.rs",
-    "find": "                {\n                    return None;\n                }\n                // Nor one lent,",
-    "replace": "                {}\n                // Nor one lent,",
+    "find": "                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);",
+    "replace": "                {}\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);",
     "tests": [
       "test/corpus.test.ts",
       "-t",
@@ -333,14 +333,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^matrix_strings.rs$"],
     snapshots: true,
-  },
-  {
-    name: "lent-chain-listed",
-    breaks: "a lent iterator's chain collected is listed whole, `Array.from($lent(it).filter(f)).slice(0, 2)`, so what `take` leaves of it is gone from its lender",
-    file: "src/lower/iterators/eager.rs",
-    find: "                if is_lent(chain_source(&list)) {\n",
-    replace: "                if false && is_lent(chain_source(&list)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
   },
   {
     name: "rchunks-not-fresh",

@@ -445,11 +445,6 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                 {
                     return None;
                 }
-                // Nor one lent, `$lent(it).filter(f)`'s: listed, it's stepped to
-                // its end, where its lender reads on from where a `take` stops.
-                if is_lent(chain_source(&list)) {
-                    return None;
-                }
                 let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
                 Some(array_stepped(items))
             }
@@ -478,14 +473,6 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
         return None;
     };
     (callee.helper_name() == Some("$lazyChain")).then(|| part(e))
-}
-
-/// What a chain of methods is called on: `it` of `it.filter(f).map(g)`.
-fn chain_source(e: &Expr) -> &Expr {
-    match &e.kind {
-        js::ExprKind::Call(callee, _) if let js::ExprKind::Member(source, _) = &callee.kind => chain_source(source),
-        _ => e,
-    }
 }
 
 /// Whether `e` is `Iterator.from(x)`.
