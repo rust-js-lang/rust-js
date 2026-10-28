@@ -246,14 +246,14 @@ pub(in crate::lower::mir::tidy) fn written_at(test: &Expr) -> js::Span {
 /// last, where `jumps into branches` made the rest its `else`, `if (c) {
 /// a; continue; } b` (ADR 0745). A loop's label those were the last jumps
 /// to goes with them.
-pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], continues: &[(js::Span, js::Span)]) {
+pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
         {
             let named = label.as_deref().is_some_and(|l| js::names_jump(body, l));
-            ends_going_on(body, label, continues);
+            ends_going_on(body, label, written);
             if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {
                 *label = None;
             }
@@ -263,11 +263,46 @@ pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], continues:
 
 /// A `continue` where the body of loop `looped` ends anyway, in the
 /// branches that end it: none. Of an `else` that's only one, `if (c) {
-/// ..; return; } else { continue; }`, no `else` (ADR 0684).
-fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(js::Span, js::Span)]) {
+/// ..; return; } else { continue; }`, no `else` (ADR 0684). And of an
+/// `if` the program wrote with an `else` of the loop's `break`, `else if
+/// (b) { .. } else { break; }`, MIR's `if (b) { ..; continue; } break;`:
+/// the `if` and its `else` (ADR 0237, amended).
+fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate::lower::mir::hints::Written) {
+    let continues = &written.continues;
     // The `if` of a `continue` the program wrote, what goes on after it its
     // `else`: that after it, as written, its `continue` kept.
     let going_on = |l: &Option<String>| l.is_none() || l == looped;
+    if let [
+        ..,
+        Stmt {
+            kind: StmtKind::If(_, then, None),
+            span,
+        },
+        Stmt {
+            kind: StmtKind::Break(broken),
+            span: broken_at,
+        },
+    ] = &stmts[..]
+        && going_on(broken)
+        && broken_at.is_none()
+        && matches!(then.last(), Some(Stmt { kind: StmtKind::Continue(l), span }) if going_on(l) && span.is_none())
+        && super::tails::written_else(
+            &StmtKind::If(Expr::undefined(), then.clone(), Some(Vec::new())).at(*span),
+            &written.elses,
+        )
+    {
+        let broken = stmts.pop().expect("matched");
+        let Some(Stmt {
+            kind: StmtKind::If(test, then, otherwise),
+            ..
+        }) = stmts.last_mut()
+        else {
+            unreachable!("matched")
+        };
+        then.pop();
+        test.facts = test.facts.with(js::Known::Else);
+        *otherwise = Some(vec![broken]);
+    }
     if let Some(Stmt {
         kind: StmtKind::If(_, then, otherwise @ Some(_)),
         span,
@@ -277,7 +312,7 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(j
     {
         let rest = otherwise.take().expect("matched");
         stmts.extend(rest);
-        return ends_going_on(stmts, looped, continues);
+        return ends_going_on(stmts, looped, written);
     }
     let more = stmts.len() > 1;
     match stmts.last_mut().map(|s| &mut s.kind) {
@@ -285,12 +320,12 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(j
             stmts.pop();
         }
         Some(StmtKind::If(_, then, otherwise)) => {
-            ends_going_on(then, looped, continues);
+            ends_going_on(then, looped, written);
             if let Some(branch) = otherwise {
                 if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), .. }] if going_on(l)) {
                     *otherwise = None;
                 } else {
-                    ends_going_on(branch, looped, continues);
+                    ends_going_on(branch, looped, written);
                 }
             }
         }
@@ -298,7 +333,7 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, continues: &[(j
         // case's `break` past it goes on too (ADR 0905, amended).
         Some(StmtKind::Switch {
             default: Some(default), ..
-        }) => ends_going_on(default, looped, continues),
+        }) => ends_going_on(default, looped, written),
         _ => {}
     }
 }

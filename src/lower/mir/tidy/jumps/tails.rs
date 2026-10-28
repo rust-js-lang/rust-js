@@ -784,6 +784,7 @@ fn linked_elses(
         StmtKind::Break(_) | StmtKind::Continue(_) => s.span.is_none(),
         _ => false,
     };
+    let jumps = |s: &Stmt| matches!(s.kind, StmtKind::Break(_) | StmtKind::Continue(_));
     let nothing = |s: &Stmt| match &s.kind {
         StmtKind::Return(None) => made(s),
         StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined) && made(s),
@@ -846,17 +847,32 @@ fn linked_elses(
                 _ if plain(exit, rest, linked) => None,
                 (true, false) => branch(otherwise, None).map(|k| (false, k)),
                 (false, true) => branch(then, Some(cond)).map(|k| (true, k)),
+                // A jump alone MIR made, or put where the test is, `if (!b)
+                // { break; }` of a written `else { break; }` (`early
+                // breaks`): the branch the rest isn't written in.
+                (false, false) if matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) => {
+                    (branch(then, Some(cond)).map(|k| (true, k)))
+                        .or_else(|| branch(otherwise, None).map(|k| (false, k)))
+                }
                 _ => None,
             };
             if let Some((turned, k)) = turned {
                 let after = stmts.split_off(at + 1 + k);
                 let mut rest = stmts.split_off(at + 1);
                 stmts.extend(after);
-                let StmtKind::If(test, exit, None) =
+                let StmtKind::If(test, mut exit, None) =
                     std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
                 else {
                     unreachable!("matched")
                 };
+                // The jump `early breaks` put where the test is: written in
+                // neither branch, so no `let … else`'s, written first.
+                if let [e] = &mut exit[..]
+                    && jumps(e)
+                    && within(cond, e.span)
+                {
+                    e.span = js::Span::NONE;
+                }
                 let linking = binds_link(if turned { &exit } else { &rest }, otherwise);
                 // A guard of its own in what's now the `else`, an `else if`'s,
                 // which the walk has passed: its chain's next link, where the

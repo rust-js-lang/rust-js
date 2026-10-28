@@ -560,7 +560,7 @@ pub(super) const STAGES: &[Stage] = &[
             // what was after a loop inside it, too, which `while heads` put
             // after it, its label with it (ADR 0702, amended).
             pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written))
             }),
             pass("let else first", |b, h| {
                 // And where a unit function goes on to its end, as to the
@@ -676,7 +676,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| {
                     case_rests::returns_of_cases(s, &h.written.switches, h.returns)
                 });
-                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
+                js::statement_lists(b, &mut |s| tail_continues(s, h.written))
             }),
             // A block a case ends with: its `break`s the case's (ADR 0790).
             pass("blocks ending cases", |b, h| {

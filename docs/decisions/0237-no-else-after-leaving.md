@@ -126,3 +126,40 @@ branch that returns stays, as written" and the corpus
 `guarded-else-unmarked`, `both-branches-else-unmarked`,
 `written-else-keeps-what-follows`, `else-if-link-not-a-link`,
 `plain-jumps-marked-written` and `lone-jumps-given-an-else`.
+
+## Amendment: a written `else { break; }` of a loop's chain stays
+
+React's getOwnerStackByComponentInfoInDev (ReactFiberComponentStack.js)
+walks its owners with a chain whose last arm is a `break` the program
+wrote:
+
+```rust
+while let Some(current) = owner {
+    if .. {
+        ..
+    } else if current.debug_stack.is_some() {
+        ..
+    } else {
+        break;
+    }
+}
+```
+
+The chain printed `} else { if (owner.debugStack != null) { ..; continue;
+} break; }`, and a `for`'s of an arm that returns before it `} else { if
+(!(..)) { break; } .. }`. The written `else { break; }` reaches tidy as
+a jump MIR made, of no span, or, once `early breaks` has made it the
+guard `if (!b) { break; }`, of its test's span: `written_elses` found no
+statement written in either branch and left the guard.
+
+- **At a loop body's end, `if (b) { ..; continue; } break;` of an `if`
+  the program wrote with an `else`, both jumps MIR's, is `if (b) { .. }
+  else { break; }`** (`tail_continues`), the `else` marked written.
+- **A guard whose exit is a lone jump MIR made, or put where the test is,
+  is the written `else`'s** where the rest is written in the other
+  branch (`written_elses`); the jump loses the test's span, so `let else
+  first` doesn't take it for a `let … else`'s, written first.
+
+Each is the same jump either way. Held by `test/corpus/else_break_ends_loop.rs`,
+against native Rust; mutations `written-else-break-continued`,
+`written-else-of-a-lone-jump-guarded` and `written-else-jump-span-kept`.

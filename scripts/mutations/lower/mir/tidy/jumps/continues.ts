@@ -5,6 +5,15 @@ const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are a
 
 export const mutations: Mutation[] = [
   {
+    name: "written-else-break-continued",
+    breaks: "a loop's chain whose last arm is the `break` the program wrote is `} else { if (..) { ..; continue; } break; }`, not `} else if (..) { .. } else { break; }` (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        && super::tails::written_else(\n",
+    replace: "        && false\n        && super::tails::written_else(\n",
+    tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
+    snapshots: true,
+  },
+  {
     name: "last-loop-break-returned",
     breaks: "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
@@ -24,7 +33,7 @@ export const mutations: Mutation[] = [
     name: "default-tail-continue-kept",
     breaks: "a `switch` that ends a loop's body keeps its `default`'s `continue;`, which goes on anyway (ADR 0905, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        }) => ends_going_on(default, looped, continues),\n",
+    find: "        }) => ends_going_on(default, looped, written),\n",
     replace: "        }) => {}\n",
     tests: ["test/lowering-switches.test.ts", "-t", "arm that returns ends with its return"],
   },

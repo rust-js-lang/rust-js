@@ -3,6 +3,24 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-else-of-a-lone-jump-guarded",
+    breaks: "a chain's last arm of the `break` the program wrote, which `early breaks` made `if (!b) { break; }`, stays a guard in the `else`, `} else { if (!(..)) { break; } .. }`, not `} else if (..) { .. } else { break; }` (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                (false, false) if matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) => {\n",
+    replace: "                (false, false) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-else-jump-span-kept",
+    breaks: "the `break` `early breaks` put where the test is keeps the test's span, so `let else first` takes the written `else { break; }` for a `let … else`'s and makes it a guard again (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                    e.span = js::Span::NONE;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
+    snapshots: true,
+  },
+  {
     name: "written-exits-at-the-end-nested",
     breaks: "an `if` that returns, written before a unit function's end MIR joined its `return` to, stays `if (!t) { rest }`, the rest nested (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",

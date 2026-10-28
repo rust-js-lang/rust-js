@@ -1164,7 +1164,7 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 An `else` you wrote after a branch that returns stays an `else`, and an
 `else if` chain stays one chain, whether statements follow the `if`, as
-`place`'s do, or not; an `if` you wrote without an `else` has none, as
+`place`'s do, or not, a loop's ending `else { break; }` too; an `if` you wrote without an `else` has none, as
 ESLint's `no-else-return` writes it
 ([ADR 0237](../../decisions/0237-no-else-after-leaving.md), amended); a function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..

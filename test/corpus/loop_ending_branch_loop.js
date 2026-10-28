@@ -22,8 +22,9 @@ function hasTag(root, tag) {
     index++;
     if (fiber.tag === 7) {
       continue;
+    } else {
+      depth = (depth + 1) | 0;
     }
-    depth = (depth + 1) | 0;
 
     if (fiber.tag === tag) {
       console.log(`found at ${depth}`);
