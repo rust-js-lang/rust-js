@@ -120,3 +120,21 @@ native Rust does; on main, two of its four forms threw. The corpus passes.
   `specialized-facts-unfollowed`, `one-shot-never`,
   `flatten-items-not-converted`, `ref-into-iter-steps-missing`,
   `in-place-flatten-unmarked`.
+
+## Amendment: `OneShot` left out of the optimizations decides nothing now (2026-10-28)
+
+The mutation `one-shot-optimizing`, `OneShot` added to `OPTIMIZING`, so
+that `optimized_default` would resolve `FlattenCompat`'s specialized
+methods to the general impl's, survived main's check. Since 7164b02aa
+(#380), a call whose impl a fact picks asks `fact_specialization` first,
+and takes its facts where rustc's resolution is none or the selected
+impl's own method, which `optimized_default` would give
+(`traits/calls.rs`); `resolves_to_crate` answers the same of either
+(`items.rs`). Only std's generic bodies call `FlattenCompat`'s methods
+unresolved. With the mutation, `test/std-package.test.ts` (the committed
+`@rust-js/std` compiled again), `test/iterator-forms.test.ts`, the 75
+corpus cases of `flatten`, `flat_map` or `size_hint` with their
+snapshots, and the lowering-iterators, collections, options, diagnostics,
+tidy-stages, snapshots and js-builtins suites all pass: it changes no JS.
+The mutation goes; `OPTIMIZING`'s comment still says why `OneShot` isn't
+one, as std's `OneShot` impls change what `size_hint` gives.
