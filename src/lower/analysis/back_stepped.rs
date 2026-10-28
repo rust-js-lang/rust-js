@@ -8,8 +8,8 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, copied_source, filtered_source, flattened_source, is_double_ended, is_exact_size,
-    is_iter_adapter_def, mapped_source,
+    Recognition, back_stepped_source, copied_source, enumerated_source, filtered_source, flattened_source,
+    is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -173,6 +173,16 @@ fn back_stepped_adapter<'tcx>(
     // steps from its back by its own methods (ADR 0919).
     if flattened_source(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
+    }
+    // An enumeration of items with a destructor, held in a variable to drop
+    // them, whose own `next_back()` the crate calls: std's compiled
+    // `Enumerate` where it's held (ADR 0871), which steps its source by
+    // its dictionaries (#383).
+    if enumerated_source(tcx, adapter).is_some() {
+        let item = recognition.iterator_item(adapter);
+        return item
+            .is_some_and(&drops)
+            .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
     let mapped = mapped_source(tcx, adapter);
     let copied = copied_source(tcx, adapter);

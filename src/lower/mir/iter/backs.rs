@@ -213,6 +213,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let knowing = self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?;
                         self.closing(knowing, held, span)?
                     }
+                    // Of one the crate steps from its back, std's compiled
+                    // struct, a `Fuse`'s, given its compiled back and length,
+                    // as `as_exact_size` makes it (#383).
+                    None if self.stepped_from_its_back(output)
+                        && let Some(knowing) = self.knowing_held(receiver.clone(), iter_ty, span)? =>
+                    {
+                        knowing
+                    }
                     None => self.closing(receiver.clone(), held, span)?,
                 };
                 Expr::call_helper("$enumerate", vec![it])

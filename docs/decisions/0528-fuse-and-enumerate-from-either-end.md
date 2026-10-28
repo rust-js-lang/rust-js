@@ -105,3 +105,27 @@ source's length where it has one, as it does its back and its `nth`
 (`enumerate_rev_drops`, `closing-length-unknown`). The case's two
 iterators, closed to drop what they don't give, grow the readability
 measure's `$iter` share, as any of items with a destructor do.
+
+## Amendment: one of items with a destructor beside a held one (#383)
+
+`vec![..].into_iter().fuse().enumerate().rev()`, of items with a
+destructor, was refused where the same function held one of that type,
+`let mut it = v.into_iter().fuse().enumerate(); it.next_back()`. The held
+one drops if a later call panics, so those calls are in a `try`, and the
+`rev()`'s enumeration, made before its call, is put in a variable, where
+its form isn't seen.
+
+- The back-stepped analysis records an enumeration of items with a
+  destructor whose own `next_back()` the crate calls. `knows_its_back`
+  reads it so, as it does a map or a filter so recorded (ADR 0545).
+- The `rev()` then makes its source knowing its back where it's made,
+  `backs.rs`' rule. Of std's compiled `Fuse`, that's `$knowing(fuse,
+  ..)`, its compiled back and length, as `as_exact_size` makes it, not
+  the struct as it is, which `$enumerate` would ask a `len()` of. Only
+  of one so recorded: another's form, `$enumerate(iterator_fuse(..))`,
+  stays as it was.
+
+`test/corpus/enumerate_of_droppers_from_back.rs` checks both forms, their
+indices and drop order, against native Rust. The mutations are
+`enumerate-of-droppers-unrecorded`, `back-stepped-enumerate-unknown` and
+`back-stepped-enumerate-fuse-unwrapped`.

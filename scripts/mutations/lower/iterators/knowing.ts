@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "back-stepped-enumerate-unknown",
+    breaks: "an enumeration the crate steps from its back, made knowing it, isn't read as knowing it: refused (#383)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                || self.stepped_from_its_back(ty);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_droppers_from_back.rs$"],
+  },
+  {
     name: "stepped-range-restepped",
     breaks: "a range stepped from its start already, an `enumerate()`'s source, is stepped as a range again where it's made knowing its length: `(1..5).enumerate()` given to code stepping its back is `(false, 0)`, not `(true, 3)` (#385)",
     file: "src/lower/iterators/knowing.rs",

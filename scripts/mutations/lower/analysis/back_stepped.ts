@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "enumerate-of-droppers-unrecorded",
+    breaks: "an enumeration of items with a destructor whose `next_back()` the crate calls isn't recorded stepped from its back: `rev()` of one beside it, flushed into a variable, is refused (#383)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "        return item\n            .is_some_and(&drops)\n",
+    replace: "        return item\n            .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_droppers_from_back.rs$"],
+  },
+  {
     name: "closing-map-asked-unrecorded",
     breaks: "a map whose closure has a destructor, held in a variable, given where generic code asks its back and length isn't made knowing them where it's made: refused as an `ExactSizeIterator` (#385)",
     file: "src/lower/analysis/back_stepped.rs",

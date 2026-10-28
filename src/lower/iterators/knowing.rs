@@ -95,7 +95,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of the crate's, made knowing both (`user_iterator_knowing`).
         if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty) {
             return (self.knows_its_back(source) || self.user_double_ended(source))
-                && (self.knows_its_length(source) || self.user_exact_size(source));
+                && (self.knows_its_length(source) || self.user_exact_size(source))
+                || self.stepped_from_its_back(ty);
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_double_ended(self.tcx, id);
