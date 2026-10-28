@@ -540,8 +540,13 @@ pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
 
 /// `else { if (t) { throw e; } s }`, a check MIR wrote first in an `else if`
 /// chain's last `else`: `else if (!t) { s } else { throw e; }`, the chain as
-/// written.
-pub(super) fn chained_checks(stmts: &mut [Stmt]) {
+/// written. Not a check the program wrote as an `if` of its own, without an
+/// `else` (`Written::thens`), which stays one, `else { if (t) { throw e; } s
+/// }` (React's markRef).
+pub(super) fn chained_checks(stmts: &mut [Stmt], thens: &[(js::Span, js::Span)]) {
+    let written = |check: &Stmt| {
+        (thens.iter()).any(|(cond, _)| !check.span.is_none() && cond.lo <= check.span.lo && check.span.hi <= cond.hi)
+    };
     for stmt in stmts {
         let StmtKind::If(_, _, Some(otherwise)) = &mut stmt.kind else {
             continue;
@@ -551,6 +556,7 @@ pub(super) fn chained_checks(stmts: &mut [Stmt]) {
         };
         if !matches!(&check.kind, StmtKind::If(_, then, None)
             if matches!(then.as_slice(), [Stmt { kind: StmtKind::Throw(_), .. }]))
+            || written(check)
         {
             continue;
         }

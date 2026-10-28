@@ -568,4 +568,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^assignments_chained.rs$|^written_tails_apart.rs$"],
     snapshots: true,
   },
+  {
+    name: "chained-checks-of-written-ifs",
+    breaks: "React's markRef, a match's last arm of two `if`s written apart, the first a `panic!`, is `} else if (..) { throw .. } else if (..) {`, the check a link of the chain (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            || written(check)\n",
+    replace: "",
+    tests: ["test/lowering-written-elses.test.ts", "-t", "stays an if of its own"],
+  },
 ];

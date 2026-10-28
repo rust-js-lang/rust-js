@@ -762,10 +762,10 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
             }
             StmtKind::If(e, a, b) => {
                 // Its test as a test, `!!x` the `x` it tests, its `if`'s facts kept (rg3).
-                let of_if = [js::Known::Else, js::Known::Guard].map(|fact| e.facts.has(fact).then_some(fact));
+                let of_if = e.facts.of_statement();
                 *e = e.tested();
                 expr(e);
-                (of_if.into_iter().flatten()).for_each(|fact| e.facts = e.facts.with(fact));
+                e.facts = e.facts.and(of_if);
                 block(a, false);
                 if let Some(b) = b {
                     block(b, false);

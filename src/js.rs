@@ -579,6 +579,18 @@ impl Facts {
     pub fn with(self, known: Known) -> Facts {
         Facts(self.0 | Facts::of(known).0)
     }
+
+    /// These and `other`'s.
+    pub fn and(self, other: Facts) -> Facts {
+        Facts(self.0 | other.0)
+    }
+
+    /// What a test says of its `if`, not of its value: a written `else`
+    /// (`Known::Else`) and a guard (`Known::Guard`), which a test made again
+    /// of the same truth keeps, `flags & 4` of `(flags & 4) !== 0`.
+    pub fn of_statement(self) -> Facts {
+        Facts(self.0 & (Facts::of(Known::Else).0 | Facts::of(Known::Guard).0))
+    }
 }
 
 /// What the lowering knows of an expression that its kind doesn't say:

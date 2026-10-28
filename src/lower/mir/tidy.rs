@@ -287,10 +287,7 @@ fn negations(e: &mut Expr) {
         let made = Expr::unary(*op, (**arg).clone());
         // What an `if`'s test says of the `if`, its written `else`, kept:
         // not of the expression, which `made` is again.
-        let facts = match e.facts.has(js::Known::Else) {
-            true => made.facts.with(js::Known::Else),
-            false => made.facts,
-        };
+        let facts = made.facts.and(e.facts.of_statement());
         *e = Expr {
             span: e.span,
             facts,

@@ -372,8 +372,8 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
             }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
-            pass("chained checks", |b, _| {
-                js::statement_lists(b, &mut |s| chained_checks(s))
+            pass("chained checks", |b, h| {
+                js::statement_lists(b, &mut |s| chained_checks(s, &h.written.thens))
             }),
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
             // A flag a block MIR made gives, of a test one now, `bb: { if (a

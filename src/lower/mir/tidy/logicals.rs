@@ -1078,11 +1078,14 @@ fn bit_test(test: &mut Expr, integer: &dyn Fn(&str) -> bool, matched: &dyn Fn(js
                 } if zero.as_int() == Some(0) && bits(&x) => *x,
                 bits => bits,
             };
-            let span = test.span;
+            let (span, kept) = (test.span, test.facts.of_statement());
             *test = match ne {
                 true => bits,
                 false => Expr::unary(UnaryOp::Not, bits),
             };
+            // What the test says of its `if`, its written `else` (ADR 0237,
+            // amended).
+            test.facts = test.facts.and(kept);
             if !span.is_none() {
                 test.span = span;
             }

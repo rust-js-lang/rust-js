@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-chained-checks-kept",
     "breaks": "an else-if chain's arm before a panic from MIR is a check in its else, `if (t._0 !== \"/\") throw ..`",
     "file": "src/lower/mir/tidy/stages.rs",
-    "find": "            pass(\"chained checks\", |b, _| {\n                js::statement_lists(b, &mut |s| chained_checks(s))\n            }),\n",
+    "find": "            pass(\"chained checks\", |b, h| {\n                js::statement_lists(b, &mut |s| chained_checks(s, &h.written.thens))\n            }),\n",
     "replace": "",
     "tests": ["test/snapshots.test.ts", "-t", "calc"]
   },

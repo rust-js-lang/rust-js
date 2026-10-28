@@ -254,3 +254,34 @@ N: the same branches either way. Held by
 `test/lowering-comments-ends.test.ts`'s "an else of only comments after a
 branch that leaves stays", run in JS, and `match_last_arm_else`'s
 `anded`, against native Rust; mutation `if-facts-lost-to-its-test`.
+
+## Amendment: a check written apart, and a bit test made again, keep the `if`s written (2026-10-28, me2)
+
+Two regressions of "a match's last arm is its `else`" (above), found in
+the React port. Case ([0262](0262-when-rust-and-js-disagree.md)) N for
+each: the same statements run on each path.
+
+- **React's markRef**, `} else { if (typeof ref !== 'function' && ..) {
+  throw .. } if (current === null || ..) { .. } }`: its port's last arm,
+  now the `else`, printed `} else if (..) { throw .. } else if (..) { ..
+  }`. Tidy's `chained_checks` makes `else { if (t) { throw e; } s }` the
+  chain `else if (!t) { s } else { throw e; }`, which is what MIR makes of
+  `else if c { s } else { panic!() }`; it took the program's own `if`,
+  written without an `else`, too. **A check the program wrote as an `if`
+  of its own (`Written::thens`) stays one.**
+- **React's updateHostRoot**, `if (workInProgress.flags &
+  ForceClientRender) { return ..; } else if (nextChildren !==
+  prevChildren) { .. }`: its port's `(flags & FORCE_CLIENT_RENDER) != 0`,
+  which `bit_tests` makes the truth test `flags & 4`, printed `} if
+  (next !== prev) {`, the rebuilt test without `Known::Else`. **What a
+  test says of its `if` is one set, `Facts::of_statement` (`Known::Else`,
+  `Known::Guard`), kept by each pass that makes a test again of the same
+  truth**: `bit_tests`, tidy's `negations` and preparation's `block`,
+  which each named the facts on their own before.
+
+Held by `test/lowering-written-elses.test.ts`, "a written if that throws
+in a match's last arm stays an if of its own" and "a bit test made again
+keeps its if's written else", run in JS; mutations
+`chained-checks-of-written-ifs` (`tidy/branches.ts`),
+`bit-test-drops-its-else` (`tidy/logicals.ts`), and
+`negation-else-dropped`, `if-facts-lost-to-its-test` on the shared set.

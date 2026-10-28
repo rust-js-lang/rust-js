@@ -517,4 +517,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-bool-ternaries.test.ts"],
   },
+  {
+    name: "bit-test-drops-its-else",
+    breaks: "React's updateHostRoot, `if (flags & 4) { return ..; } else if (..)`, is `} if (next !== prev)`: the truth test made again loses its written `else` (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            test.facts = test.facts.and(kept);\n",
+    replace: "",
+    tests: ["test/lowering-written-elses.test.ts", "-t", "keeps its if's written else"],
+  },
 ];
