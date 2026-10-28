@@ -27,14 +27,15 @@ function addEdge(graph, v1, v2, c, VOrd, VCopy, VTreeMap) {
 }
 
 function singles(pairs, VOrd, VCopy, VTreeMap) {
-  return pairs
-    .values()
-    .map((_2) => {
-      const pair = [VCopy ? VCopy.copy(_2[0]) : _2[0], _2[1]];
-      return [[VCopy ? VCopy.copy(pair[0]) : pair[0], pair[1]]];
-    })
-    .map((x) => $treeFrom(new VTreeMap(), x, false, VOrd.cmp))
-    .toArray();
+  return Array.from(
+    pairs
+      .values()
+      .map((_2) => {
+        const pair = [VCopy ? VCopy.copy(_2[0]) : _2[0], _2[1]];
+        return [[VCopy ? VCopy.copy(pair[0]) : pair[0], pair[1]]];
+      })
+      .map((x) => $treeFrom(new VTreeMap(), x, false, VOrd.cmp)),
+  );
 }
 
 function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {

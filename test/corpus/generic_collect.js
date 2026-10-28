@@ -27,11 +27,7 @@ function bagDebug_fmt(bag) {
 }
 
 function bagFromIteratorU32_fromIter(items) {
-  return [
-    Iterator.from(items)
-      .filter((x) => x % 3 !== 0)
-      .toArray(),
-  ];
+  return [Array.from(Iterator.from(items).filter((x) => x % 3 !== 0))];
 }
 
 function parsed(words, BFromIteratorResult) {

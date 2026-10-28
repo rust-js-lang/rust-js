@@ -204,14 +204,13 @@ function main() {
   }
   const nested = $lazyChain(value$11, $closing($iter(tmp$8), $dropEach(loudDrop_drop)));
   console.log(
-    `[${$skipping(nested, 3, loudDrop_drop)
-      .map((l) => {
+    `[${Array.from(
+      $skipping(nested, 3, loudDrop_drop).map((l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      })
-      .toArray()
-      .join(", ")}]`,
+      }),
+    ).join(", ")}]`,
   );
   const value$12 = $rev($closing($iter(louds(34, 4)), $dropEach(loudDrop_drop)));
   let tmp$9;

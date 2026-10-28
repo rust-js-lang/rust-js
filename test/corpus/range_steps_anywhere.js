@@ -17,13 +17,13 @@ export function entry() {
 
 function every(it, n) {
   const step = $step(n);
-  return $stepBy(Iterator.from(it), step).toArray();
+  return Array.from($stepBy(Iterator.from(it), step));
 }
 
 function main() {
   const held = { start: 0, end: 4294967295 };
   const step = $step((1 << 30) >>> 0);
-  const v = $stepBy($iterator(held, $rangeNext), step).toArray();
+  const v = Array.from($stepBy($iterator(held, $rangeNext), step));
   console.log(`[${v.join(", ")}]`);
   console.log(`[${every($lazyRange(0, 4294967295), (1 << 30) >>> 0).join(", ")}]`);
   const start = 0;
@@ -31,16 +31,14 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const back = $iterator({ start: 0, end: 4294967295 }, $rangeNextBack);
   const step$1 = $step((1 << 30) >>> 0);
-  const w = $stepBy(back, step$1).toArray();
+  const w = Array.from($stepBy(back, step$1));
   console.log(`[${w.join(", ")}]`);
   const skipped = $lazyRange(3, 4294967295);
   const step$2 = $step((1 << 31) >>> 0);
-  console.log(`[${$stepBy(skipped, step$2).toArray().join(", ")}]`);
+  console.log(`[${Array.from($stepBy(skipped, step$2)).join(", ")}]`);
   console.log(
     `${$debugStr(
-      $stepBy($iterator({ start: "a", end: "k" }, $rangeNext), 3)
-        .toArray()
-        .join(""),
+      Array.from($stepBy($iterator({ start: "a", end: "k" }, $rangeNext), 3)).join(""),
     )}`,
   );
 }

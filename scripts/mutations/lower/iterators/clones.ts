@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copied-own-clone-spread",
-    breaks: "a clone of a `copied()` of the crate's own iterator clones the JS iterator made of it as the iterator's struct, `{ ...copied }`, which throws `again.toArray is not a function` (#384)",
+    breaks: "a clone of a `copied()` of the crate's own iterator clones the JS iterator made of it as the iterator's struct, `{ ...copied }`, whose items `Array.from(again)` reads none of, an empty array (#384)",
     file: "src/lower/iterators/clones.rs",
     find: "        let of = self.clone_value(Expr::member(place.clone(), \"of\"), source, span, out)?;\n",
     replace: "        return self.clone_value(place, source, span, out);\n        let of = self.clone_value(Expr::member(place.clone(), \"of\"), source, span, out)?;\n",

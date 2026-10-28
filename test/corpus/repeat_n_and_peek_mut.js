@@ -30,10 +30,10 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function repeated() {
-  const v = $repeatingN(7, 3).toArray();
-  const s = $repeatingN("ab", 2).toArray().join("");
+  const v = Array.from($repeatingN(7, 3));
+  const s = Array.from($repeatingN("ab", 2)).join("");
   console.log(`[${v.join(", ")}] ${s}`);
-  const all = $repeatingN([1], 2, (value) => loudClone_clone(value), loudDrop_drop).toArray();
+  const all = Array.from($repeatingN([1], 2, (value) => loudClone_clone(value), loudDrop_drop));
   console.log(`all ${all.length}`);
   try {
     const none = $repeatingN([2], 0, (value) => loudClone_clone(value), loudDrop_drop);

@@ -8,12 +8,12 @@ export function entry() {
 
 function main() {
   const a = [1, 2, 3];
-  const seven = $cycle(a).take(7).toArray();
+  const seven = Array.from($cycle(a).take(7));
   console.log(`[${seven.join(", ")}]`);
 
   const it = $iter(a);
   $next(it);
-  const rest = $cycle(it.items.slice(it.at, it.end)).take(5).toArray();
+  const rest = Array.from($cycle(it.items.slice(it.at, it.end)).take(5));
   console.log(`[${rest.join(", ")}]`);
 
   const held = $cycle(a);
@@ -26,14 +26,12 @@ function main() {
   );
 
   const names = ["x", "y"];
-  const owned = $cycle(names).take(5).toArray();
+  const owned = Array.from($cycle(names).take(5));
   owned[$at(owned, 0)] += "!";
   console.log(`[${owned.map((item) => $debugStr(item)).join(", ")}]`);
 
   const lists = [[1], [2]];
-  const copies = $cycle(lists, (item) => item.slice())
-    .take(3)
-    .toArray();
+  const copies = Array.from($cycle(lists, (item) => item.slice()).take(3));
   $index(copies, 0).push(9);
   console.log(`[${copies.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 

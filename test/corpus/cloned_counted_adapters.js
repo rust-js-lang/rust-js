@@ -43,8 +43,7 @@ function main() {
     clone: (value) => $iter(value.items.slice(value.at, value.end)),
   });
   console.log(
-    `${$count(numbered)} [${$roomForHint(copy, 8, false)
-      .toArray()
+    `${$count(numbered)} [${Array.from($roomForHint(copy, 8, false))
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );

@@ -42,53 +42,55 @@ function countDoubleEndedIterator_rfold(count, init, f) {
 }
 
 function main() {
-  const value = $lent(
-    $rev(
-      $stepByEnds(
-        $iterator(
-          { at: 0, end: 9 },
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
+  const value = Array.from(
+    $lent(
+      $rev(
+        $stepByEnds(
+          $iterator(
+            { at: 0, end: 9 },
+            countIterator_next,
+            false,
+            countDoubleEndedIterator_nextBack,
+            (it) => $exactLen(countIterator_sizeHint(it)),
+            countIterator_sizeHint,
+            undefined,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_rfold,
+            countDoubleEndedIterator_nthBack,
+          ),
+          2,
         ),
-        2,
       ),
-    ),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
+    )
+      .drop(1)
+      .take(1),
+  )[0];
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $lent(
-    $rev(
-      $stepByEnds(
-        $iterator(
-          { at: 0, end: 10 },
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
+  const value$1 = Array.from(
+    $lent(
+      $rev(
+        $stepByEnds(
+          $iterator(
+            { at: 0, end: 10 },
+            countIterator_next,
+            false,
+            countDoubleEndedIterator_nextBack,
+            (it) => $exactLen(countIterator_sizeHint(it)),
+            countIterator_sizeHint,
+            undefined,
+            undefined,
+            undefined,
+            countDoubleEndedIterator_rfold,
+            countDoubleEndedIterator_nthBack,
+          ),
+          3,
         ),
-        3,
       ),
-    ),
-  )
-    .drop(2)
-    .take(1)
-    .toArray()[0];
+    )
+      .drop(2)
+      .take(1),
+  )[0];
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
 }
 //# sourceMappingURL=case.js.map

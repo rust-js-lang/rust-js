@@ -222,38 +222,24 @@ function main() {
     )}`,
   );
   console.log(
-    `[${$rev(
-      $skipping(
-        $iterator(
-          [0, 6],
-          plainDoubleEndedIterator_nextBack,
-          false,
-          plainIterator_next,
-          (it) => $exactLen(plainIterator_sizeHint(it)),
-          plainIterator_sizeHint,
+    `[${Array.from(
+      $rev(
+        $skipping(
+          $iterator(
+            [0, 6],
+            plainDoubleEndedIterator_nextBack,
+            false,
+            plainIterator_next,
+            (it) => $exactLen(plainIterator_sizeHint(it)),
+            plainIterator_sizeHint,
+          ),
+          2,
         ),
-        2,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $mapEnds(
-        $iterator(
-          [0, 4],
-          plainDoubleEndedIterator_nextBack,
-          false,
-          plainIterator_next,
-          undefined,
-          plainIterator_sizeHint,
-        ),
-        (x) => (x * 3) | 0,
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($mapEnds($iterator([0, 4], plainDoubleEndedIterator_nextBack, false, plainIterator_next, undefined, plainIterator_sizeHint), (x) => (x * 3) | 0))).join(", ")}]`,
   );
   const filter = $held(
     $filterEnds(

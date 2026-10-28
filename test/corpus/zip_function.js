@@ -26,9 +26,7 @@ function main() {
   const v = [10, 20, 30];
   const s = new Set(Array.from("zyx"));
   console.log(
-    `[${$lazyZip(v, $sortedKeys(s, $cmp))
-      .map(([a, b]) => String(a) + b)
-      .toArray()
+    `[${Array.from($lazyZip(v, $sortedKeys(s, $cmp)).map(([a, b]) => String(a) + b))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

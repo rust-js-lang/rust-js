@@ -11,37 +11,43 @@ function loudDrop_drop(loud) {
 }
 function lazy() {
   const v = [1, 2, 3, 4];
-  const r = $lazyScan(
-    v.values().map((x) => {
-      console.log(`map ${x}`);
-      return (x * 2) | 0;
-    }),
-    0,
-    (acc, x) => {
-      acc.value = (acc.value + x) | 0;
-      return acc.value < 6 ? acc.value : undefined;
-    },
-  ).toArray();
+  const r = Array.from(
+    $lazyScan(
+      v.values().map((x) => {
+        console.log(`map ${x}`);
+        return (x * 2) | 0;
+      }),
+      0,
+      (acc, x) => {
+        acc.value = (acc.value + x) | 0;
+        return acc.value < 6 ? acc.value : undefined;
+      },
+    ),
+  );
   console.log(`[${r.join(", ")}]`);
 }
 function kept() {
   const v = [[1], [2], [3], [4]];
-  const sums = $lazyScan($closing($iter(v), $dropEach(loudDrop_drop)), 0, (acc, l) => {
-    acc.value = (acc.value + l[0]) >>> 0;
-    const result = acc.value < 4 ? acc.value : undefined;
-    loudDrop_drop(l);
-    return result;
-  }).toArray();
+  const sums = Array.from(
+    $lazyScan($closing($iter(v), $dropEach(loudDrop_drop)), 0, (acc, l) => {
+      acc.value = (acc.value + l[0]) >>> 0;
+      const result = acc.value < 4 ? acc.value : undefined;
+      loudDrop_drop(l);
+      return result;
+    }),
+  );
   console.log(`[${sums.join(", ")}]`);
-  const kept = $lazyScan($iter([1, 0, 2]), undefined, (_, x) => $some(x > 0 ? x : undefined))
-    .map($someValue)
-    .toArray();
+  const kept = Array.from(
+    $lazyScan($iter([1, 0, 2]), undefined, (_, x) => $some(x > 0 ? x : undefined)).map($someValue),
+  );
   console.log(`[${kept.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
   const arr = [5, 6, 7];
-  const eager = $lazyScan($iter(arr), 1, (p, x) => {
-    p.value = Math.imul(p.value, x);
-    return p.value;
-  }).toArray();
+  const eager = Array.from(
+    $lazyScan($iter(arr), 1, (p, x) => {
+      p.value = Math.imul(p.value, x);
+      return p.value;
+    }),
+  );
   console.log(`[${eager.join(", ")}]`);
 }
 function main() {

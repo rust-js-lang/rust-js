@@ -32,14 +32,10 @@ function main() {
   );
 
   const chained = [9, ...$sortedKeys(new Set(set), $cmp)];
-  const zipped = $lazyZip(
-    $iter($sortedKeys(new Set(set), $cmp)),
-    $sortedEntries(map, $cmp),
-  ).toArray();
-  const flat = [set, new Set([0])]
-    .values()
-    .flatMap((item) => $sortedKeys(item, $cmp))
-    .toArray();
+  const zipped = Array.from(
+    $lazyZip($iter($sortedKeys(new Set(set), $cmp)), $sortedEntries(map, $cmp)),
+  );
+  const flat = Array.from([set, new Set([0])].values().flatMap((item) => $sortedKeys(item, $cmp)));
   console.log(
     `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, (${item[1][0]}, ${$debugStr(item[1][1], "'")}))`).join(", ")}] [${flat.join(", ")}]`,
   );

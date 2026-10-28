@@ -32,9 +32,11 @@ function pairsIterator_next(pairs, IIterator, IClone, AClone) {
 function main() {
   const intoIterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const pairs = pairsFromI_from($iter([1, 2, 3]), { next: $next }, intoIterClone);
-  const all = $iterator(pairs, (iterator) =>
-    pairsIterator_next(iterator, { next: $next }, intoIterClone, { clone: (value) => value }),
-  ).toArray();
+  const all = Array.from(
+    $iterator(pairs, (iterator) =>
+      pairsIterator_next(iterator, { next: $next }, intoIterClone, { clone: (value) => value }),
+    ),
+  );
   console.log(`[${all.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

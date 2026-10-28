@@ -55,9 +55,11 @@ function main() {
   console.log(
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${$exactLen($sizeHint(p))}`,
   );
-  const v = $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint)
-    .map((x) => (x * 10) >>> 0)
-    .toArray();
+  const v = Array.from(
+    $iterator([6], countIterator_next, false, undefined, undefined, countIterator_sizeHint).map(
+      (x) => (x * 10) >>> 0,
+    ),
+  );
   const arg = $capacity(v) >= 6;
   console.log(`${v.length} ${arg}`);
 }

@@ -40,122 +40,83 @@ function cd(n) {
   return { lo: 0, hi: n };
 }
 function main() {
-  console.log(`[${$iterator(cd(5), countdownDoubleEndedIterator_nextBack).toArray().join(", ")}]`);
   console.log(
-    `[${$rev(
-      $mapEnds(
+    `[${Array.from($iterator(cd(5), countdownDoubleEndedIterator_nextBack)).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from($rev($mapEnds($iterator(cd(5), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => (x * 2) >>> 0))).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from($rev($filterEnds($iterator(cd(6), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => x % 2 === 0))).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from(
+      $lazyZip(
         $iterator(
-          cd(5),
+          cd(4),
           countdownIterator_next,
           false,
-          countdownDoubleEndedIterator_nextBack,
+          undefined,
           undefined,
           countdownIterator_sizeHint,
         ),
-        (x) => (x * 2) >>> 0,
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev(
-      $filterEnds(
         $iterator(
-          cd(6),
-          countdownIterator_next,
-          false,
+          cd(4),
           countdownDoubleEndedIterator_nextBack,
+          false,
+          undefined,
           undefined,
           countdownIterator_sizeHint,
         ),
-        (x) => x % 2 === 0,
       ),
     )
-      .toArray()
+      .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$lazyZip(
+    `[${Array.from(
+      $rev(
+        $enumerate(
+          $iterator(
+            cd(5),
+            countdownIterator_next,
+            false,
+            countdownDoubleEndedIterator_nextBack,
+            (it) => $exactLen(countdownIterator_sizeHint(it)),
+            countdownIterator_sizeHint,
+          ),
+        ),
+      ),
+    )
+      .map((item) => `(${item[0]}, ${item[1]})`)
+      .join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from($stepBy($iterator(cd(7), countdownIterator_next).drop(2), 2)).join(", ")}]`,
+  );
+  const it = cd(6);
+  const next = countdownIterator_next(it);
+  const nextBack = countdownDoubleEndedIterator_nextBack(it);
+  const value = Array.from(
+    $lent(
       $iterator(
-        cd(4),
+        it,
         countdownIterator_next,
         false,
         undefined,
         undefined,
         countdownIterator_sizeHint,
       ),
-      $iterator(
-        cd(4),
-        countdownDoubleEndedIterator_nextBack,
-        false,
-        undefined,
-        undefined,
-        countdownIterator_sizeHint,
-      ),
     )
-      .toArray()
-      .map((item) => `(${item[0]}, ${item[1]})`)
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev(
-      $enumerate(
-        $iterator(
-          cd(5),
-          countdownIterator_next,
-          false,
-          countdownDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countdownIterator_sizeHint(it)),
-          countdownIterator_sizeHint,
-        ),
-      ),
-    )
-      .toArray()
-      .map((item) => `(${item[0]}, ${item[1]})`)
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$stepBy($iterator(cd(7), countdownIterator_next).drop(2), 2)
-      .toArray()
-      .join(", ")}]`,
-  );
-  const it = cd(6);
-  const next = countdownIterator_next(it);
-  const nextBack = countdownDoubleEndedIterator_nextBack(it);
-  const value = $lent(
-    $iterator(it, countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
+      .drop(1)
+      .take(1),
+  )[0];
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  console.log(`[${$iterator(it, countdownIterator_next).toArray().join(", ")}]`);
+  console.log(`[${Array.from($iterator(it, countdownIterator_next)).join(", ")}]`);
   console.log(
-    `[${$rev(
-      $chainEnds(
-        $iterator(
-          cd(3),
-          countdownIterator_next,
-          false,
-          countdownDoubleEndedIterator_nextBack,
-          undefined,
-          countdownIterator_sizeHint,
-        ),
-        $iterator(
-          cd(2),
-          countdownIterator_next,
-          false,
-          countdownDoubleEndedIterator_nextBack,
-          undefined,
-          countdownIterator_sizeHint,
-        ),
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($chainEnds($iterator(cd(3), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), $iterator(cd(2), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint)))).join(", ")}]`,
   );
   console.log(
     `${$iterator(cd(4), countdownIterator_next).reduce((a, b) => (a + b) >>> 0, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))($maxByKey($iterator(cd(4), countdownIterator_next), (x) => x % 3, $cmp))}`,

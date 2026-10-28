@@ -139,11 +139,11 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  console.log(`[${$roomForHint(both, 4, false).toArray().join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(both, 4, false)).join(", ")}]`);
 
-  const back = $rev(
-    $flattenEnds($iter(groups), (g) => $mapEnds($iter(g), (x) => (x * 10) | 0)),
-  ).toArray();
+  const back = Array.from(
+    $rev($flattenEnds($iter(groups), (g) => $mapEnds($iter(g), (x) => (x * 10) | 0))),
+  );
   console.log(`[${back.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

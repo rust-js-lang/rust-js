@@ -15,30 +15,22 @@ function countIterator_next(count) {
 }
 
 function main() {
-  const counted = $lazyRange(1, 4)
-    .flatMap((n) => $iterator({ at: 0, end: n }, countIterator_next))
-    .toArray();
-  const ranged = $lazyRange(1, 4)
-    .flatMap((x) => $lazyRange(0, x))
-    .toArray();
+  const counted = Array.from(
+    $lazyRange(1, 4).flatMap((n) => $iterator({ at: 0, end: n }, countIterator_next)),
+  );
+  const ranged = Array.from($lazyRange(1, 4).flatMap((x) => $lazyRange(0, x)));
   const spans = [
     { start: 0, end: 2 },
     { start: 5, end: 7 },
   ];
-  const joined = spans
-    .values()
-    .flatMap((item) => $iterator(item, $rangeNext))
-    .toArray();
+  const joined = Array.from(spans.values().flatMap((item) => $iterator(item, $rangeNext)));
   console.log(`[${counted.join(", ")}] [${ranged.join(", ")}] [${joined.join(", ")}]`);
   const results = [
     { TAG: "Ok", _0: 1 },
     { TAG: "Err", _0: "x" },
     { TAG: "Ok", _0: 3 },
   ];
-  const oks = results
-    .values()
-    .flatMap((item) => (item.TAG === "Ok" ? [item._0] : []))
-    .toArray();
+  const oks = Array.from(results.values().flatMap((item) => (item.TAG === "Ok" ? [item._0] : [])));
   const option = { at: 0, end: 4 };
   const total = (option == null ? [] : [option])
     .values()

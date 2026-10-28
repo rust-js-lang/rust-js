@@ -39,31 +39,29 @@ function cycles() {
   const makeMap = (it, f) =>
     $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
   console.log(
-    `[${$cycleOf(
-      makeMap($iter(a), (x) => {
-        console.log(`map ${x}`);
-        return (x + 1) | 0;
-      }),
-      $clone,
-      $next,
-    )
-      .take(5)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $cycleOf(
+        makeMap($iter(a), (x) => {
+          console.log(`map ${x}`);
+          return (x + 1) | 0;
+        }),
+        $clone,
+        $next,
+      ).take(5),
+    ).join(", ")}]`,
   );
   const makeFilter = (it, f) =>
     $cloning($iterator(it, $rangeNext).filter(f), () =>
       makeFilter({ start: it.start, end: it.end }, f),
     );
   console.log(
-    `[${$cycleOf(
-      makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
-      $clone,
-      $next,
-    )
-      .take(5)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $cycleOf(
+        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
+        $clone,
+        $next,
+      ).take(5),
+    ).join(", ")}]`,
   );
   const makeMap$1 = (it, f) =>
     $cloning($iterator(it, $rangeNext).map(f), () =>
@@ -87,31 +85,31 @@ function cycles() {
     $next,
   );
   $next(it);
-  console.log(`[${it.take(4).toArray().join(", ")}]`);
+  console.log(`[${Array.from(it.take(4)).join(", ")}]`);
   const makeMap$3 = (it, f) =>
     $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
   console.log(
-    `[${$cycleOf(
-      makeMap$3($iter(["a", "b"]), (s) => s.toUpperCase()),
-      $clone,
-      $next,
+    `[${Array.from(
+      $cycleOf(
+        makeMap$3($iter(["a", "b"]), (s) => s.toUpperCase()),
+        $clone,
+        $next,
+      ).take(3),
     )
-      .take(3)
-      .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   const makeMap$4 = (it, f) =>
     $cloning(it.map(f), () => makeMap$4($iter(it.items.slice(it.at, it.end)), f));
   console.log(
-    `[${$cycleOf(
-      makeMap$4($iter([1, undefined]), (o) => o),
-      $clone,
-      $nextSome,
-      true,
+    `[${Array.from(
+      $cycleOf(
+        makeMap$4($iter([1, undefined]), (o) => o),
+        $clone,
+        $nextSome,
+        true,
+      ).take(4),
     )
-      .take(4)
-      .toArray()
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
@@ -133,10 +131,7 @@ function clones() {
       makeChain($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
     );
   console.log(
-    `[${$cycleOf(makeChain($iter(a), $iter(b)), $clone, $next)
-      .take(7)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($cycleOf(makeChain($iter(a), $iter(b)), $clone, $next).take(7)).join(", ")}]`,
   );
   const e = iterator_chain($iter(a), $iter(b), { next: $next }, iterIntoIterator);
   $next(e);
@@ -169,9 +164,9 @@ function clones() {
       makeZip({ start: a.start, end: a.end }, $iter(b.items.slice(b.at, b.end))),
     );
   console.log(
-    `[${$cycleOf(makeZip({ start: 0, end: 3 }, $iter(Array.from("ab"))), $clone, $next)
-      .take(5)
-      .toArray()
+    `[${Array.from(
+      $cycleOf(makeZip({ start: 0, end: 3 }, $iter(Array.from("ab"))), $clone, $next).take(5),
+    )
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );
@@ -183,14 +178,13 @@ function clones() {
       makeFilter({ start: it.start, end: it.end }, f),
     );
   console.log(
-    `[${$cycleOf(
-      makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
-      $clone,
-      $next,
-    )
-      .take(5)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $cycleOf(
+        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
+        $clone,
+        $next,
+      ).take(5),
+    ).join(", ")}]`,
   );
 }
 function more() {
@@ -301,8 +295,9 @@ function more() {
   const q = zipClone_clone(p, clone, skipClone(clone));
   const next = $next(p);
   console.log(
-    `${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`} [${$roomForHint(q, 8, false)
-      .toArray()
+    `${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`} [${Array.from(
+      $roomForHint(q, 8, false),
+    )
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

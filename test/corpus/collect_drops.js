@@ -25,13 +25,15 @@ function main() {
   const w = [["x"], ["y"], ["z"]];
   try {
     const skip = (n) => n[0] !== "y";
-    const rest = $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
-      if (skip(item)) {
-        noisyDrop_drop(item);
-        return true;
-      }
-      return false;
-    }).toArray();
+    const rest = Array.from(
+      $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
+        if (skip(item)) {
+          noisyDrop_drop(item);
+          return true;
+        }
+        return false;
+      }),
+    );
     console.log(`rest ${rest.length}`);
 
     let fragments = [["f1"], ["f2"]];
@@ -40,13 +42,15 @@ function main() {
     try {
       try {
         const skip = () => true;
-        const none = $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
-          if (skip(item)) {
-            noisyDrop_drop(item);
-            return true;
-          }
-          return false;
-        }).toArray();
+        const none = Array.from(
+          $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
+            if (skip(item)) {
+              noisyDrop_drop(item);
+              return true;
+            }
+            return false;
+          }),
+        );
         console.log(`none ${none.length} ${fragments.length}`);
 
         const value = [["m1"], ["m2"]];
@@ -59,19 +63,20 @@ function main() {
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
           const keep = (n) => n[0] !== "p2";
-          const checked = $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
-            .filter((item) => {
-              if (keep(item)) {
-                return true;
-              }
-              noisyDrop_drop(item);
-              return false;
-            })
-            .map((n) => {
-              console.log(`map ${n[0]}`);
-              return n;
-            })
-            .toArray();
+          const checked = Array.from(
+            $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
+              .filter((item) => {
+                if (keep(item)) {
+                  return true;
+                }
+                noisyDrop_drop(item);
+                return false;
+              })
+              .map((n) => {
+                console.log(`map ${n[0]}`);
+                return n;
+              }),
+          );
           console.log(`checked ${checked.length}`);
           console.log("end");
           for (const item of checked) {

@@ -14,8 +14,8 @@ function main() {
       return sum.value;
     }
   });
-  const first = $lent(sums).toArray();
-  const second = sums.toArray();
+  const first = Array.from($lent(sums));
+  const second = Array.from(sums);
   console.log(`[${first.join(", ")}] [${second.join(", ")}]`);
 
   const w = [1, -1, 2, 3];

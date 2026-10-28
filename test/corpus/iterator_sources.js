@@ -32,34 +32,32 @@ function counterIterator_next(counter) {
 }
 
 function repeated(first, n) {
-  return $successors($some(first), (item) => $some(item), true)
-    .take(n)
-    .toArray();
+  return Array.from($successors($some(first), (item) => $some(item), true).take(n));
 }
 
 function powersOfTwo(limit) {
-  return $lazyTakeWhile(
-    $successors(1, (n) => $checked(n * 2, 0, 4294967295)),
-    (n) => n <= limit,
-  ).toArray();
+  return Array.from(
+    $lazyTakeWhile(
+      $successors(1, (n) => $checked(n * 2, 0, 4294967295)),
+      (n) => n <= limit,
+    ),
+  );
 }
 
 function countdown(from) {
   let n = from;
-  return Iterator.from(
+  return Array.from(
     $fromFn(() => {
       if (n !== 0) {
         n--;
         return n + 1;
       }
     }),
-  ).toArray();
+  );
 }
 
 function withHeader(header, lines) {
-  return $lazyChain($iter([header]), $iter(lines))
-    .map((line) => line.toUpperCase())
-    .toArray();
+  return Array.from($lazyChain($iter([header]), $iter(lines)).map((line) => line.toUpperCase()));
 }
 
 function maybeItems(item) {
@@ -80,12 +78,10 @@ function main() {
   );
   const nothing = [];
   console.log(`[${nothing.join(", ")}]`);
-  const dashes = $repeating("-").take(5).toArray().join("");
-  const words = $repeating("hi").take(3).toArray();
+  const dashes = Array.from($repeating("-").take(5)).join("");
+  const words = Array.from($repeating("hi").take(3));
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
-  const padded = $lazyChain($iter([1, 2]), $repeating(0))
-    .take(5)
-    .toArray();
+  const padded = Array.from($lazyChain($iter([1, 2]), $repeating(0)).take(5));
   console.log(`[${padded.join(", ")}]`);
   console.log(`[${maybeItems(4).join(", ")}] [${maybeItems(undefined).join(", ")}]`);
   const total =
@@ -98,15 +94,15 @@ function main() {
     [2, "b"],
   ]);
   console.log(`[${left.join(", ")}] [${right.map((item) => $debugStr(item, "'")).join(", ")}]`);
-  let squares = $successors(2n, (n) => BigInt.asUintN(64, n * n))
-    .take(4)
-    .toArray();
+  let squares = Array.from($successors(2n, (n) => BigInt.asUintN(64, n * n)).take(4));
   console.log(`[${squares.join(", ")}]`);
 
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
-  const zipped = $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))).toArray();
-  const labelled = $lazyZip($iter(Array.from("xyz")), $repeating(7)).toArray();
+  const zipped = Array.from(
+    $lazyZip($iterator([0], counterIterator_next), $iter(Array.from("ab"))),
+  );
+  const labelled = Array.from($lazyZip($iter(Array.from("xyz")), $repeating(7)));
   console.log(
     `[${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] [${labelled.map((item) => `(${$debugStr(item[0], "'")}, ${item[1]})`).join(", ")}]`,
   );
@@ -114,27 +110,25 @@ function main() {
   const bigger = $iterator([0], counterIterator_next).map((n) => (n + 100) >>> 0);
   const a = $next(fours);
   const b = $next(bigger);
-  const rest = bigger.toArray();
+  const rest = Array.from(bigger);
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.join(", ")}]`,
   );
-  const short = $lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2).toArray();
+  const short = Array.from($lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2));
   console.log(
     `[${short.join(", ")}] [${repeated(undefined, 2)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
-  const rows = $repeating([0], (value) => value.slice())
-    .take(2)
-    .toArray();
+  const rows = Array.from($repeating([0], (value) => value.slice()).take(2));
   $index(rows, 0).push(1);
   let k = 0;
-  squares = $repeatingWith(() => {
-    k = (k + 1) | 0;
-    return Math.imul(k, k);
-  })
-    .take(3)
-    .toArray();
+  squares = Array.from(
+    $repeatingWith(() => {
+      k = (k + 1) | 0;
+      return Math.imul(k, k);
+    }).take(3),
+  );
   console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}] [${squares.join(", ")}]`);
   // `successors` finds the next item before it gives this one.
   let calls = 0;

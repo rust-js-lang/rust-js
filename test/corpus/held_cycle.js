@@ -243,9 +243,7 @@ function main() {
   console.log(`${circularDebug_fmt(round, undefined, intoIterDebug, clone)}`);
   const copy = { ...round, iter: $clone(round.iter) };
   console.log(
-    `[${$iterator(round, (iterator) => circularIterator_next(iterator, clone), true)
-      .toArray()
-      .join(", ")}] ${circularDebug_fmt(copy, { alternate: true }, intoIterDebug, clone)}`,
+    `[${Array.from($iterator(round, (iterator) => circularIterator_next(iterator, clone), true)).join(", ")}] ${circularDebug_fmt(copy, { alternate: true }, intoIterDebug, clone)}`,
   );
   const turns = {
     order: $cycleOf(
@@ -255,7 +253,7 @@ function main() {
     ),
   };
   $next(turns.order);
-  const arg = $lent(turns.order).drop(2).take(1).toArray()[0];
+  const arg = Array.from($lent(turns.order).drop(2).take(1))[0];
   console.log(`${turnsDebug_fmt(turns)} ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`}`);
   const none = circular($iter([]), 2, { next: $next }, clone);
   const arg$1 = $sizeHint(none.iter);

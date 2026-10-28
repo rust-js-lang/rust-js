@@ -31,7 +31,7 @@ export function entry() {
 }
 
 function backPairs(it) {
-  return $rev($enumerate(it)).toArray();
+  return Array.from($rev($enumerate(it)));
 }
 
 function ends(it) {
@@ -51,32 +51,34 @@ function fusedLen(it, IFused) {
 function fusedBack(it, IFused) {
   const f = iterator_fuse(it, { next: $next }, IFused);
   const last = fuseDoubleEndedIterator_nextBack(f, { next_back: $nextBack }, IFused);
-  const rest = $rev(
-    $knowing(
-      f,
-      (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, IFused),
-      undefined,
-      undefined,
-      (iterator, k) =>
-        fuseDoubleEndedIterator_nthBack(
-          iterator,
-          k,
-          { next: $next },
-          { next_back: $nextBack },
-          IFused,
-        ),
-      (iterator, init, f, broke) =>
-        fuseDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          { next_back: $nextBack },
-          $tryOf(broke),
-          IFused,
-        ),
+  const rest = Array.from(
+    $rev(
+      $knowing(
+        f,
+        (iterator) => fuseDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, IFused),
+        undefined,
+        undefined,
+        (iterator, k) =>
+          fuseDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next },
+            { next_back: $nextBack },
+            IFused,
+          ),
+        (iterator, init, f, broke) =>
+          fuseDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            IFused,
+          ),
+      ),
     ),
-  ).toArray();
+  );
   $extend(rest, last == null ? [] : [last]);
   return rest;
 }

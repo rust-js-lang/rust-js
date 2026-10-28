@@ -104,9 +104,11 @@ function main() {
   const text = $encodeUtf8("é", buffer);
   console.log(`${text.value} ${$byteLen(text.value)}`);
   console.log(`[${buffer.join(", ")}]`);
-  const decoded = Iterator.from($decodeUtf16([104, 0xd83d, 0xde00, 0xd800, 105]))
-    .map((r) => (r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r))
-    .toArray();
+  const decoded = Array.from(
+    Iterator.from($decodeUtf16([104, 0xd83d, 0xde00, 0xd800, 105])).map((r) =>
+      r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r,
+    ),
+  );
   console.log(
     `[${decoded.map((item) => (item.TAG === "Ok" ? `Ok(${$debugStr(item._0, "'")})` : `Err(${item._0})`)).join(", ")}]`,
   );

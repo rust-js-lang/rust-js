@@ -559,15 +559,11 @@ export function rangeSum(n) {
 }
 
 export function evens(n) {
-  return $lazyRange(0, n)
-    .filter((i) => i % 2 === 0)
-    .toArray();
+  return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));
 }
 
 export function pairs(a, b) {
-  return $lazyZip($iter(a), b)
-    .map(([n, s]) => String(n) + s)
-    .toArray();
+  return Array.from($lazyZip($iter(a), b).map(([n, s]) => String(n) + s));
 }
 ```
 

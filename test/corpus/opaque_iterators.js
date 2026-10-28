@@ -22,8 +22,8 @@ function first(it) {
 function main() {
   const v = [1, 2, 3];
   const next = mapIterator_next(tens(v));
-  const nth = $lent(tens(v)).drop(1).take(1).toArray()[0];
-  const value = $lent(tens(v)).drop(5).take(1).toArray()[0];
+  const nth = Array.from($lent(tens(v)).drop(1).take(1))[0];
+  const value = Array.from($lent(tens(v)).drop(5).take(1))[0];
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );

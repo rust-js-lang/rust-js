@@ -340,7 +340,7 @@ export function iterations() {
   return [
     total,
     first,
-    $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
+    Array.from($iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6)),
     $iterator(fibonacci(), fibonacciIterator_next)
       .take(5)
       .map((x) => (x * 2) >>> 0)
@@ -360,11 +360,9 @@ export function genericIterations() {
     $iterator({ times: 2 }, (iterator) => repeatIterator_next(iterator, clone), true)
       .filter((o) => o == null)
       .reduce((n) => n + 1, 0),
-    $iterator(
-      { item: 2, times: 3 },
-      (iterator) => repeatIterator_next(iterator, clone),
-      true,
-    ).toArray(),
+    Array.from(
+      $iterator({ item: 2, times: 3 }, (iterator) => repeatIterator_next(iterator, clone), true),
+    ),
     $max(
       $iterator({ n: 5 }, countdownIterator_next)
         .map((x, i) => [i, x])
@@ -574,7 +572,7 @@ export function total(items) {
 }
 
 export function middle(items, k) {
-  return Iterator.from(items).drop(1).take(k).toArray();
+  return Array.from(Iterator.from(items).drop(1).take(k));
 }
 
 export function looped(items) {

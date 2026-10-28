@@ -1217,12 +1217,23 @@ export class $Steps extends Iterator {
     this.return();
     return folded;
   }
-  // `collect()`'s, each item, then closed, as `fold` is.
-  toArray() {
-    const items = [];
-    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);
-    this.return();
-    return items;
+  // Stepped by JS's own, `Array.from(it)`, `collect()`'s, `for..of` or a
+  // spread: each item, then closed at its end, as `fold` is, as Rust drops
+  // what it takes by value once it's stepped it all, one a variable held
+  // moved here too (#206; the user's decision, bw8). The runtime's own
+  // adapters step one as it is, `$stepsOf`, and close it where Rust's
+  // adapter drops it.
+  [Symbol.iterator]() {
+    if (!this.closesAtEnd) {
+      this.closesAtEnd = true;
+      const next = this.next;
+      this.next = () => {
+        const step = next();
+        if (step.done) this.return();
+        return step;
+      };
+    }
+    return this;
   }
   // Std's `last`: the last item its `fold` gives, a step, done where there's
   // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
@@ -1550,6 +1561,13 @@ export class $Steps extends Iterator {
     };
     return skipped;
   }
+}
+
+// What the runtime's adapters step `items` by: a `$Steps` as it is, closed
+// where Rust's adapter drops it, not at its end, as JS's own close it, so a
+// held chain's `b` is its owner's to drop (#243); else its iterator.
+export function $stepsOf(items) {
+  return items instanceof $Steps ? items : items[Symbol.iterator]();
 }
 
 export function $sortedEntries(map, cmp) {
@@ -2918,7 +2936,7 @@ export function $nextBackSome(it) {
 // number's, else the state itself, an object `f` changes in place.
 export function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   const scanning = new $Steps(
     () => {
       const step = source.next();
@@ -3529,8 +3547,8 @@ export function $binarySearchBy(items, f) {
 // std's `iter_compare` steps it by `try_for_each`, `b` by its `next`. Each
 // closed at its end, `b` first, as std drops what it takes (#242).
 export function $iterCmp(a, b, cmp) {
-  const x = a[Symbol.iterator]();
-  const y = b[Symbol.iterator]();
+  const x = $stepsOf(a);
+  const y = $stepsOf(b);
   try {
     let order = 0;
     const stopped = $lent(x).tryFold(
@@ -11348,8 +11366,8 @@ export function $zip(a, b) {
 // Its fold, std's, `a`'s then `b`'s, which an iterator rust-js makes routes
 // through the crate's own (#162), and its `try_fold`, `a`'s then `b`'s.
 export function $lazyChain(a, b) {
-  let first = a[Symbol.iterator]();
-  const second = b[Symbol.iterator]();
+  let first = $stepsOf(a);
+  const second = $stepsOf(b);
   const chained = new $Steps(
     () => {
       if (first !== undefined) {
@@ -11468,8 +11486,8 @@ export function $lazyChain(a, b) {
 // step after its end steps each on, as Rust's `Zip`, which isn't fused,
 // does.
 export function $lazyZip(a, b, dropA) {
-  const left = a[Symbol.iterator]();
-  const right = b[Symbol.iterator]();
+  const left = $stepsOf(a);
+  const right = $stepsOf(b);
   const close = () => {
     left.return?.();
     right.return?.();
@@ -11493,7 +11511,7 @@ export function $lazyZip(a, b, dropA) {
 // both have one, `a` never stepped once `b`, which knows its length, has
 // none, as std's zip pairs them up to the shorter's length (ADR 0973).
 export function $trustedZip(a, b) {
-  const left = a[Symbol.iterator]();
+  const left = $stepsOf(a);
   const zipped = new $Steps(
     () => {
       if (b.len() === 0) return { done: true, value: undefined };
@@ -11623,7 +11641,7 @@ export function $rev(it) {
 // `None` of its source ends what's stepped now, as Rust's passes it on.
 // Its `try_fold`, its source's, stopped where `keep` doesn't hold.
 export function $lazyTakeWhile(items, keep) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   let ended = false;
   const taking = new $Steps(
     () => {
@@ -11659,7 +11677,7 @@ export function $lazyTakeWhile(items, keep) {
 // isn't fused, does, where `take_while` stays ended. Its `try_fold`, its
 // source's, stopped at what `present` doesn't keep.
 export function $lazyMapWhile(items, f, present) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   const mapping = new $Steps(
     () => {
       const step = source.next();
@@ -11702,7 +11720,7 @@ export function $lazyMapWhile(items, f, present) {
 // std's is; its `try_fold` and its `fold`, its first step, then its
 // source's.
 export function $lazySkipWhile(items, skip) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   let skipping = true;
   const skipped = new $Steps(
     () => {
@@ -12422,8 +12440,8 @@ export function $cmpItems(a, b, cmp) {
 // `SpecIterEq`: of unequal ones, `false`, with none of their items stepped
 // or compared, each closed, `b` first (ADR 0992).
 export function $iterEq(a, b, eq, dropA, dropB, lengths) {
-  const x = a[Symbol.iterator]();
-  const y = b[Symbol.iterator]();
+  const x = $stepsOf(a);
+  const y = $stepsOf(b);
   try {
     if (lengths !== undefined && lengths[0] !== lengths[1]) return false;
     let same = true;
@@ -12522,7 +12540,7 @@ export function $min(items) {
 
 export function $position(items, found) {
   let i = 0;
-  const hit = $lent(items[Symbol.iterator]()).tryFold(false, (_, item) => found(item) || (i++, false), (hit) => hit);
+  const hit = $lent($stepsOf(items)).tryFold(false, (_, item) => found(item) || (i++, false), (hit) => hit);
   return hit ? i : undefined;
 }
 

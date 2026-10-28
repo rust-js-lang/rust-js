@@ -39,22 +39,13 @@ function bag() {
 }
 function main() {
   const b = bag();
-  console.log(
-    `[${Bag.items(b)
-      .map((x) => (x * 2) | 0)
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev($filterEnds($iter(Bag.items(b)), (x) => x > 1))
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from(Bag.items(b).map((x) => (x * 2) | 0)).join(", ")}]`);
+  console.log(`[${Array.from($rev($filterEnds($iter(Bag.items(b)), (x) => x > 1))).join(", ")}]`);
   const it$1 = Bag.items(b);
   const len = it$1.end - it$1.at;
   const count = Bag.items(b).reduce((n) => n + 1, 0);
-  const last = Bag.items(b).toArray().at(-1);
-  const value = $lent(Bag.items(b)).drop(2).take(1).toArray()[0];
+  const last = Array.from(Bag.items(b)).at(-1);
+  const value = Array.from($lent(Bag.items(b)).drop(2).take(1))[0];
   console.log(
     `${len} ${count} ${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`}`,
   );
@@ -67,15 +58,10 @@ function main() {
   const it$2 = Bag.items(b);
   console.log(`[${it$2.items.slice(it$2.at, it$2.end).join(", ")}]`);
   console.log(
-    `[${$lazyZip(Bag.items(b), Bag.items(b).drop(1))
-      .map(([a, c]) => (a - c) | 0)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($lazyZip(Bag.items(b), Bag.items(b).drop(1)).map(([a, c]) => (a - c) | 0)).join(", ")}]`,
   );
   console.log(
-    `[${$rev($enumerate($iter(Bag.items(b))))
-      .take(2)
-      .toArray()
+    `[${Array.from($rev($enumerate($iter(Bag.items(b)))).take(2))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
@@ -97,9 +83,7 @@ function main() {
   console.log("");
   console.log(`[${$rest(Bag.owned(bag())).toReversed().join(", ")}]`);
   console.log(
-    `[${$rev($mapEnds($iter(Bag.owned(bag())), (x) => (x + 1) | 0))
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($mapEnds($iter(Bag.owned(bag())), (x) => (x + 1) | 0))).join(", ")}]`,
   );
   const o = Bag.owned(bag());
   const nextBack = $nextBack(o);
@@ -113,8 +97,7 @@ function main() {
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const held = Bag.items(b);
   console.log(
-    `[${$rev($enumerate($iter(held)))
-      .toArray()
+    `[${Array.from($rev($enumerate($iter(held))))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

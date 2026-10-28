@@ -116,102 +116,102 @@ function main() {
     rev.return();
   }
   console.log(`${e == null ? "None" : `Some((${e[0]}, ${e[1]}))`}`);
-  const back = $rev(
-    $enumerate(
-      $knowing(
-        iterator_fuse(
-          $iter(louds(3)),
-          { next: $next },
-          true,
-          $dropEach(loudDrop_drop),
-          loudDrop_drop,
+  const back = Array.from(
+    $rev(
+      $enumerate(
+        $knowing(
+          iterator_fuse(
+            $iter(louds(3)),
+            { next: $next },
+            true,
+            $dropEach(loudDrop_drop),
+            loudDrop_drop,
+          ),
+          (iterator) =>
+            fuseDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              true,
+              $dropEach(loudDrop_drop),
+              loudDrop_drop,
+            ),
+          (iterator) =>
+            fuseExactSizeIterator_len(
+              iterator,
+              intoIterExactSizeIterator,
+              $dropEach(loudDrop_drop),
+              loudDrop_drop,
+            ),
+          undefined,
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $next },
+              { next_back: $nextBack },
+              true,
+              $dropEach(loudDrop_drop),
+              loudDrop_drop,
+            ),
+          (iterator, init, f, broke) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              true,
+              $dropEach(loudDrop_drop),
+              undefined,
+              undefined,
+              undefined,
+              loudDrop_drop,
+            ),
         ),
-        (iterator) =>
-          fuseDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            true,
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-          ),
-        (iterator) =>
-          fuseExactSizeIterator_len(
-            iterator,
-            intoIterExactSizeIterator,
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-          ),
-        undefined,
-        (iterator, k) =>
-          fuseDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: $next },
-            { next_back: $nextBack },
-            true,
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-          ),
-        (iterator, init, f, broke) =>
-          fuseDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-            true,
-            $dropEach(loudDrop_drop),
-            undefined,
-            undefined,
-            undefined,
-            loudDrop_drop,
-          ),
       ),
-    ),
-  )
-    .map(([i, l]) => {
+    ).map(([i, l]) => {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
-    })
-    .toArray();
+    }),
+  );
   console.log(`[${back.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const ranged = $rev(
-    $enumerate(
-      $knowing(
-        iterator_fuse({ start: 5, end: 9 }, { next: $rangeNext }, true),
-        (iterator) =>
-          fuseDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            true,
-          ),
-        (iterator) => fuseExactSizeIterator_len(iterator, { len: $rangeLen }),
-        undefined,
-        (iterator, k) =>
-          fuseDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: $rangeNext },
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            true,
-          ),
-        (iterator, init, f, broke) =>
-          fuseDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $rangeNext },
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            $tryOf(broke),
-            true,
-          ),
+  const ranged = Array.from(
+    $rev(
+      $enumerate(
+        $knowing(
+          iterator_fuse({ start: 5, end: 9 }, { next: $rangeNext }, true),
+          (iterator) =>
+            fuseDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              true,
+            ),
+          (iterator) => fuseExactSizeIterator_len(iterator, { len: $rangeLen }),
+          undefined,
+          (iterator, k) =>
+            fuseDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              true,
+            ),
+          (iterator, init, f, broke) =>
+            fuseDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+              true,
+            ),
+        ),
       ),
-    ),
-  )
-    .take(2)
-    .toArray();
+    ).take(2),
+  );
   console.log(`[${ranged.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

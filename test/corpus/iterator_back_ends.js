@@ -34,7 +34,7 @@ function spanDoubleEndedIterator_nextBack(span) {
 function main() {
   const down = $range(1, 4).toReversed();
   const top = $range(250, 256).toReversed();
-  const own = $iterator([0, 3], spanDoubleEndedIterator_nextBack).toArray();
+  const own = Array.from($iterator([0, 3], spanDoubleEndedIterator_nextBack));
   console.log(`[${down.join(", ")}] [${top.join(", ")}] [${own.join(", ")}]`);
 
   const v = [10, 20, 30, 40];

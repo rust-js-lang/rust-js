@@ -163,7 +163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => it,
         };
         let items = |it: Expr| match iter_ty {
-            Some(_) => method("toArray", it, Vec::new()),
+            Some(_) => Expr::collected(it),
             None => it,
         };
         // Into what holds a type parameter that a bound says it's collected
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
                     None if folded => Expr::call_helper("$foldToArray", vec![it]),
-                    None => method("toArray", it, Vec::new()),
+                    None => Expr::collected(it),
                 },
             }
         } else if self.is_lang_adt(output, LangItem::String) {

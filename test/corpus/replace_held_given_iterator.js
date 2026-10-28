@@ -41,18 +41,18 @@ function main() {
     iter: { start: 0, end: 2 },
     orig: { start: 5, end: 7 },
   };
-  const all = $iterator(
-    ranges,
-    (iterator) =>
-      restartIterator_next(
-        iterator,
-        { next: $rangeNext },
-        { clone: (value) => ({ start: value.start, end: value.end }) },
-      ),
-    true,
-  )
-    .take(5)
-    .toArray();
+  const all = Array.from(
+    $iterator(
+      ranges,
+      (iterator) =>
+        restartIterator_next(
+          iterator,
+          { next: $rangeNext },
+          { clone: (value) => ({ start: value.start, end: value.end }) },
+        ),
+      true,
+    ).take(5),
+  );
   console.log(`[${all.join(", ")}]`);
   const items = {
     iter: $iter(["a", "b"]),
@@ -60,17 +60,16 @@ function main() {
   };
   restartIterator_next(items, { next: $next }, intoIterClone);
   Restart.swapEnds(items, intoIterClone);
-  const rest = $lent(
-    $iterator(
-      items,
-      (iterator) => restartIterator_next(iterator, { next: $next }, intoIterClone),
-      true,
-    ),
-  )
-    .take(3)
-    .toArray()
-    .join("");
-  const kept = items.orig.toArray();
+  const rest = Array.from(
+    $lent(
+      $iterator(
+        items,
+        (iterator) => restartIterator_next(iterator, { next: $next }, intoIterClone),
+        true,
+      ),
+    ).take(3),
+  ).join("");
+  const kept = Array.from(items.orig);
   console.log(`${rest} [${kept.map((item) => $debugStr(item, "'")).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

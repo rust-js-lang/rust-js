@@ -24,13 +24,15 @@ function louds(n) {
 }
 
 function main() {
-  const odd = $rev(
-    $filterEnds(
-      $closing($iter(louds(3)), $dropEach(loudDrop_drop)),
-      (l) => l[0] % 2 === 1,
-      loudDrop_drop,
+  const odd = Array.from(
+    $rev(
+      $filterEnds(
+        $closing($iter(louds(3)), $dropEach(loudDrop_drop)),
+        (l) => l[0] % 2 === 1,
+        loudDrop_drop,
+      ),
     ),
-  ).toArray();
+  );
   console.log(`odd ${odd.length}`);
   for (const item of odd) {
     loudDrop_drop(item);
@@ -82,13 +84,15 @@ function main() {
   }
   console.log(`first ${first != null ? map(first) : 9}`);
 
-  const doubled = $rev(
-    $mapEnds($closing($iter(louds(3)), $dropEach(loudDrop_drop)), (l) => {
-      const result = (l[0] * 2) >>> 0;
-      loudDrop_drop(l);
-      return result;
-    }),
-  ).toArray();
+  const doubled = Array.from(
+    $rev(
+      $mapEnds($closing($iter(louds(3)), $dropEach(loudDrop_drop)), (l) => {
+        const result = (l[0] * 2) >>> 0;
+        loudDrop_drop(l);
+        return result;
+      }),
+    ),
+  );
   console.log(`[${doubled.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

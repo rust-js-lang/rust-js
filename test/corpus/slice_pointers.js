@@ -113,7 +113,7 @@ function main() {
     front[$at(front, 0)] = 8;
   }
   console.log(`[${bytes.join(", ")}]`);
-  const taken = $iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true).toArray();
+  const taken = Array.from($iterator({ iter: $iter([4, 5, 6]) }, takenIterator_next, true));
   console.log(`[${taken.join(", ")}]`);
   console.log(`[${readAll([7, 8]).join(", ")}]`);
   droppedTail();

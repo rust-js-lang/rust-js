@@ -36,7 +36,7 @@ const $iSorted = new WeakMap();
 function iSorted(IIterator) {
   return $traitImpl($iSorted, [IIterator], () => ({
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
-      const v = $given(self, IIterator, true).toArray();
+      const v = Array.from($given(self, IIterator, true));
       $sortUnstable(v, (a, b) => SelfItemOrd.cmp(a, b) < 0, SelfItemSort);
       return v;
     },

@@ -73,7 +73,7 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
-  console.log(`[${$roomForHint(runs, 4, false).toArray().join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(runs, 4, false)).join(", ")}]`);
 
   // Of arrays, whose constant size bounds what's left.
   const doubled = iterator_flatMap(

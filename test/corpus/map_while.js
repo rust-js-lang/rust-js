@@ -24,20 +24,24 @@ function countdownIterator_next(countdown) {
 
 function main() {
   const words = ["3", "14", "x", "15"];
-  const numbers = $lazyMapWhile(
-    $iter(words),
-    (w) => {
-      const result = $parseInt(w, 0, 4294967295);
-      return result.TAG === "Ok" ? result._0 : undefined;
-    },
-    (item) => item != null,
-  ).toArray();
+  const numbers = Array.from(
+    $lazyMapWhile(
+      $iter(words),
+      (w) => {
+        const result = $parseInt(w, 0, 4294967295);
+        return result.TAG === "Ok" ? result._0 : undefined;
+      },
+      (item) => item != null,
+    ),
+  );
   console.log(`[${numbers.join(", ")}]`);
-  const halves = $lazyMapWhile(
-    $lazyRange(0, 10),
-    (n) => (n < 4 ? (n / 2) >>> 0 : undefined),
-    (item) => item != null,
-  ).toArray();
+  const halves = Array.from(
+    $lazyMapWhile(
+      $lazyRange(0, 10),
+      (n) => (n < 4 ? (n / 2) >>> 0 : undefined),
+      (item) => item != null,
+    ),
+  );
   console.log(`[${halves.join(", ")}]`);
   const total = $lazyMapWhile(
     $iterator([6], countdownIterator_next),
@@ -46,12 +50,14 @@ function main() {
   ).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
   const it = $iter([1, 2, 0, 4, 5]);
-  const before = $lazyMapWhile(
-    $lent(it),
-    (n) => (n ? (n * 10) | 0 : undefined),
-    (item) => item != null,
-  ).toArray();
-  const after = it.toArray();
+  const before = Array.from(
+    $lazyMapWhile(
+      $lent(it),
+      (n) => (n ? (n * 10) | 0 : undefined),
+      (item) => item != null,
+    ),
+  );
+  const after = Array.from(it);
   console.log(`[${before.join(", ")}] [${after.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

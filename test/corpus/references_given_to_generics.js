@@ -56,7 +56,7 @@ function hashed(t, THash) {
   return h.finish();
 }
 function take2(it) {
-  return Iterator.from(it).take(2).toArray();
+  return Array.from(Iterator.from(it).take(2));
 }
 function twice(f) {
   return f(f(1));

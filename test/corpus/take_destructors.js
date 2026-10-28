@@ -23,7 +23,7 @@ function nDrop_drop(n) {
 function splitFirst(iter, k, dropI, dropIItem) {
   let first;
   try {
-    first = $lent(Iterator.from(iter)).take(k).toArray();
+    first = Array.from($lent(Iterator.from(iter)).take(k));
   } catch (error) {
     dropI?.(iter);
     throw error;
@@ -86,7 +86,7 @@ function main() {
   }
   console.log("after break");
   const x = $range(10, 13).map((value) => [value]);
-  const firsts = $closing($iter(x), $dropEach(nDrop_drop)).take(1).toArray();
+  const firsts = Array.from($closing($iter(x), $dropEach(nDrop_drop)).take(1));
   console.log(`collected ${firsts.length}`);
   try {
     const y = $range(20, 23).map((value) => [value]);
@@ -112,7 +112,7 @@ function main() {
       }
     }
     const z = $range(30, 32).map((value) => [value]);
-    const all = $closing($iter(z), $dropEach(nDrop_drop)).take(5).toArray();
+    const all = Array.from($closing($iter(z), $dropEach(nDrop_drop)).take(5));
     console.log(`all ${all.length}`);
     let s;
     try {
@@ -328,7 +328,7 @@ function main() {
     }
     let kept;
     try {
-      kept = take.toArray();
+      kept = Array.from(take);
     } catch (error) {
       for (const item of all) {
         nDrop_drop(item);
@@ -372,7 +372,7 @@ function main() {
     }
     let lent;
     try {
-      lent = $lent(made).take(2).toArray();
+      lent = Array.from($lent(made).take(2));
     } catch (error) {
       for (const item of kept) {
         nDrop_drop(item);

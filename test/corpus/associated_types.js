@@ -57,7 +57,7 @@ function tag(l, LLabeled) {
 }
 
 function all(i) {
-  return Iterator.from(i).toArray();
+  return Array.from(Iterator.from(i));
 }
 
 function main() {

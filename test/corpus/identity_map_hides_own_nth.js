@@ -60,20 +60,19 @@ function main() {
   console.log(
     `${mapped == null ? "None" : `Some(${mapped})`} ${direct == null ? "None" : `Some(${direct})`}`,
   );
-  const mappedLast = $iterator(
-    count(),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-    countIterator_last,
-  )
-    .map((x) => x)
-    .toArray()
-    .at(-1);
+  const mappedLast = Array.from(
+    $iterator(
+      count(),
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      countIterator_nth,
+      countIterator_last,
+    ).map((x) => x),
+  ).at(-1);
   const directLast = countIterator_last(count());
   console.log(
     `${mappedLast == null ? "None" : `Some(${mappedLast})`} ${directLast == null ? "None" : `Some(${directLast})`}`,

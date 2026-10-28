@@ -60,22 +60,22 @@ function main() {
   console.log(
     `count past ${$count($iterator(counted(9), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2).take(9))}`,
   );
-  const value = $folded(
-    $iterator(
-      counted(9),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    )
-      .drop(3)
-      .take(2),
-  )
-    .toArray()
-    .at(-1);
+  const value = Array.from(
+    $folded(
+      $iterator(
+        counted(9),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        countIterator_nth,
+      )
+        .drop(3)
+        .take(2),
+    ),
+  ).at(-1);
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   $iterator(
     counted(9),
@@ -93,7 +93,7 @@ function main() {
       console.log(`each ${x}`);
     });
   console.log(
-    `collected [${$iterator(counted(5), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(1).take(3).toArray().join(", ")}]`,
+    `collected [${Array.from($iterator(counted(5), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(1).take(3)).join(", ")}]`,
   );
   const value$1 = $max(
     $iterator(

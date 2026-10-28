@@ -187,8 +187,7 @@ function main() {
     { clone: (value) => value },
   );
   console.log(
-    `[${$iterator(words, withPositionIterator_next)
-      .toArray()
+    `[${Array.from($iterator(words, withPositionIterator_next))
       .map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
@@ -196,8 +195,7 @@ function main() {
     `${withPositionDebug_fmt(copy, { alternate: true }, peekableDebug(fuseDebug(intoIterDebug), debug))}`,
   );
   console.log(
-    `[${$iterator(copy, withPositionIterator_next)
-      .toArray()
+    `[${Array.from($iterator(copy, withPositionIterator_next))
       .map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );

@@ -39,8 +39,8 @@ function main() {
     `${repeated.length} ${repeated.at(-1) == null ? "None" : `Some(${repeated.at(-1)})`}`,
   );
 
-  const a = $heapFrom($lazyRange(0, 1100000).toArray(), $cmp);
-  const b = $heapFrom($lazyRange(0, 10).toArray(), $cmp);
+  const a = $heapFrom(Array.from($lazyRange(0, 1100000)), $cmp);
+  const b = $heapFrom(Array.from($lazyRange(0, 10)), $cmp);
   $heapAppend(a, b, $cmp);
   const peek = a[0];
   console.log(`${a.length} ${peek == null ? "None" : `Some(${peek})`} ${b.length}`);

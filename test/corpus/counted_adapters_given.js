@@ -43,7 +43,7 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
   const len = IExactSizeIterator.len(it);
   const copy = IClone.clone(it);
   const last = IDoubleEndedIterator.next_back(it);
-  const rest = $given(copy, IIterator, true).toArray();
+  const rest = Array.from($given(copy, IIterator, true));
   return [len, first, last, IExactSizeIterator.len(it), rest];
 }
 
@@ -210,8 +210,7 @@ function main() {
     `${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`} ${value$7 == null ? "None" : `Some((${value$7[0]}, ${value$7[1]}))`}`,
   );
   console.log(
-    `[${again
-      .toArray()
+    `[${Array.from(again)
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

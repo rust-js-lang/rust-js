@@ -22,48 +22,39 @@ function main() {
   }
   const v = [1, 2, 3];
   const w = [7, 8];
+  console.log(`[${Array.from($rev($chainEnds($iter(v), $iter(w)))).join(", ")}]`);
   console.log(
-    `[${$rev($chainEnds($iter(v), $iter(w)))
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $rev(
+        $chainEnds(
+          $mapEnds($iterator({ start: 1, end: 3 }, $rangeNext, false, $rangeNextBack), t),
+          $mapEnds($iterator({ start: 10, end: 12 }, $rangeNext, false, $rangeNextBack), t),
+        ),
+      ).take(3),
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $chainEnds(
-        $mapEnds($iterator({ start: 1, end: 3 }, $rangeNext, false, $rangeNextBack), t),
-        $mapEnds($iterator({ start: 10, end: 12 }, $rangeNext, false, $rangeNextBack), t),
+    `[${Array.from(
+      $rev(
+        $chainEnds(
+          $chainEnds($iter(v), $iter(w)),
+          $iterator({ start: 20, end: 22 }, $rangeNext, false, $rangeNextBack),
+        ),
       ),
-    )
-      .take(3)
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $chainEnds(
-        $chainEnds($iter(v), $iter(w)),
-        $iterator({ start: 20, end: 22 }, $rangeNext, false, $rangeNextBack),
+    `[${Array.from(
+      $rev(
+        $chainEnds(
+          $iterator({ start: 0, end: 2 }, $rangeNext, false, $rangeNextBack),
+          $iter(9 == null ? [] : [9]),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $chainEnds(
-        $iterator({ start: 0, end: 2 }, $rangeNext, false, $rangeNextBack),
-        $iter(9 == null ? [] : [9]),
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `${$debugStr(
-      $rev($chainEnds($iter(Array.from("ab")), $iter(Array.from("cd"))))
-        .toArray()
-        .join(""),
-    )}`,
+    `${$debugStr(Array.from($rev($chainEnds($iter(Array.from("ab")), $iter(Array.from("cd"))))).join(""))}`,
   );
 }
 //# sourceMappingURL=case.js.map

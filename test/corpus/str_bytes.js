@@ -74,6 +74,6 @@ function main() {
   const first = $iter(Array.from(new TextEncoder().encode("héllo")));
   $next(first);
   const second = $iter(first.items.slice(first.at, first.end));
-  console.log(`[${first.toArray().join(", ")}] [${second.toArray().join(", ")}]`);
+  console.log(`[${Array.from(first).join(", ")}] [${Array.from(second).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

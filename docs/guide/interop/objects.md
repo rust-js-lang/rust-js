@@ -676,7 +676,7 @@ function countdownIterator_next(countdown) {
 }
 
 export function launch() {
-  return $iterator({ from: 3 }, countdownIterator_next).toArray();
+  return Array.from($iterator({ from: 3 }, countdownIterator_next));
 }
 
 export function sumCountdown() {

@@ -89,8 +89,8 @@ function main() {
       `${$debugStr(a)}: trim ${$debugStr(trim)} ${$debugStr(trimStart)} ${$debugStr(trimEnd)} ${$debugStr(trimMatches)} ${$debugStr(trimStartMatches)} words [${value.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
     );
     const value$1 = a.split(",");
-    const value$2 = Iterator.from($splitN(a, 2, " ")).toArray();
-    const value$3 = Iterator.from($rsplit(a, " ")).toArray();
+    const value$2 = Array.from($splitN(a, 2, " "));
+    const value$3 = Array.from($rsplit(a, " "));
     const splitOnce = $splitOnce(a, ",");
     const sum = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
     const value$4 = $charIndices(a);

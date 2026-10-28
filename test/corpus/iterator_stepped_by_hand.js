@@ -16,7 +16,7 @@ function main() {
   const it = $iter(Array.from("abcd"));
   const first = $next(it);
   const second = $next(it);
-  const rest = it.toArray().join("");
+  const rest = Array.from(it).join("");
   console.log(
     `${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${second == null ? "None" : `Some(${$debugStr(second, "'")})`} ${rest}`,
   );

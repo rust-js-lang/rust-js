@@ -32,7 +32,7 @@ function main() {
   const e = {
     it: $filterEnds($iter(v), (item) => even(item)),
   };
-  const first = $lent(e.it).take(2).toArray();
+  const first = Array.from($lent(e.it).take(2));
   const arg = $next(e.it);
   console.log(`[${first.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
   const r = { it: iterator_skip($iter(v), 2) };
@@ -47,33 +47,33 @@ function main() {
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} ${$exactLen($sizeHint(r.it))}`,
   );
   const again = { it: iterator_skip($iter(v), 1) };
-  const back = $rev(
-    $knowing(
-      $lent(again.it),
-      skipDoubleEndedIterator_nextBack,
-      (iterator) => $exactLen($sizeHint(iterator)),
-      undefined,
-      skipDoubleEndedIterator_nthBack,
-      (iterator, init, f, broke) =>
-        skipDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          { next_back: $nextBack },
-          $tryOf(broke),
-        ),
-    ),
-  )
-    .take(2)
-    .toArray();
+  const back = Array.from(
+    $rev(
+      $knowing(
+        $lent(again.it),
+        skipDoubleEndedIterator_nextBack,
+        (iterator) => $exactLen($sizeHint(iterator)),
+        undefined,
+        skipDoubleEndedIterator_nthBack,
+        (iterator, init, f, broke) =>
+          skipDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+          ),
+      ),
+    ).take(2),
+  );
   const arg$1 = $next(again.it);
   console.log(`[${back.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
   const odd = {
     it: $filterEnds($iter(v), (item) => even(item)),
   };
   const last = $nextBack(odd.it);
-  const fromBack = $rev(odd.it).take(1).toArray();
+  const fromBack = Array.from($rev(odd.it).take(1));
   const value = $next(odd.it);
   const arg$2 = $nextBack(odd.it);
   console.log(

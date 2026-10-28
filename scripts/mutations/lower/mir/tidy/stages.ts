@@ -387,7 +387,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-eager-chains-off",
-    breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
+    breaks: "`Array.from($iter(xs).map(f))` stays, not `xs.map(f)`",
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"named temporaries\", |b, _| named_temporaries(b)),\n            pass(\"consumed into iterators\", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass(\"range items\", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass(\"range steps\", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n            pass(\"eager chains\", |b, _| eager_chains(b)),\n",
     replace: "            pass(\"named temporaries\", |b, _| named_temporaries(b)),\n            pass(\"consumed into iterators\", |b, h| {\n                iterators::consumed_into_iters(b, h.fuse)\n            }),\n            pass(\"range items\", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_items)\n            }),\n            pass(\"range steps\", |b, _| {\n                js::each_expr_mut(b, &mut crate::lower::std_types::range::range_steps)\n            }),\n",

@@ -76,7 +76,7 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${fuseDebug_fmt(f, undefined, flipDebug)}`,
   );
-  console.log(`[${copy.take(4).toArray().join(", ")}]`);
+  console.log(`[${Array.from(copy.take(4)).join(", ")}]`);
   const v = iterator_fuse($iter([1, 2, 3]), { next: $next }, true);
   const value$2 = $sizeHint(v);
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
@@ -102,7 +102,7 @@ function main() {
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${pairDebug_fmt(flips, flipDebug)}`,
   );
   console.log(`${pairDebug_fmt(again, flipDebug)}`);
-  console.log(`[${$iterator(again, pairIterator_next, true).take(3).toArray().join(", ")}]`);
+  console.log(`[${Array.from($iterator(again, pairIterator_next, true).take(3)).join(", ")}]`);
   const loud = iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop);
   let loud$live;
   try {

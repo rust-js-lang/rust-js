@@ -5,8 +5,8 @@
 // std's `iter_compare` steps it by `try_for_each`, `b` by its `next`. Each
 // closed at its end, `b` first, as std drops what it takes (#242).
 function $iterCmp(a, b, cmp) {
-  const x = a[Symbol.iterator]();
-  const y = b[Symbol.iterator]();
+  const x = $stepsOf(a);
+  const y = $stepsOf(b);
   try {
     let order = 0;
     const stopped = $lent(x).tryFold(

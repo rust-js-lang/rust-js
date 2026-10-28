@@ -186,8 +186,7 @@ function main() {
   }
   console.log(`[${runs.join(", ")}]`);
   console.log(
-    `[${Iterator.from($chunkBy(runs, (a, b) => a <= b))
-      .toArray()
+    `[${Array.from($chunkBy(runs, (a, b) => a <= b))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

@@ -34,7 +34,7 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${$exactLen(spanIterator_sizeHint(s))}`,
   );
-  const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_nextBack).toArray();
+  const backwards = Array.from($iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_nextBack));
   console.log(`[${backwards.join(", ")}]`);
   const both = { low: 10, high: 14 };
   const value = spanDoubleEndedIterator_nextBack(both);
@@ -46,10 +46,9 @@ function main() {
     console.log(`got ${x}`);
   }
   console.log(
-    `[${$iterator({ low: 0, high: 6 }, spanDoubleEndedIterator_nextBack)
-      .take(2)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($iterator({ low: 0, high: 6 }, spanDoubleEndedIterator_nextBack).take(2)).join(
+      ", ",
+    )}]`,
   );
 }
 //# sourceMappingURL=case.js.map

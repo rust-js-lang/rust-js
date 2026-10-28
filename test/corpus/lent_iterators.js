@@ -48,7 +48,7 @@ function word(it) {
 }
 
 function take2(it) {
-  return $lent(Iterator.from(it)).take(2).toArray();
+  return Array.from($lent(Iterator.from(it)).take(2));
 }
 
 function untilZero(it) {
@@ -73,7 +73,7 @@ function main() {
   const it = $iter([1, 2, 3, 4, 5]);
   skip(it, 2);
   const value = first(it);
-  console.log(`${value == null ? "None" : `Some(${value})`} [${it.toArray().join(", ")}]`);
+  console.log(`${value == null ? "None" : `Some(${value})`} [${Array.from(it).join(", ")}]`);
   const c = [5];
   skip($iterator(c, countdownIterator_next), 1);
   const value$1 = first($iterator(c, countdownIterator_next));

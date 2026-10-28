@@ -448,6 +448,28 @@ impl Expr {
         }
     }
 
+    /// The items an iterator gives, collected: `Array.from(it)`, as JS
+    /// writes it, an iterable's or an iterator's alike (the user's decision,
+    /// bw8/cm7, ADR 0055 amended), never ES2025's `it.toArray()`.
+    pub fn collected(it: Expr) -> Expr {
+        Expr::call(Expr::member(Expr::var("Array"), "from"), vec![it])
+    }
+
+    /// Of `Array.from(it)`, `collected`'s, `it`.
+    pub fn collected_of(&self) -> Option<&Expr> {
+        match &self.kind {
+            ExprKind::Call(callee, args) => match (&callee.kind, args.as_slice()) {
+                (ExprKind::Member(array, from), [it])
+                    if from == "from" && matches!(&array.kind, ExprKind::Var(name) if name == "Array") =>
+                {
+                    Some(it)
+                }
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// A call of the runtime's helper `name`, `$cmp(a, b)`.
     pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), args)

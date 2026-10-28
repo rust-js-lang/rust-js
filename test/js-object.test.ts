@@ -623,7 +623,7 @@ pub fn all(object: &Unknown) -> Vec<String> {
   expect(js).toContain("let n = 0;\n  for (const key in object) {\n    out.push(`${n}:${key}`);\n    n++;\n  }");
   // A closure that reads the count keeps its own each turn, as a `const`.
   expect(js).toContain("for (const [n, key] of $keysIn(object).map((x, i) => [i, x])) {");
-  expect(js).toContain("return $keysIn(object).toArray();");
+  expect(js).toContain("return Array.from($keysIn(object));");
   const proto = { inherited: 1, shadowed: 2 };
   const object = Object.assign(Object.create(proto), { own: 3, shadowed: 4, _private: 5 });
   Object.defineProperty(object, "hidden", { value: 6, enumerable: false });

@@ -4,8 +4,8 @@
 // Its fold, std's, `a`'s then `b`'s, which an iterator rust-js makes routes
 // through the crate's own (#162), and its `try_fold`, `a`'s then `b`'s.
 function $lazyChain(a, b) {
-  let first = a[Symbol.iterator]();
-  const second = b[Symbol.iterator]();
+  let first = $stepsOf(a);
+  const second = $stepsOf(b);
   const chained = new $Steps(
     () => {
       if (first !== undefined) {

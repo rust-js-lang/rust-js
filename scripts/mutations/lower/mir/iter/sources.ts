@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "deque-iter-generic",
-    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `.toArray()`, not `prev.slice()`, and its `next_back()` refused",
+    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `Array.from(..)`, not `prev.slice()`, and its `next_back()` refused",
     "file": "src/lower/mir/iter/sources.rs",
     "find": " || self.recognition().is_deque_iter(ty)",
     "replace": "",
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-range-unmapped-lazy",
-    "breaks": "a range collected unmapped from MIR stays a lazy `$iterator(\u2026).toArray()`",
+    "breaks": "a range collected unmapped from MIR stays a lazy `Array.from($iterator(\u2026))`",
     "file": "src/lower/mir/iter/sources.rs",
     "find": "        if !numbers || maps",
     "replace": "        if maps.is_empty() || !numbers || maps",

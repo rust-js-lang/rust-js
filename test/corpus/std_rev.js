@@ -78,7 +78,7 @@ function main() {
   );
   const c = revClone_clone(r, { clone: (value) => [value[0]] });
   console.log(`${revDebug_fmt(c, undefined, countdownDebug)}`);
-  console.log(`[${$roomForHint(c, 4, false).toArray().join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(c, 4, false)).join(", ")}]`);
 
   const v = [1, 2, 3, 4, 5, 6];
   const back = iterator_rev($iter(v));
@@ -134,22 +134,22 @@ function main() {
     held.return();
   }
 
-  const inPlace = $iterator([3], countdownDoubleEndedIterator_nextBack)
-    .map((n) => (n * 2) >>> 0)
-    .toArray();
+  const inPlace = Array.from(
+    $iterator([3], countdownDoubleEndedIterator_nextBack).map((n) => (n * 2) >>> 0),
+  );
   const arg = v.toReversed().slice(0, 2);
   console.log(`[${inPlace.join(", ")}] [${arg.join(", ")}]`);
   // A map held before it's reversed where it's stepped, of items with a
   // destructor: made knowing its back where it's made.
   const mapped = $mapEnds($closing($iter([[4], [5]]), $dropEach(loudDrop_drop)), (l) => l);
   console.log(
-    `[${$mapEnds($rev(mapped), (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    })
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $mapEnds($rev(mapped), (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      }),
+    ).join(", ")}]`,
   );
   // Its own impl's, of what it's made into where it's made.
   const value$6 = $nextBack($iter(v.toReversed()));

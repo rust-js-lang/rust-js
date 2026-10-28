@@ -1025,13 +1025,13 @@ test("an Iterator impl is a JS iterator, lazy until something wants all of it", 
   expect(js).toContain("const iter = { n: 3 };\n  let x;\n  while ((x = countdownIterator_next(iter)) != null) {");
   expect(js).toContain("const first = countdownIterator_next(c) ?? 0;");
   // Endless, so only lazy helpers: `drop`, `take`, `find`.
-  expect(js).toContain("$iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray()");
+  expect(js).toContain("Array.from($iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6))");
   expect(js).toContain("$lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50)");
   expect(js).toContain("$iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0)");
   // A generic `next` may box a `Some` that looks like `None`: unboxed as it comes out.
   // Its `Clone` dictionary, written three times, is declared once (ADR 0979).
   expect(js).toContain("  const clone = { clone: (value) => value };");
-  expect(js).toContain("      (iterator) => repeatIterator_next(iterator, clone),\n      true,\n    )");
+  expect(js).toContain("    Array.from(\n      $iterator({ item: 2, times: 3 }, (iterator) => repeatIterator_next(iterator, clone), true),\n    ),");
 });
 
 // `format_args!` is recognized whole, so its arguments are written in place,
@@ -1200,7 +1200,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
   expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
   expect(js).toContain("const it = $iter(v);");
-  expect(js).toContain("const rest = it.toArray();");
+  expect(js).toContain("const rest = Array.from(it);");
   expect(js).toContain('return c != null ? c.toUpperCase() + $restStr(chars) : "";');
 });
 
@@ -1235,7 +1235,7 @@ test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", a
 test("generic iterators take arrays and JS iterators alike", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
   expect(js).toContain("export function evensBelow(n) {\n  return $lazyRange(0, n).filter((x) => x % 2 === 0);");
-  expect(js).toContain("export function middle(items, k) {\n  return Iterator.from(items).drop(1).take(k).toArray();");
+  expect(js).toContain("export function middle(items, k) {\n  return Array.from(Iterator.from(items).drop(1).take(k));");
   expect(js).toContain("for (const x of items) {");
   // One of the crate's own, given where a generic one goes.
   expect(js).toContain("total($iterator({ n }, countdownIterator_next))");

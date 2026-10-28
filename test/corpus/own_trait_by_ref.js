@@ -19,7 +19,7 @@ function counterDoubled_byRef(counter) {
 function main() {
   const counter = { n: 1 };
   const doubled = counterDoubled_byRef(counter);
-  const rest = $lent($iterator(counter, counterIterator_next)).toArray();
+  const rest = Array.from($lent($iterator(counter, counterIterator_next)));
   console.log(`${doubled} [${rest.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

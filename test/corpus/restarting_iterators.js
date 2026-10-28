@@ -38,9 +38,9 @@ function f() {
   return { n: 0 };
 }
 function twice(it) {
-  const a = $lent(Iterator.from(it)).toArray();
-  const b = $lent(Iterator.from(it)).toArray();
-  const c = Iterator.from(it).toArray();
+  const a = Array.from($lent(Iterator.from(it)));
+  const b = Array.from($lent(Iterator.from(it)));
+  const c = Array.from(Iterator.from(it));
   return [a, b, c];
 }
 function main() {
@@ -187,13 +187,13 @@ function main() {
   );
   let first;
   try {
-    first = $lent(zipped)
-      .map(([x, loud]) => {
+    first = Array.from(
+      $lent(zipped).map(([x, loud]) => {
         const result = (x + loud[0]) >>> 0;
         loudDrop_drop(loud);
         return result;
-      })
-      .toArray();
+      }),
+    );
   } catch (error) {
     zipped.return();
     throw error;
@@ -204,13 +204,13 @@ function main() {
     zipped.return();
     throw error;
   }
-  const second = zipped
-    .map(([x, loud]) => {
+  const second = Array.from(
+    zipped.map(([x, loud]) => {
       const result = (x + loud[0]) >>> 0;
       loudDrop_drop(loud);
       return result;
-    })
-    .toArray();
+    }),
+  );
   console.log(`zip second [${second.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

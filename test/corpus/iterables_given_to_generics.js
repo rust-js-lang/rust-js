@@ -30,10 +30,11 @@ function count(i) {
   return Iterator.from(i).reduce((n) => n + 1, 0);
 }
 function firsts(i, IItemDebug) {
-  return Iterator.from(i)
-    .take(2)
-    .map((x) => IItemDebug.fmt(x))
-    .toArray();
+  return Array.from(
+    Iterator.from(i)
+      .take(2)
+      .map((x) => IItemDebug.fmt(x)),
+  );
 }
 function main() {
   const v = [1, 2, 3];

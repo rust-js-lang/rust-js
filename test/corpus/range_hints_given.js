@@ -50,37 +50,37 @@ function main() {
     )}`,
   );
   console.log(
-    `[${$rev(
-      $skipping(
-        $iterator(
-          { start: 1, end: 10 },
-          $rangeInclusiveNext,
-          false,
-          $rangeInclusiveNextBack,
-          $rangeInclusiveLen,
+    `[${Array.from(
+      $rev(
+        $skipping(
+          $iterator(
+            { start: 1, end: 10 },
+            $rangeInclusiveNext,
+            false,
+            $rangeInclusiveNextBack,
+            $rangeInclusiveLen,
+          ),
+          7,
         ),
-        7,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(`[${[1, 2, 3, 4].slice(1).slice(0, 2).toReversed().join(", ")}]`);
   console.log(
-    `[${$rev(
-      $stepByEnds(
-        $iterator(
-          { start: 1, end: 10 },
-          $rangeInclusiveNext,
-          false,
-          $rangeInclusiveNextBack,
-          $rangeInclusiveLen,
+    `[${Array.from(
+      $rev(
+        $stepByEnds(
+          $iterator(
+            { start: 1, end: 10 },
+            $rangeInclusiveNext,
+            false,
+            $rangeInclusiveNextBack,
+            $rangeInclusiveLen,
+          ),
+          3,
         ),
-        3,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

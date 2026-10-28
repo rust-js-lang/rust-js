@@ -81,18 +81,22 @@ function main() {
         $tryOf(broke),
       ),
   };
-  const evens = $iterator(
-    evensOrTens(true),
-    (iterator) =>
-      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
-    true,
-  ).toArray();
-  const tens = $iterator(
-    evensOrTens(false),
-    (iterator) =>
-      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
-    true,
-  ).toArray();
+  const evens = Array.from(
+    $iterator(
+      evensOrTens(true),
+      (iterator) =>
+        twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
+      true,
+    ),
+  );
+  const tens = Array.from(
+    $iterator(
+      evensOrTens(false),
+      (iterator) =>
+        twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, mapDoubleEndedIterator),
+      true,
+    ),
+  );
   const both = evensOrTens(true);
   const next = twoIterator_next(
     both,

@@ -326,7 +326,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::call_helper("$lastDropping", given))
             }
             None => {
-                let items = Expr::call(Expr::member(it, "toArray"), Vec::new());
+                let items = Expr::collected(it);
                 Ok(self.last_of(items, item, made))
             }
         }

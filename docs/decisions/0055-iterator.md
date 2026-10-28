@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0036](0036-iterators-and-sorting.md) and [0052](0052-std-trait-impls.md). Amended by
 [0473](0473-fuse-is-rusts-fuse.md): `fuse()` is std's `Fuse`, not the
-iterator itself.
+iterator itself. Amended below: collected, an iterator is `Array.from(it)`
+(the user's decision, 2026-10-28).
 
 Case: C, A, D, B ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -99,3 +100,51 @@ $iterator(fibonacci(), fibonacciIterator_next).find((x) => x > 50)
   calls it natively too. Only a closure that does something before a
   `skip` past every item, collected, can tell (a generated program's, seed
   80072, 2026-10-15).
+
+## Amendment: collected, an iterator is `Array.from(it)`
+
+The user decided (React port gaps bw8, cm7) that an iterator collected into
+a `Vec` prints `Array.from(it)`, as upstream React writes
+`Array.from(instance._transitions)` and as every host React supports runs,
+and that no `.toArray()`, ES2025's iterator helper, is printed anywhere.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `Array.from` steps an
+iterable's iterator to its first `done` as `toArray` does, each item once
+in order; what differs, closing, is made the same below.
+
+- One form, one owner: `js::Expr::collected(it)` makes `Array.from(it)`,
+  and `collected_of` reads it, for every consumer that collects: `collect`
+  into a `Vec`, a `String`'s join, a heap's items (`mir/iter/collect.rs`),
+  `last` (`closing.rs`), `nth`'s `Array.from(it.drop(n).take(1))[0]`
+  (`combinators/adapters.rs`, `iterators/in_place.rs`'s `nth_of`), the
+  eager chains that make it an array's own (`iterators/eager.rs`: `[...a,
+  ...b]` of a chain, `xs.slice()` of an array's, its argument stepped till
+  its first `done`), and `expr_walk.rs`' list of JS's own calls.
+- Of a runtime helper's items, an array or an iterable, `Iterator.from` is
+  dropped inside it, `Array.from($rsplit(s, "="))`; not of what may be a
+  binding's iterator with only a `next` (ADR 0140), which stays
+  `Array.from(Iterator.from(it))`.
+- `$Steps`, an iterator rust-js makes, closed itself at the end of its own
+  `toArray()`, as `fold` does, which drops a crate's iterator stepped
+  through an adapter and what a held one moved there has left (#206).
+  `Array.from` closes nothing at the end, so `$Steps` now closes itself
+  where JS's own protocol, `[Symbol.iterator]()`, steps it to its end:
+  `Array.from`, `for..of`, a spread. The runtime's own adapters, `$lazyChain`,
+  `$lazyZip`, `$scan` and the rest, step one as it is (`$stepsOf`), closed
+  where Rust's adapter drops it, so a held chain's `b` stays its owner's
+  to drop (#243). Its `toArray` is gone.
+- Not yet: a `js::Set`'s `values()` or `keys()` collected is
+  `Array.from(set.values())`, where the user's decision is
+  `Array.from(set)`, and `js::set::new` takes a slice, `new
+  Set(Array.from(..))`; each needs a binding of what iterates as the
+  receiver itself, written up for the user (S/decisions-pending.md, bw8b).
+
+Held by `test/lowering-collected.test.ts`, the corpus (every case run
+against native Rust, its drops' order included), and mutations
+`steps-collected-unclosed` (which takes `steps-held-fold-unclosed`'s place), `steps-of-js-protocol`,
+`collected-helper-iterator-from-kept` and `collected-stepped-as-made`,
+with `iter-chain-collected-lazily` and `position-by-next` retargeted.
+The corpus' and snapshots' 180-odd `.toArray()`s re-blessed, std's compiled
+bodies (`bun run std`) and the guide with them; `docs/readability.txt` is
+blessed: no shape's count grew (`Iterator.from` fell 170 to 119), but 233
+fewer lines make the same counts larger shares.

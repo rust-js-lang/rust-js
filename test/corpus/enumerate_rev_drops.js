@@ -12,18 +12,20 @@ function loudDrop_drop(loud) {
 
 function main() {
   const louds = [[0], [1], [2]];
-  const indexed = $rev(
-    $mapEnds($enumerate($closing($iter(louds), $dropEach(loudDrop_drop))), ([i, l]) => {
-      const result = [i, l[0]];
-      loudDrop_drop(l);
-      return result;
-    }),
-  ).toArray();
+  const indexed = Array.from(
+    $rev(
+      $mapEnds($enumerate($closing($iter(louds), $dropEach(loudDrop_drop))), ([i, l]) => {
+        const result = [i, l[0]];
+        loudDrop_drop(l);
+        return result;
+      }),
+    ),
+  );
   console.log(`[${indexed.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
-  const kept = $rev(
-    $mapEnds($enumerate($closing($iter([[3], [4]]), $dropEach(loudDrop_drop))), ([, l]) => l),
-  ).toArray();
+  const kept = Array.from(
+    $rev($mapEnds($enumerate($closing($iter([[3], [4]]), $dropEach(loudDrop_drop))), ([, l]) => l)),
+  );
   try {
     console.log(`${kept.map((l) => String(l[0])).join(",")}`);
   } finally {

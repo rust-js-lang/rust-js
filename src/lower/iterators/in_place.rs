@@ -4,9 +4,9 @@
 use super::*;
 
 /// What a JS iterator's own methods step till its first `done`, and no more:
-/// its helpers and its consumers.
-pub(super) const STEPPED_TILL_DONE: [&str; 11] = [
-    "map", "filter", "take", "drop", "flatMap", "toArray", "reduce", "forEach", "some", "every", "find",
+/// its helpers and its consumers; and `Array.from`, `collect()`'s.
+pub(super) const STEPPED_TILL_DONE: [&str; 10] = [
+    "map", "filter", "take", "drop", "flatMap", "reduce", "forEach", "some", "every", "find",
 ];
 
 /// What the runtime's helpers step their first argument till its first
@@ -75,7 +75,7 @@ pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
     }
 }
 
-/// Of `chain.drop(n).take(1).toArray()`, `nth(n)`'s first: `chain` and `n`.
+/// Of `Array.from(chain.drop(n).take(1))`, `nth(n)`'s first: `chain` and `n`.
 pub(super) fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
     fn call<'e>(e: &'e Expr, name: &str) -> Option<(&'e Expr, &'e [Expr])> {
         match &e.kind {
@@ -86,7 +86,7 @@ pub(super) fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
             _ => None,
         }
     }
-    let (taken, []) = call(e, "toArray")? else { return None };
+    let taken = e.collected_of()?;
     let (dropped, [one]) = call(taken, "take")? else {
         return None;
     };

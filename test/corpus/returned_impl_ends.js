@@ -62,55 +62,36 @@ function main() {
   const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const b = [[1, 2, 3, 4, 6]];
   console.log(
-    `[${$rev(
-      $knowing(
-        Bag.oddSquares(b),
-        mapDoubleEndedIterator_nextBack,
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-          ),
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($knowing(Bag.oddSquares(b), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke))))).join(", ")}]`,
   );
-  console.log(`[${$rev(Bag.evens(b)).toArray().join(", ")}]`);
+  console.log(`[${Array.from($rev(Bag.evens(b))).join(", ")}]`);
   const e = Bag.evens(b);
   const nextBack = $nextBack(e);
   const next = $next(e);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} [${e.toArray().join(", ")}]`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} [${Array.from(e).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        Bag.doubled(b),
-        mapDoubleEndedIterator_nextBack,
-        (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
-        undefined,
-        undefined,
-        (iterator, init, f, broke) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          Bag.doubled(b),
+          mapDoubleEndedIterator_nextBack,
+          (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+          undefined,
+          undefined,
+          (iterator, init, f, broke) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}] ${mapExactSizeIterator_len(Bag.doubled(b), iterExactSizeIterator)}`,
+    ).join(", ")}] ${mapExactSizeIterator_len(Bag.doubled(b), iterExactSizeIterator)}`,
   );
   const d = Bag.doubled(b);
   mapDoubleEndedIterator_nextBack(d);
@@ -145,35 +126,10 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
-    `[${$iterator(Bag.ranged(b), $rangeNextBack)
-      .filter((_, i) => i % 2 === 0)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($iterator(Bag.ranged(b), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        Bag.chained(b),
-        chainDoubleEndedIterator_nextBack,
-        undefined,
-        undefined,
-        chainDoubleEndedIterator_nthBack,
-        (iterator, init, f, broke) =>
-          chainDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-          ),
-      ),
-    )
-      .take(3)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($knowing(Bag.chained(b), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke)))).take(3)).join(", ")}]`,
   );
   const value$1 = $findBack(
     $knowing(

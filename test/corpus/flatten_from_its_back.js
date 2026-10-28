@@ -36,11 +36,7 @@ function main() {
   };
   const intoIterator = { intoIter: (x) => $iter(x), IntoIterIterator: () => ({ next: $next }) };
   const v = [[1, 2], [], [3, 4, 5], [6]];
-  console.log(
-    `[${$rev($flattenEnds($iter(v), (item) => $iter(item)))
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from($rev($flattenEnds($iter(v), (item) => $iter(item)))).join(", ")}]`);
   const it = iterator_flatten($iter(v), { next: $next }, intoIterator, true, undefined, false);
   const next = $next(it);
   const nextBack = flattenDoubleEndedIterator_nextBack(
@@ -65,7 +61,7 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  console.log(`[${$roomForHint(it, 4, false).toArray().join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(it, 4, false)).join(", ")}]`);
   const fm = iterator_flatMap(
     { start: 1, end: 4 },
     (n) => {
@@ -94,50 +90,50 @@ function main() {
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        fm,
-        (iterator) =>
-          flatMapDoubleEndedIterator_nextBack(
-            iterator,
-            { next: $rangeNext },
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            vecIntoIterator,
-            { next_back: $nextBack },
-            true,
-            false,
-          ),
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke) =>
-          flatMapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $rangeNext },
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-            vecIntoIterator,
-            { next_back: $nextBack },
-            $tryOf(broke),
-            true,
-            false,
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          fm,
+          (iterator) =>
+            flatMapDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              vecIntoIterator,
+              { next_back: $nextBack },
+              true,
+              false,
+            ),
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke) =>
+            flatMapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              vecIntoIterator,
+              { next_back: $nextBack },
+              $tryOf(broke),
+              true,
+              false,
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const words = ["ab", "", "cde"];
   console.log(
-    `[${$rev(
-      $flattenEnds(
-        $mapEnds($iter(words), (w) => Array.from(new TextEncoder().encode(w))),
-        (item) => $iter(item),
+    `[${Array.from(
+      $rev(
+        $flattenEnds(
+          $mapEnds($iter(words), (w) => Array.from(new TextEncoder().encode(w))),
+          (item) => $iter(item),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const rfind = $findBack(
     $flattenEnds($iter(v), (item) => $iter(item)),
@@ -150,9 +146,7 @@ function main() {
   console.log(
     `${rfind == null ? "None" : `Some(${rfind})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$5 = $flattenEnds($iter(v), (item) => $iter(item))
-    .toArray()
-    .at(-1);
+  const value$5 = Array.from($flattenEnds($iter(v), (item) => $iter(item))).at(-1);
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   fused();
 }

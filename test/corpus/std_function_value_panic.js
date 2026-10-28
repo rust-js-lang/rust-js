@@ -10,14 +10,15 @@ function main() {
   function inspect(o) {
     console.log(`${o == null ? "None" : `Some(${o})`}`);
   }
-  const seen = [1, undefined, 3]
-    .values()
-    .map((item) => {
-      inspect(item);
-      return item;
-    })
-    .map((x) => $unwrap(x))
-    .toArray();
+  const seen = Array.from(
+    [1, undefined, 3]
+      .values()
+      .map((item) => {
+        inspect(item);
+        return item;
+      })
+      .map((x) => $unwrap(x)),
+  );
   console.log(`[${seen.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -292,14 +292,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
   },
   {
-    name: "steps-held-fold-unclosed",
-    breaks: "a chain `collect()` takes isn't closed at its end, so what a held source in it has left, a variable moved there on one path, isn't dropped (#206)",
-    file: "src/runtime/steps.js",
-    find: "    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);\n    this.return();\n",
-    replace: "    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
-  },
-  {
     name: "skip-fold-past-end-left-open",
     breaks: "`take(1).skip(3).fold(..)` never drops what the `take`'s source has left, its `nth(n - 1)` finding none (#242)",
     file: "src/runtime/steps.js",
@@ -338,5 +330,21 @@ export const mutations: Mutation[] = [
     find: "        if (!step.done) drop?.(step.value);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+  },
+  {
+    name: "steps-collected-unclosed",
+    breaks: "an iterator rust-js makes, collected by JS's own `Array.from(it)`, isn't closed at its end, so a crate's own iterator's source stepped through an adapter, or what a held source a variable moved there has left, is never dropped, as `collect()` drops it (#206, bw8)",
+    file: "src/runtime/steps.js",
+    find: "        if (step.done) this.return();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_dropped_through_adapters|own_fold_through_adapters|held_iterator_dropped_by_its_owner).rs$"],
+  },
+  {
+    name: "steps-of-js-protocol",
+    breaks: "the runtime's own adapters step an iterator rust-js makes by JS's protocol, closed at its end, so a held chain's `b` is dropped at its end, not by its owner (#243, bw8)",
+    file: "src/runtime/steps.js",
+    find: "  return items instanceof $Steps ? items : items[Symbol.iterator]();\n",
+    replace: "  return items[Symbol.iterator]();\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
 ];

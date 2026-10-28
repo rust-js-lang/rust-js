@@ -104,7 +104,7 @@ function main() {
     { clone: (value) => $clone(value) },
   );
   console.log(
-    `[${$roomForHint(c, 4, false).toArray().join(", ")}] [${$roomForHint(m, 4, false).toArray().join(", ")}]`,
+    `[${Array.from($roomForHint(c, 4, false)).join(", ")}] [${Array.from($roomForHint(m, 4, false)).join(", ")}]`,
   );
 
   const v = [1, 2, 3, 4, 5];
@@ -145,13 +145,13 @@ function main() {
   };
   const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone) };
   $next(again.it);
-  const cycled = $cycleOf(
-    { ...holder, it: mapClone_clone(holder.it, rangeClone, clone) }.it,
-    (iterator) => mapClone_clone(iterator, rangeClone, clone),
-    $next,
-  )
-    .take(5)
-    .toArray();
+  const cycled = Array.from(
+    $cycleOf(
+      { ...holder, it: mapClone_clone(holder.it, rangeClone, clone) }.it,
+      (iterator) => mapClone_clone(iterator, rangeClone, clone),
+      $next,
+    ).take(5),
+  );
   console.log(`[${cycled.join(", ")}]`);
   console.log(
     `[${$foldToArray($roomForHint(again.it, 4, true)).join(", ")}] [${$foldToArray($roomForHint(holder.it, 4, true)).join(", ")}]`,
@@ -167,20 +167,19 @@ function main() {
   );
   const first = $clone(evens);
   $next(first);
-  console.log(`[${first.toArray().join(", ")}] [${evens.toArray().join(", ")}]`);
+  console.log(`[${Array.from(first).join(", ")}] [${Array.from(evens).join(", ")}]`);
   const makeMap$1 = (it, f) =>
     $cloning($iterator(it, $rangeNext).map(f), () =>
       makeMap$1({ start: it.start, end: it.end }, f),
     );
   console.log(
-    `[${$cycleOf(
-      makeMap$1({ start: 1, end: 3 }, (x) => (x * 3) | 0),
-      $clone,
-      $next,
-    )
-      .take(5)
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from(
+      $cycleOf(
+        makeMap$1({ start: 1, end: 3 }, (x) => (x * 3) | 0),
+        $clone,
+        $next,
+      ).take(5),
+    ).join(", ")}]`,
   );
   // Read by a `rev()` that's held: std's struct, as its `rev()` is.
   const cubes = iterator_map($iter(v), (x) => Math.imul(Math.imul(x, x) >>> 0, x) >>> 0);

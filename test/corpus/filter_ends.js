@@ -29,7 +29,7 @@ function lastEven(it) {
 }
 
 function evensBack(it) {
-  return $rev($filterEnds(it, (x) => x % 2 === 0)).toArray();
+  return Array.from($rev($filterEnds(it, (x) => x % 2 === 0)));
 }
 
 function sumBack(it) {
@@ -59,19 +59,21 @@ function lastHalf(it) {
 }
 
 function nested(it) {
-  return $rev(
-    $mapEnds(
-      $filterEnds(
-        $mapEnds(Iterator.from(it), (x) => {
-          if (x > 2) {
-            return $some(x % 2 === 0 ? x : undefined);
-          }
-        }),
-        (item) => item != null,
+  return Array.from(
+    $rev(
+      $mapEnds(
+        $filterEnds(
+          $mapEnds(Iterator.from(it), (x) => {
+            if (x > 2) {
+              return $some(x % 2 === 0 ? x : undefined);
+            }
+          }),
+          (item) => item != null,
+        ),
+        $someValue,
       ),
-      $someValue,
     ),
-  ).toArray();
+  );
 }
 
 function main() {
@@ -91,9 +93,9 @@ function main() {
   console.log(
     `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2] == null ? "None" : `Some(${value$2[2]})`})`,
   );
-  const found = $iterator({ start: 1, end: 10 }, $rangeNextBack)
-    .filter((x) => x % 4 === 0)
-    .toArray();
+  const found = Array.from(
+    $iterator({ start: 1, end: 10 }, $rangeNextBack).filter((x) => x % 4 === 0),
+  );
   console.log(`[${found.join(", ")}]`);
   const joined = $foldBack(
     $filterEnds($iter([3, 6, 9, 12]), (x) => x > 4),

@@ -35,11 +35,12 @@ function doubled(v) {
 function main() {
   const v = [1, 2, 3, 4];
 
-  let kept = v
-    .values()
-    .map((x) => noisy("map", (x * 2) | 0))
-    .filter((x) => noisy("filter", x) > 2)
-    .toArray();
+  let kept = Array.from(
+    v
+      .values()
+      .map((x) => noisy("map", (x * 2) | 0))
+      .filter((x) => noisy("filter", x) > 2),
+  );
   console.log(`[${kept.join(", ")}]`);
 
   // `fold`'s start is made before any item is stepped: a stage that does
@@ -50,11 +51,12 @@ function main() {
     .reduce((acc, x) => (acc + x) | 0, noisy("start", 100));
   console.log(`${total}`);
 
-  const first = v
-    .values()
-    .map((x) => noisy("take", x))
-    .take(2)
-    .toArray();
+  const first = Array.from(
+    v
+      .values()
+      .map((x) => noisy("take", x))
+      .take(2),
+  );
   console.log(`[${first.join(", ")}]`);
 
   const value = $lent(v.values().map((x) => noisy("find", x))).find((x) => x > 1);
@@ -121,26 +123,30 @@ function main() {
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);
   console.log(`${counted.reduce((n) => n + 1, 0)}`);
-  const pairs = $trustedZip(
-    $slice(v, 0, 2)
-      .values()
-      .map((x) => noisy("left", x)),
-    $mapEnds($iter(v), (x) => noisy("right", x)),
-  ).toArray();
+  const pairs = Array.from(
+    $trustedZip(
+      $slice(v, 0, 2)
+        .values()
+        .map((x) => noisy("left", x)),
+      $mapEnds($iter(v), (x) => noisy("right", x)),
+    ),
+  );
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const short = $lazyZip(
-    $iter($slice(v, 0, 2)),
-    v.values().map((x) => noisy("other", x)),
-  ).toArray();
+  const short = Array.from(
+    $lazyZip(
+      $iter($slice(v, 0, 2)),
+      v.values().map((x) => noisy("other", x)),
+    ),
+  );
   console.log(`[${short.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const back = $foldToArray(doubled(v));
   console.log(`[${back.join(", ")}]`);
-  const joined = $lazyChain(
-    $iter($slice(v, 0, 1)),
-    v.values().map((x) => noisy("joined", x)),
-  )
-    .take(2)
-    .toArray();
+  const joined = Array.from(
+    $lazyChain(
+      $iter($slice(v, 0, 1)),
+      v.values().map((x) => noisy("joined", x)),
+    ).take(2),
+  );
   console.log(`[${joined.join(", ")}]`);
 
   // `next()` takes one item, of a chain made there or kept to step through.

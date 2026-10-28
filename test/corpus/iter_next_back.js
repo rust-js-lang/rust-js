@@ -51,7 +51,7 @@ function main() {
   console.log(`[${rest.join(", ")}]`);
   const taken = $iter(v);
   $nextBack(taken);
-  const front = taken.toArray();
+  const front = Array.from(taken);
   console.log(`[${front.join(", ")}]`);
   for (const x of $lent(it)) {
     $print(`${x} `);

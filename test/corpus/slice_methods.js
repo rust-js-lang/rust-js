@@ -106,32 +106,27 @@ function main() {
   );
   console.log(`[${$repeatItems([1, 2], 3, 4).join(", ")}]`);
   console.log(
-    `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
-      .toArray()
+    `[${Array.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
-      .toArray()
+    `[${Array.from($sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
-      .toArray()
+    `[${Array.from($sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($sliceSplitBy(items, (x) => x === 4, undefined, false, true))
-      .toArray()
+    `[${Array.from($sliceSplitBy(items, (x) => x === 4, undefined, false, true))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
-      .toArray()
+    `[${Array.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

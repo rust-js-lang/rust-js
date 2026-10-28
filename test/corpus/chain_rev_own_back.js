@@ -58,72 +58,65 @@ function filtered() {
 }
 function main() {
   console.log(
-    `[${$rev(
-      $chainEnds(
-        $iterator({ n: 3 }, downIterator_next, false, downDoubleEndedIterator_nextBack),
-        $iter([7, 8]),
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    `[${Array.from($rev($chainEnds($iterator({ n: 3 }, downIterator_next, false, downDoubleEndedIterator_nextBack), $iter([7, 8])))).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        ends(),
-        (iterator) =>
-          chainDoubleEndedIterator_nextBack(iterator, {
-            next_back: downDoubleEndedIterator_nextBack,
-          }),
-        undefined,
-        undefined,
-        (iterator, k) =>
-          chainDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: downIterator_next },
-            { next_back: downDoubleEndedIterator_nextBack },
-          ),
-        (iterator, init, f, broke) =>
-          chainDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: downIterator_next },
-            { next_back: downDoubleEndedIterator_nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-            $tryOf(broke),
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          ends(),
+          (iterator) =>
+            chainDoubleEndedIterator_nextBack(iterator, {
+              next_back: downDoubleEndedIterator_nextBack,
+            }),
+          undefined,
+          undefined,
+          (iterator, k) =>
+            chainDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: downIterator_next },
+              { next_back: downDoubleEndedIterator_nextBack },
+            ),
+          (iterator, init, f, broke) =>
+            chainDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: downIterator_next },
+              { next_back: downDoubleEndedIterator_nextBack },
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        mapped(),
-        (iterator) =>
-          mapDoubleEndedIterator_nextBack(iterator, {
-            next_back: downDoubleEndedIterator_nextBack,
-          }),
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: downIterator_next },
-            { next_back: downDoubleEndedIterator_nextBack },
-            $tryOf(broke),
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          mapped(),
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(iterator, {
+              next_back: downDoubleEndedIterator_nextBack,
+            }),
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: downIterator_next },
+              { next_back: downDoubleEndedIterator_nextBack },
+              $tryOf(broke),
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const value = $nextBack(filtered());
   console.log(`${value == null ? "None" : `Some(${value})`}`);

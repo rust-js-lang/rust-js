@@ -72,15 +72,14 @@ function main() {
   const c = enumerateClone_clone(e, { clone: (value) => [value[0]] });
   console.log(`${enumerateDebug_fmt(c, undefined, countdownDebug)}`);
   console.log(
-    `[${$roomForHint(c, 8, false)
-      .toArray()
+    `[${Array.from($roomForHint(c, 8, false))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
 
   const v = [10, 20, 30, 40, 50];
   const held = iterator_enumerate($iter(v));
-  const nth = $lent(held).drop(1).take(1).toArray()[0];
+  const nth = Array.from($lent(held).drop(1).take(1))[0];
   const nthBack = enumerateDoubleEndedIterator_nthBack(held, 1, { next: $next }, exactSizeIterator);
   console.log(
     `${nth == null ? "None" : `Some((${nth[0]}, ${nth[1]}))`} ${nthBack == null ? "None" : `Some((${nthBack[0]}, ${nthBack[1]}))`} ${enumerateExactSizeIterator_len(held, exactSizeIterator)}`,

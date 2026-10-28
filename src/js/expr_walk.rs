@@ -516,7 +516,6 @@ impl Expr {
             "entries",
             "keys",
             "values",
-            "toArray",
             "repeat",
             "trim",
             "at",

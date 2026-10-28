@@ -8,14 +8,12 @@ export function entry() {
 
 function main() {
   console.log(
-    `[${Iterator.from($matchesBy("AbC", (c) => /^\p{Uppercase}$/u.test(c)))
-      .toArray()
+    `[${Array.from($matchesBy("AbC", (c) => /^\p{Uppercase}$/u.test(c)))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($matchesBy("a1b22c", (c) => /^[0-9]$/.test(c), true))
-      .toArray()
+    `[${Array.from($matchesBy("a1b22c", (c) => /^[0-9]$/.test(c), true))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -23,11 +21,7 @@ function main() {
     `${Iterator.from($matchesBy("x-y_z", (c) => ["-", "_"].includes(c))).reduce((n) => n + 1, 0)}`,
   );
   console.log(
-    `${$debugStr(
-      Iterator.from($matchesBy("héllo", (c) => ["é", "o"].includes(c)))
-        .toArray()
-        .join(""),
-    )}`,
+    `${$debugStr(Array.from($matchesBy("héllo", (c) => ["é", "o"].includes(c))).join(""))}`,
   );
   const seen = [];
   const n = Iterator.from(

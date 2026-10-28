@@ -50,9 +50,7 @@ function total(r) {
 }
 
 function evens(r) {
-  return $iterator(r, $rangeInclusiveNext)
-    .filter((n) => n % 2 === 0)
-    .toArray();
+  return Array.from($iterator(r, $rangeInclusiveNext).filter((n) => n % 2 === 0));
 }
 
 function clampTo(r, x) {
@@ -100,11 +98,10 @@ function main() {
       .map((x) => (x * 2) | 0)
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  let ids = $iterator({ start: 1 }, $rangeFromNext).take(3).toArray();
-  const numbered = $lazyZip(
-    $iterator({ start: 1 }, $rangeFromNext),
-    $iter(Array.from("abc")),
-  ).toArray();
+  let ids = Array.from($iterator({ start: 1 }, $rangeFromNext).take(3));
+  const numbered = Array.from(
+    $lazyZip($iterator({ start: 1 }, $rangeFromNext), $iter(Array.from("abc"))),
+  );
   console.log(
     `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}`,
   );
@@ -192,8 +189,8 @@ function main() {
   console.log(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]`);
 
   // `char`s step past the surrogates, which no `char` is.
-  letters = $iterator({ start: "a", end: "e" }, $rangeNext).toArray().join("");
-  const around = $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext).toArray();
+  letters = Array.from($iterator({ start: "a", end: "e" }, $rangeNext)).join("");
+  const around = Array.from($iterator({ start: "퟾", end: "" }, $rangeInclusiveNext));
   const kept = new Set();
   $extendMap(kept, $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext), true);
   iter = { start: "x", end: "z" };

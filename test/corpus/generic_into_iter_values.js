@@ -31,7 +31,7 @@ function main() {
   const c = $iter(it.items.slice(it.at, it.end));
   const sizeHint = $sizeHint(it);
   console.log(
-    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${c.toArray().join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
+    `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) [${Array.from(c).join(", ")}] [${it.items.slice(it.at, it.end).join(", ")}]`,
   );
   const pair = both(["a", "b"], [1, 2, 3], intoIterator, intoIterator);
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);

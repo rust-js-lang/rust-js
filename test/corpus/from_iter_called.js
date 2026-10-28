@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function sorted(it) {
-  const v = Iterator.from(it).toArray();
+  const v = Array.from(Iterator.from(it));
   v.sort((a, b) => a - b);
   return v;
 }

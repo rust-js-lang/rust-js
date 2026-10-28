@@ -133,10 +133,12 @@ export function tour() {
   const value$2 = largest([1.5, -2], { partialCmp: $partialCmp });
   const value$3 = largest([], { partialCmp: $cmp });
   out += `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${$debugF64(value$2)})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`;
-  const running = $lazyScan($iter([1, 2, 3, 4]), 0, (acc, x) => {
-    acc.value = (acc.value + x) >>> 0;
-    return acc.value;
-  }).toArray();
+  const running = Array.from(
+    $lazyScan($iter([1, 2, 3, 4]), 0, (acc, x) => {
+      acc.value = (acc.value + x) >>> 0;
+      return acc.value;
+    }),
+  );
   const v = $range(1, 9);
   const tail = $splitOff(v, 5);
   const drained = $drain(v, 1, 3);
@@ -172,13 +174,15 @@ export function edges() {
     major: tick(order, 2),
     minor: made(order).minor,
   };
-  const upto = $lazyScan($iter([5, 3, 8, 1]), 1, (acc, x) => {
-    acc.value = Math.imul(acc.value, x) >>> 0;
-    if (acc.value > 100) {
-      return;
-    }
-    return acc.value;
-  }).toArray();
+  const upto = Array.from(
+    $lazyScan($iter([5, 3, 8, 1]), 1, (acc, x) => {
+      acc.value = Math.imul(acc.value, x) >>> 0;
+      if (acc.value > 100) {
+        return;
+      }
+      return acc.value;
+    }),
+  );
   const fs = [NaN, 1, -0, 0, -Infinity, -1, Infinity];
   fs.sort((a, b) => $totalCmp(a, b));
   const digits = [

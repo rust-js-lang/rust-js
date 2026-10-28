@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "made-array-helper-lazy",
-    "breaks": "`v.windows(2).map(f).collect()` from MIR stays `Iterator.from($windows(v, 2)).map(f).toArray()`",
+    "breaks": "`v.windows(2).map(f).collect()` from MIR stays `Array.from(Iterator.from($windows(v, 2)).map(f))`",
     "file": "src/lower/iterators.rs",
     "find": "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
     "replace": "",
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-range-inclusive-lazy",
-    "breaks": "`(1..=n).collect()` from MIR stays `$iterator(\u2026, $rangeInclusiveNext).toArray()`, not `$range(1, n + 1)`",
+    "breaks": "`(1..=n).collect()` from MIR stays `Array.from($iterator(\u2026, $rangeInclusiveNext))`, not `$range(1, n + 1)`",
     "file": "src/lower/iterators.rs",
     "find": "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
     "replace": "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",

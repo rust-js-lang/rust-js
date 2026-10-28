@@ -76,7 +76,7 @@ function main() {
   );
   const it = $iter([1, 2, 3, 4, 5]);
   const value$3 = totalUpTo(it, 4);
-  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} [${it.toArray().join(", ")}]`);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} [${Array.from(it).join(", ")}]`);
   const product = $tryFoldSome($iterator({ start: 1n, end: 5n }, $rangeInclusiveNext), 1n, (p, n) =>
     $bigChecked(p * n, 0n, 18446744073709551615n),
   );

@@ -208,11 +208,12 @@ export function listed(list, headers) {
  * an input's `labels`, `HTMLLabelElement`s.
  */
 export function selected(el, input) {
-  const widths = el
-    .querySelectorAll("p")
-    .values()
-    .map((p) => p.getBoundingClientRect().width)
-    .toArray();
+  const widths = Array.from(
+    el
+      .querySelectorAll("p")
+      .values()
+      .map((p) => p.getBoundingClientRect().width),
+  );
   const label = input.labels?.item(0)?.htmlFor;
   return [widths, label];
 }

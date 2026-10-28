@@ -25,7 +25,7 @@ function main() {
   console.log(
     `[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}] [${copied.map((item) => tokenDebug_fmt(item)).join(", ")}]`,
   );
-  const doubled = [1, 2].map((n) => (n * 2) >>> 0).slice();
+  const doubled = [1, 2].map((n) => (n * 2) >>> 0);
   console.log(`[${doubled.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

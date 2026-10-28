@@ -23,7 +23,7 @@ function moneySumMoney_sum(items) {
 }
 
 function cartFromIterator_std__string__String__Money__fromIter(items) {
-  return { lines: Iterator.from(items).toArray() };
+  return { lines: Array.from(Iterator.from(items)) };
 }
 
 function cartExtend_std__string__String__Money__extend(cart, items) {
@@ -61,9 +61,7 @@ function main() {
   const total = moneySum_sum(cart.lines.values().map(([, m]) => m));
   const value = refCartIntoIterator_intoIter(cart).reduce((n) => n + 1, 0);
   console.log(`${moneyDebug_fmt(total)} ${value}`);
-  const names = cartIntoIterator_intoIter(cart)
-    .map(([name]) => name)
-    .toArray();
+  const names = Array.from(cartIntoIterator_intoIter(cart).map(([name]) => name));
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

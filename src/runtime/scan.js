@@ -6,7 +6,7 @@
 // number's, else the state itself, an object `f` changes in place.
 function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   const scanning = new $Steps(
     () => {
       const step = source.next();

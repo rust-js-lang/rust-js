@@ -25,7 +25,7 @@ function ids(v) {
 function collected() {
   const v = [[1], [2], [3], [4], [5]];
   try {
-    const odd = Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1)).toArray();
+    const odd = Array.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1));
     try {
       const value = ids(odd);
       const value$1 = ids(v);

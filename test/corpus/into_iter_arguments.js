@@ -30,8 +30,8 @@ function main() {
     ...(some == null ? [] : [some]),
     ...(none == null ? [] : [none]),
   ];
-  const zipped = $lazyZip($lazyRange(0, 3), $lazyRange(10, 12)).toArray();
-  const withSome = $lazyZip($iter([7, 8]), some == null ? [] : [some]).toArray();
+  const zipped = Array.from($lazyZip($lazyRange(0, 3), $lazyRange(10, 12)));
+  const withSome = Array.from($lazyZip($iter([7, 8]), some == null ? [] : [some]));
   console.log(
     `[${v.join(", ")}] [${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${withSome.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`,
   );

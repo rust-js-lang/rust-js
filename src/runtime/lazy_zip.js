@@ -4,8 +4,8 @@
 // step after its end steps each on, as Rust's `Zip`, which isn't fused,
 // does.
 function $lazyZip(a, b, dropA) {
-  const left = a[Symbol.iterator]();
-  const right = b[Symbol.iterator]();
+  const left = $stepsOf(a);
+  const right = $stepsOf(b);
   const close = () => {
     left.return?.();
     right.return?.();
@@ -29,7 +29,7 @@ function $lazyZip(a, b, dropA) {
 // both have one, `a` never stepped once `b`, which knows its length, has
 // none, as std's zip pairs them up to the shorter's length (ADR 0973).
 function $trustedZip(a, b) {
-  const left = a[Symbol.iterator]();
+  const left = $stepsOf(a);
   const zipped = new $Steps(
     () => {
       if (b.len() === 0) return { done: true, value: undefined };

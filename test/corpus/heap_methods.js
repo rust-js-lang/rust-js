@@ -11,27 +11,12 @@ function main() {
   const big = $heapFrom([3, 9, 2, 7, 4, 6], $cmp);
   $heapAppend(small, big, $cmp);
   console.log(`[${small.join(", ")}] ${big.length}`);
-  const long = $heapFrom(
-    $lazyRange(0, 40)
-      .map((i) => (((i * 7) | 0) % 23) | 0)
-      .toArray(),
-    $cmp,
-  );
+  const long = $heapFrom(Array.from($lazyRange(0, 40).map((i) => (((i * 7) | 0) % 23) | 0)), $cmp);
   const short = $heapFrom([50, 0], $cmp);
   $heapAppend(long, short, $cmp);
   console.log(`[${long.join(", ")}]`);
-  const left = $heapFrom(
-    $lazyRange(0, 32)
-      .map((i) => (((i * 5) | 0) % 17) | 0)
-      .toArray(),
-    $cmp,
-  );
-  const right = $heapFrom(
-    $lazyRange(0, 31)
-      .map((i) => (((i * 3) | 0) % 19) | 0)
-      .toArray(),
-    $cmp,
-  );
+  const left = $heapFrom(Array.from($lazyRange(0, 32).map((i) => (((i * 5) | 0) % 17) | 0)), $cmp);
+  const right = $heapFrom(Array.from($lazyRange(0, 31).map((i) => (((i * 3) | 0) % 19) | 0)), $cmp);
   $heapAppend(left, right, $cmp);
   console.log(`[${left.join(", ")}]`);
   $heapRetain(long, (x) => x % 3 !== 0, $cmp);

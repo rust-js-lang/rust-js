@@ -99,7 +99,6 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "toReversed",
                 "split",
                 "from",
-                "toArray",
                 "flatMap",
                 "flat",
                 "concat",
@@ -139,13 +138,13 @@ pub(super) fn fresh(items: &Expr) -> bool {
 }
 
 /// Each chain in `stmts` that MIR made as Rust runs it (ADR 0364), item by
-/// item, `$iter(xs).map(f).toArray()`, written as an array's, `xs.map(f)`
+/// item, `Array.from($iter(xs).map(f))`, written as an array's, `xs.map(f)`
 /// (ADR 0055), where the order its closures run in can't be told from
 /// Rust's by what takes it. One that's lent, `$lent(…).some(f)`, made for
 /// this call alone, no one else steps.
 pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
     js::each_expr_mut(stmts, &mut |e| {
-        // `nth(n)`'s, `chain.drop(n).take(1).toArray()[0]`: of an array
+        // `nth(n)`'s, `Array.from(chain.drop(n).take(1))[0]`: of an array
         // whose stages do nothing, `xs[n]`.
         if let js::ExprKind::Index(first, zero) = &e.kind
             && zero.as_int() == Some(0)
@@ -156,6 +155,40 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                 span: e.span,
                 ..Expr::index(items, n.clone())
             };
+            return;
+        }
+        // `collect()`'s, `Array.from(chain)`: of a chain of chains, their
+        // items spread, `[...a, ...b]`; of an array whose stages do nothing,
+        // a new one, a stage's already, the source copied unless it's one
+        // made here.
+        if let Some(chain) = e.collected_of() {
+            // Of a runtime helper's, an array or an iterable, `Iterator.from`
+            // makes nothing `Array.from` doesn't: `Array.from($rsplit(s,
+            // "="))`. Not of what may be a binding's iterator, which may
+            // have only a `next` (ADR 0140).
+            if is_iterator_from(chain)
+                && let js::ExprKind::Call(_, given) = &chain.kind
+                && let [items] = &given[..]
+                && let js::ExprKind::Call(helper, _) = &items.kind
+                && helper.helper_name().is_some()
+            {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::collected(items.clone())
+                };
+                return;
+            }
+            let eager = match chained(chain) {
+                Some(parts) => Some(Expr::array(parts.into_iter().map(Expr::spread).collect())),
+                None => match eager_items(chain, true, None) {
+                    Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
+                    Some((items, _)) => Some(items),
+                    None => None,
+                },
+            };
+            if let Some(eager) = eager {
+                *e = Expr { span: e.span, ..eager };
+            }
             return;
         }
         let js::ExprKind::Call(callee, args) = &e.kind else {
@@ -217,16 +250,6 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             {
                 Some(Expr::call(Expr::member((**source).clone(), "forEach"), vec![g.clone()]))
             }
-            ("toArray", []) if let Some(parts) = chained(chain) => {
-                Some(Expr::array(parts.into_iter().map(Expr::spread).collect()))
-            }
-            ("toArray", []) => match eager_items(chain, true, None) {
-                // A new array: a stage's is one already; the source, copied,
-                // unless it's one made here.
-                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
-                Some((items, _)) => Some(items),
-                None => None,
-            },
             ("forEach", [f]) => eager_items(chain, true, Some(f)).map(|(items, _)| match set_of(&items, f) {
                 // A set's items each given alone: the set's own `forEach`,
                 // `set.forEach((x) => ..)`, as JS writes it (ADR 0877).
@@ -530,7 +553,14 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
         let js::ExprKind::Call(callee, args) = &mut e.kind else {
             return;
         };
-        if let js::ExprKind::Member(object, method) = &mut callee.kind
+        // `collect()`'s, `Array.from(it)`, steps it till its first `done`.
+        if let js::ExprKind::Member(array, from) = &callee.kind
+            && from == "from"
+            && matches!(&array.kind, js::ExprKind::Var(v) if v == "Array")
+            && let [it] = &mut args[..]
+        {
+            stepped_in_place(it, false, fuse);
+        } else if let js::ExprKind::Member(object, method) = &mut callee.kind
             && STEPPED_TILL_DONE.contains(&method.as_str())
         {
             // The crate's iterator a `map` steps keeps its `size_hint`,

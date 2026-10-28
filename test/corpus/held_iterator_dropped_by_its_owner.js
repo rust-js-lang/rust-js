@@ -153,13 +153,13 @@ function main() {
     console.log(`${tmp == null ? "None" : `Some(${tmp})`}`);
     if (total > 0) {
       some$live = false;
-      const rest = some
-        .map((d) => {
+      const rest = Array.from(
+        some.map((d) => {
           const result = d[0];
           dDrop_drop(d);
           return result;
-        })
-        .toArray();
+        }),
+      );
       console.log(`rest [${rest.join(", ")}]`);
     }
     // Collected by JS's own `new Set(..)`, which closes nothing at its end:

@@ -76,7 +76,7 @@ function tTotals(TIterator, dropT) {
     },
     doubled(self) {
       const iter = $closing($given(self, TIterator), dropT).map((x) => (x * 2) & 255);
-      const result = iter.toArray();
+      const result = Array.from(iter);
       iter.return();
       return result;
     },
@@ -101,7 +101,7 @@ function tTotals(TIterator, dropT) {
       return n;
     },
     firstTwo(self) {
-      return $lent($given(self, TIterator)).take(2).toArray();
+      return Array.from($lent($given(self, TIterator)).take(2));
     },
     $drop: dropT,
   }));

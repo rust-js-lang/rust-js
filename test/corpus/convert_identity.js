@@ -10,10 +10,7 @@ function main() {
   const words = ["a", undefined, "b"];
   const kept = words.filter((item) => item != null);
   const n = 42;
-  const nested = [[1, 2], [3]]
-    .values()
-    .flatMap((x) => x)
-    .toArray();
+  const nested = Array.from([[1, 2], [3]].values().flatMap((x) => x));
   console.log(`[${kept.map((item) => $debugStr(item)).join(", ")}] ${n} [${nested.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

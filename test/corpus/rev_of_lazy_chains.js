@@ -17,25 +17,26 @@ function main() {
     console.log(`test ${x}`);
     return x > 0;
   });
-  const c = v
-    .toReversed()
-    .values()
-    .map((x) => {
-      console.log(`m ${x}`);
-      return (x + 1) | 0;
-    })
-    .filter((x) => {
-      console.log(`f ${x}`);
-      return x % 2 === 0;
-    })
-    .take(1)
-    .toArray();
+  const c = Array.from(
+    v
+      .toReversed()
+      .values()
+      .map((x) => {
+        console.log(`m ${x}`);
+        return (x + 1) | 0;
+      })
+      .filter((x) => {
+        console.log(`f ${x}`);
+        return x % 2 === 0;
+      })
+      .take(1),
+  );
   const it = v
     .toReversed()
     .values()
     .map((x) => (x * 10) | 0);
   const first = $next(it);
-  const rest = it.toArray();
+  const rest = Array.from(it);
   console.log(
     `[${a.join(", ")}] [${b.join(", ")}] [${c.join(", ")}] ${first == null ? "None" : `Some(${first})`} [${rest.join(", ")}]`,
   );

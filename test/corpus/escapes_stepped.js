@@ -20,7 +20,7 @@ export function entry() {
 function main() {
   const e = $iter(Array.from($escapeDefault("é")));
   const first = $next(e);
-  const rest = e.toArray().join("");
+  const rest = Array.from(e).join("");
   console.log(`${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${rest}`);
   const u = $iter(Array.from($escapeDebug("ab", true)));
   const value = $next(u);

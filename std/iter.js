@@ -2165,11 +2165,12 @@ export function copiedIterator_tryFold(
 }
 
 export function copiedIterator_nth(copied, n, IIterator = { next: $next }, TCopy, dropI) {
-  const option = $lent($given(copied.it, IIterator, true))
-    .drop(n)
-    .take(1)
-    .map($some)
-    .toArray()[0];
+  const option = Array.from(
+    $lent($given(copied.it, IIterator, true))
+      .drop(n)
+      .take(1)
+      .map($some),
+  )[0];
   if (option != null) {
     const value = $someValue(option);
     const v = TCopy ? TCopy.copy(value) : value;
@@ -2179,7 +2180,7 @@ export function copiedIterator_nth(copied, n, IIterator = { next: $next }, TCopy
 
 export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, dropI) {
   const iter = copied.it;
-  const items = $given(iter, IIterator, true).toArray();
+  const items = Array.from($given(iter, IIterator, true));
   const option = $someAt(items, items.length - 1);
   if (IIterator.fold === undefined) {
     dropI?.(iter);

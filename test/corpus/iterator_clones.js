@@ -53,7 +53,7 @@ function main() {
   $next(a);
   const b = $iter(a.items.slice(a.at, a.end));
   console.log(
-    `[${b.toArray().join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
+    `[${Array.from(b).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
   );
 
   // Owned items a clone copies: changing one doesn't change the other.
@@ -64,8 +64,7 @@ function main() {
     $print(`[${row.join(", ")}] `);
   }
   console.log(
-    `[${again
-      .toArray()
+    `[${Array.from(again)
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

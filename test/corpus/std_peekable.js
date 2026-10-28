@@ -45,7 +45,7 @@ function summed(it, IIterator, IClone, PeekableClone) {
   const copy = PeekableClone.clone(p);
   const total = p.reduce((acc, x) => (acc + x) >>> 0, 0);
   const again = PeekableClone.clone(copy);
-  const third = $lent(again).drop(2).take(1).toArray()[0];
+  const third = Array.from($lent(again).drop(2).take(1))[0];
   return [total, $count(copy), third, $last(again)];
 }
 

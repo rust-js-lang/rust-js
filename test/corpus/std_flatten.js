@@ -119,7 +119,7 @@ function main() {
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
-  console.log(`[${$roomForHint(cells, 4, false).toArray().join(", ")}]`);
+  console.log(`[${Array.from($roomForHint(cells, 4, false)).join(", ")}]`);
 
   // Of arrays, whose constant size bounds what's left.
   const grid = iterator_flatten(
@@ -211,40 +211,40 @@ function main() {
     `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
   );
   console.log(
-    `[${$rev(
-      $knowing(
-        counted,
-        (iterator) =>
-          flattenDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            intoIterator$3,
-            { next: countdownIterator_next },
-            { next_back: countdownDoubleEndedIterator_nextBack },
-            true,
-            false,
-          ),
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke) =>
-          flattenDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator$3,
-            { next: countdownIterator_next },
-            { next_back: countdownDoubleEndedIterator_nextBack },
-            $tryOf(broke),
-            true,
-            false,
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          counted,
+          (iterator) =>
+            flattenDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              intoIterator$3,
+              { next: countdownIterator_next },
+              { next_back: countdownDoubleEndedIterator_nextBack },
+              true,
+              false,
+            ),
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke) =>
+            flattenDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              intoIterator$3,
+              { next: countdownIterator_next },
+              { next_back: countdownDoubleEndedIterator_nextBack },
+              $tryOf(broke),
+              true,
+              false,
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
 
   // Its items dropped as it steps past them, the rest with it.
@@ -284,7 +284,7 @@ function main() {
   console.log(
     `${value$9 == null ? "None" : `Some(${$debugStr(value$9, "'")})`} (${value$10[0]}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`})`,
   );
-  console.log(`${held.cells.toArray().join("")}`);
+  console.log(`${Array.from(held.cells).join("")}`);
   const grids = $iter([
     [1, 2],
     [3, 4],

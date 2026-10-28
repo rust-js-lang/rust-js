@@ -41,7 +41,7 @@ function main() {
     v.values().map((x) => noisy("n", x)),
     $enumerate($iter(w)),
   );
-  const value$2 = $lent(nth).drop(1).take(1).toArray()[0];
+  const value$2 = Array.from($lent(nth).drop(1).take(1))[0];
   console.log(
     `${value$2 == null ? "None" : `Some((${value$2[0]}, (${value$2[1][0]}, ${value$2[1][1]})))`}`,
   );

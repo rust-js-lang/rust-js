@@ -27,10 +27,12 @@ function noisy(tag, x) {
 function main() {
   const v = [1, 2, 3];
   const w = [10, 20];
-  const z = $trustedZip(
-    v.values().map((x) => noisy("a", x)),
-    $iter(w),
-  ).toArray();
+  const z = Array.from(
+    $trustedZip(
+      v.values().map((x) => noisy("a", x)),
+      $iter(w),
+    ),
+  );
   console.log(`[${z.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   for (const [x, y] of $trustedZip(
     v.values().map((x) => noisy("b", x)),
@@ -45,38 +47,47 @@ function main() {
   )) {
     console.log(`(${p[0]}, ${p[1]})`);
   }
-  const n = $lent(
+  const n = Array.from(
+    $lent(
+      $trustedZip(
+        v.values().map((x) => noisy("e", x)),
+        $iter(w),
+      ),
+    )
+      .drop(1)
+      .take(1),
+  )[0];
+  console.log(`${n == null ? "None" : `Some((${n[0]}, ${n[1]}))`}`);
+  const ranged = Array.from(
     $trustedZip(
-      v.values().map((x) => noisy("e", x)),
+      $lazyRange(0, 5).map((x) => noisy("r", x)),
+      $iterator({ start: 1, end: 3 }, $rangeNext, false, undefined, $rangeLen),
+    ),
+  );
+  console.log(`[${ranged.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  const both = Array.from(
+    $trustedZip(
+      v.values().map((x) => noisy("l", x)),
+      $mapEnds($iter(w), (y) => noisy("m", y)),
+    ),
+  );
+  console.log(`[${both.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
+  const filtered = Array.from(
+    $lazyZip(
+      v
+        .values()
+        .map((x) => noisy("f", x))
+        .filter(() => true),
       $iter(w),
     ),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
-  console.log(`${n == null ? "None" : `Some((${n[0]}, ${n[1]}))`}`);
-  const ranged = $trustedZip(
-    $lazyRange(0, 5).map((x) => noisy("r", x)),
-    $iterator({ start: 1, end: 3 }, $rangeNext, false, undefined, $rangeLen),
-  ).toArray();
-  console.log(`[${ranged.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const both = $trustedZip(
-    v.values().map((x) => noisy("l", x)),
-    $mapEnds($iter(w), (y) => noisy("m", y)),
-  ).toArray();
-  console.log(`[${both.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const filtered = $lazyZip(
-    v
-      .values()
-      .map((x) => noisy("f", x))
-      .filter(() => true),
-    $iter(w),
-  ).toArray();
+  );
   console.log(`[${filtered.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const borrowed = $trustedZip(
-    v.values().map((x) => noisy("g", x)),
-    $iter(w),
-  ).toArray();
+  const borrowed = Array.from(
+    $trustedZip(
+      v.values().map((x) => noisy("g", x)),
+      $iter(w),
+    ),
+  );
   console.log(`[${borrowed.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const called = $foldToArray(
     $roomForHint(

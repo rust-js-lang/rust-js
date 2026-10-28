@@ -39,7 +39,7 @@ function main() {
     ...(result$3.TAG === "Ok" ? [result$3._0] : []),
   ];
   const result$4 = { ...ok };
-  const zipped = $lazyZip($iter([1, 2]), result$4.TAG === "Ok" ? [result$4._0] : []).toArray();
+  const zipped = Array.from($lazyZip($iter([1, 2]), result$4.TAG === "Ok" ? [result$4._0] : []));
   console.log(
     `[${extended.join(", ")}] [${chained.join(", ")}] [${zipped.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`,
   );

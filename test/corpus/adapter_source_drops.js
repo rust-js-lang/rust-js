@@ -21,11 +21,11 @@ function main() {
     .map((x) => (x * 2) >>> 0)
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`total ${total}`);
-  const all = $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
-    console.log(`drop ${it.of.name}`);
-  })
-    .filter((x) => x % 2 === 0)
-    .toArray();
+  const all = Array.from(
+    $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
+      console.log(`drop ${it.of.name}`);
+    }).filter((x) => x % 2 === 0),
+  );
   console.log(`all [${all.join(", ")}]`);
   const count = $closing($iterator({ n: 4, name: "count" }, counterIterator_next), (it) => {
     console.log(`drop ${it.of.name}`);

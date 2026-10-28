@@ -7,14 +7,14 @@ export function entry() {
 }
 
 function lengths(iters, HItemIntoIterator) {
-  return Iterator.from(iters)
-    .map((i) =>
+  return Array.from(
+    Iterator.from(iters).map((i) =>
       $given(HItemIntoIterator.intoIter(i), HItemIntoIterator.IntoIterIterator(), true).reduce(
         (n) => n + 1,
         0,
       ),
-    )
-    .toArray();
+    ),
+  );
 }
 
 function firsts(iters, HItemIntoIterator) {

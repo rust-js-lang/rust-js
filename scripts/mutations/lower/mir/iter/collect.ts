@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-mapped-range-lazy",
-    "breaks": "a range mapped and collected stays `$iterator({ start, end }, $rangeNext).map(f).toArray()`, not `$range(a, b).map(f)`",
+    "breaks": "a range mapped and collected stays `Array.from($iterator({ start, end }, $rangeNext).map(f))`, not `$range(a, b).map(f)`",
     "file": "src/lower/mir/iter/collect.rs",
     "find": "match self.mapped_range(&it, iter_ty, item) {",
     "replace": "match None::<Expr> {",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-iterable-collected-lazy",
-    "breaks": "a binding's list collected stays `Iterator.from(nodes).map(f).toArray()`, not `Array.from(nodes).map(f)`",
+    "breaks": "a binding's list collected stays `Array.from(Iterator.from(nodes).map(f))`, not `Array.from(nodes).map(f)`",
     "file": "src/lower/mir/iter/collect.rs",
     "find": "None => match self.collected_items(&it, iter_ty) {",
     "replace": "None => match None::<Expr> {",

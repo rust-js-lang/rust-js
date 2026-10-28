@@ -23,7 +23,7 @@ function main() {
   function skipOne(v) {
     const it = $iter(v);
     $next(it);
-    return it.map((x) => (x * 10) >>> 0).toArray();
+    return Array.from(it.map((x) => (x * 10) >>> 0));
   }
   console.log(`[${skipOne([1, 2, 3]).join(", ")}] ${numbersSecond.second(undefined)}`);
 }

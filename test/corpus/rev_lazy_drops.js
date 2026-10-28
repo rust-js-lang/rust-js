@@ -40,13 +40,13 @@ function main() {
     }
     console.log("--");
 
-    const kept = $rev($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop)))
-      .map((l) => {
+    const kept = Array.from(
+      $rev($closing($iter([[7], [8], [9]]), $dropEach(loudDrop_drop))).map((l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      })
-      .toArray();
+      }),
+    );
     console.log(`[${kept.join(", ")}]`);
   } finally {
     scaled.return();

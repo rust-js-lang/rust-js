@@ -18,8 +18,8 @@ function $cmpItems(a, b, cmp) {
 // `SpecIterEq`: of unequal ones, `false`, with none of their items stepped
 // or compared, each closed, `b` first (ADR 0992).
 function $iterEq(a, b, eq, dropA, dropB, lengths) {
-  const x = a[Symbol.iterator]();
-  const y = b[Symbol.iterator]();
+  const x = $stepsOf(a);
+  const y = $stepsOf(b);
   try {
     if (lengths !== undefined && lengths[0] !== lengths[1]) return false;
     let same = true;

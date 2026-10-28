@@ -130,24 +130,26 @@ function main() {
   );
 
   // chars.
-  const value$33 = $lent($iterator({ start: "a", end: "z" }, $rangeNext))
-    .drop(2)
-    .take(1)
-    .toArray()[0];
-  const value$34 = $iterator({ start: "a", end: "z" }, $rangeNext).toArray().at(-1);
+  const value$33 = Array.from(
+    $lent($iterator({ start: "a", end: "z" }, $rangeNext))
+      .drop(2)
+      .take(1),
+  )[0];
+  const value$34 = Array.from($iterator({ start: "a", end: "z" }, $rangeNext)).at(-1);
   console.log(
     `${value$33 == null ? "None" : `Some(${$debugStr(value$33, "'")})`} ${value$34 == null ? "None" : `Some(${$debugStr(value$34, "'")})`}`,
   );
   const letters = { start: "a", end: "e" };
-  const value$35 = $lent($iterator(letters, $rangeNext)).drop(1).take(1).toArray()[0];
+  const value$35 = Array.from($lent($iterator(letters, $rangeNext)).drop(1).take(1))[0];
   const value$36 = $rangeNext(letters);
   console.log(
     `${value$35 == null ? "None" : `Some(${$debugStr(value$35, "'")})`} ${value$36 == null ? "None" : `Some(${$debugStr(value$36, "'")})`}`,
   );
-  const value$37 = $lent($iterator({ start: "a", end: "e" }, $rangeInclusiveNextBack))
-    .drop(1)
-    .take(1)
-    .toArray()[0];
+  const value$37 = Array.from(
+    $lent($iterator({ start: "a", end: "e" }, $rangeInclusiveNextBack))
+      .drop(1)
+      .take(1),
+  )[0];
   console.log(
     `${value$37 == null ? "None" : `Some(${$debugStr(value$37, "'")})`} ${$iterator(
       { start: "a", end: "e" },

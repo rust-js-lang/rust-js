@@ -12,15 +12,17 @@ function loudIterator_next(loud) {
 
 function main() {
   const v = [1, 2, 3];
-  const all = $closing($iterator(["copied", $iter(v)], loudIterator_next), (it) => {
-    console.log(`drop ${it.of[0]}`);
-  }).toArray();
+  const all = Array.from(
+    $closing($iterator(["copied", $iter(v)], loudIterator_next), (it) => {
+      console.log(`drop ${it.of[0]}`);
+    }),
+  );
   console.log(`[${all.join(", ")}]`);
-  const first = $closing($iterator(["cloned", $iter(v)], loudIterator_next), (it) => {
-    console.log(`drop ${it.of[0]}`);
-  })
-    .take(1)
-    .toArray();
+  const first = Array.from(
+    $closing($iterator(["cloned", $iter(v)], loudIterator_next), (it) => {
+      console.log(`drop ${it.of[0]}`);
+    }).take(1),
+  );
   console.log(`[${first.join(", ")}]`);
   const total = $closing($iterator(["summed", $iter(v)], loudIterator_next), (it) => {
     console.log(`drop ${it.of[0]}`);

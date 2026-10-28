@@ -26,7 +26,7 @@ function kept() {
   const it = $iter(v);
   $next(it);
   const at = $rposition(it, (x) => x === 9);
-  const arg = it.toArray();
+  const arg = Array.from(it);
   console.log(`${at == null ? "None" : `Some(${at})`} [${arg.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -15,9 +15,7 @@ function countIterator_next(count) {
 
 const Count = {
   doubled(count) {
-    return $iterator(count, countIterator_next)
-      .map((n) => (n * 2) >>> 0)
-      .toArray();
+    return Array.from($iterator(count, countIterator_next).map((n) => (n * 2) >>> 0));
   },
 };
 
@@ -26,7 +24,7 @@ function main() {
   const it = [1];
   const next = countIterator_next(it);
   console.log(
-    `${next == null ? "None" : `Some(${next})`} [${$iterator(it, countIterator_next).toArray().join(", ")}]`,
+    `${next == null ? "None" : `Some(${next})`} [${Array.from($iterator(it, countIterator_next)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

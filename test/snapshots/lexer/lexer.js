@@ -126,7 +126,7 @@ export function pairs(v) {
     }
     out.push([a, b]);
   }
-  const rest = it.toArray();
+  const rest = Array.from(it);
   return [out, rest];
 }
 
@@ -147,7 +147,7 @@ export function report() {
   out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
   const words = $iter("one two three four".split(" "));
   const first = $next(words);
-  const rest = words.toArray();
+  const rest = Array.from(words);
   out += `${first == null ? "None" : `Some(${$debugStr(first)})`} [${rest.map((item) => $debugStr(item)).join(", ")}]\n`;
   return out;
 }

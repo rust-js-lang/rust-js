@@ -27,47 +27,42 @@ function main() {
   }
   const v = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   console.log(
-    `[${$rev(
-      $stepByEnds(
-        $iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack, $rangeLen),
-        3,
-      ),
-    )
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev(
-      $stepByEnds($iterator({ start: 0, end: 9 }, $rangeNext, false, $rangeNextBack, $rangeLen), 3),
-    )
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev($stepByEnds($iter(v), 4))
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev($stepByEnds($mapEnds($iter(v), t), 5))
-      .toArray()
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rev(
-      $stepByEnds(
-        $iterator(
-          { start: 1, end: 10 },
-          $rangeInclusiveNext,
-          false,
-          $rangeInclusiveNextBack,
-          $rangeInclusiveLen,
+    `[${Array.from(
+      $rev(
+        $stepByEnds(
+          $iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack, $rangeLen),
+          3,
         ),
-        2,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from(
+      $rev(
+        $stepByEnds(
+          $iterator({ start: 0, end: 9 }, $rangeNext, false, $rangeNextBack, $rangeLen),
+          3,
+        ),
+      ),
+    ).join(", ")}]`,
+  );
+  console.log(`[${Array.from($rev($stepByEnds($iter(v), 4))).join(", ")}]`);
+  console.log(`[${Array.from($rev($stepByEnds($mapEnds($iter(v), t), 5))).join(", ")}]`);
+  console.log(
+    `[${Array.from(
+      $rev(
+        $stepByEnds(
+          $iterator(
+            { start: 1, end: 10 },
+            $rangeInclusiveNext,
+            false,
+            $rangeInclusiveNextBack,
+            $rangeInclusiveLen,
+          ),
+          2,
+        ),
+      ),
+    ).join(", ")}]`,
   );
   const s = v.values().filter((_, i) => i % 3 === 0);
   const value = $next(s);
@@ -78,11 +73,6 @@ function main() {
     ),
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(
-    `[${$rev($stepByEnds($skipping($iter(v), 1), 2))
-      .take(2)
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from($rev($stepByEnds($skipping($iter(v), 1), 2)).take(2)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -21,75 +21,61 @@ export function entry() {
 function main() {
   const line = "a=b=c";
   console.log(
-    `[${Iterator.from($splitN(line, 2, "="))
-      .toArray()
+    `[${Array.from($splitN(line, 2, "="))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($splitN(line, 1, "="))
-      .toArray()
+      .join(", ")}] [${Array.from($splitN(line, 1, "="))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplit(line, "=", 2))
-      .toArray()
+    `[${Array.from($rsplit(line, "=", 2))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($rsplit(line, "="))
-      .toArray()
+      .join(", ")}] [${Array.from($rsplit(line, "="))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplit("aaa", "aa"))
-      .toArray()
+    `[${Array.from($rsplit("aaa", "aa"))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($rsplit("aaaa", "aa", 2))
-      .toArray()
+      .join(", ")}] [${Array.from($rsplit("aaaa", "aa", 2))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplit("ab", ""))
-      .toArray()
+    `[${Array.from($rsplit("ab", ""))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($splitN("ab", 2, ""))
-      .toArray()
+      .join(", ")}] [${Array.from($splitN("ab", 2, ""))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitTerminator("a,b,", ","))
-      .toArray()
+    `[${Array.from($splitTerminator("a,b,", ","))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($splitTerminator("", ","))
-      .toArray()
+      .join(", ")}] [${Array.from($splitTerminator("", ","))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitTerminator("a,,b,,", ",,"))
-      .toArray()
+    `[${Array.from($splitTerminator("a,,b,,", ",,"))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   const [left, right] = $splitAt("héllo wörld", 6);
   console.log(`${$debugStr(left)} ${$debugStr(right)}`);
   console.log(
-    `[${Iterator.from($matchIndices("héabcéabc", "bc"))
-      .toArray()
+    `[${Array.from($matchIndices("héabcéabc", "bc"))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($matchIndices("ab", ""))
-      .toArray()
+    `[${Array.from($matchIndices("ab", ""))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `${Iterator.from($matches("banana", "an")).reduce((n) => n + 1, 0)} [${Iterator.from(
+    `${Iterator.from($matches("banana", "an")).reduce((n) => n + 1, 0)} [${Array.from(
       $matches("a-b-c", "-"),
     )
-      .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

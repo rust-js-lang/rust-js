@@ -40,14 +40,16 @@ export function rest(j) {
   const next = $nextSome(j);
   if (next != null) {
     const first = $someValue(next);
-    return $iterator(
-      PutBack.withValue(
-        putBack(j, { intoIter: (items) => items, IntoIterIterator: () => ({ next: $nextSome }) }),
-        first,
+    return Array.from(
+      $iterator(
+        PutBack.withValue(
+          putBack(j, { intoIter: (items) => items, IntoIterIterator: () => ({ next: $nextSome }) }),
+          first,
+        ),
+        (iterator) => putBackIterator_next(iterator, { next: $nextSome }),
+        true,
       ),
-      (iterator) => putBackIterator_next(iterator, { next: $nextSome }),
-      true,
-    ).toArray();
+    );
   } else {
     return [];
   }
@@ -81,24 +83,28 @@ function main() {
   };
   console.log(`[${rest([1, 2, 3]).join(", ")}]`);
   console.log(`[${rest([]).join(", ")}]`);
-  const pairs = $iterator(
-    pairFrom_A__B__from([[1, 2, 3], $iter(Array.from("ab"))], vecIntoIterator, {
-      intoIter: (items) => items,
-      IntoIterIterator: () => ({ next: $next }),
-    }),
-    (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
-  ).toArray();
-  console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
-  const zipped = $iterator(
-    paired(
-      [
-        [4, 5],
-        ["x", "y", "z"],
-      ],
-      { from: (value) => pairFrom_A__B__from(value, vecIntoIterator, vecIntoIterator) },
+  const pairs = Array.from(
+    $iterator(
+      pairFrom_A__B__from([[1, 2, 3], $iter(Array.from("ab"))], vecIntoIterator, {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: $next }),
+      }),
+      (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
     ),
-    (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
-  ).toArray();
+  );
+  console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
+  const zipped = Array.from(
+    $iterator(
+      paired(
+        [
+          [4, 5],
+          ["x", "y", "z"],
+        ],
+        { from: (value) => pairFrom_A__B__from(value, vecIntoIterator, vecIntoIterator) },
+      ),
+      (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
+    ),
+  );
   console.log(`[${zipped.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

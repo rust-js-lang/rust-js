@@ -21,7 +21,7 @@ function main() {
   }
   console.log("");
   const step = $step((1 << 30) >>> 0);
-  const big = $lazyRange(0, 4294967295, step).toArray();
+  const big = Array.from($lazyRange(0, 4294967295, step));
   const arg = $next($lazyRange(4000000000, 4294967295));
   console.log(`[${big.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
   console.log(
@@ -32,37 +32,38 @@ function main() {
   );
   const last = $rangeLast({ start: 3, end: 9 });
   const value = $rangeLast({ start: 3, end: 3 });
-  const value$1 = $lazyRange(0, 10, 4).toArray().at(-1);
+  const value$1 = Array.from($lazyRange(0, 10, 4)).at(-1);
   console.log(
     `${last == null ? "None" : `Some(${last})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const step$1 = $step((1 << 20) >>> 0);
   const value$2 = $rangeLast({ start: 0, end: 4294967295 });
   const step$2 = $step((1 << 20) >>> 0);
-  const value$3 = $lazyRange(0, 4294967295, step$1).toArray().at(-1);
+  const value$3 = Array.from($lazyRange(0, 4294967295, step$1)).at(-1);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$lazyRange(0, 4294967295, step$2).reduce((n) => n + 1, 0)}`,
   );
-  const nth = $lent($lazyRange(2, 100, 5))
-    .drop(3)
-    .take(1)
-    .toArray()[0];
+  const nth = Array.from(
+    $lent($lazyRange(2, 100, 5))
+      .drop(3)
+      .take(1),
+  )[0];
   console.log(
     `${nth == null ? "None" : `Some(${nth})`} ${$lazyRange(1, 11, 3).reduce((n) => n + 1, 0)}`,
   );
   const step$3 = $step((1 << 30) >>> 0);
-  console.log(`[${$lazyRangeBack(0, 4294967295, step$3).toArray().join(", ")}]`);
+  console.log(`[${Array.from($lazyRangeBack(0, 4294967295, step$3)).join(", ")}]`);
   const step$4 = $step((1 << 30) >>> 0);
-  console.log(`[${$lazyRangeBack(0, 4294967295, step$4, true).toArray().join(", ")}]`);
+  console.log(`[${Array.from($lazyRangeBack(0, 4294967295, step$4, true)).join(", ")}]`);
   const step$5 = $step((1 << 31) >>> 0);
   console.log(
-    `[${$lazyRangeBack(0n, 18446744073709551615n, step$5).take(3).toArray().join(", ")}]`,
+    `[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]`,
   );
   console.log(
-    `[${$lazyRangeBack(1, 10, 3, true).toArray().join(", ")}] [${$lazyRangeBack(1, 10, 3).toArray().join(", ")}]`,
+    `[${Array.from($lazyRangeBack(1, 10, 3, true)).join(", ")}] [${Array.from($lazyRangeBack(1, 10, 3)).join(", ")}]`,
   );
   console.log(
-    `[${$lazyRangeBack(5, 5, 2).toArray().join(", ")}] [${$lazyRangeBack(-5, 5, 4, true).toArray().join(", ")}]`,
+    `[${Array.from($lazyRangeBack(5, 5, 2)).join(", ")}] [${Array.from($lazyRangeBack(-5, 5, 4, true)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

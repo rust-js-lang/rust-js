@@ -20,39 +20,45 @@ function loudDrop_drop(loud) {
 }
 function mapped() {
   const v = [1, 2, -3, 4];
-  const pos = $lazyMapWhile(
-    $iter(v),
-    (x) => {
-      const result = $tryFromInt(x, 0, 4294967295);
-      return result.TAG === "Ok" ? result._0 : undefined;
-    },
-    (item) => item != null,
-  ).toArray();
+  const pos = Array.from(
+    $lazyMapWhile(
+      $iter(v),
+      (x) => {
+        const result = $tryFromInt(x, 0, 4294967295);
+        return result.TAG === "Ok" ? result._0 : undefined;
+      },
+      (item) => item != null,
+    ),
+  );
   console.log(`[${pos.join(", ")}]`);
-  const nested = $lazyMapWhile(
-    $iter([1, $some(undefined), undefined, 2]),
-    (x) => x,
-    (item) => item != null,
-  )
-    .map($someValue)
-    .toArray();
+  const nested = Array.from(
+    $lazyMapWhile(
+      $iter([1, $some(undefined), undefined, 2]),
+      (x) => x,
+      (item) => item != null,
+    ).map($someValue),
+  );
   console.log(`[${nested.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
-  const words = $lazyMapWhile(
-    $iter("a b  c".split(" ")),
-    (w) => w || undefined,
-    (item) => item != null,
-  ).toArray();
+  const words = Array.from(
+    $lazyMapWhile(
+      $iter("a b  c".split(" ")),
+      (w) => w || undefined,
+      (item) => item != null,
+    ),
+  );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const louds = [[1], [2], [0], [3]];
-  const kept = $lazyMapWhile(
-    $closing($iter(louds), $dropEach(loudDrop_drop)),
-    (l) => {
-      const result = l[0] > 0 ? l[0] : undefined;
-      loudDrop_drop(l);
-      return result;
-    },
-    (item) => item != null,
-  ).toArray();
+  const kept = Array.from(
+    $lazyMapWhile(
+      $closing($iter(louds), $dropEach(loudDrop_drop)),
+      (l) => {
+        const result = l[0] > 0 ? l[0] : undefined;
+        loudDrop_drop(l);
+        return result;
+      },
+      (item) => item != null,
+    ),
+  );
   console.log(`[${kept.join(", ")}]`);
 }
 function kept() {

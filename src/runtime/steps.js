@@ -45,12 +45,23 @@ class $Steps extends Iterator {
     this.return();
     return folded;
   }
-  // `collect()`'s, each item, then closed, as `fold` is.
-  toArray() {
-    const items = [];
-    for (let step = this.next(); !step.done; step = this.next()) items.push(step.value);
-    this.return();
-    return items;
+  // Stepped by JS's own, `Array.from(it)`, `collect()`'s, `for..of` or a
+  // spread: each item, then closed at its end, as `fold` is, as Rust drops
+  // what it takes by value once it's stepped it all, one a variable held
+  // moved here too (#206; the user's decision, bw8). The runtime's own
+  // adapters step one as it is, `$stepsOf`, and close it where Rust's
+  // adapter drops it.
+  [Symbol.iterator]() {
+    if (!this.closesAtEnd) {
+      this.closesAtEnd = true;
+      const next = this.next;
+      this.next = () => {
+        const step = next();
+        if (step.done) this.return();
+        return step;
+      };
+    }
+    return this;
   }
   // Std's `last`: the last item its `fold` gives, a step, done where there's
   // none; an adapter whose `last` is its source's, `skip`'s, a chain's, a
@@ -378,4 +389,11 @@ class $Steps extends Iterator {
     };
     return skipped;
   }
+}
+
+// What the runtime's adapters step `items` by: a `$Steps` as it is, closed
+// where Rust's adapter drops it, not at its end, as JS's own close it, so a
+// held chain's `b` is its owner's to drop (#243); else its iterator.
+function $stepsOf(items) {
+  return items instanceof $Steps ? items : items[Symbol.iterator]();
 }

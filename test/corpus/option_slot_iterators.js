@@ -64,7 +64,7 @@ function main() {
   const value = inserted(slot, [1, 2, 3]);
   front = slot.value;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = front?.toArray();
+  const value$1 = front != null ? Array.from(front) : undefined;
   console.log(`${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`);
 
   let empty;

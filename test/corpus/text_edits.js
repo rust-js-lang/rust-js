@@ -51,44 +51,36 @@ function main() {
   );
   console.log(`${$debugStr("\vx\v ".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, ""))}`);
   console.log(
-    `[${Iterator.from($splitInclusive("a\nb\n\nc\n", "\n"))
-      .toArray()
+    `[${Array.from($splitInclusive("a\nb\n\nc\n", "\n"))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitInclusive("a--b--", "--"))
-      .toArray()
+    `[${Array.from($splitInclusive("a--b--", "--"))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitInclusive("ab", ""))
-      .toArray()
+    `[${Array.from($splitInclusive("ab", ""))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($splitInclusive("", "x"))
-      .toArray()
+      .join(", ")}] [${Array.from($splitInclusive("", "x"))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplitTerminator("a.b.c.", "."))
-      .toArray()
+    `[${Array.from($rsplitTerminator("a.b.c.", "."))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rmatches("abaXab", "ab"))
-      .toArray()
+    `[${Array.from($rmatches("abaXab", "ab"))
       .map((item) => $debugStr(item))
-      .join(", ")}] [${Iterator.from($rmatchIndices("aaa", "aa"))
-      .toArray()
+      .join(", ")}] [${Array.from($rmatchIndices("aaa", "aa"))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rmatchIndices("héllo", "l"))
-      .toArray()
+    `[${Array.from($rmatchIndices("héllo", "l"))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
@@ -98,7 +90,7 @@ function main() {
   console.log(
     `${splitAtChecked == null ? "None" : `Some((${$debugStr(splitAtChecked[0])}, ${$debugStr(splitAtChecked[1])}))`} ${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`}`,
   );
-  console.log(`[${Iterator.from($encodeUtf16("hé𝄞")).toArray().join(", ")}]`);
+  console.log(`[${Array.from($encodeUtf16("hé𝄞")).join(", ")}]`);
   const value$2 = $fromUtf16([104, 55348, 56606]);
   const value$3 = $fromUtf16([55348, 104]);
   console.log(

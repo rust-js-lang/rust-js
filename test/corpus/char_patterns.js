@@ -20,56 +20,47 @@ function main() {
   const s = "a1é2,b3;🦀4";
   const digit = (c) => /^[0-9]$/.test(c);
   console.log(
-    `[${Iterator.from($rsplitBy(s, digit))
-      .toArray()
+    `[${Array.from($rsplitBy(s, digit))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplitBy(s, (c) => /^\p{N}$/u.test(c), 2))
-      .toArray()
+    `[${Array.from($rsplitBy(s, (c) => /^\p{N}$/u.test(c), 2))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($rsplitBy(s, digit, 0))
-      .toArray()
+    `[${Array.from($rsplitBy(s, digit, 0))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitTerminatorBy(s, (c) => [",", ";"].includes(c)))
-      .toArray()
+    `[${Array.from($splitTerminatorBy(s, (c) => [",", ";"].includes(c)))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitTerminatorBy("x,y,", (c) => c === ","))
-      .toArray()
+    `[${Array.from($splitTerminatorBy("x,y,", (c) => c === ","))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitTerminatorBy("x,y,", (c) => [","].includes(c), true))
-      .toArray()
+    `[${Array.from($splitTerminatorBy("x,y,", (c) => [","].includes(c), true))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($splitInclusiveBy(s, digit))
-      .toArray()
+    `[${Array.from($splitInclusiveBy(s, digit))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($matchIndicesBy(s, (c) => /^\p{N}$/u.test(c)))
-      .toArray()
+    `[${Array.from($matchIndicesBy(s, (c) => /^\p{N}$/u.test(c)))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${Iterator.from($matchIndicesBy(s, (c) => !(c.charCodeAt(0) < 128), true))
-      .toArray()
+    `[${Array.from($matchIndicesBy(s, (c) => !(c.charCodeAt(0) < 128), true))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );

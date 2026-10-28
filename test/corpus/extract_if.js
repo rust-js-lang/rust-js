@@ -19,9 +19,7 @@ export function entry() {
 
 function main() {
   const v = $range(1, 11);
-  const evens = Iterator.from(
-    $extractIf(v, 0, undefined, (x) => x.value % 2 === 0, true),
-  ).toArray();
+  const evens = Array.from($extractIf(v, 0, undefined, (x) => x.value % 2 === 0, true));
   console.log(`[${evens.join(", ")}] [${v.join(", ")}]`);
   const w = $range(1, 11);
   for (const x of $extractIf(
@@ -41,18 +39,14 @@ function main() {
   }
   console.log(`[${w.join(", ")}]`);
   const names = ["ann", "bob", "al"];
-  const a = Iterator.from(
-    $extractIf(names, 0, undefined, (n) => n.value.startsWith("a"), true),
-  ).toArray();
+  const a = Array.from($extractIf(names, 0, undefined, (n) => n.value.startsWith("a"), true));
   console.log(
     `[${a.map((item) => $debugStr(item)).join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}]`,
   );
   console.log(`${Iterator.from($extractIf(w, 1, 1, () => true, true)).reduce((n) => n + 1, 0)}`);
 
   const list = $range(1, 7);
-  const odd = Iterator.from(
-    $extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true),
-  ).toArray();
+  const odd = Array.from($extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true));
   console.log(`[${odd.join(", ")}] [${list.join(", ")}]`);
 
   const scores = new Map([
@@ -61,7 +55,7 @@ function main() {
     ["c", 3],
     ["d", 40],
   ]);
-  const high = Iterator.from(
+  const high = Array.from(
     $mapExtractIf(
       scores,
       (_, v) => {
@@ -72,7 +66,7 @@ function main() {
       true,
       false,
     ),
-  ).toArray();
+  );
   high.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const left = Array.from(scores);
   left.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
@@ -80,12 +74,12 @@ function main() {
     `[${high.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] [${left.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`,
   );
   const set = new Set($lazyRange(1, 7));
-  const small = Iterator.from($mapExtractIf(set, (x) => x < 3, set, false, true)).toArray();
+  const small = Array.from($mapExtractIf(set, (x) => x < 3, set, false, true));
   small.sort((a, b) => a - b);
   console.log(`[${small.join(", ")}] ${set.size}`);
 
   const tree = new Map($lazyRange(1, 9).map((i) => [i, String(i)]));
-  const taken = Iterator.from(
+  const taken = Array.from(
     $mapExtractIf(
       tree,
       (k, v) => {
@@ -104,7 +98,7 @@ function main() {
       true,
       false,
     ),
-  ).toArray();
+  );
   console.log(
     `[${taken.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}] {${Array.from(
       $sortedEntries(tree, $cmp),

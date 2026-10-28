@@ -108,41 +108,41 @@ function main() {
   };
   const v = [1, 2, 3];
   console.log(
-    `[${$rev(
-      $knowing(
-        chained(v),
-        (iterator) =>
-          chainDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            takeDoubleEndedIterator,
-          ),
-        undefined,
-        undefined,
-        (iterator, k) =>
-          chainDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next, fold: $foldOf },
-            takeDoubleEndedIterator,
-          ),
-        (iterator, init, f, broke) =>
-          chainDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next, fold: $foldOf },
-            takeDoubleEndedIterator,
-            $tryOf(broke),
-          ),
+    `[${Array.from(
+      $rev(
+        $knowing(
+          chained(v),
+          (iterator) =>
+            chainDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              takeDoubleEndedIterator,
+            ),
+          undefined,
+          undefined,
+          (iterator, k) =>
+            chainDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $next },
+              { next_back: $nextBack },
+              { next: $next, fold: $foldOf },
+              takeDoubleEndedIterator,
+            ),
+          (iterator, init, f, broke) =>
+            chainDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              { next: $next, fold: $foldOf },
+              takeDoubleEndedIterator,
+              $tryOf(broke),
+            ),
+        ),
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const c = copied(v);
   console.log(`${c.end - c.at} [${$rest(c).toReversed().join(", ")}]`);

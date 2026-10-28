@@ -7,14 +7,14 @@ export function entry() {
 }
 
 function backwards(it) {
-  return $rev(it).toArray();
+  return Array.from($rev(it));
 }
 function main() {
   console.log(`[${backwards($iter([1, 2, 3])).join(", ")}]`);
   const both = $iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack);
   const nextBack = $nextBack(both);
   console.log(
-    `${nextBack == null ? "None" : `Some(${nextBack})`} [${$rev(both).toArray().join(", ")}]`,
+    `${nextBack == null ? "None" : `Some(${nextBack})`} [${Array.from($rev(both)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

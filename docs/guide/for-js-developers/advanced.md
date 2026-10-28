@@ -1010,7 +1010,7 @@ function* fibonacci() {
   }
 }
 
-const firstFibs = (n) => fibonacci().take(n).toArray();
+const firstFibs = (n) => Array.from(fibonacci().take(n));
 ```
 
 ```rust
@@ -1076,7 +1076,7 @@ export function fibonacci() {
 }
 
 export function firstFibs(n) {
-  return $iterator(fibonacci(), fibonacciIterator_next).take(n).toArray();
+  return Array.from($iterator(fibonacci(), fibonacciIterator_next).take(n));
 }
 
 export function countdown(from) {
@@ -1098,7 +1098,10 @@ export function evens(limit) {
 ```
 
 - **An `impl Iterator` is a JS iterator,** with JS's iterator helpers,
-  `take`, `filter`, `toArray`: a JS caller can `for ... of` it.
+  `take`, `filter`, `map`: a JS caller can `for ... of` it. Collected,
+  `collect::<Vec<_>>()`, it's `Array.from(it)`, as JS writes it, never
+  ES2025's `it.toArray()`
+  ([ADR 0055](../../decisions/0055-iterator.md), amended).
 - An iterator of your own struct is its `next` function, wrapped by
   `$iterator` where a chain uses it.
 - A `u64` is a BigInt, so `fibonacci` doesn't lose digits past 2⁵³.

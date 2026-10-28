@@ -97,7 +97,7 @@ function main() {
     it.return();
     console.log(`drop ${c[0]}`);
   });
-  const flat = iter$1.toArray();
+  const flat = Array.from(iter$1);
   iter$1.return();
   console.log(`[${flat.join(", ")}] flattened`);
   let d$live = true;
@@ -123,7 +123,7 @@ function main() {
       console.log(`drop ${d[0]}`);
     },
   );
-  const kept = iter$2.toArray();
+  const kept = Array.from(iter$2);
   iter$2.return();
   console.log(`[${kept.join(", ")}] kept`);
   let e$live = true;
@@ -146,7 +146,7 @@ function main() {
     it.return();
     console.log(`drop ${e[0]}`);
   });
-  const small = iter$3.toArray();
+  const small = Array.from(iter$3);
   iter$3.return();
   console.log(`[${small.join(", ")}] taken`);
   let f$live = true;

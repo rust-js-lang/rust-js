@@ -11,7 +11,7 @@ const $iSorted = new WeakMap();
 function iSorted(IIterator) {
   return $traitImpl($iSorted, [IIterator], () => ({
     sorted(self, SelfItemOrd) {
-      const v = $given(self, IIterator, true).toArray();
+      const v = Array.from($given(self, IIterator, true));
       $sort(v, SelfItemOrd.cmp);
       return v;
     },

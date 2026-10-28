@@ -25,18 +25,16 @@ function main() {
     r.return();
   }
   const w = [[4], [5], [6]];
-  const all = $rev($closing($iter(w), $dropEach(loudDrop_drop)))
-    .map((l) => {
+  const all = Array.from(
+    $rev($closing($iter(w), $dropEach(loudDrop_drop))).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    })
-    .toArray();
+    }),
+  );
   console.log(`[${all.join(", ")}]`);
   const x = [[7], [8], [9]];
-  const firsts = $rev($closing($iter(x), $dropEach(loudDrop_drop)))
-    .take(1)
-    .toArray();
+  const firsts = Array.from($rev($closing($iter(x), $dropEach(loudDrop_drop))).take(1));
   console.log(`${firsts.length}`);
   console.log("end");
   const value = [[10], [11], [12], [13]];

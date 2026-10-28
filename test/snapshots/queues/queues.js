@@ -151,23 +151,14 @@ export function heaps() {
       },
       taskOrd_cmp,
     );
-    out += `${$debugStr(
-      Iterator.from(h)
-        .map((t) => t.name)
-        .toArray()
-        .join(""),
-    )}\n`;
+    out += `${$debugStr(Array.from(Iterator.from(h).map((t) => t.name)).join(""))}\n`;
   }
   const name = h[0]?.name;
   out += `peek ${name == null ? "None" : `Some(${$debugStr(name, "'")})`} len ${h.length}\n`;
   let popped = "";
   for (let i = 0; i < 4; i++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
-    popped +=
-      Iterator.from(h)
-        .map((t) => t.name)
-        .toArray()
-        .join("") + " ";
+    popped += Array.from(Iterator.from(h).map((t) => t.name)).join("") + " ";
   }
   out += `${popped}\n`;
   const sorted = $heapSorted(h.slice(), taskOrd_cmp)

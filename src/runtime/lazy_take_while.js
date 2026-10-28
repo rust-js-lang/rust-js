@@ -4,7 +4,7 @@
 // `None` of its source ends what's stepped now, as Rust's passes it on.
 // Its `try_fold`, its source's, stopped where `keep` doesn't hold.
 function $lazyTakeWhile(items, keep) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   let ended = false;
   const taking = new $Steps(
     () => {
@@ -40,7 +40,7 @@ function $lazyTakeWhile(items, keep) {
 // isn't fused, does, where `take_while` stays ended. Its `try_fold`, its
 // source's, stopped at what `present` doesn't keep.
 function $lazyMapWhile(items, f, present) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   const mapping = new $Steps(
     () => {
       const step = source.next();

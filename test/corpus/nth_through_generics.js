@@ -17,7 +17,7 @@ function loudDrop_drop(loud) {
 }
 function second(items, dropI) {
   try {
-    return $lent(Iterator.from(items)).drop(1).take(1).toArray()[0];
+    return Array.from($lent(Iterator.from(items)).drop(1).take(1))[0];
   } finally {
     dropI?.(items);
   }
@@ -30,7 +30,7 @@ function secondOf(items, dropI, dropIItem) {
   }
 }
 function thirdRef(items) {
-  return $lent(Iterator.from(items)).drop(2).take(1).toArray()[0];
+  return Array.from($lent(Iterator.from(items)).drop(2).take(1))[0];
 }
 function main() {
   const value = second($iterator(["a", 0], plainIterator_next), (it) => {

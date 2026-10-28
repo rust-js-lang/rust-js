@@ -31,44 +31,40 @@ function main() {
   const v = [1, 2, 3, 4, 5, 6];
   console.log(`[${v.slice(2).toReversed().join(", ")}]`);
   console.log(`[${v.slice(0, 4).toReversed().join(", ")}]`);
-  console.log(
-    `[${$rev($skipping($mapEnds($iter(v), t), 3))
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from($rev($skipping($mapEnds($iter(v), t), 3))).join(", ")}]`);
   const value = $next($rev($taking($mapEnds($iter(v), t), 2)));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
-    `[${$rev(
-      $skipping(
-        $iterator(
-          { start: 1, end: 10 },
-          $rangeInclusiveNext,
-          false,
-          $rangeInclusiveNextBack,
-          $rangeInclusiveLen,
+    `[${Array.from(
+      $rev(
+        $skipping(
+          $iterator(
+            { start: 1, end: 10 },
+            $rangeInclusiveNext,
+            false,
+            $rangeInclusiveNextBack,
+            $rangeInclusiveLen,
+          ),
+          7,
         ),
-        7,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
-    `[${$rev(
-      $taking(
-        $iterator(
-          { start: 1, end: 10 },
-          $rangeInclusiveNext,
-          false,
-          $rangeInclusiveNextBack,
-          $rangeInclusiveLen,
+    `[${Array.from(
+      $rev(
+        $taking(
+          $iterator(
+            { start: 1, end: 10 },
+            $rangeInclusiveNext,
+            false,
+            $rangeInclusiveNextBack,
+            $rangeInclusiveLen,
+          ),
+          20,
         ),
-        20,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const value$1 = $next(
     $rev(

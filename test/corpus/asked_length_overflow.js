@@ -103,7 +103,7 @@ function main() {
     check(
       "collect endless",
       () =>
-        $roomForHint($iterator({ start: 0 }, $rangeFromNext).map(made), 1, true, true).toArray()
+        Array.from($roomForHint($iterator({ start: 0 }, $rangeFromNext).map(made), 1, true, true))
           .length,
     );
     const endless = iterator_map({ start: 0 }, made, { next: $rangeFromNext });

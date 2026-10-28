@@ -15,7 +15,7 @@ function drainingIterator_next(draining) {
 function main() {
   const v = [1, 2, 3];
   const iter = { items: v, at: 0 };
-  const taken = $iterator(iter, drainingIterator_next).toArray();
+  const taken = Array.from($iterator(iter, drainingIterator_next));
   console.log(`dropped after ${iter.at}`);
   iter.items.length = 0;
   console.log(`[${taken.join(", ")}] [${v.join(", ")}]`);

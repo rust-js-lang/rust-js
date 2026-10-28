@@ -145,7 +145,7 @@ function main() {
       2,
     ),
   );
-  const value = $folded(held).toArray().at(-1);
+  const value = Array.from($folded(held)).at(-1);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const back = iterator_skip(
     iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),

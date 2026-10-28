@@ -50,7 +50,7 @@ function main() {
   const each = $iter($mutItems(names));
   const value = $unwrap($next(each));
   value.value += "!";
-  const rest = each.toArray();
+  const rest = Array.from(each);
   for (const name of rest) {
     name.value = $insertStr(name.value, 0, ">");
   }

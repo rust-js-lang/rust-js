@@ -33,7 +33,7 @@ function main() {
   console.log(`${first != null && (each.reduce((n) => n + 1, 0) + 1) >>> 0 === all.length}`);
   const value = $varOs("RUST_JS_NO_SUCH_VARIABLE");
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`} ${$varOs("PATH") != null}`);
-  const os = Iterator.from($varsOs()).toArray();
+  const os = Array.from($varsOs());
   console.log(`${os.length === all.length}`);
   console.log(`${($varOs("PATH") != null) === ($var("PATH").TAG === "Ok")}`);
 }

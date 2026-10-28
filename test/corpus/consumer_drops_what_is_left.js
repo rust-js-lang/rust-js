@@ -207,23 +207,23 @@ function consume(n) {
   console.log(`set ${set.size}`);
   const value$3 = $iter(three());
   const value$4 = limit();
-  const kept = Iterator.from(
-    $closing(value$3, $dropEach(loudDrop_drop))
-      .take(value$4)
-      .filter((item, i) => {
-        if (i % 2 === 0) {
-          return true;
-        }
-        loudDrop_drop(item);
-        return false;
-      }),
-  )
-    .map((l) => {
+  const kept = Array.from(
+    Iterator.from(
+      $closing(value$3, $dropEach(loudDrop_drop))
+        .take(value$4)
+        .filter((item, i) => {
+          if (i % 2 === 0) {
+            return true;
+          }
+          loudDrop_drop(item);
+          return false;
+        }),
+    ).map((l) => {
       const result = l[0];
       loudDrop_drop(l);
       return result;
-    })
-    .toArray().length;
+    }),
+  ).length;
   console.log(`kept ${kept}`);
   const peekable = $held(
     iterator_peekable(

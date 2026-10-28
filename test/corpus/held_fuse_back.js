@@ -62,17 +62,19 @@ function main() {
   const countdownExactSizeIterator = {
     len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
   };
-  const back = $iterator(
-    pad($iter([1, 2, 3]), 2, { next: $next }, true),
-    (iterator) =>
-      padDoubleEndedIterator_nextBack(
-        iterator,
-        { next_back: $nextBack },
-        { len: (iterator) => iterator.len() },
-        true,
-      ),
-    true,
-  ).toArray();
+  const back = Array.from(
+    $iterator(
+      pad($iter([1, 2, 3]), 2, { next: $next }, true),
+      (iterator) =>
+        padDoubleEndedIterator_nextBack(
+          iterator,
+          { next_back: $nextBack },
+          { len: (iterator) => iterator.len() },
+          true,
+        ),
+      true,
+    ),
+  );
   console.log(`[${back.join(", ")}]`);
   const it = pad(
     [0, 5],
@@ -96,17 +98,19 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const ranged = $iterator(
-    pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),
-    (iterator) =>
-      padDoubleEndedIterator_nextBack(
-        iterator,
-        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-        { len: $rangeLen },
-        true,
-      ),
-    true,
-  ).toArray();
+  const ranged = Array.from(
+    $iterator(
+      pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),
+      (iterator) =>
+        padDoubleEndedIterator_nextBack(
+          iterator,
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          { len: $rangeLen },
+          true,
+        ),
+      true,
+    ),
+  );
   console.log(`[${ranged.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -26,48 +26,48 @@ function zigzag(n, len) {
         revClone_clone(b, { clone: (value) => ({ start: value.start, end: value.end }) }),
       ),
     );
-  return $cycleOf(
-    makeChain(
-      { start: 0, end: n - 1 },
-      iterator_rev(
-        { start: 1, end: n },
-        { next: $rangeNext },
-        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  return Array.from(
+    $cycleOf(
+      makeChain(
+        { start: 0, end: n - 1 },
+        iterator_rev(
+          { start: 1, end: n },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
       ),
-    ),
-    $clone,
-    $next,
-  )
-    .take(len)
-    .toArray();
+      $clone,
+      $next,
+    ).take(len),
+  );
 }
 
 function main() {
   console.log(`[${zigzag(3, 9).join(", ")}]`);
   console.log(`[${zigzag(4, 8).join(", ")}]`);
-  const back = $cycleOf(
-    iterator_rev(
-      { start: 1, end: 4 },
-      { next: $rangeNext },
-      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-    ),
-    (iterator) =>
-      revClone_clone(iterator, { clone: (value) => ({ start: value.start, end: value.end }) }),
-    $next,
-  )
-    .take(5)
-    .toArray();
+  const back = Array.from(
+    $cycleOf(
+      iterator_rev(
+        { start: 1, end: 4 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      (iterator) =>
+        revClone_clone(iterator, { clone: (value) => ({ start: value.start, end: value.end }) }),
+      $next,
+    ).take(5),
+  );
   console.log(`[${back.join(", ")}]`);
-  const skipped = $cycleOf(
-    iterator_skip($iter([5, 6, 7]), 1),
-    (iterator) =>
-      skipClone_clone(iterator, {
-        clone: (value) => $iter(value.items.slice(value.at, value.end)),
-      }),
-    $next,
-  )
-    .take(5)
-    .toArray();
+  const skipped = Array.from(
+    $cycleOf(
+      iterator_skip($iter([5, 6, 7]), 1),
+      (iterator) =>
+        skipClone_clone(iterator, {
+          clone: (value) => $iter(value.items.slice(value.at, value.end)),
+        }),
+      $next,
+    ).take(5),
+  );
   console.log(`[${skipped.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

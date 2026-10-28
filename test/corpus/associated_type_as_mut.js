@@ -72,11 +72,13 @@ function main() {
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
-  const numbers = $iterator(
-    Buffer.new([4, 5, 6], _A__A_Collect),
-    (iterator) => bufferIterator_next(iterator, _A__A_Collect),
-    true,
-  ).toArray();
+  const numbers = Array.from(
+    $iterator(
+      Buffer.new([4, 5, 6], _A__A_Collect),
+      (iterator) => bufferIterator_next(iterator, _A__A_Collect),
+      true,
+    ),
+  );
   console.log(`[${numbers.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

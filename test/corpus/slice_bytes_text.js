@@ -27,10 +27,9 @@ function main() {
   for (const chunk of $utf8Chunks(mixed)) {
     console.log(`${$debugStr(chunk.valid)} [${chunk.invalid.join(", ")}]`);
   }
-  const text = Iterator.from($utf8Chunks([99, 97, 102, 195, 169, 195]))
-    .map((c) => c.valid)
-    .toArray()
-    .join("");
+  const text = Array.from(
+    Iterator.from($utf8Chunks([99, 97, 102, 195, 169, 195])).map((c) => c.valid),
+  ).join("");
   const arg = Iterator.from($utf8Chunks([])).reduce((n) => n + 1, 0);
   console.log(`${text} ${arg}`);
 }

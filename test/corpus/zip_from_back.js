@@ -17,9 +17,9 @@ function main() {
 
   const names = ["p", "q", "r"];
   const nums = [1, 2, 3, 4];
-  const back = $zipBack($iter(names), $iter(nums)).toArray();
+  const back = Array.from($zipBack($iter(names), $iter(nums)));
   console.log(`[${back.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`);
-  const shorter = $zipBack($iter(nums.slice(0, 2)), $iter(names)).toArray();
+  const shorter = Array.from($zipBack($iter(nums.slice(0, 2)), $iter(names)));
   console.log(`[${shorter.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
 
   const words = ["x", "y"];
@@ -33,7 +33,7 @@ function main() {
   }
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}] [${counts.join(", ")}]`);
 
-  const none = $zipBack($iter([1, 2]), $iter([])).toArray();
+  const none = Array.from($zipBack($iter([1, 2]), $iter([])));
   console.log(`[${none.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

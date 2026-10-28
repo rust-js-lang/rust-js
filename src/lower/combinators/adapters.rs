@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if item_ty().is_some_and(|item| self.boxed_payload(item)) {
                     first = method(first, "map", vec![Expr::helper("$some")]);
                 }
-                Expr::index(method(first, "toArray", Vec::new()), Expr::int(0))
+                Expr::index(Expr::collected(first), Expr::int(0))
             }
             IterComb::Inspect => {
                 let f = next();

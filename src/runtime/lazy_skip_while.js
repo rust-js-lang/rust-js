@@ -5,7 +5,7 @@
 // std's is; its `try_fold` and its `fold`, its first step, then its
 // source's.
 function $lazySkipWhile(items, skip) {
-  const source = items[Symbol.iterator]();
+  const source = $stepsOf(items);
   let skipping = true;
   const skipped = new $Steps(
     () => {

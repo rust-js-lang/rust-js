@@ -86,26 +86,28 @@ function ends(it, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone, I
   const last = fuseDoubleEndedIterator_nextBack(f, IDoubleEndedIterator, IFused);
   const left = fuseExactSizeIterator_len(f, IExactSizeIterator);
   const copy = fuseClone_clone(f, IClone);
-  const rest = $rev(
-    $knowing(
-      copy,
-      (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
-      (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
-      undefined,
-      (iterator, k) =>
-        fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
-      (iterator, init, f, broke) =>
-        fuseDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          IIterator,
-          IDoubleEndedIterator,
-          $tryOf(broke),
-          IFused,
-        ),
+  const rest = Array.from(
+    $rev(
+      $knowing(
+        copy,
+        (iterator) => fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused),
+        (iterator) => fuseExactSizeIterator_len(iterator, IExactSizeIterator),
+        undefined,
+        (iterator, k) =>
+          fuseDoubleEndedIterator_nthBack(iterator, k, IIterator, IDoubleEndedIterator, IFused),
+        (iterator, init, f, broke) =>
+          fuseDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            IIterator,
+            IDoubleEndedIterator,
+            $tryOf(broke),
+            IFused,
+          ),
+      ),
     ),
-  ).toArray();
+  );
   const total = fuseDoubleEndedIterator_rfold(
     f,
     0,

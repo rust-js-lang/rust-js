@@ -69,19 +69,19 @@ function main() {
     BigInt.asIntN(64, BigInt($index(w, 1)) - BigInt($index(w, 0))),
   );
   console.log(`[${diffs.join(", ")}]`);
-  const running = $lazyScan($iter(units), 0, (acc, u) => {
-    acc.value = (acc.value + u) >>> 0;
-    return acc.value;
-  }).toArray();
+  const running = Array.from(
+    $lazyScan($iter(units), 0, (acc, u) => {
+      acc.value = (acc.value + u) >>> 0;
+      return acc.value;
+    }),
+  );
   console.log(`[${running.join(", ")}]`);
   const pairs = all
     .map((s) => s.item)
     .map((x, i) => [i, x])
     .filter((_, i) => i % 2 === 0);
   console.log(`[${pairs.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}]`);
-  const zipped = $lazyZip($iter(units), $cycle(items))
-    .map(([u, i]) => String(u) + i)
-    .toArray();
+  const zipped = Array.from($lazyZip($iter(units), $cycle(items)).map(([u, i]) => String(u) + i));
   console.log(`[${zipped.map((item) => $debugStr(item)).join(", ")}]`);
   const chunks = $chunks(units, 2).map((c) => c.reduce((a, b) => (a * b) >>> 0, 1));
   console.log(`[${chunks.join(", ")}]`);

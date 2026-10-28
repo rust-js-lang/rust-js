@@ -23,8 +23,8 @@ function dup(it, IIterator, IClone, IDebug) {
   IIterator.next(it);
   console.log(`${IDebug.fmt(it)}`);
   return [
-    $given(IClone.clone(it), IIterator, true).toArray(),
-    $given(it, IIterator, true).toArray(),
+    Array.from($given(IClone.clone(it), IIterator, true)),
+    Array.from($given(it, IIterator, true)),
   ];
 }
 

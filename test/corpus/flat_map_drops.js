@@ -10,18 +10,20 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function innerLeft() {
-  const first = $lazyRange(0, 3)
-    .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
-    .take(1)
-    .toArray();
+  const first = Array.from(
+    $lazyRange(0, 3)
+      .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
+      .take(1),
+  );
   console.log(`inner left ${first.length}`);
   const counts = [1, 2];
   try {
-    const made = counts
-      .values()
-      .flatMap((n) => $lazyRange(0, n).map((value) => [value]))
-      .take(1)
-      .toArray();
+    const made = Array.from(
+      counts
+        .values()
+        .flatMap((n) => $lazyRange(0, n).map((value) => [value]))
+        .take(1),
+    );
     console.log(`made ${made.length}`);
     for (const item of made) {
       loudDrop_drop(item);
@@ -34,28 +36,29 @@ function innerLeft() {
 }
 function sourceLeft() {
   const v = [[1], [2], [3]];
-  const firsts = $closing($iter(v), $dropEach(loudDrop_drop))
-    .flatMap((l) => {
-      const result = [l[0], (l[0] + 10) & 255];
-      loudDrop_drop(l);
-      return result;
-    })
-    .take(3)
-    .toArray();
+  const firsts = Array.from(
+    $closing($iter(v), $dropEach(loudDrop_drop))
+      .flatMap((l) => {
+        const result = [l[0], (l[0] + 10) & 255];
+        loudDrop_drop(l);
+        return result;
+      })
+      .take(3),
+  );
   console.log(`[${firsts.join(", ")}]`);
   const nested = [[[20], [21]], [[22]], [[23]]];
-  const flat = $flatMap(
-    $closing($iter(nested), (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
+  const flat = Array.from(
+    $flatMap(
+      $closing($iter(nested), (intoIter) => {
+        for (const item of intoIter) {
+          for (const item$1 of item) {
+            loudDrop_drop(item$1);
+          }
         }
-      }
-    }),
-    (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
-  )
-    .take(2)
-    .toArray();
+      }),
+      (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+    ).take(2),
+  );
   console.log(`flat ${flat.length}`);
   for (const item of flat) {
     loudDrop_drop(item);
@@ -78,18 +81,18 @@ function bothLeft() {
     it.return();
   }
   const nested = [[[50], [51]], [[52]]];
-  const one = $flatMap(
-    $closing($iter(nested), (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
+  const one = Array.from(
+    $flatMap(
+      $closing($iter(nested), (intoIter) => {
+        for (const item of intoIter) {
+          for (const item$1 of item) {
+            loudDrop_drop(item$1);
+          }
         }
-      }
-    }),
-    (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
-  )
-    .take(1)
-    .toArray();
+      }),
+      (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+    ).take(1),
+  );
   console.log(`one of nested ${one.length}`);
   for (const item of one) {
     loudDrop_drop(item);
@@ -104,16 +107,17 @@ function options() {
       }
     })
     .filter((item) => item != null);
-  const opts = $closing($iter([[60], undefined, [61]]), (intoIter) => {
-    for (const item of intoIter) {
-      if (item != null) {
-        loudDrop_drop(item);
+  const opts = Array.from(
+    $closing($iter([[60], undefined, [61]]), (intoIter) => {
+      for (const item of intoIter) {
+        if (item != null) {
+          loudDrop_drop(item);
+        }
       }
-    }
-  })
-    .filter((item) => item != null)
-    .take(1)
-    .toArray();
+    })
+      .filter((item) => item != null)
+      .take(1),
+  );
   try {
     console.log(`[${big.join(", ")}] ${opts.length}`);
   } finally {

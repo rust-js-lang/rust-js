@@ -50,11 +50,11 @@ function pairwiseSub(t) {
 
 function lastThenRest(t) {
   const last = $nextBack(t);
-  return [last, Iterator.from(t).toArray()];
+  return [last, Array.from(Iterator.from(t))];
 }
 
 function reversed(t) {
-  return $rev(t).toArray();
+  return Array.from($rev(t));
 }
 
 function passedOn(t) {

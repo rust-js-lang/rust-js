@@ -83,16 +83,11 @@ export function iters(n) {
   const v = $range(0, n, 4);
   return [
     v.map(half).filter((item) => item != null),
-    v
-      .values()
-      .flatMap((x) => [x, x])
-      .toArray(),
-    $lazyZip($iter(v), ["a", "b", "c"]).toArray(),
+    Array.from(v.values().flatMap((x) => [x, x])),
+    Array.from($lazyZip($iter(v), ["a", "b", "c"])),
     [...$iter(v), 100, 200],
-    $lazyTakeWhile($iter(v), (x) => x < 3).toArray(),
-    $lazySkipWhile($iter(v), (x) => x < 3)
-      .filter((_, i) => i % 2 === 0)
-      .toArray(),
+    Array.from($lazyTakeWhile($iter(v), (x) => x < 3)),
+    Array.from($lazySkipWhile($iter(v), (x) => x < 3).filter((_, i) => i % 2 === 0)),
   ];
 }
 export function consumers(n) {

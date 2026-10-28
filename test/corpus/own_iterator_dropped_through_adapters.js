@@ -282,31 +282,31 @@ function main() {
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `[${$rev(
-      $taking(
-        $closing(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            countIterator_nth,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
+    `[${Array.from(
+      $rev(
+        $taking(
+          $closing(
+            $iterator(
+              count(),
+              countIterator_next,
+              false,
+              countDoubleEndedIterator_nextBack,
+              (it) => $exactLen(countIterator_sizeHint(it)),
+              countIterator_sizeHint,
+              undefined,
+              countIterator_nth,
+              undefined,
+              countDoubleEndedIterator_rfold,
+              countDoubleEndedIterator_nthBack,
+            ),
+            (it) => {
+              countDrop_drop(it.of);
+            },
           ),
-          (it) => {
-            countDrop_drop(it.of);
-          },
+          5,
         ),
-        5,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   const filter = $held(
     $filterEnds(
@@ -413,31 +413,31 @@ function main() {
     `${odd == null ? "None" : `Some(${odd})`} ${fusedOdd == null ? "None" : `Some(${fusedOdd})`}`,
   );
   console.log(
-    `[${$rev(
-      $mapEnds(
-        $closing(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            undefined,
-            countIterator_sizeHint,
-            undefined,
-            countIterator_nth,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
+    `[${Array.from(
+      $rev(
+        $mapEnds(
+          $closing(
+            $iterator(
+              count(),
+              countIterator_next,
+              false,
+              countDoubleEndedIterator_nextBack,
+              undefined,
+              countIterator_sizeHint,
+              undefined,
+              countIterator_nth,
+              undefined,
+              countDoubleEndedIterator_rfold,
+              countDoubleEndedIterator_nthBack,
+            ),
+            (it) => {
+              countDrop_drop(it.of);
+            },
           ),
-          (it) => {
-            countDrop_drop(it.of);
-          },
+          (x) => (x * 2) | 0,
         ),
-        (x) => (x * 2) | 0,
       ),
-    )
-      .toArray()
-      .join(", ")}]`,
+    ).join(", ")}]`,
   );
   console.log(
     `${$stepBy(
@@ -462,28 +462,28 @@ function main() {
       2,
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const last = $closing(
-    $iterator(
-      count(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      countIterator_sizeHint,
-      undefined,
-      countIterator_nth,
-      undefined,
-      countDoubleEndedIterator_rfold,
-      countDoubleEndedIterator_nthBack,
-    ),
-    (it) => {
-      countDrop_drop(it.of);
-    },
-  )
-    .take(5)
-    .filter((x) => x % 2 === 1)
-    .toArray()
-    .at(-1);
+  const last = Array.from(
+    $closing(
+      $iterator(
+        count(),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        countIterator_sizeHint,
+        undefined,
+        countIterator_nth,
+        undefined,
+        countDoubleEndedIterator_rfold,
+        countDoubleEndedIterator_nthBack,
+      ),
+      (it) => {
+        countDrop_drop(it.of);
+      },
+    )
+      .take(5)
+      .filter((x) => x % 2 === 1),
+  ).at(-1);
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$rev(
@@ -596,7 +596,7 @@ function main() {
   );
   let indexed;
   try {
-    indexed = $lent(value$1).drop(1).take(1).toArray()[0];
+    indexed = Array.from($lent(value$1).drop(1).take(1))[0];
   } finally {
     value$1.return();
   }

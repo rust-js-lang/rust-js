@@ -27,8 +27,8 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
   const back = iterator_rev(it, IIterator, IDoubleEndedIterator);
   $next(back);
   return [
-    $roomForHint(revClone_clone(back, IClone), 4, false).toArray(),
-    $roomForHint(back, 4, false).toArray(),
+    Array.from($roomForHint(revClone_clone(back, IClone), 4, false)),
+    Array.from($roomForHint(back, 4, false)),
   ];
 }
 
@@ -45,7 +45,7 @@ function main() {
   $next(chars);
   const later = $iter(chars.items.slice(chars.at, chars.end));
   console.log(
-    `${$debugStr(chars.toArray().join(""))} ${$debugStr($rest(later).toReversed().join(""))}`,
+    `${$debugStr(Array.from(chars).join(""))} ${$debugStr($rest(later).toReversed().join(""))}`,
   );
 
   const indices = $iter($charIndices(text));
@@ -53,8 +53,9 @@ function main() {
   const copy = $iter(indices.items.slice(indices.at, indices.end));
   const nextBack = $nextBack(indices);
   console.log(
-    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} [${copy
-      .toArray()
+    `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${$debugStr(nextBack[1], "'")}))`} [${Array.from(
+      copy,
+    )
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );
@@ -83,7 +84,7 @@ function main() {
   const collect = $rest(rest).toReversed();
   const value$1 = $next(steps);
   console.log(
-    `${len} [${collect.join(", ")}] ${value$1 == null ? "None" : `Some(${value$1})`} [${fromHere.toArray().join(", ")}]`,
+    `${len} [${collect.join(", ")}] ${value$1 == null ? "None" : `Some(${value$1})`} [${Array.from(fromHere).join(", ")}]`,
   );
 
   const back = iterator_rev($iter([10, 20, 30, 40]));

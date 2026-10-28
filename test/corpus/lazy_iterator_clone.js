@@ -24,7 +24,7 @@ export function entry() {
 }
 
 function both(it, IIterator, IClone) {
-  return [$given(IClone.clone(it), IIterator).toArray(), $given(it, IIterator).toArray()];
+  return [Array.from($given(IClone.clone(it), IIterator)), Array.from($given(it, IIterator))];
 }
 
 function scaled(it, k, IIterator, IClone) {
@@ -76,7 +76,7 @@ function main() {
   );
   const a = mapClone_clone(evens, clone, clone$1);
   $next(a);
-  console.log(`[${a.toArray().join(", ")}] [${evens.toArray().join(", ")}]`);
+  console.log(`[${Array.from(a).join(", ")}] [${Array.from(evens).join(", ")}]`);
 
   const seen = 0;
   const copied = $iter([1, 2, 3, 4, 5]);
@@ -106,7 +106,7 @@ function main() {
   );
   const half = $clone(doubled);
   $next(half);
-  console.log(`[${half.toArray().join(", ")}] [${doubled.toArray().join(", ")}]`);
+  console.log(`[${Array.from(half).join(", ")}] [${Array.from(doubled).join(", ")}]`);
 
   const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
   const rest = mapClone_clone(tripled, rangeClone, clone$1);
@@ -118,7 +118,7 @@ function main() {
   const even = evensOf({ start: 1, end: 7 }, { next: $rangeNext }, rangeClone);
   const later = $clone(even);
   $next(later);
-  console.log(`[${later.toArray().join(", ")}] [${even.toArray().join(", ")}]`);
+  console.log(`[${Array.from(later).join(", ")}] [${Array.from(even).join(", ")}]`);
 
   const bothRanges = joined(
     { start: 1, end: 3 },

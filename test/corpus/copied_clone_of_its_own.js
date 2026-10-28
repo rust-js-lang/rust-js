@@ -35,13 +35,13 @@ function twiceApart(it, IIterator, IClone) {
   const once = $givenClone(copied, IClone.clone);
   $next(once);
   const twice = $givenClone(once, IClone.clone);
-  return [copied.toArray(), once.toArray(), twice.toArray()];
+  return [Array.from(copied), Array.from(once), Array.from(twice)];
 }
 
 // Cloned where it's given on, as its own type parameter.
 function both(j, JIterator, JClone) {
   const k = JClone.clone(j);
-  return [$given(j, JIterator).toArray(), $given(k, JIterator).toArray()];
+  return [Array.from($given(j, JIterator)), Array.from($given(k, JIterator))];
 }
 
 function passedOn(it, IIterator, IClone) {
@@ -68,12 +68,12 @@ function main() {
   copied = $iterator(refs(), refsIterator_next);
   $next(copied);
   const again = copied.with({ ...copied.of });
-  console.log(`[${copied.toArray().join(", ")}] [${again.toArray().join(", ")}]`);
+  console.log(`[${Array.from(copied).join(", ")}] [${Array.from(again).join(", ")}]`);
 
   const held = { it: $iterator(refs(), refsIterator_next) };
   $next(held.it);
   const other = { ...held, it: held.it.with({ ...held.it.of }) };
   $next(held.it);
-  console.log(`[${held.it.toArray().join(", ")}] [${other.it.toArray().join(", ")}]`);
+  console.log(`[${Array.from(held.it).join(", ")}] [${Array.from(other.it).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

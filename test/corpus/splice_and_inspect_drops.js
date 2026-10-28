@@ -57,7 +57,7 @@ function main() {
   }
   let removed;
   try {
-    removed = tmp$1.toArray();
+    removed = Array.from(tmp$1);
   } catch (error) {
     for (const item of v) {
       console.log(`drop ${item[0]}`);

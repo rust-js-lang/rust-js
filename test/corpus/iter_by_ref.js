@@ -15,10 +15,7 @@ function splitNumber(text) {
     }
     digits += c;
   }
-  const rest = cs
-    .map(([i, c]) => String(i) + c)
-    .toArray()
-    .join("");
+  const rest = Array.from(cs.map(([i, c]) => String(i) + c)).join("");
   return [digits, rest];
 }
 
@@ -69,7 +66,7 @@ function main() {
   console.log(
     `(${$debugStr(value$2[0])}, ${value$2[1]}) (${$debugStr(value$3[0])}, ${value$3[1]})`,
   );
-  const names = $iterator({ inner: { at: 0 }, bits: 3 }, equalNamesIterator_next).toArray();
+  const names = Array.from($iterator({ inner: { at: 0 }, bits: 3 }, equalNamesIterator_next));
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
   const all = { at: 0 };
   const iter = all;

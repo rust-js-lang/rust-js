@@ -34,17 +34,15 @@ function firstTwo(it) {
 }
 
 function doubled(it) {
-  return $lent(it)
-    .map((n) => (n * 2) >>> 0)
-    .toArray();
+  return Array.from($lent(it).map((n) => (n * 2) >>> 0));
 }
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  console.log(`[${evens(v).toArray().join(", ")}]`);
+  console.log(`[${Array.from(evens(v)).join(", ")}]`);
   const value = $max(evens(v).map((n) => (n * 10) >>> 0));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  console.log(`[${numbers(true).toArray().join(", ")}]`);
+  console.log(`[${Array.from(numbers(true)).join(", ")}]`);
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
 
   const it = $iter(v);
@@ -69,6 +67,6 @@ function main() {
     console.log(`see ${n}`);
     return n;
   });
-  console.log(`[${noisy.take(2).toArray().join(", ")}]`);
+  console.log(`[${Array.from(noisy.take(2)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -259,7 +259,7 @@ function main() {
   }
   let lists;
   try {
-    lists = map.toArray();
+    lists = Array.from(map);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);

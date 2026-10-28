@@ -27,7 +27,7 @@ function scaled(v) {
     it.return();
     console.log(`drop ${factor[0]}`);
   });
-  const result = iter.toArray();
+  const result = Array.from(iter);
   iter.return();
   return result;
 }
@@ -49,7 +49,7 @@ function kept(f, v, dropF) {
     it.return();
     dropF?.(f);
   });
-  const result = iter.toArray();
+  const result = Array.from(iter);
   iter.return();
   return result;
 }

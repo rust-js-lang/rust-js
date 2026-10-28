@@ -21,16 +21,14 @@ function bytes() {
 }
 
 function main() {
-  const all = class$(false).toArray();
-  const widths = class$(true)
-    .map(([a, b]) => (b - a) & 255)
-    .toArray();
+  const all = Array.from(class$(false));
+  const widths = Array.from(class$(true).map(([a, b]) => (b - a) & 255));
   const first = $unwrap($next(class$(false)));
   first[0] = 1;
   const arg = $next(class$(false));
   console.log(
     `[${all.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${widths.join(", ")}] (${first[0]}, ${first[1]}) ${arg == null ? "None" : `Some((${arg[0]}, ${arg[1]}))`}`,
   );
-  console.log(`[${bytes().toArray().join(", ")}]`);
+  console.log(`[${Array.from(bytes()).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

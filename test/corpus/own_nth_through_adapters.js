@@ -49,7 +49,7 @@ function maybeIterator_nth(maybe, n) {
 
 // In generic code, of what it's given: the crate's own, an array's.
 function lastSkipped(it) {
-  return $folded(Iterator.from(it).drop(3)).toArray().at(-1);
+  return Array.from($folded(Iterator.from(it).drop(3))).at(-1);
 }
 
 function main() {
@@ -164,21 +164,7 @@ function main() {
     `step ${$stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `step [${$stepBy(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ),
-      4,
-    )
-      .toArray()
-      .join(", ")}]`,
+    `step [${Array.from($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4)).join(", ")}]`,
   );
   const s = $stepBy(
     $iterator(
@@ -199,23 +185,8 @@ function main() {
   console.log(
     `step ${next == null ? "None" : `Some(${next})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`}`,
   );
-  const value$11 = $folded(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
-  )
-    .toArray()
-    .at(-1);
-  console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
-  const value$12 = $folded(
-    $stepBy(
+  const value$11 = Array.from(
+    $folded(
       $iterator(
         c(),
         countIterator_next,
@@ -225,28 +196,29 @@ function main() {
         undefined,
         undefined,
         countIterator_nth,
-      ),
-      7,
+      ).drop(2),
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
+  console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
+  const value$12 = Array.from(
+    $folded(
+      $stepBy(
+        $iterator(
+          c(),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          countIterator_nth,
+        ),
+        7,
+      ),
+    ),
+  ).at(-1);
   console.log(`last ${value$12 == null ? "None" : `Some(${value$12})`}`);
-  const value$13 = $iterator(
-    c(),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  )
-    .take(5)
-    .toArray()
-    .at(-1);
-  console.log(`last ${value$13 == null ? "None" : `Some(${value$13})`}`);
-  const text = $folded(
+  const value$13 = Array.from(
     $iterator(
       c(),
       countIterator_next,
@@ -256,12 +228,25 @@ function main() {
       undefined,
       undefined,
       countIterator_nth,
-    )
-      .drop(16)
-      .map((x) => String.fromCharCode((97 + (x & 255)) & 255)),
-  )
-    .toArray()
-    .join("");
+    ).take(5),
+  ).at(-1);
+  console.log(`last ${value$13 == null ? "None" : `Some(${value$13})`}`);
+  const text = Array.from(
+    $folded(
+      $iterator(
+        c(),
+        countIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        countIterator_nth,
+      )
+        .drop(16)
+        .map((x) => String.fromCharCode((97 + (x & 255)) & 255)),
+    ),
+  ).join("");
   console.log(`${text}`);
   const value$14 = $nth(
     $lent(

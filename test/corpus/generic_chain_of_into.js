@@ -53,19 +53,21 @@ function main() {
     console.log(`drop ${value._tag[0]}`);
     throw error;
   }
-  const counted = $roomForHint(
-    chain(
-      value,
-      tmp,
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
-      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-      (countdown) => {
-        console.log(`drop ${countdown._tag[0]}`);
-      },
+  const counted = Array.from(
+    $roomForHint(
+      chain(
+        value,
+        tmp,
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
+        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        (countdown) => {
+          console.log(`drop ${countdown._tag[0]}`);
+        },
+      ),
+      4,
+      false,
     ),
-    4,
-    false,
-  ).toArray();
+  );
   console.log(`[${counted.join(", ")}]`);
   const held = iterator_chain(
     $iter([1, 2, 3]),

@@ -45,14 +45,14 @@ function givenOn(items, IItemIntoIterator) {
 }
 
 function summed(items, IItemIntoIterator) {
-  return Iterator.from(items)
-    .map((item) =>
+  return Array.from(
+    Iterator.from(items).map((item) =>
       $given(IItemIntoIterator.intoIter(item), IItemIntoIterator.IntoIterIterator()).reduce(
         (a, b) => (a + b) | 0,
         0,
       ),
-    )
-    .toArray();
+    ),
+  );
 }
 
 function flat(items, IItemIntoIterator) {

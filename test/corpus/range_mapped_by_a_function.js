@@ -34,7 +34,7 @@ function reversed(range, f) {
     $mapEnds($iterator(range, $rangeNext, false, $rangeNextBack), (item) => f(item)),
   );
   const last = $next(back);
-  return [last, back.toArray()];
+  return [last, Array.from(back)];
 }
 
 function tripledBack(items, f) {

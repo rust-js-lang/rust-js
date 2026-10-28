@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "iter-eager-collect-uncopied",
-    breaks: "`$iter(xs).toArray()` is `xs`, which changes with it, not a copy",
+    breaks: "`Array.from($iter(xs))` is `xs`, which changes with it, not a copy",
     file: "src/lower/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, \"slice\"), vec![])),\n",
     replace: "                Some((items, 0)) if !fresh(&items) => Some(items),\n",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "iter-eager-nth-kept",
-    breaks: "`nth(1)` of a string's parts stays `drop(1).take(1).toArray()[0]`",
+    breaks: "`nth(1)` of a string's parts stays `Array.from(..drop(1).take(1))[0]`",
     file: "src/lower/iterators/eager.rs",
     find: "            && zero.as_int() == Some(0)\n",
     replace: "            && zero.as_int() == Some(0)\n            && false\n",
@@ -122,10 +122,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "iter-chain-collected-lazily",
-    breaks: "a chain MIR collects stays `Iterator.from($lazyChain(a, b)).toArray()`, not `[...a, ...b]`",
+    breaks: "a chain MIR collects stays `Array.from(Iterator.from($lazyChain(a, b)))`, not `[...a, ...b]`",
     file: "src/lower/iterators/eager.rs",
-    find: "            (\"toArray\", []) if let Some(parts) = chained(chain) => {\n",
-    replace: "            (\"toArray\", []) if let Some(parts) = chained(chain).filter(|_| false) => {\n",
+    find: "            let eager = match chained(chain) {\n",
+    replace: "            let eager = match chained(chain).filter(|_| false) {\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "chain collected from MIR"],
   },
   {
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "eager-flat-map-lazy",
-    "breaks": "`flat_map` collected from MIR stays `xs.values().flatMap(\u2026).toArray()`",
+    "breaks": "`flat_map` collected from MIR stays `Array.from(xs.values().flatMap(\u2026))`",
     "file": "src/lower/iterators/eager.rs",
     "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        && let [f] = &args[..]",
     "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")\n        && let [f] = &args[..]",
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "eager-zip-lazy",
-    "breaks": "two arrays zipped and collected from MIR stay `Iterator.from($lazyZip($iter(a), $iter(b)))\u2026toArray()`",
+    "breaks": "two arrays zipped and collected from MIR stay `Array.from(Iterator.from($lazyZip($iter(a), $iter(b)))\u2026)`",
     "file": "src/lower/iterators/eager.rs",
     "find": "zip.helper_name() == Some(\"$lazyZip\")",
     "replace": "false",
@@ -359,5 +359,21 @@ export const mutations: Mutation[] = [
     find: "            if method == \"map\" && crate::lower::iterators::stepped_value(object).is_some() {",
     replace: "            if false {",
     tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
+  },
+  {
+    name: "collected-helper-iterator-from-kept",
+    breaks: "a runtime helper's items collected stay `Array.from(Iterator.from($rsplit(s, \"=\")))`, an `Iterator.from` that makes nothing `Array.from` doesn't (bw8)",
+    file: "src/lower/iterators/eager.rs",
+    find: "                && helper.helper_name().is_some()\n",
+    replace: "                && helper.helper_name().is_some_and(|_| false)\n",
+    tests: ["test/lowering-collected.test.ts"],
+  },
+  {
+    name: "collected-stepped-as-made",
+    breaks: "an iterator `Array.from` collects isn't known stepped till its first `done`, so `$intoIter(xs)` stays one, not JS's iterator of `xs` (bw8)",
+    file: "src/lower/iterators/eager.rs",
+    find: "        {\n            stepped_in_place(it, false, fuse);\n        } else if",
+    replace: "        {\n        } else if",
+    tests: ["test/lowering-collected.test.ts"],
   },
 ];

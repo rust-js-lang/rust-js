@@ -42,12 +42,12 @@ function main() {
     IntoIterIterator: () => ({ next: $next }),
   };
   const p = go([[1, 2, 3]], wrapMake);
-  console.log(`[${p.t.toArray().join(", ")}]`);
+  console.log(`[${Array.from(p.t).join(", ")}]`);
   const q = Wrap.pair([[4, 5]], vecIntoIterator);
-  console.log(`[${q.t.toArray().join(", ")}]`);
+  console.log(`[${Array.from(q.t).join(", ")}]`);
   const value = Wrap.first([[6]]);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const r = wrapMake_make([[7, 8]], vecIntoIterator);
-  console.log(`[${r.t.toArray().join(", ")}]`);
+  console.log(`[${Array.from(r.t).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

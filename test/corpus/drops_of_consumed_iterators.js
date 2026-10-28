@@ -26,11 +26,11 @@ function main() {
   const s = $iterator(iter, counterIterator_next).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`drop counter at ${iter[0]}`);
   console.log(`s ${s}`);
-  const doubled = $closing($iterator(count(), counterIterator_next), (it) => {
-    console.log(`drop counter at ${it.of[0]}`);
-  })
-    .map((x) => (x * 2) >>> 0)
-    .toArray();
+  const doubled = Array.from(
+    $closing($iterator(count(), counterIterator_next), (it) => {
+      console.log(`drop counter at ${it.of[0]}`);
+    }).map((x) => (x * 2) >>> 0),
+  );
   console.log(`[${doubled.join(", ")}]`);
 
   const r = $collectResults(

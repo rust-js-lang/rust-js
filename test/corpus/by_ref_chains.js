@@ -20,8 +20,8 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
   const it = $iter(v);
-  const first = $lent(it).take(2).toArray();
-  const small = $lazyTakeWhile($lent(it), (x) => x < 5).toArray();
+  const first = Array.from($lent(it).take(2));
+  const small = Array.from($lazyTakeWhile($lent(it), (x) => x < 5));
   const arg = $next(it);
   console.log(
     `[${first.join(", ")}] [${small.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`,

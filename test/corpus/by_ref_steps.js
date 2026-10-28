@@ -15,7 +15,7 @@ export function entry() {
 
 function main() {
   const numbers = { start: 1, end: 10 };
-  const first = $lent($iterator(numbers, $rangeNext)).take(3).toArray();
+  const first = Array.from($lent($iterator(numbers, $rangeNext)).take(3));
   console.log(`[${first.join(", ")}] ${numbers.start}..${numbers.end}`);
   const iter = numbers;
   while (true) {
@@ -27,15 +27,13 @@ function main() {
   const value = $rangeNext(numbers);
   console.log(`${value == null ? "None" : `Some(${value})`} ${numbers.start}..${numbers.end}`);
   const letters = { start: "a", end: "e" };
-  const some = $lent($iterator(letters, $rangeInclusiveNext)).take(2).toArray().join("");
-  const arg = $iterator(letters, $rangeInclusiveNext).toArray().join("");
+  const some = Array.from($lent($iterator(letters, $rangeInclusiveNext)).take(2)).join("");
+  const arg = Array.from($iterator(letters, $rangeInclusiveNext)).join("");
   console.log(`${some} ${$debugStr(arg)}`);
   const items = [1, 2, 3, 4, 5, 6];
   const rest = $iter(items);
-  const odd = Iterator.from($lent(rest).filter((_, i) => i % 2 === 0))
-    .take(2)
-    .toArray();
-  const arg$1 = rest.toArray();
+  const odd = Array.from(Iterator.from($lent(rest).filter((_, i) => i % 2 === 0)).take(2));
+  const arg$1 = Array.from(rest);
   console.log(`[${odd.join(", ")}] [${arg$1.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

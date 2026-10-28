@@ -306,7 +306,7 @@ pub fn production(env: Option<&String>) -> bool {
   expect([lib.production("production"), lib.production(undefined), lib.production("dev")]).toEqual([true, false, false]);
 });
 
-// ADR 0140: a generic iterator collected is `Iterator.from(it).toArray()`,
+// ADR 0140: a generic iterator collected is `Array.from(Iterator.from(it))`,
 // never `Array.from(it)`: it may be a binding's with only a `next`, of
 // which `Array.from` makes an empty array.
 test("a generic iterator collected keeps an iterator with only a next", async () => {
@@ -448,7 +448,7 @@ pub fn mapped(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return Array.from(Iterator.from(items).drop(1).take(k));");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
@@ -701,8 +701,8 @@ pub fn first(keys: Vec<String>) -> Option<String> {
 
 // An iterator's adapter of a JS iterator, `.map(..)` of a range's, is a JS
 // iterator already: the next adapter is its own, not `Iterator.from(..)`'s,
-// nor an array's made of it, `Array.from(..)`, as react.dev's
-// useTocHighlight finds its anchors.
+// nor an array's made of it, `Array.from(..).filter(..)`, as react.dev's
+// useTocHighlight finds its anchors; its items collected, `Array.from(..)`.
 test("an adapter of a JS iterator is not made one again", async () => {
   const dir = fixture("iterator-from-adapter");
   writeFileSync(join(dir, "lib.rs"), `pub fn evens(n: u32) -> Vec<u32> {
@@ -711,8 +711,9 @@ test("an adapter of a JS iterator is not made one again", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).not.toMatch(/(?:Iterator|Array)\.from\(/);
-  expect(js).toContain(".filter((x) => x > 5)\n    .toArray()");
+  expect(js).not.toMatch(/Iterator\.from\(|Array\.from\([^]*Array\.from\(/);
+  expect(js).toContain("  return Array.from(\n    $lazyRange(0, n)\n");
+  expect(js).toContain(".filter((x) => x > 5),\n  );");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
 });
@@ -785,9 +786,9 @@ pub fn odd_to_five() -> Vec<u32> {
   expect(js).toContain('return $range(1, n + 1, 12)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
   expect(js).toContain("return $range(0, n, 4).toReversed();");
   expect(js).toContain("return $range(1, n + 1, 4);");
-  expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
+  expect(js).toContain("return Array.from(\n    $lazyRange(0, n)\n      .filter(");
   expect(js).toContain("return $range(1, 4).map(");
-  expect(js).toContain("return $lazyRange(1, 6)\n");
+  expect(js).toContain("return Array.from($lazyRange(1, 6).filter(");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
   expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
@@ -890,9 +891,9 @@ pub fn evens(n: u32) -> Vec<u32> {
   expect(lib.evens(5)).toEqual([0, 2, 4]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // Of a filter, which may keep few of many, no array of them all either.
-  expect(js).toContain("return $lazyRange(0, n)\n    .filter((i) => i % 2 === 0)\n    .toArray();");
+  expect(js).toContain("return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));");
   expect(js).toContain("return $lazyRange(0, n).find(f);");
-  expect(js).toContain("return $lazyRange(0, v.length)\n    .map(");
+  expect(js).toContain("return Array.from(\n    $lazyRange(0, v.length)\n      .map(");
   // A billion numbers, the first that holds the third: as quick as Rust's.
   const { first } = await import(join(dir, "mir.js"));
   expect(first(1_000_000_000, (i: number) => i === 2)).toBe(2);

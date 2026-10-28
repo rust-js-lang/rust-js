@@ -80,20 +80,20 @@ function main() {
   console.log(
     `${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  let last = $folded(
-    $iterator(
-      count(),
-      countDoubleEndedIterator_nextBack,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      countDoubleEndedIterator_rfold,
-      countDoubleEndedIterator_nthBack,
+  let last = Array.from(
+    $folded(
+      $iterator(
+        count(),
+        countDoubleEndedIterator_nextBack,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        countDoubleEndedIterator_rfold,
+        countDoubleEndedIterator_nthBack,
+      ),
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).reduce((n) => n + 1, 0)}`,
@@ -113,7 +113,7 @@ function main() {
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `[${$iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack).toArray().join(", ")}]`,
+    `[${Array.from($iterator(count(), countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack)).join(", ")}]`,
   );
   let it = count();
   second = $nth(
@@ -135,18 +135,18 @@ function main() {
   console.log(
     `${$iterator(it, countDoubleEndedIterator_nextBack, false, undefined, undefined, undefined, undefined, countDoubleEndedIterator_nthBack).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  last = $iterator(
-    it,
-    countDoubleEndedIterator_nextBack,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countDoubleEndedIterator_nthBack,
-  )
-    .toArray()
-    .at(-1);
+  last = Array.from(
+    $iterator(
+      it,
+      countDoubleEndedIterator_nextBack,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      countDoubleEndedIterator_nthBack,
+    ),
+  ).at(-1);
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   it = count();
   const third = $nth(
@@ -164,21 +164,21 @@ function main() {
     ),
     2,
   );
-  last = $iterator(
-    it,
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-    undefined,
-    countDoubleEndedIterator_rfold,
-    countDoubleEndedIterator_nthBack,
-  )
-    .toArray()
-    .at(-1);
+  last = Array.from(
+    $iterator(
+      it,
+      countIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      countIterator_nth,
+      undefined,
+      countDoubleEndedIterator_rfold,
+      countDoubleEndedIterator_nthBack,
+    ),
+  ).at(-1);
   console.log(
     `${third == null ? "None" : `Some(${third})`} ${last == null ? "None" : `Some(${last})`}`,
   );

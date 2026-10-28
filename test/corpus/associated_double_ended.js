@@ -17,7 +17,7 @@ export function entry() {
 }
 
 function backwards(it) {
-  return $rev(it).toArray();
+  return Array.from($rev(it));
 }
 
 function lastEven(it) {
@@ -67,13 +67,13 @@ function main() {
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `${$debugStr(
-      revAll(
-        ["a", "b"],
-        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-        { next_back: $nextBack },
-      )
-        .toArray()
-        .join(""),
+      Array.from(
+        revAll(
+          ["a", "b"],
+          { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+          { next_back: $nextBack },
+        ),
+      ).join(""),
     )}`,
   );
   const value$2 = lastOf($iter([7, 8]));

@@ -89,7 +89,7 @@ function main() {
     { clone: (value) => $clone(value) },
   );
   console.log(
-    `[${$roomForHint(c, 4, false).toArray().join(", ")}] [${$roomForHint(w, 4, false).toArray().join(", ")}]`,
+    `[${Array.from($roomForHint(c, 4, false)).join(", ")}] [${Array.from($roomForHint(w, 4, false)).join(", ")}]`,
   );
 
   const v = [1, 2, 3, 4];
@@ -131,7 +131,7 @@ function main() {
   };
   $next(again.it);
   console.log(
-    ` [${$roomForHint(again.it, 4, false).toArray().join(", ")}] [${$roomForHint(holder.it, 4, false).toArray().join(", ")}]`,
+    ` [${Array.from($roomForHint(again.it, 4, false)).join(", ")}] [${Array.from($roomForHint(holder.it, 4, false)).join(", ")}]`,
   );
 
   // Made in place.

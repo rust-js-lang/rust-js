@@ -46,7 +46,7 @@ function halves(it, IFused) {
     { next: $next, fold: $foldOf },
     false,
   );
-  const first = $lent(fused).drop(1).take(1).toArray()[0] ?? 0;
+  const first = Array.from($lent(fused).drop(1).take(1))[0] ?? 0;
   const total = fused.reduce((a, b) => (a + b) >>> 0, 0);
   return [(first + total) >>> 0, $next(it)];
 }
@@ -59,7 +59,7 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
-  const value$1 = $lent(doubled).drop(2).take(1).toArray()[0];
+  const value$1 = Array.from($lent(doubled).drop(2).take(1))[0];
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`${numbers.start}..${numbers.end}`);
 

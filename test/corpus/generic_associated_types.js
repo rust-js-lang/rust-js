@@ -23,7 +23,7 @@ const shelfContainer = {
   },
   items: shelfContainer_items,
   last(self) {
-    const items = shelfContainer_items(self).toArray();
+    const items = Array.from(shelfContainer_items(self));
     return $someAt(items, items.length - 1);
   },
 };
@@ -37,7 +37,7 @@ const countsContainer = {
   },
   items: countsContainer_items,
   last(self) {
-    const items = countsContainer_items(self).toArray();
+    const items = Array.from(countsContainer_items(self));
     return $someAt(items, items.length - 1);
   },
 };
@@ -51,7 +51,7 @@ const countdownContainer = {
   },
   items: countdownContainer_items,
   last(self) {
-    const items = countdownContainer_items(self).toArray();
+    const items = Array.from(countdownContainer_items(self));
     return $someAt(items, items.length - 1);
   },
 };
@@ -144,12 +144,7 @@ function main() {
   console.log(
     `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
-  console.log(
-    `[${shelfContainer_items(shelf)
-      .map((b) => $byteLen(b))
-      .toArray()
-      .join(", ")}]`,
-  );
+  console.log(`[${Array.from(shelfContainer_items(shelf).map((b) => $byteLen(b))).join(", ")}]`);
   console.log(
     `[${byteFilled_filled([7], 3).join(", ")}] [${byteFilled_filled([1], 0).join(", ")}]`,
   );

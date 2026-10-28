@@ -59,7 +59,7 @@ function total(items) {
 }
 
 function third(items) {
-  return $lent(Iterator.from(items)).drop(2).take(1).toArray()[0];
+  return Array.from($lent(Iterator.from(items)).drop(2).take(1))[0];
 }
 
 function boxedTotal(items) {
@@ -73,20 +73,20 @@ function main() {
   console.log(
     `count ${$iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth).reduce((n) => n + 1, 0)}`,
   );
-  const value = $folded(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
+  const value = Array.from(
+    $folded(
+      $iterator(
+        up(),
+        upIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        upIterator_fold,
+        upIterator_nth,
+      ),
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   $iterator(
     up(),
@@ -173,23 +173,8 @@ function main() {
     ).drop(2),
   );
   console.log(`skip next ${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = $folded(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).drop(1),
-  )
-    .toArray()
-    .at(-1);
-  console.log(`skip last ${value$4 == null ? "None" : `Some(${value$4})`}`);
-  console.log(
-    `step_by [${$stepBy(
+  const value$4 = Array.from(
+    $folded(
       $iterator(
         up(),
         upIterator_next,
@@ -199,11 +184,12 @@ function main() {
         undefined,
         upIterator_fold,
         upIterator_nth,
-      ),
-      2,
-    )
-      .toArray()
-      .join(", ")}]`,
+      ).drop(1),
+    ),
+  ).at(-1);
+  console.log(`skip last ${value$4 == null ? "None" : `Some(${value$4})`}`);
+  console.log(
+    `step_by [${Array.from($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2)).join(", ")}]`,
   );
   console.log(
     `take sum ${$iterator(
@@ -222,32 +208,32 @@ function main() {
   console.log(
     `chain ${$lazyChain($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
-  const value$5 = $folded(
-    $lazyChain(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ),
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
+  const value$5 = Array.from(
+    $folded(
+      $lazyChain(
+        $iterator(
+          up(),
+          upIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          upIterator_fold,
+          upIterator_nth,
+        ),
+        $iterator(
+          up(),
+          upIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          upIterator_fold,
+          upIterator_nth,
+        ),
       ),
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
   console.log(`chain last ${value$5 == null ? "None" : `Some(${value$5})`}`);
   console.log(
     `flat_map ${$iterator(
@@ -266,20 +252,20 @@ function main() {
   console.log(
     `by_ref ${$lent($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  let text = $folded(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).map((x) => $unwrap($fromDigit(x, 10))),
-  )
-    .toArray()
-    .join("");
+  let text = Array.from(
+    $folded(
+      $iterator(
+        up(),
+        upIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        upIterator_fold,
+        upIterator_nth,
+      ).map((x) => $unwrap($fromDigit(x, 10))),
+    ),
+  ).join("");
   console.log(`string ${text}`);
   let map = new Map(
     $folded(
@@ -311,7 +297,22 @@ function main() {
     ),
   );
   console.log(`set ${set.size}`);
-  let list = $folded(
+  let list = Array.from(
+    $folded(
+      $iterator(
+        up(),
+        upIterator_next,
+        false,
+        undefined,
+        undefined,
+        undefined,
+        upIterator_fold,
+        upIterator_nth,
+      ),
+    ),
+  );
+  console.log(`list [${list.join(", ")}]`);
+  let deque = Array.from(
     $iterator(
       up(),
       upIterator_next,
@@ -322,21 +323,10 @@ function main() {
       upIterator_fold,
       upIterator_nth,
     ),
-  ).toArray();
-  console.log(`list [${list.join(", ")}]`);
-  let deque = $iterator(
-    up(),
-    upIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    upIterator_fold,
-    upIterator_nth,
-  ).toArray();
+  );
   console.log(`deque [${deque.join(", ")}]`);
   console.log(
-    `vec [${$iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth).toArray().join(", ")}]`,
+    `vec [${Array.from($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).join(", ")}]`,
   );
   const [even, odd] = $partition(
     $iterator(

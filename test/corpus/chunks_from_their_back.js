@@ -29,8 +29,9 @@ function main() {
   const value = $nextBack(w);
   const value$1 = $nextBack(w);
   console.log(
-    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} [${w
-      .toArray()
+    `${value == null ? "None" : `Some([${value.join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`} [${Array.from(
+      w,
+    )
       .map((item) => `[${item.join(", ")}]`)
       .join(", ")}]`,
   );

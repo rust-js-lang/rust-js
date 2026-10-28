@@ -52,26 +52,8 @@ function main() {
   console.log(
     `${$lazySkipWhile($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth).drop(2), (x) => x < 3).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const value = $lent(
-    $iterator(
-      counted(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_fold,
-      countIterator_nth,
-    )
-      .drop(2)
-      .map((x) => (x * 2) | 0),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = $lent(
-    $stepBy(
+  const value = Array.from(
+    $lent(
       $iterator(
         counted(),
         countIterator_next,
@@ -81,13 +63,33 @@ function main() {
         undefined,
         countIterator_fold,
         countIterator_nth,
-      ),
-      2,
-    ).map((x) => (x * 2) | 0),
-  )
-    .drop(1)
-    .take(1)
-    .toArray()[0];
+      )
+        .drop(2)
+        .map((x) => (x * 2) | 0),
+    )
+      .drop(1)
+      .take(1),
+  )[0];
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = Array.from(
+    $lent(
+      $stepBy(
+        $iterator(
+          counted(),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          countIterator_fold,
+          countIterator_nth,
+        ),
+        2,
+      ).map((x) => (x * 2) | 0),
+    )
+      .drop(1)
+      .take(1),
+  )[0];
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = $nth(
     $lent(
@@ -153,23 +155,23 @@ function main() {
       3,
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$3 = $folded(
-    $lazyTakeWhile(
-      $iterator(
-        counted(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_fold,
-        countIterator_nth,
-      ).drop(2),
-      (x) => x < 7,
+  const value$3 = Array.from(
+    $folded(
+      $lazyTakeWhile(
+        $iterator(
+          counted(),
+          countIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          countIterator_fold,
+          countIterator_nth,
+        ).drop(2),
+        (x) => x < 7,
+      ),
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log(
     `${$lazyScan(
@@ -190,31 +192,31 @@ function main() {
       },
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$4 = $folded(
-    $lazyMapWhile(
-      $stepBy(
-        $iterator(
-          counted(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_fold,
-          countIterator_nth,
+  const value$4 = Array.from(
+    $folded(
+      $lazyMapWhile(
+        $stepBy(
+          $iterator(
+            counted(),
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            undefined,
+            countIterator_fold,
+            countIterator_nth,
+          ),
+          2,
         ),
-        2,
+        (x) => {
+          if (x < 7) {
+            return x;
+          }
+        },
+        (item) => item != null,
       ),
-      (x) => {
-        if (x < 7) {
-          return x;
-        }
-      },
-      (item) => item != null,
     ),
-  )
-    .toArray()
-    .at(-1);
+  ).at(-1);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const base = counted();
   console.log(

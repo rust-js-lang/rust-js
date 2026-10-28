@@ -68,7 +68,7 @@ function main() {
   console.log(`${$debugStr($restStr(d))}`);
   $next(d);
   console.log(`${$debugStr($restStr(d))}`);
-  const rest = d.toArray().join("");
+  const rest = Array.from(d).join("");
   console.log(`${rest} ${s}`);
 
   s = "héllo wörld";

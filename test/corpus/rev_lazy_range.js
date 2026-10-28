@@ -16,18 +16,20 @@ function main() {
   const v = $range(1, 4)
     .toReversed()
     .map((x) => (x * 2) | 0);
-  const w = $iterator({ start: 1, end: 6 }, $rangeInclusiveNextBack)
-    .filter((x) => x % 2 === 0)
-    .map((x) => (x + 1) | 0)
-    .toArray();
+  const w = Array.from(
+    $iterator({ start: 1, end: 6 }, $rangeInclusiveNextBack)
+      .filter((x) => x % 2 === 0)
+      .map((x) => (x + 1) | 0),
+  );
   const seen = [];
-  const z = $iterator({ start: 0, end: 4 }, $rangeNextBack)
-    .map((x) => {
-      seen.push(x);
-      return x;
-    })
-    .take(2)
-    .toArray();
+  const z = Array.from(
+    $iterator({ start: 0, end: 4 }, $rangeNextBack)
+      .map((x) => {
+        seen.push(x);
+        return x;
+      })
+      .take(2),
+  );
   const last = $next($iterator({ start: 10, end: 20 }, $rangeNextBack).filter((x) => x % 3 === 0));
   const empty = $range(5, 5)
     .toReversed()

@@ -52,7 +52,7 @@ function takeTwo(it, IIterator) {
 
 const Pass = {
   all(pass, IIterator) {
-    return $given(pass[0], IIterator, true).toArray();
+    return Array.from($given(pass[0], IIterator, true));
   },
   shown(pass, IIterator, IItemDebug) {
     const out = [];
@@ -88,27 +88,35 @@ function countdownIterator_next(countdown) {
   }
 }
 function main() {
-  const v = $iterator(doubled($iter([1, 2, 3])), (iterator) =>
-    doubledIterator_next(iterator, { next: $next }),
-  ).toArray();
+  const v = Array.from(
+    $iterator(doubled($iter([1, 2, 3])), (iterator) =>
+      doubledIterator_next(iterator, { next: $next }),
+    ),
+  );
   console.log(`[${v.join(", ")}]`);
-  const w = $iterator({ inner: { start: 0, end: 4 } }, (iterator) =>
-    doubledIterator_next(iterator, { next: $rangeNext }),
-  ).toArray();
+  const w = Array.from(
+    $iterator({ inner: { start: 0, end: 4 } }, (iterator) =>
+      doubledIterator_next(iterator, { next: $rangeNext }),
+    ),
+  );
   console.log(`[${w.join(", ")}]`);
   const r = Doubled.new({ start: 5, end: 9 });
   const value = doubledIterator_next(r, { next: $rangeNext });
   console.log(`${value == null ? "None" : `Some(${value})`} ${r.inner.start} ${r.inner.end}`);
   console.log(`${Doubled.rest(r, { next: $rangeNext })}`);
-  const c = $iterator(doubled([3]), (iterator) =>
-    doubledIterator_next(iterator, { next: countdownIterator_next }),
-  ).toArray();
+  const c = Array.from(
+    $iterator(doubled([3]), (iterator) =>
+      doubledIterator_next(iterator, { next: countdownIterator_next }),
+    ),
+  );
   console.log(`[${c.join(", ")}]`);
-  const nested = $iterator({ inner: { inner: { start: 1, end: 3 } } }, (iterator) =>
-    doubledIterator_next(iterator, {
-      next: (iterator) => doubledIterator_next(iterator, { next: $rangeNext }),
-    }),
-  ).toArray();
+  const nested = Array.from(
+    $iterator({ inner: { inner: { start: 1, end: 3 } } }, (iterator) =>
+      doubledIterator_next(iterator, {
+        next: (iterator) => doubledIterator_next(iterator, { next: $rangeNext }),
+      }),
+    ),
+  );
   console.log(`[${nested.join(", ")}]`);
   console.log(`${sumDoubled($lazyRange(10, 12))}`);
   const back = doubled([2]);
@@ -117,11 +125,7 @@ function main() {
   const skipped = skipOne({ inner: { start: 3, end: 6 } }, { next: $rangeNext });
   const start = skipped.inner.start;
   console.log(
-    `${start} [${$iterator(skipped, (iterator) =>
-      doubledIterator_next(iterator, { next: $rangeNext }),
-    )
-      .toArray()
-      .join(", ")}]`,
+    `${start} [${Array.from($iterator(skipped, (iterator) => doubledIterator_next(iterator, { next: $rangeNext }))).join(", ")}]`,
   );
   const [n, rest] = takeTwo({ start: 10, end: 15 }, { next: $rangeNext });
   console.log(`${n} ${rest.start} ${rest.end}`);

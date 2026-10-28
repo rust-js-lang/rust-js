@@ -38,16 +38,15 @@ function main() {
   console.log(`counted ${counted}`);
 
   const keep = (l) => l[0] < 5;
-  const taken = $lazyTakeWhile(
-    $closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)),
-    (item) => {
+  const taken = Array.from(
+    $lazyTakeWhile($closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)), (item) => {
       if (keep(item)) {
         return true;
       }
       loudDrop_drop(item);
       return false;
-    },
-  ).toArray();
+    }),
+  );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {
     loudDrop_drop(item);
@@ -82,16 +81,15 @@ function main() {
   console.log(`first ${first != null ? map(first) : 0}`);
 
   const skip = (l) => l[0] < 5;
-  const skipped = $lazySkipWhile(
-    $closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)),
-    (item) => {
+  const skipped = Array.from(
+    $lazySkipWhile($closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)), (item) => {
       if (skip(item)) {
         loudDrop_drop(item);
         return true;
       }
       return false;
-    },
-  ).toArray();
+    }),
+  );
   console.log(`skipped to ${skipped.length}`);
   for (const item of skipped) {
     loudDrop_drop(item);

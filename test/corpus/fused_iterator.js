@@ -28,18 +28,16 @@ function main() {
       .filter((n) => n % 2 === 0)
       .reduce((n) => n + 1, 0)}`,
   );
-  const all = iterator_fuse([4], { next: countdownIterator_next }, true)
-    .map((n) => (n * 10) >>> 0)
-    .toArray();
+  const all = Array.from(
+    iterator_fuse([4], { next: countdownIterator_next }, true).map((n) => (n * 10) >>> 0),
+  );
   console.log(`[${all.join(", ")}]`);
   for (const n of iterator_fuse([0], { next: blinkerIterator_next }, false)) {
     console.log(`blink ${n}`);
   }
-  const lit = $roomForHint(
-    iterator_fuse([3], { next: blinkerIterator_next }, false),
-    4,
-    false,
-  ).toArray();
+  const lit = Array.from(
+    $roomForHint(iterator_fuse([3], { next: blinkerIterator_next }, false), 4, false),
+  );
   console.log(`[${lit.join(", ")}]`);
   const sizes = [1, 22, 333];
   console.log(`${sizes.map((s) => s % 10).reduce((a, b) => (a + b) >>> 0, 0)}`);
