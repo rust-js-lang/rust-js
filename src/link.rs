@@ -19,7 +19,7 @@ impl Linked {
 
 /// Consume symbolic output; printing only receives the completed linked crate.
 pub(crate) fn link(unlinked: Unlinked) -> Linked {
-    let modules = unlinked
+    let mut modules: Vec<LoweredModule> = unlinked
         .modules
         .into_iter()
         .map(|mut item| {
@@ -37,12 +37,36 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             item.module
         })
         .collect();
+    keep_imported(&mut modules);
     Linked(Lowered {
         library: unlinked.library,
         sources: unlinked.sources,
         modules,
         tests: unlinked.tests,
     })
+}
+
+/// A module of types alone that another module's JS imports, or
+/// re-exports, `export * as bar from "./foo/bar.js"`, keeps its JS, though
+/// nothing is in it: only a declaration's `import type` may name a module
+/// whose JS isn't written (ADR 1005, amended).
+fn keep_imported(modules: &mut [LoweredModule]) {
+    let imported: HashSet<Vec<String>> = (modules.iter())
+        .flat_map(|module| {
+            let reexported = module.reexports.iter().filter_map(|reexport| match &reexport.from {
+                crate::js::ImportFrom::Module(path) => Some(path.clone()),
+                crate::js::ImportFrom::Specifier(_) => None,
+            });
+            module
+                .imports
+                .iter()
+                .map(|import| import.path.clone())
+                .chain(reexported)
+        })
+        .collect();
+    for module in modules.iter_mut().filter(|module| imported.contains(&module.path)) {
+        module.types_only = false;
+    }
 }
 
 fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: HashSet<String>) {

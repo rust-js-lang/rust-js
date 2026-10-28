@@ -216,8 +216,11 @@ export function welcome(name: string): string;
   `PluginModuleType`, has no JS: its `.d.ts` is all that's written of it,
   which another module's imports its types from as if its JS were there,
   `import type { PluginName } from "./PluginModuleType.js"`, as
-  TypeScript finds it
-  ([ADR 1005](../../decisions/1005-a-module-of-types-alone-is-its-declarations.md)).
+  TypeScript finds it. One another module's JS re-exports, `pub use
+  foo::bar;`'s `export * as bar from "./foo/bar.js"`, keeps its JS, with
+  nothing in it
+  ([ADR 1005](../../decisions/1005-a-module-of-types-alone-is-its-declarations.md),
+  amended).
 - **Names are JavaScript's**: `total_area` is `totalArea`. See
   [JavaScript types](../interop/types.md) and
   [Export Rust APIs to JavaScript](../interop/export-to-javascript.md).

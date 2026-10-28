@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = name;\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
+  {
+    name: "imported-types-module-unwritten",
+    breaks: "a module of types alone another module's JS re-exports, `export * as bar from \"./foo/bar.js\"`, writes no JS, so the program throws as it loads (ADR 1005, amended; rustc's imports/use-mod.rs)",
+    file: "src/link.rs",
+    find: "        module.types_only = false;\n",
+    replace: "        let _ = &module;\n",
+    tests: ["test/corpus.test.ts", "-t", "^module_of_types_reexported.rs$"],
+  },
 ];

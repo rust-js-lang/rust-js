@@ -453,4 +453,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a binding's rust_js::name names its import"],
   },
+  {
+    name: "own-item-renames-refused",
+    breaks: "a module's `use`s that give its own item two names, `pub(super) use self::Foo as Bar;`, are refused as two names of one import, which its file has none of (ADR 0202, amended; rustc's privacy/pub-restricted-path-usage-55376.rs)",
+    file: "src/lower/analysis/naming.rs",
+    find: ".filter(|&(def_id, ..)| !own(def_id))",
+    replace: ".filter(|&(def_id, ..)| !own(def_id) || true)",
+    tests: ["test/corpus.test.ts", "-t", "^use_renames_own_item.rs$"],
+  },
 ];

@@ -74,3 +74,22 @@ TypeScript finds the `.d.ts` of, as it does of any module's.
 - Mutations `types-only-module-unlisted` (`lower/analysis.rs`),
   `types-only-module-written-as-js` (`lower/pipeline.rs`) and
   `types-only-module-needs-js` (`library.rs`).
+
+## Amendment: one another module's JS imports keeps its JS
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, a crash where rustc's
+`imports/use-mod.rs` ran: Rust's behavior kept.
+
+`pub use foo::bar::{self, First};` of a module of types alone is
+`export * as bar from "./foo/bar.js"`, and `foo/bar.js` wasn't written: the
+program threw as it loaded, "Cannot find module". Only a declaration's
+`import type` may name a module whose JS isn't there.
+
+**A module of types alone that another module's JS imports or re-exports
+keeps its JS, though nothing is in it** (`link::keep_imported`, as the
+linker is what knows every module's imports): `foo/bar.js` is written
+beside its `.d.ts`, and `import * as` of it is an empty namespace, as a
+module of nothing but types is to JS.
+
+Held by corpus `module_of_types_reexported`, against native Rust, rustc's
+`imports/use-mod.rs`, and the mutation `imported-types-module-unwritten`.

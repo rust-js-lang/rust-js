@@ -1,6 +1,6 @@
 # 0202. An import is named in each file that imports it
 
-Status: Accepted. Amends [0028](0028-js-module-imports.md).
+Status: Accepted. Amends [0028](0028-js-module-imports.md). Amended: a module's own item renamed twice imports nothing (below).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -111,3 +111,20 @@ written, a constant; anything else camelCase, as before. Case: N (ADR
 Test: `cross-crate-items`, "a use's name of a library's thread-local is
 cased as the thread-local's own": `import is, { CALL_LIMIT as MAX_CALLS }
 from "../dep/object_is.js"`, run. Mutation: `renamed-thread-local-as-written`.
+
+## Amendment: a module's own item, which its file declares
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a program rustc
+accepts, `privacy/pub-restricted-path-usage-55376.rs`, was refused.
+
+`pub(super) use self::Foo as Bar;` and `pub(in super::my_mod) use
+self::Foo as Baz;` of a module's own `Foo` were refused as one import of
+two names, but a module's file declares its own items and imports none of
+them: its JS reads `count` by its own name, `export function count()`,
+wherever a `use` renames it.
+
+**The refusal is of a `use` of another module's item** (`naming.rs`'s
+`refuse_two_names`), one the file imports. Held by corpus
+`use_renames_own_item`, against native Rust, and the mutation
+`own-item-renames-refused`; `test/modules.test.ts`' "two uses naming one
+item apart are refused" still holds the refusal.

@@ -514,7 +514,7 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
 /// A module whose `use`s give one item two names, `use dep::helper as
 /// assist;` and `use dep::helper as aid;`: refused, as its file imports it
 /// once, by one name, and either would leave the other unsaid (ADR 0202,
-/// amended).
+/// amended). Not its own item, which its file declares and imports not.
 pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool {
     let mut failed = false;
     for &module in modules {
@@ -533,7 +533,16 @@ pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool 
             }
         }
         let mut first: HashMap<DefId, String> = HashMap::new();
-        for (def_id, alias, span) in use_renames(tcx, module) {
+        // Of its own item, its file declares it, and imports nothing.
+        let own = |def_id: DefId| {
+            def_id
+                .as_local()
+                .is_some_and(|id| tcx.parent_module_from_def_id(id) == module)
+        };
+        for (def_id, alias, span) in use_renames(tcx, module)
+            .into_iter()
+            .filter(|&(def_id, ..)| !own(def_id))
+        {
             match first.get(&def_id) {
                 Some(named) if *named != alias => {
                     let message = format!(

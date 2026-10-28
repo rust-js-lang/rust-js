@@ -221,7 +221,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0199 A component takes no drop of its type parameters](0199-components-take-no-drops.md)
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](0200-binding-props-borrow.md)
 - [0201 A component takes no dictionary, and an update makes no default it replaces](0201-components-take-no-dictionaries.md)
-- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own)*
+- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing)*
 - [0203 A component's props are as written](0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
 - [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name)*
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
@@ -789,7 +789,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1002 A range stepped already is made knowing its length as its range](1002-a-range-stepped-already-is-its-range.md)
 - [1003 A compiler's build is part of its identity](1003-a-compilers-build-is-its-identity.md)
 - [1004 The mutations surviving at main's head](1004-survivors-at-mains-head.md)
-- [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision)*
+- [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision; amended: one another module's JS imports keeps its JS)*
 - [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
