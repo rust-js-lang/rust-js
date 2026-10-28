@@ -918,7 +918,7 @@ test("Array.isArray and Object.getPrototypeOf are held as JS holds them", async 
 
 thread_local! {
     static IS_ARRAY_IMPL: fn(Option<&Unknown>) -> bool = js::array::is_array;
-    static GET_PROTOTYPE_OF: fn(&Unknown) -> Option<&'static Unknown> = js::object::get_prototype_of;
+    static GET_PROTOTYPE_OF: fn(Option<&Unknown>) -> Option<&'static Unknown> = js::object::get_prototype_of;
 }
 
 pub fn listed(a: Option<&Unknown>) -> bool {
@@ -926,7 +926,7 @@ pub fn listed(a: Option<&Unknown>) -> bool {
 }
 
 pub fn orphan(value: &Unknown) -> bool {
-    GET_PROTOTYPE_OF.with(|get_prototype_of| get_prototype_of(value)).is_none()
+    GET_PROTOTYPE_OF.with(|get_prototype_of| get_prototype_of(Some(value))).is_none()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);

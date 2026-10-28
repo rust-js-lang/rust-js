@@ -2131,9 +2131,11 @@ pub mod object {
 
     /// [`Object.getPrototypeOf(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf):
     /// the object `value` inherits from, or `None`, `null`, of one that
-    /// inherits from none, `Object.create(null)`'s.
+    /// inherits from none, `Object.create(null)`'s. Of any value, as
+    /// TypeScript's `any`, `js::get(..)`'s too; JS throws a `TypeError` of
+    /// `None`, `undefined` or `null` (ADR 0666, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.getPrototypeOf")]
-    pub fn get_prototype_of(value: &Unknown) -> Option<&'static Unknown> {
+    pub fn get_prototype_of(value: Option<&Unknown>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -2193,9 +2195,11 @@ pub mod object {
     }
 
     /// [`Object.getOwnPropertyDescriptor(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyDescriptor):
-    /// what an own property of `o` is, `None` where it has none.
+    /// what an own property of `o` is, `None` where it has none. Of any
+    /// value, as TypeScript's `any`, `js::get(node, "constructor")`'s too;
+    /// JS throws a `TypeError` of `None` (ADR 0666, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyDescriptor")]
-    pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(o: &Unknown, key: &K) -> Option<PropertyDescriptor<'static>> {
+    pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(o: Option<&Unknown>, key: &K) -> Option<PropertyDescriptor<'static>> {
         unreachable!()
     }
 
@@ -2208,9 +2212,11 @@ pub mod object {
 
     /// [`Object.getOwnPropertyNames(o)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyNames):
     /// the names of `o`'s own properties, enumerable or not, which
-    /// [`keys`] gives of the enumerable ones; not its symbols'.
+    /// [`keys`] gives of the enumerable ones; not its symbols'. Of any
+    /// value, as TypeScript's `any`; JS throws a `TypeError` of `None`
+    /// (ADR 0666, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyNames")]
-    pub fn get_own_property_names(o: &Unknown) -> Vec<String> {
+    pub fn get_own_property_names(o: Option<&Unknown>) -> Vec<String> {
         unreachable!()
     }
 

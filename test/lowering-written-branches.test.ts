@@ -177,9 +177,9 @@ test("a loop's body that ends in an if of a continue has no continue after it", 
   const { js, lib } = await compiled("written-continues-js", `use js::Unknown;
 
 pub fn is_simple_object(object: &Unknown) -> bool {
-    let names = js::object::get_own_property_names(object);
+    let names = js::object::get_own_property_names(Some(object));
     for name in &names {
-        let Some(descriptor) = js::object::get_own_property_descriptor(object, name) else {
+        let Some(descriptor) = js::object::get_own_property_descriptor(Some(object), name) else {
             return false;
         };
         if !descriptor.enumerable.unwrap_or_default() {

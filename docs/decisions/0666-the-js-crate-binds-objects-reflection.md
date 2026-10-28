@@ -4,7 +4,7 @@ Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose `PropertyDescriptor` and `ProxyHandler` were made empty, `{}`, and
 given what's set, and whose measure counted no `Object`. Amended below: a
 dictionary's keys written out are any text; a setter is given a `'static`
-value.
+value; three of `Object`'s statics take any value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 function, given and giving what TypeScript types it as.
@@ -197,4 +197,22 @@ descriptor, `get_own_property_descriptor(..)`'s, is called through
 Held by `test/js-functions.test.ts`'s "a function with_this makes is a
 property's setter", run on a node, its `this` the node. A binding's
 signature has no mutation: the test doesn't compile without it.
+
+## Amendment (2026-10-28, the user's decision): `getOwnPropertyDescriptor`, `getOwnPropertyNames` and `getPrototypeOf` take any value
+
+TypeScript types each `o: any`. They took `&Unknown`, so inputValueTracking's
+`Object.getOwnPropertyDescriptor(node.constructor.prototype, valueField)`
+was `js::get(..).unwrap()`, `$unwrap(..)`, a Rust panic where upstream's
+throws a `TypeError` (gap rd31).
+
+**Each takes `Option<&Unknown>`, the js crate's any value** (ADR 0225), as
+`js::type_of` and `array_buffer::is_view` do: what `js::get` gives, as it
+is, `None` of which JS throws its own `TypeError`. A caller holding a
+`&Unknown` gives `Some(object)`; every one in this repository's tests and
+ports was moved. Case N ([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/js-functions.test.ts`'s "Object's reflection takes any
+value, what js::get gives", run, a `TypeError` of `undefined`; and the
+tests and ports moved. A binding's signature has no mutation: the test
+doesn't compile without it.
 

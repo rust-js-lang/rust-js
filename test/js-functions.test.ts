@@ -391,3 +391,34 @@ pub fn early() -> Box<dyn Fn(&'static dyn Rest<f64>, f64) -> f64> {
 }
 `)).toContain("does not support values of type `dyn std::ops::Fn(&dyn js::Rest<f64>, f64) -> f64`");
 });
+
+// inputValueTracking reads `Object.getOwnPropertyDescriptor(node.constructor.prototype,
+// valueField)`: of any value, TypeScript's `any`, so of what `js::get` gives,
+// `None` included, of which JS throws a TypeError as upstream's would (ADR
+// 0666, amended); getOwnPropertyNames and getPrototypeOf too.
+test("Object's reflection takes any value, what js::get gives", async () => {
+  const { js, lib } = await compiled("object-reflection-any", `use js::{Unknown, object};
+
+pub fn is_accessor(node: &Unknown, field: &str) -> bool {
+    let descriptor = object::get_own_property_descriptor(js::get(js::get(node, "constructor"), "prototype"), field);
+    descriptor.is_some_and(|descriptor| descriptor.get.is_some())
+}
+
+pub fn names_of(value: Option<&Unknown>) -> Vec<String> {
+    object::get_own_property_names(value)
+}
+
+pub fn orphan(value: Option<&Unknown>) -> bool {
+    object::get_prototype_of(value).is_none()
+}
+`);
+  expect(js).toContain("Object.getOwnPropertyDescriptor(node.constructor.prototype, field);");
+  class Input {
+    get value() {
+      return "";
+    }
+  }
+  expect([lib.isAccessor(new Input(), "value"), lib.isAccessor({}, "value"), lib.namesOf({ a: 1 }), lib.orphan(Object.create(null))]).toEqual([true, false, ["a"], true]);
+  expect(() => lib.isAccessor(Object.create(null), "value")).toThrow(TypeError);
+  expect(() => lib.namesOf(undefined)).toThrow(TypeError);
+});

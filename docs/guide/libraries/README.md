@@ -112,7 +112,10 @@ What it has:
 - **`object` is `Object`'s statics,** each as TypeScript types it:
   `define_property`, `define_properties`, `get_own_property_descriptor`,
   `get_own_property_names`, `create`, `freeze`, `has_own`, `group_by` and
-  the rest, and `object::prototype` is `Object.prototype`. A
+  the rest, and `object::prototype` is `Object.prototype`; one TypeScript
+  types `o: any`, `get_own_property_descriptor`,
+  `get_own_property_names`, `get_prototype_of`, takes any value,
+  `Option<&Unknown>`, what `js::get` gives. A
   `PropertyDescriptor` is a dictionary, a struct of `Option`s:
   `PropertyDescriptor { value: Some(&prev), ..props }` is `{ ...props,
   value: prev }`; its `set` is given any value JS gives, so a function

@@ -97,7 +97,7 @@ thread_local! {
     // This is the shared constructor of all typed arrays.
     #[cfg_attr(rust_js, rust_js::name = "TypedArrayConstructor")]
     static TYPED_ARRAY_CONSTRUCTOR: Option<&'static Unknown> = js::get(
-        js::object::get_prototype_of(js::unknown(js::uint32_array::prototype())),
+        js::object::get_prototype_of(Some(js::unknown(js::uint32_array::prototype()))),
         "constructor",
     );
 }

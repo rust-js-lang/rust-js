@@ -46,8 +46,8 @@ pub fn defined(o: &Unknown) -> (bool, bool, Vec<String>, Vec<String>, String) {
     let shown = PropertyDescriptor { enumerable: Some(true), ..hidden };
     object::define_properties(o, dict::from_entries(vec![("hidden".to_string(), hidden), ("shown".to_string(), shown)]));
     object::define_property(o, "got", &PropertyDescriptor { get: Some(&|| Some(js::unknown("read"))), ..Default::default() });
-    let read_only = object::get_own_property_descriptor(o, "id").is_some_and(|d| d.writable == Some(false));
-    let getter = object::get_own_property_descriptor(o, "got").is_some_and(|d| d.get.is_some());
+    let read_only = object::get_own_property_descriptor(Some(o), "id").is_some_and(|d| d.writable == Some(false));
+    let getter = object::get_own_property_descriptor(Some(o), "got").is_some_and(|d| d.get.is_some());
     let all = object::get_own_property_descriptors(o);
     (read_only, getter, object::keys(o), dict::keys(all), js::string(js::get(o, "got")))
 }
@@ -66,7 +66,7 @@ pub fn made() -> (bool, bool, bool, Vec<u32>) {
     let made = object::create(Some(object::prototype), Some(dict::from_entries(vec![("n".to_string(), n)])));
     let moved = object::set_prototype_of(bare, Some(made));
     let counts = dict::from_entries(vec![("a".to_string(), 1u32), ("b".to_string(), 2)]);
-    (object::get_prototype_of(bare) == Some(made), object::has_own(made, "n"), js::has(moved, "n") && !object::has_own(moved, "n"), dict::values(counts))
+    (object::get_prototype_of(Some(bare)) == Some(made), object::has_own(made, "n"), js::has(moved, "n") && !object::has_own(moved, "n"), dict::values(counts))
 }
 pub fn grouped(words: Vec<String>) -> Vec<(String, Vec<String>)> {
     dict::entries(object::group_by(words, |word, _| if word.starts_with('a') { "a".to_string() } else { "other".to_string() }))
@@ -109,10 +109,10 @@ pub fn is_object_prototype(object: Option<&Unknown>) -> bool {
     }
     // It might be an object from a different Realm which is
     // still just a plain simple object.
-    if object::get_prototype_of(object).is_some() {
+    if object::get_prototype_of(Some(object)).is_some() {
         return false;
     }
-    let names = object::get_own_property_names(object);
+    let names = object::get_own_property_names(Some(object));
     for name in &names {
         if !js::has(object_prototype, name) {
             return false;
@@ -128,8 +128,8 @@ pub fn is_getter(object: Option<&Unknown>, name: &str) -> bool {
     if object == object_prototype {
         return false;
     }
-    match object::get_own_property_descriptor(object, name) {
-        None => is_getter(object::get_prototype_of(object), name),
+    match object::get_own_property_descriptor(Some(object), name) {
+        None => is_getter(object::get_prototype_of(Some(object)), name),
         Some(descriptor) => descriptor.get.is_some(),
     }
 }
@@ -156,10 +156,10 @@ pub fn object_name(object: Option<&Unknown>) -> String {
   }
   return true;`);
   expect(js).toContain(`  const descriptor = Object.getOwnPropertyDescriptor(object, name);
-  if (!descriptor) {
+  if (descriptor == null) {
     return isGetter(Object.getPrototypeOf(object), name);
   }
-  return !!descriptor.get;`);
+  return descriptor.get != null;`);
   expect(js).toContain("const name = Object.prototype.toString.call(object);");
   expect([lib.isObjectPrototype(Object.prototype), lib.isObjectPrototype({}), lib.isObjectPrototype(undefined)]).toEqual([true, false, false]);
   // Another realm's `Object.prototype`, of no prototype and only its names.
@@ -966,7 +966,7 @@ pub fn determine_component_frame_root(
                     control = x.downcast_ref::<&'static JsError>().copied();
                 }
                 let prototype: &'static Unknown = unsafe { js::cast(js::get(js::unknown(r#fn), "prototype")) };
-                let prev_props = object::get_own_property_descriptor(prototype, "props");
+                let prev_props = object::get_own_property_descriptor(Some(prototype), "props");
                 object::define_property(
                     prototype,
                     "props",
