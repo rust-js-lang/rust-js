@@ -68,8 +68,9 @@ export const lexErrorDisplay = { fmt: lexErrorDisplay_fmt };
 function lexErrorDisplay_fmt(lexError) {
   if (lexError.TAG === "Unexpected") {
     return `unexpected ${$debugStr(lexError._0, "'")} at ${lexError._1}`;
+  } else {
+    return "unterminated string";
   }
-  return "unterminated string";
 }
 
 const Lexer = {

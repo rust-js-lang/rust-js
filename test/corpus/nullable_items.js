@@ -41,10 +41,7 @@ function takeHidden(root, index) {
   $index(hidden, index);
   const updates = hidden[index];
   hidden[index] = null;
-  if (updates != null) {
-    return updates.length;
-  }
-  return 0;
+  return updates != null ? updates.length : 0;
 }
 
 function main() {

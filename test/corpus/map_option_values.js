@@ -20,8 +20,9 @@ function read(map, key, VDebug) {
   if (get != null) {
     const value = $someValue(get);
     return VDebug.fmt(value);
+  } else {
+    return "absent";
   }
-  return "absent";
 }
 
 function main() {

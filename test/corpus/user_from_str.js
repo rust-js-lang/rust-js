@@ -42,8 +42,9 @@ export const pointErrorDisplay = { fmt: pointErrorDisplay_fmt };
 function pointErrorDisplay_fmt(pointError) {
   if (pointError === "Shape") {
     return "expected x,y";
+  } else {
+    return `bad number: ${pointError._0}`;
   }
-  return `bad number: ${pointError._0}`;
 }
 
 export const pointFromStr = { fromStr: pointFromStr_fromStr };

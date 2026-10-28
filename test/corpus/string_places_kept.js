@@ -20,10 +20,7 @@ function found(s) {
 
 function onAnother(s, other) {
   const at = $find(s, " ");
-  if (at != null) {
-    return $strSlice(other, 0, at);
-  }
-  return other;
+  return at != null ? $strSlice(other, 0, at) : other;
 }
 
 function stepped(s) {
@@ -36,7 +33,7 @@ function stepped(s) {
 
 function nearStart(s) {
   const at = $find(s, "b");
-  return at != null && at < 3;
+  return at != null ? at < 3 : false;
 }
 
 function between(s) {

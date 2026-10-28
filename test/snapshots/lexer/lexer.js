@@ -133,10 +133,7 @@ export function pairs(v) {
 export function capitalize(s) {
   const chars = $iter(Array.from(s));
   const c = $next(chars);
-  if (c != null) {
-    return c.toUpperCase() + $restStr(chars);
-  }
-  return "";
+  return c != null ? c.toUpperCase() + $restStr(chars) : "";
 }
 
 export function report() {

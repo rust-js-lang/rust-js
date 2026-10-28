@@ -28,8 +28,9 @@ function replaceIn(x, with$) {
   if (held != null) {
     held.value = with$;
     return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 function main() {

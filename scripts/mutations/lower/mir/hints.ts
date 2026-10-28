@@ -378,4 +378,22 @@ export const mutations: Mutation[] = [
     replace: "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
+  {
+    name: "match-arms-no-else",
+    breaks: "a two-arm `match` is no `if` the program wrote with an `else`, so its last arm follows a guard, `if (current == null) { ..; return ..; } wip.lanes = ..;`, not React's `if (..) { .. } else { .. }` (ADR 0237, amended, the user's decision)",
+    file: "src/lower/mir/hints.rs",
+    find: "                } if arms.len() == 2\n",
+    replace: "                } if arms.len() == 2 && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "match-arm-jump-alone-an-else",
+    breaks: "a `match` whose arm is a jump alone, `None => break`, is an `if` with an `else`, which takes the loop's way out from its `while` (ADR 0237, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    && !arms.iter().any(|&arm| self.jump_alone(self.frame.thir[arm].body))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exit_code_after.rs$"],
+    snapshots: true,
+  },
 ];

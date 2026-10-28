@@ -264,4 +264,13 @@ export const mutations: Mutation[] = [
     replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
     tests: ["test/lowering-arrows.test.ts"],
   },
+  {
+    name: "negation-else-dropped",
+    breaks: "a written `else` whose test is a negation, `if (!x)`, loses its mark when `negations` makes the test again, so preparation's `unelsed` drops it (ADR 0237, amended)",
+    file: "src/lower/mir/tidy.rs",
+    find: "        let facts = match e.facts.has(js::Known::Else) {\n",
+    replace: "        let facts = match e.facts.has(js::Known::Else) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
+    snapshots: true,
+  },
 ];

@@ -20,10 +20,7 @@ export function entry() {
 }
 
 function kind(c) {
-  if (c.TAG === "Borrowed") {
-    return "borrowed";
-  }
-  return "owned";
+  return c.TAG === "Borrowed" ? "borrowed" : "owned";
 }
 
 function main() {

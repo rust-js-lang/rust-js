@@ -22,15 +22,14 @@ const Value = {
     return { kind: "Float", number: { float: x } };
   },
   show(value) {
-    if (value.kind === "Int") {
-      return `int ${$unionField(value.number, "int", [], {
-        float(value) {
-          const bytes = $toBytes($floatToBits(value, 8), 8, true);
-          return $fromBytes(bytes.slice(0, 4), 4, true, true);
-        },
-      })}`;
-    }
-    return `float ${$displayF64($unionField(value.number, "float"))}`;
+    return value.kind === "Int"
+      ? `int ${$unionField(value.number, "int", [], {
+          float(value) {
+            const bytes = $toBytes($floatToBits(value, 8), 8, true);
+            return $fromBytes(bytes.slice(0, 4), 4, true, true);
+          },
+        })}`
+      : `float ${$displayF64($unionField(value.number, "float"))}`;
   },
   isZero(value) {
     if (value.kind === "Int") {

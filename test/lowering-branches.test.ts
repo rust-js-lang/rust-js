@@ -82,8 +82,9 @@ pub fn matched(a: Option<u32>) -> bool {
   // A branch of `false` the program wrote with an `if`: the conditional
   // it wrote, not the `&&` MIR makes the same branches of (ADR 0879).
   expect(js).toContain('return a > 1 ? s === "x" : false;');
-  // One MIR made of a `match`'s arm of `false`: the `&&` a person writes.
-  expect(js).toContain("return a != null && a > 2;");
+  // A `match`'s arm of `false` is its `else`, as an `if`'s is, the user's
+  // decision (ADR 0237, amended).
+  expect(js).toContain("return a != null ? a > 2 : false;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
 });
@@ -639,9 +640,11 @@ test("branches that each add to a variable stay branches", async () => {
   expect(lib.report([{ TAG: "Ok", _0: 1 }, { TAG: "Err", _0: "x" }])).toBe("ok 1\nerr x\n");
 });
 
-// A function's value of a \`match\`'s arms is returned from each arm; its
-// \`if\`/\`else\` of two values is one conditional, as a variable's is.
-test("a function's match returns each arm, and its if of two values is one conditional", async () => {
+// A function's value of a \`match\`'s two arms is one conditional, its last
+// arm the \`else\`, as its \`if\`/\`else\` of two values is, and a
+// variable's (ADR 0237, amended, the user's decision); of three, a
+// \`switch\`.
+test("a function's match of two arms and its if of two values are each one conditional", async () => {
   const dir = fixture("mir-returned-branches");
   writeFileSync(join(dir, "lib.rs"), `pub fn two(s: &str) -> u32 {
     match s {
@@ -694,25 +697,16 @@ pub fn colors(message: &str) -> &'static str {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain(`export function two(s) {
-  if (s === "a") {
-    return 1;
-  }
-  return 2;
+  return s === "a" ? 1 : 2;
 }`);
   expect(js).toContain(`export function cond(s) {
   return s === "a" ? 1 : 2;
 }`);
   expect(js).toContain(`export function bools(b) {
-  if (b) {
-    return 1;
-  }
-  return 2;
+  return b ? 1 : 2;
 }`);
   expect(js).toContain(`export function opt(o) {
-  if (o != null) {
-    return o;
-  }
-  return 0;
+  return o ?? 0;
 }`);
   // Of three arms, a \`switch\` (ADR 0629).
   expect(js).toContain(`export function colors(message) {
@@ -729,7 +723,7 @@ pub fn colors(message: &str) -> &'static str {
   // A `return` the program wrote stays where it wrote it.
   expect(js).toContain("export function early(g, x) {\n  if (!g) {\n    return false;\n  }\n  return x > 1;\n}");
   // An arm a macro begins is in its place too.
-  expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
+  expect(js).toContain('export function shown(o) {\n  return o != null ? "#1" : "";\n');
   // A `bool` of what's not one, `!!o`.
   expect(js).toContain("  return o != null || r;\n");
   const lib = await import(join(dir, "mir.js"));

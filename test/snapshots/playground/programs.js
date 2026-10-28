@@ -125,8 +125,9 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
         };
         const code$1 = transform(code, options).code;
         return [path, code$1];
+      } else {
+        return [path, code];
       }
-      return [path, code];
     });
   $extend(
     sources,

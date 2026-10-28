@@ -118,11 +118,12 @@ function first(k) {
       loudDrop_drop(held);
     }
     return result;
+  } else {
+    const loud = ["arm"];
+    result = $byteLen(loud[0]);
+    loudDrop_drop(loud);
+    return result;
   }
-  const loud = ["arm"];
-  result = $byteLen(loud[0]);
-  loudDrop_drop(loud);
-  return result;
 }
 
 function main() {

@@ -49,8 +49,9 @@ const Node = {
     if (child != null) {
       child.value.value = (child.value.value + 10) & 255;
       return true;
+    } else {
+      return false;
     }
-    return false;
   },
 
   replaceChild(node, left, value) {

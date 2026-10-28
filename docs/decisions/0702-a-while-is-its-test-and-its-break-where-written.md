@@ -476,7 +476,10 @@ way is a `match`'s, which `switches` makes cases of, each with its own
 
 Held by `test/corpus/continues_in_arms.rs`, against native Rust;
 mutations `breaks-as-ends-never` and `breaks-as-ends-jump-dropped`
-(`mir/tidy/jumps/labels.ts`).
+(`mir/tidy/jumps/labels.ts`). Later (2026-10-28): `breaks_as_ends` is
+gone, `jumps into branches` the rule's one owner
+([0745](0745-a-continue-in-a-chain-is-where-it-is-written.md), amended);
+held by its mutation `jumps-into-branches-off`.
 
 ## Amendment: a `while let` that ends its function (2026-10-28)
 

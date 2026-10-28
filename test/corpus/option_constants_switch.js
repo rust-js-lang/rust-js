@@ -49,10 +49,7 @@ function apart(n) {
 // Of a `bool`, which JS tests by its truth, `!b`, which `None` passes: its
 // test that it's there first.
 function flag(b) {
-  if (b != null && !b) {
-    return 1;
-  }
-  return 0;
+  return b != null && !b ? 1 : 0;
 }
 
 const ENABLE_A = false;

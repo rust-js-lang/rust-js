@@ -631,4 +631,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
     snapshots: true,
   },
+  {
+    name: "arrow-called-in-place-small",
+    breaks: "a `with`'s closure that throws, an arrow called in place, is a branch's value, `return done ? 1 : ((exception) => { throw exception; })(exception);`, not `if (done) { return 1; } throw exception;` (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,\n",
+    replace: "",
+    tests: ["test/lowering-throws.test.ts", "-t", "a with whose closure throws"],
+  },
 ];

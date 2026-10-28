@@ -288,7 +288,17 @@ fn concise_arrows(e: &mut Expr, concise: &[(js::Span, crate::lower::jsx::OneCall
 fn negations(e: &mut Expr) {
     if let ExprKind::Unary(op, arg) = &e.kind {
         let made = Expr::unary(*op, (**arg).clone());
-        *e = Expr { span: e.span, ..made };
+        // What an `if`'s test says of the `if`, its written `else`, kept:
+        // not of the expression, which `made` is again.
+        let facts = match e.facts.has(js::Known::Else) {
+            true => made.facts.with(js::Known::Else),
+            false => made.facts,
+        };
+        *e = Expr {
+            span: e.span,
+            facts,
+            ..made
+        };
     }
 }
 

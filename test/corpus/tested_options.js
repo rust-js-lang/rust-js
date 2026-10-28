@@ -21,10 +21,7 @@ function firstName(items, wanted) {
 // `v` may be `None`: the `Option`'s test is its own.
 function maybe(value, wanted) {
   const chosen = wanted ? value : undefined;
-  if (chosen != null) {
-    return chosen.name;
-  }
-  return "nothing";
+  return chosen != null ? chosen.name : "nothing";
 }
 
 // `v` changes where the `Option` is read: it's what it was.

@@ -31,10 +31,7 @@ import { $parseInt } from "@rust-js/runtime";
 
 export function parse(text) {
   const parse = $parseInt(text, 0, 4294967295);
-  if (parse.TAG === "Ok") {
-    return { TAG: "Left", _0: parse._0 };
-  }
-  return { TAG: "Right", _0: text };
+  return parse.TAG === "Ok" ? { TAG: "Left", _0: parse._0 } : { TAG: "Right", _0: text };
 }
 
 export function describe(text) {

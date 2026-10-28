@@ -326,8 +326,9 @@ pub fn named(value: &Unknown) -> String {
   expect(js).toContain(`  if (typeof value === "object" && !Array.isArray(value)) {`);
   expect(js).not.toContain(`typeof value !== "string"`);
   // Of two cases, `"object"` and a \`default\`, or a \`"string"\` beside an
-  // array's \`if\`: an \`if\` chain, as ADR 0629's \`switch\` is of three.
-  expect(js).toMatch(/export function objects\(value\) \{\n  if \(/);
+  // array's \`if\`: an \`if\` chain, as ADR 0629's \`switch\` is of three,
+  // a value's of two arms its conditional (ADR 0237, amended).
+  expect(js).toMatch(/export function objects\(value\) \{\n  return typeof value === "object" \? 1 : 0;/);
   expect(js).toMatch(/export function listed\(value\) \{\n  if \(/);
   expect(js.slice(js.indexOf("export function listed"), js.indexOf("export function tally"))).not.toContain("switch");
   writeFileSync(join(dir, "run.mjs"), `import { getIoDescription, describe, tally, named, objects, listed } from "./lib.js";
@@ -576,10 +577,7 @@ pub fn any_object(value: Option<&Unknown>) -> bool {
   return false;
 }`);
   expect(js).toContain(`export function objects(value) {
-  if (typeof value === "object") {
-    return 1;
-  }
-  return 0;
+  return typeof value === "object" ? 1 : 0;
 }`);
   expect(js).toContain(`return typeof value === "function" || typeof value === "object";`);
   // In the order the pattern names them (ADR 0780).
@@ -656,10 +654,7 @@ pub fn described(value: &Unknown) -> String {
   switch (typeof value) {
     case "function": {
       const name = value.name;
-      if (typeof name === "string") {
-        return name;
-      }
-      return "";
+      return typeof name === "string" ? name : "";
     }
     case "object": {`);
   expect(js).toContain(`      return text;
@@ -707,10 +702,12 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
             return String::new();
         };
         match js::classify(Some(value)) {
-            Kind::Function(_) => match js::classify(js::get(value, "name")) {
-                Kind::String(name) => name.to_string(),
-                _ => String::new(),
-            },
+            Kind::Function(_) => {
+                if let Kind::String(name) = js::classify(js::get(value, "name")) {
+                    return name.to_string();
+                }
+                String::new()
+            }
             Kind::Object(_) | Kind::Array(_) => {
                 // Test the object for a bunch of common property names that are useful identifiers.
                 if unsafe { js::cast::<&JsError>(Some(value)) }.is_error() {

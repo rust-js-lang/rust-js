@@ -51,10 +51,7 @@ export function fibLoop(n) {
 
 /** Simple enum + `match`. */
 export function nth(order, n) {
-  if (order === "Ascending") {
-    return fibIter(n);
-  }
-  return fibIter((20 - n) >>> 0);
+  return order === "Ascending" ? fibIter(n) : fibIter((20 - n) >>> 0);
 }
 
 /** Signed wrapping arithmetic. */

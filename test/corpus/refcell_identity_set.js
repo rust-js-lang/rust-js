@@ -15,8 +15,9 @@ function finish(transition) {
     const count = transition.updatedFibers.size;
     transition.updatedFibers.clear();
     return count;
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 function main() {

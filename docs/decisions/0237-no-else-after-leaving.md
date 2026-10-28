@@ -1,6 +1,6 @@
 # 0237. An `if` whose branch leaves has no `else`
 
-Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit; and an `else` the program wrote after a branch that leaves stays where statements follow the `if` (the user's decision, 2026-10-27), so this rule holds of an `if` that ends its block, or one MIR made. Amended again (the user's decision, 2026-10-28): every `else` the program wrote stays, statements after the `if` or not, and an `else if` chain is one; this rule holds of an `if` the program wrote without an `else`, MIR's guard of it.
+Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit; and an `else` the program wrote after a branch that leaves stays where statements follow the `if` (the user's decision, 2026-10-27), so this rule holds of an `if` that ends its block, or one MIR made. Amended again (the user's decision, 2026-10-28): every `else` the program wrote stays, statements after the `if` or not, and an `else if` chain is one; this rule holds of an `if` the program wrote without an `else`, MIR's guard of it. Amended again (the user's decision, 2026-10-28): a `match` of two arms is an `if` with both its branches, its last arm the `else`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -167,3 +167,72 @@ statement written in either branch and left the guard.
 Each is the same jump either way. Held by `test/corpus/else_break_ends_loop.rs`,
 against native Rust; mutations `written-else-break-continued`,
 `written-else-of-a-lone-jump-guarded` and `written-else-jump-span-kept`.
+
+## Amendment: a `match`'s last arm is its `else` (the user's decision, 2026-10-28)
+
+React's updateActivityComponent, updateSuspenseComponent and
+updateHostRoot write `if (current === null) { ..; return ..; } else { ..
+}`. Their ports' `match current { None => { ..; return ..; } Some(c) => {
+.. } }` printed `if (current == null) { ..; return ..; } ..`: an `else`
+the program wrote stays (the amendment above), and a `match` wrote none.
+
+**A `match` of two arms is an `if` the program wrote with an `else`, its
+first arm the `then`, its last the `else`**, as `if let` and `if`/`else`
+are: a statement `match` at a function's end prints `if (c) { .. } else {
+.. }`, and a value's `return c ? a : b`, as a written `if`/`else`'s value
+does ([0879](0879-an-if-and-a-closures-captures-read-as-written.md)):
+
+```js
+export function tailMatch(current, wip) {
+  if (current == null) {
+    if (wip.lanes === 1) {
+      return 0;
+    }
+    return wip.lanes;
+  } else {
+    wip.lanes = current.lanes;
+    return current.lanes;
+  }
+}
+
+export function valueMatch(n) {
+  return n != null ? (n * 2) >>> 0 : 1;
+}
+```
+
+- **Where it's one** (`hints.rs`'s `Written::elses`): two arms, neither
+  guarded nor inside an arm's guard, neither a jump alone, `None =>
+  break`, which stays a guard's way out as `let … else` writes it. Its
+  test is where MIR tests it, from `match` to the scrutinee's end, or to
+  the first arm's pattern's, where a string's `s === "a"` is.
+- **A `match` of constants is a `switch` first**
+  ([0629](0629-a-match-of-constants-is-a-switch.md)): `returned ifs` and
+  `returned values` leave one alone until `switches` has made what it can,
+  `switch (tag) { case HostHoistable: case HostComponent: return 2;
+  default: return 3; }`; `unswitched values`, after it, folds one it
+  didn't, two arms of an enum's four.
+- **A written negation keeps the mark**: tidy's `negations`, which makes
+  each `!x` again, kept none of the test's facts, and a written `else`
+  whose test is a negation, `if !flag { ..; return 1; } else { .. }`'s,
+  lost its `Known::Else` before preparation's `unelsed` read it, a bw2
+  leftover.
+- **An arrow called in place is no small value** (`branches.rs`'s
+  `small`): a `with`'s closure that throws, `((e) => { throw e; })(e)`,
+  stays a branch of its own, `if (done) { return 1; } throw exception;`,
+  not a conditional of it.
+
+A port that wants no `else`, upstream's `if (..) { return ..; } ..`,
+writes `let Some(c) = current else { ..; return ..; };` or an `if let`
+with no `else`; getIODescription's port writes `if let Kind::String(name)
+= .. { return name.to_string(); } String::new()` for upstream's `if
+(typeof name === 'string') { return name; } return '';`.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): an `else` after a
+branch that leaves runs as the statements after it would, and a
+conditional gives the value the branch returned.
+
+Held by `test/corpus/match_last_arm_else.rs`, against native Rust, and
+the corpus's snapshots; mutations `match-arms-no-else`,
+`match-arm-jump-alone-an-else` (`mir/hints.ts`), `negation-else-dropped`
+(`mir/tidy.ts`), `switch-match-returned-first`, `unswitched-values-off`
+(`tidy/stages.ts`) and `arrow-called-in-place-small` (`tidy/branches.ts`).

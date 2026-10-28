@@ -42,10 +42,7 @@ function trackedClone_clone(tracked) {
 
 export const figureClone = { clone: figureClone_clone };
 function figureClone_clone(figure) {
-  if (figure === "Dot") {
-    return "Dot";
-  }
-  return { TAG: "Poly", _0: figure._0.slice() };
+  return figure === "Dot" ? "Dot" : { TAG: "Poly", _0: figure._0.slice() };
 }
 
 function metersFromF64_from(m) {
@@ -115,10 +112,7 @@ export function handWritten() {
 }
 
 function points(s) {
-  if (s === "Dot") {
-    return 0;
-  }
-  return s._0.length;
+  return s === "Dot" ? 0 : s._0.length;
 }
 
 /** A derived clone of an enum copies the variant whose `Vec` changes. */
@@ -267,8 +261,9 @@ export const figureDisplay = { fmt: figureDisplay_fmt };
 function figureDisplay_fmt(figure) {
   if (figure === "Dot") {
     return "a dot";
+  } else {
+    return `a polygon of ${figure._0.length}`;
   }
-  return `a polygon of ${figure._0.length}`;
 }
 
 const $labeledDisplay = new WeakMap();

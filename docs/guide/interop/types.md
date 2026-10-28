@@ -1788,10 +1788,7 @@ export function describe(value) {
       return "a function";
     case "object": {
       const name = value.name;
-      if (name != null) {
-        return `an object named ${String(name)}`;
-      }
-      return "an object";
+      return name != null ? `an object named ${String(name)}` : "an object";
     }
   }
 }
@@ -2122,8 +2119,9 @@ export function described(value) {
   if (typeof value === "function") {
     const functionName = value.name;
     return !functionName ? "() => {}" : functionName + "() {}";
+  } else {
+    return "";
   }
-  return "";
 }
 
 export function sameSource(prev, next) {

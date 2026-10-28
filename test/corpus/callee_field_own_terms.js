@@ -23,9 +23,10 @@ function pairsIterator_next(pairs, IIterator, IClone, AClone) {
   if (next != null) {
     const second = $someValue(next);
     return [first, second];
+  } else {
+    const again = pairsFromI_from(IClone.clone(pairs.rest), IIterator, IClone);
+    pairs.first = again.first;
   }
-  const again = pairsFromI_from(IClone.clone(pairs.rest), IIterator, IClone);
-  pairs.first = again.first;
 }
 
 function main() {

@@ -32,8 +32,9 @@ function opt(o) {
   if (o.value != null) {
     o.value.x = (o.value.x + 10) >>> 0;
     return o.value.x;
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 function unit(o) {
@@ -45,10 +46,7 @@ function unit(o) {
 
 /** Used twice: the payload where each is, `$someValue(o.value)`. */
 function unitTwice(o) {
-  if (o.value != null) {
-    return `${Unit.name(o.value.value)} ${Unit.name(o.value.value)}`;
-  }
-  return "";
+  return o.value != null ? `${Unit.name(o.value.value)} ${Unit.name(o.value.value)}` : "";
 }
 
 function main() {

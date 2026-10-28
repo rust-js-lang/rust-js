@@ -31,10 +31,7 @@ function lazy(dev) {
 
 function describe(payload) {
   const info = payload.ioInfo;
-  if (info != null) {
-    return `${payload.status} ${info.name}`;
-  }
-  return `${payload.status} none`;
+  return info != null ? `${payload.status} ${info.name}` : `${payload.status} none`;
 }
 
 // Set again where it may be set already: `Err` gives the value back.
@@ -49,9 +46,10 @@ function rename(payload, name) {
   const set = unset ? { TAG: "Ok" } : { TAG: "Err", _0: value };
   if (set.TAG === "Ok") {
     return true;
+  } else {
+    console.log(`refused ${set._0.name}`);
+    return false;
   }
-  console.log(`refused ${set._0.name}`);
-  return false;
 }
 
 function flagsDebug_fmt(flags) {

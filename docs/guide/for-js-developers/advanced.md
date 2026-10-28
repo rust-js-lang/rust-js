@@ -603,8 +603,9 @@ export const configErrorDisplay = { fmt: configErrorDisplay_fmt };
 function configErrorDisplay_fmt(configError) {
   if (configError.TAG === "Missing") {
     return `missing ${configError._0}`;
+  } else {
+    return `bad number: ${configError._0}`;
   }
-  return `bad number: ${configError._0}`;
 }
 
 const $configErrorError_source = () => undefined;
@@ -641,9 +642,10 @@ export function portOrDefault(line) {
   const value = port(line);
   if (value.TAG === "Ok") {
     return value._0;
+  } else {
+    console.error(`${configErrorDisplay_fmt(value._0)}`);
+    return 8080;
   }
-  console.error(`${configErrorDisplay_fmt(value._0)}`);
-  return 8080;
 }
 
 export function mustPort(line) {

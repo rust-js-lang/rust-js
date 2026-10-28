@@ -19,8 +19,9 @@ function unsubscribe(hook) {
     if (index != null) {
       $removeAt(hooks, index);
       return true;
+    } else {
+      return false;
     }
-    return false;
   })(hooks);
 }
 

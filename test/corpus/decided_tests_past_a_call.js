@@ -35,8 +35,9 @@ function matched(s) {
   if (s.v != null) {
     const x = s.v;
     return (x * 10) >>> 0;
+  } else {
+    return 2;
   }
-  return 2;
 }
 
 function letElse(s) {

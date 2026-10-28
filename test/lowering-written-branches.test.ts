@@ -356,8 +356,9 @@ pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
   expect(js).toContain("return !!v;");
   expect(js).toContain('return !v ? globalThis.supportsIt("b") : true;');
   expect(js).toContain('return !!v || globalThis.supportsIt("b");');
-  // A `match`'s, MIR's test of `None` first: `o != null`, not the array.
-  expect(js).toContain("return o != null || f();");
+  // A `match`'s, its last arm the `else`, as an `if`'s (ADR 0237, amended):
+  // `o == null`, not the array.
+  expect(js).toContain("return o == null ? f() : true;");
   expect(js).toContain('return !v && n ? globalThis.supportsIt("d") : true;');
   // A chain's part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
   expect(js).toContain('return !!v || n === 0 || globalThis.supportsIt("d");');

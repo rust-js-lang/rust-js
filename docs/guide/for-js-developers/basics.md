@@ -992,10 +992,7 @@ export function describe(user) {
 }
 
 export function contact({ name, email }) {
-  if (email != null) {
-    return `${name} <${email}>`;
-  }
-  return name;
+  return email != null ? `${name} <${email}>` : name;
 }
 
 export function swap(pair) {
@@ -1166,7 +1163,12 @@ An `else` you wrote after a branch that returns stays an `else`, and an
 `else if` chain stays one chain, whether statements follow the `if`, as
 `place`'s do, or not, a loop's ending `else { break; }` too; an `if` you wrote without an `else` has none, as
 ESLint's `no-else-return` writes it
-([ADR 0237](../../decisions/0237-no-else-after-leaving.md), amended); a function's last `match`
+([ADR 0237](../../decisions/0237-no-else-after-leaving.md), amended). A `match` of two arms is an
+`if` you wrote with an `else`, its last arm the `else`: a statement
+`match` is `if (current == null) { .. } else { .. }`, and a value's at a
+function's end `return c ? a : b`, as an `if`'s value is; one of
+constants that's a `switch` is a `switch` first; to have no `else`,
+write `let … else` or an `if let` without one. A function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..
 } else { .. }`, with no `return;` at their ends
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended):
@@ -1220,6 +1222,48 @@ export function place(tag, log) {
     return;
   }
   log.push(0);
+}
+```
+
+```rust
+pub fn lanes(current: Option<&std::cell::Cell<u32>>, wip: &std::cell::Cell<u32>) -> u32 {
+    match current {
+        None => {
+            if wip.get() == 1 {
+                return 0;
+            }
+            wip.get()
+        }
+        Some(current) => {
+            wip.set(current.get());
+            current.get()
+        }
+    }
+}
+
+pub fn doubled(n: Option<u32>) -> u32 {
+    match n {
+        Some(n) => n * 2,
+        None => 1,
+    }
+}
+```
+
+```js
+export function lanes(current, wip) {
+  if (current == null) {
+    if (wip.value === 1) {
+      return 0;
+    }
+    return wip.value;
+  } else {
+    wip.value = current.value;
+    return current.value;
+  }
+}
+
+export function doubled(n) {
+  return n != null ? (n * 2) >>> 0 : 1;
 }
 ```
 
@@ -1886,10 +1930,9 @@ export function next(light) {
 }
 
 export function area(shape) {
-  if (shape.TAG === "Circle") {
-    return Math.PI * shape.radius * shape.radius;
-  }
-  return shape.width * shape.height;
+  return shape.TAG === "Circle"
+    ? Math.PI * shape.radius * shape.radius
+    : shape.width * shape.height;
 }
 
 export function unit() {

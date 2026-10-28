@@ -90,8 +90,9 @@ export function load() {
     } catch {
       return [];
     }
+  } else {
+    return [];
   }
-  return [];
 }
 
 /** The todos, kept for next time, where they can be. */

@@ -173,11 +173,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "jumps-into-branches-off",
-    breaks: "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745)",
+    breaks: "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745), and so a chain's at its block's end, `bb16: { if (a) { A } else if (b) { B } else { break bb16; } continue; }`, which `breaks as ends` gave each arm too (ADR 0745, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "StmtKind::Break(_)) && into_arms(&stmts[i]) {\n",
     replace: "StmtKind::Break(_)) && false {\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
+    tests: ["test/lowering-early-exits.test.ts", "test/corpus.test.ts", "-t", "a continue the program wrote in a chain|^continues_in_arms.rs$"],
+    snapshots: true,
   },
   {
     name: "jumps-into-branches-wrong-branch",

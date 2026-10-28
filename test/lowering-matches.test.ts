@@ -115,7 +115,7 @@ pub fn first_id(items: &[Title]) -> u32 {
     expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
   }
   // A \`vec!\` a branch gives back, its box made, then filled: the array.
-  expect(js).toContain('  if (titled) {\n    return [{ TAG: "Element", _0: { kind: "h4", id: 3 } }];\n  }\n  return [{ TAG: "Text", _0: "t" }];\n');
+  expect(js).toContain('  return titled ? [{ TAG: "Element", _0: { kind: "h4", id: 3 } }] : [{ TAG: "Text", _0: "t" }];\n');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.firstId([{ kind: "p", id: 4 }]), lib.firstId([]), lib.elementId([{ kind: "p", id: 5 }]), lib.elementId(["t"])]).toEqual([8, 8, 0, 10, 0]);
   expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
@@ -1476,8 +1476,8 @@ pub fn specifier(code: u8, log: &mut Vec<u8>) {
   expect(js).toContain("  let slice;\n  switch (n) {\n    case 0:\n      slice = [1];\n");
   expect(js).toContain("$byteLen(s) === 0 ? 1 : $byteLen(s) === 1 ? 2 : 3");
   expect(js).toContain('n === 1 ? "one" : n === 2 ? "two" : "many"');
-  // Of two arms, the \`if\` of two ways.
-  expect(js).toContain('  if (n === 0) {\n    return "zero";\n  }\n  return "other";\n');
+  // Of two arms, the \`if\` of two ways: a value's conditional (ADR 0237).
+  expect(js).toContain('  return n === 0 ? "zero" : "other";\n');
   const lib = await import(join(dir, "lib.js"));
   expect([0, 2, 9].map(lib.kind)).toEqual(["zero", "small", "big"]);
   expect([0, 1, 2, 3].map((i) => lib.named("Ocdz", i))).toEqual([1, 1, 2, 0]);

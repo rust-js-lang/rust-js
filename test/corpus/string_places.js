@@ -28,26 +28,17 @@ function formatOwnerStack(stack) {
 
 function firstWord(s) {
   const at = s.indexOf(" ");
-  if (at !== -1) {
-    return s.slice(0, at);
-  }
-  return s;
+  return at !== -1 ? s.slice(0, at) : s;
 }
 
 function after(s, pattern) {
   const at = s.indexOf(pattern);
-  if (at !== -1) {
-    return s.slice(at + pattern.length);
-  }
-  return "";
+  return at !== -1 ? s.slice(at + pattern.length) : "";
 }
 
 function afterChar(s, c) {
   const at = s.lastIndexOf(c);
-  if (at !== -1) {
-    return s.slice(at + c.length);
-  }
-  return s;
+  return at !== -1 ? s.slice(at + c.length) : s;
 }
 
 function pieces(s) {

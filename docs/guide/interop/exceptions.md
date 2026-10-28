@@ -598,10 +598,7 @@ import { $index, $panicMessage, $unwound } from "@rust-js/runtime";
 export function url(value) {
   try {
     const url = value.url;
-    if (typeof url === "string") {
-      return url;
-    }
-    return "";
+    return typeof url === "string" ? url : "";
   } catch {
     return "";
   }

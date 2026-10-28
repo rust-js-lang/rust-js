@@ -8,10 +8,7 @@ export function entry() {
 
 function firstWord(s) {
   const at = s.indexOf(" ");
-  if (at !== -1) {
-    return s.slice(0, at);
-  }
-  return s;
+  return at !== -1 ? s.slice(0, at) : s;
 }
 
 function main() {

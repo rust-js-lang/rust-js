@@ -14,9 +14,10 @@ function processOrInsertDefault(map, key) {
   const value = $mutGet(map, key);
   if (value != null) {
     return process(value.value);
+  } else {
+    map.set(key, "");
+    return 0;
   }
-  map.set(key, "");
-  return 0;
 }
 
 function main() {

@@ -11,8 +11,9 @@ function renamed(name) {
     const old = name;
     name = "new";
     return `${old} ${name == null ? "None" : `Some(${$debugStr(name)})`}`;
+  } else {
+    return "";
   }
-  return "";
 }
 
 function reverse(head) {

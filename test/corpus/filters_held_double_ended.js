@@ -41,19 +41,18 @@ function twoDoubleEndedIterator_nextBack(two, LDoubleEndedIterator, RDoubleEnded
 }
 
 function evensOrTens(evens) {
-  if (evens) {
-    return {
-      TAG: "One",
-      _0: $filterEnds(
-        $iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack),
-        (n) => n % 2 === 0,
-      ),
-    };
-  }
-  return {
-    TAG: "Other",
-    _0: iterator_map({ start: 1, end: 4 }, (n) => (n * 10) >>> 0, { next: $rangeNext }),
-  };
+  return evens
+    ? {
+        TAG: "One",
+        _0: $filterEnds(
+          $iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack),
+          (n) => n % 2 === 0,
+        ),
+      }
+    : {
+        TAG: "Other",
+        _0: iterator_map({ start: 1, end: 4 }, (n) => (n * 10) >>> 0, { next: $rangeNext }),
+      };
 }
 
 function main() {

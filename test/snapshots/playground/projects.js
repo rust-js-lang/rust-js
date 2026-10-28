@@ -17,10 +17,7 @@ function copy(files) {
 
 /** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
 export function jsName(path) {
-  if (path.endsWith(".rs")) {
-    return `${path.slice(0, -3)}.js`;
-  }
-  return path;
+  return path.endsWith(".rs") ? `${path.slice(0, -3)}.js` : path;
 }
 
 export const Project = {

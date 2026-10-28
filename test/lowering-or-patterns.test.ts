@@ -70,9 +70,7 @@ pub fn named(payload: &Payload) -> &'static str {
     payload.status === "Pending" ||
     payload.status === "Uninitialized"
   );`);
-  expect(js).toContain(`  if (payload.status === "Resolved" || payload.status === "Pending") {
-    return "on";
-  }`);
+  expect(js).toContain(`  return payload.status === "Resolved" || payload.status === "Pending" ? "on" : "off";`);
   const lib = await import(join(dir, "lib.js"));
   const payload = lib.make();
   expect([lib.waiting(payload), lib.named(payload), lib.settle(payload), payload.status]).toEqual([true, "off", true, "Resolved"]);

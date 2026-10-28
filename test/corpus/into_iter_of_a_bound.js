@@ -48,8 +48,9 @@ export function rest(j) {
       (iterator) => putBackIterator_next(iterator, { next: $nextSome }),
       true,
     ).toArray();
+  } else {
+    return [];
   }
-  return [];
 }
 
 function pairFrom_A__B__from([a, b], AIntoIterator, BIntoIterator) {

@@ -19,10 +19,7 @@ function valueBranch(value) {
 }
 
 function valueMatch(value) {
-  if (value != null) {
-    return "some";
-  }
-  return "none";
+  return value != null ? "some" : "none";
 }
 
 function valueTried(value) {
@@ -49,10 +46,7 @@ function floatBranch(n) {
 }
 
 function bigBranch(n) {
-  if (n != null) {
-    return "some";
-  }
-  return "none";
+  return n != null ? "some" : "none";
 }
 
 function textBranch(s) {

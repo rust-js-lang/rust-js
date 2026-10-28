@@ -331,8 +331,9 @@ export function run(task) {
     const n = f(false);
     task.callback = f;
     return n;
+  } else {
+    return 0;
   }
-  return 0;
 }
 ```
 

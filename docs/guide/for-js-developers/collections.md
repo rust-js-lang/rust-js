@@ -1084,18 +1084,12 @@ export function indexOf(s, needle) {
 
 export function firstWord(s) {
   const at = s.indexOf(" ");
-  if (at !== -1) {
-    return s.slice(0, at);
-  }
-  return s;
+  return at !== -1 ? s.slice(0, at) : s;
 }
 
 export function after(s, key) {
   const at = s.indexOf(key);
-  if (at !== -1) {
-    return s.slice(at + key.length);
-  }
-  return "";
+  return at !== -1 ? s.slice(at + key.length) : "";
 }
 
 export function withoutScheme(url) {

@@ -285,6 +285,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |
 | A shadow that is the binding it shadows | `mir/tidy/shadows.rs` | `shadowed` |
+| A jump MIR shared after an `if` chain, given to each arm that goes on (ADR 0745, amended) | `mir/tidy/jumps/continues.rs` | `jumps_into_branches` |
 | Where a variable is JS's `this`, a `with_this` closure's and a class's method's `self`, read through a `const` in a function made in its body, and whether a body reads its own `this` (ADR 0972) | `js/stmt_walk.rs` | `read_as_this`, `reads_this` |
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |

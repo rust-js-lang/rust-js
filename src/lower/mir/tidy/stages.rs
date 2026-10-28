@@ -453,8 +453,8 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if`'s value of two small ones, `return t ? a : b`, its
             // temporaries declared where they're read by now.
             pass("returned values", |b, h| {
-                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
-                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
+                let (elses, returns, booleans) = (unswitched(h), h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| returned_values(s, &elses, returns, booleans))
             }),
             // An `if` those emptied, an `if let` whose binding is only read,
             // gone, its test kept where it does anything, as it ensures
@@ -639,6 +639,14 @@ pub(super) const STAGES: &[Stage] = &[
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {
                 switches::switches(b, &h.written.switches, &h.written.loops)
+            }),
+            // A function's value of a `match` of constants `switches` left
+            // an `if`, two arms of an enum's four: `return t ? a : b`, as
+            // `returned values` gives each other `match`'s (ADR 0237,
+            // amended).
+            pass("unswitched values", |b, h| {
+                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
             }),
             // `!(b >= 48)` of what's never `NaN`: `b < 48`; a guard's too,
             // that a case of a `switch` tests negated (ADR 0905).
@@ -834,9 +842,11 @@ const JUMPS: &[Pass] = &[
     // A `return` of an `if` the program wrote, `return if c { a } else { b
     // };`: its value, `return c ? a : b;`, before a shared tail takes its
     // `else`'s out (ADR 0657, amended).
+    // Not yet of a `match` of constants, which `switches` makes a `switch`
+    // of first (ADR 0629); `unswitched values` folds one it doesn't.
     pass("returned ifs", |b, h| {
-        let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);
-        js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))
+        let (elses, returns, booleans) = (unswitched(h), h.returns, h.booleans);
+        js::statement_lists(b, &mut |s| returned_values(s, &elses, returns, booleans))
     }),
     // An arm MIR made the block's fall-through, written first: first.
     pass("written first", |b, h| {
@@ -850,11 +860,6 @@ const JUMPS: &[Pass] = &[
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
     pass("branch values", branch_values_of),
-    // A chain's arms that share one jump after it, the rest of their
-    // block falling to its end: each arm's own, as written.
-    pass("breaks as ends", |b, h| {
-        js::statement_lists(b, &mut |s| breaks_as_ends(s, &h.written.blocks))
-    }),
     pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
     // A let chain's value, each branch one: its binding read first, `const
     // x = a ? e : undefined;`, as an `if let`'s, which the next run and
@@ -913,4 +918,16 @@ mod tests {
         let unique: std::collections::HashSet<_> = names.iter().collect();
         assert_eq!(unique.len(), names.len());
     }
+}
+
+/// Each `if` the program wrote with an `else` but a `match` of constants,
+/// which `switches` makes a `switch` of where it can before any is a value
+/// (ADR 0629): a function's `match tag { A | B => 2, _ => 3 }` its `switch
+/// (tag)`, not `return tag === A || tag === B ? 2 : 3`.
+fn unswitched(h: &Hints) -> Vec<(js::Span, js::Span, js::Span)> {
+    let switch = |cond: &js::Span| h.written.switches.iter().any(|s| s.span.lo == cond.lo);
+    (h.written.elses.iter())
+        .filter(|(cond, ..)| !switch(cond))
+        .copied()
+        .collect()
 }

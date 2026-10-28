@@ -98,10 +98,10 @@ pub fn quoted(s: &str) -> &str {
     }
 }
 `);
-  expect(js).toContain("return s.slice(at + 1);");
-  expect(js).toContain("return s.slice(at + pattern.length);");
-  expect(js).toContain("return s.slice(at + c.length);");
-  expect(js).toContain('return s.slice(open + "«".length, s.length);');
+  expect(js).toContain("return at !== -1 ? s.slice(at + 1) : s;");
+  expect(js).toContain('return at !== -1 ? s.slice(at + pattern.length) : "";');
+  expect(js).toContain("return at !== -1 ? s.slice(at + c.length) : s;");
+  expect(js).toContain('return open !== -1 ? s.slice(open + "«".length, s.length) : s;');
   expect(js).not.toContain("@rust-js/runtime");
   expect(lib.afterE("🦀é🦀")).toBe("🦀");
   expect(lib.after("a🦀b🦀c", "🦀")).toBe("b🦀c");
@@ -190,8 +190,8 @@ pub fn unwrapped(s: &str) -> &str {
 `);
   expect(js).toContain('return $find(s, "é");');
   expect(js).toContain("at < 3");
-  expect(js).toContain("return $strSlice(other, 0, at);");
-  expect(js).toContain("return $strSlice(s, (at + 3) >>> 0);");
+  expect(js).toContain("return at != null ? $strSlice(other, 0, at) : other;");
+  expect(js).toContain('return at != null ? $strSlice(s, (at + 3) >>> 0) : "";');
   expect(js).toContain("return $strSlice(s, 0, at);");
   expect([lib.found("🦀é"), lib.found("x")]).toEqual([4, undefined]);
   expect([lib.nearStart("ab"), lib.nearStart("ééb")]).toEqual([true, false]);

@@ -21,10 +21,7 @@ function popped(v, n) {
 function counted(v) {
   const n = v.length;
   const x = v.pop();
-  if (x != null) {
-    return (((n * 10) >>> 0) + x) >>> 0;
-  }
-  return n;
+  return x != null ? (((n * 10) >>> 0) + x) >>> 0 : n;
 }
 
 function peeked(map, names) {

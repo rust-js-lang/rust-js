@@ -17,8 +17,9 @@ function read(o, v, TPartialEq) {
   if (o.value != null) {
     const x = $someMut(o);
     return TPartialEq.eq(x.value, v);
+  } else {
+    return false;
   }
-  return false;
 }
 
 function setIfConsistent(old, new$, TPartialEq) {

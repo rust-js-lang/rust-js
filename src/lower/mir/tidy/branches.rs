@@ -403,6 +403,10 @@ pub(super) fn small(e: &Expr) -> bool {
     }
     match &e.kind {
         ExprKind::Jsx(_) => levels(e) <= 2,
+        // An arrow called in place, a `with`'s closure that throws, `((e)
+        // => { throw e; })(e)`: statements, which a branch of its own
+        // reads as they are, `throw e;`, and a conditional can't.
+        ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,
         _ => !matches!(e.kind, ExprKind::Cond(..)),
     }
 }

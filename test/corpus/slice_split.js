@@ -19,8 +19,9 @@ function total(items) {
     const first = splitFirst[0];
     const rest = splitFirst[1];
     return (first + total(rest)) >>> 0;
+  } else {
+    return 0;
   }
-  return 0;
 }
 
 function main() {

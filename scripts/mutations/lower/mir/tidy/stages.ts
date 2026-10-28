@@ -715,4 +715,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
+  {
+    name: "switch-match-returned-first",
+    breaks: "a `match` of constants is a function's value before `switches` makes its `switch`, `return tag === HostHoistable || tag === HostComponent ? 2 : 3`, not `switch (tag) { case HostHoistable: .. }` (ADRs 0237, amended, 0629)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "        .filter(|(cond, ..)| !switch(cond))\n",
+    replace: "        .filter(|(cond, ..)| !switch(cond) || true)\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "constants of one value each name it"],
+  },
+  {
+    name: "unswitched-values-off",
+    breaks: "a function's `match` of an enum's constants `switches` leaves an `if` is a guard, `if (payload.status === \"Resolved\" || ..) { return \"on\"; } return \"off\";`, not its conditional (ADR 0237, amended)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);\n                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))\n            }),\n",
+    replace: "                let _ = (b, h);\n            }),\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "an or-pattern's variants are tested in the order written, of a field"],
+  },
 ];

@@ -63,10 +63,7 @@ function build(depth) {
 }
 
 function sum(t) {
-  if (t.TAG === "Leaf") {
-    return t._0;
-  }
-  return (sum(t._0) + sum(t._1)) | 0;
+  return t.TAG === "Leaf" ? t._0 : (sum(t._0) + sum(t._1)) | 0;
 }
 
 export function treeSum(depth) {
@@ -128,10 +125,7 @@ function grow(f) {
 }
 
 function points(f) {
-  if (f.TAG === "Poly") {
-    return f._0.length;
-  }
-  return 0;
+  return f.TAG === "Poly" ? f._0.length : 0;
 }
 
 export function changedInPlace(r) {

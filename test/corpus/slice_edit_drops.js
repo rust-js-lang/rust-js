@@ -40,10 +40,7 @@ function trackedClone_cloneFrom(tracked, source) {
 }
 export const modeClone = { clone: modeClone_clone, cloneFrom: modeClone_cloneFrom };
 function modeClone_clone(mode) {
-  if (mode === "On") {
-    return "On";
-  }
-  return "Off";
+  return mode === "On" ? "On" : "Off";
 }
 function modeClone_cloneFrom(mode, source) {
   console.log(`mode clone_from ${source} over ${mode.value}`);

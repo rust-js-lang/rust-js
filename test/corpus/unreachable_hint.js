@@ -5,10 +5,10 @@ export function entry() {
 }
 
 function digit(c) {
-  if (c < 48 || c > 57) {
-    throw new Error("internal error: entered unreachable code");
+  if (c >= 48 && c <= 57) {
+    return (c - 48) & 255;
   }
-  return (c - 48) & 255;
+  throw new Error("internal error: entered unreachable code");
 }
 
 function main() {

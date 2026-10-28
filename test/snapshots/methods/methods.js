@@ -35,10 +35,7 @@ export const Counter = {
 export const Light = {
   /** `self` by value. */
   next(light) {
-    if (light === "Red") {
-      return "Green";
-    }
-    return "Red";
+    return light === "Red" ? "Green" : "Red";
   },
 
   isGo(light) {

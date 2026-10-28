@@ -330,7 +330,7 @@ pub fn constant() -> Status {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("{ pending: true, data }");
-  expect(js).toContain("if (s.pending === true) {");
+  expect(js).toContain("return s.pending === true ? `sending ${s.data}` : \"idle\";");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.made("a")).toEqual([{ pending: true, data: "a" }, { pending: false }]);
   expect(lib.constant()).toEqual({ pending: false });
@@ -1350,7 +1350,7 @@ pub fn pace(fast: bool) -> &'static str {
   // Another module's not `pub`, exported as it's read there; the last
   // arm's, whose test an exhaustive `match` needn't write, not imported.
   expect(js).toContain('import { Slow, speed } from "./motion.js";');
-  expect(js).toContain('  if (speed(fast) === Slow) {\n    return "slow";\n  }\n  return "fast";\n');
+  expect(js).toContain('  return speed(fast) === Slow ? "slow" : "fast";\n');
   expect(readFileSync(join(dir, "motion.js"), "utf8")).toContain("export const Slow = 1;\nexport const Fast = 2;\n");
   const lib = await import(join(dir, "lib.js"));
   const [first, second] = [lib.lazy(), lib.lazy()];

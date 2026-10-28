@@ -28,28 +28,29 @@ function described(props, room) {
 }
 
 function renamed(kind, names, room) {
-  if (kind !== "object") {
+  if (kind === "object") {
+    if (names.length === 0) {
+      return "{}";
+    }
+    let properties = "";
+    for (let name of names) {
+      if (name.startsWith("_")) {
+        continue;
+      }
+      if ($byteLen(name) > 3) {
+        name = $debugStr(name);
+      }
+      room = BigInt.asIntN(64, room - BigInt($byteLen(name)));
+      if (room < 0n) {
+        properties += !properties ? "..." : ", ...";
+        break;
+      }
+      properties += (!properties ? "" : ",") + name;
+    }
+    return "{" + properties + "}";
+  } else {
     return kind;
   }
-  if (names.length === 0) {
-    return "{}";
-  }
-  let properties = "";
-  for (let name of names) {
-    if (name.startsWith("_")) {
-      continue;
-    }
-    if ($byteLen(name) > 3) {
-      name = $debugStr(name);
-    }
-    room = BigInt.asIntN(64, room - BigInt($byteLen(name)));
-    if (room < 0n) {
-      properties += !properties ? "..." : ", ...";
-      break;
-    }
-    properties += (!properties ? "" : ",") + name;
-  }
-  return "{" + properties + "}";
 }
 
 function main() {

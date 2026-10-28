@@ -16,16 +16,14 @@ export const messageDisplay = { fmt: messageDisplay_fmt };
 function messageDisplay_fmt(message) {
   if (message.TAG === "Literal") {
     return `literal ${message._0}`;
+  } else {
+    return `formatted ${message._0}`;
   }
-  return `formatted ${message._0}`;
 }
 
 // anyhow's `format_err`.
 function message(args) {
-  if (args != null) {
-    return { TAG: "Literal", _0: args };
-  }
-  return { TAG: "Formatted", _0: args };
+  return args != null ? { TAG: "Literal", _0: args } : { TAG: "Formatted", _0: args };
 }
 
 function main() {

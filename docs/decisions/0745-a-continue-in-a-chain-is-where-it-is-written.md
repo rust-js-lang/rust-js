@@ -1,7 +1,8 @@
 # 0745. A `continue` in a chain of `if`s is where it's written
 
 Status: Accepted. Extends [0364](0364-mir-lowering.md)'s jumps past blocks
-and branch ends.
+and branch ends. Amended (2026-10-28): `jumps into branches` owns the rule
+`breaks as ends` asked for too, one authority.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 each rewrite moves a jump to where it goes on from anyway, or an `if`'s
@@ -125,3 +126,28 @@ moves to each place that goes on to it.
 Held by the corpus case `continue_arms_of_else_if` (native-compared) and
 the mutations `jumps-into-chain-arms-uncounted` and
 `jumps-into-arms-that-leave-their-own-way`.
+
+## Amendment: one owner gives a chain's arms the jump after it (2026-10-28)
+
+Two passes put a jump MIR shared after an `else if` chain into each arm
+that goes on: `jumps into branches` (`tidy/jumps/continues.rs`, this
+decision), of a jump after the chain, and `breaks as ends`
+(`tidy/jumps/labels.rs`, 041187f13, [0702](0702-a-while-is-its-test-and-its-break-where-written.md), amended, React's
+commitBeforeMutationEffects_begin), of a `continue` after a chain whose
+last `else` is `break l;` where `l` ends. Each had its own walk of the
+chain and its own test of which arms go on: one rule, two authorities
+(AGENTS.md's "one way, one authority").
+
+**`jumps into branches` is the rule's one owner, and `breaks as ends` is
+gone.** With a `match`'s last arm its `else`
+([0237](0237-no-else-after-leaving.md), amended), the chain
+commitBeforeMutationEffects_begin's port makes reaches `jumps into
+branches` with its `continue` after it, which gives each arm its own, and
+`tail jumps` drops the `break l;` at `l`'s end: with `breaks as ends` run
+nowhere, no snapshot of the corpus, the guide or the React ports changed.
+It covers each case the other did, so it stays and the other goes.
+
+Held by the architecture's table of owners, which names
+`jumps_into_branches`, and the mutation `jumps-into-branches-off`, whose
+tests are both rules' (`lowering-early-exits`' chain, the corpus's
+`continues_in_arms`, against its snapshot).

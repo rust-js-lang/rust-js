@@ -208,6 +208,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each `if` with an `else` is written, its condition and each
         // branch; a `while`'s too, `if c { body } else { break }` of its
         // desugaring, its `else` the whole loop.
+        // Where each arm's guard is: a `match` in one is a test, not branches.
+        let guards: Vec<js::Span> = (self.frame.thir.arms.iter())
+            .filter_map(|arm| arm.guard.map(|guard| self.js_span(self.frame.thir[guard].span)))
+            .collect();
         let elses: Vec<(js::Span, js::Span, js::Span)> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If {
@@ -220,6 +224,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.js_span(self.frame.thir[then].span),
                     self.js_span(self.frame.thir[otherwise].span),
                 )),
+                // A `match` of two arms of no guard, its last arm the `else`,
+                // as an `if`'s, `if (current === null) { .. } else { .. }`
+                // (ADR 0237, amended, the user's decision, 2026-10-28): its
+                // test where MIR tests it, from `match` to its scrutinee.
+                thir::ExprKind::Match {
+                    scrutinee, ref arms, ..
+                } if arms.len() == 2
+                    && arms.iter().all(|&arm| self.frame.thir[arm].guard.is_none())
+                    // Not of an arm that's a jump alone, `None => break`,
+                    // a guard's way out, as `let … else` writes it.
+                    && !arms.iter().any(|&arm| self.jump_alone(self.frame.thir[arm].body))
+                    && !guards.iter().any(|g| {
+                        let at = self.js_span(e.span);
+                        g.lo <= at.lo && at.hi <= g.hi
+                    }) =>
+                {
+                    // Or at its first arm's pattern, a string's `s === "a"`.
+                    let pattern = self.js_span(self.frame.thir[arms[0]].pattern.span);
+                    let tested = js::Span {
+                        lo: self.js_span(e.span).lo,
+                        hi: self.js_span(self.frame.thir[scrutinee].span).hi.max(pattern.hi),
+                    };
+                    let body = |arm: thir::ArmId| self.js_span(self.frame.thir[self.frame.thir[arm].body].span);
+                    Some((tested, body(arms[0]), body(arms[1])))
+                }
                 _ => None,
             })
             .collect();
@@ -672,6 +701,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(x), Some(y)) => x == y,
                 _ => true,
             },
+        }
+    }
+
+    /// Whether `body`, an arm's, is a jump alone, `break`, `continue` or
+    /// `return`, in a block or not.
+    fn jump_alone(&self, mut body: thir::ExprId) -> bool {
+        loop {
+            match self.frame.thir[body].kind {
+                thir::ExprKind::Scope { value, .. }
+                | thir::ExprKind::Use { source: value }
+                | thir::ExprKind::NeverToAny { source: value } => body = value,
+                thir::ExprKind::Block { block }
+                    if self.frame.thir[block].stmts.is_empty() && self.frame.thir[block].expr.is_some() =>
+                {
+                    body = self.frame.thir[block].expr.expect("matched");
+                }
+                thir::ExprKind::Block { block } if self.frame.thir[block].expr.is_none() => {
+                    let stmts = &self.frame.thir[block].stmts;
+                    let [only] = stmts[..] else {
+                        return false;
+                    };
+                    let thir::StmtKind::Expr { expr, .. } = self.frame.thir[only].kind else {
+                        return false;
+                    };
+                    body = expr;
+                }
+                thir::ExprKind::Break { .. } | thir::ExprKind::Continue { .. } | thir::ExprKind::Return { .. } => {
+                    return true;
+                }
+                _ => return false,
+            }
         }
     }
 

@@ -38,10 +38,7 @@ export const missingError = {
 };
 
 function find(name) {
-  if (name === "one") {
-    return { TAG: "Ok", _0: 1 };
-  }
-  return { TAG: "Err", _0: [name] };
+  return name === "one" ? { TAG: "Ok", _0: 1 } : { TAG: "Err", _0: [name] };
 }
 
 function lookup(name) {

@@ -715,7 +715,7 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
   expect(js).toContain('  if (s === "Empty") {\n    return 0;\n  }\n  if (s.TAG === "Circle") {');
   expect(js).toContain("  if (s.TAG !== \"Circle\") {\n    if (s !== \"Empty\" && s.w !== 0) {");
   // Through a reference, with no copy: the reference is the value.
-  expect(js).toContain("  if (t.TAG === \"Leaf\") {\n    return t._0;\n  }\n  return (sum(t._0) + sum(t._1)) | 0;");
+  expect(js).toContain("  return t.TAG === \"Leaf\" ? t._0 : (sum(t._0) + sum(t._1)) | 0;");
   // `Result` is ReScript's `result`.
   expect(js).toContain("  return value.TAG === \"Ok\" ? value._0 : fallback;");
 });
@@ -975,7 +975,7 @@ test("a Display impl's fmt returns the string it writes", async () => {
   const js = await Bun.file(join(target, "std_traits.js")).text();
   // One write: its string. One per way through: a `return` each.
   expect(js).toContain("function pointDisplay_fmt(point) {\n  return `(${point.x}, ${point.y})`;\n}");
-  expect(js).toContain("  if (figure === \"Dot\") {\n    return \"a dot\";\n  }\n  return `a polygon of ${figure._0.length}`;");
+  expect(js).toContain("  if (figure === \"Dot\") {\n    return \"a dot\";\n  } else {\n    return `a polygon of ${figure._0.length}`;\n  }");
   // More: a string built up, with nested `fmt`s and a helper that writes.
   expect(js).toContain('    f += pointDisplay_fmt(stop);');
   expect(js).toContain('    f += writeLoop(route.stops.length);');
@@ -1168,7 +1168,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = it.toArray();");
-  expect(js).toContain("return c.toUpperCase() + $restStr(chars);");
+  expect(js).toContain('return c != null ? c.toUpperCase() + $restStr(chars) : "";');
 });
 
 // ADR 0074: a `&mut` to a string or a number is a box the caller copies

@@ -27,8 +27,9 @@ function moneyDisplay_fmt(money, options) {
   const w = options?.width;
   if (w != null) {
     return $pad(s, w, ">");
+  } else {
+    return s;
   }
-  return s;
 }
 
 function main() {

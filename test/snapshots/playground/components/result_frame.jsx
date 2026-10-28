@@ -25,7 +25,7 @@ export function ResultFrame({ program, onOutcome }) {
         "message",
         (e) => {
           const frame$1 = frame.current;
-          const fromFrame = frame$1 != null && Object.is(e.source, frame$1.contentWindow);
+          const fromFrame = frame$1 != null ? Object.is(e.source, frame$1.contentWindow) : false;
           const report = readReport(e);
           if (report != null && fromFrame) {
             if (report.run === run) {

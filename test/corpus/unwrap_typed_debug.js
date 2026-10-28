@@ -11,10 +11,9 @@ function stockErrorDebug_fmt(stockError) {
 }
 
 function find(name) {
-  if (name === "pen") {
-    return { TAG: "Ok", _0: 3 };
-  }
-  return { TAG: "Err", _0: { TAG: "Missing", name, shelf: 2 } };
+  return name === "pen"
+    ? { TAG: "Ok", _0: 3 }
+    : { TAG: "Err", _0: { TAG: "Missing", name, shelf: 2 } };
 }
 
 function main() {

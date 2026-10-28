@@ -797,7 +797,8 @@ pub fn shown(p: &Point, s: &Shape, l: &List) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function pointDebug_fmt(point) {\n  return `Point { x: ${point.x}, y: ${point.y} }`;\n}");
-  expect(js).toContain('function shapeDisplay_fmt(shape) {\n  if (shape === "Dot") {\n    return "a dot";\n  }\n  return `a line of ${shape._0}`;\n}');
+  // Its `match`'s last arm the `else` (ADR 0237, amended).
+  expect(js).toContain('function shapeDisplay_fmt(shape) {\n  if (shape === "Dot") {\n    return "a dot";\n  } else {\n    return `a line of ${shape._0}`;\n  }\n}');
   expect(js).toContain('function listDisplay_fmt(list) {\n  let f = "[";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown({ x: 1, y: 2 }, { TAG: "Line", _0: 3 }, [[1, 2]]), lib.shown({ x: 1, y: 2 }, "Dot", [[]])]).toEqual(["Point { x: 1, y: 2 } a line of 3 [1, 2]", "Point { x: 1, y: 2 } a dot []"]);

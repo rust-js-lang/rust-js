@@ -527,7 +527,7 @@ pub fn big(x: Option<u32>) -> bool {
   expect([lib.big(4 as never), lib.big(2 as never), lib.big(undefined as never)]).toEqual([true, false, false]);
   expect(js).toContain("  return (\n    a &&\n    // And the other.\n    b\n  );\n");
   // `p` of `p.x`, read where it's bound, placed where the operand is.
-  expect(js).toContain("      (a +\n        // And its x.\n        p.x) >>>\n      0\n");
+  expect(js).toContain("    ? (a +\n        // And its x.\n        p.x) >>>\n        0\n");
   expect([lib.sum(1 as never, { x: 2 } as never), lib.sum(1 as never, undefined as never)]).toEqual([3, 1]);
   expect(js.match(/The key/g)?.length).toBe(1);
   expect([lib.keyed("p" as never, "k" as never, "c" as never), lib.keyed("p" as never, undefined as never, "c" as never)]).toEqual(["pk/c", "pc"]);
