@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "fn-pointer-never-from-outside",
     breaks: "no value comes from outside the crate's code, so what JS gives `apply` borrows nothing, and its borrow isn't counted",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys);\n",
+    find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys);\n        self.library_rust.extend(held.rust);\n",
     replace: "        let _ = (recognition, ty);\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
   },
