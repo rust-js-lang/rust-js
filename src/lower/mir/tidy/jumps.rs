@@ -300,7 +300,20 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
                 }
         })
     }
-    while stmts.last().is_some_and(unwritten) {
+    // And a copy MIR made of a `return;` the program wrote before it in
+    // the list, a `let … else`'s, its span that `return`'s: the program
+    // wrote it once, there (rd73).
+    let copied = |stmts: &[Stmt]| match stmts.split_last() {
+        Some((
+            last @ Stmt {
+                kind: StmtKind::Return(None),
+                ..
+            },
+            before,
+        )) => !last.span.is_none() && returns_at(before, last.span),
+        _ => false,
+    };
+    while stmts.last().is_some_and(unwritten) || copied(stmts) {
         stmts.pop();
     }
     if let Some(at) = (stmts.iter()).position(
@@ -400,6 +413,22 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         Some(StmtKind::Labeled(_, body)) => ending_returns(body, returns, branch),
         _ => {}
     }
+}
+
+/// Whether `stmts` hold a `return;` at `span`, however deep.
+fn returns_at(stmts: &[Stmt], span: js::Span) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Return(None) => stmt.span == span,
+        StmtKind::If(_, a, b) => returns_at(a, span) || b.as_deref().is_some_and(|b| returns_at(b, span)),
+        StmtKind::Labeled(_, body)
+        | StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. } => returns_at(body, span),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => returns_at(a, span) || returns_at(b, span),
+        StmtKind::Switch { cases, default, .. } => js::case_lists(cases, default).any(|body| returns_at(body, span)),
+        _ => false,
+    })
 }
 
 /// Whether `stmts` hold a `return` the program wrote, of `returns`.

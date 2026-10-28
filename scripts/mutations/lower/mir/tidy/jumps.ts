@@ -151,4 +151,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_undefined.rs$"],
     snapshots: true,
   },
+  {
+    name: "copied-let-else-return-kept",
+    breaks: "a `return;` MIR copied of a let-else's, at the end of a block that ends the function, stays, `for (..) { .. } return; }` (rd73)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    while stmts.last().is_some_and(unwritten) || copied(stmts) {\n",
+    replace: "    while stmts.last().is_some_and(unwritten) {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "leaves no return"],
+  },
 ];

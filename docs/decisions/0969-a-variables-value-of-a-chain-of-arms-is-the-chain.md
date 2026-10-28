@@ -178,8 +178,11 @@ None, the same tests in the same order.
 `returned_else_ifs` takes such a link for the chain's head where the
 statement before it declares what its test reads (`bound`). The corpus'
 `dyn_any` now names the `Option`'s Debug arrow's value `value$1`, a
-`const` where it was an arrow called in place; the readability baseline's
-`renamed x$1` share doesn't grow. `catch_unwind_typed_payloads`' last link
+`const` where it was an arrow called in place; on main the readability
+baseline's `renamed x$1` share grows 681.4 to 681.5 in 10,000 lines by
+that one name, blessed for it: the form it replaces, an arrow called in
+place, read worse. Naming that temporary for what it holds, the
+downcast's, is the names owner's, written up (S/decisions-pending.md). `catch_unwind_typed_payloads`' last link
 is the chain's `else if`. Held by `test/lowering-returned-chains.test.ts`'
 "the rest of a returned chain after an else if let's binding is a chain of
 its own" and mutation `returned-chain-bound-rest-headless`.

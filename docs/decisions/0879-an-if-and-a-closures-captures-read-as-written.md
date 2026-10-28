@@ -647,3 +647,24 @@ mutations `arm-exit-not-a-guard` (`hints.ts`) and
 `docs/readability.txt`'s share of `return;` grows, 9.9 to 10 in 10,000
 lines, by that case's two guards' `return;`s, each one the program
 wrote, as upstream's.
+
+## Amendment: a `return;` MIR copied of a `let … else`'s, at the function's end, is nothing (2026-10-28, rd73)
+
+React DOM's validateShorthandPropertyCollisionInDev writes `if (__DEV__) {
+if (!nextStyles) { return; } for (..) { .. } }`. The port's `if DEV { let
+Some(next) = .. else { return; }; for .. }` printed a `return;` after the
+`for`, the `if`'s last statement: MIR's one return block carries the span
+of the `return` the program wrote, so its copy at the block's end read as
+written, and `tail_returns` kept it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Where a function
+of no value ends, falling off it and `return;` both give `undefined`.
+
+- **A `return;` that ends a list ending the function, of the span of one
+  written before it in the list, is MIR's copy** (`ending_returns`'
+  `copied`): gone, as an unwritten one is. The program wrote that
+  `return` once, where it still is.
+
+Held by `test/lowering-early-exits.test.ts`' "a let-else's return in a
+block that ends the function leaves no return at its end" (the JS run)
+and mutation `copied-let-else-return-kept`.

@@ -756,3 +756,28 @@ test("a break of the loop a function ends with is a break", async () => {
   lib.find([6, 0, 7] as never, [9] as never, log as never);
   expect(log).toEqual([1, 2, 4, 6]);
 });
+
+// rd73: a let-else whose else returns, the first of a block that ends the
+// function, `if (DEV) { let Some(next) = .. else { return; }; .. }`: the
+// guard, then the block's statements, no `return;` MIR made at their end
+// (CSSPropertyOperations' validateShorthandPropertyCollisionInDev).
+test("a let-else's return in a block that ends the function leaves no return at its end", async () => {
+  const { js, lib } = await compiled("let-else-ending-block", `pub const DEV: bool = true;
+
+pub fn check(next: Option<&Vec<u32>>, log: &mut Vec<u32>) {
+    if DEV {
+        let Some(next) = next.filter(|next| !next.is_empty()) else {
+            return;
+        };
+        for key in next {
+            log.push(*key);
+        }
+    }
+}`);
+  expect(js).not.toMatch(/\n    return;\n  }\n}/);
+  const log: number[] = [];
+  lib.check([1, 2] as never, log as never);
+  lib.check([] as never, log as never);
+  lib.check(undefined as never, log as never);
+  expect(log).toEqual([1, 2]);
+});
