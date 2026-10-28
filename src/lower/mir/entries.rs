@@ -262,13 +262,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
         };
         let mut given = Vec::new();
+        // Whether the first is a place rust-js made, a variable of the
+        // body's or a field of the crate's struct, not a cell's value read
+        // through what holds it (`Known::Taken`, ADR 0996).
+        let mut made_here = false;
         for (i, value) in values.enumerate() {
             given.push(match value {
-                Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
+                Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => {
+                    made_here |= i == 0;
+                    Value::Ref(e)
+                }
                 // Of fields, `&mut self.orig`: each field, written as a place.
                 Value::Expr(e) | Value::Place(e)
                     if i < borrowed && fields && matches!(e.kind, js::ExprKind::Member(..)) =>
                 {
+                    made_here |= i == 0;
                     Value::Ref(e)
                 }
                 // A cell, a generic `&mut V` a store gives: its `value`, the
@@ -279,6 +287,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.spill("cell", e, out),
                     };
                     Value::Ref(Expr::held(cell))
+                }
+                // A `&mut` MIR gives of a place, a variable's or a field's.
+                Value::Ref(e) => {
+                    made_here |= i == 0;
+                    Value::Ref(e)
                 }
                 value => value,
             });
@@ -325,10 +338,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::MemTake => (self.default_value(pointee, span)?, None),
             _ => (self.value_expr(values.next().expect("a value"), span)?, None),
         };
-        // An item of a `#[rust_js::nullable]` field's items stores `null`
-        // for `None`, `v[i].take()` (ADR 0586, amended).
-        let b = match b_place.is_none() && self.lends_field_item(state) {
+        // A `#[rust_js::nullable]` field, or an item of one's items, stores
+        // `null` for `None`, `root.pending.take()` (ADR 0996), `v[i].take()`
+        // (ADR 0586, amended).
+        let b = match b_place.is_none() && self.lends_nullable_place(state) {
             true => js::Storage::NullForNone.written(b, false),
+            false => b,
+        };
+        // A take of a place rust-js made, read and written as a path, may
+        // write where it was `Some` (`Known::Taken`, ADR 0996).
+        let b = match known == Std::OptionTake && made_here && js::taken_place(&a) {
+            true => Expr {
+                facts: b.facts.with(js::Known::Taken),
+                ..b
+            },
             false => b,
         };
         let old = self.spill(if b_place.is_some() { "t" } else { "old" }, a.clone(), out);

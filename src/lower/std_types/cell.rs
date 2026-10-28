@@ -267,6 +267,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => cell,
                     false => self.fixed_place_of(Expr::held(cell), out),
                 };
+                // A take of a place rust-js made, read and written as a
+                // path, may write where it was `Some` (ADR 0996).
+                let next = match known == Std::CellTake && self.option_of(item).is_some() && js::taken_place(&place) {
+                    true => Expr {
+                        facts: next.facts.with(js::Known::Taken),
+                        ..next
+                    },
+                    false => next,
+                };
                 let old = self.spill("old", place.clone(), out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
                 match stores_null {

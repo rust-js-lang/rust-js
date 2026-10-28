@@ -619,6 +619,13 @@ pub enum Known {
     /// `make(context)` of `set(Some(make(context)))`. A nullable place
     /// stores it as it is (`Storage::written`, ADR 0841).
     Defined,
+    /// The `None` a `take()` writes over a place rust-js made, a variable
+    /// or a crate struct's field, a plain data property, read into a
+    /// `const` just before (ADR 0996): nothing but that `const` sees the
+    /// place between, so the write may go where the `const` is `Some`,
+    /// upstream's `if (x.f !== null) { const c = x.f; x.f = null; .. }`,
+    /// `None` written over `None` changing nothing.
+    Taken,
     /// A read of a thread-local made where it's first used, `key()`
     /// (ADR 0037, amended): making it runs its initializer, which Rust runs
     /// inside the call that uses it, after what that call is given, so it's

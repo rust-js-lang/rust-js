@@ -554,4 +554,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_vec_taken.rs$"],
     snapshots: true,
   },
+  {
+    name: "cell-take-unmarked",
+    breaks: "a `Cell` field's `take()` then tested keeps its take first, `const cancel = root.cancel; root.cancel = undefined; if (cancel != null)` (ADR 0996)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let next = match known == Std::CellTake && self.option_of(item).is_some() && js::taken_place(&place) {\n",
+    replace: "                let next = match false && js::taken_place(&place) {\n",
+    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
+  },
 ];

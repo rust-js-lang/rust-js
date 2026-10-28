@@ -325,9 +325,9 @@ pub fn run(task: &Task) -> u32 {
 
 ```js
 export function run(task) {
-  const f = task.callback;
-  task.callback = undefined;
-  if (f != null) {
+  if (task.callback != null) {
+    const f = task.callback;
+    task.callback = undefined;
     const n = f(false);
     task.callback = f;
     return n;

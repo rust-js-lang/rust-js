@@ -950,25 +950,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether the call that ends the block being lowered is given first a
-    /// `&mut` to an item of a `#[rust_js::nullable]` field's items,
-    /// `v[i].take()`'s (`field_item`): what it writes there, `null` for
-    /// `None` (ADR 0586, amended).
-    pub(super) fn lends_field_item(&self, state: &State<'_, 'tcx>) -> bool {
+    /// `&mut` to a `#[rust_js::nullable]` field, `root.pending.take()`'s
+    /// (ADR 0996), or to an item of one's items, `v[i].take()`'s
+    /// (`field_item`): what it writes there, `null` for `None` (ADR 0586,
+    /// amended).
+    pub(super) fn lends_nullable_place(&self, state: &State<'_, 'tcx>) -> bool {
         let mir::TerminatorKind::Call { args, .. } = &state.body.basic_blocks[state.at].terminator().kind else {
             return false;
         };
         let Some(lent) = args.first().and_then(|arg| arg.node.place()) else {
             return false;
         };
-        let reborrowed = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
-            mir::StatementKind::Assign(assign) if assign.0 == lent => match &assign.1 {
-                Rvalue::Ref(_, _, place) => Some(*place),
+        // What it reborrows, through each `&mut *r` MIR makes of another,
+        // `mem::take(&mut root.pending)`'s.
+        let reborrowed = |lent: Place<'tcx>| {
+            (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+                mir::StatementKind::Assign(assign) if assign.0 == lent => match &assign.1 {
+                    Rvalue::Ref(_, _, place) => Some(*place),
+                    _ => None,
+                },
                 _ => None,
-            },
-            _ => None,
-        });
-        let item = reborrowed.unwrap_or_else(|| self.tcx.mk_place_deref(lent));
+            })
+        };
+        let mut item = reborrowed(lent).unwrap_or_else(|| self.tcx.mk_place_deref(lent));
+        for _ in 0..state.body.local_decls.len() {
+            match (item.as_local(), item.projection.as_slice()) {
+                (None, [PlaceElem::Deref]) => match reborrowed(Place::from(item.local)) {
+                    Some(place) => item = place,
+                    None => break,
+                },
+                _ => break,
+            }
+        }
         self.field_item(state, item).is_some()
+            || (self.place_field(state, item)).is_some_and(|field| bindings::is_nullable(self.tcx, field))
     }
 
     /// The `#[rust_js::nullable]` field whose `Vec<Option<T>>` the items

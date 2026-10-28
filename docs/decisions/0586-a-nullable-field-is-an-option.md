@@ -366,3 +366,10 @@ ConsoleTask | null;`.
   `.d.ts`, of a thread-local of an `Option` and of a module variable's
   cell.
 - Mutation `nullable-local-declared-unaliased` (`declarations.rs`).
+
+## Amended by 0996: a field's `take()` stores `null`
+
+`root.pending.take()` and `mem::take(&mut root.pending)` of a
+`#[rust_js::nullable]` field wrote `undefined`, where every other write of
+it stores `null`; they store `null` too
+([0996](0996-a-take-then-tested-is-the-place-tested.md)).

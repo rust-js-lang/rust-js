@@ -2361,6 +2361,12 @@ export function isAdult(p) {
   is the place read there, `workInProgress.child = current.child;`, where
   it's named as the field and nothing runs before it; named otherwise,
   given as an argument or tested, it keeps its name (ADR 0866, amended).
+- `if let Some(cancel) = root.cancel.take()` tests the field and takes it
+  where it's there, `if (root.cancel != null) { const cancel =
+  root.cancel; root.cancel = undefined; .. }`, as JS writes it, of a
+  variable or a field of your struct; a `#[rust_js::nullable]` field's
+  take writes `null`
+  ([ADR 0996](../../decisions/0996-a-take-then-tested-is-the-place-tested.md)).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,

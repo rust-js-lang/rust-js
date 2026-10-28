@@ -58,6 +58,21 @@ pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
     }
 }
 
+/// Whether `place`, what a `take()` writes, is one rust-js made, read and
+/// written as a path: a variable, or a field of one, `root.cancel`, a
+/// plain data property none of whose reads a getter answers (ADR 0996),
+/// so reading it twice reads the same value, and writing it runs nothing.
+pub(crate) fn taken_place(place: &Expr) -> bool {
+    if place.facts.has(Known::Getter) || place.facts.has(Known::Setter) {
+        return false;
+    }
+    match &place.kind {
+        ExprKind::Var(_) => true,
+        ExprKind::Member(object, _) => taken_place(object),
+        _ => false,
+    }
+}
+
 /// Are `a` and `b` the same variable or path of one: `s`, `a.b`, `a?.b`, an
 /// item by a key that reads the same, `counts[name]`, `files["/a"]`,
 /// `v[0]`, or the runtime's checked item, `$index(v, i).hits`, which names

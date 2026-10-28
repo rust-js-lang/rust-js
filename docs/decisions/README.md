@@ -469,7 +469,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
 - [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value)*
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
-- [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one; amended: or a `Vec` of them, each item's `None` `null`; of a thread-local, and a binding's type parameter; of a field of a type parameter's value, and a thread-local a generic constructor makes; of a thread-local of an `Option` itself, and what one gives; of a `const`; of a constant's struct's field; amended: declared by the aliases its type is written of)*
+- [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one; amended: or a `Vec` of them, each item's `None` `null`; of a thread-local, and a binding's type parameter; of a field of a type parameter's value, and a thread-local a generic constructor makes; of a thread-local of an `Option` itself, and what one gives; of a `const`; of a constant's struct's field; amended: declared by the aliases its type is written of; amended by 0996: its `take()` stores `null`)*
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
 - [0588 A binding may throw by the result it's declared with](0588-a-binding-throws-by-its-declared-result.md)
 - [0589 A `Drop` dropped in one place is its body there](0589-a-drop-dropped-once-is-its-body-there.md) *(amended by 0705: a guard's field of a variable is that variable)*
@@ -780,6 +780,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0993 What compiled `rev()` is given is made knowing its back where it's made](0993-what-compiled-rev-is-given-is-made-where-its-made.md)
 - [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md)
 - [0995 A std body takes a JS iterator's dictionary where it's given none](0995-a-std-body-takes-a-js-iterators-dictionary-by-default.md)
+- [0996 A `take()` then tested is the place tested, taken where it's `Some`](0996-a-take-then-tested-is-the-place-tested.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

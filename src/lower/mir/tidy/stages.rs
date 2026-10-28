@@ -259,6 +259,9 @@ pub(super) const STAGES: &[Stage] = &[
             // `values-chain-branch-values-off`, `values-chain-declarations-off`,
             // `inlined-in-values-off`).
             pass("inlined", inlined_of),
+            // A `take()` of a place rust-js made, then tested: the place
+            // tested, and taken where it's `Some` (ADR 0996).
+            pass("taken options", |b, _| js::statement_lists(b, &mut taken_options)),
             // An `Option` made where it's tested, `if let Some(o) =
             // kind.object()`: the test it's made by (ADR 0910); before its
             // branches are one value, `o?.$$typeof` of `if (o) { t =

@@ -12,9 +12,9 @@ const Holder = {
   },
 
   bump(holder) {
-    const x = holder.held;
-    holder.held = undefined;
-    if (x != null) {
+    if (holder.held != null) {
+      const x = holder.held;
+      holder.held = undefined;
       x.value = (x.value + 1) >>> 0;
       holder.held = x;
     }

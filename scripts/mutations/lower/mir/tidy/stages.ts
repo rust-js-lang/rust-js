@@ -707,4 +707,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
     snapshots: true,
   },
+  {
+    name: "taken-options-off",
+    breaks: "a take of a field then tested keeps its take first, `const cancel = root.cancel; root.cancel = undefined; if (cancel != null)`, not upstream's test of the place (ADR 0996)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"taken options\", |b, _| js::statement_lists(b, &mut taken_options)),\n",
+    replace: "",
+    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
+  },
 ];

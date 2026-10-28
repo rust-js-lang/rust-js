@@ -588,4 +588,20 @@ export const mutations: Mutation[] = [
     replace: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet) && false\n",
     tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
   },
+  {
+    name: "nullable-field-taken-undefined",
+    breaks: "a `#[rust_js::nullable]` field taken, `root.pending.take()`, is left `undefined`, not its `None`, `null`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            || (self.place_field(state, item)).is_some_and(|field| bindings::is_nullable(self.tcx, field))\n",
+    replace: "",
+    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
+  },
+  {
+    name: "nullable-reborrow-unfollowed",
+    breaks: "`mem::take(&mut root.pending)`, whose MIR reborrows the field, leaves a nullable field `undefined`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                (None, [PlaceElem::Deref]) => match reborrowed(Place::from(item.local)) {\n",
+    replace: "                (None, [PlaceElem::Deref]) if false => match reborrowed(Place::from(item.local)) {\n",
+    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
+  },
 ];

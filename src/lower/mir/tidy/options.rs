@@ -6,9 +6,9 @@ use super::*;
 /// (x) { a } else { b }`, of a value `v` that's there (`Known::Defined`):
 /// `if (t) { a } else { b }`, `x` read as `v` in `a`, as `if let Some(x) =
 /// kind.object()` is upstream's `if (typeof value === "object" && value
-/// !== null)` (ADR 0910). Its test is the `Option`'s presence, `!!x`, true
-/// exactly where it's set (`Known::Presence`), which is where `t` holds,
-/// `v` being there; or `!x`, of a branch that ends, `x` read past it. `v`
+/// !== null)` (ADR 0910). Its test is the `Option`'s presence, `x != null`,
+/// true exactly where `t` holds, `v` being there; or `x == null`, of a
+/// branch that ends, `x` read past it. `v`
 /// is a variable nothing changes, so it's what `x` was wherever `x` is
 /// read, a closure's later too; `x` is read nowhere else, and neither is
 /// declared in what reads `x`, which would read another.
@@ -84,5 +84,62 @@ fn tested_option(
             StmtKind::If(test.clone().negated_test(), then.clone(), None),
             Some(reads),
         ),
+    })
+}
+
+/// A `take()` of a place rust-js made, then tested, `const c = x.f; x.f =
+/// undefined; if (c != null) { a } else { b }`: the place tested, and taken
+/// where it's `Some`, `if (x.f != null) { const c = x.f; x.f = undefined; a
+/// } else { b }`, as upstream writes it (ADR 0996). The write is marked so
+/// by lowering (`Known::Taken`): the place is a path nothing but `c` reads
+/// between, read twice the same, and where it's `None` writing `None` over
+/// it changes nothing. `c` is read nowhere but `a`.
+pub(super) fn taken_options(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        if let Some(tested) = taken_option(&stmts[i], &stmts[i + 1], &stmts[i + 2], &stmts[i + 3..]) {
+            let span = stmts[i + 2].span;
+            stmts.splice(i..i + 3, [tested.at(span)]);
+        }
+        i += 1;
+    }
+}
+
+/// `taken_options`'s rewrite of `made`, `const c = place;`, `written`, the
+/// take's `place = undefined;`, and `tested`, the `if` of `c`, before
+/// `rest`.
+fn taken_option(made: &Stmt, written: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
+    let StmtKind::Const(c, place) = &made.kind else {
+        return None;
+    };
+    let StmtKind::Assign(target, none) = &written.kind else {
+        return None;
+    };
+    if !none.facts.has(js::Known::Taken) || !js::same_path(place, target) {
+        return None;
+    }
+    let StmtKind::If(test, then, otherwise) = &tested.kind else {
+        return None;
+    };
+    let of_c = |e: &Expr| matches!(&e.kind, ExprKind::Var(o) if o == c);
+    // `c != null`, where it's taken in `then`, or `c == null`, in the else.
+    let set = match (js::null_test(test, true), js::null_test(test, false)) {
+        (Some(option), _) if of_c(option) => true,
+        (_, Some(option)) if of_c(option) => false,
+        _ => return None,
+    };
+    let (some, none_branch) = match set {
+        true => (then.as_slice(), otherwise.as_deref().unwrap_or_default()),
+        false => (otherwise.as_deref()?, then.as_slice()),
+    };
+    if js::mentions_in(none_branch, c) > 0 || js::mentions_in(rest, c) > 0 {
+        return None;
+    }
+    let mut taken = vec![made.clone(), written.clone()];
+    taken.extend(some.iter().cloned());
+    let test = Expr::presence(place.clone(), set);
+    Some(match set {
+        true => StmtKind::If(test, taken, otherwise.clone()),
+        false => StmtKind::If(test, then.clone(), Some(taken)),
     })
 }

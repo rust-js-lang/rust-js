@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     "name": "mir-take-variable-as-object",
     "breaks": "`mem::take(&mut current)` of a variable is `$take(current, [])` from MIR, not `const old = current; current = [];`",
     "file": "src/lower/mir/entries.rs",
-    "find": "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),",
-    "replace": "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => Value::Ref(e),",
+    "find": "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => {",
+    "replace": "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => {",
     "tests": ["test/lowering-functions.test.ts", "-t", "taking a variable assigns the variable"]
   },
   {
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "nullable-item-taken-undefined",
     breaks: "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
     file: "src/lower/mir/entries.rs",
-    find: "        let b = match b_place.is_none() && self.lends_field_item(state) {\n",
+    find: "        let b = match b_place.is_none() && self.lends_nullable_place(state) {\n",
     replace: "        let b = match b_place.is_none() && false {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
   },
@@ -129,5 +129,13 @@ export const mutations: Mutation[] = [
     find: "        if tried.reads_same() && !place {\n",
     replace: "        if tried.reads_same() {\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a place a question mark tries is read once"],
+  },
+  {
+    name: "option-take-unmarked",
+    breaks: "`root.pending.take()` then tested keeps its take first, `const pending = root.pending; root.pending = null; if (pending != null)`, not upstream's test of the place (ADR 0996)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let b = match known == Std::OptionTake && made_here && js::taken_place(&a) {\n",
+    replace: "        let b = match false && made_here && js::taken_place(&a) {\n",
+    tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
 ];

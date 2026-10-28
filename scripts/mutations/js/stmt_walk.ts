@@ -288,4 +288,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"],
   },
+  {
+    name: "taken-place-any",
+    breaks: "a take of an item, `hiddenUpdates[index].take()`, is moved into its test's branch too, where only a path of variables and fields is (ADR 0996)",
+    file: "src/js/stmt_walk.rs",
+    find: "        ExprKind::Member(object, _) => taken_place(object),\n        _ => false,\n",
+    replace: "        ExprKind::Member(object, _) => taken_place(object),\n        _ => true,\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a binding of what take\\(\\) gives names it"],
+  },
 ];

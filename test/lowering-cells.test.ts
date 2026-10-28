@@ -770,7 +770,8 @@ pub fn emptied(bag: &Bag) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const callback = task.callback;\n  task.callback = undefined;");
+  // Taken where it's set, the field tested (ADR 0996).
+  expect(js).toContain("  if (task.callback != null) {\n    const callback = task.callback;\n    task.callback = undefined;\n");
   expect(js).toContain("export function cancel(task) {\n  task.callback = undefined;\n}");
   expect(js).toContain("return task.callback == null;");
   expect(js).toContain("return { callback: (n) => (n + 1) >>> 0 };");
