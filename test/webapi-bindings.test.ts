@@ -841,3 +841,35 @@ pub fn scaled(response: &Response) -> String {
   const own = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
   expect(own.stderr.toString()).toContain("`#[rust_js::whole]` is of a binding that gives an `f64`");
 });
+
+// React port gap rd81: an `and_then` of a binding TypeScript types
+// `T | null`, `Node::first_child`, is JS's optional chain,
+// `node?.firstChild`, whose `undefined` where `node` is `None` is a `None`
+// as its `null` is (ADR 0298, amended): getNodeForCharacterOffset's
+// getLeafNode. The crate's own nullable function's is `null` for `None`,
+// `node != null ? f(node) : null`, as React's is (ADR 0841, amended).
+test("an and_then of a nullable binding is an optional chain", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-and-then-chain");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Node;
+
+pub fn get_leaf_node(mut node: Option<&'static Node>) -> Option<&'static Node> {
+    while let Some(first_child) = node.and_then(Node::first_child) {
+        node = Some(first_child);
+    }
+    node
+}
+
+pub fn parent_name(node: Option<&Node>) -> Option<String> {
+    node.and_then(Node::parent_node).map(|parent| parent.node_name())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("while ((firstChild = node?.firstChild) != null) {");
+  expect(js).not.toContain(": null");
+  const lib = await import(join(dir, "lib.js"));
+  const leaf = { firstChild: null };
+  expect([lib.getLeafNode({ firstChild: { firstChild: leaf } }), lib.getLeafNode(null), lib.getLeafNode(undefined)]).toEqual([leaf, null, undefined]);
+  expect([lib.parentName({ parentNode: { nodeName: "DIV" } }), lib.parentName({ parentNode: null }), lib.parentName(undefined)]).toEqual(["DIV", undefined, undefined]);
+});

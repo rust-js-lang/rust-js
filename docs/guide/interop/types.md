@@ -946,7 +946,9 @@ export function ratio(a, b) {
   owner ? nameOfOwner(owner) : null`, and of a closure of its call,
   `next.and_then(|next| try_hydrate(fiber, next))`'s `next != null ?
   tryHydrate(fiber, next) : null`, but not a trait's method's, whose
-  impl may give `undefined`
+  impl may give `undefined`, nor a binding's, whose `and_then` is JS's
+  optional chain, `node.and_then(Node::first_child)` `node?.firstChild`,
+  `undefined` where `node` is `None` (ADR 0298, amended)
   ([ADR 0841](../../decisions/0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md),
   amended).
   What's read of a nullable field is `null` or its value, so a variable

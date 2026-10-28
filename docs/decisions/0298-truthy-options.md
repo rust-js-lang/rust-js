@@ -553,3 +553,22 @@ against native Rust, and the mutations `presence-none-kind-unsaid`,
 `nones-through-a-mut-borrow`, `nones-of-any-call` (`lower/mir/patterns.ts`),
 `none-given-by-the-crates-nullable-function` and
 `and-then-of-a-binding-nulled` (`lower/calls.ts`).
+
+## Amendment (2026-10-29): a binding's `and_then` is an optional chain
+
+The amendment before this one wrote `#[rust_js::nullable]` of every
+webapi binding TypeScript types `T | null`, so `calls::and_then_given`
+took `Node::first_child` for a nullable function, whose `and_then` is
+`null` for `None` (ADR 0841, amended): getNodeForCharacterOffset's
+`node.and_then(Node::first_child)` read `node != null ? node.firstChild
+: null` where it was, and upstream's is, `node?.firstChild` (React port
+gap rd81, a regression). A binding's `and_then`, of the function as of a
+closure of its call, is JS's optional chain again, its `None`
+`undefined` where what it's of is `None`, `null` where the binding gives
+it: an `Option` of no `NoneNull` fact, tested `!= null`, stored `?? null`
+in a nullable place. The crate's own nullable function's stays `null`,
+React's `owner ? getComponentNameFromOwner(owner) : null`. Held by
+`test/webapi-bindings.test.ts`'s "an and_then of a nullable binding is an
+optional chain" (run, with `None` given as `null` and as `undefined`) and
+the mutation `and-then-binding-null`.
+

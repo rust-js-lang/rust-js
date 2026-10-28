@@ -251,9 +251,11 @@ pub(super) fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_spa
 /// amended).
 pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Expr) -> (Expr, Expr) {
     let none = match f.kind() {
-        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),
-        // Not a binding's, `|labels| labels.item(0)`, whose `?.` reads as
-        // JS's, `labels?.item(0)` (ADR 0298, amended).
+        // Not a binding's, `Node::first_child` or `|labels| labels.item(0)`,
+        // whose `?.` reads as JS's, `node?.firstChild` (ADR 0298, amended).
+        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {
+            Expr::null()
+        }
         ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),
         _ => Expr::undefined(),
     };

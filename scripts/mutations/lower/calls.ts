@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "and-then-of-nullable-none-undefined",
     breaks: "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
-    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),\n",
+    find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {\n            Expr::null()\n        }\n",
     replace: "",
     tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
   },
@@ -138,5 +138,13 @@ export const mutations: Mutation[] = [
     find: "    if output.is_floating_point() && super::bindings::whole_range(tcx, def_id).is_some() {\n",
     replace: "    if false {\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "and-then-binding-null",
+    breaks: "an `and_then` of a nullable binding is `node != null ? node.firstChild : null`, not JS's `node?.firstChild` (rd81)",
+    file: "src/lower/calls.rs",
+    find: " && !super::bindings::is_binding(tcx, *def_id)",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "and_then of a nullable binding"],
   },
 ];
