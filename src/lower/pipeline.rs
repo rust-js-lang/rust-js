@@ -1289,7 +1289,8 @@ pub fn lower_crate<'tcx>(
             let names = import_names.get(&module);
             let foreign_variables: HashSet<&str> = (foreign.all())
                 .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())
-                .filter_map(|item| names?.get(&(item.from.clone(), item.export.clone())))
+                .flat_map(|item| std::iter::once((item.from.clone(), item.export.clone())).chain(item.rooted.clone()))
+                .filter_map(|export| names?.get(&export))
                 .map(String::as_str)
                 .collect();
             if !foreign_variables.is_empty() {

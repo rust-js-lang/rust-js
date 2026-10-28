@@ -472,6 +472,9 @@ pub(super) struct Foreign<'a, 'tcx> {
     /// The libraries' functions the crate compiles itself (ADR 0914), which
     /// are its own, no item of theirs it imports.
     instances: &'a super::instances::Instances,
+    /// Each library item a module names through its library's root
+    /// (`rooted_paths`), found where first asked.
+    rooted: std::cell::OnceCell<HashSet<(LocalModId, DefId)>>,
 }
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {
@@ -484,6 +487,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             tcx,
             dependencies,
             instances,
+            rooted: std::cell::OnceCell::new(),
         }
     }
 
@@ -538,6 +542,23 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .flat_map(|param| param.facts.iter().map(move |word| (param.index, word)))
             .filter_map(|(index, word)| super::recognition::TypeFact::of_word(word).map(|fact| (index, fact)))
             .collect()
+    }
+
+    /// What `module` imports library item `id` as, from where: by its
+    /// package's name, as its root re-exports it, where the module's Rust
+    /// names it through the library's root; else by its module's file (the
+    /// user's decision, ADR 1008, amended).
+    pub(super) fn import_key(&self, id: DefId, module: LocalModId) -> Option<(String, String)> {
+        let item = self.item(id)?;
+        let rooted = || {
+            self.rooted
+                .get_or_init(|| rooted_paths(self.tcx))
+                .contains(&(module, id))
+        };
+        Some(match &item.rooted {
+            Some(by_package) if rooted() => by_package.clone(),
+            _ => (item.from.clone(), item.export.clone()),
+        })
     }
 
     pub(super) fn item(&self, id: DefId) -> Option<&'a Imported> {
@@ -905,20 +926,17 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 }
 
-/// Each library item the crate's Rust names through its library's root,
-/// `use react_isomorphic::CHILDREN;` of a `pub use react_client::CHILDREN;`
-/// there, imported by its package's name where its package's root
-/// re-exports it, `import {Children} from 'react'`; one named by its
-/// module's path, `react_reconciler::react_fiber_reconciler::..`, by its
-/// module's file, as upstream's `'react-reconciler/src/..'` (the user's
-/// decision, ADR 1008, amended). Of the whole crate: one it names both ways
-/// is imported by the package's name.
-pub fn import_through_roots(tcx: TyCtxt<'_>, dependencies: &mut Dependencies) {
+/// Each library item a module of the crate names through its library's
+/// root, by the module: `use react_isomorphic::CHILDREN;` of a `pub use
+/// react_client::CHILDREN;` there, a path whose last but one segment is the
+/// library's root, its `use`s' and its expressions' (the user's decision,
+/// ADR 1008, amended).
+fn rooted_paths(tcx: TyCtxt<'_>) -> HashSet<(LocalModId, DefId)> {
     use rustc_hir::def::{DefKind, Res};
     use rustc_hir::intravisit::{self, Visitor};
     struct Paths<'tcx> {
         tcx: TyCtxt<'tcx>,
-        rooted: HashSet<DefId>,
+        rooted: HashSet<(LocalModId, DefId)>,
     }
     impl<'tcx> Visitor<'tcx> for Paths<'tcx> {
         type NestedFilter = rustc_middle::hir::nested_filter::All;
@@ -926,17 +944,15 @@ pub fn import_through_roots(tcx: TyCtxt<'_>, dependencies: &mut Dependencies) {
             self.tcx
         }
         fn visit_path(&mut self, path: &rustc_hir::Path<'tcx>, id: rustc_hir::HirId) {
-            // A path whose last but one segment is the library's root.
             if let Res::Def(_, item) = path.res
                 && !item.is_local()
                 && let [.., parent, _] = path.segments
                 && let Res::Def(DefKind::Mod, module) = parent.res
                 && module == item.krate.as_def_id()
             {
-                self.rooted.insert(item);
+                self.rooted.insert((self.tcx.parent_module(id), item));
             }
             intravisit::walk_path(self, path);
-            let _ = id;
         }
     }
     let mut paths = Paths {
@@ -944,12 +960,5 @@ pub fn import_through_roots(tcx: TyCtxt<'_>, dependencies: &mut Dependencies) {
         rooted: HashSet::new(),
     };
     tcx.hir_visit_all_item_likes_in_crate(&mut paths);
-    for item in paths.rooted {
-        let crate_name = tcx.crate_name(item.krate).to_string();
-        if let Some(imported) =
-            (dependencies.libraries.get_mut(&crate_name)).and_then(|exports| exports.items.get_mut(&key(tcx, item)))
-        {
-            imported.by_package_root();
-        }
-    }
+    paths.rooted
 }

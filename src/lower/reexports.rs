@@ -151,9 +151,10 @@ pub(super) fn reexports(
             // A library's, from its file, as its manifest says (ADR 0100).
             if let Some(imported) = foreign.item(def_id)
                 && imported.member.is_none()
+                && let Some((from, export)) = foreign.import_key(def_id, module)
             {
-                let from = js::ImportFrom::Specifier(imported.from.clone());
-                found.push((statement, from, (imported.export.clone(), alias(&imported.name))));
+                let from = js::ImportFrom::Specifier(from);
+                found.push((statement, from, (export, alias(&imported.name))));
                 continue;
             }
             let what = format!("a `pub use` of `{}`", tcx.def_path_str(def_id));
@@ -206,11 +207,8 @@ pub(super) fn reexports(
                     Some((js::ImportFrom::Module(from.clone()), info.owner.clone()?))
                 };
                 let library_class = || {
-                    let imported = foreign.item(constructor?)?;
-                    Some((
-                        js::ImportFrom::Specifier(imported.from.clone()),
-                        imported.export.clone(),
-                    ))
+                    let (from, export) = foreign.import_key(constructor?, module)?;
+                    Some((js::ImportFrom::Specifier(from), export))
                 };
                 let Some((from, export)) = crate_class().or_else(library_class) else {
                     let why = "a class is its constructor, `fn new(..) -> Self`";

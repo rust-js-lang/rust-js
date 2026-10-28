@@ -147,13 +147,16 @@ exception listed in ADR 0262's Consequences and the guide's differences
   imported by the package's name only where the crate's Rust names it
   through the library's root, `use react_isomorphic::CHILDREN;` of the
   root's `pub use react_client::CHILDREN;`: a path whose last but one
-  segment is the library's root (`lower::import_through_roots`, of every
-  path the crate's HIR has, `use`s and expressions). One named by its
+  segment is the library's root (`Foreign::import_key`, of the paths of
+  each module's HIR, `use`s and expressions). One named by its
   module's path, `react_reconciler::react_fiber_reconciler::..`, is
   imported by its module's file, as upstream's `'react-reconciler/src/..'`
-  is by its path. Of the crate as a whole: one it names both ways is
-  imported by the package's name (each import of the crate's is named
-  once, ADR 0202). Mutation `package-root-path-unread`.
+  is by its path. Each module as its own paths say (amended again, the
+  user's decision): one module's `kids::bump` is `import { bump } from
+  "@acme/kids"`, another's `kids::client::bump` `import { bump } from
+  "../../kids/src/client.js"` in its file, one binding of one module
+  instance. Mutations `package-root-path-unread` and
+  `package-root-path-of-the-crate`.
 - **A generated root too: one way.** Where the package's root is the
   crate's root module's JS, ADR 0414's `"main": "src/lib.js"`, what that
   module exports, its own items and its `pub use`s, is what the root

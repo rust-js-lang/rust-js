@@ -521,13 +521,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the module imports it: `consumed_into_iters`'s `fuse`.
     pub(in crate::lower) fn fuse_import(&self) -> Option<String> {
         crate::lower::recognition::compiled_provided_method(self.tcx, "Iterator", "fuse")
-            .and_then(|id| self.krate.foreign.item(id))
-            .and_then(|item| {
-                self.krate
-                    .imports
-                    .get(&self.module)?
-                    .get(&(item.from.clone(), item.export.clone()))
-            })
+            .and_then(|id| self.krate.foreign.import_key(id, self.module))
+            .and_then(|export| self.krate.imports.get(&self.module)?.get(&export))
             .cloned()
     }
 }

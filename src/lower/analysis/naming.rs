@@ -295,11 +295,7 @@ pub(super) fn name_imports(
             // "../shared/enqueueTask.js"`, as React's ReactAct has it (ADR
             // 0202, amended).
             let library_renamed: HashMap<Export, &String> = (renamed.iter())
-                .filter_map(|(&id, alias)| {
-                    foreign
-                        .item(id)
-                        .map(|item| ((item.from.clone(), item.export.clone()), alias))
-                })
+                .filter_map(|(&id, alias)| foreign.import_key(id, module).map(|export| (export, alias)))
                 .collect();
             // What the module imports is named first, so it's named as it is
             // where another module imports another of its name: next/image's

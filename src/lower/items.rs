@@ -77,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A library's, imported by the name it chose (ADR 0100).
         if let Some(item) = self.krate.foreign.item(def_id) {
-            let export = (item.from.clone(), item.export.clone());
+            let export = (self.krate.foreign.import_key(def_id, self.module)).expect("a library's item");
             self.dependencies
                 .borrow_mut()
                 .package_uses

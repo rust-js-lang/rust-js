@@ -252,7 +252,8 @@ pub fn count() -> u32 {
   writeFileSync(join(kids, "src", "hooks.rs"), "pub fn hook() -> u32 {\n    7\n}\n\npub fn other() -> u32 {\n    0\n}\n");
   const entry = "export {bump} from './src/client.js';\nexport * from './src/hooks.js';\n";
   writeFileSync(join(kids, "index.js"), entry);
-  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub fn run() -> u32 {\n    kids::bump();\n    kids::client::bump();\n    kids::client::count() * 10 + kids::hook() + kids::hooks::other()\n}\n");
+  writeFileSync(join(dir, "dom", "src", "by_module.rs"), "pub fn bumped() -> u32 {\n    kids::client::bump();\n    kids::client::count()\n}\n");
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub mod by_module;\n\npub fn run() -> u32 {\n    kids::bump();\n    by_module::bumped() * 10 + kids::hook() + kids::hooks::other()\n}\n");
   mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
@@ -260,11 +261,21 @@ pub fn count() -> u32 {
   const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
+  // What native Rust prints of the two crates.
+  const native = join(dir, "native");
+  mkdirSync(native);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "kids", join(kids, "src", "lib.rs"), "-o", join(native, "libkids.rlib")]);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "dom", join(dir, "dom", "src", "lib.rs"), "-o", join(native, "libdom.rlib"), "--extern", `kids=${join(native, "libkids.rlib")}`]);
+  writeFileSync(join(native, "main.rs"), "fn main() {\n    println!(\"{}\", dom::run());\n}\n");
+  run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
+  const nativeRun = run([join(native, "program")]).trim();
+  expect(nativeRun).toBe("27");
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
-  expect(js()).toContain('import { count } from "../../kids/src/client.js";\n');
   expect(js()).toContain('import { other } from "../../kids/src/hooks.js";\n');
-  expect(ran()).toBe("27");
+  // Each module as its own `use` names it: this one by the module's path.
+  expect(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8")).toContain('import { bump, count } from "../../kids/src/client.js";\n');
+  expect(ran()).toBe(nativeRun);
   // Its root re-exports what the entry does, each from the same module,
   // and nothing else: no JS of its own, the entry's already (ADR 1008,
   // amended), as React's react.rs is no react.js.
@@ -276,12 +287,12 @@ pub fn count() -> u32 {
   manifest({ ".": { browser: "./index.js", default: "./server.js" } });
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { hook } from "@acme/kids";\n');
-  expect(js()).toContain('import { bump, count } from "../../kids/src/client.js";\n');
-  expect(ran()).toBe("27");
+  expect(js()).toContain('import { bump } from "../../kids/src/client.js";\n');
+  expect(ran()).toBe(nativeRun);
   // An entry that runs more than its re-exports as it loads, which the
   // Rust doesn't, and a package Node finds no copy of from the crate's JS,
   // or another: each by its file, as the Rust has it.
-  const byFiles = 'import { bump, count } from "../../kids/src/client.js";\nimport { hook, other } from "../../kids/src/hooks.js";\n';
+  const byFiles = 'import { bump } from "../../kids/src/client.js";\nimport { hook, other } from "../../kids/src/hooks.js";\n';
   manifest();
   writeFileSync(join(kids, "index.js"), `${entry}console.log("loaded");\n`);
   expect(built().stderr).toBe("");
@@ -298,7 +309,7 @@ pub fn count() -> u32 {
   expect(built().stderr).toBe("");
   expect(readFileSync(rootJs, "utf8")).toContain("export { bump } from \"./client.js\";\n");
   expect(readFileSync(join(kids, "src", "lib.d.ts"), "utf8")).toContain("export type Count = number;");
-  expect(ran()).toBe("27");
+  expect(ran()).toBe(nativeRun);
   // Flow's, which oxc doesn't read.
   writeFileSync(join(kids, "index.js"), `export type Kid = number;\n${entry}`);
   const refused = built();

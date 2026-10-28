@@ -371,16 +371,6 @@ pub struct Imported {
     pub rooted: Option<(String, String)>,
 }
 
-impl Imported {
-    /// Imported by its package's name, as its root re-exports it, where
-    /// it does.
-    pub fn by_package_root(&mut self) {
-        if let Some((name, entry)) = self.rooted.take() {
-            (self.from, self.export) = (name, entry);
-        }
-    }
-}
-
 /// A binding a library's module holds as a consumer imports it: from a JS
 /// file, relative to its own output, by its export (ADR 0633).
 #[derive(Clone)]
@@ -507,7 +497,7 @@ impl Dependencies {
             // where Node finds that package from the crate's JS (ADR 1008):
             // an item of its root module, whichever path names it; another,
             // where the crate's Rust names it through the library's root, as
-            // `import_through_roots` says (ADR 1008, amended).
+            // `Foreign::import_key` says of each module (ADR 1008, amended).
             let package = (library.package.as_ref())
                 .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
             let rooted_of = |module: &Vec<String>, export: &str| {

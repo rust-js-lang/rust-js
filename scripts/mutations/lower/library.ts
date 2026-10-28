@@ -300,10 +300,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "package-root-path-unread",
-    breaks: "an item the crate's Rust names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
+    breaks: "an item a module names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
     file: "src/lower/library.rs",
-    find: "            imported.by_package_root();\n",
-    replace: "",
+    find: "            Some(by_package) if rooted() => by_package.clone(),\n",
+    replace: "            Some(by_package) if false => by_package.clone(),\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
+  {
+    name: "package-root-path-of-the-crate",
+    breaks: "an item one module names through its library's root is imported by the package's name in every module, one naming its module's path too, where each module's import follows its own `use` (the user's decision, ADR 1008, amended)",
+    file: "src/lower/library.rs",
+    find: ".contains(&(module, id))",
+    replace: ".iter().any(|&(_, rooted)| rooted == id)",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
 ];

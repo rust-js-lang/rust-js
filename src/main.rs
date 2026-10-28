@@ -292,9 +292,6 @@ impl Callbacks for RustJs {
         // with it (ADR 0914); and so is one with a thread-local made as its
         // module loads by a function of a module that may load after it,
         // made where it's first used then (ADR 0037, amended).
-        // A library's item named through its root, by its package's name
-        // (ADR 1008, amended).
-        lower::import_through_roots(tcx, &mut self.dependencies);
         let mut instances = lower::Instances::default();
         let mut made_where_used = std::collections::HashSet::new();
         let lowered = loop {
