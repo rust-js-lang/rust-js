@@ -23,6 +23,10 @@ pub(super) struct Written {
     /// Each `if` written with an `else`: its condition, its `then` and its
     /// `else`, which MIR's structure may make a guard of (`written_elses`).
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
+    /// Where each `else if` is written, an `else` that's an `if`: a link
+    /// of a chain, which an `if let`'s binding, its JS `const`, keeps from
+    /// being an `else if` (`written_elses`).
+    pub else_ifs: Vec<js::Span>,
     /// Where each `let … else`'s `else` is written: a guard's exit, which
     /// stays where it's written, not a tail it's alike (`shared_tails`).
     pub let_elses: Vec<js::Span>,
@@ -219,6 +223,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let else_ifs: Vec<js::Span> = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If {
+                    else_opt: Some(otherwise),
+                    ..
+                } if matches!(self.frame.thir[self.strip(otherwise)].kind, thir::ExprKind::If { .. }) => {
+                    Some(self.js_span(self.frame.thir[otherwise].span))
+                }
+                _ => None,
+            })
+            .collect();
         // Where each `&&` or `||` the program wrote is.
         let logicals: Vec<js::Span> = (self.frame.thir.exprs.iter())
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
@@ -345,6 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ifs,
             thens,
             elses,
+            else_ifs,
             let_elses,
             logicals,
             strict_tests,

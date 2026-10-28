@@ -8,11 +8,10 @@ export function entry() {
 
 const countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
 function countSource_nextItem(count) {
-  if (count.n === 0) {
-    return;
+  if (count.n !== 0) {
+    count.n = (count.n - 1) >>> 0;
+    return count.n;
   }
-  count.n = (count.n - 1) >>> 0;
-  return count.n;
 }
 
 const wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };

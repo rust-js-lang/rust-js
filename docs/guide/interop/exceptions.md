@@ -863,10 +863,11 @@ pub fn lazy_initializer(payload: &Payload) -> Option<&'static Unknown> {
 
 ```js
 export function lazyInitializer(payload) {
-  if (payload._status !== "Resolved") {
+  if (payload._status === "Resolved") {
+    return payload._result;
+  } else {
     throw payload._result;
   }
-  return payload._result;
 }
 ```
 

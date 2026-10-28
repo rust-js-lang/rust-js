@@ -11,11 +11,11 @@ function warned(seen, key) {
 function label(flag) {
   if (flag) {
     return "on";
-  }
-  if (flag) {
+  } else if (flag) {
     return "never";
+  } else {
+    return !flag ? "off" : "never";
   }
-  return !flag ? "off" : "never";
 }
 
 function countdown(flags) {

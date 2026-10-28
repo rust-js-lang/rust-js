@@ -235,6 +235,10 @@ fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
                     Some(otherwise) if last => assigned(otherwise, name)?,
                     // An early `return`'s: what follows is its `else`.
                     None if !last => assigned(&stmts[i + 1..], name)?,
+                    // The last, of no `else`: the function falls off its end
+                    // otherwise, `undefined`, what the `let` starts as (ADR
+                    // 0237, amended).
+                    None => Vec::new(),
                     _ => return None,
                 };
                 // Of a branch left with nothing to do, the other's test.

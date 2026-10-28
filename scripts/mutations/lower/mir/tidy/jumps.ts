@@ -150,4 +150,21 @@ export const mutations: Mutation[] = [
     replace: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "last match of arms"],
   },
+  {
+    name: "branch-undefined-return-kept",
+    breaks: "the playground's outcome, `} else if (report.tested) { return ..; } else { return; }`, keeps the `return undefined;` MIR made of a `None` at the function's end",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    replace: "        StmtKind::Return(Some(v)) => false && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
+  },
+  {
+    name: "body-undefined-return-dropped",
+    breaks: "a constant's value `undefined`, its body's `return undefined;`, is dropped, the constant `(() => {})()` and its tests `$eq`s",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    replace: "        StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_undefined.rs$"],
+    snapshots: true,
+  },
 ];

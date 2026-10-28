@@ -19,16 +19,16 @@ export function entry() {
 }
 
 function text(payload) {
-  let s = payload.impl.typeId() === "&str" ? payload.value : undefined;
+  const s = payload.impl.typeId() === "&str" ? payload.value : undefined;
   if (s != null) {
     return s;
   }
-  s =
+  const s$1 =
     payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
       ? payload.value
       : undefined;
-  if (s != null) {
-    return s;
+  if (s$1 != null) {
+    return s$1;
   }
   const n = payload.impl.typeId() === "i32" ? payload.value : undefined;
   return n != null ? `an i32, ${n}` : "Box<dyn Any>";

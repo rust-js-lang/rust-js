@@ -647,9 +647,9 @@ pub enum Known {
     /// what's after it is never run (`js::ends`, ADR 0954).
     Diverges,
     /// The test of an `if` whose `else` the program wrote, its branches
-    /// each as written: an `else` after a `then` that leaves stays one
-    /// where statements follow the `if`, `if (a) { ..; return; } else if
-    /// (b) { return; } more` (ADR 0879, amended), not 0237's `if` after.
+    /// each as written: an `else` after a `then` that leaves stays one,
+    /// `if (a) { ..; return; } else if (b) { return; }` (ADR 0237,
+    /// amended), not an `if` after.
     Else,
     /// The test of a `let … else`'s guard, `if (parentA == null) { break; }`,
     /// where the program wrote it: never the test of the loop it's first in,

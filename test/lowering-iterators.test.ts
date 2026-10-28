@@ -271,7 +271,7 @@ pub fn pick(c: bool, n: u32) -> u32 {
   expect(js).toContain("v[0]");
   // A \`return\` the program wrote stays one, the smaller branch first.
   expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
-  expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return (n * 2) >>> 0;\n");
+  expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  } else {\n    return (n * 2) >>> 0;\n  }\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.lastTwo("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);

@@ -238,8 +238,9 @@ const Parser = {
             return result;
           }
           return { TAG: "Ok", _0: { TAG: "Call", _0: other._0, _1: args } };
+        } else {
+          return { TAG: "Ok", _0: { TAG: "Var", _0: other._0 } };
         }
-        return { TAG: "Ok", _0: { TAG: "Var", _0: other._0 } };
       }
       if (other.TAG === "Op") {
         if (other._0 === "-") {

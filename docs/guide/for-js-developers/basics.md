@@ -1162,10 +1162,11 @@ on stays an `else`; a `!( .. )` you wrote of an `&&` or `||` stays one,
 && status !== "rejected"`; and so is an `if`'s value, `if a == 0 || a > b
 { a } else { b }` being `a === 0 || a > b ? a : b`
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
-A branch that returns needs no `else` after it where the `if` ends the
-function, as ESLint's `no-else-return` has it; but an `else` you wrote
-after it stays where statements follow the `if`, `place`'s, and an `else
-if` after an arm that goes on stays one chain; a function's last `match`
+An `else` you wrote after a branch that returns stays an `else`, and an
+`else if` chain stays one chain, whether statements follow the `if`, as
+`place`'s do, or not; an `if` you wrote without an `else` has none, as
+ESLint's `no-else-return` writes it
+([ADR 0237](../../decisions/0237-no-else-after-leaving.md), amended); a function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..
 } else { .. }`, with no `return;` at their ends
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended):

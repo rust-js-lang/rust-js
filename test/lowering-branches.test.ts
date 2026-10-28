@@ -156,11 +156,10 @@ export function one(n, v) {
   expect([v, w, x]).toEqual([[1], [3], ["abc"]]);
 });
 
-// An `if` whose branch leaves has no `else`: what follows it runs only when
-// the branch doesn't, as JS writes it and react.dev's Link has it, `if (..)
-// { return cloneElement(..); } return child;` (ADR 0237). A branch that
-// doesn't leave keeps its `else`.
-test("an if whose branch returns has no else", async () => {
+// An `if` whose branch leaves keeps the `else` the program wrote, as
+// React's BeginWork writes both arms (ADR 0237, amended); one written
+// without it has none. A branch that doesn't leave keeps its `else`.
+test("an if whose branch returns keeps the else the program wrote", async () => {
   const dir = fixture("no-else-return");
   writeFileSync(join(dir, "lib.rs"), `pub fn classify(n: i32) -> &'static str {
     if n < 0 {
@@ -201,10 +200,14 @@ pub fn counted(n: i32) -> i32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  }\n  if (n === 0) {\n    console.log("zero");\n    return "zero";\n  }\n  console.log("pos");\n  return "pos";\n}');
+  // Each `else` the program wrote, an `else if` chain as one (ADR 0237,
+  // amended, the user's decision, 2026-10-28).
+  expect(js).toContain(
+    '  if (n < 0) {\n    console.log("neg");\n    return "neg";\n  } else if (n === 0) {\n    console.log("zero");\n    return "zero";\n  } else {\n    console.log("pos");\n    return "pos";\n  }\n}',
+  );
   // Each branch's step, as written (ADR 0657, amended).
   expect(js).toContain("  if (n > 0) {\n    total += n;\n  } else {\n    total = (total - n) | 0;\n  }\n");
-  expect(js).toContain('    console.log("a");\n    return 2;\n  }\n  console.log("none");\n  return 3;\n}');
+  expect(js).toContain('    } else {\n      console.log("a");\n      return 2;\n    }\n  } else {\n    console.log("none");\n    return 3;\n  }\n}');
   const lib = await import(join(dir, "lib.js"));
   const log = console.log;
   console.log = () => {};
@@ -412,7 +415,7 @@ test("branches' values coerced to the result are returned where made", async () 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function pick(now) {\n  if (now) {\n    return () => 1;\n  }\n");
+  expect(js).toContain("export function pick(now) {\n  if (now) {\n    return () => 1;\n  } else {\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.pick(true)(), lib.pick(false)()]).toEqual([1, 2]);
 });

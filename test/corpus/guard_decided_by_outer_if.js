@@ -20,8 +20,9 @@ function pick(strict, x, y, fallback) {
       return 2;
     }
     return (((a + b) | 0) << 24) >> 24;
+  } else {
+    return fallback;
   }
-  return fallback;
 }
 
 function main() {

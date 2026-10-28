@@ -1084,11 +1084,10 @@ export function countdown(from) {
   let n$1 = n;
   return Iterator.from(
     $fromFn(() => {
-      if (n$1 === 0) {
-        return;
+      if (n$1 !== 0) {
+        n$1--;
+        return n$1 + 1;
       }
-      n$1--;
-      return n$1 + 1;
     }),
   );
 }

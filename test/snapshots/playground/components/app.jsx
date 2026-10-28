@@ -38,9 +38,10 @@ function testsSummary(passed, failed, ignored) {
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
   if (total === 0) {
     return say("No tests.", "Good");
+  } else {
+    const tone = failed > 0 ? "Bad" : "Good";
+    return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
   }
-  const tone = failed > 0 ? "Bad" : "Good";
-  return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
 }
 
 export function App() {

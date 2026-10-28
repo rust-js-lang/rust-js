@@ -42,8 +42,9 @@ function step(p, n, TSize) {
   if (TSize === 0) {
     const pointer = $ptrBytes(p);
     return $ptrTyped($ptrAt(pointer, $addr(pointer, 1) + n * 1, 1));
+  } else {
+    return $ptrAdd(p, n);
   }
-  return $ptrAdd(p, n);
 }
 
 const Stack = {

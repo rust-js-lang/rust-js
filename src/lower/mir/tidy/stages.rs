@@ -360,7 +360,7 @@ pub(super) const STAGES: &[Stage] = &[
             // tests one now; and the `continue`s its branches end with, which
             // it didn't write, gone where the loop's body ends anyway.
             pass("written elses", |b, h| {
-                js::statement_lists(b, &mut |s| written_elses(s, &h.written.elses))
+                js::statement_lists(b, &mut |s| written_elses(s, h.written, h.returns))
             }),
             // And one it wrote without an `else`, its body in it (ADR 0879,
             // amended).

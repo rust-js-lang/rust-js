@@ -1,6 +1,6 @@
 # 0237. An `if` whose branch leaves has no `else`
 
-Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit; and an `else` the program wrote after a branch that leaves stays where statements follow the `if` (the user's decision, 2026-10-27), so this rule holds of an `if` that ends its block, or one MIR made.
+Status: Accepted. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): an `else` the program wrote whose `then` goes on, `if let Some(c) = c { .. } else { break }`, is both its branches, not an early exit; and an `else` the program wrote after a branch that leaves stays where statements follow the `if` (the user's decision, 2026-10-27), so this rule holds of an `if` that ends its block, or one MIR made. Amended again (the user's decision, 2026-10-28): every `else` the program wrote stays, statements after the `if` or not, and an `else if` chain is one; this rule holds of an `if` the program wrote without an `else`, MIR's guard of it.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -81,3 +81,48 @@ children and leaves each list where it is till then (a review,
 `each_item_slotted_block_mut`), and a link is an `else` whose one
 statement is an `if`. The JS is the same, byte for byte. Held by the
 mutations `else-if-links-unheld` and `else-slot-unsaid`.
+
+## Amendment: every `else` the program wrote stays (2026-10-28)
+
+The user's decision (2026-10-28), superseding 2026-10-27's (ADR 0879,
+amended), which kept a written `else` only where statements followed
+the `if`. React's BeginWork writes both arms, `if (current === null) {
+..; return x; } else { .. }`, in updateActivityComponent,
+updateSuspenseComponent, updateHostRoot and the dehydrated components;
+other files write `no-else-return`'s style. The Rust says which, as
+upstream does file by file:
+
+- **An `else` the program wrote stays an `else`**, at the end of its
+  block too: `if (key === 1) { return 10; } else { return key + 1; }`,
+  `if (payload._status === "Resolved") { return payload._result; } else
+  { throw payload._result; }`.
+- **An `else if` chain is one**, where each arm leaves and where it ends
+  a branch: `if (key === 2) { return 0; } else if (key === 3) { return 1;
+  } else { .. }`.
+- **What the program wrote after the `if` follows it**, out of the
+  `else` MIR's structure put it in: `} else if (tags.length === 0) {
+  return 7; } return 9;`.
+- **An `if` the program wrote without an `else`** has none still, `if (c)
+  { return; } more`; nor a value's `if` of a lone jump MIR made each way,
+  `return c ? a : b`'s; nor an `else` of only the `return;` MIR made of a
+  `None` or a `()`, which, at the function's end, is nothing, as falling
+  off it gives `undefined` too.
+
+`written_elses` (`tidy/jumps/tails.rs`) marks the test of each `if` it
+makes of a guard and of each it finds with both branches the program
+wrote (`written_else`), `Known::Else`, and preparation's `unelsed` keeps
+each marked `else`. An `else` it makes holds the chain's next link,
+which it reads again, a value's too. `tail_returns` drops a `return
+undefined;` MIR made at the end as it drops a `return;`.
+
+Case N of [ADR 0262](0262-when-rust-and-js-disagree.md): JS's `else`
+after a branch that leaves runs as the statements after it would; which
+reads is the program's.
+
+Tested by `test/lowering-written-branches.test.ts`'s "an else after a
+branch that returns stays, as written" and the corpus
+(`returns_in_held_branches`, `option_bool_tested`, `unit_given_to_js`,
+`restarting_iterators`); mutations `written-else-unelsed`,
+`guarded-else-unmarked`, `both-branches-else-unmarked`,
+`written-else-keeps-what-follows`, `else-if-link-not-a-link`,
+`plain-jumps-marked-written` and `lone-jumps-given-an-else`.

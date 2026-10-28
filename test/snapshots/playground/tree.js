@@ -51,8 +51,11 @@ export function inOrder(tree, first) {
   entries.sort((a, b) => {
     if (isFirst(a[1])) {
       return -1;
+    } else if (isFirst(b[1])) {
+      return 1;
+    } else {
+      return $cmp(key(a), key(b));
     }
-    return isFirst(b[1]) ? 1 : $cmp(key(a), key(b));
   });
   return entries;
 }

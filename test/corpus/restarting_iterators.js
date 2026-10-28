@@ -25,13 +25,11 @@ export function entry() {
 
 function flakyIterator_next(flaky) {
   flaky.n = (flaky.n + 1) >>> 0;
-  if (flaky.n === 3 || flaky.n === 7) {
-    return;
+  if (flaky.n !== 3 && flaky.n !== 7) {
+    if (!(flaky.n > 10)) {
+      return flaky.n;
+    }
   }
-  if (flaky.n > 10) {
-    return;
-  }
-  return flaky.n;
 }
 function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);

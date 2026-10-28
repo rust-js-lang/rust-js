@@ -8,11 +8,10 @@ export function entry() {
 }
 
 function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
+  if (countdown[0] !== 0) {
+    countdown[0] = (countdown[0] - 1) >>> 0;
+    return countdown[0];
   }
-  countdown[0] = (countdown[0] - 1) >>> 0;
-  return countdown[0];
 }
 
 function blinkerIterator_next(blinker) {

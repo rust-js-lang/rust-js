@@ -14,10 +14,11 @@ function outer(n) {
     }
     if ($byteLen(s) > 2) {
       return s;
+    } else {
+      let t = s;
+      t += "!";
+      return t;
     }
-    let t = s;
-    t += "!";
-    return t;
   }
   let t = "";
   for (let i = 0; i < n; i++) {

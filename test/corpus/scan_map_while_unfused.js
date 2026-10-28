@@ -9,11 +9,10 @@ export function entry() {
 function main() {
   const v = [1, 2, 0, 3, 4];
   const sums = $lazyScan($iter(v), 0, (sum, x) => {
-    if (x === 0) {
-      return;
+    if (x) {
+      sum.value = (sum.value + x) | 0;
+      return sum.value;
     }
-    sum.value = (sum.value + x) | 0;
-    return sum.value;
   });
   const first = $lent(sums).toArray();
   const second = sums.toArray();

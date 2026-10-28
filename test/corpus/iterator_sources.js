@@ -48,11 +48,10 @@ function countdown(from) {
   let n = from;
   return Iterator.from(
     $fromFn(() => {
-      if (n === 0) {
-        return;
+      if (n !== 0) {
+        n--;
+        return n + 1;
       }
-      n--;
-      return n + 1;
     }),
   ).toArray();
 }

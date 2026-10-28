@@ -170,8 +170,9 @@ function skipping(first, skip, flag) {
         // Clean up.
         update = update.next;
         continue;
+      } else {
+        shouldSkip = true;
       }
-      shouldSkip = true;
     }
     if (shouldSkip) {
       total = (total + 100) >>> 0;

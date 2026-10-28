@@ -16,11 +16,10 @@ export function entry() {
 }
 
 function countIterator_next(count) {
-  if (count[0] === 0) {
-    return;
+  if (count[0] !== 0) {
+    count[0] = (count[0] - 1) >>> 0;
+    return count[0];
   }
-  count[0] = (count[0] - 1) >>> 0;
-  return count[0];
 }
 function countIterator_sizeHint(count) {
   return [count[0], count[0]];

@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "                    (true, false) => StmtKind::If(test.clone(), then, Some(otherwise)),\n",
     tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only|build global.s if"],
   },
+  {
+    name: "last-if-of-no-else-not-assigned",
+    breaks: "React's `componentFrameCache`, `if (__DEV__) { return new WeakMap(); }` and nothing after, stays a closure called where it's made, not `let componentFrameCache; if (__DEV__) { componentFrameCache = .. }`",
+    file: "src/prepare/initializers.rs",
+    find: "                    None => Vec::new(),\n",
+    replace: "                    None => return None,\n",
+    tests: ["test/lowering-cells.test.ts", "-t", "a thread-local of a build global's if"],
+  },
 ];

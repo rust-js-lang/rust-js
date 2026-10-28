@@ -28,11 +28,12 @@ function hasTag(root, tag) {
     if (fiber.tag === tag) {
       console.log(`found at ${depth}`);
       return true;
-    }
-    let child = fiber.child;
-    while (child != null) {
-      stack.push([child, depth]);
-      child = child.sibling;
+    } else {
+      let child = fiber.child;
+      while (child != null) {
+        stack.push([child, depth]);
+        child = child.sibling;
+      }
     }
   }
 

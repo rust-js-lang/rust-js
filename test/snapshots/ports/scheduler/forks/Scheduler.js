@@ -171,12 +171,13 @@ function workLoop(initialTime) {
   // Return whether there's additional work
   if (currentTask != null) {
     return true;
+  } else {
+    const startTime = peek(timerQueue)?.startTime;
+    if (startTime != null) {
+      requestHostTimeout(handleTimeout, startTime - currentTime);
+    }
+    return false;
   }
-  const startTime = peek(timerQueue)?.startTime;
-  if (startTime != null) {
-    requestHostTimeout(handleTimeout, startTime - currentTime);
-  }
-  return false;
 }
 
 export function unstable_runWithPriority(priorityLevel, eventHandler) {

@@ -539,9 +539,8 @@ pub fn both(a: bool) -> u32 {
     }
 }
 
-// An else after a branch that returns is written after its if, in the
-// function's block, beside its other n, read no more: that n, assigned
-// (ADR 0650).
+// A written else after a branch that returns stays, its n its block's
+// (ADR 0237, amended).
 pub fn early(a: bool, k: u32) -> u32 {
     let n = k + 1;
     if a {
@@ -574,11 +573,11 @@ pub fn again(mut items: Vec<u32>) -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (a) {\n    const n = 1;\n    return n + 1;\n  }\n  const n = 2;\n  return n * 3;");
+  expect(js).toContain("  if (a) {\n    const n = 1;\n    return n + 1;\n  } else {\n    const n = 2;\n    return n * 3;\n  }\n");
   expect(js).toContain("    const m = n;\n    const n$1 = 1;");
   expect(js).toContain("  items.pop();\n  const n = items.length;");
-  expect(js).toContain("  let n = (k + 1) >>> 0;\n  if (a) {\n    return n;\n  }\n  n = 2;\n  return n * 3;");
-  expect(js).toContain("  const n$1 = 2;\n");
+  expect(js).toContain("  const n = (k + 1) >>> 0;\n  if (a) {\n    return n;\n  } else {\n    const n = 2;\n    return n * 3;\n  }\n");
+  expect(js).toContain("  } else {\n    const n = 2;\n    return (n * 3 + f()) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4), lib.seen(true, 4), lib.seen(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6, 5, 11]);
 });

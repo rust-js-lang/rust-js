@@ -736,12 +736,28 @@ pub(in crate::lower::mir::tidy) fn written_values(
 /// `then`'s, where it's in scope.
 /// Where statements the program wrote after the `if` follow its other
 /// branch's, the branch is those before them, `if (t) { exit } else {
-/// rest } more`, and its test says so (`Known::Else`), so preparation
-/// keeps the `else` (ADR 0879, amended).
+/// rest } more`. Its test says so (`Known::Else`), as each `if`'s does of
+/// both branches the program wrote, so preparation keeps the `else`
+/// (ADR 0237, amended, the user's decision, 2026-10-28).
 /// And `if (t) { b } else { a }` of `if !t { a } else { b }`, its branches
 /// MIR turned, a `switchInt` testing `t`: `if (!t) { a } else { b }`, as
 /// written (ADR 0879).
-pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
+pub(in crate::lower::mir::tidy) fn written_elses(
+    stmts: &mut Vec<Stmt>,
+    written: &crate::lower::mir::hints::Written,
+    returns: &[js::Span],
+) {
+    linked_elses(stmts, (&written.elses, &written.else_ifs), returns, false);
+}
+
+/// `written_elses` of `stmts`, whose first is the next link of an `else if`
+/// chain where `link`: the chain's, each link as written, a value's too.
+fn linked_elses(
+    stmts: &mut Vec<Stmt>,
+    (elses, else_ifs): (&[(js::Span, js::Span, js::Span)], &[js::Span]),
+    returns: &[js::Span],
+    link: bool,
+) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     // Where a statement after the guard is written: a `return` MIR made of
     // a value, where the function ends, where its value is.
@@ -758,8 +774,38 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
             && (stmts.iter())
                 .all(|s| at(s).is_none() || within(branch, at(s)) || made.is_some_and(|c| within(c, at(s))))
     };
+    // A jump MIR made alone each way, `if (t) { return a; } return b;` of a
+    // value the program wrote with an `if`, reads as it is, a conditional;
+    // and an `else` of only the `return;` MIR made of a `None` or a `()` is
+    // no `else` (ADR 0237, amended). Not the next link of a chain, which is
+    // one.
+    let made = |s: &Stmt| match s.kind {
+        StmtKind::Return(_) => !super::written(returns, s.span),
+        StmtKind::Break(_) | StmtKind::Continue(_) => s.span.is_none(),
+        _ => false,
+    };
+    let nothing = |s: &Stmt| match &s.kind {
+        StmtKind::Return(None) => made(s),
+        StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined) && made(s),
+        _ => false,
+    };
+    let plain = |exit: &[Stmt], rest: &[Stmt], linked: bool| matches!(rest, [s] if nothing(s) || !linked && made(s) && matches!(exit, [e] if made(e)));
+    // An `else if let`'s, written at `otherwise`, whose binding, a `const`,
+    // comes first: no `else if` of JS's, its links each an `if` after the
+    // last, where each leaves (ADR 0237, amended).
+    let binds_link = |list: &[Stmt], otherwise: &js::Span| {
+        matches!(
+            list.first(),
+            Some(Stmt {
+                kind: StmtKind::Const(..),
+                ..
+            })
+        ) && else_ifs.contains(otherwise)
+    };
     let mut at = 0;
     while at < stmts.len() {
+        // The chain's next link, after what an `else if let` binds.
+        let linked = link && stmts[..at].iter().all(|s| matches!(s.kind, StmtKind::Const(..)));
         // Its branches MIR turned, `if !c { a } else { b }`'s `if (c) { b }
         // else { a }` of a `switchInt` that tests `c`: as written, `a`
         // first (ADR 0879).
@@ -781,9 +827,6 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
             && let Some((cond, then, otherwise)) = elses.iter().find(|(cond, ..)| within(cond, stmts[at].span))
         {
             let rest = &stmts[at + 1..];
-            // A jump alone each way, `if (t) { return a; } return;`, reads as
-            // it is.
-            let jump = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
             // The statements after the guard that are the other branch's:
             // those up to the last written in it, where what follows is
             // written after the whole `if`, the statements the program
@@ -796,32 +839,68 @@ pub(in crate::lower::mir::tidy) fn written_elses(stmts: &mut Vec<Stmt>, elses: &
                 let more = rest[k..].iter().any(|s| !place(s).is_none());
                 match more {
                     true => (of(b, made, &rest[..k], true) && rest[k..].iter().all(after)).then_some(k),
-                    false => of(b, made, rest, false).then_some(rest.len()),
+                    false => of(b, made, rest, true).then_some(rest.len()),
                 }
             };
-            let turned = match (of(then, Some(cond), exit, false), of(otherwise, None, exit, false)) {
-                _ if matches!(rest, [s] if jump(s)) && matches!(exit.as_slice(), [s] if jump(s)) => None,
+            let turned = match (of(then, Some(cond), exit, true), of(otherwise, None, exit, true)) {
+                _ if plain(exit, rest, linked) => None,
                 (true, false) => branch(otherwise, None).map(|k| (false, k)),
                 (false, true) => branch(then, Some(cond)).map(|k| (true, k)),
                 _ => None,
             };
             if let Some((turned, k)) = turned {
                 let after = stmts.split_off(at + 1 + k);
-                let rest = stmts.split_off(at + 1);
+                let mut rest = stmts.split_off(at + 1);
                 stmts.extend(after);
                 let StmtKind::If(test, exit, None) =
                     std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
                 else {
                     unreachable!("matched")
                 };
-                let written = |t: Expr| Expr {
-                    facts: t.facts.with(js::Known::Else),
-                    ..t
+                let linking = binds_link(if turned { &exit } else { &rest }, otherwise);
+                // A guard of its own in what's now the `else`, an `else if`'s,
+                // which the walk has passed: its chain's next link, where the
+                // chain holds.
+                linked_elses(&mut rest, (elses, else_ifs), returns, !turned && !linking);
+                let written = |t: Expr| match linking {
+                    true => t,
+                    false => Expr {
+                        facts: t.facts.with(js::Known::Else),
+                        ..t
+                    },
                 };
                 stmts[at].kind = match turned {
                     false => StmtKind::If(written(test), exit, Some(rest)),
                     true => StmtKind::If(written(test.negated_test()), rest, Some(exit)),
                 };
+            }
+        }
+        // An `if` with both the branches the program wrote, as MIR left it:
+        // its test says so, which preparation keeps the `else` of (ADR 0237,
+        // amended).
+        // Where its `then` leaves and MIR's `else` goes on to the statements
+        // the program wrote after the `if`, `if (a) { return; } else if (b)
+        // { return 7; } return 9;`, those follow it, as written.
+        let span = stmts[at].span;
+        if written_else(&stmts[at], elses)
+            && let Some((_, branch, other)) = elses.iter().find(|(cond, ..)| within(cond, span))
+            && let StmtKind::If(test, then, Some(otherwise)) = &mut stmts[at].kind
+            && !plain(then, otherwise, linked)
+            && !binds_link(otherwise, other)
+        {
+            test.facts = test.facts.with(js::Known::Else);
+            let end = other.hi.max(branch.hi);
+            let k = otherwise
+                .iter()
+                .rposition(|s| within(other, place(s)))
+                .map_or(0, |k| k + 1);
+            if k > 0
+                && then.last().is_some_and(ends)
+                && otherwise[k..].iter().any(|s| !place(s).is_none())
+                && otherwise[k..].iter().all(|s| place(s).is_none() || place(s).lo >= end)
+            {
+                let after = otherwise.split_off(k);
+                stmts.splice(at + 1..at + 1, after);
             }
         }
         at += 1;

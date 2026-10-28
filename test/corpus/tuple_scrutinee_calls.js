@@ -44,7 +44,6 @@ function peeked(map, names) {
   } else if (value$1.TAG === "Square" && !value) {
     return value$1._0;
   }
-  return;
 }
 
 function guarded(v) {

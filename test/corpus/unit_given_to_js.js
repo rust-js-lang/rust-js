@@ -8,11 +8,11 @@ export function entry() {
 function kind(value) {
   if (value.impl.typeId() === "()") {
     return "undefined";
-  }
-  if (value.impl.typeId() !== "f64" && value.impl.typeId() !== "u8") {
+  } else if (value.impl.typeId() === "f64" || value.impl.typeId() === "u8") {
+    return "number";
+  } else {
     return value.impl.typeId() === "&str" ? "string" : "object";
   }
-  return "number";
 }
 
 function main() {

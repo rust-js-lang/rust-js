@@ -308,11 +308,10 @@ export function displays() {
 }
 
 function countdownIterator_next(countdown) {
-  if (countdown.n === 0) {
-    return;
+  if (countdown.n !== 0) {
+    countdown.n = (countdown.n - 1) >>> 0;
+    return (countdown.n + 1) >>> 0;
   }
-  countdown.n = (countdown.n - 1) >>> 0;
-  return (countdown.n + 1) >>> 0;
 }
 
 function fibonacciIterator_next(fibonacci) {

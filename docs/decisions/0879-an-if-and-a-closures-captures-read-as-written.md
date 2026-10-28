@@ -283,6 +283,10 @@ the two the same value. Tested by `test/lowering-written-branches.test.ts`'s
 
 ## Amendment: an `else` after a branch that returns stays where statements follow
 
+Superseded by the user's decision of 2026-10-28 ([ADR 0237](0237-no-else-after-leaving.md),
+amended): every `else` the program wrote stays, statements after the `if`
+or not.
+
 The user's decision (2026-10-27). React's insertOrAppendPlacementNode
 writes `if (isHost) { ..; return; } else if (tag === HostPortal) { //
 .. return; }` and goes on after it; its port, the same `if .. else if`,

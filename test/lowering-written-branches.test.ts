@@ -1140,7 +1140,10 @@ pub fn boundary_and(fiber: &Fiber) -> bool {
 // after a branch that returns stays, where statements follow the `if`; a
 // chain the function ends with is still each `if` after the last (ADR
 // 0237), and `if`s written apart stay apart.
-test("an else after a branch that returns stays where statements follow", async () => {
+// The user's decision (2026-10-28), ADR 0237, amended: every `else` the
+// program wrote stays, statements after the `if` or not, and an `else if`
+// chain is one, as React's BeginWork writes both arms.
+test("an else after a branch that returns stays, as written", async () => {
   const { js, lib } = await compiled(
     "else-after-return",
     `pub fn place(tag: u8, log: &mut Vec<u8>) {
@@ -1192,6 +1195,30 @@ pub fn last(key: u32) -> u32 {
         key + 1
     }
 }
+
+pub fn first(a: &[u32], b: &[u32]) -> u32 {
+    if let Some(x) = a.first() {
+        *x
+    } else if let Some(y) = b.last() {
+        y + 1
+    } else {
+        0
+    }
+}
+
+pub fn inner(key: u32, total: &mut u32) -> u32 {
+    if key > 0 {
+        *total += 1;
+        if key == 2 {
+            return 0;
+        } else if key == 3 {
+            return 1;
+        } else {
+            *total += key;
+        }
+    }
+    *total
+}
 `,
   );
   expect(js).toContain(
@@ -1200,7 +1227,12 @@ pub fn last(key: u32) -> u32 {
   expect(js).toContain("  if (key === 0) {\n    return 0;\n  } else {\n    total.value = (total.value + key) >>> 0;\n  }\n  return total.value;\n");
   expect(js).toContain("  if (key) {\n    total.value = (total.value + key) >>> 0;\n  } else {\n    return 0;\n  }\n  return total.value;\n");
   expect(js).toContain("  if (key === 1) {\n    return 10;\n  }\n  if (key === 2) {\n    return 20;\n  }\n  return key;\n");
-  expect(js).toContain("  if (key === 1) {\n    return 10;\n  }\n  if (key === 2) {\n    return 20;\n  }\n  return (key + 1) >>> 0;\n");
+  expect(js).toContain(
+    "  if (key === 1) {\n    return 10;\n  } else if (key === 2) {\n    return 20;\n  } else {\n    return (key + 1) >>> 0;\n  }\n",
+  );
+  expect(js).toContain(
+    "    if (key === 2) {\n      return 0;\n    } else if (key === 3) {\n      return 1;\n    } else {\n      total.value = (total.value + key) >>> 0;\n    }\n  }\n  return total.value;\n",
+  );
   const placed = [5, 4, 3].map((tag) => {
     const log: number[] = [];
     lib.place(tag as never, log as never);
@@ -1211,6 +1243,11 @@ pub fn last(key: u32) -> u32 {
   expect([lib.counted(0 as never, total as never), lib.counted(2 as never, total as never)]).toEqual([0, 3]);
   expect([lib.turned(0 as never, total as never), lib.turned(4 as never, total as never)]).toEqual([0, 7]);
   expect([1, 2, 3].map((k) => [lib.apart(k as never), lib.last(k as never)])).toEqual([[10, 10], [20, 20], [3, 4]]);
+  // An `else if let`'s binding is no JS `else if`: each link after the last.
+  expect(js).toContain("  if (x != null) {\n    return x;\n  }\n  const y = b.at(-1);\n  return y != null ? (y + 1) >>> 0 : 0;\n");
+  expect([lib.first([4] as never, [1] as never), lib.first([] as never, [1] as never), lib.first([] as never, [] as never)]).toEqual([4, 2, 0]);
+  const inner = { value: 0 };
+  expect([0, 2, 3, 4].map((k) => lib.inner(k as never, inner as never))).toEqual([0, 0, 1, 7]);
 });
 
 // The user's decision (2026-10-27), ADR 0879, amended: React's

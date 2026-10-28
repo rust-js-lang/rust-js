@@ -65,8 +65,7 @@ function fromALoop(tags) {
       }
     }
     throw new Error(`no tag ${boundary.tag}`);
-  }
-  if (tags.length === 0) {
+  } else if (tags.length === 0) {
     return 7;
   }
   return 9;

@@ -275,7 +275,19 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
 /// `return;` MIR made (ADR 0879, amended, the user's decision,
 /// 2026-10-27).
 pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
-    let unwritten = |s: &Stmt| matches!(s.kind, StmtKind::Return(None)) && !written(returns, s.span);
+    ending_returns(stmts, returns, false);
+}
+
+/// `tail_returns` of `stmts`, a branch of the `if` that ends the function
+/// where `branch`: there a `return undefined;` MIR made of a `None` or a
+/// `()` is nothing too, as falling off the end gives `undefined` (ADR 0237,
+/// amended); not a body's own, a constant's value.
+fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
+    let unwritten = |s: &Stmt| match &s.kind {
+        StmtKind::Return(None) => !written(returns, s.span),
+        StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),
+        _ => false,
+    };
     // Whether each way through `list` ends in such a `return;`.
     fn returns_at_end(list: &[Stmt], unwritten: &dyn Fn(&Stmt) -> bool) -> bool {
         list.last().is_some_and(|last| {
@@ -300,15 +312,15 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         let StmtKind::If(_, then, otherwise) = &mut stmts[at].kind else {
             unreachable!("found")
         };
-        tail_returns(then, returns);
+        ending_returns(then, returns, branch);
         if !rest.is_empty() {
             *otherwise = Some(rest);
         }
     }
     if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|last| &mut last.kind) {
-        tail_returns(then, returns);
+        ending_returns(then, returns, true);
         if let Some(otherwise) = otherwise {
-            tail_returns(otherwise, returns);
+            ending_returns(otherwise, returns, true);
         }
     }
     if let Some(at) = (stmts.iter())
@@ -323,9 +335,9 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
             unreachable!("found")
         };
         then.pop();
-        tail_returns(&mut then, returns);
+        ending_returns(&mut then, returns, branch);
         let mut rest = rest;
-        tail_returns(&mut rest, returns);
+        ending_returns(&mut rest, returns, branch);
         match (then.is_empty(), rest.is_empty()) {
             (true, true) => {}
             (true, false) => stmts.push(StmtKind::If(test.negated_test(), rest, None).at(span)),
@@ -376,16 +388,16 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         // function's `if let` (MIR's `return` there is where the macro is
         // called), is `if (c) { s }`.
         Some(StmtKind::If(_, then, otherwise)) => {
-            tail_returns(then, returns);
-            if let Some(branch) = otherwise {
-                tail_returns(branch, returns);
+            ending_returns(then, returns, true);
+            if let Some(otherwise) = otherwise {
+                ending_returns(otherwise, returns, true);
             }
             let last = stmts.pop().expect("matched");
             if let Some(kind) = emptied_branch(last.kind) {
                 stmts.push(kind.at(last.span));
             }
         }
-        Some(StmtKind::Labeled(_, body)) => tail_returns(body, returns),
+        Some(StmtKind::Labeled(_, body)) => ending_returns(body, returns, branch),
         _ => {}
     }
 }

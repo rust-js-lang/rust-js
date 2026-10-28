@@ -43,8 +43,9 @@ function trailing(s) {
             out += next;
           }
           continue;
+        } else {
+          out += ".";
         }
-        out += ".";
       }
       break;
     }

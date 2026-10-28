@@ -15,8 +15,7 @@ function walk(fiber, modern) {
       if (fiber.lanes === 5) {
         complete(fiber);
         continue;
-      }
-      if (fiber.lanes === 7) {
+      } else if (fiber.lanes === 7) {
         fiber.lanes = 6;
         complete(fiber);
         continue;

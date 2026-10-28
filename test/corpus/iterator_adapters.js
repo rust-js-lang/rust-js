@@ -82,11 +82,10 @@ function totalOf(d, spare, IIterator) {
   return [sumAll($iterator(d, (iterator) => doubledIterator_next(iterator, IIterator))), spare];
 }
 function countdownIterator_next(countdown) {
-  if (countdown[0] === 0) {
-    return;
+  if (countdown[0] !== 0) {
+    countdown[0] = (countdown[0] - 1) | 0;
+    return countdown[0];
   }
-  countdown[0] = (countdown[0] - 1) | 0;
-  return countdown[0];
 }
 function main() {
   const v = $iterator(doubled($iter([1, 2, 3])), (iterator) =>

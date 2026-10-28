@@ -841,7 +841,7 @@ pub fn shown(s: &Size) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (options?.alternate === true) {\n    return `${size[0]} bytes`;\n  }\n  const w = options?.width;");
+  expect(js).toContain("  if (options?.alternate === true) {\n    return `${size[0]} bytes`;\n  } else {\n    const w = options?.width;");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.shown([5])).toBe("5B 5 bytes 5B/7");
 });
@@ -905,9 +905,9 @@ pub fn shown(p: &P, b: &Bag, m: &Mark) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function pDebug_fmt(p) {\n  return `P { x: ${p.x} }`;\n}");
   expect(js).toContain('return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;');
-  expect(js).toContain('  if (mark[0]) {\n    return shown;\n  }\n  return "-";\n}');
+  expect(js).toContain('  if (mark[0]) {\n    return shown;\n  } else {\n    return "-";\n  }\n}');
   const lib = await import(join(dir, "lib.js"));
-  expect(js).toContain('function flagDisplay_fmt(flag) {\n  if (flag[0]) {\n    return "y";\n  }\n  return "n";\n}');
+  expect(js).toContain('function flagDisplay_fmt(flag) {\n  if (flag[0]) {\n    return "y";\n  } else {\n    return "n";\n  }\n}');
   expect(lib.shown({ x: 1 }, [[2, 3]], [true])).toBe("P { x: 1 } [0, 2, 3] yes y n");
 });
 
