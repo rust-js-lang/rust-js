@@ -424,3 +424,9 @@ Held by `test/corpus/tried_loop_jumps.rs`, against native Rust; mutations
 `tried-try-ending-the-body-kept`, `written-loop-label-unnamed-kept`
 (`prepare/labels.ts`) and `written-loop-label-dropped-in-tidy`
 (`tidy/jumps/labels.ts`).
+
+`docs/readability.txt`'s share of `return;` grows, 9.6 to 9.7 in 10,000
+lines, by `tried_loop_jumps.rs`'s `kept`: the `return;` its closure
+writes, inside the closure that stays where the loop has no label. It's
+the program's own `return`, as it writes it; the closure around it is
+what the user's decision keeps, no label the program didn't write.
