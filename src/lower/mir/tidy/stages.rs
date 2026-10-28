@@ -81,7 +81,13 @@ pub(super) const STAGES: &[Stage] = &[
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
             pass("shared tails", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    shared_tails(s, &h.written.let_elses, &h.written.switches, &h.written.elses)
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
                 })
             }),
         ],
@@ -191,7 +197,13 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("shared tails", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    shared_tails(s, &h.written.let_elses, &h.written.switches, &h.written.elses)
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
                 })
             }),
             // Each `let` where it's first named, a `const` where it's
@@ -337,7 +349,13 @@ pub(super) const STAGES: &[Stage] = &[
             pass("decided tests", decided_tests_of),
             pass("shared tails", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    shared_tails(s, &h.written.let_elses, &h.written.switches, &h.written.elses)
+                    shared_tails(
+                        s,
+                        &h.written.let_elses,
+                        &h.written.switches,
+                        &h.written.elses,
+                        &h.written.thens,
+                    )
                 })
             }),
             // A chain's tests, where each is read in place now: `if (a) { if

@@ -189,3 +189,26 @@ The `Ok` arm's `if did_fatal { ..; return; }` then the code after the
 `match`, which printed `if (!didFatal) { .. } else { .. }`, MIR's order,
 is the `if` as written after the `try` since ADR 0879's amendment of
 2026-10-28 (wl6).
+
+## Amendment: a tail written in an `if`'s `then` and after it stays in each (2026-10-28, rd48)
+
+ReactDOMUnknownPropertyHook writes `if (prefix === 'data-' || prefix ===
+'aria-') { return true; } ..; warnedProperties[name] = true; return
+true;`. Its port, the same `if` with no `else` and a `return true;` after
+the rest, printed `if (prefix !== 'data-' && prefix !== 'aria-') { ..;
+warnedProperties[name] = true; } return true;`: MIR joins the two
+`return true`s, the `if`'s branches each end giving the result `true`,
+and `shared_tails` wrote that once after the `if`, the rest inside the
+negated test.
+
+**Two copies of a tail, one written in the `then` of an `if` the program
+wrote without an `else` (`Written::thens`) and the other after that
+`if`, are each the program's and stay where they are** (`branches.rs`'s
+`then_and_after`), as the wl6 amendment above keeps an `if`/`else`'s;
+the `if` then reads as written. Case ([0262](0262-when-rust-and-js-disagree.md))
+N: the same statements run on each path. Copies MIR made, an
+or-pattern's part bindings, a `?`'s `undefined`, at distinct places too,
+are still written once: only a written `then` and what follows it count.
+
+Held by `test/corpus/arm_returns_as_written.rs`, against native Rust;
+mutation `shared-tails-of-a-then-and-after` (`tidy/branches.ts`).

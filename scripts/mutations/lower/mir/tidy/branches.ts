@@ -576,4 +576,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-elses.test.ts", "-t", "stays an if of its own"],
   },
+  {
+    name: "shared-tails-of-a-then-and-after",
+    breaks: "ReactDOMUnknownPropertyHook's `if (prefix === 'data-' || ..) { return true; } ..; return true;` merges its two written `return true`s, the rest inside the negated test (rd48, ADR 0564, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    || then_and_after(stmts[i].span, (tail, other), thens);\n",
+    replace: "                    ;\n",
+    tests: ["test/corpus.test.ts", "-t", "^arm_returns_as_written.rs$"],
+    snapshots: true,
+  },
 ];

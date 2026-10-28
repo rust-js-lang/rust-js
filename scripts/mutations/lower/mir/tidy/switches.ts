@@ -396,4 +396,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
     snapshots: true,
   },
+  {
+    name: "switch-takes-what-follows",
+    breaks: "an arm that does nothing, `\"inert\" => {}`, takes what's written after the `match` into its case, `case \"inert\": console.error(..); return true;` (rd49, ADR 0629, amended)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        written_after(list, i, switches);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^arm_returns_as_written.rs$"],
+    snapshots: true,
+  },
 ];

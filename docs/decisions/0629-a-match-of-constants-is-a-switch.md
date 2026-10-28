@@ -361,3 +361,23 @@ lowering or port test, nor `option_constants_switch.rs` or a late-set
 `let tag; match .. { .. }`, reaches the check, and its mutation,
 `last-clause-tail-kept`, survived every run: the check is gone with it
 (ADR 0093).
+
+## Amendment: what's written after the `match` stays after the `switch` (2026-10-28, rd49)
+
+ReactDOMUnknownPropertyHook writes `switch (name) { case 'inert': {
+break; } default: { return true; } } console.error(..); return true;`.
+Its port's `match name { "checked" | "inert" => {} _ => { return true; } }
+error(..); return true;` printed `case "checked": case "inert":
+console.error(..); return true; default: return true;`: MIR tests the
+arm that does nothing negated, `if (t) { return true; } else { .. }`, its
+`else` what follows the `match`, which the case took as its own.
+
+**Of an arm's test whose branch leaves, `if (t) { exit } else { own; rest
+}`, what's written after the whole `match`, `rest`, is after the `if`
+before the `switch` is made** (`switches.rs`'s `written_after`): the case
+is `own`, a `break` where that's nothing, and `rest` follows the
+`switch`. Case ([0262](0262-when-rust-and-js-disagree.md)) N: `exit`
+leaves, so `rest` runs only after `own`, either way.
+
+Held by `test/corpus/arm_returns_as_written.rs`, against native Rust;
+mutation `switch-takes-what-follows` (`tidy/switches.ts`).

@@ -1274,6 +1274,18 @@ fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
     disturbed
 }
 
+/// Whether of two copies of a tail, of the `if` at `span`, one is written in
+/// the `then` of an `if` the program wrote there without an `else`
+/// (`Written::thens`), and the other after that `if`: each the program's.
+fn then_and_after(span: js::Span, (a, b): (&[Stmt], &[Stmt]), thens: &[(js::Span, js::Span)]) -> bool {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let inside = |copy: &[Stmt], then: &js::Span| copy.iter().all(|s| within(then, s.span));
+    let after = |copy: &[Stmt], then: &js::Span| copy.iter().all(|s| !s.span.is_none() && s.span.lo >= then.hi);
+    (thens.iter()).any(|(cond, then)| {
+        within(cond, span) && ((inside(a, then) && after(b, then)) || (inside(b, then) && after(a, then)))
+    })
+}
+
 /// What both branches of an `if` end with, one statement MIR wrote into
 /// each, `if (c) { a; x = 1; } else { b; x = 1; }`: written once, after
 /// it, `if (c) { a } else { b } x = 1;`; and of an `if` without `else` whose
@@ -1294,6 +1306,7 @@ pub(super) fn shared_tails(
     let_elses: &[js::Span],
     switches: &[Switch],
     elses: &[(js::Span, js::Span, js::Span)],
+    thens: &[(js::Span, js::Span)],
 ) {
     let guards = |tail: &[Stmt]| {
         (tail.iter()).any(|s| !s.span.is_none() && let_elses.iter().any(|e| e.lo <= s.span.lo && s.span.hi <= e.hi))
@@ -1312,7 +1325,12 @@ pub(super) fn shared_tails(
                 // Each written in its branch of an `if` the program wrote with
                 // an `else`, two the program wrote: each where it is, as
                 // written (the user's decision, wl6).
-                let apart = super::written_branches(stmts[i].span, tail, &otherwise[otherwise.len() - shared..], elses);
+                let other = &otherwise[otherwise.len() - shared..];
+                let apart = super::written_branches(stmts[i].span, tail, other, elses)
+                    // Or one written in the `then` of an `if` the program
+                    // wrote without an `else`, the other after it: `if (c) {
+                    // return true; } ..; return true;` (rd48).
+                    || then_and_after(stmts[i].span, (tail, other), thens);
                 if shared == 0
                     || apart
                     || super::switches::switched(test, stmts[i].span, switches)

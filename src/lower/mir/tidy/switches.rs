@@ -46,6 +46,7 @@ fn walk(
 ) {
     let mut i = 0;
     while i < list.len() {
+        written_after(list, i, switches);
         if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut()) {
             list.splice(i..i + taken, switch);
             if discriminant_in_place(list, i) {
@@ -129,6 +130,34 @@ fn walk(
             _ => {}
         }
     }
+}
+
+/// `if (t) { exit } else { own; rest }`, an arm's test whose branch leaves,
+/// `rest` written after the `match`: `if (t) { exit } else { own } rest`,
+/// `case 'inert': break; default: return true; } console.error(..);` (rd49,
+/// ADR 0629, amended): `exit` leaves, so `rest` follows `own` either way.
+fn written_after(list: &mut Vec<Stmt>, i: usize, switches: &[Switch]) {
+    let of = |at| (switches.iter()).find(|s: &&Switch| (s.arms.iter()).any(|arm| within(at, arm.pattern)));
+    let Some(written) = tested_at(&list[i]).and_then(of) else {
+        return;
+    };
+    let StmtKind::If(_, exit, Some(otherwise)) = &mut list[i].kind else {
+        return;
+    };
+    let past = |s: &Stmt| written_at(s).is_some_and(|at| at >= written.span.hi);
+    let Some(k) = otherwise.iter().position(past) else {
+        return;
+    };
+    if !exit.last().is_some_and(js::ends) || !otherwise[k..].iter().all(|s| written_at(s).is_none() || past(s)) {
+        return;
+    }
+    let rest = otherwise.split_off(k);
+    if let StmtKind::If(_, _, otherwise) = &mut list[i].kind
+        && otherwise.as_ref().is_some_and(Vec::is_empty)
+    {
+        *otherwise = None;
+    }
+    list.splice(i + 1..i + 1, rest);
 }
 
 /// A temporary only the test of the `switch` at `list[i]` reads, `const _5
