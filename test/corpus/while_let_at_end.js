@@ -39,6 +39,26 @@ function chain(tags) {
   return $unwrap(last);
 }
 
+function labeled(fiber) {
+  let parent = fiber;
+  findParent: while (parent != null) {
+    switch (parent.tag) {
+      case 2:
+        hostParent = parent.state;
+        break findParent;
+      case 3:
+        if (parent.state > 15) {
+          hostParent = (parent.state + 100) >>> 0;
+        } else {
+          hostParent = (parent.state + 200) >>> 0;
+        }
+        break findParent;
+    }
+    parent = parent.parent;
+  }
+  hostParent = (hostParent + 1) >>> 0;
+}
+
 function main() {
   findHostParent(chain([1, 1, 2, 2]));
   console.log(`${hostParent}`);
@@ -47,5 +67,11 @@ function main() {
   const log = [];
   depth(chain([1, 2, 3]), log);
   console.log(`[${log.join(", ")}]`);
+  labeled(chain([1, 3, 2]));
+  console.log(`${hostParent}`);
+  labeled(chain([3, 1]));
+  console.log(`${hostParent}`);
+  labeled(chain([1, 1]));
+  console.log(`${hostParent}`);
 }
 //# sourceMappingURL=case.js.map

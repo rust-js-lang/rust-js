@@ -37,4 +37,13 @@ export const mutations: Mutation[] = [
     replace: "        let [.., only, _] = reaching[..] else {\n",
     tests: fallthrough,
   },
+  {
+    name: "loop-left-by-cases-unlabeled",
+    breaks: "a loop the program labeled, `'find_parent:`, left by its `switch`'s cases, stays MIR's `switch (..) { case A: ..; break; default: rest; continue; } break;`, not React's `findParent: while (..) { switch (..) { case A: ..; break findParent; } rest }` (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "        let Some((.., Some(written))) = super::written_loop(loops, span) else {\n",
+    replace: "        let Some((.., Some(written))) = super::written_loop(loops, span).filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
+    snapshots: true,
+  },
 ];

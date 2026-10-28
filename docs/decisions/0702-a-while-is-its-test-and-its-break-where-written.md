@@ -499,10 +499,23 @@ function ends, where the `return;` went. The loop is then as one followed
 by code, its test and its `break`s where the program wrote them. A
 `return;` the program wrote has its span, and stays.
 
-The rest of cm4, a `switch` in such a loop whose cases leave the loop,
-which upstream writes `break findParent;` of the label the program wrote,
-`'find_parent:`, and its guarded arm that falls to an unguarded one whose
-statements MIR shares (`bb12`), is still to do.
+**A loop the program labeled, `'find_parent: while let ..`, whose turn
+ends in a `switch` whose cases leave the loop, MIR's `switch (..) { case
+A: ..; break; .. default: rest; continue; } break;`, is each case's way
+past the `switch` the loop's `break` of the program's label, and the
+`default`'s `rest` after the `switch`**, `findParent: while (parent !=
+null) { switch (parent.tag) { case HostComponent: ..; break findParent; }
+parent = parent.return; }`, as upstream writes it (`case_rests.rs`,
+`loops_left_by_cases`, after the `switch`es are settled). Not a loop the
+program didn't label: its `switch`'s cases can't leave it without one,
+which upstream has none of, so it stays MIR's, `default: ..; continue; }
+break;`. Nor where `rest` declares what the loop's body before it does.
 
-Held by `test/corpus/while_let_at_end.rs`, against native Rust; mutation
-`loop-end-return-kept` (`mir/tidy/jumps/labels.ts`).
+Still to do of cm4: the guarded arm, `SINGLETON if SUPPORTS_SINGLETONS`,
+that falls to an unguarded one, `SINGLETON | COMPONENT`, whose statements
+MIR shares in a block after the `switch` (`bb12`), and the `?? null` of a
+nullable cell's stores.
+
+Held by `test/corpus/while_let_at_end.rs`, against native Rust;
+mutations `loop-end-return-kept` (`mir/tidy/jumps/labels.ts`) and
+`loop-left-by-cases-unlabeled` (`mir/tidy/case_rests.ts`).

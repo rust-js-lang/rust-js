@@ -214,3 +214,87 @@ pub(super) fn returns_of_cases(stmts: &mut Vec<Stmt>, switches: &[Switch], retur
         i += 1;
     }
 }
+
+/// A loop the program labeled, `'find_parent: while let ..`, whose turn ends
+/// in a `switch` whose cases leave the loop, MIR's `switch (..) { case A:
+/// ..; break; .. default: rest; continue; } break;`: each case's way past
+/// the `switch` the loop's `break` of the program's label, and the
+/// `default`'s `rest` after the `switch`, `findParent: while (..) { switch
+/// (..) { case A: ..; break findParent; } rest }`, as React's
+/// commitDeletionEffects writes it (ADR 0702, amended). Not a loop the
+/// program didn't label, whose label upstream has none of.
+pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        let (StmtKind::While { label, body, .. }
+        | StmtKind::ForOf { label, body, .. }
+        | StmtKind::For { label, body, .. }) = &mut stmt.kind
+        else {
+            continue;
+        };
+        let Some((.., Some(written))) = super::written_loop(loops, span) else {
+            continue;
+        };
+        let written = written.clone();
+        let own = |l: &Option<String>| l.is_none() || *l == *label;
+        let [.., switch, last] = &body[..] else {
+            continue;
+        };
+        let StmtKind::Switch {
+            cases,
+            default: Some(default),
+            ..
+        } = &switch.kind
+        else {
+            continue;
+        };
+        let continued = matches!(default.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if own(l));
+        let rest = &default[..default.len().saturating_sub(1)];
+        if !matches!(&last.kind, StmtKind::Break(l) if own(l))
+            || !continued
+            || cases.is_empty()
+            || js::continues(rest, label.as_deref())
+            || super::declared(rest).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))
+        {
+            continue;
+        }
+        body.pop();
+        let at = body.len() - 1;
+        let StmtKind::Switch { cases, default, .. } = &mut body[at].kind else {
+            unreachable!("matched")
+        };
+        let mut rest = default.take().expect("matched");
+        rest.pop();
+        for case in cases.iter_mut() {
+            leaving(&mut case.body, &written);
+            if !case.falls && !case.body.last().is_some_and(js::ends) {
+                case.body
+                    .push(StmtKind::Break(Some(written.clone())).at(js::Span::NONE));
+            }
+        }
+        body.extend(rest);
+        *label = Some(written);
+    }
+}
+
+/// Each `break` of no label in a case's `stmts`, not in a loop or a
+/// `switch` of their own, which leaves the `switch`, then the loop: the
+/// loop's, `written`'s.
+fn leaving(stmts: &mut [Stmt], written: &str) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Break(l @ None) => *l = Some(written.to_string()),
+            StmtKind::If(_, a, b) => {
+                leaving(a, written);
+                if let Some(b) = b {
+                    leaving(b, written);
+                }
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                leaving(a, written);
+                leaving(b, written);
+            }
+            _ => {}
+        }
+    }
+}

@@ -677,6 +677,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("blocks ending cases", |b, h| {
                 js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))
             }),
+            // A loop the program labeled, left by its `switch`'s cases: each
+            // case's `break` of its label, as written (ADR 0702, amended).
+            pass("loops left by cases", |b, h| {
+                js::statement_lists(b, &mut |s| case_rests::loops_left_by_cases(s, &h.written.loops))
+            }),
             // `(lanes & X) !== 0` of a test, and `lanes !== 0` of an integer's:
             // `lanes & X`, `lanes` (ADR 0896, amended). After `switches`, whose
             // cases are its chain's `day === 0`.
