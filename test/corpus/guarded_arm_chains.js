@@ -118,6 +118,45 @@ function named(tag, a, b, c, log) {
   log.push(0);
 }
 
+function onlyTransitions(lanes) {
+  return lanes > 4;
+}
+
+function onlyRetries(lanes) {
+  return lanes < 2;
+}
+
+// A guard of `&&`, which MIR tests in parts, is one `if` of both, `if
+// (!onlyTransitions(lanes) && !onlyRetries(lanes)) { break; }`, falling
+// to the next case, as React's finishConcurrentRender writes it.
+function finished(exitStatus, lanes, log) {
+  switch (exitStatus) {
+    case 0:
+    case 1:
+      log.push(10);
+      break;
+    case 4:
+      if (!onlyTransitions(lanes) && !onlyRetries(lanes)) {
+        break;
+        // Commit the placeholder.
+      }
+    // Fallthrough
+    case 6:
+      // Delay indefinitely.
+      log.push(1);
+      return;
+    case 2:
+      log.push(2);
+      break;
+    case 3:
+    case 5:
+      break;
+    default:
+      log.push(11);
+  }
+  log.push(3);
+}
+
 function main() {
   let log = [];
   for (const tag of [HOISTABLE, SINGLETON, COMPONENT, TEXT, PORTAL, FRAGMENT, VIEW, 99]) {
@@ -140,6 +179,13 @@ function main() {
   for (let tag = 0; tag < 7; tag++) {
     for (let flags = 0; flags < 8; flags++) {
       named(tag, (flags & 1) !== 0, (flags & 2) !== 0, (flags & 4) !== 0, log);
+    }
+  }
+  console.log(`[${log.join(", ")}]`);
+  log = [];
+  for (let exitStatus = 0; exitStatus < 8; exitStatus++) {
+    for (let lanes = 0; lanes < 7; lanes++) {
+      finished(exitStatus, lanes, log);
     }
   }
   console.log(`[${log.join(", ")}]`);

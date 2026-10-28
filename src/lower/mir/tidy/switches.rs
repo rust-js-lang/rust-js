@@ -475,11 +475,20 @@ fn fallen(cases: &mut [Case], arms: &[&SwitchArm]) -> Option<Vec<bool>> {
 /// `if (guard) { .. } next`, its `if` leaving; `if (guard) { .. } else {
 /// next }`; `if (!guard) { next } ..`, what follows leaving, as MIR tests a
 /// guard whose arm does nothing; or `if (!guard) { next } else { .. }`.
+/// Of `&&`, tested in parts, `if (a) { if (b) { .. } }`, one test, `if (a
+/// && b)`, React's finishConcurrentRender's (ADR 0905, amended).
 fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
     let (first, rest) = body.split_first()?;
     let StmtKind::If(test, then, otherwise) = &first.kind else {
         return None;
     };
+    let (mut test, mut then) = (test.clone(), then);
+    while otherwise.is_none()
+        && let [part] = &then[..]
+        && let StmtKind::If(t, inner, None) = &part.kind
+    {
+        (test, then) = (Expr::bin(Op::And, test, t.clone()), inner);
+    }
     // Each way it goes on to the next only tests.
     let mut assigns = false;
     test.clone()

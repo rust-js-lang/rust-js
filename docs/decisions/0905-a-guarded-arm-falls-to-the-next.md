@@ -510,3 +510,20 @@ moves to the one place that reaches it.
 Held by `test/corpus/guarded_arm_chains.rs`, against native Rust; mutations
 `case-rest-in-guard-unplaced` and `case-rest-blocks-outer-first`
 (`mir/tidy/case_rests.ts`).
+
+## Amendment: a guard of `&&` tested in parts falls through too
+
+React's finishConcurrentRender guards `RootSuspendedWithDelay if
+!includesOnlyTransitions(lanes) && !includesOnlyRetries(lanes)`, an arm
+that does nothing, before `RootSuspendedWithDelay | RootSuspendedAtTheShell`.
+MIR tests the guard in parts, `if (!a) { if (!b) { break bb38; } }`, which
+`guard_alone` didn't take for a guard's `if`, so the whole `match` was an
+`if` chain and a label. **A guard's `if` whose branch is one `if` of no
+`else`, down to the guard's end, is one test of its parts joined by `&&`**,
+`if (!includesOnlyTransitions(lanes) && !includesOnlyRetries(lanes)) {
+break; } // Fallthrough`, upstream's `switch`. Each part is still tested
+where Rust tests it, in order, short-circuit stopping where it does.
+
+Held by `guarded_arm_chains`' `finished`, against native Rust; mutations
+`and-guard-parts-unjoined` and `and-guard-first-part-dropped`
+(`mir/tidy/switches.ts`).

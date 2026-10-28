@@ -95,6 +95,35 @@ fn named(tag: u32, a: bool, b: bool, c: bool, log: &mut Vec<u32>) {
     log.push(0);
 }
 
+fn only_transitions(lanes: u32) -> bool {
+    lanes > 4
+}
+
+fn only_retries(lanes: u32) -> bool {
+    lanes < 2
+}
+
+// A guard of `&&`, which MIR tests in parts, is one `if` of both, `if
+// (!onlyTransitions(lanes) && !onlyRetries(lanes)) { break; }`, falling
+// to the next case, as React's finishConcurrentRender writes it.
+fn finished(exit_status: u32, lanes: u32, log: &mut Vec<u32>) {
+    match exit_status {
+        0 | 1 => log.push(10),
+        4 if !only_transitions(lanes) && !only_retries(lanes) => {
+            // Commit the placeholder.
+        }
+        4 | 6 => {
+            // Delay indefinitely.
+            log.push(1);
+            return;
+        }
+        2 => log.push(2),
+        3 | 5 => {}
+        _ => log.push(11),
+    }
+    log.push(3);
+}
+
 fn main() {
     let mut log = Vec::new();
     for tag in [HOISTABLE, SINGLETON, COMPONENT, TEXT, PORTAL, FRAGMENT, VIEW, 99] {
@@ -115,6 +144,13 @@ fn main() {
     for tag in 0..7 {
         for flags in 0..8 {
             named(tag, flags & 1 != 0, flags & 2 != 0, flags & 4 != 0, &mut log);
+        }
+    }
+    println!("{log:?}");
+    let mut log = Vec::new();
+    for exit_status in 0..8 {
+        for lanes in 0..7 {
+            finished(exit_status, lanes, &mut log);
         }
     }
     println!("{log:?}");

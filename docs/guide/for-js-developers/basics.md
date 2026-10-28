@@ -1554,7 +1554,7 @@ JS falls out of. One `match` may have guards of both kinds, as React's
 `getOwnerStackByFiberInDev` does, and several chains of guarded arms, each
 falling to the next, as `commitDeletionEffectsOnFiber` does, each arm's
 body in its guard's `if`; each case's guard is one `if`, `if
-(!owned && !info)`, whose branch has no `break;` where the case's
+(!owned && !info)`, of a guard that falls to the next arm too, whose branch has no `break;` where the case's
 end leaves anyway
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended):
 
