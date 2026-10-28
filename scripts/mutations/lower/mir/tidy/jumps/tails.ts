@@ -453,4 +453,22 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::Return(Some(v)) if s.span.is_none() && false => v.span,\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
   },
+  {
+    name: "held-block-not-made",
+    breaks: "a `return` from a `match` inside an `if let` holding an `Rc` is `let result;` and a labeled block, `bb24: { .. result = false; break bb24; }`, not the `return false;` React's throwException writes (ADR 0432, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        Some(StmtKind::Labeled(label, body)) => {\n            made_at_ends(body, result)\n",
+    replace: "        Some(StmtKind::Labeled(label, body)) if false => {\n            made_at_ends(body, result)\n",
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-block-breaks-unreturned",
+    breaks: "a block's `break`s that follow the result made aren't returned, so the block stays, `bb24: { .. result = false; break bb24; }` (ADR 0432, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            returned_breaks(body, false, Some(label.as_str()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
+    snapshots: true,
+  },
 ];

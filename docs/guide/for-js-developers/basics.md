@@ -2053,6 +2053,11 @@ export function untilTag(words) {
   written too, and a `match` of a string's literals, `Kind::String(
   "fulfilled")`, is `if (status === "fulfilled")`, no `typeof` before it
   ([ADR 0755](../../decisions/0755-a-shared-return-is-each-breaks.md)).
+  So is a value's `return` from a `match` inside an `if let` that holds an
+  `Rc` or a `Box`, whose drop MIR runs on each way out: `case 1: return
+  false;`, with no `let result` and no label round the `switch` ([ADR
+  0432](../../decisions/0432-a-return-is-written-where-its-value-is-made.md),
+  amended).
 - A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).

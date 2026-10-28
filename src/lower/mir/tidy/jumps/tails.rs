@@ -98,6 +98,8 @@ fn returned_where_made(body: &mut Vec<Stmt>, label: &str, result: &str) {
     if made_at_ends(body, result) {
         returned_at_ends(body);
     }
+    // A block whose `break`s are `return`s now: its statements in its place.
+    js::statement_lists(body, &mut unlabeled);
 }
 
 /// A `break label` after a block: its statements in its place, its own
@@ -250,6 +252,14 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
             matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_deref(), result)
         }
         Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
+        // Or a block each of whose `break`s follows what makes it, as its
+        // end does, which goes on to what they end at: its statements in
+        // its place, where they fit, once those are `return`s.
+        Some(StmtKind::Labeled(label, body)) => {
+            made_at_ends(body, result)
+                && broken_made(body, false, Some(label.as_str()), result)
+                && fits_in_place(stmts, stmts.len() - 1, body)
+        }
         _ => false,
     }
 }
@@ -293,6 +303,10 @@ pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
             returned_at_ends(otherwise);
         }
         StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_deref()),
+        StmtKind::Labeled(label, body) => {
+            returned_breaks(body, false, Some(label.as_str()));
+            returned_at_ends(body);
+        }
         _ => {}
     }
 }

@@ -1,7 +1,8 @@
 # 0432. A `return` is written where its value is made
 
 Status: Accepted. Extends [0370](0370-loop-exits-first.md). Amended: a
-`let .. else` is a guard first wherever its `else` is (below).
+`let .. else` is a guard first wherever its `else` is; a block a branch
+ends in returns where its value is made too (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): where a `return` is
 written changes nothing a program can observe, only how its JS reads.
@@ -122,3 +123,56 @@ whose `else` always leaves and is written before its `then` is `if (!c)
 lone `return`'s case was this rule's, and is gone. `inventory`'s
 `let Some(have) = .. else { return Err(..) }` is a guard first now, and
 `labeled_blocks`' loop tests its `next()` as written.
+
+## Amendment: a block a branch ends in returns where its value is made
+
+React's throwException returns from a `switch` on its Suspense handler's
+tag, inside `if (suspenseBoundary !== null)`, and from the `else` after
+it. Its port holds the handler, an `Rc`, in an `if let`, whose drop MIR
+runs on each way out; the `match`'s `return false`s jump to one block
+past the drops, and rust-js wrote them as `let result;`, a labeled block
+and `return result;` after the `if`:
+
+```js
+let result;
+if (boundary != null) {
+  bb24: {
+    switch (boundary) {
+      case 1:
+        ..
+        result = false;
+        break bb24;
+      ..
+    }
+    throw new Error(`Unexpected tag (${boundary})`);
+  }
+} else {
+  ..
+  result = false;
+}
+return result;
+```
+
+`returned_in_branches` returns each branch's value where it's made where
+both of the `if`'s branches end making it (`made_at_ends`), but a branch
+that ended in a block wasn't one. A label upstream doesn't have is never
+an accepted difference.
+
+**A block that ends a branch makes the result at its ends where each
+`break` of it follows what makes it, as its own end does; each such
+`break`, and its end, is a `return` of what's made there, and the block,
+which nothing names then, is its statements in its place** (`made_at_ends`
+and `returned_at_ends`, `jumps/tails.rs`), where they declare nothing
+its neighbors do. A `break` of the block goes on to its end, the end of
+the branch, then the `return result;` after the `if`: the `return` it
+is. So the port's throwException is upstream's, `case
+SuspenseComponent: .. return false;`, with no label and no `result`, as a
+borrowed handler, which nothing drops, already was.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above.
+
+Held by `test/corpus/returns_in_held_branches.rs`, against native Rust:
+an `Rc`'s `match` returning from its cases and its guard, a `Box`'s, and
+a `for` returning from inside one. Mutations `held-block-not-made`,
+`held-block-breaks-unreturned` (`jumps/tails.ts`) and
+`held-block-left-labeled` (`branches.ts`).

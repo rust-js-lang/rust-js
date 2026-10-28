@@ -622,4 +622,13 @@ export const mutations: Mutation[] = [
     replace: "                    && false\n                    && let Some(value) =\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
   },
+  {
+    name: "held-block-left-labeled",
+    breaks: "a block whose `break`s are `return`s now keeps its label, `bb24: { .. }`, which nothing names (ADR 0432, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    js::statement_lists(&mut made, &mut unlabeled);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
+    snapshots: true,
+  },
 ];
