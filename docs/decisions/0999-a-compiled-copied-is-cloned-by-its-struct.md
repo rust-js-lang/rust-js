@@ -1,4 +1,4 @@
-# 0997. A `copied()` std compiles held is cloned by its struct
+# 0999. A `copied()` std compiles held is cloned by its struct
 
 Status: Accepted. Amends [0525](0525-a-cloned-map-is-made-again.md)'s
 amendment for a clone of a `copied()` (633ae1dea).

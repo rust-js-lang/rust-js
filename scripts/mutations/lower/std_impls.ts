@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "compiled-copied-cloned-as-source",
-    breaks: "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0997)",
+    breaks: "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0999)",
     file: "src/lower/std_impls.rs",
     find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n            && !held_compiled\n",
     replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n",

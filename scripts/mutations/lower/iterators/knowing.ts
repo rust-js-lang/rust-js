@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "enumerate-back-of-arrays-only",
+    breaks: "an `enumerate()` made in place of what isn't an array's items, a `fuse()` of owned items, is refused where it's stepped from its back (#383)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                false => self.as_exact_size(source_value.clone(), source.peel_refs(), true, span)?,\n",
+    replace: "                false => return Err(self.unsupported(span, \"a mutated enumerate\")),\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_fuse_from_back.rs$"],
+  },
+  {
     name: "double-ended-rev-unread",
     breaks: "a `rev()` made in place, given where generic code steps it from its back, is refused: `ends((1..4).rev())` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
@@ -270,8 +278,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-array-no-back",
     breaks: "an enumerate of an array's items made here steps from its back",
     file: "src/lower/iterators/knowing.rs",
-    find: "        // its length, whose index from the back is where it is (ADR 0528).\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n",
-    replace: "        // its length, whose index from the back is where it is (ADR 0528).\n        if let Some(source) = None::<ty::Ty<'tcx>>\n",
+    find: "        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
+    replace: "        if let Some(source) = None::<ty::Ty<'tcx>>\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
     tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
   },
   {

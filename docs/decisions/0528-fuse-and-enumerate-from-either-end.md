@@ -6,6 +6,10 @@ Status: Accepted; superseded in part by [0566](0566-fuse-is-stds.md), whose
 [0456](0456-a-generic-exact-size-iterator.md) and
 [0473](0473-fuse-is-rusts-fuse.md); accepts part of the
 [iterators draft](draft/cloned-and-buffering-iterators.md).
+Amended (#383): an `enumerate()` made in place of what isn't an array's
+items, a `fuse()` of owned items with a destructor say, is `$enumerate`
+of its source made knowing its back and length (`as_exact_size`), where
+it's stepped from its back; `test/corpus/enumerate_of_a_fuse_from_back.rs`.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): the items, their
 indices and their order are Rust's.
