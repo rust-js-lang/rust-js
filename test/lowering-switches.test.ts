@@ -120,7 +120,9 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
   );
   expect(js).toContain('    case C:\n      if (on) {\n        return "c";\n      }\n      break;\n    case B:\n      return "b";\n  }\n  return "none";\n');
   expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n  }\n  log.push(0);\n");
-  expect(js).toContain("        break loop;\n      case C:\n        if (on) {\n          continue;\n        }\n    }\n");
+  // An arm that breaks the loop, which goes on past the `match`: its arms
+  // an `if` chain, no label the program didn't write (#389).
+  expect(js).toContain("    } else if (x === B) {\n      break;\n    } else if (x === C && on) {\n      continue;\n    }\n");
   expect(js).toContain('    case "Class":\n      if (on) {\n        return 2;\n      }\n      break;\n    case "Host":\n      return 3;\n  }\n');
   // A later arm that could take the constant, `_ => 0`, `C => ..`: an `if` chain.
   expect(js).toMatch(/export function taken\(n, on\) \{\n  if \(n === A\)/);

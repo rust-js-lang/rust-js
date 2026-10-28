@@ -10,12 +10,8 @@ use crate::lower::mir::hints::{Constant, SUBJECT, Switch, SwitchArm};
 use crate::lower::untagged::TypeofCase;
 
 use super::bindings::declared;
+use super::loop_labels::{LOOP_LABEL, continued, labeled_breaks, labels_in};
 use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
-
-/// What a readable label a loop's given is, where a `break` of it in a
-/// `switch` names it and the program named it none: `loop`, as ADR 0015
-/// names one.
-const LOOP_LABEL: &str = "loop";
 
 /// Each chain of `body` that tests the arms of a `match` of `switches`, in
 /// the order written, a `switch`; a `break` in it of a loop around it, of
@@ -24,13 +20,14 @@ pub(super) fn switches(body: &mut Vec<Stmt>, switches: &[Switch], loops: &[(js::
     if switches.is_empty() {
         return;
     }
-    walk(body, switches, loops, &mut Vec::new(), None);
+    walk(body, switches, loops, &mut Vec::new(), None, false);
 }
 
-/// The loop a `switch` is in: the label a `break` of it names, and whether
-/// one does.
+/// The loop a `switch` is in: the label a `break` of it names, whether
+/// the program wrote it, and whether one does.
 struct Around<'l> {
     label: &'l str,
+    written: bool,
     named: bool,
 }
 
@@ -43,11 +40,12 @@ fn walk(
     loops: &[(js::Span, bool, Option<String>)],
     labels: &mut Vec<String>,
     mut around: Option<&mut Around>,
+    turn: bool,
 ) {
     let mut i = 0;
     while i < list.len() {
         written_after(list, i, switches);
-        if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut()) {
+        if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut(), turn) {
             list.splice(i..i + taken, switch);
             if discriminant_in_place(list, i) {
                 i -= 1;
@@ -60,19 +58,19 @@ fn walk(
         let span = stmt.span;
         match &mut stmt.kind {
             StmtKind::If(_, a, b) => {
-                walk(a, switches, loops, labels, around.as_deref_mut());
+                walk(a, switches, loops, labels, around.as_deref_mut(), false);
                 if let Some(b) = b {
-                    walk(b, switches, loops, labels, around.as_deref_mut());
+                    walk(b, switches, loops, labels, around.as_deref_mut(), false);
                 }
             }
-            StmtKind::Labeled(_, body) => walk(body, switches, loops, labels, around.as_deref_mut()),
+            StmtKind::Labeled(_, body) => walk(body, switches, loops, labels, around.as_deref_mut(), false),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                walk(a, switches, loops, labels, around.as_deref_mut());
-                walk(b, switches, loops, labels, around.as_deref_mut());
+                walk(a, switches, loops, labels, around.as_deref_mut(), false);
+                walk(b, switches, loops, labels, around.as_deref_mut(), false);
             }
             StmtKind::Switch { cases, default, .. } => {
                 for body in js::case_lists_mut(cases, default) {
-                    walk(body, switches, loops, labels, around.as_deref_mut());
+                    walk(body, switches, loops, labels, around.as_deref_mut(), false);
                 }
             }
             StmtKind::While { label, body, .. }
@@ -81,27 +79,29 @@ fn walk(
                 // Its label, a readable one where MIR made it, `bb5`: the
                 // program's, or `loop`, apart from the labels around it and
                 // in it.
-                let readable = match label.as_deref() {
-                    Some(l) if !crate::lower::mir::is_block_label(l) => l.to_string(),
+                let written = written_loop(loops, span).and_then(|(.., l)| l.clone());
+                let (readable, written) = match label.as_deref() {
+                    Some(l) if !crate::lower::mir::is_block_label(l) => (l.to_string(), true),
                     _ => {
                         let mut taken: HashSet<String> = labels.iter().cloned().collect();
                         labels_in(body, &mut taken);
-                        let written = written_loop(loops, span).and_then(|(.., l)| l.clone());
-                        (written.into_iter())
+                        let readable = (written.clone().into_iter())
                             .chain((0..).map(|n| match n {
                                 0 => LOOP_LABEL.to_string(),
                                 n => format!("{LOOP_LABEL}${n}"),
                             }))
                             .find(|name| !taken.contains(name))
-                            .expect("a name no label has")
+                            .expect("a name no label has");
+                        (readable.clone(), written.as_ref() == Some(&readable))
                     }
                 };
                 let mut inner = Around {
                     label: &readable,
+                    written,
                     named: false,
                 };
                 labels.push(readable.clone());
-                walk(body, switches, loops, labels, Some(&mut inner));
+                walk(body, switches, loops, labels, Some(&mut inner), true);
                 labels.pop();
                 // A case's `continue` of the loop whose turn the `switch`
                 // ends, which it goes on to anyway.
@@ -257,6 +257,7 @@ fn switch_at(
     at: usize,
     switches: &[Switch],
     around: Option<&mut Around>,
+    turn: bool,
 ) -> Option<(Vec<Stmt>, usize)> {
     let first = &stmts[at];
     let at_test = tested_at(first)?;
@@ -350,13 +351,27 @@ fn switch_at(
     nulls_inside(&mut cases)?;
     let before = arrays_before(&mut cases)?;
     // A `break` of no label in a case, of the loop around it, which in a
-    // `switch` would leave the `switch`: of the loop's label.
+    // `switch` would leave the `switch`: of the loop's label, where the
+    // program wrote one; else, where the loop's turn ends at the `switch`,
+    // the `switch`'s, a `break;` after it leaving the loop, each case that
+    // goes on to the next turn its `continue;` (`framed`); and otherwise no
+    // `switch`, its arms the `if` chain they are, as no label the program
+    // didn't write is JS's (#389, the user's decision). But of guarded arms
+    // that fall through (ADR 0905), whose `if` chain MIR's shared tests make
+    // only of labeled blocks, `loop` still, written up for the user.
+    let mut framed = false;
     if cases.iter().any(|(_, body, ..)| js::breaks(body, None)) {
         let around = around?;
-        for (_, body, ..) in cases.iter_mut() {
-            labeled_breaks(body, around.label);
+        if !around.written && turn && stmts.len() == at + taken && before.is_empty() {
+            framed = true;
+        } else if around.written || falling {
+            for (_, body, ..) in cases.iter_mut() {
+                labeled_breaks(body, around.label);
+            }
+            around.named = true;
+        } else {
+            return None;
         }
-        around.named = true;
     }
     // Each guarded arm's case that falls to the next, its own statements
     // the guard's `if`; what follows, which went on to each, the last's
@@ -378,7 +393,8 @@ fn switch_at(
     // each case that went on to it going on past the `switch` (ADR 0905,
     // amended).
     let mut past = Vec::new();
-    if before.is_empty()
+    if !framed
+        && before.is_empty()
         && stmts.len() == at + taken
         && let Some((_, body, true, _)) = cases.last()
         && body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)))
@@ -414,13 +430,17 @@ fn switch_at(
     // Where the `match` is written, not its first arm's pattern, which the
     // first case's constant is (ADR 0630).
     let span = written.span;
-    let switch = StmtKind::Switch {
+    let mut switch = StmtKind::Switch {
         discriminant,
         cases: switched,
         default,
     };
+    if framed {
+        continued(&mut switch);
+    }
     // Each `if` before it, its `else` the rest, where it goes on.
-    let switched = std::iter::once(switch.at(span)).chain(past).collect();
+    let left = framed.then(|| StmtKind::Break(None).at(js::Span::NONE));
+    let switched = std::iter::once(switch.at(span)).chain(past).chain(left).collect();
     let written = (before.into_iter().rev()).fold(switched, |rest, (test, body, at)| {
         match body.last().is_some_and(js::ends) {
             true => std::iter::once(StmtKind::If(test, body, None).at(at))
@@ -1208,58 +1228,6 @@ fn written_at(stmt: &Stmt) -> Option<u32> {
 /// Whether `at` is in `span`.
 fn within(at: u32, span: js::Span) -> bool {
     !span.is_none() && span.lo <= at && at < span.hi
-}
-
-/// Each `break` of no label in `stmts`, not in a loop of their own, of
-/// `label`: the loop's around the `switch` they're a case of.
-fn labeled_breaks(stmts: &mut [Stmt], label: &str) {
-    for stmt in stmts {
-        match &mut stmt.kind {
-            StmtKind::Break(l @ None) => *l = Some(label.to_string()),
-            StmtKind::If(_, a, b) => {
-                labeled_breaks(a, label);
-                if let Some(b) = b {
-                    labeled_breaks(b, label);
-                }
-            }
-            StmtKind::Labeled(_, body) => labeled_breaks(body, label),
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                labeled_breaks(a, label);
-                labeled_breaks(b, label);
-            }
-            _ => {}
-        }
-    }
-}
-
-/// Each label in `stmts`, a loop's or a block's.
-fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
-    for stmt in stmts {
-        match &stmt.kind {
-            StmtKind::While { label, body, .. }
-            | StmtKind::ForOf { label, body, .. }
-            | StmtKind::For { label, body, .. } => {
-                labels.extend(label.clone());
-                labels_in(body, labels);
-            }
-            StmtKind::Labeled(label, body) => {
-                labels.insert(label.clone());
-                labels_in(body, labels);
-            }
-            StmtKind::If(_, a, b) => {
-                labels_in(a, labels);
-                labels_in(b.as_deref().unwrap_or_default(), labels);
-            }
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                labels_in(a, labels);
-                labels_in(b, labels);
-            }
-            StmtKind::Switch { cases, default, .. } => {
-                js::case_lists(cases, default).for_each(|body| labels_in(body, labels));
-            }
-            _ => {}
-        }
-    }
 }
 
 /// A block's `break` in a `switch` its statements end with, `l: { if (c) {

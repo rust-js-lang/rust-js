@@ -194,3 +194,69 @@ test("a default after a guarded case needs no break", async () => {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.guarded(1, true), lib.guarded(1, false), lib.guarded(3, true), lib.guarded(9, true)]).toEqual([102, 2, 4, 1]);
 });
+
+// #389, the user's decision: no JS label where the Rust wrote none. A
+// `match` of constants an arm of which breaks the loop around it is a
+// `switch` where the loop's turn ends at it, each `break` the `switch`'s and
+// one `break;` after it the loop's, each case that goes on `continue;`, a
+// value of none of them too; and an `if` chain where the turn goes on past
+// it. A loop the program labeled keeps its `break rows;`.
+test("a match whose arm breaks its loop has no label the program didn't write", async () => {
+  const dir = fixture("switch-loop-breaks");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first_stop(codes: &[u8]) -> usize {
+    let mut i = 0;
+    while i < codes.len() {
+        match codes[i] {
+            b'.' | b'!' => break,
+            b' ' => {}
+            _ => i += 1,
+        }
+        i += 1;
+    }
+    i
+}
+
+pub fn framed(codes: &[u8]) -> u32 {
+    let mut i = 0;
+    let mut n = 0;
+    while i < codes.len() {
+        i += 1;
+        match codes[i - 1] {
+            b'.' | b'!' => break,
+            b' ' => n += 2,
+            b'-' => n += 1,
+            _ => {}
+        }
+    }
+    n
+}
+
+pub fn labeled(rows: &[Vec<u8>]) -> u32 {
+    let mut n = 0;
+    'rows: for row in rows {
+        for &b in row {
+            match b {
+                0 => break 'rows,
+                1 => n += 1,
+                _ => n += 10,
+            }
+            n += 100;
+        }
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("loop:");
+  expect(js).toContain("    if (codes[i] === 46 || codes[i] === 33) {\n      break;\n    }\n");
+  expect(js).toContain(
+    "      case 46:\n      case 33:\n        break;\n      case 32:\n        n = (n + 2) >>> 0;\n        continue;\n      case 45:\n        n = (n + 1) >>> 0;\n        continue;\n      default:\n        continue;\n    }\n    break;\n",
+  );
+  expect(js).toContain("        case 0:\n          break rows;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const bytes = (s: string) => [...s].map((c) => c.charCodeAt(0));
+  expect([lib.firstStop(bytes(" .")), lib.firstStop(bytes(".")), lib.firstStop(bytes("a"))]).toEqual([1, 0, 2]);
+  expect([lib.framed(bytes("a -.--")), lib.framed(bytes(" x-"))]).toEqual([3, 3]);
+  expect(lib.labeled([[1, 2], [0, 1]])).toEqual(1 + 100 + 10 + 100);
+});

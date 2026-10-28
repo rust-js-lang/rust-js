@@ -20,6 +20,7 @@ mod destructuring;
 mod flags;
 mod jumps;
 mod logicals;
+mod loop_labels;
 mod loops;
 mod moves;
 mod options;

@@ -1,7 +1,8 @@
 # 0629. A `match` of constants is a `switch`
 
 Status: Accepted. Amends [ADR 0014](0014-match-lowering.md), which made
-every `match` an `if` chain. Amended by
+every `match` an `if` chain. Amended below, the user's decision of #389: no
+label the program didn't write, superseding `loop:`. Amended by
 [0731](0731-a-cases-break-past-the-switch-is-its-own.md): a case's `break`
 past the `switch` is its own; by
 [0634](0634-a-registered-symbol-is-a-const.md): a `Some` of constants,
@@ -381,3 +382,39 @@ leaves, so `rest` runs only after `own`, either way.
 
 Held by `test/corpus/arm_returns_as_written.rs`, against native Rust;
 mutation `switch-takes-what-follows` (`tidy/switches.ts`).
+
+## Amendment: no label the program didn't write (#389)
+
+The user decided, of #389, that a JS label never appears where the Rust
+wrote none, which supersedes this ADR's `loop:` above: "a `break` of a loop
+in a case names the loop" now names it only where the program labeled it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each form runs the
+same jumps; only the JS's shape differs.
+
+- **Where the loop's turn ends at the `switch`**, the `switch` stays, its
+  breaking cases `break;` it, one `break;` after it leaves the loop, and
+  each case that goes on to the next turn ends in `continue;`, a value of
+  none of them too, `default: continue;`, as MIR already gave React's
+  `frame` (`switches.rs`' `framed`).
+- **Otherwise the `match` is no `switch`**, its arms the `if` chain they
+  are, `if (codes[i] === 46 || codes[i] === 33) { break; }`, the subject
+  read as that chain reads it: in place where it's plain, else MIR's
+  temporary named as the program names it. ADR 0958's chain of
+  `js::strict_equals` tests already makes no `switch` of a chain an arm of
+  which breaks (`strict_switches.rs`), so it doesn't make one again.
+- **A loop the program labeled**, `'rows: for ..`, keeps its `switch` and
+  `break rows;` (ADRs 0742, 0944).
+- **Not yet: guarded arms that fall through (ADR 0905)** in a loop whose
+  turn goes on past the `match`, `test/corpus/switch_fallthrough.rs`'s
+  `counted`: MIR shares their guards' tests, and the `if` chain it gives is
+  labeled blocks, `bb38: { bb15: { .. } }`, worse than the label, so that
+  `switch` keeps `loop:` until tidy rebuilds such a chain; written up for
+  the user (S/decisions-pending.md, #389b).
+
+The guide's `count` is the `if` chain. Held by
+`test/lowering-switch-ends.test.ts`' "a match whose arm breaks its loop has
+no label the program didn't write", `test/corpus/match_breaks_its_loop.rs`
+against native Rust, `lowering-matches`' and `lowering-switches`' loops,
+and mutations `loop-break-switch-labeled`, `loop-break-framed-past-the-turn`,
+`framed-case-not-continued` and `framed-default-missing`.

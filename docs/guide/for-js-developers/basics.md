@@ -1801,8 +1801,14 @@ export function frame(tag, viewTransitions) {
 }
 ```
 
-A `break` in an arm leaves the loop, as in Rust: in a `switch` it would
-leave the `switch`, so it names the loop, the program's label or `loop`:
+A `break` in an arm leaves the loop, as in Rust. In a `switch` it would
+leave the `switch`, and JS gets no label the program didn't write: where
+the loop's turn ends at the `switch`, its cases `break;` it and one
+`break;` after it leaves the loop, each case that goes on `continue;`;
+where the turn goes on past it, the arms are an `if` chain; a loop the
+program labeled, `'rows: for ..`, keeps its `switch` and `break rows;`
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md),
+amended, #389):
 
 ```rust
 pub fn count(s: &str) -> u32 {
@@ -1823,16 +1829,13 @@ pub fn count(s: &str) -> u32 {
 ```js
 export function count(s) {
   let n = 0;
-  loop: for (const c of s) {
-    switch (c) {
-      case "a":
-      case "e":
-        n = (n + 1) >>> 0;
-        break;
-      case ".":
-        break loop;
-      case "#":
-        continue;
+  for (const c of s) {
+    if (c === "a" || c === "e") {
+      n = (n + 1) >>> 0;
+    } else if (c === ".") {
+      break;
+    } else if (c === "#") {
+      continue;
     }
     n = (n + 10) >>> 0;
   }

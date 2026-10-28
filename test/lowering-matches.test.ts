@@ -1461,12 +1461,12 @@ pub fn specifier(code: u8, log: &mut Vec<u8>) {
   expect(js).toContain("  switch (bytes[i]) {\n    case UPPER:\n    case LOWER:\n      return 1;\n    case 100:");
   // Each variant a case, the last too: Rust tested every one.
   expect(js).toContain('    case "Class":\n      return 2;\n    case "Host":\n      return 3;\n  }');
+  // An arm that breaks the loop, which goes on past it: an `if` chain (#389).
   expect(js).toContain(
-    '  loop: for (const c of s) {\n    switch (c) {\n      case "a":\n      case "e":\n        n = (n + 1) >>> 0;\n        break;\n      case "x":\n        break loop;\n      case "y":\n        continue;\n    }\n',
+    '  for (const c of s) {\n    if (c === "a" || c === "e") {\n      n = (n + 1) >>> 0;\n    } else if (c === "x") {\n      break;\n    } else if (c === "y") {\n      continue;\n    }\n',
   );
-  // The program's label, and one of its own for the inner loop.
-  expect(js).toContain('        case "#":\n          break rows;\n        case ".":\n          break loop;\n        default:\n          n = (n + 1) >>> 0;\n      }\n');
-  expect(js).toContain("    loop: for (const c of row) {\n");
+  // The program's label; a turn that ends at the `switch` left after it.
+  expect(js).toContain('          break rows;\n        case ".":\n          break;\n        default:\n          n = (n + 1) >>> 0;\n          continue;\n      }\n      break;\n');
   expect(js).toContain("    case 1: {\n      const s = `one${n}`;\n      log.push(s);\n      break;\n    }\n");
   expect(js).not.toMatch(/default:\n *break;/);
   expect(js).toContain("  if (n === 1) {\n    if (n > 0) {");
