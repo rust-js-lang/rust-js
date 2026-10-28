@@ -640,7 +640,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0841 A nullable place stores what's never `undefined` as it is](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md) *(amended: a nullable function's result, kept in a variable or a `Drop` guard's field, is stored as it is; a trait's method's isn't taken as one; an `and_then` of a nullable function is stored as it is; stored again where it's read in place; amended: an `and_then` of a closure of a nullable function's call; amended: a `Cell` made of a `Some`, and what a closure put in its place is given)*
 - [0846 A parameter's clone that is the same JS value is read by the parameter's name](0846-a-parameters-clone-is-read-by-its-name.md) *(extended by 0879: of what a `move` closure captured)*
 - [0853 A variable set again is read, and given what's made, where it is](0853-a-variable-set-again-is-read-and-given-where-it-is.md)
-- [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md)
+- [0855 A parameter's `#[rust_js::name]` is its JS name](0855-a-parameters-rust-js-name-is-its-js-name.md) *(amended: a `let`'s names its variable (the user's decision))*
 - [0855 A `loop` that ends an `if`'s branch breaks as a loop, its `else` kept](0855-a-loop-that-ends-a-branch-breaks-as-a-loop.md)
 - [0856 JS's iterator protocol is `js::Iterator`, and a loop is of what its test makes](0856-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)
 - [0857 A function's own nullable parameter is `null` where it's given or set `None`](0857-a-functions-own-nullable-parameter-is-set-null.md)

@@ -263,3 +263,62 @@ test("js::symbol::r#for is gone, an error naming js::SymbolFor", () => {
   const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()], root, 60_000);
   expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::symbol::r#for` is gone: the registry's symbol of a key is `js::SymbolFor(key)`")]);
 });
+
+// ADR 0855, amended: a `let`'s `#[rust_js::name]` is its JS name, a name
+// Rust can't spell, React's mountLazyComponent's `const $$typeof =
+// component.$$typeof`; a closure's read of it too. One of a pattern, not a
+// string or not a JS name, or the name it has anyway, is an error saying
+// what to write, as a parameter's is.
+test("a let's rust_js::name is its JS name", async () => {
+  const dir = fixture("let-name");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+pub const REACT_MEMO_TYPE: SymbolFor = SymbolFor("react.memo");
+
+pub fn tag(component: &Unknown) -> u32 {
+    #[cfg_attr(rust_js, rust_js::name = "$$typeof")]
+    let typeof_ = SymbolFor::from_value(js::get(component, "$$typeof"));
+    if typeof_ == Some(REACT_MEMO_TYPE) { 1 } else { 2 }
+}
+
+pub fn counted(n: u32) -> u32 {
+    #[cfg_attr(rust_js, rust_js::name = "$count")]
+    let count = n + 1;
+    let twice = || count * 2;
+    twice()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const $$typeof = component.$$typeof;\n  return $$typeof === REACT_MEMO_TYPE ? 1 : 2;\n");
+  expect(js).toContain("  const $count = (n + 1) >>> 0;\n  const twice = () => ($count * 2) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.tag({ $$typeof: Symbol.for("react.memo") }), lib.tag({}), lib.counted(2)]).toEqual([1, 2, 6]);
+  writeFileSync(join(dir, "lib.rs"), `pub fn same() -> u32 {
+    #[cfg_attr(rust_js, rust_js::name = "value")]
+    let value = 1;
+    value
+}
+pub fn pair() -> u32 {
+    #[cfg_attr(rust_js, rust_js::name = "Pair")]
+    let (x, y) = (1, 2);
+    x + y
+}
+pub fn bare() -> u32 {
+    #[cfg_attr(rust_js, rust_js::name)]
+    let given = 1;
+    given
+}
+pub fn dashed() -> u32 {
+    #[cfg_attr(rust_js, rust_js::name = "my-name")]
+    let given = 1;
+    given
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain('rust-js: `value` is `value` in JS without `#[rust_js::name = "value"]`: remove it');
+  expect(refused.stderr).toContain("rust-js: `#[rust_js::name]` names a `let` that binds a name, `let value = ..`, not a pattern");
+  expect(refused.stderr).toContain('rust-js: write a `let`\'s JS name as a string, `#[cfg_attr(rust_js, rust_js::name = "$$typeof")]`');
+  expect(refused.stderr).toContain("rust-js: a `let`'s JS name is a name JS lets a variable have, not `my-name`");
+});

@@ -13,10 +13,13 @@ use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
 mod effects;
+mod given_names;
 mod imports;
 mod nullable;
 mod rest_values;
+
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
+pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(super) use imports::{Export, js_import, module_binding, namespace_name};
 pub(super) use nullable::{
     is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init,
@@ -939,30 +942,6 @@ pub(super) fn marked_rest<'tcx>(
     let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
     (params.iter().enumerate())
         .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))
-}
-
-/// Each of `owner`'s parameters' `#[rust_js::name = ".."]`, its JS name, React's
-/// `useContext(Context)` (ADR 0855), read from its body as `marked_rest` is.
-pub(super) fn named_parameters<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    owner: LocalDefId,
-) -> impl Iterator<Item = (&'tcx rustc_hir::Param<'tcx>, &'tcx rustc_hir::Attribute)> {
-    let path = [Symbol::intern("rust_js"), sym::name];
-    let params = tcx.hir_maybe_body_owned_by(owner).map_or(&[][..], |body| body.params);
-    let attr =
-        move |param: &'tcx rustc_hir::Param<'tcx>| tcx.hir_attrs(param.hir_id).iter().find(|a| a.path_matches(&path));
-    params.iter().filter_map(move |param| Some((param, attr(param)?)))
-}
-
-/// The JS name `#[rust_js::name = ".."]` gives `owner`'s parameter that
-/// binds `name`, if it gives one (ADR 0855).
-pub(super) fn given_parameter_name(tcx: TyCtxt<'_>, owner: LocalDefId, name: &str) -> Option<String> {
-    named_parameters(tcx, owner).find_map(|(param, attr)| match param.pat.kind {
-        rustc_hir::PatKind::Binding(_, _, ident, None) if ident.name.as_str() == name => {
-            attr.value_str().map(|given| given.to_string())
-        }
-        _ => None,
-    })
 }
 
 /// Whether the crate's function `def_id` takes JS's rest arguments, its last

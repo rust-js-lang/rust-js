@@ -91,4 +91,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
   },
+  {
+    name: "let-name-ignored",
+    breaks: "a `let`'s `#[rust_js::name = \"$$typeof\"]` is silently ignored, `const typeof$` (ADR 0855, amended)",
+    file: "src/lower/mir/locals.rs",
+    find: "                let named = given.iter().find(|(span, _)| *span == info.source_info.span);\n",
+    replace: "                let named = given.iter().find(|_| false);\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+  },
 ];

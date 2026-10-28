@@ -91,6 +91,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sm = self.tcx.sess.source_map();
         // `?`'s own `val`, what its `Continue` holds: a temporary.
         let continued = self.continued(body);
+        // Each `let`'s `#[rust_js::name]`, by its binding's span (ADR 0855).
+        let given = (body.source.def_id().as_local())
+            .map(|owner| crate::lower::bindings::given_let_names(self.tcx, owner))
+            .unwrap_or_default();
         for info in &body.var_debug_info {
             // A variable a std macro makes, `format_args!`'s `args`, isn't one
             // the program names, nor `.await`'s `result`; a derived impl's
@@ -111,8 +115,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => info.name.to_string(),
                 };
                 // A parameter's without the `_` that marks it unused (ADR 0678).
+                let named = given.iter().find(|(span, _)| *span == info.source_info.span);
                 user[place.local] = Some(match body.local_kind(place.local) {
                     LocalKind::Arg => crate::lower::parameter_name(self.tcx, body.source.def_id(), &name),
+                    _ if let Some((_, named)) = named => named.clone(),
                     _ => crate::lower::camel_case(&name),
                 });
                 locals.user[place.local] = true;
