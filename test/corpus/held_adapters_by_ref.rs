@@ -18,7 +18,9 @@ fn even(x: &&u32) -> bool {
 
 fn main() {
     let v = vec![1, 2, 3, 4, 5, 6, 7, 8];
-    let mut e = Evens { it: v.iter().filter(even as fn(&&u32) -> bool) };
+    let mut e = Evens {
+        it: v.iter().filter(even as fn(&&u32) -> bool),
+    };
     let first: Vec<_> = e.it.by_ref().take(2).collect();
     println!("{first:?} {:?}", e.it.next());
     let mut r = Rest { it: v.iter().skip(2) };
@@ -31,4 +33,10 @@ fn main() {
     let mut again = Rest { it: v.iter().skip(1) };
     let back: Vec<_> = again.it.by_ref().rev().take(2).collect();
     println!("{back:?} {:?}", again.it.next());
+    let mut odd = Evens {
+        it: v.iter().filter(even as fn(&&u32) -> bool),
+    };
+    let last = odd.it.by_ref().next_back();
+    let from_back: Vec<_> = odd.it.by_ref().rev().take(1).collect();
+    println!("{last:?} {from_back:?} {:?} {:?}", odd.it.next(), odd.it.next_back());
 }

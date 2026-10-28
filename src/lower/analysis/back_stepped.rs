@@ -102,9 +102,10 @@ pub(super) fn back_stepped<'tcx>(
 }
 
 /// `adapter`, regions erased, where it's a map or a filter of a source not
-/// an array's, which its own forms step from their back, or of an array's
-/// items whose drop runs, `drops`'s, or that a function gives behind an
-/// `impl`, `given`, which no form of its caller's steps.
+/// an array's, a filter of an array's items, which no form of its own
+/// steps from its back (ADR 0990), a map of an array's items whose drop
+/// runs, `drops`'s, or one that a function gives behind an `impl`,
+/// `given`, which no form of its caller's steps.
 fn back_stepped_adapter<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
@@ -118,10 +119,14 @@ fn back_stepped_adapter<'tcx>(
     if flattened_source(tcx, adapter).is_some() || given && chained_sources(tcx, adapter).is_some() {
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
-    let source = mapped_source(tcx, adapter)
-        .or_else(|| filtered_source(tcx, adapter))?
-        .peel_refs();
-    let native = !given && recognition.array_source(source).is_some() && !dropping_items(recognition, adapter, &drops);
+    let mapped = mapped_source(tcx, adapter);
+    let source = mapped.or_else(|| filtered_source(tcx, adapter))?.peel_refs();
+    // A map of an array's items steps from its back by its own form, its
+    // source's last item mapped; a filter's has none.
+    let native = mapped.is_some()
+        && !given
+        && recognition.array_source(source).is_some()
+        && !dropping_items(recognition, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
 }
 

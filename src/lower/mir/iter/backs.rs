@@ -169,8 +169,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // drop it is what's owned.
         let held = arg_tys.first().copied().unwrap_or(iter_ty);
         Ok(Some(match method {
-            // One a struct holds, itself, which closing doesn't end (ADR 0542).
-            Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),
             // A range's, the range, whose `&mut` it is: what steps it after
             // moves its start, `$rangeNext(it)`, as Rust's does, not a JS
             // iterator of it, which would be stepped as a range again.

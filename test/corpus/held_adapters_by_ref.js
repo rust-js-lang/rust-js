@@ -8,6 +8,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $exactLen,
+  $filterEnds,
   $iter,
   $knowing,
   $lent,
@@ -28,7 +29,9 @@ function even(x) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
-  const e = { it: v.values().filter((item) => even(item)) };
+  const e = {
+    it: $filterEnds($iter(v), (item) => even(item)),
+  };
   const first = $lent(e.it).take(2).toArray();
   const arg = $next(e.it);
   console.log(`[${first.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
@@ -72,5 +75,15 @@ function main() {
     .toArray();
   const arg$1 = $next(again.it);
   console.log(`[${back.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
+  const odd = {
+    it: $filterEnds($iter(v), (item) => even(item)),
+  };
+  const last = $nextBack(odd.it);
+  const fromBack = $rev(odd.it).take(1).toArray();
+  const value = $next(odd.it);
+  const arg$2 = $nextBack(odd.it);
+  console.log(
+    `${last == null ? "None" : `Some(${last})`} [${fromBack.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+  );
 }
 //# sourceMappingURL=case.js.map

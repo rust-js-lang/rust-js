@@ -1,6 +1,7 @@
 # 0545. A map the crate steps from its back is made knowing it
 
-Status: Accepted. Extends [0455](0455-stepping-from-the-back.md),
+Status: Accepted; a filter of an array's items is one too, since
+[0990](0990-a-filter-of-an-arrays-items-stepped-from-its-back.md). Extends [0455](0455-stepping-from-the-back.md),
 [0488](0488-an-extension-bound-iterator-is-an-iterator.md) and [0535](0535-a-lazy-map-steps-from-its-back.md);
 accepts more of the [iterators draft](draft/cloned-and-buffering-iterators.md)'s
 analysis. Amended: a type parameter's map or filter where its bounds give

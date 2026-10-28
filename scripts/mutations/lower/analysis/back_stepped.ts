@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "filter-of-items-native",
+    breaks: "a filter of an array's items stepped from its back is taken to have a form of its own that does it, and is refused: `v.iter().filter(p).next_back()` (ADR 0990)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    let native = mapped.is_some()\n        && !given\n",
+    replace: "    let native = !given\n",
+    tests: ["test/corpus.test.ts", "-t", "^(next_back_lazy|held_adapters_by_ref).rs$"],
+  },
+  {
     name: "back-stepped-none",
     breaks: "no map the crate steps from its back is seen, and one held before it's stepped is refused",
     file: "src/lower/analysis/back_stepped.rs",

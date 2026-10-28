@@ -128,7 +128,8 @@ on:
   a clone, `collect`, a `for` after them, a B-tree's range and `iter`,
   `map`, `chars`, `split`, `Option`s, a `Peekable` peeked after, `next_if`,
   `as_str` and a `RangeInclusive`; `next_back_lazy` and `next_back_generic`
-  the refusals (the second compiles since ADR 0487).
+  the refusals (the second compiles since ADR 0487, the first since ADR
+  [0990](0990-a-filter-of-an-arrays-items-stepped-from-its-back.md)).
   Mutations take from the front, read past `end` in each reader, unbox,
   run the chain eagerly, and refuse each.
 - **A slice's or a `VecDeque`'s `iter_mut()` kept, and a chain on

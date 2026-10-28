@@ -233,14 +233,6 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "held-by-ref-lent",
-    breaks: "`by_ref()` of a held adapter is lent, which keeps none of its back",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(IterMethod::ByRef) if self.explicit_adapter(iter_ty) => receiver.clone(),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
-  },
-  {
     name: "back-stepped-source-raw",
     breaks: "a range a map the crate steps from its back maps is given as it is, not knowing its back",
     file: "src/lower/mir/iter/backs.rs",
