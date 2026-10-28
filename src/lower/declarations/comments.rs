@@ -15,10 +15,23 @@ pub(in crate::lower) fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_
     use rustc_hir::attrs::AttributeKind;
     let docs: Vec<String> = (rustc_hir::attrs::HasAttrs::get_attrs(def_id, &tcx).iter())
         .filter_map(|attr| match attr {
-            hir::Attribute::Parsed(AttributeKind::DocComment { comment, .. }) => Some(comment.to_string()),
+            // A block's, `/** .. */`, as rustdoc reads it, its stars and
+            // its first and last empty lines left out (rd67).
+            hir::Attribute::Parsed(AttributeKind::DocComment { kind, comment, .. }) => {
+                Some(match kind.comment_kind() {
+                    rustc_ast::token::CommentKind::Block => {
+                        rustc_ast::util::comments::beautify_doc_string(*comment, rustc_ast::token::CommentKind::Block)
+                            .as_str()
+                            .trim_end()
+                            .to_string()
+                    }
+                    rustc_ast::token::CommentKind::Line => comment.to_string(),
+                })
+            }
             _ => None,
         })
-        .flat_map(|doc| doc.lines().map(str::to_string).collect::<Vec<_>>())
+        // Each line, an empty `///`'s too, which `lines()` gives none of.
+        .flat_map(|doc| doc.split('\n').map(str::to_string).collect::<Vec<_>>())
         .collect();
     let lines: Vec<&str> = docs.iter().map(String::as_str).collect();
     let jsdoc = crate::comments::jsdoc(&lines).filter(|_| !lines.is_empty());

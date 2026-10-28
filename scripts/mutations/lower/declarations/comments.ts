@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && blank {\n",
     tests: ["test/declarations-comments.test.ts", "-t", "the comments written before an item"],
   },
+  {
+    name: "block-doc-starred-again",
+    breaks: "a block doc comment's JSDoc stars each of its lines again, ` * * A block ..`, and keeps its first and last empty lines (rd67)",
+    file: "src/lower/declarations/comments.rs",
+    find: "                        rustc_ast::util::comments::beautify_doc_string(*comment, rustc_ast::token::CommentKind::Block)\n",
+    replace: "                        comment\n",
+    tests: ["test/declarations-comments.test.ts", "-t", "a block doc comment is its lines' JSDoc"],
+  },
+  {
+    name: "empty-doc-line-dropped",
+    breaks: "an empty `///` line of a doc comment is left out of its JSDoc, its paragraphs run together (rd67)",
+    file: "src/lower/declarations/comments.rs",
+    find: "        .flat_map(|doc| doc.split('\\n').map(str::to_string).collect::<Vec<_>>())\n",
+    replace: "        .flat_map(|doc| doc.lines().map(str::to_string).collect::<Vec<_>>())\n",
+    tests: ["test/declarations-comments.test.ts", "-t", "a block doc comment is its lines' JSDoc"],
+  },
 ];

@@ -59,3 +59,29 @@ pub fn lanes(state: &SuspenseState) -> Lanes {
   expect(first.match(/Copyright/g)).toHaveLength(1);
   expect(first).toContain("affiliates.\n\nexport type Lane = number;");
 });
+
+// React port gap rd67: a block doc comment, `/** .. */`, as upstream's
+// JSDoc, is the JSDoc of its lines, as rustdoc reads them: not each line's
+// star starred again, `* * A block ..`, nor its first and last empty lines
+// kept.
+test("a block doc comment is its lines' JSDoc", () => {
+  const dir = fixture("declarations-block-docs");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `/**
+ * A block doc comment, as upstream's JSDoc,
+ * across lines.
+ */
+pub fn documented() {}
+
+/// A line doc,
+///
+/// across lines.
+pub fn lined() {}
+`,
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("/**\n * A block doc comment, as upstream's JSDoc,\n * across lines.\n */\nexport function documented(): void;\n");
+  expect(declarations).toContain("/**\n * A line doc,\n *\n * across lines.\n */\nexport function lined(): void;\n");
+});

@@ -530,3 +530,16 @@ conditional. `test/lowering-comments-inside.test.ts`, "a comment before
 an operand that's an if's value is before it"; mutation
 `operand-if-opening-code`.
 
+
+## Amendment: a block doc comment's lines, and an empty one (2026-10-28, React port gap rd67)
+
+A port's `/** .. */` doc comment, as upstream's JSDoc, kept its JS form,
+but its declaration starred each line again, ` * * A block ..`, and kept
+its first and last empty lines: rustc gives a block doc comment's text
+as written, its stars too. **A declaration's JSDoc is of a block doc
+comment's lines as rustdoc reads them** (`beautify_doc_string`: its
+stars and its first and last empty lines left out), and of a line doc
+comment's each line, an empty `///`'s too, which a paragraph break is
+(`declarations/comments.rs`). Held by `test/declarations-comments.test.ts`,
+"a block doc comment is its lines' JSDoc", and the mutations
+`block-doc-starred-again` and `empty-doc-line-dropped`.
