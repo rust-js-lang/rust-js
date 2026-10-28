@@ -1162,7 +1162,7 @@ test("the report's JS: function values, case mapping, and plain array reads", as
 // iterator it is, its `peek` and `next_if` rewritten over it (ADR 0561).
 test("the lexer's JS steps through its source with $next and $peek", async () => {
   const js = await Bun.file(join(target, "lexer.js")).text();
-  expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src)), { next: $next }),\n      line: 1,\n    };");
+  expect(js).toContain("return {\n      chars: iterator_peekable($iter(Array.from(src))),\n      line: 1,\n    };");
   expect(js).toContain("while ((c = $peek(lexer.chars)) != null) {");
   expect(js).toContain('$nextIf(lexer.chars, (item) => item === "/") != null');
   expect(js).toContain('$nextIf(lexer.chars, (c) => c !== "\\n") == null');

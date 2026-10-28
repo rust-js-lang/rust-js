@@ -218,6 +218,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let name = self.fresh(&js_word(&name));
                     self.given.evidence.push((tr, Expr::var(&name)));
+                    // A std body's default, where a call gives none (ADR 0995).
+                    if let Some(default) = self.default_dictionary(id, tr.def_id) {
+                        params.push(js::Pattern::Defaulted(name, plain_dictionary(default)));
+                        continue;
+                    }
                     name
                 }
                 Slot::Fact(index, fact) => {

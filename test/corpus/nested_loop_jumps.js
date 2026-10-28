@@ -31,7 +31,7 @@ function scores(words) {
 function trailing(s) {
   let out = "";
   for (const word of s.split(" ")) {
-    const chars = iterator_peekable($iter(Array.from(word)), { next: $next });
+    const chars = iterator_peekable($iter(Array.from(word)));
     while (true) {
       const c = $next(chars);
       if (c != null) {
@@ -56,7 +56,7 @@ function trailing(s) {
 function splitWords(s) {
   const words = [];
   for (const word of $splitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
-    const charIndices = iterator_peekable($iter($charIndices(word)), { next: $next });
+    const charIndices = iterator_peekable($iter($charIndices(word)));
     let init = 0;
     let mode = "Boundary";
     while (true) {

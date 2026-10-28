@@ -35,31 +35,25 @@ function main() {
   const first = $lent(e.it).take(2).toArray();
   const arg = $next(e.it);
   console.log(`[${first.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
-  const r = { it: iterator_skip($iter(v), 2, { next: $next }) };
+  const r = { it: iterator_skip($iter(v), 2) };
   for (const x of $lent(r.it)) {
     if (x === 4) {
       break;
     }
   }
-  const nextBack = skipDoubleEndedIterator_nextBack(
-    r.it,
-    { next: $next },
-    { next_back: $nextBack },
-  );
+  const nextBack = skipDoubleEndedIterator_nextBack(r.it);
   const next = $next(r.it);
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${next == null ? "None" : `Some(${next})`} ${$exactLen($sizeHint(r.it))}`,
   );
-  const again = { it: iterator_skip($iter(v), 1, { next: $next }) };
+  const again = { it: iterator_skip($iter(v), 1) };
   const back = $rev(
     $knowing(
       $lent(again.it),
-      (iterator) =>
-        skipDoubleEndedIterator_nextBack(iterator, { next: $next }, { next_back: $nextBack }),
+      skipDoubleEndedIterator_nextBack,
       (iterator) => $exactLen($sizeHint(iterator)),
       undefined,
-      (iterator, k) =>
-        skipDoubleEndedIterator_nthBack(iterator, k, { next: $next }, { next_back: $nextBack }),
+      skipDoubleEndedIterator_nthBack,
       (iterator, init, f, broke) =>
         skipDoubleEndedIterator_tryRfold(
           iterator,

@@ -59,7 +59,7 @@ function repeated() {
   }
 }
 function peeked() {
-  const it = iterator_peekable($iter([1, 2, 3]), { next: $next });
+  const it = iterator_peekable($iter([1, 2, 3]));
   let x = $peekCell(it);
   if (x != null) {
     x.value = (x.value * 10) | 0;
@@ -74,7 +74,7 @@ function peeked() {
     x.value = (x.value + 100) | 0;
   }
   console.log(`[${$roomForHint(lazy, 4, true).toArray().join(", ")}]`);
-  const words = iterator_peekable($iter(["a", "b"]), { next: $next });
+  const words = iterator_peekable($iter(["a", "b"]));
   const w = $peekCell(words);
   if (w != null) {
     w.value += "!";
@@ -85,7 +85,7 @@ function peeked() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const empty = iterator_peekable($iter([]), { next: $next });
+  const empty = iterator_peekable($iter([]));
   const value = $peekCell(empty);
   console.log(`${value == null ? "None" : `Some(${value.value})`}`);
 }

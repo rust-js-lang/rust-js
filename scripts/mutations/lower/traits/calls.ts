@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-dictionaries-kept",
+    breaks: "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",
+    file: "src/lower/traits/calls.rs",
+    find: "                && is_plain_dictionary(last, *default)\n",
+    replace: "                && is_plain_dictionary(last, *default)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
+    snapshots: true,
+  },
+  {
     name: "into-iter-param-boxed",
     breaks: "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
     file: "src/lower/traits/calls.rs",

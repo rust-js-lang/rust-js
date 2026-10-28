@@ -44,7 +44,7 @@ export function entry() {
 function chained(v) {
   return iterator_chain(
     $iter(v),
-    iterator_take($iter(v), 1, { next: $next }),
+    iterator_take($iter(v), 1),
     { next: $next },
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
   );
@@ -53,7 +53,7 @@ function copied(v) {
   return $iter(v);
 }
 function mapped(v) {
-  return iterator_map($iter(v), (x) => (x * 2) >>> 0, { next: $next });
+  return iterator_map($iter(v), (x) => (x * 2) >>> 0);
 }
 function lastOf(c, CIntoIterDoubleEndedIterator) {
   return $nextSome($rev($intoIter(c)));
@@ -140,7 +140,7 @@ function main() {
   const c = copied(v);
   console.log(`${c.end - c.at} [${$rest(c).toReversed().join(", ")}]`);
   const m = mapped(v);
-  const nextBack = mapDoubleEndedIterator_nextBack(m, { next_back: $nextBack });
+  const nextBack = mapDoubleEndedIterator_nextBack(m);
   console.log(
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${mapExactSizeIterator_len(m, iterExactSizeIterator)} ${((
       value,
@@ -149,7 +149,7 @@ function main() {
         $rev(
           $knowing(
             m,
-            (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
+            mapDoubleEndedIterator_nextBack,
             (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
             undefined,
             undefined,
@@ -205,12 +205,12 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${revExactSizeIterator_len(held, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }) })}`,
   );
-  const it = iterator_map($iter(v), (x) => (x + 1) >>> 0, { next: $next });
+  const it = iterator_map($iter(v), (x) => (x + 1) >>> 0);
   const back = $next(
     $rev(
       $knowing(
         $lent(it),
-        (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
+        mapDoubleEndedIterator_nextBack,
         (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
         undefined,
         undefined,
@@ -227,11 +227,11 @@ function main() {
     ),
   );
   const value$3 = $next(it);
-  const arg = mapDoubleEndedIterator_nextBack(it, { next_back: $nextBack });
+  const arg = mapDoubleEndedIterator_nextBack(it);
   console.log(
     `${back == null ? "None" : `Some(${back})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
-  const r = iterator_rev($iter(v), { next: $next }, { next_back: $nextBack });
+  const r = iterator_rev($iter(v));
   console.log(
     `${revExactSizeIterator_len(r, iterExactSizeIterator)} ${((value) => (value == null ? "None" : `Some(${value})`))($rest(r).toReversed()[0])}`,
   );

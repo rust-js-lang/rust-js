@@ -42,12 +42,11 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
-  const doubled = iterator_map($iter(v), (x) => (x * 2) | 0, { next: $next });
+  const doubled = iterator_map($iter(v), (x) => (x * 2) | 0);
   const odd = iterator_map(doubled, (x) => (x + 1) | 0, { next: $next, fold: $foldOf });
   let last = mapDoubleEndedIterator_nextBack(odd, {
-    next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-    rfold: (iterator, init, f) =>
-      mapDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, { next_back: $nextBack }),
+    next_back: mapDoubleEndedIterator_nextBack,
+    rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),
     tryRfold: (iterator, init, f, broke) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
@@ -64,8 +63,8 @@ function main() {
   );
   const tripled = $mapEnds($iter(v), (x) => (x * 3) | 0);
   const even = $filterEnds(tripled, (x) => x % 2 === 0);
-  const halved = iterator_map(even, (x) => (x / 2) | 0, { next: $next });
-  last = mapDoubleEndedIterator_nextBack(halved, { next_back: $nextBack });
+  const halved = iterator_map(even, (x) => (x / 2) | 0);
+  last = mapDoubleEndedIterator_nextBack(halved);
   first = $next(halved);
   console.log(
     `${last == null ? "None" : `Some(${last})`} ${first == null ? "None" : `Some(${first})`}`,

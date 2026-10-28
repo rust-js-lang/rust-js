@@ -35,13 +35,9 @@ function backPairs(it) {
 }
 
 function ends(it) {
-  const e = iterator_enumerate(it, { next: $next });
+  const e = iterator_enumerate(it);
   const first = $next(e);
-  const last = enumerateDoubleEndedIterator_nextBack(
-    e,
-    { len: (iterator) => iterator.len() },
-    { next_back: $nextBack },
-  );
+  const last = enumerateDoubleEndedIterator_nextBack(e, { len: (iterator) => iterator.len() });
   return [first, last, enumerateExactSizeIterator_len(e, { len: (iterator) => iterator.len() })];
 }
 

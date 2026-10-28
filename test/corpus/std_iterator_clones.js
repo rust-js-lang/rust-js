@@ -32,7 +32,7 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function backLen(it) {
-  const back = iterator_rev(it, { next: $next }, { next_back: $nextBack });
+  const back = iterator_rev(it);
   $next(back);
   return revExactSizeIterator_len(back, { len: (iterator) => iterator.len() });
 }
@@ -85,9 +85,9 @@ function main() {
     `${len} [${collect.join(", ")}] ${value$1 == null ? "None" : `Some(${value$1})`} [${fromHere.toArray().join(", ")}]`,
   );
 
-  const back = iterator_rev($iter([10, 20, 30, 40]), { next: $next }, { next_back: $nextBack });
+  const back = iterator_rev($iter([10, 20, 30, 40]));
   $next(back);
-  const value$2 = revDoubleEndedIterator_nextBack(back, { next: $next });
+  const value$2 = revDoubleEndedIterator_nextBack(back);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} [${revClone_clone(back, intoIterClone).toArray().join(", ")}] ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })}`,
   );
@@ -101,7 +101,7 @@ function main() {
     `([${value$3[0].join(", ")}], [${value$3[1].join(", ")}]) ${backLen($iter([4, 5, 6]))}`,
   );
 
-  const rows = iterator_rev($iter([[1], [2]]), { next: $next }, { next_back: $nextBack });
+  const rows = iterator_rev($iter([[1], [2]]));
   const copied = revClone_clone(rows, {
     clone: (value) => $iter(value.items.slice(value.at, value.end).map((item) => item.slice())),
   });

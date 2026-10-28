@@ -135,7 +135,7 @@ function main() {
   const map = new Map();
   map.set("a", { TAG: "Circle", _0: 3 });
   map.set("b", { TAG: "Square", _0: 4 });
-  const names = iterator_peekable($iter(["a", "b", "a"]), { next: $next });
+  const names = iterator_peekable($iter(["a", "b", "a"]));
   const value = peeked(map, names);
   const value$1 = peeked(map, names);
   const value$2 = peeked(map, names);

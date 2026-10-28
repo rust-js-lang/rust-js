@@ -52,11 +52,7 @@ function main() {
     .map((x) => noisy("s", x));
   for (const pair of $lazyZip(
     map,
-    iterator_fuse(
-      iterator_take($iter(w), 3, { next: $next }),
-      { next: $next, fold: $foldOf },
-      true,
-    ),
+    iterator_fuse(iterator_take($iter(w), 3), { next: $next, fold: $foldOf }, true),
   )) {
     console.log(`(${pair[0]}, ${pair[1]})`);
   }

@@ -79,20 +79,14 @@ function main() {
   );
 
   const v = [10, 20, 30, 40, 50];
-  const held = iterator_enumerate($iter(v), { next: $next });
+  const held = iterator_enumerate($iter(v));
   const nth = $lent(held).drop(1).take(1).toArray()[0];
-  const nthBack = enumerateDoubleEndedIterator_nthBack(
-    held,
-    1,
-    { next: $next },
-    exactSizeIterator,
-    { next_back: $nextBack },
-  );
+  const nthBack = enumerateDoubleEndedIterator_nthBack(held, 1, { next: $next }, exactSizeIterator);
   console.log(
     `${nth == null ? "None" : `Some((${nth[0]}, ${nth[1]}))`} ${nthBack == null ? "None" : `Some((${nthBack[0]}, ${nthBack[1]}))`} ${enumerateExactSizeIterator_len(held, exactSizeIterator)}`,
   );
   console.log(
-    `${enumerateDoubleEndedIterator_rfold(enumerateClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (acc, [i, x]) => (((((acc * 100) >>> 0) + ((i * 10) >>> 0)) >>> 0) + (x >>> 0)) >>> 0, { next: $next }, exactSizeIterator, { next_back: $nextBack })}`,
+    `${enumerateDoubleEndedIterator_rfold(enumerateClone_clone(held, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (acc, [i, x]) => (((((acc * 100) >>> 0) + ((i * 10) >>> 0)) >>> 0) + (x >>> 0)) >>> 0, { next: $next }, exactSizeIterator)}`,
   );
   console.log(
     `${enumerateDebug_fmt(held, undefined, { fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` })}`,
@@ -147,10 +141,8 @@ function main() {
         `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(byMut, countdownExactSizeIterator)}`,
       );
       // Lent where its own impl steps it, from its back: std's struct.
-      const ends = iterator_enumerate($iter(v), { next: $next });
-      const value$2 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator, {
-        next_back: $nextBack,
-      });
+      const ends = iterator_enumerate($iter(v));
+      const value$2 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator);
       const value$3 = $next(ends);
       console.log(
         `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`,

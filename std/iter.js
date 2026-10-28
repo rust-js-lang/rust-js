@@ -19,6 +19,8 @@ import {
   $lastDropping,
   $lent,
   $neverShortCircuitTry,
+  $next,
+  $nextBack,
   $nextSome,
   $nthBack,
   $nthDropping,
@@ -67,7 +69,7 @@ export const FlattenCompat = {
     flattenCompat,
     acc,
     fold,
-    IIterator,
+    IIterator = { next: $next },
     IItemIntoIterator,
     dropI,
     dropU,
@@ -102,7 +104,7 @@ export const FlattenCompat = {
     flattenCompat,
     _2,
     fold,
-    IIterator,
+    IIterator = { next: $next },
     IItemIntoIterator,
     RTry,
     IFused,
@@ -203,8 +205,8 @@ export const FlattenCompat = {
     flattenCompat,
     acc,
     fold,
-    IIterator,
-    IDoubleEndedIterator,
+    IIterator = { next: $next },
+    IDoubleEndedIterator = { next_back: $nextBack },
     IItemIntoIterator,
     dropI,
     dropU,
@@ -235,8 +237,8 @@ export const FlattenCompat = {
     flattenCompat,
     _2,
     fold,
-    IIterator,
-    IDoubleEndedIterator,
+    IIterator = { next: $next },
+    IDoubleEndedIterator = { next_back: $nextBack },
     IItemIntoIterator,
     RTry,
     IFused,
@@ -341,8 +343,8 @@ export const Zip = {
   superNth(
     zip,
     n,
-    AIterator,
-    BIterator,
+    AIterator = { next: $next },
+    BIterator = { next: $next },
     ARandomAccess,
     ARandomAccessNoCoerce,
     BRandomAccess,
@@ -423,7 +425,7 @@ const $chainClone = new WeakMap();
 const $chainABDebug = new WeakMap();
 const $zipClone = new WeakMap();
 
-export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
+export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
   peekable.peeked = undefined;
   if (peeked != null) {
@@ -432,7 +434,7 @@ export function peekableIterator_next(peekable, IIterator, dropI, dropIItem) {
   return IIterator.next(peekable.iter);
 }
 
-export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
+export function peekableIterator_nth(peekable, n, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
   peekable.peeked = undefined;
   let v;
@@ -461,7 +463,7 @@ export function peekableIterator_nth(peekable, n, IIterator, dropI, dropIItem) {
   return v;
 }
 
-export function peekableIterator_last(peekable, IIterator, dropI, dropIItem) {
+export function peekableIterator_last(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
   peekable.peeked = undefined;
   let x;
@@ -494,7 +496,7 @@ export function peekableIterator_last(peekable, IIterator, dropI, dropIItem) {
   return x;
 }
 
-export function peekableIterator_count(peekable, IIterator, dropI, dropIItem) {
+export function peekableIterator_count(peekable, IIterator = { next: $next }, dropI, dropIItem) {
   const peeked = peekable.peeked;
   peekable.peeked = undefined;
   let result;
@@ -536,7 +538,7 @@ export function peekableIterator_fold(
   peekable,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropAcc,
   dropFold,
@@ -565,7 +567,7 @@ export function peekableIterator_tryFold(
   peekable,
   _2,
   f,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropB,
@@ -600,7 +602,7 @@ export function peekableIterator_tryFold(
 
 export function peekableDoubleEndedIterator_nextBack(
   peekable,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -631,8 +633,8 @@ export function peekableDoubleEndedIterator_rfold(
   peekable,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropFold,
@@ -661,8 +663,8 @@ export function peekableDoubleEndedIterator_tryRfold(
   peekable,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropB,
@@ -712,7 +714,7 @@ export function peekableDoubleEndedIterator_tryRfold(
   return value;
 }
 
-export function peekableClone_clone(peekable, IClone, IIterator, IItemClone) {
+export function peekableClone_clone(peekable, IClone, IIterator = { next: $next }, IItemClone) {
   const value = IClone.clone(peekable.iter);
   let tmp;
   if (peekable.peeked != null) {
@@ -750,13 +752,19 @@ export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
     : `Peekable { iter: ${shown}, peeked: ${shown$1} }`;
 }
 
-export function fuseIterator_next(fuse, IIterator, IFused, dropI, dropIItem) {
+export function fuseIterator_next(fuse, IIterator = { next: $next }, IFused, dropI, dropIItem) {
   return IFused
     ? fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem)
     : fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem);
 }
 
-export function fuseIterator___iteratorGetUnchecked(fuse, idx, IIterator, dropI, dropIItem) {
+export function fuseIterator___iteratorGetUnchecked(
+  fuse,
+  idx,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   const iter = $someValue(fuse.iter);
   return iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
     iter,
@@ -767,7 +775,7 @@ export function fuseIterator___iteratorGetUnchecked(fuse, idx, IIterator, dropI,
   );
 }
 
-export function fuseIterator_sizeHint(fuse, IIterator, dropI, dropIItem) {
+export function fuseIterator_sizeHint(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     return $sizeHint(iter, IIterator);
@@ -775,7 +783,16 @@ export function fuseIterator_sizeHint(fuse, IIterator, dropI, dropIItem) {
   return [0, 0];
 }
 
-export function fuseIterator_fold(fuse, acc, fold, IIterator, dropI, dropAcc, dropFold, dropIItem) {
+export function fuseIterator_fold(
+  fuse,
+  acc,
+  fold,
+  IIterator = { next: $next },
+  dropI,
+  dropAcc,
+  dropFold,
+  dropIItem,
+) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     const value = $given(iter, IIterator, true).reduce((a, b) => fold(a, b), acc);
@@ -791,7 +808,7 @@ export function fuseIterator_fold(fuse, acc, fold, IIterator, dropI, dropAcc, dr
   return result;
 }
 
-export function fuseIterator_count(fuse, IIterator, dropI, dropIItem) {
+export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     const result = $count($given(iter, IIterator, true), dropIItem);
@@ -807,7 +824,7 @@ export function fuseIterator_tryFold(
   fuse,
   acc,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   IFused,
   dropI,
@@ -843,7 +860,14 @@ export function fuseIterator_tryFold(
       );
 }
 
-export function fuseIterator_advanceBy(fuse, n, IIterator, IFused, dropI, dropIItem) {
+export function fuseIterator_advanceBy(
+  fuse,
+  n,
+  IIterator = { next: $next },
+  IFused,
+  dropI,
+  dropIItem,
+) {
   return IFused
     ? fuseFuseImplIFusedIterator_advanceBy(fuse, n, IIterator, dropI, dropIItem)
     : fuseFuseImplI_advanceBy(fuse, n, IIterator, dropI, dropIItem);
@@ -853,7 +877,7 @@ export function fuseFuseImplI_tryFold(
   fuse,
   _2,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -885,7 +909,7 @@ export function fuseFuseImplIFusedIterator_tryFold(
   fuse,
   _2,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -909,7 +933,7 @@ export function fuseFuseImplIFusedIterator_tryFold(
   return result;
 }
 
-export function fuseFuseImplI_advanceBy(fuse, n, IIterator, dropI, dropIItem) {
+export function fuseFuseImplI_advanceBy(fuse, n, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     const res = $advanceBy($lent($given(iter, IIterator, true)), n, dropIItem);
@@ -928,7 +952,13 @@ export function fuseFuseImplI_advanceBy(fuse, n, IIterator, dropI, dropIItem) {
   return { TAG: "Ok" };
 }
 
-export function fuseFuseImplIFusedIterator_advanceBy(fuse, n, IIterator, dropI, dropIItem) {
+export function fuseFuseImplIFusedIterator_advanceBy(
+  fuse,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     return $advanceBy($lent($given(iter, IIterator, true)), n, dropIItem);
@@ -942,7 +972,7 @@ export function fuseFuseImplIFusedIterator_advanceBy(fuse, n, IIterator, dropI, 
 
 export function fuseDoubleEndedIterator_nextBack(
   fuse,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   IFused,
   dropI,
   dropIItem,
@@ -956,8 +986,8 @@ export function fuseDoubleEndedIterator_rfold(
   fuse,
   acc,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropFold,
@@ -979,8 +1009,8 @@ export function fuseDoubleEndedIterator_tryRfold(
   fuse,
   acc,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   IFused,
   dropI,
@@ -1021,8 +1051,8 @@ export function fuseDoubleEndedIterator_tryRfold(
 export function fuseDoubleEndedIterator_nthBack(
   fuse,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IFused,
   dropI,
   dropIItem,
@@ -1040,14 +1070,19 @@ export function fuseExactSizeIterator_len(fuse, IExactSizeIterator, dropI, dropI
   return 0;
 }
 
-export function fuseFuseImplI_next(fuse, IIterator, dropI, dropIItem) {
+export function fuseFuseImplI_next(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   const opt = { value: fuse.iter };
   const result = andThenOrClear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
   fuse.iter = opt.value;
   return result;
 }
 
-export function fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIItem) {
+export function fuseFuseImplIFusedIterator_next(
+  fuse,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   let option;
   if (fuse.iter != null) {
     const x = $someValue(fuse.iter);
@@ -1058,20 +1093,20 @@ export function fuseFuseImplIFusedIterator_next(fuse, IIterator, dropI, dropIIte
   option = undefined;
 }
 
-export function fuseIterator_nth(fuse, n, IIterator, IFused, dropI, dropIItem) {
+export function fuseIterator_nth(fuse, n, IIterator = { next: $next }, IFused, dropI, dropIItem) {
   return IFused
     ? fuseFuseImplIFusedIterator_nth(fuse, n, IIterator, dropI, dropIItem)
     : fuseFuseImplI_nth(fuse, n, IIterator, dropI, dropIItem);
 }
 
-export function fuseIterator_last(fuse, IIterator, dropI, dropIItem) {
+export function fuseIterator_last(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   if (fuse.iter != null) {
     const iter = $someValue(fuse.iter);
     return $lastDropping($given(iter, IIterator, true), dropIItem, true);
   }
 }
 
-export function fuseFuseImplI_nth(fuse, n, IIterator, dropI, dropIItem) {
+export function fuseFuseImplI_nth(fuse, n, IIterator = { next: $next }, dropI, dropIItem) {
   const opt = { value: fuse.iter };
   const result = andThenOrClear(
     opt,
@@ -1083,7 +1118,13 @@ export function fuseFuseImplI_nth(fuse, n, IIterator, dropI, dropIItem) {
   return result;
 }
 
-export function fuseFuseImplIFusedIterator_nth(fuse, n, IIterator, dropI, dropIItem) {
+export function fuseFuseImplIFusedIterator_nth(
+  fuse,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   let option;
   if (fuse.iter != null) {
     const x = $someValue(fuse.iter);
@@ -1099,7 +1140,12 @@ export function fuseFuseImplIFusedIterator_nth(fuse, n, IIterator, dropI, dropII
   option = undefined;
 }
 
-export function fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+export function fuseFuseImplI_nextBack(
+  fuse,
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
   const opt = { value: fuse.iter };
   const result = andThenOrClear(
     opt,
@@ -1111,7 +1157,12 @@ export function fuseFuseImplI_nextBack(fuse, IDoubleEndedIterator, dropI, dropII
   return result;
 }
 
-export function fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, dropI, dropIItem) {
+export function fuseFuseImplIFusedIterator_nextBack(
+  fuse,
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
   let option;
   if (fuse.iter != null) {
     const x = $someValue(fuse.iter);
@@ -1122,7 +1173,14 @@ export function fuseFuseImplIFusedIterator_nextBack(fuse, IDoubleEndedIterator, 
   option = undefined;
 }
 
-export function fuseFuseImplI_nthBack(fuse, n, IIterator, IDoubleEndedIterator, dropI, dropIItem) {
+export function fuseFuseImplI_nthBack(
+  fuse,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
   const opt = { value: fuse.iter };
   const result = andThenOrClear(
     opt,
@@ -1137,8 +1195,8 @@ export function fuseFuseImplI_nthBack(fuse, n, IIterator, IDoubleEndedIterator, 
 export function fuseFuseImplIFusedIterator_nthBack(
   fuse,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -1180,23 +1238,35 @@ export function fuseDebug_fmt(fuse, options, IDebug) {
     : `Fuse { iter: ${shown} }`;
 }
 
-export function revIterator_next(rev, IDoubleEndedIterator, dropI, dropIItem) {
+export function revIterator_next(
+  rev,
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
   return IDoubleEndedIterator.next_back(rev.iter);
 }
 
-export function revIterator_sizeHint(rev, IIterator, dropI, dropIItem) {
+export function revIterator_sizeHint(rev, IIterator = { next: $next }, dropI, dropIItem) {
   return $sizeHint(rev.iter, IIterator);
 }
 
-export function revIterator_nth(rev, n, IIterator, IDoubleEndedIterator, dropI, dropIItem) {
+export function revIterator_nth(
+  rev,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
   return $nthBack($given(rev.iter, IIterator, true, IDoubleEndedIterator), n, $some, dropIItem);
 }
 
 export function revIterator_find(
   rev,
   predicate,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropP,
   dropIItem,
@@ -1215,8 +1285,8 @@ export function revIterator_fold(
   rev,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropF,
@@ -1231,8 +1301,8 @@ export function revIterator_tryFold(
   rev,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropB,
@@ -1250,11 +1320,22 @@ export function revIterator_tryFold(
   return value;
 }
 
-export function revDoubleEndedIterator_nextBack(rev, IIterator, dropI, dropIItem) {
+export function revDoubleEndedIterator_nextBack(
+  rev,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   return IIterator.next(rev.iter);
 }
 
-export function revDoubleEndedIterator_nthBack(rev, n, IIterator, dropI, dropIItem) {
+export function revDoubleEndedIterator_nthBack(
+  rev,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   return $nthDropping($lent($given(rev.iter, IIterator, true)), n, dropIItem, true);
 }
 
@@ -1262,7 +1343,7 @@ export function revDoubleEndedIterator_rfold(
   rev,
   init,
   f,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropAcc,
   dropF,
@@ -1281,7 +1362,7 @@ export function revDoubleEndedIterator_tryRfold(
   rev,
   init,
   f,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropB,
@@ -1294,7 +1375,14 @@ export function revDoubleEndedIterator_tryRfold(
   return value;
 }
 
-export function revDoubleEndedIterator_rfind(rev, predicate, IIterator, dropI, dropP, dropIItem) {
+export function revDoubleEndedIterator_rfind(
+  rev,
+  predicate,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const value = $findDropping(
     $lent($given(rev.iter, IIterator, true)),
     (item) => predicate(item),
@@ -1318,7 +1406,7 @@ export function revDebug_fmt(rev, options, TDebug) {
   return options?.alternate ? $pretty("Rev {", [`iter: ${shown}`], "}") : `Rev { iter: ${shown} }`;
 }
 
-export function enumerateIterator_next(enumerate, IIterator, dropI, dropIItem) {
+export function enumerateIterator_next(enumerate, IIterator = { next: $next }, dropI, dropIItem) {
   const option = IIterator.next(enumerate.iter);
   if (option != null) {
     const v = $someValue(option);
@@ -1332,7 +1420,7 @@ export function enumerateIterator_next(enumerate, IIterator, dropI, dropIItem) {
 export function enumerateIterator___iteratorGetUnchecked(
   enumerate,
   idx,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropIItem,
 ) {
@@ -1347,11 +1435,16 @@ export function enumerateIterator___iteratorGetUnchecked(
   return [(enumerate.count$ + idx) >>> 0, value];
 }
 
-export function enumerateIterator_sizeHint(enumerate, IIterator, dropI, dropIItem) {
+export function enumerateIterator_sizeHint(
+  enumerate,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   return $sizeHint(enumerate.iter, IIterator);
 }
 
-export function enumerateIterator_nth(enumerate, n, IIterator, dropI, dropIItem) {
+export function enumerateIterator_nth(enumerate, n, IIterator = { next: $next }, dropI, dropIItem) {
   const option = $nthDropping($lent($given(enumerate.iter, IIterator, true)), n, dropIItem, true);
   if (option != null) {
     const v = $someValue(option);
@@ -1362,7 +1455,7 @@ export function enumerateIterator_nth(enumerate, n, IIterator, dropI, dropIItem)
   }
 }
 
-export function enumerateIterator_count(enumerate, IIterator, dropI, dropIItem) {
+export function enumerateIterator_count(enumerate, IIterator = { next: $next }, dropI, dropIItem) {
   const iter = enumerate.iter;
   const result = $count($given(iter, IIterator, true), dropIItem);
   if (IIterator.fold === undefined) {
@@ -1375,7 +1468,7 @@ export function enumerateIterator_fold(
   enumerate,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropAcc,
   dropFold,
@@ -1406,7 +1499,7 @@ export function enumerateIterator_tryFold(
   enumerate,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -1434,7 +1527,13 @@ export function enumerateIterator_tryFold(
   return value;
 }
 
-export function enumerateIterator_advanceBy(enumerate, n, IIterator, dropI, dropIItem) {
+export function enumerateIterator_advanceBy(
+  enumerate,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   const remaining = $advanceBy($lent($given(enumerate.iter, IIterator, true)), n, dropIItem);
   if (remaining.TAG !== "Ok") {
     const rem = remaining._0;
@@ -1447,7 +1546,7 @@ export function enumerateIterator_advanceBy(enumerate, n, IIterator, dropI, drop
 export function enumerateDoubleEndedIterator_nextBack(
   enumerate,
   IExactSizeIterator,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -1463,9 +1562,9 @@ export function enumerateDoubleEndedIterator_nextBack(
 export function enumerateDoubleEndedIterator_nthBack(
   enumerate,
   n,
-  IIterator,
+  IIterator = { next: $next },
   IExactSizeIterator,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -1487,9 +1586,9 @@ export function enumerateDoubleEndedIterator_rfold(
   enumerate,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IExactSizeIterator,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropFold,
@@ -1516,9 +1615,9 @@ export function enumerateDoubleEndedIterator_tryRfold(
   enumerate,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IExactSizeIterator,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropAcc,
@@ -1566,7 +1665,7 @@ export function enumerateDebug_fmt(enumerate, options, IDebug) {
     : `Enumerate { iter: ${shown}, count: ${shown$1} }`;
 }
 
-export function mapIterator_next(map, IIterator, dropB, dropI, dropF, dropIItem) {
+export function mapIterator_next(map, IIterator = { next: $next }, dropB, dropI, dropF, dropIItem) {
   const option = IIterator.next(map.iter);
   const f = map.f;
   if (option != null) {
@@ -1579,7 +1678,7 @@ export function mapIterator_next(map, IIterator, dropB, dropI, dropF, dropIItem)
 export function mapIterator___iteratorGetUnchecked(
   map,
   idx,
-  IIterator,
+  IIterator = { next: $next },
   dropB,
   dropI,
   dropF,
@@ -1597,7 +1696,14 @@ export function mapIterator___iteratorGetUnchecked(
   );
 }
 
-export function mapIterator_sizeHint(map, IIterator, dropB, dropI, dropF, dropIItem) {
+export function mapIterator_sizeHint(
+  map,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
   return $sizeHint(map.iter, IIterator);
 }
 
@@ -1605,7 +1711,7 @@ export function mapIterator_fold(
   map,
   init,
   g,
-  IIterator,
+  IIterator = { next: $next },
   dropB,
   dropI,
   dropF,
@@ -1634,7 +1740,7 @@ export function mapIterator_tryFold(
   map,
   init,
   g,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropB,
   dropI,
@@ -1658,7 +1764,7 @@ export function mapIterator_tryFold(
 
 export function mapDoubleEndedIterator_nextBack(
   map,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropB,
   dropI,
   dropF,
@@ -1677,8 +1783,8 @@ export function mapDoubleEndedIterator_rfold(
   map,
   init,
   g,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropB,
   dropI,
   dropF,
@@ -1704,8 +1810,8 @@ export function mapDoubleEndedIterator_tryRfold(
   map,
   init,
   g,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropB,
   dropI,
@@ -1746,7 +1852,7 @@ export function mapDebug_fmt(map, options, IDebug, dropI, dropF) {
     : `Map { iter: ${IDebug.fmt(map.iter, options)} }`;
 }
 
-export function filterIterator_next(filter, IIterator, dropI, dropP, dropIItem) {
+export function filterIterator_next(filter, IIterator = { next: $next }, dropI, dropP, dropIItem) {
   return $findDropping(
     $lent($given(filter.iter, IIterator, true)),
     (item) => filter.predicate(item),
@@ -1755,12 +1861,18 @@ export function filterIterator_next(filter, IIterator, dropI, dropP, dropIItem) 
   );
 }
 
-export function filterIterator_sizeHint(filter, IIterator, dropI, dropP, dropIItem) {
+export function filterIterator_sizeHint(
+  filter,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const upper = $sizeHint(filter.iter, IIterator)[1];
   return [0, upper];
 }
 
-export function filterIterator_count(filter, IIterator, dropI, dropP, dropIItem) {
+export function filterIterator_count(filter, IIterator = { next: $next }, dropI, dropP, dropIItem) {
   const option = $sizeHint(filter.iter, IIterator)[1];
   const before = option ?? 4294967295;
   const predicate = filter.predicate;
@@ -1805,7 +1917,7 @@ export function filterIterator_fold(
   filter,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropP,
   dropAcc,
@@ -1840,7 +1952,7 @@ export function filterIterator_tryFold(
   filter,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropP,
@@ -1870,8 +1982,8 @@ export function filterIterator_tryFold(
 
 export function filterDoubleEndedIterator_nextBack(
   filter,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropP,
   dropIItem,
@@ -1888,8 +2000,8 @@ export function filterDoubleEndedIterator_rfold(
   filter,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropP,
   dropAcc,
@@ -1921,8 +2033,8 @@ export function filterDoubleEndedIterator_tryRfold(
   filter,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropP,
@@ -1968,7 +2080,7 @@ export function filterDebug_fmt(filter, options, IDebug, dropI, dropP) {
     : `Filter { iter: ${IDebug.fmt(filter.iter, options)} }`;
 }
 
-export function copiedIterator_next(copied, IIterator, TCopy, dropI) {
+export function copiedIterator_next(copied, IIterator = { next: $next }, TCopy, dropI) {
   const option = IIterator.next(copied.it);
   if (option != null) {
     const value = $someValue(option);
@@ -1977,7 +2089,13 @@ export function copiedIterator_next(copied, IIterator, TCopy, dropI) {
   }
 }
 
-export function copiedIterator___iteratorGetUnchecked(copied, idx, IIterator, TCopy, dropI) {
+export function copiedIterator___iteratorGetUnchecked(
+  copied,
+  idx,
+  IIterator = { next: $next },
+  TCopy,
+  dropI,
+) {
   const it = copied.it;
   const value = iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
     it,
@@ -1988,11 +2106,20 @@ export function copiedIterator___iteratorGetUnchecked(copied, idx, IIterator, TC
   return TCopy ? TCopy.copy(value) : value;
 }
 
-export function copiedIterator_sizeHint(copied, IIterator, TCopy, dropI) {
+export function copiedIterator_sizeHint(copied, IIterator = { next: $next }, TCopy, dropI) {
   return $sizeHint(copied.it, IIterator);
 }
 
-export function copiedIterator_fold(copied, init, f, IIterator, TCopy, dropI, dropAcc, dropF) {
+export function copiedIterator_fold(
+  copied,
+  init,
+  f,
+  IIterator = { next: $next },
+  TCopy,
+  dropI,
+  dropAcc,
+  dropF,
+) {
   const iter = copied.it;
   const f$1 = $dropping(
     (acc, _3) => {
@@ -2015,7 +2142,7 @@ export function copiedIterator_tryFold(
   copied,
   init,
   f,
-  IIterator,
+  IIterator = { next: $next },
   TCopy,
   RTry,
   dropI,
@@ -2037,7 +2164,7 @@ export function copiedIterator_tryFold(
   return value;
 }
 
-export function copiedIterator_nth(copied, n, IIterator, TCopy, dropI) {
+export function copiedIterator_nth(copied, n, IIterator = { next: $next }, TCopy, dropI) {
   const option = $lent($given(copied.it, IIterator, true))
     .drop(n)
     .take(1)
@@ -2050,7 +2177,7 @@ export function copiedIterator_nth(copied, n, IIterator, TCopy, dropI) {
   }
 }
 
-export function copiedIterator_last(copied, IIterator, TCopy, dropI) {
+export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, dropI) {
   const iter = copied.it;
   const items = $given(iter, IIterator, true).toArray();
   const option = $someAt(items, items.length - 1);
@@ -2064,7 +2191,7 @@ export function copiedIterator_last(copied, IIterator, TCopy, dropI) {
   }
 }
 
-export function copiedIterator_count(copied, IIterator, TCopy, dropI) {
+export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy, dropI) {
   const iter = copied.it;
   const result = $count($given(iter, IIterator, true));
   if (IIterator.fold === undefined) {
@@ -2073,11 +2200,16 @@ export function copiedIterator_count(copied, IIterator, TCopy, dropI) {
   return result;
 }
 
-export function copiedIterator_advanceBy(copied, n, IIterator, TCopy, dropI) {
+export function copiedIterator_advanceBy(copied, n, IIterator = { next: $next }, TCopy, dropI) {
   return $advanceBy($lent($given(copied.it, IIterator, true)), n);
 }
 
-export function copiedDoubleEndedIterator_nextBack(copied, IDoubleEndedIterator, TCopy, dropI) {
+export function copiedDoubleEndedIterator_nextBack(
+  copied,
+  IDoubleEndedIterator = { next_back: $nextBack },
+  TCopy,
+  dropI,
+) {
   const option = IDoubleEndedIterator.next_back(copied.it);
   if (option != null) {
     const value = $someValue(option);
@@ -2090,8 +2222,8 @@ export function copiedDoubleEndedIterator_rfold(
   copied,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   TCopy,
   dropI,
   dropAcc,
@@ -2116,8 +2248,8 @@ export function copiedDoubleEndedIterator_tryRfold(
   copied,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   TCopy,
   RTry,
   dropI,
@@ -2147,8 +2279,8 @@ export function copiedDoubleEndedIterator_tryRfold(
 export function copiedDoubleEndedIterator_advanceBackBy(
   copied,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   TCopy,
   dropI,
 ) {
@@ -2170,13 +2302,27 @@ export function copiedDebug_fmt(copied, options, IDebug) {
     : `Copied { it: ${shown} }`;
 }
 
-export function filterMapIterator_next(filterMap, IIterator, dropB, dropI, dropF, dropIItem) {
+export function filterMapIterator_next(
+  filterMap,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
   return $lent($given(filterMap.iter, IIterator, true))
     .map(filterMap.f)
     .find((item) => item != null);
 }
 
-export function filterMapIterator_sizeHint(filterMap, IIterator, dropB, dropI, dropF, dropIItem) {
+export function filterMapIterator_sizeHint(
+  filterMap,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropF,
+  dropIItem,
+) {
   const upper = $sizeHint(filterMap.iter, IIterator)[1];
   return [0, upper];
 }
@@ -2185,7 +2331,7 @@ export function filterMapIterator_fold(
   filterMap,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropB,
   dropI,
   dropF,
@@ -2221,7 +2367,7 @@ export function filterMapIterator_tryFold(
   filterMap,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropB,
   dropI,
@@ -2257,8 +2403,8 @@ export function filterMapIterator_tryFold(
 
 export function filterMapDoubleEndedIterator_nextBack(
   filterMap,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropB,
   dropI,
   dropF,
@@ -2295,8 +2441,8 @@ export function filterMapDoubleEndedIterator_rfold(
   filterMap,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropB,
   dropI,
   dropF,
@@ -2329,8 +2475,8 @@ export function filterMapDoubleEndedIterator_tryRfold(
   filterMap,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropB,
   dropI,
@@ -2377,7 +2523,13 @@ export function filterMapDebug_fmt(filterMap, options, IDebug, dropI, dropF) {
     : `FilterMap { iter: ${IDebug.fmt(filterMap.iter, options)} }`;
 }
 
-export function takeWhileIterator_next(takeWhile, IIterator, dropI, dropP, dropIItem) {
+export function takeWhileIterator_next(
+  takeWhile,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   if (takeWhile.flag) {
     return;
   }
@@ -2395,7 +2547,13 @@ export function takeWhileIterator_next(takeWhile, IIterator, dropI, dropP, dropI
   }
 }
 
-export function takeWhileIterator_sizeHint(takeWhile, IIterator, dropI, dropP, dropIItem) {
+export function takeWhileIterator_sizeHint(
+  takeWhile,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   if (takeWhile.flag) {
     return [0, 0];
   }
@@ -2407,7 +2565,7 @@ export function takeWhileIterator_tryFold(
   takeWhile,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropP,
@@ -2459,7 +2617,7 @@ export function takeWhileIterator_fold(
   takeWhile,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropP,
   dropAAA,
@@ -2499,7 +2657,13 @@ export function takeWhileDebug_fmt(takeWhile, options, IDebug, dropI, dropP) {
     : `TakeWhile { iter: ${IDebug.fmt(takeWhile.iter, options)}, flag: ${takeWhile.flag} }`;
 }
 
-export function skipWhileIterator_next(skipWhile, IIterator, dropI, dropP, dropIItem) {
+export function skipWhileIterator_next(
+  skipWhile,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const pred = skipWhile.predicate;
   return $findDropping(
     $lent($given(skipWhile.iter, IIterator, true)),
@@ -2517,7 +2681,13 @@ export function skipWhileIterator_next(skipWhile, IIterator, dropI, dropP, dropI
   );
 }
 
-export function skipWhileIterator_sizeHint(skipWhile, IIterator, dropI, dropP, dropIItem) {
+export function skipWhileIterator_sizeHint(
+  skipWhile,
+  IIterator = { next: $next },
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const upper = $sizeHint(skipWhile.iter, IIterator)[1];
   return [0, upper];
 }
@@ -2526,7 +2696,7 @@ export function skipWhileIterator_fold(
   skipWhile,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropP,
   dropAcc,
@@ -2574,7 +2744,7 @@ export function skipWhileIterator_tryFold(
   skipWhile,
   _2,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropP,
@@ -2647,7 +2817,14 @@ export function skipWhileDebug_fmt(skipWhile, options, IDebug, dropI, dropP) {
     : `SkipWhile { iter: ${IDebug.fmt(skipWhile.iter, options)}, flag: ${skipWhile.flag} }`;
 }
 
-export function mapWhileIterator_next(mapWhile, IIterator, dropB, dropI, dropP, dropIItem) {
+export function mapWhileIterator_next(
+  mapWhile,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const option = IIterator.next(mapWhile.iter);
   if (option != null) {
     const v = $someValue(option);
@@ -2655,7 +2832,14 @@ export function mapWhileIterator_next(mapWhile, IIterator, dropB, dropI, dropP, 
   }
 }
 
-export function mapWhileIterator_sizeHint(mapWhile, IIterator, dropB, dropI, dropP, dropIItem) {
+export function mapWhileIterator_sizeHint(
+  mapWhile,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropP,
+  dropIItem,
+) {
   const upper = $sizeHint(mapWhile.iter, IIterator)[1];
   return [0, upper];
 }
@@ -2664,7 +2848,7 @@ export function mapWhileIterator_tryFold(
   mapWhile,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropB,
   dropI,
@@ -2703,7 +2887,7 @@ export function mapWhileIterator_fold(
   mapWhile,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropB,
   dropI,
   dropP,
@@ -2736,7 +2920,15 @@ export function mapWhileDebug_fmt(mapWhile, options, IDebug, dropI, dropP) {
     : `MapWhile { iter: ${IDebug.fmt(mapWhile.iter, options)} }`;
 }
 
-export function scanIterator_next(scan, IIterator, dropB, dropI, dropSt, dropF, dropIItem) {
+export function scanIterator_next(
+  scan,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropSt,
+  dropF,
+  dropIItem,
+) {
   const option = IIterator.next(scan.iter);
   if (option != null) {
     const v = $someValue(option);
@@ -2754,7 +2946,15 @@ export function scanIterator_next(scan, IIterator, dropB, dropI, dropSt, dropF, 
   }
 }
 
-export function scanIterator_sizeHint(scan, IIterator, dropB, dropI, dropSt, dropF, dropIItem) {
+export function scanIterator_sizeHint(
+  scan,
+  IIterator = { next: $next },
+  dropB,
+  dropI,
+  dropSt,
+  dropF,
+  dropIItem,
+) {
   const upper = $sizeHint(scan.iter, IIterator)[1];
   return [0, upper];
 }
@@ -2763,7 +2963,7 @@ export function scanIterator_tryFold(
   scan,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropB,
   dropI,
@@ -2821,7 +3021,7 @@ export function scanIterator_fold(
   scan,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropB,
   dropI,
   dropSt,
@@ -2897,7 +3097,13 @@ export function scanDebug_fmt(scan, options, IDebug, StDebug, dropI, dropSt, dro
     : `Scan { iter: ${IDebug.fmt(scan.iter, options)}, state: ${StDebug.fmt(scan.state, options)} }`;
 }
 
-export function inspectIterator_next(inspect, IIterator, dropI, dropF, dropIItem) {
+export function inspectIterator_next(
+  inspect,
+  IIterator = { next: $next },
+  dropI,
+  dropF,
+  dropIItem,
+) {
   const elt = IIterator.next(inspect.iter);
   if (elt != null) {
     const a = $someValue(elt);
@@ -2906,7 +3112,13 @@ export function inspectIterator_next(inspect, IIterator, dropI, dropF, dropIItem
   return elt;
 }
 
-export function inspectIterator_sizeHint(inspect, IIterator, dropI, dropF, dropIItem) {
+export function inspectIterator_sizeHint(
+  inspect,
+  IIterator = { next: $next },
+  dropI,
+  dropF,
+  dropIItem,
+) {
   return $sizeHint(inspect.iter, IIterator);
 }
 
@@ -2914,7 +3126,7 @@ export function inspectIterator_fold(
   inspect,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropF,
   dropAcc,
@@ -2945,7 +3157,7 @@ export function inspectIterator_tryFold(
   inspect,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropF,
@@ -2976,7 +3188,7 @@ export function inspectIterator_tryFold(
 
 export function inspectDoubleEndedIterator_nextBack(
   inspect,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropF,
   dropIItem,
@@ -2993,8 +3205,8 @@ export function inspectDoubleEndedIterator_rfold(
   inspect,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropF,
   dropAcc,
@@ -3022,8 +3234,8 @@ export function inspectDoubleEndedIterator_tryRfold(
   inspect,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropF,
@@ -3071,9 +3283,9 @@ export function inspectDebug_fmt(inspect, options, IDebug, dropI, dropF) {
 
 export function flattenIterator_next(
   flatten,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   IFused,
   UOneShot,
   dropI,
@@ -3108,9 +3320,9 @@ export function flattenIterator_next(
 
 export function flattenIterator_sizeHint(
   flatten,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   UOneShot,
   IItemConstSize,
   dropI,
@@ -3146,9 +3358,9 @@ export function flattenIterator_fold(
   flatten,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   UOneShot,
   dropI,
   dropU,
@@ -3191,9 +3403,9 @@ export function flattenIterator_tryFold(
   flatten,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   RTry,
   IFused,
   UOneShot,
@@ -3243,10 +3455,10 @@ export function flattenIterator_tryFold(
 
 export function flattenDoubleEndedIterator_nextBack(
   flatten,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
-  UDoubleEndedIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
   IFused,
   UOneShot,
   dropI,
@@ -3283,11 +3495,11 @@ export function flattenDoubleEndedIterator_rfold(
   flatten,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
-  UDoubleEndedIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
   UOneShot,
   dropI,
   dropU,
@@ -3333,11 +3545,11 @@ export function flattenDoubleEndedIterator_tryRfold(
   flatten,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
-  UDoubleEndedIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   IFused,
   UOneShot,
@@ -3578,10 +3790,10 @@ export function flatMapIterator_tryFold(
 
 export function flatMapDoubleEndedIterator_nextBack(
   flatMap,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   UIntoIterator,
-  UIntoIterDoubleEndedIterator,
+  UIntoIterDoubleEndedIterator = { next_back: $nextBack },
   IFused,
   UIntoIterOneShot,
   dropI,
@@ -3704,10 +3916,10 @@ export function flatMapDoubleEndedIterator_rfold(
   flatMap,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   UIntoIterator,
-  UIntoIterDoubleEndedIterator,
+  UIntoIterDoubleEndedIterator = { next_back: $nextBack },
   UIntoIterOneShot,
   dropI,
   dropU,
@@ -3839,10 +4051,10 @@ export function flatMapDoubleEndedIterator_tryRfold(
   flatMap,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   UIntoIterator,
-  UIntoIterDoubleEndedIterator,
+  UIntoIterDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   IFused,
   UIntoIterOneShot,
@@ -3979,7 +4191,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
       );
 }
 
-export function skipIterator_next(skip, IIterator, dropI, dropIItem) {
+export function skipIterator_next(skip, IIterator = { next: $next }, dropI, dropIItem) {
   const b = skip.n > 0;
   if (!b) {
     return IIterator.next(skip.iter);
@@ -3989,7 +4201,13 @@ export function skipIterator_next(skip, IIterator, dropI, dropIItem) {
   return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
 }
 
-export function skipIterator___iteratorGetUnchecked(skip, idx, IIterator, dropI, dropIItem) {
+export function skipIterator___iteratorGetUnchecked(
+  skip,
+  idx,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   if (idx === 0) {
     const iter = { start: 0, end: skip.n };
     while (true) {
@@ -4021,14 +4239,14 @@ export function skipIterator___iteratorGetUnchecked(skip, idx, IIterator, dropI,
   );
 }
 
-export function skipIterator_sizeHint(skip, IIterator, dropI, dropIItem) {
+export function skipIterator_sizeHint(skip, IIterator = { next: $next }, dropI, dropIItem) {
   let [lower, upper] = $sizeHint(skip.iter, IIterator);
   lower = Math.max(lower - skip.n, 0);
   upper = upper != null ? Math.max(upper - skip.n, 0) : undefined;
   return [lower, upper];
 }
 
-export function skipIterator_nth(skip, n, IIterator, dropI, dropIItem) {
+export function skipIterator_nth(skip, n, IIterator = { next: $next }, dropI, dropIItem) {
   if (!(skip.n > 0)) {
     return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
   }
@@ -4053,7 +4271,7 @@ export function skipIterator_nth(skip, n, IIterator, dropI, dropIItem) {
   return $nthDropping($lent($given(skip.iter, IIterator, true)), n, dropIItem, true);
 }
 
-export function skipIterator_count(skip, IIterator, dropI, dropIItem) {
+export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dropIItem) {
   if (skip.n > 0) {
     const nth = $nthDropping(
       $lent($given(skip.iter, IIterator, true)),
@@ -4076,7 +4294,7 @@ export function skipIterator_count(skip, IIterator, dropI, dropIItem) {
   return result;
 }
 
-export function skipIterator_last(skip, IIterator, dropI, dropIItem) {
+export function skipIterator_last(skip, IIterator = { next: $next }, dropI, dropIItem) {
   if (skip.n > 0) {
     const option = $nthDropping(
       $lent($given(skip.iter, IIterator, true)),
@@ -4099,7 +4317,7 @@ export function skipIterator_fold(
   skip,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropAcc,
   dropFold,
@@ -4133,7 +4351,7 @@ export function skipIterator_tryFold(
   skip,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -4162,7 +4380,7 @@ export function skipIterator_tryFold(
   return value;
 }
 
-export function skipIterator_advanceBy(skip, n, IIterator, dropI, dropIItem) {
+export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dropI, dropIItem) {
   const skipInner = skip.n;
   const skipAndAdvance = Math.min(skipInner + n, 4294967295);
   const advanceBy = $advanceBy(
@@ -4203,8 +4421,8 @@ export function skipIterator_advanceBy(skip, n, IIterator, dropI, dropIItem) {
 
 export function skipDoubleEndedIterator_nextBack(
   skip,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -4247,8 +4465,8 @@ export function skipDoubleEndedIterator_nextBack(
 export function skipDoubleEndedIterator_nthBack(
   skip,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropIItem,
 ) {
@@ -4308,8 +4526,8 @@ export function skipDoubleEndedIterator_tryRfold(
   skip,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropI,
   dropAcc,
@@ -4388,8 +4606,8 @@ export function skipDoubleEndedIterator_rfold(
   skip,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAAA,
   dropFFF,
@@ -4431,7 +4649,7 @@ export function skipDebug_fmt(skip, options, IDebug) {
     : `Skip { iter: ${shown}, n: ${shown$1} }`;
 }
 
-export function takeIterator_next(take, IIterator, dropI, dropIItem) {
+export function takeIterator_next(take, IIterator = { next: $next }, dropI, dropIItem) {
   if (take.n === 0) {
     return;
   }
@@ -4439,7 +4657,7 @@ export function takeIterator_next(take, IIterator, dropI, dropIItem) {
   return IIterator.next(take.iter);
 }
 
-export function takeIterator_sizeHint(take, IIterator, dropI, dropIItem) {
+export function takeIterator_sizeHint(take, IIterator = { next: $next }, dropI, dropIItem) {
   if (take.n === 0) {
     return [0, 0];
   }
@@ -4454,7 +4672,7 @@ export function takeIterator_sizeHint(take, IIterator, dropI, dropIItem) {
   return [lower$1, upper];
 }
 
-export function takeIterator_nth(take, n, IIterator, dropI, dropIItem) {
+export function takeIterator_nth(take, n, IIterator = { next: $next }, dropI, dropIItem) {
   if (take.n > n) {
     take.n = (take.n - ((n + 1) >>> 0)) >>> 0;
     return $nthDropping($lent($given(take.iter, IIterator, true)), n, dropIItem, true);
@@ -4473,7 +4691,7 @@ export function takeIterator_nth(take, n, IIterator, dropI, dropIItem) {
   }
 }
 
-export function takeIterator_advanceBy(take, n, IIterator, dropI, dropIItem) {
+export function takeIterator_advanceBy(take, n, IIterator = { next: $next }, dropI, dropIItem) {
   let min = take.n;
   if (n < min) {
     min = n;
@@ -4495,7 +4713,7 @@ export function takeIterator_advanceBy(take, n, IIterator, dropI, dropIItem) {
   return { TAG: "Ok" };
 }
 
-export function takeIterator_count(take, IIterator, dropI, dropIItem) {
+export function takeIterator_count(take, IIterator = { next: $next }, dropI, dropIItem) {
   let result;
   if (take.n === 0) {
     result = 0;
@@ -4513,7 +4731,16 @@ export function takeIterator_count(take, IIterator, dropI, dropIItem) {
   return result;
 }
 
-export function takeIterator_fold(take, init, f, IIterator, dropI, dropB, dropF, dropIItem) {
+export function takeIterator_fold(
+  take,
+  init,
+  f,
+  IIterator = { next: $next },
+  dropI,
+  dropB,
+  dropF,
+  dropIItem,
+) {
   return takeSpecTake_specFold(take, init, f, IIterator, dropI, dropB, dropF, dropIItem);
 }
 
@@ -4521,7 +4748,7 @@ export function takeIterator_tryFold(
   take,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -4567,8 +4794,8 @@ export function takeIterator_tryFold(
 
 export function takeIDoubleEndedIterator_nextBack(
   take,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -4597,8 +4824,8 @@ export function takeRepeatTDoubleEndedIterator_nextBack(take, TClone, dropT) {
 export function takeIDoubleEndedIterator_nthBack(
   take,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -4630,8 +4857,8 @@ export function takeIDoubleEndedIterator_tryRfold(
   take,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   RTry,
   dropI,
@@ -4692,8 +4919,8 @@ export function takeIDoubleEndedIterator_rfold(
   take,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropAcc,
@@ -4771,19 +4998,28 @@ export function takeIDebug_fmt(take, options, IDebug) {
     : `Take { iter: ${shown}, n: ${shown$1} }`;
 }
 
-export function stepByIterator_next(stepBy, IIterator, dropI, dropIItem) {
+export function stepByIterator_next(stepBy, IIterator = { next: $next }, dropI, dropIItem) {
   return stepByStepByImplI_specNext(stepBy, IIterator, dropI, dropIItem);
 }
 
-export function stepByIterator_sizeHint(stepBy, IIterator, dropI, dropIItem) {
+export function stepByIterator_sizeHint(stepBy, IIterator = { next: $next }, dropI, dropIItem) {
   return stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIItem);
 }
 
-export function stepByIterator_nth(stepBy, n, IIterator, dropI, dropIItem) {
+export function stepByIterator_nth(stepBy, n, IIterator = { next: $next }, dropI, dropIItem) {
   return stepByStepByImplI_specNth(stepBy, n, IIterator, dropI, dropIItem);
 }
 
-export function stepByIterator_fold(stepBy, acc, f, IIterator, dropI, dropAcc, dropF, dropIItem) {
+export function stepByIterator_fold(
+  stepBy,
+  acc,
+  f,
+  IIterator = { next: $next },
+  dropI,
+  dropAcc,
+  dropF,
+  dropIItem,
+) {
   return stepByStepByImplI_specFold(stepBy, acc, f, IIterator, dropI, dropAcc, dropF, dropIItem);
 }
 
@@ -4791,7 +5027,7 @@ export function stepByIterator_tryFold(
   stepBy,
   acc,
   f,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -4815,8 +5051,8 @@ export function stepByIterator_tryFold(
 
 export function stepByDoubleEndedIterator_nextBack(
   stepBy,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -4834,8 +5070,8 @@ export function stepByDoubleEndedIterator_nextBack(
 export function stepByDoubleEndedIterator_nthBack(
   stepBy,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -4855,8 +5091,8 @@ export function stepByDoubleEndedIterator_rfold(
   stepBy,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropAcc,
@@ -4881,8 +5117,8 @@ export function stepByDoubleEndedIterator_tryRfold(
   stepBy,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   RTry,
   dropI,
@@ -4918,7 +5154,14 @@ export function stepByClone_clone(stepBy, IClone) {
   );
 }
 
-export function chainIterator_next(chain, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_next(
+  chain,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   const opt = { value: chain.a };
   const option = andThenOrClear$1(opt, (x0) => AIterator.next(x0.value), dropA, dropAItem);
   chain.a = opt.value;
@@ -4936,7 +5179,14 @@ export function chainIterator_next(chain, AIterator, BIterator, dropA, dropB, dr
   return option;
 }
 
-export function chainIterator_sizeHint(chain, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_sizeHint(
+  chain,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   if (chain.a == null) {
     if (chain.b != null) {
       const b = $someValue(chain.b);
@@ -4964,7 +5214,14 @@ export function chainIterator_sizeHint(chain, AIterator, BIterator, dropA, dropB
   return $sizeHint(a, AIterator);
 }
 
-export function chainIterator_count(chain, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_count(
+  chain,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   let aCount;
   if (chain.a != null) {
     const iter = $someValue(chain.a);
@@ -4994,8 +5251,8 @@ export function chainIterator_fold(
   chain,
   acc,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAcc,
@@ -5029,8 +5286,8 @@ export function chainIterator_tryFold(
   chain,
   _2,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   RTry,
   dropA,
   dropB,
@@ -5072,7 +5329,15 @@ export function chainIterator_tryFold(
   return result;
 }
 
-export function chainIterator_advanceBy(chain, n, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_advanceBy(
+  chain,
+  n,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   if (chain.a != null) {
     const a = $someValue(chain.a);
     const advanceBy = $advanceBy($lent($given(a, AIterator, true)), n, dropAItem);
@@ -5097,7 +5362,15 @@ export function chainIterator_advanceBy(chain, n, AIterator, BIterator, dropA, d
   return { TAG: "Ok" };
 }
 
-export function chainIterator_nth(chain, n, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_nth(
+  chain,
+  n,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   if (chain.a != null) {
     const a = $someValue(chain.a);
     const advanceBy = $advanceBy($lent($given(a, AIterator, true)), n, dropAItem);
@@ -5131,7 +5404,14 @@ export function chainIterator_nth(chain, n, AIterator, BIterator, dropA, dropB, 
   option = undefined;
 }
 
-export function chainIterator_last(chain, AIterator, BIterator, dropA, dropB, dropAItem) {
+export function chainIterator_last(
+  chain,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+) {
   let option = chain.a;
   let aLast;
   if (option != null) {
@@ -5168,8 +5448,8 @@ export function chainIterator_last(chain, AIterator, BIterator, dropA, dropB, dr
 
 export function chainDoubleEndedIterator_nextBack(
   chain,
-  ADoubleEndedIterator,
-  BDoubleEndedIterator,
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BDoubleEndedIterator = { next_back: $nextBack },
   dropA,
   dropB,
   dropAItem,
@@ -5199,10 +5479,10 @@ export function chainDoubleEndedIterator_nextBack(
 export function chainDoubleEndedIterator_nthBack(
   chain,
   n,
-  AIterator,
-  ADoubleEndedIterator,
-  BIterator,
-  BDoubleEndedIterator,
+  AIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BIterator = { next: $next },
+  BDoubleEndedIterator = { next_back: $nextBack },
   dropA,
   dropB,
   dropAItem,
@@ -5249,10 +5529,10 @@ export function chainDoubleEndedIterator_rfold(
   chain,
   acc,
   f,
-  AIterator,
-  ADoubleEndedIterator,
-  BIterator,
-  BDoubleEndedIterator,
+  AIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BIterator = { next: $next },
+  BDoubleEndedIterator = { next_back: $nextBack },
   dropA,
   dropB,
   dropAcc,
@@ -5279,10 +5559,10 @@ export function chainDoubleEndedIterator_tryRfold(
   chain,
   _2,
   f,
-  AIterator,
-  ADoubleEndedIterator,
-  BIterator,
-  BDoubleEndedIterator,
+  AIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BIterator = { next: $next },
+  BDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   dropA,
   dropB,
@@ -5372,8 +5652,8 @@ export function chainABDebug_fmt(chain, options, ADebug, BDebug) {
 
 export function zipIterator_next(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -5408,8 +5688,8 @@ export function zipIterator_next(
 
 export function zipIterator_sizeHint(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -5443,8 +5723,8 @@ export function zipIterator_sizeHint(
 export function zipIterator_nth(
   zip,
   n,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -5504,8 +5784,8 @@ export function zipIterator_fold(
   zip,
   init,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   ATrustedLen,
@@ -5558,11 +5838,11 @@ export function zipIterator_fold(
 
 export function zipDoubleEndedIterator_nextBack(
   zip,
-  AIterator,
-  ADoubleEndedIterator,
+  AIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
   AExactSizeIterator,
-  BIterator,
-  BDoubleEndedIterator,
+  BIterator = { next: $next },
+  BDoubleEndedIterator = { next_back: $nextBack },
   BExactSizeIterator,
   ARandomAccess,
   ARandomAccessNoCoerce,
@@ -5613,8 +5893,8 @@ export function zipDoubleEndedIterator_nextBack(
 export function zipIterator___iteratorGetUnchecked(
   zip,
   idx,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -5639,7 +5919,7 @@ export function zipClone_clone(zip, AClone, BClone) {
   );
 }
 
-export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
+export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self },
     {
@@ -5697,7 +5977,13 @@ export function iterator_peekable(self, SelfIterator, dropSelf, dropSelfItem) {
   );
 }
 
-export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfItem) {
+export function iterator_fuse(
+  self,
+  SelfIterator = { next: $next },
+  SelfFused,
+  dropSelf,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: $some(self) },
     {
@@ -5756,7 +6042,13 @@ export function iterator_fuse(self, SelfIterator, SelfFused, dropSelf, dropSelfI
   );
 }
 
-export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSelf, dropSelfItem) {
+export function iterator_rev(
+  self,
+  SelfIterator = { next: $next },
+  SelfDoubleEndedIterator = { next_back: $nextBack },
+  dropSelf,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self },
     {
@@ -5815,7 +6107,7 @@ export function iterator_rev(self, SelfIterator, SelfDoubleEndedIterator, dropSe
   );
 }
 
-export function iterator_enumerate(self, SelfIterator, dropSelf, dropSelfItem) {
+export function iterator_enumerate(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self, count$: 0 },
     {
@@ -5868,7 +6160,15 @@ export function iterator_enumerate(self, SelfIterator, dropSelf, dropSelfItem) {
   );
 }
 
-export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, dropSelfItem) {
+export function iterator_map(
+  self,
+  f,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropB,
+  dropF,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, f },
     {
@@ -5917,7 +6217,14 @@ export function iterator_map(self, f, SelfIterator, dropSelf, dropB, dropF, drop
   );
 }
 
-export function iterator_filter(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+export function iterator_filter(
+  self,
+  predicate,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropP,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, predicate },
     {
@@ -5967,7 +6274,7 @@ export function iterator_filter(self, predicate, SelfIterator, dropSelf, dropP, 
   );
 }
 
-export function iterator_copied(self, SelfIterator, TCopy, dropSelf) {
+export function iterator_copied(self, SelfIterator = { next: $next }, TCopy, dropSelf) {
   return $stdIterator(
     { it: self },
     {
@@ -6011,7 +6318,15 @@ export function iterator_copied(self, SelfIterator, TCopy, dropSelf) {
   );
 }
 
-export function iterator_filterMap(self, f, SelfIterator, dropSelf, dropB, dropF, dropSelfItem) {
+export function iterator_filterMap(
+  self,
+  f,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropB,
+  dropF,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, f },
     {
@@ -6067,7 +6382,14 @@ export function iterator_filterMap(self, f, SelfIterator, dropSelf, dropB, dropF
   );
 }
 
-export function iterator_takeWhile(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+export function iterator_takeWhile(
+  self,
+  predicate,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropP,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, flag: false, predicate },
     {
@@ -6114,7 +6436,14 @@ export function iterator_takeWhile(self, predicate, SelfIterator, dropSelf, drop
   );
 }
 
-export function iterator_skipWhile(self, predicate, SelfIterator, dropSelf, dropP, dropSelfItem) {
+export function iterator_skipWhile(
+  self,
+  predicate,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropP,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, flag: false, predicate },
     {
@@ -6164,7 +6493,7 @@ export function iterator_skipWhile(self, predicate, SelfIterator, dropSelf, drop
 export function iterator_mapWhile(
   self,
   predicate,
-  SelfIterator,
+  SelfIterator = { next: $next },
   dropSelf,
   dropB,
   dropP,
@@ -6229,7 +6558,7 @@ export function iterator_scan(
   self,
   initialState,
   f,
-  SelfIterator,
+  SelfIterator = { next: $next },
   dropSelf,
   dropSt,
   dropB,
@@ -6278,7 +6607,14 @@ export function iterator_scan(
   );
 }
 
-export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSelfItem) {
+export function iterator_inspect(
+  self,
+  f,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropF,
+  dropSelfItem,
+) {
   return $stdIterator(
     { iter: self, f },
     {
@@ -6327,7 +6663,7 @@ export function iterator_inspect(self, f, SelfIterator, dropSelf, dropF, dropSel
 
 export function iterator_flatten(
   self,
-  SelfIterator,
+  SelfIterator = { next: $next },
   SelfItemIntoIterator,
   SelfFused,
   SelfItemConstSize,
@@ -6422,7 +6758,7 @@ export function iterator_flatten(
 export function iterator_flatMap(
   self,
   f,
-  SelfIterator,
+  SelfIterator = { next: $next },
   UIntoIterator,
   SelfFused,
   UConstSize,
@@ -6627,7 +6963,7 @@ export function iterator_flatMap(
   );
 }
 
-export function iterator_skip(self, n, SelfIterator, dropSelf, dropSelfItem) {
+export function iterator_skip(self, n, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self, n },
     {
@@ -6683,7 +7019,7 @@ export function iterator_skip(self, n, SelfIterator, dropSelf, dropSelfItem) {
   );
 }
 
-export function iterator_take(self, n, SelfIterator, dropSelf, dropSelfItem) {
+export function iterator_take(self, n, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {
   return $stdIterator(
     { iter: self, n },
     {
@@ -6736,7 +7072,13 @@ export function iterator_take(self, n, SelfIterator, dropSelf, dropSelfItem) {
   );
 }
 
-export function iterator_stepBy(self, step, SelfIterator, dropSelf, dropSelfItem) {
+export function iterator_stepBy(
+  self,
+  step,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropSelfItem,
+) {
   return $stdIterator(StepBy.new(self, step, dropSelf), {
     next(iterator) {
       return stepByIterator_next(iterator, SelfIterator, dropSelf, dropSelfItem);
@@ -6783,7 +7125,7 @@ export function iterator_stepBy(self, step, SelfIterator, dropSelf, dropSelfItem
 export function iterator_chain(
   self,
   other,
-  SelfIterator,
+  SelfIterator = { next: $next },
   UIntoIterator,
   dropSelf,
   dropU,
@@ -6902,7 +7244,7 @@ export function iterator_chain(
 export function iterator_zip(
   self,
   other,
-  SelfIterator,
+  SelfIterator = { next: $next },
   UIntoIterator,
   SelfRandomAccess,
   SelfRandomAccessNoCoerce,
@@ -6969,14 +7311,19 @@ export function iterator_zip(
         );
 }
 
-export function trustedRandomAccessNoCoerce_size(self, SelfIterator, dropSelf, dropSelfItem) {
+export function trustedRandomAccessNoCoerce_size(
+  self,
+  SelfIterator = { next: $next },
+  dropSelf,
+  dropSelfItem,
+) {
   return $sizeHint(self, SelfIterator)[0];
 }
 
 export function iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked(
   self,
   index,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropIItem,
 ) {
@@ -6987,9 +7334,9 @@ export function fuseFuseImplI_tryRfold(
   fuse,
   _2,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropFold,
@@ -7025,9 +7372,9 @@ export function fuseFuseImplIFusedIterator_tryRfold(
   fuse,
   _2,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropAcc,
   dropFold,
@@ -7081,9 +7428,9 @@ export function iSpecAssumeCount_assumeCountLeUpperBound(count, upper, dropI, dr
 
 export function flattenCompatIUIterator_next(
   flattenCompat,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   IFused,
   dropI,
   dropU,
@@ -7123,9 +7470,9 @@ export function flattenCompatIUIterator_next(
 
 export function flattenCompatIUIterator2_next(
   flattenCompat,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   IFused,
   dropI,
   dropU,
@@ -7153,9 +7500,9 @@ export function flattenCompatIUIterator2_next(
 
 export function flattenCompatIUIterator_sizeHint(
   flattenCompat,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   IItemConstSize,
   dropI,
   dropU,
@@ -7294,7 +7641,7 @@ export function flattenCompatIUIterator_sizeHint(
 
 export function flattenCompatIUIterator2_sizeHint(
   flattenCompat,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
   IItemConstSize,
   dropI,
@@ -7324,9 +7671,9 @@ export function flattenCompatIUIterator_fold(
   flattenCompat,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   dropI,
   dropU,
   dropAcc,
@@ -7364,7 +7711,7 @@ export function flattenCompatIUIterator2_fold(
   flattenCompat,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
   dropI,
   dropU,
@@ -7419,9 +7766,9 @@ export function flattenCompatIUIterator_tryFold(
   flattenCompat,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   RTry,
   IFused,
   dropI,
@@ -7459,7 +7806,7 @@ export function flattenCompatIUIterator2_tryFold(
   flattenCompat,
   init,
   fold,
-  IIterator,
+  IIterator = { next: $next },
   IItemIntoIterator,
   RTry,
   IFused,
@@ -7519,9 +7866,9 @@ export function flattenCompatIUIterator2_tryFold(
 
 export function flattenCompatIUDoubleEndedIterator_nextBack(
   flattenCompat,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UDoubleEndedIterator,
+  UDoubleEndedIterator = { next_back: $nextBack },
   IFused,
   dropI,
   dropU,
@@ -7566,9 +7913,9 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
 
 export function flattenCompatIUDoubleEndedIterator2_nextBack(
   flattenCompat,
-  IDoubleEndedIterator,
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
+  UIterator = { next: $next },
   IFused,
   dropI,
   dropU,
@@ -7598,11 +7945,11 @@ export function flattenCompatIUDoubleEndedIterator_rfold(
   flattenCompat,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
-  UDoubleEndedIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
   dropI,
   dropU,
   dropAcc,
@@ -7635,8 +7982,8 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
   flattenCompat,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
   dropI,
   dropU,
@@ -7688,11 +8035,11 @@ export function flattenCompatIUDoubleEndedIterator_tryRfold(
   flattenCompat,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
-  UIterator,
-  UDoubleEndedIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
   RTry,
   IFused,
   dropI,
@@ -7737,8 +8084,8 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
   flattenCompat,
   init,
   fold,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IItemIntoIterator,
   RTry,
   IFused,
@@ -7798,7 +8145,16 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
       );
 }
 
-export function takeSpecTake_specFold(take, init, f, IIterator, dropI, dropB, dropF, dropIItem) {
+export function takeSpecTake_specFold(
+  take,
+  init,
+  f,
+  IIterator = { next: $next },
+  dropI,
+  dropB,
+  dropF,
+  dropIItem,
+) {
   const f$1 = $dropping(
     (a, b) => f(a, b),
     () => {
@@ -7811,13 +8167,18 @@ export function takeSpecTake_specFold(take, init, f, IIterator, dropI, dropB, dr
   return result;
 }
 
-export function stepByStepByImplI_specNext(stepBy, IIterator, dropI, dropIItem) {
+export function stepByStepByImplI_specNext(stepBy, IIterator = { next: $next }, dropI, dropIItem) {
   const stepSize = stepBy.firstTake ? 0 : stepBy.stepMinusOne;
   stepBy.firstTake = false;
   return $nthDropping($lent($given(stepBy.iter, IIterator, true)), stepSize, dropIItem, true);
 }
 
-export function stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIItem) {
+export function stepByStepByImplI_specSizeHint(
+  stepBy,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   const [low, high] = $sizeHint(stepBy.iter, IIterator);
   if (stepBy.firstTake) {
     const n$1 = (stepBy.stepMinusOne + 1) >>> 0;
@@ -7839,7 +8200,13 @@ export function stepByStepByImplI_specSizeHint(stepBy, IIterator, dropI, dropIIt
   return [$div(low, n$1) >>> 0, high != null ? f(high) : undefined];
 }
 
-export function stepByStepByImplI_specNth(stepBy, n, IIterator, dropI, dropIItem) {
+export function stepByStepByImplI_specNth(
+  stepBy,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
   if (stepBy.firstTake) {
     stepBy.firstTake = false;
     const option = IIterator.next(stepBy.iter);
@@ -7917,7 +8284,7 @@ export function stepByStepByImplI_specFold(
   stepBy,
   acc,
   f,
-  IIterator,
+  IIterator = { next: $next },
   dropI,
   dropAcc,
   dropF,
@@ -7950,7 +8317,7 @@ export function stepByStepByImplI_specTryFold(
   stepBy,
   _2,
   f,
-  IIterator,
+  IIterator = { next: $next },
   RTry,
   dropI,
   dropAcc,
@@ -7988,8 +8355,8 @@ export function stepByStepByImplI_specTryFold(
 
 export function stepByStepByBackImplI_specNextBack(
   stepBy,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -8005,8 +8372,8 @@ export function stepByStepByBackImplI_specNextBack(
 export function stepByStepByBackImplI_specNthBack(
   stepBy,
   n,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropIItem,
@@ -8034,8 +8401,8 @@ export function stepByStepByBackImplI_specRfold(
   stepBy,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   dropI,
   dropAcc,
@@ -8072,8 +8439,8 @@ export function stepByStepByBackImplI_specTryRfold(
   stepBy,
   init,
   f,
-  IIterator,
-  IDoubleEndedIterator,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
   IExactSizeIterator,
   RTry,
   dropI,
@@ -8134,7 +8501,15 @@ export function andThenOrClear$1(opt, f, dropT, dropU, dropFnOnce) {
   return x;
 }
 
-export function zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem) {
+export function zipZipImplAB_next(
+  zip,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  dropA,
+  dropB,
+  dropAItem,
+  dropBItem,
+) {
   const option = AIterator.next(zip.a);
   if (option != null) {
     const v = $someValue(option);
@@ -8152,8 +8527,8 @@ export function zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropA
 
 export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -8168,8 +8543,8 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
 
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_next(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -8192,8 +8567,8 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 
 export function zipZipImplAB_sizeHint(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -8232,8 +8607,8 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint(
 
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint(
   zip,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -8250,8 +8625,8 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 export function zipZipImplAB_nth(
   zip,
   n,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -8280,8 +8655,8 @@ export function zipZipImplAB_nth(
 export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
   zip,
   n,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -8325,8 +8700,8 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nth(
   zip,
   n,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,
@@ -8356,8 +8731,8 @@ export function zipZipImplAB_fold(
   zip,
   init,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   ATrustedLen,
@@ -8394,8 +8769,8 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   zip,
   init,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   BRandomAccess,
   dropA,
@@ -8442,9 +8817,9 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 
 export function zipZipImplAB_nextBack(
   zip,
-  ADoubleEndedIterator,
+  ADoubleEndedIterator = { next_back: $nextBack },
   AExactSizeIterator,
-  BDoubleEndedIterator,
+  BDoubleEndedIterator = { next_back: $nextBack },
   BExactSizeIterator,
   dropA,
   dropB,
@@ -8501,10 +8876,10 @@ export function zipZipImplAB_nextBack(
 
 export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
   zip,
-  AIterator,
-  BIterator,
-  ADoubleEndedIterator,
-  BDoubleEndedIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BDoubleEndedIterator = { next_back: $nextBack },
   dropA,
   dropB,
   dropAItem,
@@ -8554,9 +8929,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
 
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack(
   zip,
-  ADoubleEndedIterator,
+  ADoubleEndedIterator = { next_back: $nextBack },
   AExactSizeIterator,
-  BDoubleEndedIterator,
+  BDoubleEndedIterator = { next_back: $nextBack },
   BExactSizeIterator,
   dropA,
   dropB,
@@ -8614,8 +8989,8 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked(
   zip,
   idx,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   dropA,
   dropB,
   dropAItem,
@@ -8628,8 +9003,8 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 export function zipZipImplAB_new(
   a,
   b,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   ATrustedLen,
@@ -8723,8 +9098,8 @@ export function zipZipImplAB_new(
 export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
   a,
   b,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   ATrustedLen,
@@ -8823,8 +9198,8 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_new(
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new(
   a,
   b,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   ATrustedLen,
@@ -8941,8 +9316,8 @@ export function zipSpecFold_specFold(
   zip,
   init,
   f,
-  AIterator,
-  BIterator,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
   ARandomAccess,
   ARandomAccessNoCoerce,
   BRandomAccess,

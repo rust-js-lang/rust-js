@@ -14,7 +14,6 @@ import {
   $iter,
   $iterator,
   $next,
-  $nextBack,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -30,13 +29,9 @@ function tens(x) {
 }
 function main() {
   const v = [1, 2, 3, 4, 5];
-  const a = iterator_rev(
-    $filterEnds($iter(v), (x) => x % 2 === 1),
-    { next: $next },
-    { next_back: $nextBack },
-  );
+  const a = iterator_rev($filterEnds($iter(v), (x) => x % 2 === 1));
   const next = $next(a);
-  const value = revDoubleEndedIterator_nextBack(a, { next: $next });
+  const value = revDoubleEndedIterator_nextBack(a);
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`}`,
   );

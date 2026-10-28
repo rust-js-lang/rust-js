@@ -7,7 +7,7 @@ import {
   iterator_rev,
   revExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
-import { $enumerate, $foldOf, $iter, $mapEnds, $next, $nextBack } from "@rust-js/runtime";
+import { $enumerate, $foldOf, $iter, $mapEnds, $next } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -20,12 +20,8 @@ function mapped(it) {
   return $enumerate($mapEnds(it, (x) => (x + 1) & 255)).len();
 }
 function backs(it) {
-  const e = iterator_enumerate(it, { next: $next });
-  const back = enumerateDoubleEndedIterator_nextBack(
-    e,
-    { len: (iterator) => iterator.len() },
-    { next_back: $nextBack },
-  );
+  const e = iterator_enumerate(it);
+  const back = enumerateDoubleEndedIterator_nextBack(e, { len: (iterator) => iterator.len() });
   return [enumerateExactSizeIterator_len(e, { len: (iterator) => iterator.len() }), back];
 }
 function main() {
@@ -36,12 +32,9 @@ function main() {
   console.log(
     `(${value[0]}, ${value[1] == null ? "None" : `Some((${value[1][0]}, ${value[1][1]}))`})`,
   );
-  const e = iterator_enumerate($iter(v), { next: $next });
+  const e = iterator_enumerate($iter(v));
   console.log(`${enumerateExactSizeIterator_len(e, iterExactSizeIterator)}`);
-  const r = iterator_enumerate(iterator_rev($iter(v), { next: $next }, { next_back: $nextBack }), {
-    next: $next,
-    fold: $foldOf,
-  });
+  const r = iterator_enumerate(iterator_rev($iter(v)), { next: $next, fold: $foldOf });
   console.log(
     `${enumerateExactSizeIterator_len(r, { len: (iterator) => revExactSizeIterator_len(iterator, iterExactSizeIterator) })}`,
   );

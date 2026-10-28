@@ -72,11 +72,9 @@ function main() {
       $knowing(
         ends(),
         (iterator) =>
-          chainDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: downDoubleEndedIterator_nextBack },
-            { next_back: $nextBack },
-          ),
+          chainDoubleEndedIterator_nextBack(iterator, {
+            next_back: downDoubleEndedIterator_nextBack,
+          }),
         undefined,
         undefined,
         (iterator, k) =>
@@ -85,8 +83,6 @@ function main() {
             k,
             { next: downIterator_next },
             { next_back: downDoubleEndedIterator_nextBack },
-            { next: $next },
-            { next_back: $nextBack },
           ),
         (iterator, init, f, broke) =>
           chainDoubleEndedIterator_tryRfold(

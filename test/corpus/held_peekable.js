@@ -201,7 +201,7 @@ function main() {
       .map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const lexer = { chars: iterator_peekable($iter(["x", "y"]), { next: $next }) };
+  const lexer = { chars: iterator_peekable($iter(["x", "y"])) };
   $peek(lexer.chars);
   const arg$1 = $sizeHint(lexer.chars);
   console.log(

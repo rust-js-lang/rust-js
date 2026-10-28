@@ -106,12 +106,12 @@ function main() {
   );
 
   const v = [1, 2, 3, 4, 5];
-  let held = iterator_map($iter(v), (x) => Math.imul(x, x) >>> 0, { next: $next });
+  let held = iterator_map($iter(v), (x) => Math.imul(x, x) >>> 0);
   console.log(
     `${mapClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
   );
   console.log(
-    `${mapDoubleEndedIterator_rfold(mapClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 100) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
+    `${mapDoubleEndedIterator_rfold(mapClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 100) >>> 0) + x) >>> 0)}`,
   );
   const value = $sizeHint(held);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
@@ -133,7 +133,7 @@ function main() {
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${mapExactSizeIterator_len(d.inner, countdownExactSizeIterator)}`,
   );
   const value$3 = lastOf(
-    iterator_map($iter(v), (x) => (x + 1) >>> 0, { next: $next }),
+    iterator_map($iter(v), (x) => (x + 1) >>> 0),
     { next_back: $nextBack },
   );
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
@@ -181,16 +181,13 @@ function main() {
       .join(", ")}]`,
   );
   // Read by a `rev()` that's held: std's struct, as its `rev()` is.
-  const cubes = iterator_map($iter(v), (x) => Math.imul(Math.imul(x, x) >>> 0, x) >>> 0, {
-    next: $next,
-  });
+  const cubes = iterator_map($iter(v), (x) => Math.imul(Math.imul(x, x) >>> 0, x) >>> 0);
   const back = iterator_rev(
     cubes,
     { next: $next, fold: $foldOf },
     {
-      next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }),
-      rfold: (iterator, init, f) =>
-        mapDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, { next_back: $nextBack }),
+      next_back: mapDoubleEndedIterator_nextBack,
+      rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),
       tryRfold: (iterator, init, f, broke) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,

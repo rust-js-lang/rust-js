@@ -9,7 +9,7 @@ export function entry() {
 
 function textIn(root, path) {
   let dir = root;
-  const parts = iterator_peekable($iter(path.split("/")), { next: $next });
+  const parts = iterator_peekable($iter(path.split("/")));
   let part;
   while ((part = $next(parts)) != null) {
     const value = dir.get(part);

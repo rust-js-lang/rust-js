@@ -10,7 +10,7 @@ export function entry() {
 function main() {
   const v = [1, 2, 3];
   const p = iterator_peekable(
-    iterator_map($iter(v), (x) => (x * 2) | 0, { next: $next }),
+    iterator_map($iter(v), (x) => (x * 2) | 0),
     { next: $next, fold: $foldOf },
   );
   console.log(

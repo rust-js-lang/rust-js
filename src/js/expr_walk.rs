@@ -56,8 +56,15 @@ impl Expr {
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().for_each(|a| a.visit_vars(read)),
             ExprKind::Object(fields, ..) => props(fields, read),
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),
-            ExprKind::Function(function) => visit_stmts(&function.body, read),
+            // Its parameters' defaults too, read where it's called.
+            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
+                params
+                    .iter()
+                    .flat_map(Pattern::defaults)
+                    .for_each(|d| d.visit_vars(read));
+                visit_stmts(body, read);
+            }
+            ExprKind::Function(function) => function.visit_vars(read),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &jsx.tag {
                     tag.visit_vars(read);

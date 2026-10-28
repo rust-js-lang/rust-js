@@ -858,11 +858,18 @@ pub fn each_item_expr_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Expr)) {
             Item::Statements(stmts) => each_expr_mut(stmts, f),
             Item::Namespace(namespace) => {
                 (namespace.constants.iter_mut()).for_each(|constant| constant.value.each_mut(f));
-                (namespace.methods.iter_mut()).for_each(|method| each_expr_mut(&mut method.body, f));
+                (namespace.methods.iter_mut()).for_each(|method| function_exprs_mut(method, f));
             }
-            Item::Function(function) => each_expr_mut(&mut function.body, f),
+            Item::Function(function) => function_exprs_mut(function, f),
         }
     }
+}
+
+/// Each expression of `function`: its parameters' defaults, `IIterator = {
+/// next: $next }`'s (ADR 0995), and its body's.
+fn function_exprs_mut(function: &mut Function, f: &mut dyn FnMut(&mut Expr)) {
+    (function.params.iter_mut()).for_each(|param| param.defaults_mut().into_iter().for_each(|d| d.each_mut(f)));
+    each_expr_mut(&mut function.body, f);
 }
 
 /// Each list of statements in `items`, as `each_block_mut` goes: what a

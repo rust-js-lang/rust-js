@@ -24,6 +24,17 @@ pub(in crate::lower) enum Slot<'tcx> {
     Drop(u32),
 }
 
+/// `{ entry: helper }`, a default dictionary (`default_dictionary`).
+pub(in crate::lower) fn plain_dictionary((entry, helper): (&str, &'static str)) -> Expr {
+    Expr::object(vec![js::Prop::Field(entry.to_string(), Expr::helper(helper))])
+}
+
+/// Whether `e` is `plain_dictionary(default)` as written.
+pub(in crate::lower) fn is_plain_dictionary(e: &Expr, (entry, helper): (&str, &str)) -> bool {
+    matches!(&e.kind, js::ExprKind::Object(props, _)
+        if matches!(props.as_slice(), [js::Prop::Field(name, value)] if name == entry && value.helper_name() == Some(helper)))
+}
+
 /// Whose evidence: the whole function's, or a trait's generic method's own,
 /// given through a dictionary, whose impl's and trait's the dictionary has
 /// (ADR 0106).
@@ -34,6 +45,25 @@ pub(in crate::lower) enum Scope {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The dictionary `id`, a std body compiled into `@rust-js/std`, takes
+    /// for its bound `tr` where it's given none: a JS iterator's own, `{
+    /// next: $next }` of an `Iterator` bound, `{ next_back: $nextBack }` of a
+    /// `DoubleEndedIterator` one, as its entry and its helper. A call whose
+    /// last argument is it leaves it out (ADR 0995): the one rule, of its
+    /// parameter and of its calls.
+    pub(in crate::lower) fn default_dictionary(&self, id: DefId, tr: DefId) -> Option<(&'static str, &'static str)> {
+        if !crate::lower::recognition::is_compiled_std(self.tcx, id) {
+            return None;
+        }
+        if is_std_def(self.tcx, tr, StdItem::Iterator) {
+            Some(("next", "$next"))
+        } else if self.recognition().double_ended_iterator() == Some(tr) {
+            Some(("next_back", "$nextBack"))
+        } else {
+            None
+        }
+    }
+
     /// What `id` takes after its own parameters, of `scope`, in order: its
     /// caller's location, its const parameters, its bounds' dictionaries,
     /// the facts it asks, then its drops. The one order.

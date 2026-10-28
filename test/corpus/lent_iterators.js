@@ -81,7 +81,7 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const chars = iterator_peekable($iter(Array.from("12+345")), { next: $next });
+  const chars = iterator_peekable($iter(Array.from("12+345")));
   let a = number(chars);
   $next(chars);
   console.log(`${a} ${number(chars)}`);
@@ -92,7 +92,6 @@ function main() {
   const lazy = iterator_map(
     $successors(1, (n) => (n * 2) >>> 0),
     (n) => (n + 1) >>> 0,
-    { next: $next },
   );
   a = take2(lazy);
   console.log(

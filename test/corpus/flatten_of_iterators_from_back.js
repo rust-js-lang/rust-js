@@ -55,16 +55,13 @@ function main() {
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
 
-  const numbered = iterator_enumerate($iter([7, 8, 9]), { next: $next });
+  const numbered = iterator_enumerate($iter([7, 8, 9]));
   console.log(
     `${$foldBack(
       $flattenEnds($iter(numbered == null ? [] : [numbered]), (item) =>
         $knowing(
           item,
-          (iterator) =>
-            enumerateDoubleEndedIterator_nextBack(iterator, iterExactSizeIterator, {
-              next_back: $nextBack,
-            }),
+          (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, iterExactSizeIterator),
           (iterator) => enumerateExactSizeIterator_len(iterator, iterExactSizeIterator),
           undefined,
           (iterator, k) =>
@@ -73,7 +70,6 @@ function main() {
               k,
               { next: $next },
               iterExactSizeIterator,
-              { next_back: $nextBack },
             ),
           (iterator, init, f, broke) =>
             enumerateDoubleEndedIterator_tryRfold(

@@ -19,9 +19,7 @@ function fnv1a(text) {
 
 // A number at the start of a line, read a byte at a time.
 function leadingNumber(line) {
-  const bytes = iterator_peekable($iter(Array.from(new TextEncoder().encode(line))), {
-    next: $next,
-  });
+  const bytes = iterator_peekable($iter(Array.from(new TextEncoder().encode(line))));
   let value;
   while (true) {
     const b = $peek(bytes);

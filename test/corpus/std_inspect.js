@@ -14,7 +14,6 @@ import {
   $exactLen,
   $iter,
   $next,
-  $nextBack,
   $print,
   $rangeNext,
   $rangeNextBack,
@@ -94,18 +93,14 @@ function main() {
   );
 
   const v = [1, 2, 3, 4];
-  const held = iterator_inspect(
-    $iter(v),
-    (x) => {
-      $print(`(${x})`);
-    },
-    { next: $next },
-  );
+  const held = iterator_inspect($iter(v), (x) => {
+    $print(`(${x})`);
+  });
   console.log(
     `${inspectClone_clone(held, iterClone, clone).reduce((acc, x) => (((acc * 10) >>> 0) + x) >>> 0, 0)}`,
   );
   console.log(
-    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0, { next: $next }, { next_back: $nextBack })}`,
+    `${inspectDoubleEndedIterator_rfold(inspectClone_clone(held, iterClone, clone), 0, (acc, x) => (((acc * 10) >>> 0) + x) >>> 0)}`,
   );
 
   const shown = iterator_inspect([2], show, {

@@ -13,7 +13,6 @@ import {
   $lazyRange,
   $lent,
   $next,
-  $nextBack,
   $nextIf,
   $rangeNext,
   $rangeNextBack,
@@ -25,7 +24,7 @@ export function entry() {
 }
 
 function firstTwo(it) {
-  const p = iterator_peekable(it, { next: $next });
+  const p = iterator_peekable(it);
   const a = $next(p);
   const b = $nextIf(p, (x) => x % 2 === 0);
   const c = $next(p);
@@ -33,10 +32,10 @@ function firstTwo(it) {
 }
 
 function fromBack(it) {
-  const p = iterator_peekable(it, { next: $next });
-  const out = [peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack }) ?? 0];
+  const p = iterator_peekable(it);
+  const out = [peekableDoubleEndedIterator_nextBack(p) ?? 0];
   out.push($next(p) ?? 0);
-  out.push(peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack }) ?? 0);
+  out.push(peekableDoubleEndedIterator_nextBack(p) ?? 0);
   return out;
 }
 
@@ -91,7 +90,7 @@ function main() {
   console.log(
     `(${value$4[0]}, ${value$4[1]}, ${value$4[2] == null ? "None" : `Some(${value$4[2]})`}, ${value$4[3] == null ? "None" : `Some(${value$4[3]})`})`,
   );
-  const p = iterator_peekable($iter(v.slice()), { next: $next });
+  const p = iterator_peekable($iter(v.slice()));
   const nextIfEq = $nextIf(p, (item) => item === 1);
   const value$5 = $nextIf(p, (item) => item === 1);
   console.log(

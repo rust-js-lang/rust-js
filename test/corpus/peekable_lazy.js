@@ -25,7 +25,6 @@ function tokens(src) {
     Array.from(src)
       .values()
       .filter((c) => !/^\p{White_Space}$/u.test(c)),
-    { next: $next },
   );
   let c;
   while ((c = $next(chars)) != null) {
@@ -76,7 +75,7 @@ function main() {
       .join(", ")}]`,
   );
   const empty = iterator_peekable(
-    iterator_map($iter([]), (x) => (x + 1) & 255, { next: $next }),
+    iterator_map($iter([]), (x) => (x + 1) & 255),
     { next: $next, fold: $foldOf },
   );
   // Of items that look like `None`: `Some(None)`, not `None`.

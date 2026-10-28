@@ -88,7 +88,7 @@ function main() {
   };
   const v = [10, 20, 30, 40, 50];
   const value = ends(
-    iterator_take($iter(v), 3, { next: $next }),
+    iterator_take($iter(v), 3),
     { next: $next, fold: $foldOf },
     takeDoubleEndedIterator,
     takeExactSizeIterator,
@@ -98,21 +98,14 @@ function main() {
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`}, ${value[3]}, [${value[4].join(", ")}])`,
   );
   const value$1 = ends(
-    iterator_enumerate($iter(v), { next: $next }),
+    iterator_enumerate($iter(v)),
     { next: $next, fold: $foldOf },
     {
-      next_back: (iterator) =>
-        enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator, {
-          next_back: $nextBack,
-        }),
+      next_back: (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator),
       rfold: (iterator, init, f) =>
-        enumerateDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, exactSizeIterator, {
-          next_back: $nextBack,
-        }),
+        enumerateDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, exactSizeIterator),
       nthBack: (iterator, k) =>
-        enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator, {
-          next_back: $nextBack,
-        }),
+        enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
       tryRfold: (iterator, init, f, broke) =>
         enumerateDoubleEndedIterator_tryRfold(
           iterator,
@@ -131,7 +124,7 @@ function main() {
     `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some((${value$1[1][0]}, ${value$1[1][1]}))`}, ${value$1[2] == null ? "None" : `Some((${value$1[2][0]}, ${value$1[2][1]}))`}, ${value$1[3]}, [${value$1[4].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}])`,
   );
   const value$2 = ends(
-    iterator_enumerate(iterator_take($iter(v), 4, { next: $next }), { next: $next, fold: $foldOf }),
+    iterator_enumerate(iterator_take($iter(v), 4), { next: $next, fold: $foldOf }),
     { next: $next, fold: $foldOf },
     {
       next_back: (iterator) =>
@@ -187,16 +180,11 @@ function main() {
       $filterEnds(
         $knowing(
           it,
-          (iterator) =>
-            enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator, {
-              next_back: $nextBack,
-            }),
+          (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator),
           (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator),
           undefined,
           (iterator, k) =>
-            enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator, {
-              next_back: $nextBack,
-            }),
+            enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
           (iterator, init, f, broke) =>
             enumerateDoubleEndedIterator_tryRfold(
               iterator,
@@ -212,7 +200,7 @@ function main() {
       ),
       () => makeFilter(enumerateClone_clone(it, clone), f),
     );
-  const counted = makeFilter(iterator_enumerate($iter(v), { next: $next }), ([i]) => i !== 1);
+  const counted = makeFilter(iterator_enumerate($iter(v)), ([i]) => i !== 1);
   const again = $clone(counted);
   const value$5 = $next(counted);
   const value$6 = $nextBack(counted);

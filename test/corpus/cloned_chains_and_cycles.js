@@ -165,7 +165,7 @@ function clones() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );
-  const m = iterator_map($iter(a), (x) => (x * 10) | 0, { next: $next });
+  const m = iterator_map($iter(a), (x) => (x * 10) | 0);
   const m2 = mapClone_clone(m, iterClone, { clone: (value) => value });
   console.log(`[${m.toArray().join(", ")}] ${m2.reduce((a, b) => (a + b) | 0, 0)}`);
   const makeFilter = (it, f) =>
@@ -266,7 +266,7 @@ function more() {
     $cloning($lazyZip(a, b), () =>
       makeZip$2($iter(a.items.slice(a.at, a.end)), skipClone_clone(b, clone)),
     );
-  const p = makeZip$2($iter([1]), iterator_skip($iter([5, 6]), 1, { next: $next }));
+  const p = makeZip$2($iter([1]), iterator_skip($iter([5, 6]), 1));
   const q = $clone(p);
   const next = $next(p);
   console.log(
@@ -280,7 +280,7 @@ function more() {
 function steppedThenCloned() {
   const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
-  const m = iterator_map($iter([1, 2, 3]), (x) => (x * 10) | 0, { next: $next });
+  const m = iterator_map($iter([1, 2, 3]), (x) => (x * 10) | 0);
   $next(m);
   const m2 = mapClone_clone(m, clone, { clone: (value) => value });
   console.log(`[${m.toArray().join(", ")}] [${m2.toArray().join(", ")}]`);

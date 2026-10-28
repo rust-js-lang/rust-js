@@ -132,7 +132,7 @@ function findPair(grid, want) {
 // A `?` in a loop that holds a loop of its own, left by its own `break`,
 // as it's given to what a call's arguments are pushed to.
 function callArgs(tokens) {
-  const it = iterator_peekable($iter(tokens), { next: $next });
+  const it = iterator_peekable($iter(tokens));
   const t = $next(it);
   if (t != null) {
     if (t === "(") {

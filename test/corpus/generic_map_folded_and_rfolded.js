@@ -87,7 +87,7 @@ function main() {
   );
   // One that steps forward only, which has no back to give.
   const words = wrapIterator_fold(
-    { inner: iterator_take($repeating("a"), 3, { next: $next }) },
+    { inner: iterator_take($repeating("a"), 3) },
     "",
     (all, [w]) => all + w,
     { next: $next, fold: $foldOf },
@@ -104,7 +104,7 @@ function main() {
     `${nextBack == null ? "None" : `Some(${taggedDebug_fmt(nextBack, i32Debug)})`} ${next == null ? "None" : `Some(${taggedDebug_fmt(next, i32Debug)})`} ${value == null ? "None" : `Some(${taggedDebug_fmt(value, i32Debug)})`}`,
   );
   const counted = Wrap.countKept(
-    { inner: iterator_take($repeating("b"), 2, { next: $next }) },
+    { inner: iterator_take($repeating("b"), 2) },
     { next: $next, fold: $foldOf },
   );
   const arg = Wrap.lastKept(

@@ -80,15 +80,15 @@ function main() {
   console.log(`[${$roomForHint(c, 4, false).toArray().join(", ")}]`);
 
   const v = [1, 2, 3, 4, 5, 6];
-  const back = iterator_rev($iter(v), { next: $next }, { next_back: $nextBack });
-  const value$1 = revDoubleEndedIterator_nextBack(back, { next: $next });
+  const back = iterator_rev($iter(v));
+  const value$1 = revDoubleEndedIterator_nextBack(back);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })} ${((value) => (value == null ? "None" : `Some(${value})`))(revDoubleEndedIterator_nthBack(back, 1, { next: $next }))}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })} ${((value) => (value == null ? "None" : `Some(${value})`))(revDoubleEndedIterator_nthBack(back, 1))}`,
   );
   console.log(
-    `${revDoubleEndedIterator_rfold(revClone_clone(back, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0, { next: $next })}`,
+    `${revDoubleEndedIterator_rfold(revClone_clone(back, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0)}`,
   );
-  const value$2 = revDoubleEndedIterator_rfind(back, (x) => x > 3, { next: $next });
+  const value$2 = revDoubleEndedIterator_rfind(back, (x) => x > 3);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${revDebug_fmt(back, undefined, iterDebug)}`,
   );
@@ -156,7 +156,7 @@ function main() {
     `${value$6 == null ? "None" : `Some(${value$6})`} ${$sizeHint($iterator([5], countdownDoubleEndedIterator_nextBack))[0]}`,
   );
   // Shown or cloned where it's made, by its own compiled impl.
-  const rev = iterator_rev($iter(v), { next: $next }, { next_back: $nextBack });
+  const rev = iterator_rev($iter(v));
   const value$7 = $roomForHint(
     revClone_clone(
       iterator_rev(

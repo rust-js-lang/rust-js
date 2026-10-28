@@ -145,6 +145,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // argument the pipeline keeps or leaves out (ADR 0300).
         let takes_used = self.krate.takes_used_drops.contains(id);
         let (mut values, mut drops) = (Vec::new(), Vec::new());
+        // Each value's default, a std body's dictionary's (ADR 0995).
+        let mut defaults = Vec::new();
         let mut location = Some(location);
         for slot in self.evidence_slots(id, Scope::Whole) {
             match slot {
@@ -170,6 +172,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),
                         None => values.push(self.dictionary(bound, span)?),
                     }
+                    defaults.resize(values.len() - 1, None);
+                    defaults.push(self.default_dictionary(id, declared.def_id));
                 }
                 Slot::Fact(index, fact) => {
                     let of = self.drop_slot_of(id, index, args);
@@ -190,6 +194,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.held_drop_function(ty, iterated, span)?,
                     });
                 }
+            }
+        }
+        // Of none dropped after them, the dictionaries at the end the callee
+        // takes where it's given none, left out (ADR 0995).
+        defaults.resize(values.len(), None);
+        if drops.iter().all(Option::is_none) {
+            while let Some(last) = values.last()
+                && let Some(Some(default)) = defaults.get(values.len() - 1)
+                && is_plain_dictionary(last, *default)
+            {
+                values.pop();
             }
         }
         Ok(Expr::optional_args(values, drops))

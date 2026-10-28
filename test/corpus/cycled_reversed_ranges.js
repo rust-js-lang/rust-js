@@ -59,7 +59,7 @@ function main() {
     .toArray();
   console.log(`[${back.join(", ")}]`);
   const skipped = $cycleOf(
-    iterator_skip($iter([5, 6, 7]), 1, { next: $next }),
+    iterator_skip($iter([5, 6, 7]), 1),
     (iterator) =>
       skipClone_clone(iterator, {
         clone: (value) => $iter(value.items.slice(value.at, value.end)),

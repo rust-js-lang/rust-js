@@ -8,7 +8,7 @@ export function entry() {
 }
 
 function tens(v) {
-  return iterator_map($iter(v), (x) => (x * 10) | 0, { next: $next });
+  return iterator_map($iter(v), (x) => (x * 10) | 0);
 }
 
 function evens(n) {
@@ -21,7 +21,7 @@ function first(it) {
 
 function main() {
   const v = [1, 2, 3];
-  const next = mapIterator_next(tens(v), { next: $next });
+  const next = mapIterator_next(tens(v));
   const nth = $lent(tens(v)).drop(1).take(1).toArray()[0];
   const value = $lent(tens(v)).drop(5).take(1).toArray()[0];
   console.log(
@@ -38,8 +38,8 @@ function main() {
     `${max == null ? "None" : `Some(${max})`} ${tens(v).reduce((n) => n + 1, 0)} ${((value) => (value == null ? "None" : `Some(${value})`))(tens(v).toArray().at(-1))}`,
   );
   const kept = tens(v);
-  const value$2 = mapIterator_next(kept, { next: $next });
-  const value$3 = mapIterator_next(kept, { next: $next });
+  const value$2 = mapIterator_next(kept);
+  const value$3 = mapIterator_next(kept);
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );

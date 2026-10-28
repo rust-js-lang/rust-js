@@ -82,7 +82,7 @@ function number(chars) {
 
 function tokenize(source) {
   const tokens = [];
-  const chars = iterator_peekable($iter(Array.from(source)), { next: $next });
+  const chars = iterator_peekable($iter(Array.from(source)));
   while (true) {
     const c = $peek(chars);
     if (c == null) {

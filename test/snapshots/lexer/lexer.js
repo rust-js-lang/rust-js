@@ -32,7 +32,7 @@ function tokDebug_fmt(tok) {
 export const Lexer = {
   new(src) {
     return {
-      chars: iterator_peekable($iter(Array.from(src)), { next: $next }),
+      chars: iterator_peekable($iter(Array.from(src))),
       line: 1,
     };
   },

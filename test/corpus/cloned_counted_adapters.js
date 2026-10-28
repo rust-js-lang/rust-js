@@ -36,7 +36,7 @@ function windowDebug_fmt(window) {
 
 function main() {
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
-  const numbered = iterator_enumerate($iter(Array.from("abcde")), { next: $next });
+  const numbered = iterator_enumerate($iter(Array.from("abcde")));
   $next(numbered);
   const copy = enumerateClone_clone(numbered, {
     clone: (value) => $iter(value.items.slice(value.at, value.end)),
@@ -67,7 +67,7 @@ function main() {
   );
 
   const window = {
-    rows: iterator_take($iter([1, 2, 3, 4, 5]), 3, { next: $next }),
+    rows: iterator_take($iter([1, 2, 3, 4, 5]), 3),
     rest: iterator_skip({ start: 0, end: 6 }, 2, { next: $rangeNext }),
   };
   const len = $exactLen($sizeHint(window.rows));

@@ -141,11 +141,11 @@ impl Item {
         match self {
             Item::Namespace(namespace) => {
                 namespace.constants.iter().for_each(|c| c.value.visit_vars(read));
-                namespace.methods.iter().for_each(|m| visit_stmts(&m.body, read));
+                namespace.methods.iter().for_each(|m| m.visit_vars(read));
             }
             Item::Const(constant) => constant.value.visit_vars(read),
             Item::Statements(stmts) => visit_stmts(stmts, read),
-            Item::Function(function) => visit_stmts(&function.body, read),
+            Item::Function(function) => function.visit_vars(read),
         }
     }
 
@@ -264,6 +264,18 @@ pub struct Function {
     pub param_spans: Vec<Span>,
 }
 
+impl Function {
+    /// Each variable it reads: its parameters' defaults', `IIterator = {
+    /// next: $next }`'s (ADR 0995), and its body's.
+    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        self.params
+            .iter()
+            .flat_map(Pattern::defaults)
+            .for_each(|d| d.visit_vars(read));
+        visit_stmts(&self.body, read);
+    }
+}
+
 /// What a parameter or declaration binds: a variable, or the parts of an
 /// array or object, `[count, setCount]` or `{ initial, label }`.
 #[derive(Clone, PartialEq)]
@@ -327,6 +339,19 @@ impl Pattern {
                 .iter_mut()
                 .flat_map(|(_, p, _)| p.names_mut())
                 .chain(rest.as_mut())
+                .collect(),
+        }
+    }
+
+    /// `defaults`, to change.
+    pub fn defaults_mut(&mut self) -> Vec<&mut Expr> {
+        match self {
+            Pattern::Name(_) | Pattern::Rest(_) => Vec::new(),
+            Pattern::Defaulted(_, default) => vec![default],
+            Pattern::Array(items) => items.iter_mut().flatten().flat_map(Pattern::defaults_mut).collect(),
+            Pattern::Object(fields, _) => fields
+                .iter_mut()
+                .flat_map(|(_, p, default)| default.iter_mut().chain(p.defaults_mut()))
                 .collect(),
         }
     }

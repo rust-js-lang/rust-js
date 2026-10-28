@@ -54,7 +54,7 @@ function main() {
     `${nextBack == null ? "None" : `Some(${nextBack})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 
-  const p = iterator_peekable($iter(v), { next: $next });
+  const p = iterator_peekable($iter(v));
   const peeked = $peek(p);
   const ten = $nextIf(p, (item) => item === 10);
   const big = $nextIf(p, (x) => x > 100);

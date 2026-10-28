@@ -8,12 +8,12 @@ export function entry() {
 }
 
 export function f(v) {
-  const p = iterator_peekable($iter(v), { next: $next });
+  const p = iterator_peekable($iter(v));
   $peek(p);
   return $exactLen($sizeHint(p));
 }
 function g(v) {
-  const p = iterator_peekable($iter(v), { next: $next });
+  const p = iterator_peekable($iter(v));
   const a = $next(p);
   $peek(p);
   return [$exactLen($sizeHint(p)), a, $count(p)];

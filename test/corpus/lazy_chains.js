@@ -27,7 +27,7 @@ function noisy(tag, x) {
 
 // A chain kept in a variable that's returned: who ends it isn't known here.
 function doubled(v) {
-  const it = iterator_map($iter(v), (x) => noisy("returned", (x * 2) | 0), { next: $next });
+  const it = iterator_map($iter(v), (x) => noisy("returned", (x * 2) | 0));
   return it;
 }
 

@@ -42,7 +42,7 @@ function countIterator_fold(count, init, f) {
 
 function halves(it, IFused) {
   const fused = iterator_fuse(
-    iterator_map($lent(Iterator.from(it)), (x) => (x / 2) >>> 0, { next: $next }),
+    iterator_map($lent(Iterator.from(it)), (x) => (x / 2) >>> 0),
     { next: $next, fold: $foldOf },
     false,
   );

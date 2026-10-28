@@ -117,13 +117,13 @@ function main() {
     `${peek == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(peek))})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
   );
 
-  const peeking = iterator_peekable($iter(v), { next: $next });
+  const peeking = iterator_peekable($iter(v));
   const first = $peek(peeking);
-  const arg = peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack });
+  const arg = peekableDoubleEndedIterator_nextBack(peeking);
   console.log(
     `${first == null ? "None" : `Some(${first})`} ${arg == null ? "None" : `Some(${arg})`}`,
   );
-  while (peekableDoubleEndedIterator_nextBack(peeking, { next_back: $nextBack }) != null) {}
+  while (peekableDoubleEndedIterator_nextBack(peeking) != null) {}
   const left = $peek(peeking);
   const arg$1 = $nextIf(peeking, () => true);
   console.log(

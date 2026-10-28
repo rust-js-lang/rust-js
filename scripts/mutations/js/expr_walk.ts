@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "closure-reads-unseen",
     breaks: "a helper only a closure calls isn't imported, and the module throws when the closure runs",
     file: "src/js/expr_walk.rs",
-    find: "            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => visit_stmts(body, read),\n",
-    replace: "            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => {}\n",
+    find: "                params\n                    .iter()\n                    .flat_map(Pattern::defaults)\n                    .for_each(|d| d.visit_vars(read));\n                visit_stmts(body, read);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
   },
   {

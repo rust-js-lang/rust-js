@@ -64,7 +64,6 @@ function main() {
   const evens = iterator_map(
     makeFilter($iter([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0),
     (x) => (x * 3) | 0,
-    { next: $next },
   );
   const a = mapClone_clone(evens, clone, clone$1);
   $next(a);
