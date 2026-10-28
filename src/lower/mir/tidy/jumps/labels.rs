@@ -753,3 +753,50 @@ fn chain_broken_to(stmt: &Stmt, label: &str) -> bool {
         _ => false,
     }
 }
+
+/// `l: while (true) { b: { if (x != null) { .. } break b; } return; }`, a
+/// `while let` that ends a function's `body`, the `return;` MIR's of the
+/// loop's way out, which is the function's end: the
+/// loop's `break l;`, as a loop followed by code ends, so its test and its
+/// `break`s are where the program wrote them, `while (parent != null) {
+/// .. }`, as React's commitDeletionEffects walks its parents. Not a
+/// `return;` the program wrote, which has its span.
+pub(in crate::lower::mir::tidy) fn loop_ends_returned(body: &mut [Stmt]) {
+    let Some(Stmt {
+        kind: StmtKind::While {
+            label: Some(label),
+            cond,
+            body: looped,
+        },
+        ..
+    }) = body.last_mut()
+    else {
+        return;
+    };
+    if !matches!(cond.kind, ExprKind::Bool(true)) {
+        return;
+    }
+    // A `while let`'s, its test's `if`, in a block MIR made or not, and the
+    // way out after it, `l: while (true) { if (x != null) { .. } return; }`.
+    let [first, last] = looped.as_mut_slice() else {
+        return;
+    };
+    let tested = |s: &Stmt| matches!(s.kind, StmtKind::If(_, _, None));
+    let tests = match &first.kind {
+        StmtKind::Labeled(block, inner) => match &inner[..] {
+            [test] => tested(test),
+            [
+                test,
+                Stmt {
+                    kind: StmtKind::Break(Some(b)),
+                    ..
+                },
+            ] => tested(test) && b == block,
+            _ => false,
+        },
+        _ => tested(first),
+    };
+    if tests && matches!(last.kind, StmtKind::Return(None)) && last.span.is_none() {
+        last.kind = StmtKind::Break(Some(label.clone()));
+    }
+}

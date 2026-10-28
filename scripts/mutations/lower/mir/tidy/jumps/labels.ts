@@ -217,4 +217,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^continues_in_arms.rs$"],
   },
+  {
+    name: "loop-end-return-kept",
+    breaks: "a `while let` that ends its function stays `while (true) { if (parent != null) { .. } return; }`, its `break` an `else`'s `continue`, not React's `while (parent != null) { if (..) { ..; break; } parent = parent.return; }` (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        last.kind = StmtKind::Break(Some(label.clone()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
+    snapshots: true,
+  },
 ];

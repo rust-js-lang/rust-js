@@ -477,3 +477,32 @@ way is a `match`'s, which `switches` makes cases of, each with its own
 Held by `test/corpus/continues_in_arms.rs`, against native Rust;
 mutations `breaks-as-ends-never` and `breaks-as-ends-jump-dropped`
 (`mir/tidy/jumps/labels.ts`).
+
+## Amendment: a `while let` that ends its function (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same way out.
+
+React's commitDeletionEffects finds a host parent in a loop that ends its
+function (cm4 of the CommitWork port's gaps). A `while let` followed by
+code was its test and its `break`s, `while (parent != null) { if (..) {
+..; break; } parent = parent.return; }`; one that ends its function was
+`while (true) { if (parent != null) { if (..) { .. } else { parent =
+parent.return; continue; } } return; }`: MIR's way out of the loop is the
+function's return block, which the structure wrote as the loop's last
+`return;`, so no pass saw a loop's `break`.
+
+**A `while (true)` that ends a function's body, of a `while let`'s shape,
+its test's `if` and after it MIR's `return;`, that `return;` with no span
+of the program's, is the loop's `break`** (`jumps/labels.rs`,
+`loop_ends_returned`, first of the jumps passes): after the loop the
+function ends, where the `return;` went. The loop is then as one followed
+by code, its test and its `break`s where the program wrote them. A
+`return;` the program wrote has its span, and stays.
+
+The rest of cm4, a `switch` in such a loop whose cases leave the loop,
+which upstream writes `break findParent;` of the label the program wrote,
+`'find_parent:`, and its guarded arm that falls to an unguarded one whose
+statements MIR shares (`bb12`), is still to do.
+
+Held by `test/corpus/while_let_at_end.rs`, against native Rust; mutation
+`loop-end-return-kept` (`mir/tidy/jumps/labels.ts`).

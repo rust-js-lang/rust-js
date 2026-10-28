@@ -797,6 +797,9 @@ pub(super) const STAGES: &[Stage] = &[
 
 /// `jumps`, run twice.
 const JUMPS: &[Pass] = &[
+    // A loop that ends the function, whose way out MIR wrote as its
+    // `return;`: its `break`, as a loop followed by code is left.
+    pass("loop ends returned", |b, _| loop_ends_returned(b)),
     // A block the program labeled, by its name, its `break`s where they're
     // written (ADR 0790).
     pass("written blocks", |b, h| written_blocks(b, &h.written.blocks)),
