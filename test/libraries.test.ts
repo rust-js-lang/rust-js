@@ -282,4 +282,9 @@ pub fn count() -> u32 {
   expect(refused.code).not.toBe(0);
   expect(refused.stderr).toContain(`rust-js can't read \`${realpathSync(join(kids, "index.js"))}\`, package \`@acme/kids\`'s entry, as JavaScript`);
   expect(refused.stderr).toContain("keep only JS in it, its types in a `.d.ts` beside it, `index.d.ts`");
+  // Upstream's header, which says `@flow`, is kept: the entry is JS.
+  symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
+  writeFileSync(join(kids, "index.js"), `/**\n * @flow\n */\n\n${entry}`);
+  expect(built().stderr).toBe("");
+  expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
 }, 600_000);
