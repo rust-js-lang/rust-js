@@ -18,11 +18,9 @@ function bump(c) {
 function main() {
   const c = { n: 1 };
   const t = { value: c };
-  apply(t, (x0) =>
-    ((x) => {
-      x.n = (x.n + 1) | 0;
-    })(x0.value),
-  );
+  apply(t, (x0) => {
+    x0.value.n = (x0.value.n + 1) | 0;
+  });
   $assign(c, t.value);
   console.log(`${c.n}`);
   const t$1 = { value: c };

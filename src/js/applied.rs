@@ -49,7 +49,8 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
         let whole = body.clone();
         if ends_function
             && let Some(last) = body.len().checked_sub(1)
-            && let Some(inlined) = block_of(&body[last], &whole, true, true)
+            && let Some(inlined) =
+                block_of(&body[last], &whole, true, true).or_else(|| returned_block(&body[last], &whole))
         {
             body.splice(last..=last, inlined);
             continue;
@@ -105,6 +106,26 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool) -> Option<Vec<S
         return None;
     }
     in_place(stmt, whole, &[], (params, args), body, hold)
+}
+
+/// `return ((d) => { .. return v; .. })(x);`, a closure called where it's
+/// made whose value the function's body ends returning: its body in place,
+/// each `return` of it the function's, as the closure's value is what the
+/// function returns, and its end the function's, which gives `undefined`
+/// as the closure's does. React's warnAboutUpdateOnNotYetMountedFiberInDEV,
+/// a thread-local's `with_borrow_mut(|did_warn| { .. return true; .. })`
+/// (bx1, ADR 0581, amended).
+fn returned_block(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
+    let StmtKind::Return(Some(e)) = &stmt.kind else {
+        return None;
+    };
+    let ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let ExprKind::Arrow(params, body) = &callee.kind else {
+        return None;
+    };
+    in_place(stmt, whole, &[], (params, args), body.clone(), true)
 }
 
 /// The statements `stmt` is, in `whole`, the function's body, where what

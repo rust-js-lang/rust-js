@@ -133,3 +133,33 @@ const onMount = __DEV__
 Held by `test/lowering-module-variables.test.ts`, "a thread-local's with
 in a closure of a constant's value is its body", run; the mutation
 `constant-closure-with-applied-kept` (`std_types/cell.ts`).
+
+## Amended (2026-10-28): a closure whose value the function returns (bx1)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, nothing that runs
+changes.
+
+React's warnAboutUpdateOnNotYetMountedFiberInDEV writes `if
+(didWarnStateUpdateForNotYetMountedComponent !== null) { if (..has(name))
+{ return; } ..add(name); } else { .. = new Set([name]); }`. Its port's
+`DID_WARN.with_borrow_mut(|did_warn| { match did_warn { Some(..) => { if
+.. { return true; } .. } None => *did_warn = Some(..) } false })`, the
+function's value, printed `return ((didWarn) => { .. })(didWarn);`, and
+the module variable a box, `const didWarn = {};`, which the closure's
+`*did_warn = ..` set through: a closure whose `return` gives a value
+stayed called.
+
+**A closure called where it's made, whose value the function's body ends
+returning, `return ((d) => { .. })(x);`, is its body in place, each
+`return` of it the function's** (`applied.rs`'s `returned_block`): what
+the closure returns is what the function returns, and its end, which
+gives `undefined`, is the function's, which gives it too. The same
+conditions as a statement's hold of its parameter and what it declares.
+With no closure left to set it through, the variable is no box: `let
+didWarn;`, `didWarn = new Set([name]);`. The corpus's `unsubscribe` of
+`rc_fn_ptr_eq_of_moved.rs` reads its `hooks` so, and a `Fn`'s `(x0) =>
+((x) => { .. })(x0.value)` is `(x0) => { x0.value.n = .. }`.
+
+Held by `test/corpus/returned_closure_body.rs`, against native Rust, and
+`test/lowering-cells.test.ts`'s `capped`; mutation
+`returned-closure-called` (`js/applied.ts`).

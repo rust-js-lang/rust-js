@@ -177,4 +177,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_unit_guard.rs$"],
     snapshots: true,
   },
+  {
+    name: "returned-closure-called",
+    breaks: "React's warnAboutUpdateOnNotYetMountedFiberInDEV, a thread-local's `with_borrow_mut` whose closure returns early, the function's value, is `return ((didWarn) => { .. })(didWarn);` and the variable a box (bx1, ADR 0581, amended)",
+    file: "src/js/applied.rs",
+    find: ".or_else(|| returned_block(&body[last], &whole))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returned_closure_body.rs$"],
+    snapshots: true,
+  },
 ];

@@ -14,15 +14,13 @@ function subscribe(hook) {
 }
 
 function unsubscribe(hook) {
-  return ((hooks) => {
-    const index = $position(hooks, (h) => h === hook);
-    if (index != null) {
-      $removeAt(hooks, index);
-      return true;
-    } else {
-      return false;
-    }
-  })(hooks);
+  const index = $position(hooks, (h) => h === hook);
+  if (index != null) {
+    $removeAt(hooks, index);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function observe(count) {
