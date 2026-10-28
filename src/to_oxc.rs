@@ -590,7 +590,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                         })
                 };
                 // Of an operator and what opens its operand, `+ &(`, a
-                // let-chain's `&& let` (ADR 0444, amended), and comments.
+                // let-chain's `&& let`, an `if`'s value, `|| (if` (ADR 0444,
+                // amended), and comments.
                 let only_operators = |lo: u32, hi: u32| {
                     let mut code = lo;
                     (file.comments.iter())
@@ -600,8 +601,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                             let between = sources.text.get(code as usize..other.lo as usize);
                             code = other.hi;
                             between.is_some_and(|gap| {
-                                (gap.split_whitespace())
-                                    .all(|word| word == "let" || word.chars().all(|c| "+-*/%&|^!=<>(".contains(c)))
+                                (gap.split_whitespace()).all(|word| {
+                                    let opened = word.trim_start_matches(|c| "+-*/%&|^!=<>(".contains(c));
+                                    opened.is_empty() || opened == "let" || opened == "if"
+                                })
                             })
                         })
                 };

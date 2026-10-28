@@ -508,3 +508,16 @@ call's now too (`try_catch`, `prepare/catches.rs`).
 catch_unwind closure's value is in the try"; mutation
 `kept-ok-at-the-match`.
 
+## Amendment: before an operand that's an `if`'s value (2026-10-28)
+
+React's beginWork, `oldProps !== newProps || hasLegacyContextChanged() ||
+// Force a re-render if the implementation changed due to hot reload:
+(__DEV__ ? workInProgress.type !== current.type : false)`: its port's
+`|| (if __DEV__ { .. } else { false })` lost the comment (React port gap
+bwc1), as only an operator and what opens its operand, `+ &(`, `&& let`,
+were what a comment and the operand may have between them. **An `if`
+opening it is one too**, `|| (if`: the comment is before the operand, the
+conditional. `test/lowering-comments-inside.test.ts`, "a comment before
+an operand that's an if's value is before it"; mutation
+`operand-if-opening-code`.
+

@@ -78,3 +78,33 @@ pub fn is_text_href(frame: Option<&'static Unknown>) -> bool {
   }`);
   expect([lib.isTextHref({ location: { href: "a" } } as never), lib.isTextHref(undefined as never)]).toEqual([true, false]);
 });
+
+// React's beginWork: `oldProps !== newProps || hasLegacyContextChanged() ||
+// // Force a re-render if the implementation changed due to hot reload:
+// (__DEV__ ? workInProgress.type !== current.type : false)`. Its port's
+// comment, before an `||`'s operand of an `if`'s value, was lost (ADR 0444,
+// amended).
+test("a comment before an operand that's an if's value is before it", async () => {
+  const { js, lib } = await compiled("comment-before-an-if-operand", `const DEV: bool = true;
+
+pub fn changed(a: u8, b: u8, c: bool, t: u8, u: u8) -> bool {
+    let mut did = false;
+    if a != b
+        || c
+        // Force a re-render if the implementation changed due to hot reload:
+        || (if DEV { t != u } else { false })
+    {
+        // If props or context changed, mark the fiber as having performed work.
+        did = true;
+    }
+    did
+}
+`);
+  expect(js).toContain(`    c ||
+    // Force a re-render if the implementation changed due to hot reload:
+    (DEV ? t !== u : false)
+  ) {
+    // If props or context changed, mark the fiber as having performed work.
+    did = true;`);
+  expect([lib.changed(1 as never, 1 as never, false as never, 2 as never, 3 as never), lib.changed(1 as never, 1 as never, false as never, 2 as never, 2 as never)]).toEqual([true, false]);
+});

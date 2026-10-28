@@ -439,8 +439,8 @@ export const mutations: Mutation[] = [
     name: "let-chain-let-code",
     breaks: "a let-chain's `&& let` is code between a comment and the operand it's before, so it's lost or before the statement (ADR 0444, amended)",
     file: "src/to_oxc.rs",
-    find: "                                    .all(|word| word == \"let\" || word.chars().all(|c| \"+-*/%&|^!=<>(\".contains(c)))\n",
-    replace: "                                    .all(|word| word.chars().all(|c| \"+-*/%&|^!=<>(\".contains(c)))\n",
+    find: "                                    opened.is_empty() || opened == \"let\" || opened == \"if\"\n",
+    replace: "                                    opened.is_empty() || opened == \"if\"\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
   },
   {
@@ -628,5 +628,13 @@ export const mutations: Mutation[] = [
     find: "            let ends_line = line[column as usize..].trim().is_empty();\n",
     replace: "            let ends_line = false;\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "between an array's items"],
+  },
+  {
+    name: "operand-if-opening-code",
+    breaks: "a comment before an `||`'s operand of an `if`'s value, beginWork's `// Force a re-render if the implementation changed due to hot reload:`, is lost (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                                    opened.is_empty() || opened == \"let\" || opened == \"if\"\n",
+    replace: "                                    opened.is_empty() || opened == \"let\"\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "if's value is before it"],
   },
 ];
