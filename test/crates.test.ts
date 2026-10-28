@@ -397,7 +397,7 @@ test("a library's type equal only to itself keys its consumer's Set by itself", 
   const out = chain(pairs, "identity_keys", ["dep", "app"]);
   expect(contract(out).identities).toEqual([expect.any(String)]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("function schedule(transition, fiber) {\n  if (transition.updatedFibers) {\n    transition.updatedFibers.add(fiber);\n");
+  expect(app).toContain("function schedule(transition, fiber) {\n  if (transition.updatedFibers != null) {\n    transition.updatedFibers.add(fiber);\n");
   // A borrow held while `contains` runs: std's `Borrow` of a `&Fiber` is
   // its blanket impl, none of the library's, so it runs no code of `dep`'s.
   expect(app).toContain("  return transition.updatedFibers != null && transition.updatedFibers.has(fiber);\n");

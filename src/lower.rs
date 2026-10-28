@@ -1120,7 +1120,7 @@ fn reads_parameter(tcx: TyCtxt<'_>, function: DefId, name: &str) -> bool {
     let Some(local) = function.as_local() else {
         use rustc_middle::mir::{
             self as rmir,
-            visit::{PlaceContext, Visitor as _},
+            visit::{MutatingUseContext, PlaceContext, Visitor as _},
         };
         if !tcx.is_mir_available(function) {
             return false;
@@ -1141,7 +1141,9 @@ fn reads_parameter(tcx: TyCtxt<'_>, function: DefId, name: &str) -> bool {
         struct Uses(rmir::Local, bool);
         impl<'tcx> rmir::visit::Visitor<'tcx> for Uses {
             fn visit_local(&mut self, local: rmir::Local, context: PlaceContext, _: rmir::Location) {
-                self.1 |= local == self.0 && context.is_use();
+                // Not its drop, MIR's, which the source never writes.
+                let dropped = matches!(context, PlaceContext::MutatingUse(MutatingUseContext::Drop));
+                self.1 |= local == self.0 && context.is_use() && !dropped;
             }
         }
         let mut uses = Uses(param, false);

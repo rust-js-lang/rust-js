@@ -425,4 +425,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
+  {
+    name: "parameter-drop-read",
+    breaks: "a library's generic function its consumer compiles from MIR keeps the `_` of a parameter only its drop reads, `pick(a, _b, dropB)` where its library's JS is `pick(a, b)` (ADR 0678, amended)",
+    file: "src/lower.rs",
+    find: "                self.1 |= local == self.0 && context.is_use() && !dropped;\n",
+    replace: "                self.1 |= local == self.0 && context.is_use();\n",
+    tests: ["test/crates.test.ts", "-t", "a library's generic function takes the drops its body uses"],
+  },
 ];

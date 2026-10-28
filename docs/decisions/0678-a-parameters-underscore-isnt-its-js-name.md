@@ -149,7 +149,8 @@ closure's in it too, `|| _seen`; an `async fn`'s move of it into its
 future, `let _arg = _arg;`, which no program writes, is no read, and the
 binding it makes is the parameter; of a library's function its consumer
 compiles from MIR alone (ADR 0914), a use of its local, so both crates'
-copies name it alike.
+copies name it alike; not its drop, which MIR writes where the source
+writes none (`pick(a, b, dropB)`, of `fn pick<T, U>(a: T, _b: U) -> T`).
 
 ```rust
 pub fn current_or(_current: Option<u32>, fallback: u32) -> u32 {
