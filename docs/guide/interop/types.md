@@ -198,6 +198,13 @@ is `6`, so it's `$byteLen(text)`, not `text.length`
 ([ADR 0138](../../decisions/0138-string-byte-counts.md)). `chars()` is by
 code point.
 
+JS's own reads of a string, by UTF-16 unit, are `js::string`'s:
+`string::length(text)` is `text.length`, `string::char_code_at(text, i)`
+`text.charCodeAt(i)`, and `string::get(text, index)` is `text[index]` of
+any number, `None` where JS reads `undefined`, past the end, before the
+start or of a fraction, as React compares `endValue[endLength - end]`
+([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
+
 ## Collections
 
 ```rust

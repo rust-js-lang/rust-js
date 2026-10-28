@@ -1688,6 +1688,15 @@ pub mod string {
         unreachable!()
     }
 
+    /// `text[index]`: its UTF-16 code unit at `index`, any number, as text,
+    /// half of an emoji; `None` where JS reads `undefined`, past its end,
+    /// before its start or of a fraction, as React's FallbackCompositionState
+    /// compares `endValue[endLength - end]` (ADR 0994).
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    pub fn get(this: &str, index: f64) -> Option<&'static str> {
+        unreachable!()
+    }
+
     /// [`text.charCodeAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charCodeAt):
     /// its UTF-16 code unit at `index`, a number, `NaN` past its end.
     #[cfg_attr(rust_js, rust_js::link_name = "charCodeAt")]

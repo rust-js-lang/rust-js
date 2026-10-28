@@ -96,9 +96,16 @@ newEventLog.set(eventLog);
   `int32_array::new(4.0)`, where it was `0`, `4`; its JS is the same.
 - React's port's `binaryToComparableString` gives its view's offsets as
   `f64::from(view.byte_offset())`.
-- `Atomics`' indices and values, and the js crate's other integer
-  parameters (`String.prototype.charAt`'s, gap ch1), aren't yet changed:
-  each follows this rule when it's ported.
+- `Atomics`' indices and values, and `js::string`'s `charAt`,
+  `charCodeAt` and `substring`, take integers still: a Rust caller's
+  index there is a loop's `u32`, which nothing casts. Each follows this
+  rule where a port gives one a JS number.
+- **A string read by any number is `js::string::get(text, index)`**,
+  `text[index]`, `None` where JS reads `undefined`: React's
+  FallbackCompositionState compares `endValue[endLength - end]`, an index
+  that may be negative (gap ch1), where `charAt` gives `""`. Held by
+  `test/lowering-strings.test.ts`'s "a string read by any number is
+  text[index], None where JS reads undefined", run.
 
 ## What holds it
 

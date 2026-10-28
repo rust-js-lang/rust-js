@@ -1308,3 +1308,50 @@ fn last_unit(a: EncodeUtf16, b: EncodeUtf16) -> Ordering {
   expect(lib.descending([...words])).toEqual([...ascending].reverse());
   expect(lib.byLast([...words])).toEqual(["", "B", "a", "ca", "ab", "b\u{10000}", "b\u{1F600}", "b\u{E000}", "b\u{FF61}"]);
 });
+
+// React's FallbackCompositionState finds the text a composition inserted
+// by comparing `startValue[start] !== endValue[start]` and
+// `startValue[startLength - end] !== endValue[endLength - end]`: a string
+// read by any number, `undefined` past its end or before its start, where
+// `charAt` gives `""`. `js::string::get(text, index)` is that read,
+// `text[index]`, `None` where JS reads `undefined` (ADR 0994).
+test("a string read by any number is text[index], None where JS reads undefined", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("string-index");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+
+/// FallbackCompositionState's getData.
+pub fn inserted(start_value: &str, end_value: &str) -> String {
+    let start_length = f64::from(string::length(start_value));
+    let end_length = f64::from(string::length(end_value));
+    let mut start = 0.0;
+    while start < start_length {
+        if string::get(start_value, start) != string::get(end_value, start) {
+            break;
+        }
+        start += 1.0;
+    }
+    let min_end = start_length - start;
+    let mut end = 1.0;
+    while end <= min_end {
+        if string::get(start_value, start_length - end) != string::get(end_value, end_length - end) {
+            break;
+        }
+        end += 1.0;
+    }
+    let slice_tail = if end > 1.0 { Some(1.0 - end) } else { None };
+    string::slice(end_value, start, slice_tail)
+}
+
+pub fn at(text: &str, index: f64) -> Option<&'static str> {
+    string::get(text, index)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("if (startValue[startLength - end] != endValue[endLength - end]) {");
+  expect(js).toContain("export function at(text, index) {\n  return text[index];\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.inserted("abc", "abXc"), lib.inserted("", "hi"), lib.inserted("ab", "ab")]).toEqual(["X", "hi", ""]);
+  expect([lib.at("ab", 1), lib.at("ab", 2), lib.at("ab", -1), lib.at("ab", 0.5), lib.at("😀", 0).length]).toEqual(["b", undefined, undefined, undefined, 1]);
+});
