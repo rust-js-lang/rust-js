@@ -10653,7 +10653,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set name")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_name(&self, value: &str) {
+    pub fn set_name(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -10782,7 +10782,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_type(&self, value: &str) {
+    pub fn set_type(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 

@@ -766,6 +766,12 @@ pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, nam
     node.set_attribute_ns("http://www.w3.org/1999/xlink", "href", value);
     style.set_property("--x", 1.5, None);
 }
+
+// As ReactDOMInput sets an input's type and name, of any value (d15a).
+pub fn input(input: &webapi::HTMLInputElement, kind: &js::Unknown) {
+    input.set_type(kind);
+    input.set_name(7);
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -777,6 +783,11 @@ pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, nam
   const props: Record<string, string> = {};
   lib.set(node, { setProperty: (n: string, v: unknown) => void (props[n] = String(v)) }, 0, "Save");
   expect([attributes, props]).toEqual([{ tabindex: "3", hidden: "true", title: "Save", href: "0" }, { "--x": "1.5" }]);
+  expect(js).toContain("  input.type = kind;\n  input.name = 7;\n");
+  const field: Record<string, unknown> = {};
+  lib.input(field, { valueOf: () => 1, toString: () => "text" });
+  expect(typeof field.type).toBe("object");
+  expect(field.name).toBe(7);
 });
 
 // The user's decision (React port gaps fx1, rd68): a WebIDL integer a

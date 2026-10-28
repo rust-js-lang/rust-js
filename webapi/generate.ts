@@ -499,7 +499,7 @@ const ANY = "<any>";
  * `node.setAttribute(name, value)` of a number or a `bool`: any value,
  * `impl IntoUnknown`, as JS takes one (the user's decision, React port gap
  * d13a). Each `Interface.member`, its value the last parameter. */
-const STRINGIFIED = new Set(["Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute", "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat"]);
+const STRINGIFIED = new Set(["Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute", "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat", "HTMLInputElement.set type", "HTMLInputElement.set name"]);
 
 const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
 

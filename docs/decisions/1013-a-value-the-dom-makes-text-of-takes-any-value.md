@@ -32,3 +32,15 @@ A CSS property's own setter, `style.set_background_color(..)`, still
 takes text; widening it is the list's to say. Held by
 `test/webapi-bindings.test.ts`, "a value the DOM makes text of takes any
 value", run in Node.
+
+## Amendment (2026-10-29, the user's rule applied): an input's `type` and `name`
+
+React DOM's ReactDOMInput sets `node.type = type` and `node.name = name`
+of the values its props give, any of them (gap d15a), so
+`HTMLInputElement`'s `set_type` and `set_name` take any value, `impl
+IntoUnknown`, as this decision's list does: the DOM makes text of it by
+its `ToString`, `toString` first. Converting it to text in Rust first,
+`'' + value`, would ask `valueOf` first, a different text. Held by
+`test/webapi-bindings.test.ts`'s "a value the DOM makes text of takes any
+value" (`input.type = kind` of an object, run).
+

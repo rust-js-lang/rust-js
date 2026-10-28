@@ -799,6 +799,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1012 `js::loose_equals` is JS's `==`](1012-loose-equals-is-jss-double-equals.md)
 - [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision)*
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md)
+- [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

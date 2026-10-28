@@ -286,8 +286,8 @@ How WebIDL maps to Rust, one rule for each:
 - **A value the DOM makes text of takes any value**, `impl
   IntoUnknown`, whatever TypeScript's `string` says, as the DOM's
   `ToString` takes one: `node.set_attribute("tabindex", 3)`,
-  `set_attribute_ns`, `style.set_property(name, value, None)` and
-  `set_css_float`
+  `set_attribute_ns`, `style.set_property(name, value, None)`,
+  `set_css_float`, and an input's `set_type` and `set_name`
   ([ADR 1013](../../decisions/1013-a-value-the-dom-makes-text-of-takes-any-value.md)).
 - **An index signature is std's `Index`:** TypeScript's `[index:
   number]: HTMLOptionElement` of an `HTMLOptionsCollection` is `impl
