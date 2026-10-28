@@ -140,7 +140,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            StmtKind::Break(None).at(at)\n",
     replace: "            StmtKind::Break(None).at(if at.is_none() { at } else { moved[0].span })\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a match an if is made of is the if's"],
+    tests: ["test/corpus.test.ts", "-t", "^(loop_drops|scope_temporaries).rs$"],
+    snapshots: true,
   },
   {
     name: "labeled-switch-of-a-case-break",
