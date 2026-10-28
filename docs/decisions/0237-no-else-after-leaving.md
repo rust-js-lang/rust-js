@@ -236,3 +236,21 @@ the corpus's snapshots; mutations `match-arms-no-else`,
 `match-arm-jump-alone-an-else` (`mir/hints.ts`), `negation-else-dropped`
 (`mir/tidy.ts`), `switch-match-returned-first`, `unswitched-values-off`
 (`tidy/stages.ts`) and `arrow-called-in-place-small` (`tidy/branches.ts`).
+
+## Amendment: an `&&` test keeps its `if`'s written `else` (2026-10-28, rg3)
+
+React's throwException writes `if (getIsHydrating() && (disableLegacyMode
+|| sourceFiber.mode & ConcurrentMode)) { .. return ..; } else { //
+Otherwise, fall through to the error path. }`. Its port printed no `else`,
+the comment after the function's last statement, and so did every written
+`else` of an `if` whose test is an `&&`, `if (h && (l || ..)) { ..;
+return; } else { .. }`: preparation makes an `if`'s test again as a test
+(`tested`) and an `&&`'s of its parts (`typeofs::implied`), which keeps
+none of the test's facts, so `unelsed` no longer saw `Known::Else`.
+
+**What a test says of its `if`, `Known::Else` and `Known::Guard`, is kept
+whatever preparation makes of the test** (`prepare.rs`'s `block`). Case
+N: the same branches either way. Held by
+`test/lowering-comments-ends.test.ts`'s "an else of only comments after a
+branch that leaves stays", run in JS, and `match_last_arm_else`'s
+`anded`, against native Rust; mutation `if-facts-lost-to-its-test`.

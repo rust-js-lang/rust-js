@@ -22,6 +22,8 @@ function throwException(x, boundary, log) {
     }
     log.push(3);
     return true;
+  } else {
+    // Otherwise, fall through to the error path.
   }
 
   log.push(4);
@@ -30,7 +32,6 @@ function throwException(x, boundary, log) {
   }
   log.push(5);
   return false;
-  // Otherwise, fall through to the error path.
 }
 
 function main() {

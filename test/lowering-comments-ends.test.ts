@@ -145,3 +145,34 @@ pub fn finish(status: u32, lanes: u32, log: &mut Vec<u32>) {
     .toEqual([[2], [1], [1], [2]]);
   expect(() => finish(7, 0, [])).toThrow("Unknown root exit status.");
 });
+
+// React's throwException writes `} else { // Otherwise, fall through to the
+// error path. }` after a branch that returns each way, its test an `&&`:
+// preparation made the test again of its parts, which lost its written
+// `else`, and the comment printed at the function's end (rg3).
+test("an else of only comments after a branch that leaves stays", async () => {
+  const { js, lib } = await compiled("comment-else-after-return", `pub fn thrown(hydrating: bool, legacy: bool, boundary: Option<&u32>, log: &mut Vec<u32>) -> bool {
+    if hydrating && (legacy || log.is_empty()) {
+        if let Some(b) = boundary {
+            log.push(*b);
+            return true;
+        } else {
+            log.push(2);
+            return false;
+        }
+    } else {
+        // Otherwise, fall through to the error path.
+    }
+
+    log.push(3);
+    false
+}
+`);
+  expect(js).toContain("  } else {\n    // Otherwise, fall through to the error path.\n  }\n\n  log.push(3);\n  return false;\n}");
+  const thrown = lib.thrown as (h: boolean, l: boolean, b: number | undefined, log: number[]) => boolean;
+  const logs = [true, false].map((h) => {
+    const log: number[] = [];
+    return [thrown(h, false, h ? 7 : undefined, log), log];
+  });
+  expect(logs).toEqual([[true, [7]], [false, [3]]]);
+});

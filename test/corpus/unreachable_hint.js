@@ -7,8 +7,9 @@ export function entry() {
 function digit(c) {
   if (c >= 48 && c <= 57) {
     return (c - 48) & 255;
+  } else {
+    throw new Error("internal error: entered unreachable code");
   }
-  throw new Error("internal error: entered unreachable code");
 }
 
 function main() {

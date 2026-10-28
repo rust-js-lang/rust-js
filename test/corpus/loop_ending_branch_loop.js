@@ -88,8 +88,7 @@ function merged(boundingRects) {
           // Complete overlapping rects; remove the inner one.
           $removeAt(boundingRects, i);
           break;
-        }
-        if (
+        } else if (
           targetLeft === otherLeft &&
           targetRect.width === otherRect.width &&
           !(otherBottom < targetTop) &&
@@ -106,8 +105,7 @@ function merged(boundingRects) {
 
           $removeAt(boundingRects, i);
           break;
-        }
-        if (
+        } else if (
           targetTop === otherTop &&
           targetRect.height === otherRect.height &&
           !(otherRight < targetLeft) &&

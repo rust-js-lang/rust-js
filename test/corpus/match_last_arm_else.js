@@ -43,6 +43,18 @@ function turned(flag, v) {
   return v.length;
 }
 
+// And of an `&&`, which preparation makes again as a test.
+function anded(on, mode, v) {
+  if (on && (mode > 3 || mode & 1)) {
+    v.push(mode);
+    return true;
+  } else {
+    v.push(0);
+  }
+  v.push(9);
+  return false;
+}
+
 // A lone jump's arm stays a guard's way out, as `let … else` writes it.
 function summed(items) {
   let sum = 0;
@@ -69,5 +81,6 @@ function main() {
   console.log(`${summed([1, undefined, 5])}`);
   const v = [];
   console.log(`${turned(true, v)} ${turned(false, v)} [${v.join(", ")}]`);
+  console.log(`${anded(true, 1, v)} ${anded(true, 2, v)} ${anded(false, 5, v)} [${v.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

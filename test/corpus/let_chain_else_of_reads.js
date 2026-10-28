@@ -13,8 +13,9 @@ function restore() {
   if (inProgressLanes != null && inProgressRoot != null) {
     inProgressRoot.lanes = inProgressLanes;
     return (inProgressRoot.lanes * 2) >>> 0;
+  } else {
+    throw new Error("Expected finished root and lanes to be set. This is a bug in React.");
   }
-  throw new Error("Expected finished root and lanes to be set. This is a bug in React.");
 }
 
 function main() {

@@ -826,4 +826,13 @@ export const mutations: Mutation[] = [
     replace: "    catches::try_catches(body, true);\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
   },
+  {
+    name: "if-facts-lost-to-its-test",
+    breaks: "an `if` whose test is an `&&`, made again of its parts as a test, loses its written `else`, `if (h && (l || ..)) { ..; return; } log.push(2);`, and a comment-only `else`'s comment prints at the function's end (ADR 0237, amended, rg3)",
+    file: "src/prepare.rs",
+    find: "                (of_if.into_iter().flatten()).for_each(|fact| e.facts = e.facts.with(fact));\n",
+    replace: "",
+    tests: ["test/lowering-comments-ends.test.ts", "test/corpus.test.ts", "-t", "an else of only comments after a branch|^match_last_arm_else.rs$"],
+    snapshots: true,
+  },
 ];

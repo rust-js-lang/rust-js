@@ -55,6 +55,18 @@ fn turned(flag: bool, v: &mut Vec<u32>) -> usize {
     v.len()
 }
 
+// And of an `&&`, which preparation makes again as a test.
+fn anded(on: bool, mode: u32, v: &mut Vec<u32>) -> bool {
+    if on && (mode > 3 || mode & 1 != 0) {
+        v.push(mode);
+        return true;
+    } else {
+        v.push(0);
+    }
+    v.push(9);
+    false
+}
+
 // A lone jump's arm stays a guard's way out, as `let … else` writes it.
 fn summed(items: &[Option<u32>]) -> u32 {
     let mut sum = 0;
@@ -83,4 +95,5 @@ fn main() {
     println!("{}", summed(&[Some(1), None, Some(5)]));
     let mut v = Vec::new();
     println!("{} {} {:?}", turned(true, &mut v), turned(false, &mut v), v);
+    println!("{} {} {} {:?}", anded(true, 1, &mut v), anded(true, 2, &mut v), anded(false, 5, &mut v), v);
 }
