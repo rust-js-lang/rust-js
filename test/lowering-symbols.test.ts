@@ -151,7 +151,8 @@ pub fn named(value: Option<&Unknown>) -> &'static str {
 // ADR 0771: `from_value(x) == Some(C)` says what `matches!(from_value(x),
 // Some(C))` does, and is what it is, `x === C`, `!==` of `!=`, `C` by its
 // name; a value read as one and kept is still checked, and its `==` of a
-// `Some` strict. An object that turns into the symbol isn't it.
+// `Some` strict, but one a `let` holds only to compare is the value. An
+// object that turns into the symbol isn't it.
 test("an == of a value read as the registry's symbol and a Some is the matches! form", async () => {
   const dir = fixture("registered-symbols-equal");
   writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
@@ -186,9 +187,26 @@ pub fn kept(x: Option<&Unknown>) -> Option<SymbolFor<'static>> {
     }
     s
 }
+
+pub fn tagged(x: Option<&Unknown>) -> u32 {
+    let tag = SymbolFor::from_value(x);
+    if tag == Some(REACT_MEMO_TYPE) {
+        1
+    } else if tag != Some(REACT_LAZY_TYPE) {
+        2
+    } else {
+        3
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // A `let` of the read that's only compared, React's mountLazyComponent's
+  // `$$typeof`: the value, as of the read in place (ADR 0771, amended).
+  const tagged = js.slice(js.indexOf("export function tagged"));
+  expect(tagged).toContain("tag === REACT_MEMO_TYPE");
+  expect(tagged).toContain("tag !== REACT_LAZY_TYPE");
+  expect(tagged).not.toContain("$symbolFor");
   expect(js).toContain("export function eq(x) {\n  return x === REACT_MEMO_TYPE;\n}");
   expect(js).toContain("export function ne(x) {\n  return x !== REACT_MEMO_TYPE;\n}");
   expect(js).toContain("export function flipped(x) {\n  return REACT_LAZY_TYPE === x;\n}");
@@ -198,6 +216,7 @@ pub fn kept(x: Option<&Unknown>) -> Option<SymbolFor<'static>> {
   const lib = await import(join(dir, "lib.js"));
   const memo = Symbol.for("react.memo");
   const values = [memo, Symbol.for("react.lazy"), Symbol("react.memo"), "react.memo", { [Symbol.toPrimitive]: () => memo }, undefined];
+  expect(values.map(lib.tagged)).toEqual([1, 3, 2, 2, 2, 2]);
   expect(values.map((v) => [lib.eq(v), lib.ne(v), lib.flipped(v), lib.matched(v), lib.literal(v), lib.kept(v)])).toEqual([
     [true, false, false, true, false, undefined],
     [false, true, true, false, true, Symbol.for("react.lazy")],

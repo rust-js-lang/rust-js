@@ -1291,6 +1291,7 @@ fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span>
             ExprKind::Let { expr, ref pat } => tests_registered(tcx, pat).then_some(registered_read(tcx, thir, expr)?),
             _ => registered_equality(tcx, thir, e).map(|(read, _)| read),
         })
+        .chain(registered_lets(tcx, thir).into_iter().map(|(read, _)| read))
         .collect()
 }
 
@@ -1299,6 +1300,75 @@ fn registered_reads<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span>
 fn registered_equalities<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
     (thir.exprs.indices())
         .filter_map(|e| registered_equality(tcx, thir, e).map(|(_, equality)| equality))
+        .chain(
+            registered_lets(tcx, thir)
+                .into_iter()
+                .flat_map(|(_, equalities)| equalities),
+        )
+        .collect()
+}
+
+/// Of each `let` of a `from_value` read, `let r#typeof =
+/// SymbolFor::from_value(..)`, whose every read is an `==` or `!=` of it
+/// and a `Some(..)`, React's mountLazyComponent's `if ($$typeof ===
+/// REACT_FORWARD_REF_TYPE) .. else if ($$typeof === REACT_MEMO_TYPE)`: the
+/// read's `fn_span`, and each comparison's, as of the read in place (ADR
+/// 0771, amended).
+fn registered_lets<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Vec<(Span, Vec<Span>)> {
+    let compared = |e: ExprId| -> Option<(LocalVarId, Span)> {
+        let ExprKind::Call {
+            fun, ref args, fn_span, ..
+        } = thir[e].kind
+        else {
+            return None;
+        };
+        let &[a, b] = &args[..] else {
+            return None;
+        };
+        if !is_partial_eq(tcx, thir[fun].ty) {
+            return None;
+        }
+        let var = |e: ExprId| match thir[strip(thir, e)].kind {
+            ExprKind::VarRef { id } => Some(id),
+            _ => None,
+        };
+        let (a, b) = (borrowed(thir, a)?, borrowed(thir, b)?);
+        match (var(a), var(b)) {
+            (Some(id), None) if is_some(tcx, thir, b) => Some((id, fn_span)),
+            (None, Some(id)) if is_some(tcx, thir, a) => Some((id, fn_span)),
+            _ => None,
+        }
+    };
+    let comparisons: Vec<(LocalVarId, Span)> = thir.exprs.indices().filter_map(compared).collect();
+    (thir.stmts.iter())
+        .filter_map(|stmt| {
+            let thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                ..
+            } = stmt.kind
+            else {
+                return None;
+            };
+            let PatKind::Binding {
+                var,
+                mode: BindingMode(ByRef::No, _),
+                subpattern: None,
+                ..
+            } = pattern.kind
+            else {
+                return None;
+            };
+            let read = registered_read(tcx, thir, init)?;
+            let reads = (thir.exprs.iter())
+                .filter(|e| matches!(e.kind, ExprKind::VarRef { id } if id == var))
+                .count();
+            let equalities: Vec<Span> = (comparisons.iter())
+                .filter(|(id, _)| *id == var)
+                .map(|&(_, span)| span)
+                .collect();
+            (reads > 0 && reads == equalities.len()).then_some((read, equalities))
+        })
         .collect()
 }
 

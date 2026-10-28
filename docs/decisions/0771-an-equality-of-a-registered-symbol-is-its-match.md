@@ -92,3 +92,29 @@ back, where its `None` is `undefined`.
   `registered-equality-loose` (`mir/dispatch.rs`),
   `promoted-some-unnamed` (`mir/operands.rs`), `promoted-some-maybe-none`
   and `reborrowed-some-maybe-none` (`mir/patterns.rs`).
+
+## Amendment: a `let` of the read that's only compared (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as the decision's:
+no value but the symbol is `===` it.
+
+React's mountLazyComponent, `const $$typeof = Component.$$typeof; if
+($$typeof === REACT_FORWARD_REF_TYPE) { .. } else if ($$typeof ===
+REACT_MEMO_TYPE) { .. }`, its port's `let r#typeof =
+SymbolFor::from_value(js::get(component, "$$typeof")); if r#typeof ==
+Some(REACT_FORWARD_REF_TYPE) { .. }` (gap ml1 of the port), checked the
+read where the `let` held it, `const typeof$ =
+$symbolFor(component.$$typeof)`.
+
+**A `let` of a `from_value` read, every read of which is an `==` or `!=`
+of it and a `Some(..)`, is the value** (`body_queries::registered_lets`):
+its read is a registered read, and each comparison a registered equality,
+`const typeof$ = component.$$typeof; if (typeof$ ===
+REACT_FORWARD_REF_TYPE)`. One read any other way, returned or given on,
+is checked as before.
+
+Held by `test/lowering-symbols.test.ts`, "an == of a value read as the
+registry's symbol and a Some is the matches! form", its `tagged`, run;
+mutations `registered-let-compared-checked` and
+`registered-let-of-any-read` (`body_queries.ts`).
+

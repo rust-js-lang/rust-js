@@ -380,4 +380,20 @@ export const mutations: Mutation[] = [
     replace: "    super::fn_def(thir[fun].ty).is_some()\n",
     tests: ["test/lowering-strings.test.ts", "-t", "only a sort by the first"],
   },
+  {
+    name: "registered-let-compared-checked",
+    breaks: "a `let` of a `from_value` read that's only compared to a `Some` is checked, `const tag = $symbolFor(x)`, where React's mountLazyComponent reads `$$typeof` as it is (ADR 0771, amended)",
+    file: "src/lower/body_queries.rs",
+    find: "        .chain(registered_lets(tcx, thir).into_iter().map(|(read, _)| read))\n",
+    replace: "",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
+  {
+    name: "registered-let-of-any-read",
+    breaks: "a `let` of a `from_value` read that's also returned is the value, so a string or a symbol not the registry's is its `Some` (ADR 0771, amended)",
+    file: "src/lower/body_queries.rs",
+    find: "            (reads > 0 && reads == equalities.len()).then_some((read, equalities))\n",
+    replace: "            (reads > 0 && !equalities.is_empty()).then_some((read, equalities))\n",
+    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+  },
 ];

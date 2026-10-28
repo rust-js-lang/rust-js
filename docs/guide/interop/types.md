@@ -2444,7 +2444,9 @@ its own, `js::symbol::new("id")`, or a well-known one,
 patterns each a `Some` of them or `_`, it's the value itself, as no other
 value is one of them, and a `match` of three cases or more is a `switch`
 of it. An `==` or `!=` of it and a `Some` is that `matches!`, `===` and
-`!==` ([ADR 0771](../../decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md)):
+`!==`, of a `let` of it only compared so too, `let r#typeof =
+SymbolFor::from_value(..)`'s `const typeof$ = component.$$typeof`
+([ADR 0771](../../decisions/0771-an-equality-of-a-registered-symbol-is-its-match.md), amended):
 
 ```rust
 use js::{SymbolFor, Unknown};
