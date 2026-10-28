@@ -45,3 +45,12 @@ there to be a whole number in the integer's range, is the variable.**
 - **It's the JavaScript a person writes**: `startColumn: index`.
 - **It's the same program**: a whole number in range is what saturating
   gives of it.
+
+## Amendment (2026-10-29): `position` is `whole`
+
+`#[rust_js::position]` is `#[rust_js::whole = "-1..=4294967294"]`: the
+range of whole numbers a binding gives, of which a WebIDL integer's is
+another ([ADR 0994](0994-a-number-a-binding-takes-is-typescripts-number.md),
+amended). One attribute for one fact; `position` is refused, naming it. A
+cast of such a call's value, not only of a variable it's given, is the
+value where its range fits the integer's.

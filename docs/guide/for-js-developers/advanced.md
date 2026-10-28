@@ -718,7 +718,7 @@ pub fn on_click(url: &'static str) {
 ```
 
 ```js
-import { $displayF64, $settle } from "@rust-js/runtime";
+import { $settle } from "@rust-js/runtime";
 
 export async function fetchText(url) {
   const response = await window.fetch(url);
@@ -733,7 +733,7 @@ export async function tryFetch(url) {
   }
   const response = result$1._0;
   if (!response.ok) {
-    return { TAG: "Err", _0: `HTTP ${$displayF64(response.status)}` };
+    return { TAG: "Err", _0: `HTTP ${response.status}` };
   }
   return { TAG: "Ok", _0: await response.text() };
 }

@@ -468,6 +468,15 @@ const typeName = (name: string) => qualified(name);
 
 // ── Types ───────────────────────────────────────────────────────────────
 
+/** The whole numbers each WebIDL integer is, as JS is given them, which
+ * `#[rust_js::whole]` says of a binding's `f64` (ADR 0994, amended): a
+ * `long long`'s nearest number, whole too. */
+const INTEGERS: Record<string, string> = {
+  byte: "-128..=127", octet: "0..=255", short: "-32768..=32767", "unsigned short": "0..=65535",
+  long: "-2147483648..=2147483647", "unsigned long": "0..=4294967295",
+  "long long": "-9223372036854775808..=9223372036854775807", "unsigned long long": "0..=18446744073709551615",
+};
+
 const STRINGS = new Set(["DOMString", "USVString", "CSSOMString", "ByteString"]);
 const NUMBERS: Record<string, string> = {
   boolean: "bool", byte: "i8", octet: "u8", short: "i16", "unsigned short": "u16",
@@ -849,7 +858,8 @@ const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
 /** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275);
  * `none`, what its `Option` result's `None` is to JS where it's only one
- * (`noneOf`); `variadic`, its last a rest parameter's tuple (ADR 0640). */
+ * (`noneOf`); `whole`, the whole numbers its `f64` is, a WebIDL integer's
+ * (`wholeOf`); `variadic`, its last a rest parameter's tuple (ADR 0640). */
 type Fn = {
   name: string;
   jsName: string;
@@ -858,6 +868,7 @@ type Fn = {
   doc: string[];
   nullable?: string[];
   none?: "null" | "undefined";
+  whole?: string;
   typeParams?: string[];
   variadic?: boolean;
 };
@@ -1082,6 +1093,16 @@ function functionsOf(declared: Interface): Fn[] {
     return nulls && !undefineds ? "null" : undefineds && !nulls ? "undefined" : undefined;
   };
 
+  // The whole numbers a result is, where it's an `f64` of a WebIDL
+  // integer, `status`'s `unsigned short`, through its typedefs, `GLenum`'s
+  // (ADR 0994, amended); not of a nullable one, an `Option`.
+  const wholeOf = (t: IdlType, result: string): string | undefined => {
+    if (result !== "f64" || t.union || t.generic) return undefined;
+    const name = t.idlType as string;
+    const aliased = typedefs.get(name);
+    return aliased ? wholeOf(aliased, result) : INTEGERS[name];
+  };
+
   // Arguments up to the first optional one, each of the one type it takes:
   // a union's is its enum (ADR 0215).
   const signatures = (args: Arg[]): { names: string[]; types: string[] } | { skip: string } => {
@@ -1207,7 +1228,7 @@ function functionsOf(declared: Interface): Fn[] {
         const result = rustType(m.idlType!, "result");
         if (typeof result === "string") {
           const given = orNull(result, m.idlType!);
-          fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given) });
+          fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
         } else {
           skip(result.skip);
         }
@@ -1245,7 +1266,7 @@ function functionsOf(declared: Interface): Fn[] {
       // its setter can still take the union's enum.
       if (typeof result === "string") {
         const given = orNull(result, m.idlType!);
-        fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: self, result: given, doc, none: noneOf(m.idlType!, given) });
+        fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: self, result: given, doc, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
       } else {
         skip(result.skip);
       }
@@ -1304,7 +1325,7 @@ function functionsOf(declared: Interface): Fn[] {
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
       const given = orNull(result, m.idlType!);
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given) });
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
     }
   }
 
@@ -1527,6 +1548,8 @@ function generic(f: Fn): string {
     // Its result's `None`, where JS gives only one (`noneOf`).
     ...(f.none === "null" ? ["    #[cfg_attr(rust_js, rust_js::nullable)]"] : []),
     ...(f.none === "undefined" ? ["    #[cfg_attr(rust_js, rust_js::optional)]"] : []),
+    // The whole numbers it gives, a WebIDL integer's (`wholeOf`).
+    ...(f.whole ? [`    #[cfg_attr(rust_js, rust_js::whole = ${JSON.stringify(f.whole)})]`] : []),
     ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose

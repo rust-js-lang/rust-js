@@ -183,7 +183,7 @@ pub fn all(flags: &[bool]) -> Vec<i8> {
 // that may be -1, or is set again after its test, is cast as `as` casts.
 test("an f64 known to be a whole number in range is cast as it is", async () => {
   const dir = fixture("whole-casts");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "indexOf")] #[rust_js::position] #[allow(unused_variables)] fn index_of(this: &str, search: &str) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "indexOf")] #[rust_js::whole = "-1..=4294967294"] #[allow(unused_variables)] fn index_of(this: &str, search: &str) -> f64 { unreachable!() }
 pub fn found(line: &str, word: &str) -> u32 {
     let index = index_of(line, word);
     if index == -1.0 {

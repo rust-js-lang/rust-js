@@ -778,3 +778,66 @@ pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, nam
   lib.set(node, { setProperty: (n: string, v: unknown) => void (props[n] = String(v)) }, 0, "Save");
   expect([attributes, props]).toEqual([{ tabindex: "3", hidden: "true", title: "Save", href: "0" }, { "--x": "1.5" }]);
 });
+
+// The user's decision (React port gaps fx1, rd68): a WebIDL integer a
+// binding gives is a whole number in its type's range, which its
+// `#[rust_js::whole]` says (ADR 0994, amended). Its cast into an integer
+// that holds each of them is the number as it is, `options.length`, and its
+// `{}` JS's text of it, `${response.status}`: both what Rust makes of it. A
+// cast into one that doesn't hold them all saturates still, as `as` does.
+test("a WebIDL integer is a whole number in its type's range", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-whole-numbers");
+  const source = `use webapi::{HTMLSelectElement, Response};
+
+pub fn selected(node: &HTMLSelectElement) -> Option<usize> {
+    let options = node.options();
+    (0..options.length() as usize).find(|&i| options[i].selected())
+}
+
+pub fn status_line(response: &Response) -> String {
+    format!("HTTP {}", response.status())
+}
+
+pub fn status_byte(response: &Response) -> u8 {
+    response.status() as u8
+}
+
+pub fn kind(node: &webapi::Node) -> i16 {
+    node.node_type() as i16
+}
+
+pub fn scaled(response: &Response) -> String {
+    format!("{}", response.status() / 8.0)
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("options.length");
+  expect(js).toContain("  return `HTTP ${response.status}`;\n");
+  expect(js).toContain("  return $f64ToInt(response.status, 0, 255);\n");
+  expect(js).toContain("  return $f64ToInt(node.nodeType, -32768, 32767);\n");
+  expect(js).toContain("$displayF64(response.status / 8)");
+  expect(js).not.toContain("$f64ToInt(options.length");
+  const lib = await import(join(dir, "lib.js"));
+  const options = [{ selected: false }, { selected: true }];
+  expect([lib.selected({ options }), lib.selected({ options: [] })]).toEqual([1, undefined]);
+  expect([lib.statusLine({ status: 404 }), lib.statusByte({ status: 404 }), lib.kind({ nodeType: 1 }), lib.scaled({ status: 404 })])
+    .toEqual(["HTTP 404", 255, 1, "50.5"]);
+  // It's said of a binding giving an `f64`, by its least and most numbers;
+  // `#[rust_js::position]` was indexOf's, `whole = "-1..=4294967294"`.
+  for (const [attr, message] of [
+    ['#[rust_js::whole = "0..65535"]', '`#[rust_js::whole = "lo..=hi"]` writes the least and the most whole number'],
+    ['#[rust_js::whole = "5..=1"]', '`#[rust_js::whole = "lo..=hi"]` writes the least and the most whole number'],
+    ["#[rust_js::position]", '`#[rust_js::position]` is `#[rust_js::whole = "-1..=4294967294"]`'],
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), `#[rust_js::link_name = "get size"] ${attr} #[allow(unused_variables)] pub fn size(this: &js::Unknown) -> f64 { unreachable!() }\n`);
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(message);
+  }
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::whole = "0..=9"] pub fn size() -> f64 { 1.0 }\n`);
+  const own = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
+  expect(own.stderr.toString()).toContain("`#[rust_js::whole]` is of a binding that gives an `f64`");
+});

@@ -1,0 +1,69 @@
+// Mutations of src/lower/body_queries/whole_casts.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "whole-bits-unbounded",
+    breaks: "a `u64` cast of a whole `f64` is the number, not a BigInt",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "        if bits > 32 {\n",
+    replace: "        if bits > 128 {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+  {
+    name: "whole-int-unknown",
+    breaks: "an integer `as f64` isn't known to be a whole number, so `x as u8` keeps `$f64ToInt`",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "        ExprKind::Cast { source } => int_range(thir[source].ty),\n",
+    replace: "        ExprKind::Cast { source } => None,\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+  {
+    name: "whole-position-unknown",
+    breaks: "what `indexOf` gives isn't known to be a whole number, so `index as u32` keeps `$f64ToInt`",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "        ExprKind::Call { .. } => whole_call(e),\n",
+    replace: "        ExprKind::Call { .. } => None,\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+  {
+    name: "whole-call-cast-unknown",
+    breaks: "a cast of what a WebIDL integer's binding gives keeps `$f64ToInt`, `$f64ToInt(options.length, 0, 4294967295)`",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "                (tlo <= lo && hi <= thi).then_some(id)\n",
+    replace: "                (tlo <= lo && hi <= thi && false).then_some(id)\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "whole-call-cast-unranged",
+    breaks: "a cast of a WebIDL integer into an integer that doesn't hold it all is the number as it is, `response.status as u8` 404",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "                (tlo <= lo && hi <= thi).then_some(id)\n",
+    replace: "                (tlo <= lo || hi <= thi).then_some(id)\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "whole-other-changes",
+    breaks: "a variable changed by `-=` is taken as only its `=`s give it values",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "        let only_set = bound.contains(&var) && changes == sets.get(&var).copied().unwrap_or(0);\n",
+    replace: "        let only_set = bound.contains(&var);\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+  {
+    name: "whole-set-after-test",
+    breaks: "a test holds where its variable is set again after it",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "&& region.contains(here) && !after(*from))\n",
+    replace: "&& region.contains(here))\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+  {
+    name: "whole-not-equal-unnarrowed",
+    breaks: "`index != -1` doesn't narrow -1 or more to 0 or more",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "                if c.with == lo {\n",
+    replace: "                if false && c.with == lo {\n",
+    tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
+  },
+];

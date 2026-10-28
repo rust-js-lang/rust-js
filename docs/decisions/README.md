@@ -321,7 +321,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0299 A return of `undefined` is a bare `return;`](0299-bare-return.md)
 - [0300 A function takes the drops its body uses](0300-drops-by-need.md) *(amended by 0712: what a function finds is returned with it; amended by 0914: a library's takes those its crate's calls give it)*
 - [0301 A read that can't throw comes before a move](0301-reads-that-cannot-throw.md)
-- [0302 An `f64` known to be a whole number in range is cast as it is](0302-whole-number-casts.md)
+- [0302 An `f64` known to be a whole number in range is cast as it is](0302-whole-number-casts.md) *(amended: `position` is `whole`)*
 - [0303 Top-level statements that span lines are set apart](0303-blank-lines.md) *(superseded by 0865 where the source tells: a blank line is where the Rust has one)*
 - [0304 `js::import!` of an item loads its module when it's asked for](0304-dynamic-import.md)
 - [0305 A binding marked `require` is read through `require(module)`](0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
@@ -778,7 +778,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0991 Every adapter that holds a function drops it](0991-every-adapter-holding-a-function-drops-it.md)
 - [0992 `eq()` of two `TrustedLen` iterators asks their lengths first](0992-eq-of-trusted-len-iterators-asks-their-lengths.md)
 - [0993 What compiled `rev()` is given is made knowing its back where it's made](0993-what-compiled-rev-is-given-is-made-where-its-made.md)
-- [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`)*
+- [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`; a WebIDL integer is `#[rust_js::whole]`)*
 - [0995 A std body takes a JS iterator's dictionary where it's given none](0995-a-std-body-takes-a-js-iterators-dictionary-by-default.md)
 - [0996 A `take()` then tested is the place tested, taken where it's `Some`](0996-a-take-then-tested-is-the-place-tested.md) *(the user's decision)*
 - [0997 A zip std folds otherwise than it steps is std's struct](0997-a-zip-that-folds-apart-is-stds-struct.md)

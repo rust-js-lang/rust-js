@@ -305,7 +305,12 @@ How WebIDL maps to Rust, one rule for each:
   Into<f64>`: `range.set_start(node, offset)`, `labels.item(0)`,
   `list.item(i)` of a `u32`; an optional one an `Option<f64>`. What it
   gives is an `f64`, `node.node_type()`, `view.byte_length()`, so one
-  given back is as it was
+  given back is as it was. One WebIDL types an integer is a whole number
+  in its type's range, which its `#[rust_js::whole]` says: `for i in
+  0..options.length() as usize` counts to `options.length`, no cast, and
+  `format!("HTTP {}", response.status())` is `` `HTTP ${response.status}` ``.
+  A cast into an integer that doesn't hold them all, `node_type() as i8`,
+  saturates, as `as` does
   ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
 - **An argument a caller may leave out is an `Option`,** and a trailing
   `None` is no argument: `window.fetch(url, None)` is `window.fetch(url)`

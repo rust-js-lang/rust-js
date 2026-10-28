@@ -160,7 +160,8 @@ Consequences:
   `f64`, as of any `f64`: `format!("HTTP {}", response.status())` is
   `` `HTTP ${$displayF64(response.status)}` ``, where a WebIDL integer's
   text is JS's own. A fact that a binding's number is an integer, which
-  `{}` could show as JS does, is a gap still.
+  `{}` could show as JS does, is a gap still (closed by the amendment
+  below: a WebIDL integer is `#[rust_js::whole]`).
 - A binding named as a value, `js::is_function(Range::set_start)`, of a
   function taking `impl Into<f64>`, names no type for it, so rustc can't
   infer it: a path to one asks of its optional parameters, or of the
@@ -175,3 +176,57 @@ array, view and atomics tests (`new_with_buffer(.., Some(view.byte_offset()),
 Some(view.byte_length()))`), `test/web_forms.rs` (`set_width(320)`,
 `item(0)`), the playground's compiler, and the examples' `item(n)`.
 
+## Amendment (2026-10-29, the user's decision): a WebIDL integer is a whole number in its type's range
+
+With every number a binding gives an `f64`, an integer WebIDL guarantees
+was cast as any `f64` is: React DOM's `for i in 0..options.length() as
+usize` read `$f64ToInt(options.length, 0, 4294967295)` where upstream
+writes `i < options.length` (gap rd68), and the pilot's
+`format!("HTTP {}", response.status())` `$displayF64(response.status)`
+(fx1, #390).
+
+The user's decision: **the bindings record that a WebIDL integer a
+binding gives is a whole number in its type's range**, and the cast and
+format owners consume it. No `len()` beside `length()`.
+
+- **It's `#[rust_js::whole = "lo..=hi"]`** on a binding giving an `f64`:
+  the least and the most whole number it gives, never `-0`, `NaN` or an
+  infinity. `webapi/generate.ts` writes it (`wholeOf`, `INTEGERS`) of
+  each getter's and operation's result WebIDL types an integer, through
+  its typedefs: an `unsigned short`'s `"0..=65535"`, an `unsigned long`'s
+  `"0..=4294967295"`, a `long long`'s its range too, the number JS is
+  given its nearest, whole still. Not of a nullable one, an
+  `Option<f64>`, `selectionStart`'s, whose `Some` isn't asked yet.
+- **It replaces ADR 0302's `#[rust_js::position]`**, `indexOf`'s
+  position or -1, now `whole = "-1..=4294967294"`: one attribute for the
+  range of a binding's number. `position` is refused, naming its `whole`.
+  `validate` refuses a `whole` on what isn't a binding giving an `f64`,
+  or whose bounds aren't two integers in order below 10^21 in size.
+- **A cast** (ADR 0302's `whole_casts`, the owner) of what such a call
+  gives into an integer of 32 bits or fewer that holds each of its
+  numbers is the number as it is: `options.length() as usize` is
+  `options.length`. A variable it's given is known so as `indexOf`'s was.
+  Into one that doesn't hold them all, `node.node_type() as i16` of an
+  `unsigned short`, it saturates, as `as` does: Rust's result.
+- **`{}` of it is JS's text of it** (`Known::Whole`, which
+  `calls::given_by` sets on its call and `display_string` reads):
+  `` `HTTP ${response.status}` ``. A whole number below 10^21 in size
+  that isn't `-0` has one text in both, its digits. `{:?}` is Rust's
+  `404.0` still, `$debugF64`; and `{}` of what's made of it,
+  `response.status() / 8.0`, `$displayF64`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as the forms
+are the same program: the value is what saturating gives of it, and its
+text Rust's.
+
+Consequences: 377 of webapi's functions say `whole`. A variable a
+binding's integer was given, `let s = response.status(); format!("{s}")`,
+is `$displayF64(s)` still: the fact is of the call's value, not yet of a
+variable's.
+
+Held by `test/webapi-bindings.test.ts`'s "a WebIDL integer is a whole
+number in its type's range" (run, with `as u8`'s and `as i16`'s
+saturation and the refusals) and `test/lowering-numbers.test.ts`'s
+"an f64 known to be a whole number in range is cast as it is", and the
+`whole-` mutations of `body_queries`, `calls`, `display/written` and
+`bindings`.

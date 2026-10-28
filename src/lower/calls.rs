@@ -267,7 +267,8 @@ pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Exp
 /// declaration says is `null` for `None` (ADR 0638, amended), whatever
 /// else is known of it. A closure's value isn't asked.
 /// And, of an `Option` it gives, what its `None` is where it's only one
-/// (`none_given_by`), which its test says (ADR 0298, amended).
+/// (`none_given_by`), which its test says (ADR 0298, amended); of an `f64`
+/// a `#[rust_js::whole]` binding gives, that it's whole (ADR 0994, amended).
 pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
     let ty::FnDef(def_id, _) = *f.kind() else {
         return value;
@@ -277,6 +278,9 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
         facts = facts.with(Known::Defined);
     }
     let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
+    if output.is_floating_point() && super::bindings::whole_range(tcx, def_id).is_some() {
+        facts = facts.with(Known::Whole);
+    }
     if let Some(none) = none_given_by(tcx, def_id)
         && matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
     {

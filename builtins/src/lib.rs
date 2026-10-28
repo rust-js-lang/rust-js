@@ -1853,7 +1853,7 @@ pub mod string {
     /// [`text.indexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf):
     /// where `search` first is, from `from` on where it's given, or `-1`.
     #[cfg_attr(rust_js, rust_js::link_name = "indexOf")]
-    #[cfg_attr(rust_js, rust_js::position)]
+    #[cfg_attr(rust_js, rust_js::whole = "-1..=4294967294")]
     pub fn index_of(this: &str, search: &str, from: Option<f64>) -> f64 {
         unreachable!()
     }
@@ -1861,7 +1861,7 @@ pub mod string {
     /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
     /// where `search` last is, or `-1`.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
-    #[cfg_attr(rust_js, rust_js::position)]
+    #[cfg_attr(rust_js, rust_js::whole = "-1..=4294967294")]
     pub fn last_index_of(this: &str, search: &str) -> f64 {
         unreachable!()
     }

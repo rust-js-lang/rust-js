@@ -218,4 +218,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(value);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
   },
+  {
+    name: "whole-display-unknown",
+    breaks: "`{}` of a WebIDL integer is `$displayF64(response.status)`, not JS's text of it",
+    file: "src/lower/display/written.rs",
+    find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
+    replace: "        let whole = false;\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "whole-display-any-float",
+    breaks: "`{}` of any `f64` is JS's text of it, `${response.status / 8}`, where Rust's is `50.5`... and `1e21`'s isn't",
+    file: "src/lower/display/written.rs",
+    find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
+    replace: "        let whole = Num::of(ty) == Some(Num::F64);\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
 ];

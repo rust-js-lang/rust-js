@@ -17,6 +17,7 @@ mod given_names;
 mod imports;
 mod nullable;
 mod rest_values;
+mod whole;
 
 pub(super) use effects::{cannot_throw, runs_nothing, runs_only_given};
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
@@ -27,6 +28,8 @@ pub(super) use nullable::{
     optional_result,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
+pub(in crate::lower) use whole::whole_range;
+use whole::whole_refused;
 
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.
@@ -119,6 +122,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     valid = false;
                 }
             }
+        }
+        // `#[rust_js::whole]` is a range of whole numbers a binding's `f64`
+        // is in (ADR 0302, amended); `position` was one, `indexOf`'s.
+        if let Some(message) = whole_refused(tcx, def.to_def_id()) {
+            tcx.dcx().span_err(tcx.def_span(def), message);
+            valid = false;
         }
         // A `#[rust_js::nullable]` thread-local or `const` is of an `Option`
         // its `None` is `null` of (ADR 0586, amended).
@@ -905,13 +914,6 @@ pub(super) fn skips_falsy(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// written where it's given, named, as React's effects are (ADR 0297).
 pub(super) fn named_callback(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("named_callback")];
-    tcx.get_attrs_by_path(def_id, &path).next().is_some()
-}
-
-/// `#[rust_js::position]`: a binding that gives a position in what it's
-/// called on, or -1, as `indexOf` does (ADR 0302).
-pub(super) fn position(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("position")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 

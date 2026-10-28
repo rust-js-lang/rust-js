@@ -522,7 +522,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(shown) = self.json_value_display(value.clone(), ty, false) {
             return Ok(shown);
         }
-        if ty.is_bool() || Num::of(ty).is_some_and(|n| !n.float()) {
+        // A whole `f64` a binding gave, a WebIDL integer, is JS's text of
+        // it, which is Rust's: `200` (ADR 0994, amended).
+        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);
+        if ty.is_bool() || Num::of(ty).is_some_and(|n| !n.float()) || whole {
             return Ok(shown_number(value));
         }
         if Num::of(ty) == Some(Num::F64) {

@@ -713,6 +713,11 @@ pub enum Known {
     /// where the program wrote it: never the test of the loop it's first in,
     /// `while ((parentA = a.return) != null)` (ADRs 0860, 0879, amended).
     Guard,
+    /// Of an `f64`, that it's a whole number below 10^21 in size, never
+    /// `-0`: what a `#[rust_js::whole]` binding gives, a WebIDL integer,
+    /// `response.status`. Its `{}` is JS's text of it, `${response.status}`,
+    /// which is Rust's (ADR 0994, amended).
+    Whole,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

@@ -135,6 +135,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/eventPhase)
     #[cfg_attr(rust_js, rust_js::link_name = "get eventPhase")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn event_phase(&self) -> f64 {
@@ -341,6 +342,7 @@ pub mod node {
 impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/nodeType)
     #[cfg_attr(rust_js, rust_js::link_name = "get nodeType")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn node_type(&self) -> f64 {
@@ -529,6 +531,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/compareDocumentPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "compareDocumentPosition")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compare_document_position(&self, other: &Node) -> f64 {
@@ -647,6 +650,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -1030,6 +1034,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll_width(&self) -> f64 {
@@ -1038,6 +1043,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll_height(&self) -> f64 {
@@ -1046,6 +1052,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientTop)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientTop")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_top(&self) -> f64 {
@@ -1054,6 +1061,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientLeft)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientLeft")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_left(&self) -> f64 {
@@ -1062,6 +1070,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_width(&self) -> f64 {
@@ -1070,6 +1079,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_height(&self) -> f64 {
@@ -1602,6 +1612,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/childElementCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn child_element_count(&self) -> f64 {
@@ -3831,6 +3842,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/childElementCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn child_element_count(&self) -> f64 {
@@ -5828,6 +5840,7 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/childElementCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn child_element_count(&self) -> f64 {
@@ -5911,6 +5924,7 @@ pub mod dom_token_list {
 impl DOMTokenList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -6077,6 +6091,7 @@ impl<T> NodeList<T> {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -6149,6 +6164,7 @@ pub mod html_collection {
 impl HTMLCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -6352,6 +6368,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetTop)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetTop")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset_top(&self) -> f64 {
@@ -6360,6 +6377,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetLeft)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetLeft")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset_left(&self) -> f64 {
@@ -6368,6 +6386,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset_width(&self) -> f64 {
@@ -6376,6 +6395,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset_height(&self) -> f64 {
@@ -6678,6 +6698,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/headingOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "get headingOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn heading_offset(&self) -> f64 {
@@ -8640,6 +8661,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/tabIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tab_index(&self) -> f64 {
@@ -9668,6 +9690,7 @@ impl HTMLFormElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -9791,6 +9814,7 @@ pub mod html_image_element {
 impl HTMLImageElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/x)
     #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn x(&self) -> f64 {
@@ -9799,6 +9823,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/y)
     #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn y(&self) -> f64 {
@@ -9937,6 +9962,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -9953,6 +9979,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -9969,6 +9996,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/naturalWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get naturalWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn natural_width(&self) -> f64 {
@@ -9977,6 +10005,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/naturalHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get naturalHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn natural_height(&self) -> f64 {
@@ -10121,6 +10150,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/hspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hspace(&self) -> f64 {
@@ -10137,6 +10167,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/vspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vspace(&self) -> f64 {
@@ -10488,6 +10519,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -10545,6 +10577,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/maxLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_length(&self) -> f64 {
@@ -10577,6 +10610,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/minLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get minLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn min_length(&self) -> f64 {
@@ -10689,6 +10723,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -10819,6 +10854,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -11173,6 +11209,7 @@ pub mod html_li_element {
 impl HTMLLIElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLIElement/value)
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn value(&self) -> f64 {
@@ -11249,6 +11286,7 @@ impl HTMLOListElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOListElement/start)
     #[cfg_attr(rust_js, rust_js::link_name = "get start")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self) -> f64 {
@@ -11430,6 +11468,7 @@ impl HTMLOptionElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionElement/index)
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn index(&self) -> f64 {
@@ -11765,6 +11804,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -11797,6 +11837,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -11857,6 +11898,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/selectedIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selected_index(&self) -> f64 {
@@ -12024,6 +12066,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/cols)
     #[cfg_attr(rust_js, rust_js::link_name = "get cols")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cols(&self) -> f64 {
@@ -12081,6 +12124,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/maxLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_length(&self) -> f64 {
@@ -12097,6 +12141,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/minLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get minLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn min_length(&self) -> f64 {
@@ -12177,6 +12222,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/rows)
     #[cfg_attr(rust_js, rust_js::link_name = "get rows")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn rows(&self) -> f64 {
@@ -12249,6 +12295,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/textLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get textLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn text_length(&self) -> f64 {
@@ -12323,6 +12370,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/selectionStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_start(&self) -> f64 {
@@ -12339,6 +12387,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/selectionEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_end(&self) -> f64 {
@@ -12912,6 +12961,7 @@ pub mod html_table_row_element {
 impl HTMLTableRowElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement/rowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get rowIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn row_index(&self) -> f64 {
@@ -12920,6 +12970,7 @@ impl HTMLTableRowElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement/sectionRowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get sectionRowIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn section_row_index(&self) -> f64 {
@@ -13061,6 +13112,7 @@ pub mod html_table_cell_element {
 impl HTMLTableCellElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement/colSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get colSpan")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn col_span(&self) -> f64 {
@@ -13077,6 +13129,7 @@ impl HTMLTableCellElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement/rowSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get rowSpan")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn row_span(&self) -> f64 {
@@ -13109,6 +13162,7 @@ impl HTMLTableCellElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement/cellIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get cellIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cell_index(&self) -> f64 {
@@ -13616,6 +13670,7 @@ pub mod html_canvas_element {
 impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -13632,6 +13687,7 @@ impl HTMLCanvasElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -15064,6 +15120,7 @@ pub mod html_pre_element {
 impl HTMLPreElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLPreElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -15537,6 +15594,7 @@ impl HTMLSourceElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -15553,6 +15611,7 @@ impl HTMLSourceElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -15959,6 +16018,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/hspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hspace(&self) -> f64 {
@@ -15991,6 +16051,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/vspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vspace(&self) -> f64 {
@@ -16099,6 +16160,7 @@ pub mod html_video_element {
 impl HTMLVideoElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -16115,6 +16177,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -16131,6 +16194,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/videoWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get videoWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn video_width(&self) -> f64 {
@@ -16139,6 +16203,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/videoHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get videoHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn video_height(&self) -> f64 {
@@ -16247,6 +16312,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestVideoFrameCallback")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_video_frame_callback(&self, callback: Box<dyn FnOnce(f64, VideoFrameCallbackMetadata)>) -> f64 {
@@ -16409,6 +16475,7 @@ impl HTMLTrackElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -16617,6 +16684,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/networkState)
     #[cfg_attr(rust_js, rust_js::link_name = "get networkState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn network_state(&self) -> f64 {
@@ -16666,6 +16734,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -17492,6 +17561,7 @@ pub mod html_table_col_element {
 impl HTMLTableColElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement/span)
     #[cfg_attr(rust_js, rust_js::link_name = "get span")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn span(&self) -> f64 {
@@ -18728,6 +18798,7 @@ pub mod window {
 impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/orientation)
     #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn orientation(&self) -> f64 {
@@ -18831,6 +18902,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get innerWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn inner_width(&self) -> f64 {
@@ -18839,6 +18911,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get innerHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn inner_height(&self) -> f64 {
@@ -18927,6 +19000,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenX)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_x(&self) -> f64 {
@@ -18935,6 +19009,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenLeft)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenLeft")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_left(&self) -> f64 {
@@ -18943,6 +19018,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenY)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_y(&self) -> f64 {
@@ -18951,6 +19027,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenTop)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenTop")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_top(&self) -> f64 {
@@ -18959,6 +19036,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get outerWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn outer_width(&self) -> f64 {
@@ -18967,6 +19045,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get outerHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn outer_height(&self) -> f64 {
@@ -19188,6 +19267,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -19396,6 +19476,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
@@ -21682,6 +21763,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setTimeout)
     #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_timeout(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
@@ -21700,6 +21782,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setInterval)
     #[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_interval(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
@@ -21774,6 +21857,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_animation_frame(&self, callback: Box<dyn FnOnce(f64)>) -> f64 {
@@ -22010,6 +22094,7 @@ pub struct History(PhantomData<JsObject>);
 impl History {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -22094,6 +22179,7 @@ pub struct Storage(PhantomData<JsObject>);
 impl Storage {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -22530,6 +22616,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/interactionCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get interactionCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn interaction_count(&self) -> f64 {
@@ -22717,6 +22804,7 @@ impl UIEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/detail)
     #[cfg_attr(rust_js, rust_js::link_name = "get detail")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn detail(&self) -> f64 {
@@ -22734,6 +22822,7 @@ impl UIEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/which)
     #[cfg_attr(rust_js, rust_js::link_name = "get which")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn which(&self) -> f64 {
@@ -22871,6 +22960,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenX)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_x(&self) -> f64 {
@@ -22879,6 +22969,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/screenY)
     #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn screen_y(&self) -> f64 {
@@ -22887,6 +22978,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientX)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_x(&self) -> f64 {
@@ -22895,6 +22987,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/clientY)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_y(&self) -> f64 {
@@ -22903,6 +22996,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerX)
     #[cfg_attr(rust_js, rust_js::link_name = "get layerX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn layer_x(&self) -> f64 {
@@ -22911,6 +23005,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/layerY)
     #[cfg_attr(rust_js, rust_js::link_name = "get layerY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn layer_y(&self) -> f64 {
@@ -22951,6 +23046,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/button)
     #[cfg_attr(rust_js, rust_js::link_name = "get button")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn button(&self) -> f64 {
@@ -22959,6 +23055,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/buttons)
     #[cfg_attr(rust_js, rust_js::link_name = "get buttons")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buttons(&self) -> f64 {
@@ -23073,6 +23170,7 @@ impl KeyboardEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/location)
     #[cfg_attr(rust_js, rust_js::link_name = "get location")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn location(&self) -> f64 {
@@ -23146,6 +23244,7 @@ impl KeyboardEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/charCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get charCode")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn char_code(&self) -> f64 {
@@ -23154,6 +23253,7 @@ impl KeyboardEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/keyCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get keyCode")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn key_code(&self) -> f64 {
@@ -23309,6 +23409,7 @@ impl WheelEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/deltaMode)
     #[cfg_attr(rust_js, rust_js::link_name = "get deltaMode")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delta_mode(&self) -> f64 {
@@ -23679,6 +23780,7 @@ pub mod pointer_event {
 impl PointerEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/pointerId)
     #[cfg_attr(rust_js, rust_js::link_name = "get pointerId")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pointer_id(&self) -> f64 {
@@ -23719,6 +23821,7 @@ impl PointerEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltX)
     #[cfg_attr(rust_js, rust_js::link_name = "get tiltX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tilt_x(&self) -> f64 {
@@ -23727,6 +23830,7 @@ impl PointerEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/tiltY)
     #[cfg_attr(rust_js, rust_js::link_name = "get tiltY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tilt_y(&self) -> f64 {
@@ -23735,6 +23839,7 @@ impl PointerEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/twist)
     #[cfg_attr(rust_js, rust_js::link_name = "get twist")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn twist(&self) -> f64 {
@@ -23775,6 +23880,7 @@ impl PointerEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/persistentDeviceId)
     #[cfg_attr(rust_js, rust_js::link_name = "get persistentDeviceId")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn persistent_device_id(&self) -> f64 {
@@ -23834,6 +23940,7 @@ impl CSSStyleDeclaration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -32887,6 +32994,7 @@ impl IntersectionObserver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/delay)
     #[cfg_attr(rust_js, rust_js::link_name = "get delay")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn delay(&self) -> f64 {
@@ -33429,6 +33537,7 @@ impl Response {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/status)
     #[cfg_attr(rust_js, rust_js::link_name = "get status")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn status(&self) -> f64 {
@@ -33758,6 +33867,7 @@ pub mod touch {
 impl Touch {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Touch/identifier)
     #[cfg_attr(rust_js, rust_js::link_name = "get identifier")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn identifier(&self) -> f64 {
@@ -33909,6 +34019,7 @@ pub mod touch_list {
 impl TouchList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -34160,6 +34271,7 @@ pub mod blob {
 impl Blob {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -34268,6 +34380,7 @@ impl File {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/File/lastModified)
     #[cfg_attr(rust_js, rust_js::link_name = "get lastModified")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_modified(&self) -> f64 {
@@ -34632,6 +34745,7 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/maxTouchPoints)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTouchPoints")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_touch_points(&self) -> f64 {
@@ -34882,6 +34996,7 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/hardwareConcurrency)
     #[cfg_attr(rust_js, rust_js::link_name = "get hardwareConcurrency")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hardware_concurrency(&self) -> f64 {
@@ -36936,6 +37051,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/tabIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tab_index(&self) -> f64 {
@@ -37330,6 +37446,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/suspendRedraw)
     #[cfg_attr(rust_js, rust_js::link_name = "suspendRedraw")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn suspend_redraw(&self, max_wait_milliseconds: impl Into<f64>) -> f64 {
@@ -38658,6 +38775,7 @@ impl SVGTextContentElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getNumberOfChars)
     #[cfg_attr(rust_js, rust_js::link_name = "getNumberOfChars")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_number_of_chars(&self) -> f64 {
@@ -38714,6 +38832,7 @@ impl SVGTextContentElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getCharNumAtPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "getCharNumAtPosition")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_char_num_at_position(&self, point: Option<DOMPointInit>) -> f64 {
@@ -42743,6 +42862,7 @@ impl AbstractRange {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbstractRange/startOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "get startOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start_offset(&self) -> f64 {
@@ -42759,6 +42879,7 @@ impl AbstractRange {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbstractRange/endOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "get endOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end_offset(&self) -> f64 {
@@ -42847,6 +42968,7 @@ impl AnalyserNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/fftSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get fftSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fft_size(&self) -> f64 {
@@ -42863,6 +42985,7 @@ impl AnalyserNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/frequencyBinCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get frequencyBinCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn frequency_bin_count(&self) -> f64 {
@@ -43465,6 +43588,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -43481,6 +43605,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/numberOfChannels)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfChannels")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_channels(&self) -> f64 {
@@ -43777,6 +43902,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/numberOfFrames)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfFrames")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_frames(&self) -> f64 {
@@ -43785,6 +43911,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/numberOfChannels)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfChannels")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_channels(&self) -> f64 {
@@ -43793,6 +43920,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> f64 {
@@ -43801,6 +43929,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/timestamp)
     #[cfg_attr(rust_js, rust_js::link_name = "get timestamp")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timestamp(&self) -> f64 {
@@ -43809,6 +43938,7 @@ impl AudioData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/allocationSize)
     #[cfg_attr(rust_js, rust_js::link_name = "allocationSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn allocation_size(&self, options: AudioDataCopyToOptions<'_>) -> f64 {
@@ -43895,6 +44025,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/decodeQueueSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get decodeQueueSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn decode_queue_size(&self) -> f64 {
@@ -43993,6 +44124,7 @@ pub mod audio_destination_node {
 impl AudioDestinationNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDestinationNode/maxChannelCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxChannelCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_channel_count(&self) -> f64 {
@@ -44053,6 +44185,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/encodeQueueSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get encodeQueueSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn encode_queue_size(&self) -> f64 {
@@ -44300,6 +44433,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/numberOfInputs)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfInputs")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_inputs(&self) -> f64 {
@@ -44308,6 +44442,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/numberOfOutputs)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfOutputs")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_outputs(&self) -> f64 {
@@ -44316,6 +44451,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/channelCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get channelCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn channel_count(&self) -> f64 {
@@ -44880,6 +45016,7 @@ impl AuthenticatorAttestationResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorAttestationResponse/getPublicKeyAlgorithm)
     #[cfg_attr(rust_js, rust_js::link_name = "getPublicKeyAlgorithm")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_public_key_algorithm(&self) -> f64 {
@@ -46176,6 +46313,7 @@ impl CSSGroupingRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSGroupingRule/insertRule)
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> f64 {
@@ -46413,6 +46551,7 @@ impl CSSKeyframesRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -47146,6 +47285,7 @@ impl CSSNumericArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -48486,6 +48626,7 @@ impl CSSRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRule/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#type(&self) -> f64 {
@@ -48534,6 +48675,7 @@ impl CSSRuleList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -48984,6 +49126,7 @@ impl CSSStyleSheet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/insertRule)
     /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> Result<f64, &'static JsError> {
@@ -49028,6 +49171,7 @@ impl CSSStyleSheet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/addRule)
     /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_rule(&self, selector: Option<&str>, style: Option<&str>, index: Option<f64>) -> Result<f64, &'static JsError> {
@@ -49233,6 +49377,7 @@ impl CSSTransformValue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -49514,6 +49659,7 @@ impl CSSUnparsedValue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -50713,6 +50859,7 @@ impl CaretPosition {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CaretPosition/offset)
     #[cfg_attr(rust_js, rust_js::link_name = "get offset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset(&self) -> f64 {
@@ -50840,6 +50987,7 @@ impl CloseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/code)
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn code(&self) -> f64 {
@@ -51866,6 +52014,7 @@ impl DOMException {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/code)
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn code(&self) -> f64 {
@@ -53124,6 +53273,7 @@ pub mod dom_rect_list {
 impl DOMRectList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -53160,6 +53310,7 @@ pub mod dom_string_list {
 impl DOMStringList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -53270,6 +53421,7 @@ pub mod data_transfer_item_list {
 impl DataTransferItemList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -54929,6 +55081,7 @@ impl EncodedAudioChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/timestamp)
     #[cfg_attr(rust_js, rust_js::link_name = "get timestamp")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timestamp(&self) -> f64 {
@@ -54946,6 +55099,7 @@ impl EncodedAudioChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/byteLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn byte_length(&self) -> f64 {
@@ -54990,6 +55144,7 @@ impl EncodedVideoChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/timestamp)
     #[cfg_attr(rust_js, rust_js::link_name = "get timestamp")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timestamp(&self) -> f64 {
@@ -55007,6 +55162,7 @@ impl EncodedVideoChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/byteLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn byte_length(&self) -> f64 {
@@ -55076,6 +55232,7 @@ impl ErrorEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/lineno)
     #[cfg_attr(rust_js, rust_js::link_name = "get lineno")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn lineno(&self) -> f64 {
@@ -55084,6 +55241,7 @@ impl ErrorEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/colno)
     #[cfg_attr(rust_js, rust_js::link_name = "get colno")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn colno(&self) -> f64 {
@@ -55225,6 +55383,7 @@ impl EventSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -55361,6 +55520,7 @@ impl FileList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -55459,6 +55619,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -56575,6 +56736,7 @@ impl GPUAdapterInfo {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUAdapterInfo/subgroupMinSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get subgroupMinSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn subgroup_min_size(&self) -> f64 {
@@ -56583,6 +56745,7 @@ impl GPUAdapterInfo {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUAdapterInfo/subgroupMaxSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get subgroupMaxSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn subgroup_max_size(&self) -> f64 {
@@ -56652,6 +56815,7 @@ pub struct GPUBuffer(PhantomData<JsObject>);
 impl GPUBuffer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -56660,6 +56824,7 @@ impl GPUBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/usage)
     #[cfg_attr(rust_js, rust_js::link_name = "get usage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn usage(&self) -> f64 {
@@ -56974,6 +57139,7 @@ impl GPUCompilationMessage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/lineNum)
     #[cfg_attr(rust_js, rust_js::link_name = "get lineNum")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_num(&self) -> f64 {
@@ -56982,6 +57148,7 @@ impl GPUCompilationMessage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/linePos)
     #[cfg_attr(rust_js, rust_js::link_name = "get linePos")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_pos(&self) -> f64 {
@@ -56990,6 +57157,7 @@ impl GPUCompilationMessage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/offset)
     #[cfg_attr(rust_js, rust_js::link_name = "get offset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset(&self) -> f64 {
@@ -56998,6 +57166,7 @@ impl GPUCompilationMessage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -57607,6 +57776,7 @@ impl GPUQuerySet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQuerySet/count)
     #[cfg_attr(rust_js, rust_js::link_name = "get count")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn count(&self) -> f64 {
@@ -58211,6 +58381,7 @@ pub struct GPUSupportedLimits(PhantomData<JsObject>);
 impl GPUSupportedLimits {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxTextureDimension1D)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension1D")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_texture_dimension1_d(&self) -> f64 {
@@ -58219,6 +58390,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxTextureDimension2D)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension2D")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_texture_dimension2_d(&self) -> f64 {
@@ -58227,6 +58399,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxTextureDimension3D)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension3D")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_texture_dimension3_d(&self) -> f64 {
@@ -58235,6 +58408,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxTextureArrayLayers)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureArrayLayers")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_texture_array_layers(&self) -> f64 {
@@ -58243,6 +58417,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxBindGroups)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindGroups")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_bind_groups(&self) -> f64 {
@@ -58251,6 +58426,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxBindGroupsPlusVertexBuffers)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindGroupsPlusVertexBuffers")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_bind_groups_plus_vertex_buffers(&self) -> f64 {
@@ -58259,6 +58435,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxBindingsPerBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindingsPerBindGroup")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_bindings_per_bind_group(&self) -> f64 {
@@ -58267,6 +58444,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxDynamicUniformBuffersPerPipelineLayout)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDynamicUniformBuffersPerPipelineLayout")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_dynamic_uniform_buffers_per_pipeline_layout(&self) -> f64 {
@@ -58275,6 +58453,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxDynamicStorageBuffersPerPipelineLayout)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDynamicStorageBuffersPerPipelineLayout")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_dynamic_storage_buffers_per_pipeline_layout(&self) -> f64 {
@@ -58283,6 +58462,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxSampledTexturesPerShaderStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxSampledTexturesPerShaderStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_sampled_textures_per_shader_stage(&self) -> f64 {
@@ -58291,6 +58471,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxSamplersPerShaderStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxSamplersPerShaderStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_samplers_per_shader_stage(&self) -> f64 {
@@ -58299,6 +58480,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageBuffersPerShaderStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersPerShaderStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_buffers_per_shader_stage(&self) -> f64 {
@@ -58307,6 +58489,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageBuffersInVertexStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersInVertexStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_buffers_in_vertex_stage(&self) -> f64 {
@@ -58315,6 +58498,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageBuffersInFragmentStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersInFragmentStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_buffers_in_fragment_stage(&self) -> f64 {
@@ -58323,6 +58507,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageTexturesPerShaderStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesPerShaderStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_textures_per_shader_stage(&self) -> f64 {
@@ -58331,6 +58516,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageTexturesInVertexStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesInVertexStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_textures_in_vertex_stage(&self) -> f64 {
@@ -58339,6 +58525,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageTexturesInFragmentStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesInFragmentStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_textures_in_fragment_stage(&self) -> f64 {
@@ -58347,6 +58534,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxUniformBuffersPerShaderStage)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxUniformBuffersPerShaderStage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_uniform_buffers_per_shader_stage(&self) -> f64 {
@@ -58355,6 +58543,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxUniformBufferBindingSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxUniformBufferBindingSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_uniform_buffer_binding_size(&self) -> f64 {
@@ -58363,6 +58552,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxStorageBufferBindingSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBufferBindingSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_storage_buffer_binding_size(&self) -> f64 {
@@ -58371,6 +58561,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/minUniformBufferOffsetAlignment)
     #[cfg_attr(rust_js, rust_js::link_name = "get minUniformBufferOffsetAlignment")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn min_uniform_buffer_offset_alignment(&self) -> f64 {
@@ -58379,6 +58570,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/minStorageBufferOffsetAlignment)
     #[cfg_attr(rust_js, rust_js::link_name = "get minStorageBufferOffsetAlignment")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn min_storage_buffer_offset_alignment(&self) -> f64 {
@@ -58387,6 +58579,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxVertexBuffers)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexBuffers")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_vertex_buffers(&self) -> f64 {
@@ -58395,6 +58588,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxBufferSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBufferSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_buffer_size(&self) -> f64 {
@@ -58403,6 +58597,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxVertexAttributes)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexAttributes")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_vertex_attributes(&self) -> f64 {
@@ -58411,6 +58606,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxVertexBufferArrayStride)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexBufferArrayStride")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_vertex_buffer_array_stride(&self) -> f64 {
@@ -58419,6 +58615,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxInterStageShaderVariables)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxInterStageShaderVariables")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_inter_stage_shader_variables(&self) -> f64 {
@@ -58427,6 +58624,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxColorAttachments)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxColorAttachments")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_color_attachments(&self) -> f64 {
@@ -58435,6 +58633,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxColorAttachmentBytesPerSample)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxColorAttachmentBytesPerSample")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_color_attachment_bytes_per_sample(&self) -> f64 {
@@ -58443,6 +58642,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeWorkgroupStorageSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupStorageSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_workgroup_storage_size(&self) -> f64 {
@@ -58451,6 +58651,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeInvocationsPerWorkgroup)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeInvocationsPerWorkgroup")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_invocations_per_workgroup(&self) -> f64 {
@@ -58459,6 +58660,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeWorkgroupSizeX)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeX")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_workgroup_size_x(&self) -> f64 {
@@ -58467,6 +58669,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeWorkgroupSizeY)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeY")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_workgroup_size_y(&self) -> f64 {
@@ -58475,6 +58678,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeWorkgroupSizeZ)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeZ")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_workgroup_size_z(&self) -> f64 {
@@ -58483,6 +58687,7 @@ impl GPUSupportedLimits {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxComputeWorkgroupsPerDimension)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupsPerDimension")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_compute_workgroups_per_dimension(&self) -> f64 {
@@ -58515,6 +58720,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -58523,6 +58729,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -58531,6 +58738,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/depthOrArrayLayers)
     #[cfg_attr(rust_js, rust_js::link_name = "get depthOrArrayLayers")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn depth_or_array_layers(&self) -> f64 {
@@ -58539,6 +58747,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/mipLevelCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get mipLevelCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn mip_level_count(&self) -> f64 {
@@ -58547,6 +58756,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/sampleCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get sampleCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sample_count(&self) -> f64 {
@@ -58571,6 +58781,7 @@ impl GPUTexture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/usage)
     #[cfg_attr(rust_js, rust_js::link_name = "get usage")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn usage(&self) -> f64 {
@@ -58754,6 +58965,7 @@ impl Gamepad {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Gamepad/index)
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn index(&self) -> f64 {
@@ -58924,6 +59136,7 @@ impl Geolocation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/watchPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "watchPosition")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn watch_position(&self, success_callback: Box<dyn FnMut(&GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&GeolocationPositionError)>>, options: Option<PositionOptions>) -> f64 {
@@ -59031,6 +59244,7 @@ impl GeolocationPosition {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPosition/timestamp)
     #[cfg_attr(rust_js, rust_js::link_name = "get timestamp")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timestamp(&self) -> f64 {
@@ -59066,6 +59280,7 @@ pub mod geolocation_position_error {
 impl GeolocationPositionError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPositionError/code)
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn code(&self) -> f64 {
@@ -59113,6 +59328,7 @@ pub mod html_all_collection {
 impl HTMLAllCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -60002,6 +60218,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/hspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hspace(&self) -> f64 {
@@ -60018,6 +60235,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/loop)
     #[cfg_attr(rust_js, rust_js::link_name = "get loop")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#loop(&self) -> f64 {
@@ -60034,6 +60252,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/scrollAmount)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollAmount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll_amount(&self) -> f64 {
@@ -60050,6 +60269,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/scrollDelay)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollDelay")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll_delay(&self) -> f64 {
@@ -60082,6 +60302,7 @@ impl HTMLMarqueeElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMarqueeElement/vspace)
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn vspace(&self) -> f64 {
@@ -60180,6 +60401,7 @@ pub mod html_options_collection {
 impl HTMLOptionsCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -60214,6 +60436,7 @@ impl HTMLOptionsCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/selectedIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selected_index(&self) -> f64 {
@@ -60494,6 +60717,7 @@ impl Highlight {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/priority)
     #[cfg_attr(rust_js, rust_js::link_name = "get priority")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn priority(&self) -> f64 {
@@ -60786,6 +61010,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/version)
     #[cfg_attr(rust_js, rust_js::link_name = "get version")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn version(&self) -> f64 {
@@ -60941,6 +61166,7 @@ impl IDBFactory {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/cmp)
     #[cfg_attr(rust_js, rust_js::link_name = "cmp")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cmp<F, S>(&self, first: F, second: S) -> f64 {
@@ -61667,6 +61893,7 @@ pub mod idb_version_change_event {
 impl IDBVersionChangeEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/oldVersion)
     #[cfg_attr(rust_js, rust_js::link_name = "get oldVersion")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn old_version(&self) -> f64 {
@@ -61759,6 +61986,7 @@ pub struct ImageBitmap(PhantomData<JsObject>);
 impl ImageBitmap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmap/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -61767,6 +61995,7 @@ impl ImageBitmap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmap/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -61886,6 +62115,7 @@ pub mod image_data {
 impl ImageData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -61894,6 +62124,7 @@ impl ImageData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -62018,6 +62249,7 @@ impl ImageTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrack/frameCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get frameCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn frame_count(&self) -> f64 {
@@ -62077,6 +62309,7 @@ impl ImageTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrackList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -62085,6 +62318,7 @@ impl ImageTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrackList/selectedIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selected_index(&self) -> f64 {
@@ -62303,6 +62537,7 @@ impl LargestContentfulPaint {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/LargestContentfulPaint/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -64801,6 +65036,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/tabIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tab_index(&self) -> f64 {
@@ -65102,6 +65338,7 @@ pub mod media_error {
 impl MediaError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaError/code)
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn code(&self) -> f64 {
@@ -65322,6 +65559,7 @@ impl MediaKeyStatusMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -65452,6 +65690,7 @@ impl MediaList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -65746,6 +65985,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/videoBitsPerSecond)
     #[cfg_attr(rust_js, rust_js::link_name = "get videoBitsPerSecond")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn video_bits_per_second(&self) -> f64 {
@@ -65754,6 +65994,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/audioBitsPerSecond)
     #[cfg_attr(rust_js, rust_js::link_name = "get audioBitsPerSecond")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn audio_bits_per_second(&self) -> f64 {
@@ -66772,6 +67013,7 @@ pub mod mime_type_array {
 impl MimeTypeArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -66958,6 +67200,7 @@ pub mod named_node_map {
 impl NamedNodeMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -67488,6 +67731,7 @@ impl NavigationDestination {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationDestination/index)
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn index(&self) -> f64 {
@@ -67565,6 +67809,7 @@ impl NavigationHistoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/index)
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn index(&self) -> f64 {
@@ -67764,6 +68009,7 @@ impl NodeIterator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/whatToShow)
     #[cfg_attr(rust_js, rust_js::link_name = "get whatToShow")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn what_to_show(&self) -> f64 {
@@ -67850,6 +68096,7 @@ pub mod notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/maxActions)
     #[cfg_attr(rust_js, rust_js::link_name = "get Notification.maxActions")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_actions() -> f64 {
@@ -68197,6 +68444,7 @@ pub mod offscreen_canvas {
 impl OffscreenCanvas {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -68213,6 +68461,7 @@ impl OffscreenCanvas {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -70312,6 +70561,7 @@ impl PerformanceEventTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceEventTiming/interactionId)
     #[cfg_attr(rust_js, rust_js::link_name = "get interactionId")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn interaction_id(&self) -> f64 {
@@ -70422,6 +70672,7 @@ pub mod performance_navigation {
 impl PerformanceNavigation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceNavigation/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#type(&self) -> f64 {
@@ -70430,6 +70681,7 @@ impl PerformanceNavigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceNavigation/redirectCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn redirect_count(&self) -> f64 {
@@ -70546,6 +70798,7 @@ impl PerformanceNavigationTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceNavigationTiming/redirectCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn redirect_count(&self) -> f64 {
@@ -70847,6 +71100,7 @@ impl PerformanceResourceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/transferSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get transferSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transfer_size(&self) -> f64 {
@@ -70855,6 +71109,7 @@ impl PerformanceResourceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/encodedBodySize)
     #[cfg_attr(rust_js, rust_js::link_name = "get encodedBodySize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn encoded_body_size(&self) -> f64 {
@@ -70863,6 +71118,7 @@ impl PerformanceResourceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/decodedBodySize)
     #[cfg_attr(rust_js, rust_js::link_name = "get decodedBodySize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn decoded_body_size(&self) -> f64 {
@@ -70871,6 +71127,7 @@ impl PerformanceResourceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/responseStatus)
     #[cfg_attr(rust_js, rust_js::link_name = "get responseStatus")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn response_status(&self) -> f64 {
@@ -70941,6 +71198,7 @@ pub struct PerformanceTiming(PhantomData<JsObject>);
 impl PerformanceTiming {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/navigationStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get navigationStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn navigation_start(&self) -> f64 {
@@ -70949,6 +71207,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/unloadEventStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get unloadEventStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unload_event_start(&self) -> f64 {
@@ -70957,6 +71216,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/unloadEventEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get unloadEventEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unload_event_end(&self) -> f64 {
@@ -70965,6 +71225,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/redirectStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn redirect_start(&self) -> f64 {
@@ -70973,6 +71234,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/redirectEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn redirect_end(&self) -> f64 {
@@ -70981,6 +71243,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/fetchStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get fetchStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fetch_start(&self) -> f64 {
@@ -70989,6 +71252,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domainLookupStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get domainLookupStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn domain_lookup_start(&self) -> f64 {
@@ -70997,6 +71261,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domainLookupEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get domainLookupEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn domain_lookup_end(&self) -> f64 {
@@ -71005,6 +71270,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/connectStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get connectStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn connect_start(&self) -> f64 {
@@ -71013,6 +71279,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/connectEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get connectEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn connect_end(&self) -> f64 {
@@ -71021,6 +71288,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/secureConnectionStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get secureConnectionStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn secure_connection_start(&self) -> f64 {
@@ -71029,6 +71297,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/requestStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get requestStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_start(&self) -> f64 {
@@ -71037,6 +71306,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/responseStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get responseStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn response_start(&self) -> f64 {
@@ -71045,6 +71315,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/responseEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get responseEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn response_end(&self) -> f64 {
@@ -71053,6 +71324,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domLoading)
     #[cfg_attr(rust_js, rust_js::link_name = "get domLoading")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dom_loading(&self) -> f64 {
@@ -71061,6 +71333,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domInteractive)
     #[cfg_attr(rust_js, rust_js::link_name = "get domInteractive")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dom_interactive(&self) -> f64 {
@@ -71069,6 +71342,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domContentLoadedEventStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get domContentLoadedEventStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dom_content_loaded_event_start(&self) -> f64 {
@@ -71077,6 +71351,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domContentLoadedEventEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get domContentLoadedEventEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dom_content_loaded_event_end(&self) -> f64 {
@@ -71085,6 +71360,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/domComplete)
     #[cfg_attr(rust_js, rust_js::link_name = "get domComplete")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dom_complete(&self) -> f64 {
@@ -71093,6 +71369,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/loadEventStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get loadEventStart")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn load_event_start(&self) -> f64 {
@@ -71101,6 +71378,7 @@ impl PerformanceTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/loadEventEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get loadEventEnd")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn load_event_end(&self) -> f64 {
@@ -71282,6 +71560,7 @@ pub mod picture_in_picture_window {
 impl PictureInPictureWindow {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -71290,6 +71569,7 @@ impl PictureInPictureWindow {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -71371,6 +71651,7 @@ impl Plugin {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -71437,6 +71718,7 @@ impl PluginArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -71994,6 +72276,7 @@ pub struct RTCCertificate(PhantomData<JsObject>);
 impl RTCCertificate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCCertificate/expires)
     #[cfg_attr(rust_js, rust_js::link_name = "get expires")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn expires(&self) -> f64 {
@@ -72220,6 +72503,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/bufferedAmount)
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferedAmount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffered_amount(&self) -> f64 {
@@ -72228,6 +72512,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/bufferedAmountLowThreshold)
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferedAmountLowThreshold")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffered_amount_low_threshold(&self) -> f64 {
@@ -73558,6 +73843,7 @@ impl RTCPeerConnectionIceErrorEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/errorCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get errorCode")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error_code(&self) -> f64 {
@@ -74374,6 +74660,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/compareBoundaryPoints)
     #[cfg_attr(rust_js, rust_js::link_name = "compareBoundaryPoints")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compare_boundary_points(&self, how: impl Into<f64>, source_range: &Range) -> f64 {
@@ -74450,6 +74737,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/comparePoint)
     #[cfg_attr(rust_js, rust_js::link_name = "comparePoint")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn compare_point(&self, node: &Node, offset: impl Into<f64>) -> f64 {
@@ -75015,6 +75303,7 @@ pub mod svg_angle {
 impl SVGAngle {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAngle/unitType)
     #[cfg_attr(rust_js, rust_js::link_name = "get unitType")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unit_type(&self) -> f64 {
@@ -75150,6 +75439,7 @@ pub struct SVGAnimatedEnumeration(PhantomData<JsObject>);
 impl SVGAnimatedEnumeration {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedEnumeration/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn base_val(&self) -> f64 {
@@ -75166,6 +75456,7 @@ impl SVGAnimatedEnumeration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedEnumeration/animVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn anim_val(&self) -> f64 {
@@ -75181,6 +75472,7 @@ pub struct SVGAnimatedInteger(PhantomData<JsObject>);
 impl SVGAnimatedInteger {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedInteger/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn base_val(&self) -> f64 {
@@ -75197,6 +75489,7 @@ impl SVGAnimatedInteger {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedInteger/animVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn anim_val(&self) -> f64 {
@@ -75440,6 +75733,7 @@ pub mod svg_length {
 impl SVGLength {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLength/unitType)
     #[cfg_attr(rust_js, rust_js::link_name = "get unitType")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn unit_type(&self) -> f64 {
@@ -75545,6 +75839,7 @@ pub mod svg_length_list {
 impl SVGLengthList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -75553,6 +75848,7 @@ impl SVGLengthList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGLengthList/numberOfItems)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_items(&self) -> f64 {
@@ -75672,6 +75968,7 @@ pub mod svg_number_list {
 impl SVGNumberList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -75680,6 +75977,7 @@ impl SVGNumberList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumberList/numberOfItems)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_items(&self) -> f64 {
@@ -75764,6 +76062,7 @@ pub mod svg_point_list {
 impl SVGPointList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -75772,6 +76071,7 @@ impl SVGPointList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPointList/numberOfItems)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_items(&self) -> f64 {
@@ -75889,6 +76189,7 @@ pub mod svg_preserve_aspect_ratio {
 impl SVGPreserveAspectRatio {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPreserveAspectRatio/align)
     #[cfg_attr(rust_js, rust_js::link_name = "get align")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn align(&self) -> f64 {
@@ -75905,6 +76206,7 @@ impl SVGPreserveAspectRatio {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGPreserveAspectRatio/meetOrSlice)
     #[cfg_attr(rust_js, rust_js::link_name = "get meetOrSlice")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn meet_or_slice(&self) -> f64 {
@@ -75940,6 +76242,7 @@ pub mod svg_string_list {
 impl SVGStringList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -75948,6 +76251,7 @@ impl SVGStringList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStringList/numberOfItems)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_items(&self) -> f64 {
@@ -76044,6 +76348,7 @@ pub mod svg_transform {
 impl SVGTransform {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#type(&self) -> f64 {
@@ -76153,6 +76458,7 @@ pub mod svg_transform_list {
 impl SVGTransformList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -76161,6 +76467,7 @@ impl SVGTransformList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/numberOfItems)
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn number_of_items(&self) -> f64 {
@@ -76407,6 +76714,7 @@ pub struct Screen(PhantomData<JsObject>);
 impl Screen {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/availWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get availWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn avail_width(&self) -> f64 {
@@ -76415,6 +76723,7 @@ impl Screen {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/availHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get availHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn avail_height(&self) -> f64 {
@@ -76423,6 +76732,7 @@ impl Screen {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn width(&self) -> f64 {
@@ -76431,6 +76741,7 @@ impl Screen {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/height)
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn height(&self) -> f64 {
@@ -76439,6 +76750,7 @@ impl Screen {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/colorDepth)
     #[cfg_attr(rust_js, rust_js::link_name = "get colorDepth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn color_depth(&self) -> f64 {
@@ -76447,6 +76759,7 @@ impl Screen {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/pixelDepth)
     #[cfg_attr(rust_js, rust_js::link_name = "get pixelDepth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pixel_depth(&self) -> f64 {
@@ -76516,6 +76829,7 @@ impl ScreenOrientation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScreenOrientation/angle)
     #[cfg_attr(rust_js, rust_js::link_name = "get angle")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn angle(&self) -> f64 {
@@ -76588,6 +76902,7 @@ impl ScriptProcessorNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScriptProcessorNode/bufferSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer_size(&self) -> f64 {
@@ -76757,6 +77072,7 @@ impl SecurityPolicyViolationEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/statusCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get statusCode")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn status_code(&self) -> f64 {
@@ -76765,6 +77081,7 @@ impl SecurityPolicyViolationEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/lineNumber)
     #[cfg_attr(rust_js, rust_js::link_name = "get lineNumber")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn line_number(&self) -> f64 {
@@ -76773,6 +77090,7 @@ impl SecurityPolicyViolationEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/columnNumber)
     #[cfg_attr(rust_js, rust_js::link_name = "get columnNumber")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn column_number(&self) -> f64 {
@@ -76797,6 +77115,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/anchorOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "get anchorOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn anchor_offset(&self) -> f64 {
@@ -76814,6 +77133,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/focusOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "get focusOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus_offset(&self) -> f64 {
@@ -76830,6 +77150,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/rangeCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn range_count(&self) -> f64 {
@@ -78092,6 +78413,7 @@ pub mod source_buffer_list {
 impl SourceBufferList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -78247,6 +78569,7 @@ pub mod speech_recognition_event {
 impl SpeechRecognitionEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEvent/resultIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get resultIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn result_index(&self) -> f64 {
@@ -78294,6 +78617,7 @@ pub mod speech_recognition_result {
 impl SpeechRecognitionResult {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -78350,6 +78674,7 @@ pub mod speech_recognition_result_list {
 impl SpeechRecognitionResultList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -78569,6 +78894,7 @@ impl SpeechSynthesisEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get charIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn char_index(&self) -> f64 {
@@ -78577,6 +78903,7 @@ impl SpeechSynthesisEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent/charLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get charLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn char_length(&self) -> f64 {
@@ -79256,6 +79583,7 @@ impl StylePropertyMapReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -79379,6 +79707,7 @@ impl StyleSheetList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -80181,6 +80510,7 @@ pub mod text_track_cue_list {
 impl TextTrackCueList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -80246,6 +80576,7 @@ pub mod text_track_list {
 impl TextTrackList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -80324,6 +80655,7 @@ pub struct TimeRanges(PhantomData<JsObject>);
 impl TimeRanges {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TimeRanges/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> f64 {
@@ -80474,6 +80806,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/whatToShow)
     #[cfg_attr(rust_js, rust_js::link_name = "get whatToShow")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn what_to_show(&self) -> f64 {
@@ -80705,6 +81038,7 @@ pub mod url_search_params {
 impl URLSearchParams {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -81095,6 +81429,7 @@ impl VTTRegion {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTRegion/lines)
     #[cfg_attr(rust_js, rust_js::link_name = "get lines")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn lines(&self) -> f64 {
@@ -81401,6 +81736,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/decodeQueueSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get decodeQueueSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn decode_queue_size(&self) -> f64 {
@@ -81523,6 +81859,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/encodeQueueSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get encodeQueueSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn encode_queue_size(&self) -> f64 {
@@ -81621,6 +81958,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/codedWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get codedWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn coded_width(&self) -> f64 {
@@ -81629,6 +81967,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/codedHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get codedHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn coded_height(&self) -> f64 {
@@ -81655,6 +81994,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/displayWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get displayWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn display_width(&self) -> f64 {
@@ -81663,6 +82003,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/displayHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get displayHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn display_height(&self) -> f64 {
@@ -81680,6 +82021,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/timestamp)
     #[cfg_attr(rust_js, rust_js::link_name = "get timestamp")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timestamp(&self) -> f64 {
@@ -81696,6 +82038,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/allocationSize)
     #[cfg_attr(rust_js, rust_js::link_name = "allocationSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn allocation_size(&self, options: Option<VideoFrameCopyToOptions<'_>>) -> f64 {
@@ -81744,6 +82087,7 @@ impl VideoPlaybackQuality {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoPlaybackQuality/droppedVideoFrames)
     #[cfg_attr(rust_js, rust_js::link_name = "get droppedVideoFrames")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dropped_video_frames(&self) -> f64 {
@@ -81752,6 +82096,7 @@ impl VideoPlaybackQuality {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoPlaybackQuality/totalVideoFrames)
     #[cfg_attr(rust_js, rust_js::link_name = "get totalVideoFrames")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn total_video_frames(&self) -> f64 {
@@ -81760,6 +82105,7 @@ impl VideoPlaybackQuality {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoPlaybackQuality/corruptedVideoFrames)
     #[cfg_attr(rust_js, rust_js::link_name = "get corruptedVideoFrames")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn corrupted_video_frames(&self) -> f64 {
@@ -84008,6 +84354,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawingBufferWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn drawing_buffer_width(&self) -> f64 {
@@ -84016,6 +84363,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/drawingBufferHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn drawing_buffer_height(&self) -> f64 {
@@ -84199,6 +84547,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/checkFramebufferStatus)
     #[cfg_attr(rust_js, rust_js::link_name = "checkFramebufferStatus")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn check_framebuffer_status(&self, target: impl Into<f64>) -> f64 {
@@ -84562,6 +84911,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getAttribLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribLocation")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> f64 {
@@ -84586,6 +84936,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getError)
     #[cfg_attr(rust_js, rust_js::link_name = "getError")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_error(&self) -> f64 {
@@ -84695,6 +85046,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getVertexAttribOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttribOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_vertex_attrib_offset(&self, index: impl Into<f64>, pname: impl Into<f64>) -> f64 {
@@ -85289,6 +85641,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getFragDataLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "getFragDataLocation")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_frag_data_location(&self, program: &WebGLProgram, name: &str) -> f64 {
@@ -85695,6 +86048,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clientWaitSync)
     #[cfg_attr(rust_js, rust_js::link_name = "clientWaitSync")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn client_wait_sync(&self, sync: &WebGLSync, flags: impl Into<f64>, timeout: impl Into<f64>) -> f64 {
@@ -85851,6 +86205,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getUniformBlockIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformBlockIndex")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_uniform_block_index(&self, program: &WebGLProgram, uniform_block_name: &str) -> f64 {
@@ -86214,6 +86569,7 @@ pub struct WebGLActiveInfo(PhantomData<JsObject>);
 impl WebGLActiveInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLActiveInfo/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn size(&self) -> f64 {
@@ -86222,6 +86578,7 @@ impl WebGLActiveInfo {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLActiveInfo/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#type(&self) -> f64 {
@@ -87211,6 +87568,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawingBufferWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn drawing_buffer_width(&self) -> f64 {
@@ -87219,6 +87577,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/drawingBufferHeight)
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn drawing_buffer_height(&self) -> f64 {
@@ -87402,6 +87761,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/checkFramebufferStatus)
     #[cfg_attr(rust_js, rust_js::link_name = "checkFramebufferStatus")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn check_framebuffer_status(&self, target: impl Into<f64>) -> f64 {
@@ -87765,6 +88125,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getAttribLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribLocation")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> f64 {
@@ -87789,6 +88150,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getError)
     #[cfg_attr(rust_js, rust_js::link_name = "getError")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_error(&self) -> f64 {
@@ -87898,6 +88260,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getVertexAttribOffset)
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttribOffset")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_vertex_attrib_offset(&self, index: impl Into<f64>, pname: impl Into<f64>) -> f64 {
@@ -88499,6 +88862,7 @@ pub struct WebGLShaderPrecisionFormat(PhantomData<JsObject>);
 impl WebGLShaderPrecisionFormat {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLShaderPrecisionFormat/rangeMin)
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeMin")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn range_min(&self) -> f64 {
@@ -88507,6 +88871,7 @@ impl WebGLShaderPrecisionFormat {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLShaderPrecisionFormat/rangeMax)
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeMax")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn range_max(&self) -> f64 {
@@ -88515,6 +88880,7 @@ impl WebGLShaderPrecisionFormat {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLShaderPrecisionFormat/precision)
     #[cfg_attr(rust_js, rust_js::link_name = "get precision")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn precision(&self) -> f64 {
@@ -88599,6 +88965,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -88607,6 +88974,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/bufferedAmount)
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferedAmount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffered_amount(&self) -> f64 {
@@ -88891,6 +89259,7 @@ impl WebTransportDatagramDuplexStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/maxDatagramSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDatagramSize")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_datagram_size(&self) -> f64 {
@@ -89052,6 +89421,7 @@ pub mod web_transport_send_stream {
 impl WebTransportSendStream {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportSendStream/sendOrder)
     #[cfg_attr(rust_js, rust_js::link_name = "get sendOrder")]
+    #[cfg_attr(rust_js, rust_js::whole = "-9223372036854775808..=9223372036854775807")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn send_order(&self) -> f64 {
@@ -89445,6 +89815,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/readyState)
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ready_state(&self) -> f64 {
@@ -89471,6 +89842,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/timeout)
     #[cfg_attr(rust_js, rust_js::link_name = "get timeout")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timeout(&self) -> f64 {
@@ -89537,6 +89909,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/status)
     #[cfg_attr(rust_js, rust_js::link_name = "get status")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn status(&self) -> f64 {
@@ -89924,6 +90297,7 @@ pub mod x_path_result {
 impl XPathResult {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/resultType)
     #[cfg_attr(rust_js, rust_js::link_name = "get resultType")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn result_type(&self) -> f64 {
@@ -89973,6 +90347,7 @@ impl XPathResult {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/snapshotLength)
     #[cfg_attr(rust_js, rust_js::link_name = "get snapshotLength")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn snapshot_length(&self) -> f64 {
@@ -92717,6 +93092,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_idle_callback(callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
@@ -92743,6 +93119,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn request_animation_frame(callback: Box<dyn FnOnce(f64)>) -> f64 {
