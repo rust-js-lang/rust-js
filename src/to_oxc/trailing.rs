@@ -293,3 +293,52 @@ pub(super) fn own_line_before_value(
     let column = (after - value_line_start) as u32;
     Some((line, column.saturating_sub(1)))
 }
+
+/// Where a line comment `c` alone on its line after a conditional's
+/// branch's value, before its block's `}`, goes: right after the value, as
+/// if written after it on its line, `? 2 // TODO .. : phase` (ADR 0658,
+/// amended). `value_ends` are where each branch's value ends; what's
+/// between it and the value, and it and the `}`, may be other comments
+/// only, each placed so in turn.
+pub(super) fn own_line_after_value(
+    text: &str,
+    comments: &[crate::program::Comment],
+    value_ends: &std::collections::HashSet<u32>,
+    c: &crate::program::Comment,
+) -> Option<(u32, u32)> {
+    let written = text.get(c.lo as usize..c.hi as usize)?;
+    if !written.starts_with("//") {
+        return None;
+    }
+    let line_start = text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
+    if !text[line_start..c.lo as usize].trim().is_empty() {
+        return None;
+    }
+    // Past whitespace and other comments, each way.
+    let mut before = c.lo as usize;
+    loop {
+        let code = text[..before].trim_end();
+        match comments.iter().find(|o| o.hi as usize == code.len()) {
+            Some(o) => before = o.lo as usize,
+            None => break,
+        }
+    }
+    let end = text[..before].trim_end().len();
+    let mut after = c.hi as usize;
+    loop {
+        let skipped = after + (text[after..].len() - text[after..].trim_start().len());
+        match comments.iter().find(|o| o.lo as usize == skipped) {
+            Some(o) => after = o.hi as usize,
+            None => {
+                after = skipped;
+                break;
+            }
+        }
+    }
+    if !value_ends.contains(&(end as u32)) || !text[after..].starts_with('}') {
+        return None;
+    }
+    let value_line_start = text[..end].rfind('\n').map_or(0, |i| i + 1);
+    let line = text[..end].matches('\n').count() as u32;
+    Some((line, (end - value_line_start) as u32))
+}

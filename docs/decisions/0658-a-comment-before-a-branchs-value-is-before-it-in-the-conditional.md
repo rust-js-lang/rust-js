@@ -4,7 +4,8 @@ Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 [0621](0621-comments-around-macros-and-at-a-modules-end.md) and
 [0630](0630-a-comment-inside-an-expression.md); amends
 [0657](0657-an-if-of-one-value-each-is-a-conditional.md), whose branch with
-a comment kept its `if`.
+a comment kept its `if`. Amended: a comment after a branch's value is
+right after it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -79,3 +80,41 @@ the next line.** So a branch with a comment is folded as any branch is
 - `test/lowering-names.test.ts`, "a comment is in the JS where it's in
   the Rust": a comment before each branch, an `if`'s and a `match`'s.
 - Mutations `arm-comment-unplaced`, `arm-comment-after-question-only`.
+
+## Amendment: a comment after a branch's value
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments.
+
+ReactFiberApplyGesture writes `nextPhase = CLONE_UNHIDE; // TODO: Mark the
+name and find a pair.` in an `if`. Its port, as clippy's
+`needless_late_init` has it, `let next_phase = if .. { // .. CLONE_UNHIDE
+// TODO: .. } else { visit_phase };`, printed the conditional with the
+`// TODO` above the loop it was in: a comment after a branch's value,
+before its `}`, is before no start, and went to the innermost statement it
+was inside, the loop.
+
+**The user's decision: the conditional stays, and a line comment on a line
+of its own after a branch's value, before its block's `}`, is right after
+that value, as if written after it on its line:**
+
+```js
+const nextPhase =
+  phase === 1
+    ? // This was an Enter of a ViewTransition.
+      2 // TODO: Mark the name and find a pair.
+    : phase;
+```
+
+`trailing::own_line_after_value` finds it, past whitespace and other
+comments each way, by where each conditional's branch's value ends
+(`arm_starts`' `?` and `:`), and gives it to the comments after code on
+their line (ADR 0444), whose line comment ends its JS's line, the rest on
+the next, `? 2 // .. \n : now` (ADR 0733). The statement form upstream
+writes, `let next; if (..) { next = ..; // TODO }`, would be a second form
+of one `if` (ADR 0657), which a comment is no reason for. A block comment
+there, or a comment after code that's no branch's value, is placed as
+before.
+
+`test/lowering-comments-ends.test.ts` "a comment after a branch's value
+is right after it" (ApplyGesture's loop, a function's tail of two
+branches); mutations `after-value-not-at-close` and `after-value-any-code`.

@@ -888,6 +888,28 @@ export function limit(fast) {
 }
 ```
 
+And one after a branch's value, before its `}`, is right after the value
+([ADR 0658](../../decisions/0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md#amendment-a-comment-after-a-branchs-value), amended):
+
+```rust
+pub fn phase(entered: bool, now: u8) -> u8 {
+    if entered {
+        2
+        // TODO: Mark the name and find a pair.
+    } else {
+        now
+    }
+}
+```
+
+```js
+export function phase(entered, now) {
+  return entered
+    ? 2 // TODO: Mark the name and find a pair.
+    : now;
+}
+```
+
 So is a comment before a call's argument, or before an object literal's
 field: before it, on lines of their own
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md)):

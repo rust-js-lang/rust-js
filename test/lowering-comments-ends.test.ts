@@ -216,3 +216,42 @@ pub fn last(reason: i32, log: &mut Vec<i32>) {
   }
   expect(log).toEqual([1, 1, 2]);
 });
+
+// ADR 0658, amended: ReactFiberApplyGesture's `nextPhase = CLONE_UNHIDE;
+// // TODO: Mark the name and find a pair.`, written `let next_phase = if
+// .. { // .. CLONE_UNHIDE // TODO: .. } else { phase };`, kept a
+// conditional as clippy's needless_late_init has it: the comment after a
+// branch's value is right after it, `2 // TODO`, not lost or above the loop.
+test("a comment after a branch's value is right after it", async () => {
+  const { js, lib } = await compiled("comment-after-branch-value", `pub fn visit(phases: &[u8]) -> Vec<u8> {
+    let mut seen = Vec::new();
+    for &phase in phases {
+        let next_phase = if phase == 1 {
+            // This was an Enter of a ViewTransition.
+            2
+            // TODO: Mark the name and find a pair.
+        } else {
+            phase
+        };
+        seen.push(next_phase);
+    }
+    seen
+}
+
+pub fn pick(flag: bool) -> u8 {
+    if flag {
+        3
+        // The first.
+    } else {
+        4
+        // The second.
+    }
+}
+`);
+  expect(js).toContain(
+    "        ? // This was an Enter of a ViewTransition.\n          2 // TODO: Mark the name and find a pair.\n        : phase;",
+  );
+  expect(js).toContain("  for (const phase of phases) {\n    const nextPhase");
+  expect(js).toContain("return flag\n    ? 3 // The first.\n    : 4; // The second.");
+  expect([lib.visit([1, 5] as never), lib.pick(true as never), lib.pick(false as never)]).toEqual([[2, 5], 3, 4]);
+});

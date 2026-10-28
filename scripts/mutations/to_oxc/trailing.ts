@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "                .trim_end_matches(char::is_whitespace)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
   },
+  {
+    name: "after-value-not-at-close",
+    breaks: "a comment after a branch's value is after it only where no `}` follows, so ApplyGesture's `// TODO` above the loop stays",
+    file: "src/to_oxc/trailing.rs",
+    find: "    if !value_ends.contains(&(end as u32)) || !text[after..].starts_with('}') {",
+    replace: "    if !value_ends.contains(&(end as u32)) || text[after..].starts_with('}') {",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a branch's value"],
+  },
+  {
+    name: "after-value-any-code",
+    breaks: "a line comment after any code, not a branch's value, before a `}`, is placed after that code, so a block's last statement's comment moves onto its line",
+    file: "src/to_oxc/trailing.rs",
+    find: "    if !value_ends.contains(&(end as u32)) || !text[after..].starts_with('}') {",
+    replace: "    if !text[after..].starts_with('}') {",
+    tests: ["test/lowering-comments-ends.test.ts"],
+  },
 ];

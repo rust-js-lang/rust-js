@@ -29,7 +29,7 @@ mod openings;
 mod statements;
 mod trailing;
 
-use self::trailing::{Inside, Trailing, own_line_before_value, with_inside_comments};
+use self::trailing::{Inside, Trailing, own_line_after_value, own_line_before_value, with_inside_comments};
 
 use self::arms::{Arm, arm_starts, else_if_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
@@ -519,8 +519,29 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // is: placed as if right before the value's first code (ADR 0630,
         // amended).
         // Placed so, not before a statement too.
-        let before_value =
-            |c: &crate::program::Comment| own_line_before_value(&sources.text, &file.comments, c).is_some();
+        // A line comment on a line of its own after a conditional's branch's
+        // value, before its block's `}`, is after the value, as one on its
+        // line is (ADR 0658, amended).
+        let value_ends: std::collections::HashSet<u32> = (arms.values())
+            .filter(|arm| matches!(arm.operator, "?" | ":"))
+            .map(|arm| arm.hi)
+            .collect();
+        for c in file.comments.iter().filter(|c| c.lo >= past) {
+            if let Some((line, column)) = own_line_after_value(&sources.text, &file.comments, &value_ends, c) {
+                trailing.push(Trailing {
+                    line,
+                    column,
+                    inside: false,
+                    before_value: false,
+                    text: sources.text[c.lo as usize..c.hi as usize].to_string(),
+                    after_param: None,
+                });
+            }
+        }
+        let before_value = |c: &crate::program::Comment| {
+            own_line_before_value(&sources.text, &file.comments, c).is_some()
+                || own_line_after_value(&sources.text, &file.comments, &value_ends, c).is_some()
+        };
         for c in file.comments.iter().filter(|c| c.lo >= past) {
             if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {
                 trailing.push(Trailing {
