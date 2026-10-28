@@ -459,7 +459,7 @@ export const mutations: Mutation[] = [
     breaks: "a closure's last `return;` is written, where it falls off its end",
     file: "src/prepare.rs",
     find: "                false => function_body(params, body),\n",
-    replace: "                false => block(body),\n",
+    replace: "                false => block(body, true),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"],
   },
   {
