@@ -532,3 +532,17 @@ Held by `test/corpus/while_let_at_end.rs`, against native Rust;
 mutations `loop-end-return-kept` (`mir/tidy/jumps/labels.ts`),
 `loop-left-by-cases-unlabeled`, `turn-block-left-by-cases-kept` and
 `case-rest-past-a-turns-end-kept` (`mir/tidy/case_rests.ts`).
+
+## Amendment: a way out of an `if` whose branches each leave
+
+react-dom-bindings' port (rd20) has a `while` whose body, after an inner
+`while`, ends `i = j; if total > 10.0 { break; }`. MIR puts that tail in
+the inner loop's one way out, `i = j; if (total > 10) { break bb18; } else
+{ continue bb1; }`, and `exits after` took only a lone jump for a way out,
+so the tail stayed inside the inner loop and the outer one kept its label,
+`bb1:`. **An `if` each of whose branches leaves so is a way out too**,
+where the loop has no `break` of its own: what's written after the inner
+loop follows it, `while (j < xs.length) { .. } i = j; if (total > 10) {
+break; }`, as written. Each is the same jump either way. Held by
+`test/corpus/inner_while_then_break.rs`, against native Rust; mutation
+`exit-after-of-leaving-if-unmoved`.

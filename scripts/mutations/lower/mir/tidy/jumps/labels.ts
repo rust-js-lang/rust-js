@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "exit-after-of-leaving-if-unmoved",
+    breaks: "an inner loop's way out of an `if` each branch of which leaves, `i = j; if (total > 10) { break bb18; } else { continue bb1; }`, stays inside it, with a `bb1:` label, not after it as written (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            .filter(|s| if own { leaves(s) } else { leaving(s, &leaves) })?;\n",
+    replace: "            .filter(|s| leaves(s))?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^inner_while_then_break.rs$"],
+    snapshots: true,
+  },
+  {
     name: "mir-tidy-for-label-kept",
     breaks: "a `for` loop's label nothing names stays",
     file: "src/lower/mir/tidy/jumps/labels.rs",

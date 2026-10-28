@@ -114,8 +114,18 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
             }
         }
     }
+    // An `if` each of whose branches leaves so, `if (total > 10) { break
+    // bb18; } else { continue bb1; }`, leaves too, where the loop has no
+    // `break` of its own to keep.
+    fn leaving(s: &Stmt, leaves: &dyn Fn(&Stmt) -> bool) -> bool {
+        leaves(s)
+            || matches!(&s.kind, StmtKind::If(_, then, Some(otherwise))
+                if [then, otherwise].iter().all(|b| b.last().is_some_and(|s| leaving(s, leaves))))
+    }
     let at = |list: &[Stmt]| -> Option<usize> {
-        let last = list.last().filter(|s| leaves(s))?;
+        let last = list
+            .last()
+            .filter(|s| if own { leaves(s) } else { leaving(s, &leaves) })?;
         let mut k = list.len() - 1;
         while k > 0 && stays(&list[k - 1]) && after(&list[k - 1]) {
             k -= 1;
