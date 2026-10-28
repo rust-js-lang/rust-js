@@ -28,10 +28,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-pointer-of-a-dyn-opens-all",
-    breaks: "a fn pointer type of a `dyn`, `function::bind`'s result, makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADR 0907, amended)",
+    breaks: "a fn pointer type of a `dyn`, `function::bind`'s result, isn't keyed and makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADRs 0907, 1007, amended)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                    if let Some(key) = key(tcx, part) {\n",
-    replace: "                    held.any |= key(tcx, part).is_none();\n                    if let Some(key) = key(tcx, part) {\n",
+    replace: "                    held.any |= part.walk().any(|p| p.as_type().is_some_and(|t| t.is_trait()));\n                    if let Some(key) = key(tcx, part) {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "a fn pointer of a dyn given from outside"],
   },
   {

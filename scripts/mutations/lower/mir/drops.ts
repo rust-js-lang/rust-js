@@ -109,11 +109,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-quiet-drop-unwinds",
-    breaks: "a drop of what JS drops nothing of is taken to unwind, so a closure given to a setter is held, `const value = () => ..`",
+    breaks: "a drop of what JS drops nothing of is taken to unwind, so a set field's old value dropped in a cycle is given a live flag, `let next$live = true`, and its drop an `if` of it (ADR 0800)",
     file: "src/lower/mir/drops.rs",
     find: "        let flow = pruned.as_ref().unwrap_or(body);\n",
     replace: "        let flow = pruned.as_ref().map_or(body, |_| body);\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "setter"],
+    tests: ["test/corpus.test.ts", "-t", "^set_field_drops_in_a_cycle.rs$"],
+    snapshots: true,
   },
   {
     name: "held-iterator-unheld",
