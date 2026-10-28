@@ -5,8 +5,8 @@ with [0624](0624-is-defined-of-a-path-of-bindings.md)'s paths and
 [0645](0645-is-defined-of-a-static-is-of-the-static.md)'s statics, to a
 second question; and [0887](0887-std-items-that-are-math-are-math.md)'s
 `Math`, which every host has, to ECMAScript's first edition's globals.
-Amended: a chain of its tests reads as written, a comment before it kept
-(below).
+Amended: a chain of its tests reads as written, a comment before it kept;
+and of a value of a function's type JS gives, it asks the value (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -140,3 +140,79 @@ Case N for both: the same values. Held by
 is_function's chain read as written"; mutations `local-with-bool-unknown`
 and `defined-test-unplaced`.
 
+## Amendment (2026-10-28): of a value of a function's type, it asks the value
+
+React's SchedulerMock (and Scheduler) runs a task's callback only if it's a
+function, and keeps what it gives back only if that is one:
+
+```js
+const callback = currentTask.callback;
+if (typeof callback === 'function') {
+  ..
+  const continuationCallback = callback(didUserCallbackTimeout);
+  if (typeof continuationCallback === 'function') {
+```
+
+Its test "gracefully handles scheduled tasks that are not a function"
+schedules `null`, `undefined`, `{}` and `42`. A port's task holds
+`Option<Callback>`, a transparent struct of a `Box<dyn FnMut(bool) ->
+Option<Callback>>`, whose `Some` was `callback != null`, so `{}` and `42`
+were called: a `TypeError` where upstream skips them. Nothing could ask
+it: `js::is_function` took a global's binding, and refused anything else.
+
+**`js::is_function` of a value of a function's type that JS may give is
+`typeof value === "function"`**: one argument, a `fn`, a `dyn Fn` lent or
+boxed, a type parameter's `impl Fn`, a transparent struct of one, or an
+`Option` of one, not of an `Option` (`asks_of_value`, `function_given`):
+
+```rust
+if let Some(Callback(mut callback)) = callback
+    && js::is_function(&callback)
+{
+```
+
+```js
+if (typeof callback === "function") {
+```
+
+- **It's the one question, "can it be called", of a value now**, as
+  ADR 0942 made it of a global: a person who knows `typeof X ===
+  "function"` writes `js::is_function`. A global's binding, a static and
+  a path are asked as before; a static of a function's type is asked as
+  the global it is, unread.
+- **The value is read**, where a global's argument isn't
+  (`unread_defined_operands` leaves it, ADR 0647): reading a variable
+  throws nothing.
+- **A closure or a function item the program makes is refused**, as
+  before: only Rust makes one, so it's always a function.
+- **An `Option` of one is `null` or `undefined` where it's `None`**,
+  which `typeof` says isn't a function, so `js::is_function(&callback)`
+  asks of the `Option` as of its value; and an `if let Some(..) = x &&
+  js::is_function(..)` needs no `!= null` before it, which the implied
+  test drops.
+- **Rust is told nothing**, as of a global: natively a value of a
+  function's type is always one. Case A
+  ([0262](0262-when-rust-and-js-disagree.md)): what's asked of JS, as JS
+  asks it.
+
+Alternatives:
+
+- **`js::classify(js::unknown(&callback))`'s `Kind::Function`**: the
+  `&Unknown` form, which reads as `typeof` too, but of a value cast to
+  any value first, and its `Kind::Function` a `&dyn Fn() -> ..` of no
+  parameters, not the callback to call.
+- **Typing the task's callback `Option<&Unknown>`**, as ADR 0910's values
+  are: then it's called as `function::call(f, None, (x,))`, which
+  upstream's `callback(didUserCallbackTimeout)` isn't.
+- **A function of its own, `js::is_callable(&value)`**: a second way to
+  ask one question.
+
+Held by `test/lowering-is-function.test.ts`, "js::is_function of a value
+of a function's type is whether JS gave a function", each form, run of
+`null`, `undefined`, `{}`, `42`, a string and a function; its refusals
+in "js::is_function of what isn't a global's binding is refused"; the
+guide's `run` (interop/global-scope.md). Mutations `is-function-of-no-value`,
+`is-function-value-of-an-option-refused`,
+`is-function-value-of-a-transparent-struct-refused`,
+`is-function-value-of-the-crates-function` (`mir/calls.ts`) and
+`is-function-value-unread` (`mir/temporaries.ts`).

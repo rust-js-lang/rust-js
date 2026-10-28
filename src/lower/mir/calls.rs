@@ -384,15 +384,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// function's, by its type, or a static's, `webapi::performance`, by the
     /// static it is, so no temporary between hides it. A global's own name,
     /// its `js_path`: not an import's, which isn't the host's to lack.
-    /// `None` of another call.
+    /// And `js::is_function` of a value JS gave, `typeof callback ===
+    /// "function"` (`asks_of_value`). `None` of another call.
     pub(super) fn mir_defined(
-        &self,
-        body: &mir::Body<'tcx>,
+        &mut self,
+        state: &mut State<'_, 'tcx>,
         def_id: rustc_span::def_id::DefId,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
         span: Span,
+        out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let tcx = self.tcx;
+        let body = state.body;
         if !bindings::is_binding(tcx, def_id) {
             return Ok(None);
         }
@@ -401,6 +404,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             bindings::JsForm::Function => Asked::Function,
             _ => return Ok(None),
         };
+        if self.asks_of_value(body, def_id, args) {
+            let mut values = self.take_operands(state, &[&args[0].node], out)?;
+            let value = self.value_expr(values.remove(0), span)?;
+            let typeof_ = Expr::unary(js::UnaryOp::Typeof, value);
+            return Ok(Some(
+                Expr::bin(Op::Eq, typeof_, Expr::str("function")).or_at(self.js_span(span)),
+            ));
+        }
         // A path of bindings, each read from the one before (ADR 0624).
         if let Some(arg) = args.first()
             && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()
@@ -447,6 +458,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         };
         self.mir_defined_parts(global, asked, span)
+    }
+
+    /// Whether a call of binding `def_id` given `args` is `js::is_function`
+    /// of a value, not of a global: one argument, of a type whose value is
+    /// a function JS may give, which JS may give as anything else, React's
+    /// SchedulerMock's task `callback` (`function_given`); not a static,
+    /// which is asked as the global it is (ADR 0645). Its argument is read,
+    /// where a global's isn't (`unread_defined_operands`).
+    pub(super) fn asks_of_value(
+        &self,
+        body: &mir::Body<'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) -> bool {
+        let tcx = self.tcx;
+        let [arg] = args else { return false };
+        matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Function)
+            && self.function_given(arg.node.ty(&body.local_decls, tcx))
+            && self
+                .static_given(body, &arg.node)
+                .filter(|&s| tcx.is_foreign_item(s))
+                .is_none()
+    }
+
+    /// Whether `ty` is a function a JS caller may give, so may give as
+    /// anything else: a `fn`, a `dyn Fn` lent or boxed, a type parameter's
+    /// `impl Fn`, a transparent struct of one, or an `Option` of one. Not a
+    /// closure or a function item, which only Rust makes.
+    fn function_given(&self, ty: ty::Ty<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let ty = ty.peel_refs();
+        if let Some(payload) = self.option_of(ty) {
+            return self.option_of(payload.peel_refs()).is_none() && self.function_given(payload);
+        }
+        match *ty.kind() {
+            ty::Adt(adt, args) if adt.is_box() => self.function_given(args.type_at(0)),
+            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| {
+                self.function_given(
+                    adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)]
+                        .ty(tcx, args)
+                        .skip_normalization(),
+                )
+            }),
+            ty::Closure(..) | ty::FnDef(..) => false,
+            _ => self.is_callable(ty),
+        }
     }
 
     /// `typeof` of each part of `global`'s path, joined by `&&`: each but

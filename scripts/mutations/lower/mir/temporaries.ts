@@ -318,4 +318,12 @@ export const mutations: Mutation[] = [
     replace: "            && args.as_closure().upvar_tys().is_empty()\n            && false\n        {\n            return true;\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
   },
+  {
+    name: "is-function-value-unread",
+    breaks: "what `js::is_function` of a value is given is unread as a global's is, so `typeof` reads a temporary never declared",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            || self.asks_of_value(state.body, def_id, args)\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "value of a function's type"],
+  },
 ];

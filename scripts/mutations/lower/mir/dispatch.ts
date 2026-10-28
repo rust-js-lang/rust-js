@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "defined-unread",
     breaks: "`js::is_defined(set_immediate)` is a call of `setImmediate`'s binding, not a `typeof`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if let Some(defined) = self.mir_defined(state.body, def_id, args, span)? {\n",
+    find: "        if let Some(defined) = self.mir_defined(state, def_id, args, span, out)? {\n",
     replace: "        if let Some(defined) = None::<Expr> {\n",
     tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },

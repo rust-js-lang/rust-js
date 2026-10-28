@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const isFunctionValue = ["test/lowering-is-function.test.ts", "-t", "value of a function's type"];
+
 export const mutations: Mutation[] = [
   {
     name: "bool-assign-by-ref-refused",
@@ -411,5 +413,37 @@ export const mutations: Mutation[] = [
     find: "            .map(|test| test.or_at(at))\n",
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "a thread-local bool of another"],
+  },
+  {
+    name: "is-function-of-no-value",
+    breaks: "SchedulerMock's `js::is_function(&callback)` is refused as of no global's binding, so nothing can write `typeof callback === 'function'`",
+    file: "src/lower/mir/calls.rs",
+    find: "        if self.asks_of_value(body, def_id, args) {\n",
+    replace: "        if false && self.asks_of_value(body, def_id, args) {\n",
+    tests: isFunctionValue,
+  },
+  {
+    name: "is-function-value-of-an-option-refused",
+    breaks: "`js::is_function(&Option<Callback>)` is refused: an `Option` of a function isn't one JS may give",
+    file: "src/lower/mir/calls.rs",
+    find: "            return self.option_of(payload.peel_refs()).is_none() && self.function_given(payload);\n",
+    replace: "            return false;\n",
+    tests: isFunctionValue,
+  },
+  {
+    name: "is-function-value-of-a-transparent-struct-refused",
+    breaks: "SchedulerMock's `Callback(Box<dyn FnMut ..>)`, a transparent struct of a function, isn't one JS may give, so its `js::is_function` is refused",
+    file: "src/lower/mir/calls.rs",
+    find: "            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| {\n",
+    replace: "            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| false && {\n",
+    tests: isFunctionValue,
+  },
+  {
+    name: "is-function-value-of-the-crates-function",
+    breaks: "`js::is_function(helper)` of the crate's function, or of a closure, which only Rust makes, is `typeof helper === \"function\"`, always true, not refused",
+    file: "src/lower/mir/calls.rs",
+    find: "            ty::Closure(..) | ty::FnDef(..) => false,\n",
+    replace: "            ty::Closure(..) | ty::FnDef(..) => true,\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "refused"],
   },
 ];

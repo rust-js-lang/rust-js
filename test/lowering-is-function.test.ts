@@ -194,3 +194,57 @@ pub fn supports() -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.supports()).toBe(true);
 });
+
+// React's SchedulerMock runs a task's callback only `if (typeof callback ===
+// 'function')`, and its test "gracefully handles scheduled tasks that are
+// not a function" schedules `null`, `undefined`, `{}` and `42`. A value of
+// a function's type that JS gives may be anything, so `js::is_function` of
+// one asks it, `typeof callback === "function"`: a `fn`, a `dyn Fn` lent
+// or boxed, a type parameter's `impl Fn`, a transparent struct of one, or
+// an `Option` of any of them. A closure the program makes, or one of its
+// functions, is always one, and stays refused.
+test("js::is_function of a value of a function's type is whether JS gave a function", async () => {
+  const dir = fixture("is-function-value");
+  writeFileSync(join(dir, "lib.rs"), `#[repr(transparent)]
+pub struct Callback(Box<dyn Fn(bool) -> Option<f64>>);
+
+/// SchedulerMock's workLoop: \`if (typeof callback === 'function')\`.
+pub fn run(callback: Option<Callback>, did_timeout: bool) -> Option<f64> {
+    if let Some(Callback(callback)) = callback
+        && js::is_function(&callback)
+    {
+        return callback(did_timeout);
+    }
+    None
+}
+
+pub fn pointer(f: fn(f64) -> f64) -> bool {
+    js::is_function(f)
+}
+
+pub fn lent(f: &dyn Fn()) -> bool {
+    js::is_function(f)
+}
+
+pub fn generic(f: impl Fn() + Copy) -> bool {
+    js::is_function(f)
+}
+
+pub fn maybe(callback: &Option<Callback>) -> bool {
+    js::is_function(callback)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof callback === "function") {\n    return callback(didTimeout);\n  }');
+  expect(js).toContain('export function pointer(f) {\n  return typeof f === "function";\n}');
+  expect(js).toContain('export function lent(f) {\n  return typeof f === "function";\n}');
+  expect(js).toContain('export function generic(f) {\n  return typeof f === "function";\n}');
+  expect(js).toContain('export function maybe(callback) {\n  return typeof callback === "function";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  const given = [null, undefined, {}, 42, "f", (t: boolean) => (t ? 1 : 2)];
+  expect(given.map((v) => lib.run(v, true))).toEqual([undefined, undefined, undefined, undefined, undefined, 1]);
+  expect(given.map((v) => [lib.pointer(v), lib.lent(v), lib.generic(v), lib.maybe(v)])).toEqual(
+    given.map((v) => Array(4).fill(typeof v === "function")),
+  );
+});

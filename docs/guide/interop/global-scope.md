@@ -253,6 +253,36 @@ export function hasTimers() {
 }
 ```
 
+Of a value of a function's type that JS gives, which a JS caller may give
+as anything, it asks the value: a `fn`, a `dyn Fn` lent or boxed, an `impl
+Fn`, a transparent struct of one, or an `Option` of one. React's scheduler
+runs a task's callback only `if (typeof callback === 'function')`. A
+closure or a function the program makes is always one, and asking of it
+is an error
+([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
+amended):
+
+```rust
+pub type Callback = Box<dyn Fn(bool) -> Option<f64>>;
+
+pub fn run(callback: Option<Callback>, did_timeout: bool) -> Option<f64> {
+    if let Some(callback) = callback
+        && js::is_function(&callback)
+    {
+        return callback(did_timeout);
+    }
+    None
+}
+```
+
+```js
+export function run(callback, didTimeout) {
+  if (typeof callback === "function") {
+    return callback(didTimeout);
+  }
+}
+```
+
 `js::SymbolFor` itself is `Symbol.for`, asked so and called as it is where
 a variable holds it; a `typeof` an earlier test of an `&&` says isn't
 asked again, as React makes its selector types

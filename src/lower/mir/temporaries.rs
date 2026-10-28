@@ -26,7 +26,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `js::is_defined` is given isn't read: it names what's asked of,
     /// `typeof` of its path, so a static's value MIR copies into its
     /// argument, `Symbol.toStringTag`, is no read before the test, which
-    /// throws where the host hasn't the global (ADR 0647).
+    /// throws where the host hasn't the global (ADR 0647). Not a value
+    /// `js::is_function` asks of, which it reads (`asks_of_value`).
     pub(super) fn unread_defined_operands(
         &self,
         state: &mut State<'_, 'tcx>,
@@ -41,6 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 bindings::js_form(self.tcx, def_id),
                 bindings::JsForm::Defined | bindings::JsForm::Function
             )
+            || self.asks_of_value(state.body, def_id, args)
         {
             return;
         }
