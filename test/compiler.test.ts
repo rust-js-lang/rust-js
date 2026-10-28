@@ -723,7 +723,7 @@ test("enums with fields are tagged objects, as in ReScript", async () => {
 // ADR 0031: a `const` is the value rustc computed, under its own name.
 test("constants are the values rustc computed, by name", async () => {
   const js = await Bun.file(join(target, "consts.js")).text();
-  expect(js).toContain("export const SIZE = 4096;\nconst GREETING = \"hello\";\nconst RATIO = 0.25;\nconst ON = true;");
+  expect(js).toContain("export const SIZE = 4 * 1024;\nconst GREETING = \"hello\";\nconst RATIO = 0.25;\nconst ON = true;");
   expect(js).toContain('const NOTHING = undefined;\nconst LEVEL = "High";');
   // A `const` inside a function goes beside it.
   expect(js).toContain("const STEP = 3;");

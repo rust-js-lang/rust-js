@@ -60,6 +60,37 @@ pub fn zeros() -> f64 {
   expect([lib.OWNER_STACK_LIMIT, lib.SEED, lib.masked(0x1234), lib.small(), lib.whole(), lib.below(), lib.flags(1)]).toEqual([10000, 0x811c9dc5, 0x34, 0.0025, 5000, -10000, 11]);
 });
 
+// ADR 0627, amended: react-dom-bindings' EventSystemFlags, `export const
+// IS_NON_DELEGATED = 1 << 1;`. A constant of literals and operators is as
+// written where JS reads it as rustc's value; one JS reads otherwise, `1 <<
+// 31` of a `u32`, negative in JS, is its value.
+test("a constant expression of literals is as written", async () => {
+  const dir = fixture("constant-expressions-as-written");
+  writeFileSync(join(dir, "lib.rs"), `pub const IS_NON_DELEGATED: i32 = 1 << 1;
+pub const IS_CAPTURE_PHASE: i32 = 1 << 2;
+pub const HIGH: u32 = 1 << 31;
+pub const MASK: u32 = (1 << 4) - 1;
+pub const BELOW: i32 = -(1 << 3);
+pub const NOT: i32 = !0;
+pub const BITS: u8 = 0b1 << 3 | 0x1;
+pub const ORDER: u32 = 1 | 2 << 2;
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const IS_NON_DELEGATED = 1 << 1;");
+  expect(js).toContain("export const IS_CAPTURE_PHASE = 1 << 2;");
+  expect(js).toContain("export const HIGH = 2147483648;");
+  expect(js).toContain("export const MASK = (1 << 4) - 1;");
+  expect(js).toContain("export const BELOW = -(1 << 3);");
+  expect(js).toContain("export const NOT = -1;");
+  expect(js).toContain("export const BITS = (0b1 << 3) | 0x1;");
+  expect(js).toContain("export const ORDER = 1 | (2 << 2);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.IS_NON_DELEGATED, lib.IS_CAPTURE_PHASE, lib.HIGH, lib.MASK, lib.BELOW, lib.NOT, lib.BITS, lib.ORDER]).toEqual([
+    2, 4, 2147483648, 15, -8, -1, 9, 9,
+  ]);
+});
+
 // ADR 0631: a statement `x += 1` is `x++`, and `x -= 1` is `x--`, of a
 // variable, a field or an item: a step of 1, a number literal, is only a
 // number's. Any other step, a string's text, `2`, is as it's written.

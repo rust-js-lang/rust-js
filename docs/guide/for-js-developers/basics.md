@@ -108,8 +108,10 @@ export function banner(count) {
   ReactFiberLane's `NoLane`. A function reads it by its name
   ([ADR 0722](../../decisions/0722-a-repr-enums-variant-is-its-number.md),
   [ADR 0031](../../decisions/0031-consts.md), amended).
-- A `const` of literals is the value rustc computed, `4 * 1024` is
-  `4096`. One written of other constants, the crate's or a library's, is
+- A `const` of literals is the value rustc computed, written as the
+  program writes it where JS reads it as that value, `4 * 1024`, `1 << 1`
+  ([ADR 0627](../../decisions/0627-a-number-literal-keeps-its-base-and-exponent.md#amendment-a-constant-expression-of-literals), amended),
+  else its digits, `1 << 31` of a `u32` `2147483648`. One written of other constants, the crate's or a library's, is
   as it's written, each read by its name, after what it reads; one that
   calls the crate's functions is rustc's value still. A `bool` one's read
   is a boolean, `ENABLED && count > 0`, with no `!!`
@@ -123,7 +125,7 @@ pub const SYNC_UPDATE_LANES: i32 = SYNC_LANE | DEFAULT_LANE;
 ```
 
 ```js
-export const SIZE = 4096;
+export const SIZE = 4 * 1024;
 export const SYNC_LANE = 0b0010;
 export const DEFAULT_LANE = 0b1000;
 export const SYNC_UPDATE_LANES = SYNC_LANE | DEFAULT_LANE;

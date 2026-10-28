@@ -375,4 +375,28 @@ export const mutations: Mutation[] = [
     replace: "                && matches!(&flags.kind, ExprKind::Str(_)) =>\n",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },
+  {
+    name: "written-expression-unchecked",
+    breaks: "a constant's expression is written whatever JS reads it as, so a `u32`'s `1 << 31` is JS's negative `-2147483648`",
+    file: "src/to_oxc/expressions.rs",
+    find: "    (at == tokens.len() && value == n && value.is_finite()).then_some(written)",
+    replace: "    (at == tokens.len() && value.is_finite()).then_some(written)",
+    tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
+  },
+  {
+    name: "written-expression-shift-unmasked",
+    breaks: "`<<` is evaluated of 64-bit integers, not JS's 32, so a `u32`'s `1 << 31` is written as JS's negative",
+    file: "src/to_oxc/expressions.rs",
+    find: "                \"<<\" => a.wrapping_shl(b as u32 & 31) as f64,",
+    replace: "                \"<<\" => ((left.1 as i64) << (b as u32 & 63)) as f64,",
+    tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
+  },
+  {
+    name: "written-expression-precedence-flat",
+    breaks: "operators are read left to right, so `0b1 << 3 | 0x1` and `(1 << 4) - 1` are evaluated otherwise than JS reads them, and their values are written",
+    file: "src/to_oxc/expressions.rs",
+    find: "            let (text, right) = parse(tokens, at, precedence + 1, literal, int32)?;",
+    replace: "            let (text, right) = parse(tokens, at, 7, literal, int32)?;",
+    tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
+  },
 ];

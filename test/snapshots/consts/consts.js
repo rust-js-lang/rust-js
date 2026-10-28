@@ -3,7 +3,7 @@
 // `const` items (ADR 0031): rustc works out each value at compile time, and
 // the JS gives it a name: `const SIZE = 4096;`.
 
-export const SIZE = 4096;
+export const SIZE = 4 * 1024;
 const GREETING = "hello";
 const RATIO = 0.25;
 const ON = true;

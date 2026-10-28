@@ -23,7 +23,7 @@ function isBlockingLane(lane) {
 
 // Read before it's written, and in a closure and a function of its own.
 function clamped(values) {
-  const LIMIT = 42;
+  const LIMIT = 40 + 2;
   const limit = (x) => Math.min(x, LIMIT);
   const out = values.map((x) => step(limit(x)));
   function step(x) {

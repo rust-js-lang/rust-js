@@ -569,10 +569,17 @@ impl<'a> Cx<'a> {
         if !n.is_finite() || (n == 0.0 && n.is_sign_negative()) {
             return Expression::new_numeric_literal(sp, n, None, NumberBase::Decimal, &self.b);
         }
+        // A constant's expression of literals as it's written, `1 << 1`,
+        // where JS reads it as `n` (ADR 0627, amended), parenthesized as an
+        // operand, which the layout leaves out where it needn't be.
+        let text = self.source.get(sp.start as usize..sp.end as usize);
+        if let Some(written) = text.and_then(|text| as_written_expression(text, n)) {
+            return Expression::new_identifier(sp, self.name(&format!("({written})")), &self.b);
+        }
         // oxc would print the shortest text, `.25`: the digits are JS's own,
         // `0.25`, as `String(n)` writes them; or the program's, its base or
         // its exponent (ADR 0627).
-        let written = (self.source.get(sp.start as usize..sp.end as usize)).and_then(|text| as_written(text, n.abs()));
+        let written = text.and_then(|text| as_written(text, n.abs()));
         let digits = written.unwrap_or_else(|| js_number(n.abs()));
         let digits = Expression::new_identifier(sp, self.name(&digits), &self.b);
         if n < 0.0 {
@@ -750,6 +757,141 @@ fn as_written(text: &str, n: f64) -> Option<String> {
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '+')))
     .then_some(body)
+}
+
+/// A constant's expression of number literals and operators as the program
+/// writes it, `1 << 1`, where JS reads it as the value `n` rustc computed:
+/// its literals as JS writes them (`as_written`), each of JS's own
+/// precedence, evaluated as JS evaluates them, `<<` of 32-bit integers too,
+/// so text JS reads otherwise, `1u32 << 31`'s, is never written (ADR 0627,
+/// amended). Unary `-` and `~`, binary `* + - << >> & ^ |` and parentheses;
+/// anything else, a cast, a name, `/`, isn't.
+fn as_written_expression(text: &str, n: f64) -> Option<String> {
+    #[derive(Clone, Copy, PartialEq)]
+    enum Token<'t> {
+        Number(&'t str),
+        Op(&'static str),
+    }
+    let mut tokens = Vec::new();
+    let mut rest = text.trim();
+    while !rest.is_empty() {
+        rest = rest.trim_start();
+        let op = ["<<", ">>", "(", ")", "-", "~", "*", "+", "&", "^", "|"]
+            .into_iter()
+            .find(|op| rest.starts_with(op));
+        match op {
+            Some(op) => {
+                tokens.push(Token::Op(op));
+                rest = &rest[op.len()..];
+            }
+            None => {
+                let end = rest
+                    .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                    .unwrap_or(rest.len());
+                if end == 0 {
+                    return None;
+                }
+                tokens.push(Token::Number(&rest[..end]));
+                rest = &rest[end..];
+            }
+        }
+    }
+    if !tokens
+        .iter()
+        .any(|t| matches!(t, Token::Op(op) if *op != "(" && *op != ")"))
+    {
+        return None;
+    }
+    // Each literal as JS writes it, and its value; an integer past what a
+    // JS number holds exactly, none.
+    let literal = |text: &str| -> Option<(String, f64)> {
+        let plain = text.replace('_', "");
+        let suffixes = ["u8", "u16", "u32", "usize", "i8", "i16", "i32", "isize"];
+        let based = ["0x", "0o", "0b"].into_iter().find(|prefix| plain.starts_with(prefix));
+        let (written, value) = match based {
+            Some(prefix) => {
+                let digits = &plain[2..];
+                let digits = suffixes.iter().find_map(|s| digits.strip_suffix(s)).unwrap_or(digits);
+                let radix = match prefix {
+                    "0x" => 16,
+                    "0o" => 8,
+                    _ => 2,
+                };
+                let value = u64::from_str_radix(digits, radix).ok()?;
+                (format!("{prefix}{}", digits.to_ascii_lowercase()), value)
+            }
+            None => {
+                let digits = suffixes.iter().find_map(|s| plain.strip_suffix(s)).unwrap_or(&plain);
+                if !digits.bytes().all(|c| c.is_ascii_digit()) || (digits.len() > 1 && digits.starts_with('0')) {
+                    return None;
+                }
+                (digits.to_string(), digits.parse::<u64>().ok()?)
+            }
+        };
+        (value <= 1 << 53).then_some((written, value as f64))
+    };
+    let int32 = |v: f64| (v as i64) as i32;
+    // Of precedence `min` and up, from `at`: its text and its value.
+    fn parse(
+        tokens: &[Token<'_>],
+        at: &mut usize,
+        min: u8,
+        literal: &dyn Fn(&str) -> Option<(String, f64)>,
+        int32: &dyn Fn(f64) -> i32,
+    ) -> Option<(String, f64)> {
+        let mut left = match *tokens.get(*at)? {
+            Token::Number(text) => {
+                *at += 1;
+                literal(text)?
+            }
+            Token::Op("(") => {
+                *at += 1;
+                let (text, value) = parse(tokens, at, 0, literal, int32)?;
+                (*tokens.get(*at)? == Token::Op(")")).then_some(())?;
+                *at += 1;
+                (format!("({text})"), value)
+            }
+            Token::Op(op @ ("-" | "~")) => {
+                *at += 1;
+                let (text, value) = parse(tokens, at, 7, literal, int32)?;
+                let value = if op == "-" { -value } else { !int32(value) as f64 };
+                (format!("{op}{text}"), value)
+            }
+            _ => return None,
+        };
+        while let Some(Token::Op(op)) = tokens.get(*at).copied() {
+            let precedence = match op {
+                "|" => 1,
+                "^" => 2,
+                "&" => 3,
+                "<<" | ">>" => 4,
+                "+" | "-" => 5,
+                "*" => 6,
+                _ => break,
+            };
+            if precedence < min {
+                break;
+            }
+            *at += 1;
+            let (text, right) = parse(tokens, at, precedence + 1, literal, int32)?;
+            let (a, b) = (int32(left.1), int32(right));
+            let value = match op {
+                "|" => (a | b) as f64,
+                "^" => (a ^ b) as f64,
+                "&" => (a & b) as f64,
+                "<<" => a.wrapping_shl(b as u32 & 31) as f64,
+                ">>" => (a >> (b as u32 & 31)) as f64,
+                "+" => left.1 + right,
+                "-" => left.1 - right,
+                _ => left.1 * right,
+            };
+            left = (format!("{} {op} {text}", left.0), value);
+        }
+        Some(left)
+    }
+    let mut at = 0;
+    let (written, value) = parse(&tokens, &mut at, 0, &literal, &int32)?;
+    (at == tokens.len() && value == n && value.is_finite()).then_some(written)
 }
 
 fn js_number(n: f64) -> String {

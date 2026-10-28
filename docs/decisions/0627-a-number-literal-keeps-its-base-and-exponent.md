@@ -1,6 +1,7 @@
 # 0627. A number literal keeps its base and its exponent
 
-Status: Accepted. Extends [0011](0011-numbers.md).
+Status: Accepted. Extends [0011](0011-numbers.md). Amended: a constant
+expression of literals is as written where JS reads it as its value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: how a number is
 written, not what it is.
@@ -65,3 +66,34 @@ zeros are dropped, one kept before its point or its exponent: `0e10`,
 JavaScript has no spelling of it, so it's rewritten. Held by
 `test/lowering-numbers.test.ts`, "a number literal keeps its base and its
 exponent", and the mutation `literal-leading-zeros-kept`.
+
+## Amendment: a constant expression of literals
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: how a number is
+written, where JS reads it as the same value.
+
+react-dom-bindings' EventSystemFlags writes `export const
+IS_NON_DELEGATED = 1 << 1;`; its port's `pub const IS_NON_DELEGATED: i32 =
+1 << 1;` printed rustc's value, `2`, which says less of what each flag is.
+
+**A constant's value, where its source is an expression of number
+literals and operators that JS reads as that value, is written as the
+program wrote it:** `1 << 1`, `(1 << 4) - 1`, `-(1 << 3)`, `(0b1 << 3) |
+0x1`. The printer (`as_written_expression`, `src/to_oxc/expressions.rs`)
+reads the value's source, takes integer literals (each as a literal is
+written, `as_written`), unary `-` and `~`, `* + - << >> & ^ |` and
+parentheses, evaluates it as JS does, by JS's precedence, `<<`, `>>` and
+the bitwise operators of 32-bit integers, and writes it only where that's
+rustc's value exactly; the layout drops the parentheses it needn't keep.
+So one JS reads otherwise is the value as before: `1 << 31` of a `u32` is
+`2147483648`, JS's `1 << 31` being negative; and `!0`, whose JS is `~0`,
+is `-1`, as is anything else, a cast, a name, `/` or a literal past
+2^53.
+
+Alternatives: the expression lowered as Rust's operators, `(1 << 31) >>>
+0`, writes what the program didn't; a rule by the expression's type
+rather than by its value, which a mistake would make wrong, where this
+can only fall back to the value. `test/lowering-numbers.test.ts` "a
+constant expression of literals is as written"; mutations
+`written-expression-unchecked`, `written-expression-shift-unmasked` and
+`written-expression-precedence-flat`.

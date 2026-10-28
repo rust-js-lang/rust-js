@@ -1,5 +1,6 @@
 // What the compiler writes of a `const` (ADR 0031): rustc's value of it,
-// `export const SIZE = 4096;`, or, where it's written of other constants,
+// as its literals are written where JS reads them so, `export const SIZE =
+// 4 * 1024;` (ADR 0627, amended), or, where it's written of other constants,
 // its initializer as it's written, `A | B`, each read by its name (ADR 0031,
 // amended). Each test is a program of its own, compiled and run.
 
@@ -77,7 +78,7 @@ pub fn named(lane: Lane) -> i32 {
   expect(js).toContain("export const DefaultLane = /*               */ 0b0000000000000000000000000100000;\n");
   expect(js).toContain("export const SyncUpdateLanes = SyncLane | InputContinuousLane | DefaultLane;\n");
   expect(js).toContain("export const SomeTransitionLane = TransitionLane1;\n");
-  expect(js).toContain("export const SIZE = 4096;\nexport const HALF = (SIZE / 2) >>> 0;\n");
+  expect(js).toContain("export const SIZE = 4 * 1024;\nexport const HALF = (SIZE / 2) >>> 0;\n");
   // One that runs the crate's code is rustc's value, as before.
   expect(js).toContain("export const DOUBLED = 8192;\n");
   expect(js).toContain("export const NoEventPriority = [SyncLane];\n");
