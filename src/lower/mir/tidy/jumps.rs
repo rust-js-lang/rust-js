@@ -420,8 +420,7 @@ pub(super) fn written(returns: &[js::Span], span: js::Span) -> bool {
 /// `l: { if (a) { break l; } if (b) { break l; } rest } t`, of `let … else`
 /// and checks that go on to one end, `t`, a `throw` or a `return`, and
 /// `rest` never going on past its own: `if (a || b) { t } rest`, as a
-/// person writes a guard; each guard one that tests on too, an `||` of
-/// `&&`s the program tests (`break_test`).
+/// person writes a guard (`break_test`).
 pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
     for i in 0..stmts.len() {
         let StmtKind::Labeled(label, body) = &stmts[i].kind else {
@@ -455,23 +454,14 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
     }
 }
 
-/// When `stmt` breaks out to `label`, of `if`s that do or test on:
-/// `if (!m) { if (c) { break l; } } else { break l; }`'s `m || c`. One that
-/// tests on with no `else`, `if (k) { if (m) { break l; } }`, is
-/// `skipped_tests`' (ADR 0946), whose one test is `k && m` too.
+/// When `stmt` breaks out to `label`, `if (c) { break l; }`: its test,
+/// `c`. One that tests on, `if (k) { if (m) { break l; } }`, or breaks in
+/// its `else`, is `skipped_tests`' (ADR 0946), whose one test is the same.
 pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
-    let StmtKind::If(test, then, otherwise) = &stmt.kind else {
-        return None;
-    };
-    let breaks = |s: &[Stmt]| matches!(s, [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label);
-    let inner = |s: &[Stmt]| match s {
-        [one] => break_test(one, label),
+    match &stmt.kind {
+        StmtKind::If(test, then, None) if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label) => {
+            Some(test.clone())
+        }
         _ => None,
-    };
-    match otherwise.as_deref() {
-        None if breaks(then) => Some(test.clone()),
-        None => None,
-        Some(otherwise) if breaks(otherwise) => Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),
-        Some(_) => None,
     }
 }

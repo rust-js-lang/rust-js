@@ -153,5 +153,7 @@ before.
 So too `guarded`'s guard that tests on with no `else`, `if (k) { if (m) {
 break l; } }`, which `break_test` read as `k && m`: the block it leaves
 is `skipped_tests`' then, whose one test is the same, and no JS changed
-without it. A guard with an `else` that breaks, `!m || ..`, is still
-`guarded`'s. Its mutation, `break-test-nested-unread`, goes with it.
+without it; nor one that breaks in its `else`, `!m || ..`, which with it
+gone no input reaches. `guarded` reads `if (c) { break l; }`s alone; the
+mutations `break-test-nested-unread` and `break-test-else-unnegated` go
+with the rest.

@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
   },
   {
-    "name": "break-test-else-unnegated",
-    "breaks": "`if (!m) { .. } else { break l; }` is read as `!m || ..`, breaking where `m` doesn't hold",
-    "file": "src/lower/mir/tidy/jumps.rs",
-    "find": "Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),\n",
-    "replace": "Some(Expr::bin(Op::Or, test.clone(), inner(then)?)),\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "an or of ands from MIR is one test"]
-  },
-  {
     name: "loop-exit-before-what-goes-on",
     breaks: "`if (c) { a } return x;` is `if (!c) { return x; } a`, where `a` goes on round the loop instead of returning",
     file: "src/lower/mir/tidy/jumps.rs",
