@@ -1417,6 +1417,7 @@ pub mod dict {
 /// A JS [`Promise`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// of a `T`. `.await` on one is JS's `await`; a rejected one throws, like a
 /// panic. See ADR 0029.
+#[cfg_attr(rust_js, rust_js::types = "Promise<T>")]
 pub struct Promise<T>(PhantomData<JsObject>, PhantomData<T>);
 
 /// A promise is a handle JS shares: `p.then(f)` leaves `p` as it was, so
@@ -1597,6 +1598,7 @@ pub fn set_immediate(callback: Box<dyn FnOnce()>) -> &'static Immediate {
 /// here; with a closure, and `matchAll`, are bindings a program declares, typed
 /// for its pattern: a JS replacer is given the match, then each group, then
 /// where it matched, so its Rust type is the pattern's.
+#[cfg_attr(rust_js, rust_js::types = "RegExp")]
 pub struct RegExp(PhantomData<JsObject>);
 
 impl RegExp {

@@ -154,6 +154,7 @@ pub struct ResolvedCollatorOptions {
 
 /// [`Intl.Collator`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator): text compared as a locale orders it.
 #[cfg_attr(rust_js, rust_js::name = "Intl.Collator")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.Collator")]
 pub struct Collator(PhantomData<JsObject>);
 
 impl Collator {
@@ -432,6 +433,7 @@ pub struct NumberRangeFormatPart {
 
 /// [`Intl.NumberFormat`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat): numbers written as a locale writes them.
 #[cfg_attr(rust_js, rust_js::name = "Intl.NumberFormat")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.NumberFormat")]
 pub struct NumberFormat(PhantomData<JsObject>);
 
 impl NumberFormat {
@@ -654,6 +656,7 @@ pub struct DateTimeRangeFormatPart {
 
 /// [`Intl.DateTimeFormat`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat): dates written as a locale writes them.
 #[cfg_attr(rust_js, rust_js::name = "Intl.DateTimeFormat")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.DateTimeFormat")]
 pub struct DateTimeFormat(PhantomData<JsObject>);
 
 impl DateTimeFormat {
@@ -758,6 +761,7 @@ pub struct ResolvedPluralRulesOptions {
 
 /// [`Intl.PluralRules`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules): which plural form a number takes in a locale.
 #[cfg_attr(rust_js, rust_js::name = "Intl.PluralRules")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.PluralRules")]
 pub struct PluralRules(PhantomData<JsObject>);
 
 impl PluralRules {
@@ -848,6 +852,7 @@ pub struct RelativeTimeFormatPart {
 
 /// [`Intl.RelativeTimeFormat`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat): a time from now written as a locale writes it, `in 3 days`.
 #[cfg_attr(rust_js, rust_js::name = "Intl.RelativeTimeFormat")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.RelativeTimeFormat")]
 pub struct RelativeTimeFormat(PhantomData<JsObject>);
 
 impl RelativeTimeFormat {
@@ -932,6 +937,7 @@ pub struct ListFormatPart {
 
 /// [`Intl.ListFormat`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat): lists written as a locale writes them.
 #[cfg_attr(rust_js, rust_js::name = "Intl.ListFormat")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.ListFormat")]
 pub struct ListFormat(PhantomData<JsObject>);
 
 impl ListFormat {
@@ -1027,6 +1033,7 @@ pub struct ResolvedDisplayNamesOptions {
 
 /// [`Intl.DisplayNames`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames): languages, regions, currencies and scripts named as a locale names them.
 #[cfg_attr(rust_js, rust_js::name = "Intl.DisplayNames")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.DisplayNames")]
 pub struct DisplayNames(PhantomData<JsObject>);
 
 impl DisplayNames {
@@ -1076,6 +1083,7 @@ pub struct LocaleOptions<'a> {
 
 /// [`Intl.Locale`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale): a locale and its parts, `en-Latn-US`.
 #[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]
 pub struct Locale(PhantomData<JsObject>);
 
 impl Locale {
@@ -1226,6 +1234,7 @@ pub mod segments {
 
 /// [`Intl.Segmenter`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter): text split into what a locale sees as its letters, words or sentences.
 #[cfg_attr(rust_js, rust_js::name = "Intl.Segmenter")]
+#[cfg_attr(rust_js, rust_js::types = "Intl.Segmenter")]
 pub struct Segmenter(PhantomData<JsObject>);
 
 impl Segmenter {

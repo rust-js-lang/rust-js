@@ -752,10 +752,13 @@ export function size(input) {
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
   two of one kind. A JS type's class is the global its
-  `#[rust_js::types]` names, `types = "URL"`'s `instanceof URL`, or of a
-  type that declares none, its name's; a module's type, `types =
-  "chart.js#Chart"`, is an object, `typeof value === "object"`, as no
-  `instanceof` can name a class its module doesn't import
+  `#[rust_js::types]` names, `types = "URL"`'s `instanceof URL`, as the js
+  crate's `Date`, `RegExp`, `Promise`, buffers and `Intl` classes declare
+  theirs; a module's type, `types = "chart.js#Chart"`, is an object,
+  `typeof value === "object"`, as no `instanceof` can name a class its
+  module doesn't import. A type that declares none, or `JsError`, what JS
+  threw, is an error as a variant's payload, not `instanceof` a class of
+  its name JS may not have
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A `RefCell` of an array or an object is that, and an
   `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
   an array, except where the crate has one as a box, `{ value }` or

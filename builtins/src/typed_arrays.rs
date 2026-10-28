@@ -19,6 +19,7 @@ use core::ops::Deref;
 
 /// [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer): bytes, which a typed array or a
 /// `DataView` reads and writes.
+#[cfg_attr(rust_js, rust_js::types = "ArrayBuffer")]
 pub struct ArrayBuffer(PhantomData<JsObject>);
 
 impl ArrayBuffer {
@@ -88,6 +89,7 @@ pub mod array_buffer {
 }
 
 /// [`SharedArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer): bytes workers share.
+#[cfg_attr(rust_js, rust_js::types = "SharedArrayBuffer")]
 pub struct SharedArrayBuffer(PhantomData<JsObject>);
 
 impl SharedArrayBuffer {
@@ -177,6 +179,7 @@ impl<B> ArrayBufferView<B> {
 
 /// [`DataView`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/DataView): a buffer's bytes read and written as numbers
 /// of any kind, at any offset, big-endian unless `little_endian` says.
+#[cfg_attr(rust_js, rust_js::types = "DataView")]
 pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 
@@ -338,6 +341,7 @@ impl<T: ?Sized + Takes<A>, A, const N: usize> ArrayLike<T> for [A; N] {}
 impl<T: ?Sized + Takes<A>, A> ArrayLike<T> for Vec<A> {}
 
 /// [`Int8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array): 1-byte `i8`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Int8Array")]
 pub struct Int8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -614,6 +618,7 @@ pub mod int8_array {
 }
 
 /// [`Uint8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array): 1-byte `u8`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Uint8Array")]
 pub struct Uint8Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -890,6 +895,7 @@ pub mod uint8_array {
 }
 
 /// [`Uint8ClampedArray`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray): 1-byte `u8`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Uint8ClampedArray")]
 pub struct Uint8ClampedArray<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -1166,6 +1172,7 @@ pub mod uint8_clamped_array {
 }
 
 /// [`Int16Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array): 2-byte `i16`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Int16Array")]
 pub struct Int16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -1442,6 +1449,7 @@ pub mod int16_array {
 }
 
 /// [`Uint16Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array): 2-byte `u16`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Uint16Array")]
 pub struct Uint16Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -1718,6 +1726,7 @@ pub mod uint16_array {
 }
 
 /// [`Int32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array): 4-byte `i32`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Int32Array")]
 pub struct Int32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -1994,6 +2003,7 @@ pub mod int32_array {
 }
 
 /// [`Uint32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array): 4-byte `u32`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Uint32Array")]
 pub struct Uint32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -2270,6 +2280,7 @@ pub mod uint32_array {
 }
 
 /// [`Float32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array): 4-byte `f32`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Float32Array")]
 pub struct Float32Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -2546,6 +2557,7 @@ pub mod float32_array {
 }
 
 /// [`Float64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array): 8-byte `f64`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "Float64Array")]
 pub struct Float64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -2822,6 +2834,7 @@ pub mod float64_array {
 }
 
 /// [`BigInt64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array): 8-byte `i64`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "BigInt64Array")]
 pub struct BigInt64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.
@@ -3098,6 +3111,7 @@ pub mod big_int64_array {
 }
 
 /// [`BigUint64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array): 8-byte `u64`s in a buffer, `B`.
+#[cfg_attr(rust_js, rust_js::types = "BigUint64Array")]
 pub struct BigUint64Array<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
 // An object, never `undefined`, which a structured clone copies.

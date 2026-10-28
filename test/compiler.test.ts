@@ -666,7 +666,9 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
 // one TypeScript names it, a global's, `instanceof URL` of a `Url` declared
 // `#[rust_js::types = "URL"]`, not of its Rust name; and a module's type,
 // `./shapes.js#Chart`, which an `instanceof` would read unimported, is
-// told apart as an object.
+// told apart as an object. The js crate's global classes declare theirs,
+// `js::RegExp` and `js::intl::Collator` (one that declares none is refused,
+// diagnostics.test.ts).
 test("an untagged enum's JS object is tested by the class TypeScript names", async () => {
   const dir = fixture("untagged-declared-classes");
   writeFileSync(join(dir, "shapes.js"), "export class Chart {}\n");
@@ -701,6 +703,21 @@ pub fn link(link: Link) -> String {
     }
 }
 
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Pattern<'a> {
+    Regex(&'a js::RegExp),
+    Collator(&'a js::intl::Collator),
+    Text(&'a str),
+}
+
+pub fn pattern(pattern: Pattern) -> String {
+    match pattern {
+        Pattern::Regex(_) => "regex".to_string(),
+        Pattern::Collator(_) => "collator".to_string(),
+        Pattern::Text(text) => text.to_string(),
+    }
+}
+
 pub fn drawn(drawn: Drawn) -> String {
     match drawn {
         Drawn::Chart(_) => "chart".to_string(),
@@ -719,6 +736,9 @@ pub fn drawn(drawn: Drawn) -> String {
   const { Chart } = await import(join(dir, "shapes.js"));
   expect([lib.link(new URL("https://a.b")), lib.link("x")]).toEqual(["url", "x"]);
   expect([lib.drawn(new Chart()), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "2 charts", "pie"]);
+  expect(js).toContain("pattern instanceof RegExp");
+  expect(js).toContain("pattern instanceof Intl.Collator");
+  expect([lib.pattern(/a/), lib.pattern(new Intl.Collator()), lib.pattern("x")]).toEqual(["regex", "collator", "x"]);
 });
 
 // A slice's `concat` of parts written out is an array of them, spread, as

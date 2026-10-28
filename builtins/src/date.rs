@@ -13,6 +13,7 @@ use core::marker::PhantomData;
 
 /// [`Date`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date):
 /// `date::now()` is the time, `date::new(None)` a `Date` of it.
+#[cfg_attr(rust_js, rust_js::types = "Date")]
 pub struct Date(PhantomData<JsObject>);
 
 // An object, never `undefined`.

@@ -6,8 +6,11 @@ use core::marker::PhantomData;
 use core::ops::Deref;
 use js::{ArrayBuffer, JsObject, RegExp};
 
-/// JS's `Error`, and its subclass `TypeError`, as `Deref` says.
+/// JS's `Error`, and its subclass `TypeError`, as `Deref` says, each the
+/// global class its `types` names.
+#[cfg_attr(rust_js, rust_js::types = "Error")]
 pub struct Error(PhantomData<JsObject>);
+#[cfg_attr(rust_js, rust_js::types = "TypeError")]
 pub struct TypeError(PhantomData<JsObject>);
 
 impl Deref for TypeError {

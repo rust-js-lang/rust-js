@@ -213,24 +213,48 @@ pub(super) fn untagged_adt<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Adt
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    /// What JS can tell a payload of type `ty` is, if anything: not an
-    /// `Option`'s `undefined`, a `()`, a generic `T` or an enum.
-    pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
+    /// The value JS has of a payload of type `ty`: past a reference and a
+    /// box, an `Rc` is what it points at, and a `RefCell` of an object the
+    /// object, the array a `RefCell<Vec<T>>` is (ADRs 0844, 0863): of one
+    /// that's a box where the crate's code has it, `{ value }` or counted,
+    /// refused once that's known (`held_payloads`).
+    fn untagged_payload(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         let ty = ty.peel_refs();
         let ty = ty.boxed_ty().unwrap_or(ty);
-        // An `Rc` is what it points at, and a `RefCell` of an object the
-        // object, the array a `RefCell<Vec<T>>` is (ADRs 0844, 0863): of
-        // one that's a box where the crate's code has it, `{ value }` or
-        // counted, refused once that's known (`held_payloads`).
         if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {
-            return self.untagged_kind(pointee);
+            return self.untagged_payload(pointee);
         }
         if let ty::Adt(cell, args) = ty.kind()
             && super::recognition::is_std_def(self.tcx, cell.did(), StdItem::RefCell)
             && super::drops::holds_itself(self.tcx, args.type_at(0))
         {
-            return self.untagged_kind(args.type_at(0));
+            return self.untagged_payload(args.type_at(0));
         }
+        ty
+    }
+
+    /// The JS object type a payload of type `ty` is, where it declares no
+    /// `#[rust_js::types]` nor `#[rust_js::test]`: one whose class JS can't
+    /// be told, as nothing says one of its name exists, `instanceof Tag`
+    /// of an undeclared `Tag` throwing (#391).
+    pub(super) fn undeclared_js_object(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        let ty = self.untagged_payload(ty);
+        match ty.kind() {
+            ty::Adt(adt, _)
+                if self.is_js_object(ty)
+                    && written_types(self.tcx, adt.did()).is_none()
+                    && bindings::test_of(self.tcx, adt.did()).is_none() =>
+            {
+                Some(adt.did())
+            }
+            _ => None,
+        }
+    }
+
+    /// What JS can tell a payload of type `ty` is, if anything: not an
+    /// `Option`'s `undefined`, a `()`, a generic `T` or an enum.
+    pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
+        let ty = self.untagged_payload(ty);
         if self.is_string_like(ty) || ty.is_char() {
             return Some(Kind::String);
         }
@@ -282,14 +306,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // object literal, `Dict`'s `{ [key: string]: T }`, `object`, or a
         // module's type, `chart.js#Chart`, which an `instanceof` would read
         // unimported; an array's or a function's, that; nothing JS can tell
-        // of `unknown` or a union. One TypeScript names nothing is the global
-        // class of its name, `RegExp`, `Intl.Collator` of `rust_js::name`.
+        // of `unknown` or a union. One TypeScript names nothing has no class
+        // JS can be told exists, a global of its name or none, refused
+        // (`undeclared_js_object`): the js crate's `RegExp` declares
+        // `types = "RegExp"`, as each of its global classes does.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
         {
             let class = |name: String| Some(Kind::Class(name, Some(adt.did())));
             return match written_types(self.tcx, adt.did()) {
-                None => class(bindings::class_name(self.tcx, adt.did())),
+                None => None,
                 Some(Written::Reference { from: None, name, .. }) => class(name),
                 Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),
                 Some(Written::Keyword(keyword)) if keyword == "object" => Some(Kind::Object),
@@ -327,12 +353,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// type TypeScript names otherwise, `object` or `unknown`, or doesn't,
     /// `JsError`, what JS threw, of no one class.
     pub(super) fn class_value(&self, ty: Ty<'tcx>) -> Option<String> {
-        // A class `untagged_kind` found of a global TypeScript names, not one
-        // it takes of a type's name.
-        let Some(Kind::Class(class, Some(did))) = self.untagged_kind(ty) else {
-            return None;
-        };
-        written_types(self.tcx, did).is_some().then_some(class)
+        // A class `untagged_kind` found of a global TypeScript names, the
+        // only one it finds of a binding's type, not `Map`'s of std's.
+        match self.untagged_kind(ty) {
+            Some(Kind::Class(class, Some(_))) => Some(class),
+            _ => None,
+        }
     }
 
     /// What JS can tell `variant` is: its payload's kind, or of one without
@@ -821,12 +847,18 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                 }
                 let ty = field.ty(tcx, args).skip_normalization();
                 let Some(kind) = recognition.untagged_kind(ty) else {
-                    error(
-                        span,
-                        format!(
+                    let message = match recognition.undeclared_js_object(ty) {
+                        Some(did) => {
+                            let name = tcx.item_name(did);
+                            format!(
+                                "JS can't tell a `{ty}` from another variant's value: `{name}` declares no `#[rust_js::types]`, so no class JS has is known to be its, and an `instanceof {name}` of none throws; declare what TypeScript names it, a global class, `#[rust_js::types = \"{name}\"]`, a module's, `\"module#{name}\"`, or `\"object\"` (ADR 0214, #391)"
+                            )
+                        }
+                        None => format!(
                             "JS can't tell a `{ty}` from another variant's value: an untagged enum's variant holds a string, a number, a `bool`, an array, a JS object, a function or a struct (ADR 0214)"
                         ),
-                    );
+                    };
+                    error(span, message);
                     continue;
                 };
                 // Two variants of one kind are told apart nowhere but where
