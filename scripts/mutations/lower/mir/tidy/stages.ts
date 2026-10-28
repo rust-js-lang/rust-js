@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "    pass(\"tail jumps\", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n    pass(\"branch values\", branch_values_of),\n",
     replace: "    pass(\"tail jumps\", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a let chain from MIR is one test, past what held its parts"],
   },
   {
     name: "mir-tidy-and-tests-off",
