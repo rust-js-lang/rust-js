@@ -1419,13 +1419,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let type_args = self.type_args(did, args);
                     return reference(&name, type_args);
                 }
-                // Another module's is imported from its file; one of a module
-                // without one, of types only, has nowhere it's declared.
+                // Another module's is imported from its file, which a module
+                // of a public type has, of types alone its `.d.ts` (ADR 1005).
                 if home != self.module {
-                    let Some(path) = self.files.get(&home) else {
-                        return keyword("any");
-                    };
-                    self.imported(path.clone(), did, type_name(tcx, did));
+                    self.imported(self.files[&home].clone(), did, type_name(tcx, did));
                 }
                 let type_args = self.type_args(did, args);
                 reference(&type_name(tcx, did), type_args)

@@ -198,11 +198,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-extends-any",
-    breaks: "another module's flattened struct is `extends any`, which TypeScript refuses",
+    breaks: "a flattened field of another module's type of the crate's own, `pub(crate) struct Far`, is `extends any`, which TypeScript refuses",
     file: "src/lower/declarations.rs",
     find: "                    (true, _) => Vec::new(),",
     replace: "                    (true, _) => vec![inner],",
-    tests,
+    tests: ["test/declarations-flatten.test.ts"],
   },
   {
     name: "shadowed-names-not-omitted",
@@ -224,16 +224,8 @@ export const mutations: Mutation[] = [
     name: "module-type-not-imported",
     breaks: "another module's type is named, `RouteItem[]`, but not imported",
     file: "src/lower/declarations.rs",
-    find: "                    self.imported(path.clone(), did, type_name(tcx, did));\n",
+    find: "                    self.imported(self.files[&home].clone(), did, type_name(tcx, did));\n",
     replace: "",
-    tests,
-  },
-  {
-    name: "types-only-module-imported",
-    breaks: "a type of a module of types only, which has no file, is imported from one that isn't there",
-    file: "src/lower/declarations.rs",
-    find: "                    let Some(path) = self.files.get(&home) else {\n                        return keyword(\"any\");\n                    };",
-    replace: "                    let path = &super::module_path(tcx, home);",
     tests,
   },
   {
