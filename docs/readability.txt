@@ -6,5 +6,5 @@ labeled blocks	16	1.3
 while (true)	127	10.5
 $iter	1006	83
 Iterator.from	170	14
-return;	119	9.8
+return;	120	9.9
 renamed x$1	8263	681.7

@@ -960,7 +960,11 @@ pub(in crate::lower::mir::tidy) fn returned_values(
 /// the same either way round. MIR's structure
 /// makes a guard of it where `exit` is short, `if __DEV__ { .. } return
 /// None;`'s `if (!__DEV__) { return null; } ..` (ADR 0879, amended).
-pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+pub(in crate::lower::mir::tidy) fn written_thens(
+    stmts: &mut Vec<Stmt>,
+    thens: &[(js::Span, js::Span)],
+    returns: &[js::Span],
+) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for at in 0..stmts.len() {
         let (if_stmt, rest) = (&stmts[at], &stmts[at + 1..]);
@@ -978,13 +982,50 @@ pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &
         {
             continue;
         }
-        let rest = stmts.split_off(at + 1);
+        let mut rest = stmts.split_off(at + 1);
+        // The `return;` the rest goes on to, `returns_at_ends`'s, is the one
+        // the program wrote in its `then`, which MIR joined to it.
+        if let Some(
+            last @ Stmt {
+                kind: StmtKind::Return(None),
+                ..
+            },
+        ) = rest.last_mut()
+            && last.span.is_none()
+            && let Some(&written) = returns.iter().find(|r| within(then, **r))
+        {
+            last.span = written;
+        }
         let StmtKind::If(test, exit, None) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
         stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);
         stmts.extend(exit);
         break;
+    }
+}
+
+/// Each way through a body that goes on past its end, or to the `return;`
+/// it ends with, given a `return;` of its own, MIR's (no span), so
+/// `written_thens` sees it leave, which `tail returns` takes away again where
+/// it still ends one: the `Ok` arm of React's
+/// throwAndUnwindWorkLoop, `if (!didFatal) { ..; return; }
+/// panicOnRootError(..);`, whose rest goes on to the function's end (ADR
+/// 0879, amended). An `if`'s with an `else`, in each branch.
+pub(in crate::lower::mir::tidy) fn returns_at_ends(stmts: &mut Vec<Stmt>) {
+    let returned = stmts.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None)));
+    let end = stmts.len() - usize::from(returned);
+    match stmts[..end].last_mut() {
+        Some(Stmt {
+            kind: StmtKind::If(_, then, Some(otherwise)),
+            ..
+        }) => {
+            returns_at_ends(then);
+            returns_at_ends(otherwise);
+        }
+        _ if returned => {}
+        Some(last) if ends(last) => {}
+        _ => stmts.push(StmtKind::Return(None).at(js::Span::NONE)),
     }
 }
 

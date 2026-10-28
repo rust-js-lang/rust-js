@@ -180,7 +180,12 @@ what MIR copied into both, a binding of an or-pattern's parts or a `?`'s
 each path. Held by `test/corpus/written_tails_apart.rs`, against native
 Rust, and `assignments_chained`, `binding_read_before_set`,
 `loop_exit_code_after`'s snapshots; mutation `written-tails-shared`.
+`docs/readability.txt`'s share of `return;` grows, 9.7 to 9.8 in 10,000
+lines, by `written_tails_apart.rs`'s `catch`: the `return;` the program
+wrote in its `Err` arm, which was merged away with the `Ok` arm's, as
+upstream's `catch` writes it.
 
-Left (wl6): the `Ok` arm's `if did_fatal { ..; return; }` then the code
-after the `match` print `if (!didFatal) { .. } else { .. }`, MIR's
-order; upstream's is `if (didFatal) { ..; return; }` inside the `try`.
+The `Ok` arm's `if did_fatal { ..; return; }` then the code after the
+`match`, which printed `if (!didFatal) { .. } else { .. }`, MIR's order,
+is the `if` as written after the `try` since ADR 0879's amendment of
+2026-10-28 (wl6).

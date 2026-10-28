@@ -2,7 +2,10 @@
 // user's decision (wl6): React's throwAndUnwindWorkLoop's `if (didFatal) {
 // panicOnRootError(..); return; }` and its `catch`'s `else {
 // panicOnRootError(..); return; }`, which merged left a `$catchUnwind`, are
-// a `try` and its `catch` (ADR 0564, amended).
+// a `try` and its `catch` (ADR 0564, amended). The `Ok` arm's `if` is as
+// written too, after the `try`, its rest the function's end (ADR 0879,
+// amended): inside the `try`, upstream's, a throw of `onRootError` would be
+// the `catch`'s.
 use std::cell::Cell;
 use std::panic::{self, AssertUnwindSafe};
 

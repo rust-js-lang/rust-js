@@ -366,10 +366,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written elses", |b, h| {
                 js::statement_lists(b, &mut |s| written_elses(s, h.written, h.returns))
             }),
-            // And one it wrote without an `else`, its body in it (ADR 0879,
-            // amended).
+            // And one it wrote without an `else`, its body in it, of a body
+            // too that goes on to the function's end, its `return;` (ADR
+            // 0879, amended).
             pass("written thens", |b, h| {
-                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+                returns_at_ends(b);
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))
             }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, h| {
@@ -544,7 +546,7 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` the program wrote without an `else` that a loop
             // `while heads` made ends, its body in it (ADR 0879, amended).
             pass("written thens", |b, h| {
-                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))
             }),
             pass("written order steps", |b, _| {
                 js::statement_lists(b, &mut |s| written_order_steps(s))

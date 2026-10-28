@@ -526,4 +526,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
     snapshots: true,
   },
+  {
+    name: "written-thens-end-return-unwritten",
+    breaks: "the `return;` a written `if did_fatal { ..; return; }` goes on to, MIR's joined one, isn't the program's, so `tail returns` makes `if (didFatal) { .. } else { .. }` of it (ADR 0879, amended, wl6)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            last.span = written;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_tails_apart.rs$"],
+    snapshots: true,
+  },
 ];

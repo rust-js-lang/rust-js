@@ -32,11 +32,11 @@ function unwind(x, returnFiber) {
       return;
     }
   }
-  if (!didFatal) {
-    log = (log + 1) >>> 0;
-  } else {
+  if (didFatal) {
     onRootError(x);
+    return;
   }
+  log = (log + 1) >>> 0;
 }
 
 function main() {

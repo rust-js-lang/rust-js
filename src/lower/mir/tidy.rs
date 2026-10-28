@@ -672,13 +672,13 @@ mod tests {
         };
         let turned = |stmts: &[Stmt]| matches!(&stmts[0].kind, StmtKind::If(test, then, None) if matches!(test.kind, ExprKind::Var(_)) && then.len() == 2);
         let mut leaves = [vec![guard()], rest(true)].concat();
-        written_thens(&mut leaves, &thens);
+        written_thens(&mut leaves, &thens, &[]);
         assert!(turned(&leaves) && leaves.len() == 2);
         let mut goes_on = [vec![guard()], rest(false)].concat();
-        written_thens(&mut goes_on, &thens);
+        written_thens(&mut goes_on, &thens, &[]);
         assert!(matches!(&goes_on[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
         let mut elsewhere = [vec![guard()], rest(true)].concat();
-        written_thens(&mut elsewhere, &[(at(0, 3), at(60, 80))]);
+        written_thens(&mut elsewhere, &[(at(0, 3), at(60, 80))], &[]);
         assert!(matches!(&elsewhere[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
     }
 

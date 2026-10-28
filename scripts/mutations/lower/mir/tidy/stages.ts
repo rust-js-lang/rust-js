@@ -694,8 +694,8 @@ export const mutations: Mutation[] = [
     name: "written-thens-not-after-while-heads",
     breaks: "getHostSibling's `if (node.flags & Placement) == 0 { return .. }`, after a loop `while heads` made, is `if (node.flags & PLACEMENT) { continue; } return ..`, a guard (ADR 0879, amended)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))\n            }),\n            pass(\"written order steps\"",
-    replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[]))\n            }),\n            pass(\"written order steps\"",
+    find: "                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))\n            }),\n            pass(\"written order steps\"",
+    replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[], h.returns))\n            }),\n            pass(\"written order steps\"",
     tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
   },
   {
@@ -730,5 +730,14 @@ export const mutations: Mutation[] = [
     find: "                let (elses, returns, booleans) = (&h.written.elses, h.returns, h.booleans);\n                js::statement_lists(b, &mut |s| returned_values(s, elses, returns, booleans))\n            }),\n",
     replace: "                let _ = (b, h);\n            }),\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "an or-pattern's variants are tested in the order written, of a field"],
+  },
+  {
+    name: "written-thens-not-to-the-end",
+    breaks: "React's throwAndUnwindWorkLoop's `Ok` arm, `if did_fatal { ..; return; }` then the code after the match, is `if (!didFatal) { .. } else { onRootError(x); }`, MIR's order, its rest going on to the function's end not seen to leave (ADR 0879, amended, wl6)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                returns_at_ends(b);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_tails_apart.rs$"],
+    snapshots: true,
   },
 ];

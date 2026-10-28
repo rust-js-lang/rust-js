@@ -555,3 +555,38 @@ of a bool literal branch is && or ||", run in JS, of each kind kept;
 `written-bool-ternary-kept`, `written-bool-or-ternary-kept`,
 `written-bool-ternary-of-any-branch` and
 `written-bool-ternary-of-any-test` (`tidy/logicals.ts`).
+
+## Amendment: a written `if` whose rest goes on to the function's end is that `if` (2026-10-28, wl6)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements
+run on each path: what goes on to a function's end returns there.
+
+React's throwAndUnwindWorkLoop's `Ok` arm, `if (didFatal) {
+panicOnRootError(..); return; }`, then the code after the `try`: its
+port's `Ok(did_fatal) => { if did_fatal { panic_on_root_error(..);
+return; } }` printed `if (!didFatal) { .. } else { panicOnRootError(..);
+}` after the `try`. MIR joins the written `return` to the function's
+end, so the `if`'s rest, `panicOnRootError(..)`, goes on there, and
+`written_thens` turned back only a rest that leaves.
+
+**A way through the body that goes on to its end, or to the `return;`
+it ends with, leaves as that `return;` does** (`returns_at_ends`, in the
+`written thens` pass): each is given a `return;` of MIR's, the rest
+leaves, and `written_thens` makes the `if` as written, `if (didFatal) {
+panicOnRootError(..); return; } ..`, its `return;` the one the program
+wrote in the `then`, which `tail returns` keeps; one still at a way's
+end, MIR's, `tail returns` takes away, as before.
+
+Upstream writes that `if` inside the `try`; the port's `if` is in the
+`Ok` arm, outside what `catch_unwind` catches, so a throw of
+`panicOnRootError` isn't the `catch`'s, and the JS keeps it after the
+`try`. A port that wants upstream's shape writes the `if` in the closure,
+its `return` a flag out of it (ADR 0660, amended).
+
+Held by `test/corpus/written_tails_apart.rs`, against native Rust;
+mutations `written-thens-not-to-the-end` (`tidy/stages.ts`) and
+`written-thens-end-return-unwritten` (`tidy/jumps/tails.ts`).
+
+`docs/readability.txt`'s share of `return;` grows, 9.8 to 9.9 in 10,000
+lines, by that `if`'s: the `return;` the program wrote in it, which MIR
+joined to the function's end.
