@@ -647,4 +647,20 @@ export const mutations: Mutation[] = [
     replace: "                        .any(|_| true)\n",
     tests: ["test/js-constructors.test.ts", "-t", "nullable"],
   },
+  {
+    name: "closure-nullable-tuple-item-coalesced",
+    breaks: "React DOM's SyntheticBaseEvent is `function Made(_3, _3$2) { const _3$1 = [_3, _3$2]; const name = _3$1[0] ?? null; ..`, a binding its `#[rust_js::nullable(..)]` names made of the tuple's item as if the body set it (ADR 0861, amended, rd91)",
+    file: "src/lower/mir/assign.rs",
+    find: "            return bindings::nullable_tuple_item(self.tcx, owner, place.local.as_usize() - 2, item.as_usize());\n",
+    replace: "            return false;\n",
+    tests: ["test/js-constructors.test.ts", "-t", "stored through a borrow as given"],
+  },
+  {
+    name: "borrowed-nullable-store-coalesced",
+    breaks: "`*this.inst.borrow_mut() = inst` of a nullable parameter is `this.inst = inst ?? null`, where it's `null` or a value as declared (ADRs 0791, 0861, amended, rd91)",
+    file: "src/lower/mir/assign.rs",
+    find: "                if matches!(place.projection.last(), Some(PlaceElem::Deref))\n",
+    replace: "                if false && matches!(place.projection.last(), Some(PlaceElem::Deref))\n",
+    tests: ["test/js-constructors.test.ts", "-t", "stored through a borrow as given"],
+  },
 ];

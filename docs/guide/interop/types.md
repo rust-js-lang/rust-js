@@ -908,7 +908,8 @@ export function ratio(a, b) {
   A closure's, `function::with_this`'s tuple, says so on the parameter,
   naming its bindings, `#[cfg_attr(rust_js, rust_js::nullable(react_name,
   target_inst))] (react_name, react_event_type, target_inst): (..)`, each
-  stored as it's given, `this._reactName = reactName;`; a function's own
+  stored as it's given, `this._reactName = reactName;`, through a
+  `RefCell`'s `borrow_mut()` too; a function's own
   parameter says so on the function, an error on the parameter (ADR 0861,
   amended).
   A nullable thread-local's whole value cloned,

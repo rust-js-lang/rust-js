@@ -221,11 +221,29 @@ this._reactName = reactName;
   SyntheticEventCtor(reactName, reactEventType, null, ..)`, which is
   upstream's JS too. An unnamed binding is `?? null` still.
 
+- **Its bindings are the function's parameters** (rd91): MIR makes each
+  of the tuple's item, `name = (_3.0)`, which is the binding's own value,
+  not a `None` the body sets (`nullable_tuple_item`), so `function
+  Made(name, inst)`, where the port's shape, a `move` closure in its
+  factory, was `function Made(_3, _3$2) { const _3$1 = [_3, _3$2]; const
+  name = _3$1[0] ?? null; ..`: the same values, but MIR's names and a
+  tuple made again.
+- **Stored through a borrow as it is** (rd91): `*this.target_inst.
+  borrow_mut() = target_inst` of a nullable `RefCell<Option<Rc<Fiber>>>`
+  field writes through a handle that stores as the field does, which
+  tidy applies with no word from MIR (ADR 0791); what's `null` or a value
+  already, such a binding or a function's own nullable parameter, says so
+  (`Known::NoneNull` on what's stored through a reference), `this.inst =
+  inst;`, as a `Cell`'s `set` of it is. A function's own parameter was
+  `made.inst = inst ?? null` there too.
+
 Held by `test/js-constructors.test.ts`'s "a with_this closure's nullable
-parameters are stored as they're given" (named ones stored as given, one
+parameters are stored as they're given", "a with_this closure's nullable
+bindings are its parameters, stored through a borrow as given" (named ones stored as given, one
 set `None` `null`, one not named `?? null`, run in JS) and "a closure's
 nullable parameter names its own Option bindings" (the two errors);
 mutations `closure-nullable-binding-coalesced`,
-`closure-nullable-binding-any-name` (`mir/assign.ts`),
+`closure-nullable-binding-any-name`, `closure-nullable-tuple-item-coalesced`,
+`borrowed-nullable-store-coalesced` (`mir/assign.ts`),
 `closure-nullable-not-an-option-allowed` and `fn-param-nullable-allowed`
 (`bindings/nullable.ts`).

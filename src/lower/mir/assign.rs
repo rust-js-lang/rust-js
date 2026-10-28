@@ -227,6 +227,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Value::Expr(js::Storage::NullForNone.written(self.value_expr(value, span)?, nulled))
             }
+            // Written through a reference, a `RefCell`'s borrow of a
+            // nullable field, `*this.target_inst.borrow_mut() = target_inst`,
+            // whose handle stores as the field does: what's `null` or a
+            // value already, a nullable parameter, says so, as it's stored
+            // as it is (ADRs 0791, 0861, amended).
+            false
+                if matches!(place.projection.last(), Some(PlaceElem::Deref))
+                    && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>
+            {
+                let value = self.value_expr(value, span)?;
+                Value::Expr(Expr {
+                    facts: value.facts.with(js::Known::NoneNull),
+                    ..value
+                })
+            }
             false => value,
         };
         self.mir_store(state, *place, value, span, out)
@@ -279,6 +294,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if !self.tcx.is_closure_like(owner.to_def_id()) {
             return false;
+        }
+        // The tuple's item it's bound of, `(_3.0)`, which its binding is
+        // made of, as it is: a closure's parameters start after its own
+        // captures, MIR's first.
+        if let [PlaceElem::Field(item, _)] = place.projection[..]
+            && (2..=state.body.arg_count).contains(&place.local.as_usize())
+        {
+            return bindings::nullable_tuple_item(self.tcx, owner, place.local.as_usize() - 2, item.as_usize());
         }
         let bindings = bindings::nullable_bindings(self.tcx, owner);
         !bindings.is_empty()

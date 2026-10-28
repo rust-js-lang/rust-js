@@ -129,6 +129,41 @@ pub(in crate::lower) fn nullable_bindings(
     found
 }
 
+/// Whether item `item` of `owner`'s parameter `param`, a closure's tuple,
+/// `(name, inst)`'s `inst` of `#[rust_js::nullable(name, inst)]`, is a
+/// binding that attribute names: what the closure's body binds it of, the
+/// tuple's item, is `null` or a value, as it's declared (ADR 0861,
+/// amended), not a `None` the body sets.
+pub(in crate::lower) fn nullable_tuple_item(
+    tcx: TyCtxt<'_>,
+    owner: rustc_span::def_id::LocalDefId,
+    param: usize,
+    item: usize,
+) -> bool {
+    let Some(body) = tcx.hir_maybe_body_owned_by(owner) else {
+        return false;
+    };
+    let Some(param) = body.params.get(param) else {
+        return false;
+    };
+    let rustc_hir::PatKind::Tuple(items, dots) = param.pat.kind else {
+        return false;
+    };
+    if dots.as_opt_usize().is_some() {
+        return false;
+    }
+    let Some(rustc_hir::Pat {
+        kind: rustc_hir::PatKind::Binding(_, _, ident, None),
+        ..
+    }) = items.get(item)
+    else {
+        return false;
+    };
+    nullable_bindings(tcx, owner)
+        .iter()
+        .any(|(name, _)| *name == ident.name)
+}
+
 /// What's wrong with a `#[rust_js::nullable]` on a parameter of `owner`'s:
 /// on a closure's, each name it gives is a binding of that parameter that's
 /// an `Option`; a function's says so on the function, as a binding's does,

@@ -391,3 +391,69 @@ test("a closure's nullable parameter names its own Option bindings", () => {
   );
   expect(onFunction).toContain("a function's parameter is `#[rust_js::nullable(value)]` on the function");
 });
+
+// React port gap rd91: React DOM's SyntheticBaseEvent as the port writes it,
+// a `move` closure in its factory whose bindings MIR makes of the tuple's
+// items, and `*this.target_inst.borrow_mut() = target_inst` of a nullable
+// `RefCell<Option<Rc<Fiber>>>`: its parameters are the function's, `(name,
+// inst)`, each stored as it's given, where they were `(_3, _3$2)`, the
+// tuple made again and each `?? null`; and a function's own nullable
+// parameter stored through a borrow so too.
+test("a with_this closure's nullable bindings are its parameters, stored through a borrow as given", async () => {
+  const { js, lib } = await compiled(
+    "constructor-nullable-borrowed",
+    `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use js::{Class, function};
+
+pub struct Fiber {
+    pub tag: Cell<u8>,
+}
+
+pub struct Made {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub name: Cell<Option<&'static str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub inst: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub type MadeClass = Class<fn(Option<&'static str>, Option<Rc<Fiber>>) -> Made>;
+
+pub fn make() -> &'static MadeClass {
+    #[cfg_attr(rust_js, rust_js::name = "Made")]
+    let made = Class::of(function::with_this(
+        move |this,
+              #[cfg_attr(rust_js, rust_js::nullable(name, inst))] (name, inst): (
+            Option<&'static str>,
+            Option<Rc<Fiber>>,
+        )| {
+            // Safety: \`new\` gives its constructor the event it makes.
+            let this: &'static Made = unsafe { js::cast(this) };
+            this.name.set(name);
+            *this.inst.borrow_mut() = inst;
+            this
+        },
+    ));
+    made
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(inst))]
+pub fn set(made: &Made, inst: Option<Rc<Fiber>>) {
+    *made.inst.borrow_mut() = inst;
+}
+`,
+  );
+  expect(js).toContain(`  function Made(name, inst) {
+    // Safety: \`new\` gives its constructor the event it makes.
+    this.name = name;
+    this.inst = inst;
+    return this;
+  }`);
+  expect(js).toContain("  made.inst = inst;\n");
+  const Made = lib.make();
+  const made = new Made(null, { tag: 1 });
+  expect([made.name, made.inst]).toEqual([null, { tag: 1 }]);
+  lib.set(made, null);
+  expect(made.inst).toBe(null);
+});
