@@ -349,6 +349,9 @@ pub(super) enum JsForm {
     Truthy,
     /// `===`: `this === other`, JS's strict equality (ADR 0721).
     StrictEquals,
+    /// `==`: `this == other`, JS's loose equality, which coerces, `"0.0" ==
+    /// 0` (ADR 1012).
+    LooseEquals,
     /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
     TypeOf,
     /// `typeof !== "undefined"`: whether the host has the global of the
@@ -399,6 +402,7 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "in []" => return JsForm::In,
         "!!" => return JsForm::Truthy,
         "===" => return JsForm::StrictEquals,
+        "==" => return JsForm::LooseEquals,
         "instanceof" => return JsForm::InstanceOfGiven,
         "typeof" => return JsForm::TypeOf,
         "typeof !== \"undefined\"" => return JsForm::Defined,

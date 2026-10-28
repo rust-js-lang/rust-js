@@ -224,6 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
             }
             (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),
+            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),
             (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),
             (JsForm::TypeOf, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Typeof, this),
             (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, Expr::str(""), this),

@@ -2,6 +2,7 @@
 
 Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md)'s `for` loops and
 [0666](0666-the-js-crate-binds-objects-reflection.md)'s object reflection.
+Amended: `keys_in` takes any value, an `Option` too, as JS's loop does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the keys are JS's
 `for…in`'s, in its order, each as the loop reaches it; and the counter is
@@ -90,3 +91,17 @@ for (const key in prev) {
   `keys-in-continue-uncounted`,
   `keys-in-end-uncounted`, `for-in-printed-of`, `keys-in-own-keys`.
 - The guide's [JS values](../guide/interop/types.md#js-values-jsobject-and-unknown).
+
+## Amendment: of any value, an `Option` too (2026-10-28, React port gap rd71)
+
+React DOM's CSSPropertyOperations loops `for (const styleName in styles)`
+of styles that may be `null` or `undefined`, which JS's `for…in` visits
+nothing of. `keys_in` took an `&Unknown`, so the port wrapped its loop in
+`if let Some(styles) = styles`, printed `if (styles != null) { for (..)
+}`. **`keys_in` takes any value, `impl IntoUnknown`, as `js::get` and
+`js::has` do**: `js::keys_in(styles)` of an `Option<&Unknown>` is `for
+(const key in styles)`, and of a `None`, as JS's loop, no key; its
+iterator elsewhere, `$keysIn(styles)`, the same. Case
+([0262](0262-when-rust-and-js-disagree.md)): None, JS's loop as it is.
+Held by `test/js-object.test.ts`, "keys_in of an Option visits none of
+None", run in Node.

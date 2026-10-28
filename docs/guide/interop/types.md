@@ -1841,7 +1841,10 @@ export function describe(value) {
   too, each as the loop reaches it. A `for` loop of it is `for (const key
   in value)`, and of its `enumerate()` a counter each turn ends with,
   where no closure in it reads the count; anywhere else it's a JS iterator
-  of them ([ADR 0719](../../decisions/0719-for-in-is-a-for-loop-of-keys-in.md)):
+  of them ([ADR 0719](../../decisions/0719-for-in-is-a-for-loop-of-keys-in.md)).
+  It takes any value, as JS's loop does: of an `Option<&Unknown>` that's
+  `None`, it visits none, `for (const key in styles)`, no `if` around it
+  ([ADR 0719](../../decisions/0719-for-in-is-a-for-loop-of-keys-in.md), amended):
 
 ```rust
 use js::Unknown;
@@ -2533,6 +2536,24 @@ pub fn is(a: Option<&js::Unknown>, b: Option<&js::Unknown>) -> bool {
 ```js
 export function is(a, b) {
   return a === b;
+}
+```
+- **`js::loose_equals(a, b)` is JS's `==`**, which coerces as JS does,
+  `"0.0" == 0` and `null == undefined` holding. Write it only where the
+  JS a port reads compares so on purpose, as ReactDOMInput's `node.value
+  != value` leaves `"0.0"` as typed where the value is `0`; Rust's `==`
+  of the text, `"0.0" != "0"`, would clobber it, a different answer
+  ([ADR 1012](../../decisions/1012-loose-equals-is-jss-double-equals.md)):
+
+```rust
+pub fn clobbers(typed: &str, value: &js::Unknown) -> bool {
+    !js::loose_equals(typed, value)
+}
+```
+
+```js
+export function clobbers(typed, value) {
+  return typed != value;
 }
 ```
 - **An `if`/`else if` chain of `js::strict_equals` tests of one subject,

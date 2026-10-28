@@ -599,7 +599,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0734 `extend` of an array written in place is `push` of its items](0734-extend-of-an-array-written-in-place-is-push.md)
 - [0735 A comment in a macro, before the `fn` it writes, is the function's](0735-a-comment-in-a-macro-before-its-fn-is-the-fns.md)
 - [0718 A typed array is rest arguments, spread, and a rest of `number` takes any JS number](0718-a-typed-array-is-rest-arguments-spread.md)
-- [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md)
+- [0719 `for…in` is a `for` loop of `js::keys_in`, and its `enumerate()` a counter](0719-for-in-is-a-for-loop-of-keys-in.md) *(amended: of any value, an `Option` too)*
 - [0740 A function's members are read of any function, `js::function`](0740-a-functions-members-are-read-of-any-function.md) *(extended by 0848: `apply`, its `this` `null` too; amended: `bind`, a function of its type; amended by 0907: `bind` of first arguments too)*
 - [0741 An `ArrayBufferView` is what each view derefs to, and `isView` takes any value](0741-an-array-buffer-view-is-what-each-view-derefs-to.md)
 - [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case; amended: a loop's `return` MIR joined past a block is a `return`)*
@@ -796,6 +796,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*
 - [1010 A tuple of an `if`'s value taken apart is a `let` of each part](1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md) *(the user's decision)*
 - [1011 A binding's index signature is std's `Index`](1011-a-bindings-index-signature-is-index.md)
+- [1012 `js::loose_equals` is JS's `==`](1012-loose-equals-is-jss-double-equals.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

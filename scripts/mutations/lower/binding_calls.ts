@@ -491,4 +491,12 @@ export const mutations: Mutation[] = [
     replace: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty)) && false;\n",
     tests: ["test/js-functions.test.ts", "-t", "takes rest arguments as JS"],
   },
+  {
+    name: "loose-equals-strict",
+    breaks: "`js::loose_equals(typed, value)` is `typed === value`, so ReactDOMInput's `\"0.0\"` typed where the value is `0` is clobbered (a wrong answer, ADR 1012)",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
+    replace: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
+    tests: ["test/js-any-values.test.ts", "-t", "loose_equals"],
+  },
 ];

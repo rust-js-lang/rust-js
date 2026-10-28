@@ -648,6 +648,17 @@ pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
     unreachable!()
 }
 
+/// `a == b`, JS's loose equality of any two values, which coerces them as
+/// JS does: `"0.0" == 0`, `"1" == 1`, `null == undefined` hold. For a port
+/// of JS that compares so on purpose, React DOM's `node.value != value`,
+/// which leaves `"0.0"` as typed where the value is `0`; any other
+/// comparison is Rust's `==`, or [`strict_equals`]'s `===` (ADR 1012).
+#[cfg_attr(rust_js, rust_js::link_name = "==")]
+#[allow(unused_variables)]
+pub fn loose_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
+    unreachable!()
+}
+
 /// JS's `null`, as an `Option` of any type: `None` to Rust, as either of
 /// JS's `None`s is (ADR 0030), and `null` where it's written, as a field
 /// TypeScript types `T | null` starts: React's fiber's `memoizedState:
@@ -1025,10 +1036,13 @@ pub fn has<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
 /// prototypes', which [`object::keys`] leaves out, not one a prototype's
 /// key of the same name hides, nor one deleted before it's reached (ADR
 /// 0719). A `for` loop of it is that loop, `for key in js::keys_in(o)`
-/// `for (const key in o)`; any other use of it, a JS iterator of them.
+/// `for (const key in o)`; any other use of it, a JS iterator of them. Of
+/// any value, as JS's loop takes one: of `undefined` or `null`, a `None`,
+/// none, as JS visits none, `for (const key in styles)` of an
+/// `Option<&Unknown>` (React port gap rd71).
 #[cfg_attr(rust_js, rust_js::link_name = "for in")]
 #[allow(unused_variables)]
-pub fn keys_in(this: &Unknown) -> Box<dyn core::iter::Iterator<Item = String>> {
+pub fn keys_in(this: impl IntoUnknown) -> Box<dyn core::iter::Iterator<Item = String>> {
     unreachable!()
 }
 
