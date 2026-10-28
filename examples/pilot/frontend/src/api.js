@@ -9,7 +9,6 @@ import {
 import {
   $debugJsonError,
   $displayJsonError,
-  $f64ToInt,
   $fromJson,
   $json,
   $settle,
@@ -38,7 +37,7 @@ async function call(url, init, ok) {
   const value = await $settle(window.fetch(url, init));
   if (value.TAG === "Ok") {
     const response = value._0;
-    const status = $f64ToInt(response.status, 0, 65535);
+    const status = response.status;
     const text = await response.text();
     if (status === ok) {
       return { TAG: "Ok", _0: text };
