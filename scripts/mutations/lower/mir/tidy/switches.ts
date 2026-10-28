@@ -42,11 +42,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-tail-continue-kept",
-    breaks: "a case's `continue` where the `switch` ends the loop's turn stays, `n += 1; continue;`",
+    breaks: "a case's `continue` where the `switch` ends the loop's turn stays, `case 0: continue;`, not `case 0: break;`",
     file: "src/lower/mir/tidy/switches.rs",
     find: "                            case.pop();\n",
     replace: "",
-    tests: switches,
+    tests: ["test/corpus.test.ts", "-t", "^switch_tail_continues.rs$"],
+    snapshots: true,
   },
   {
     name: "switch-value-temporary-kept",
