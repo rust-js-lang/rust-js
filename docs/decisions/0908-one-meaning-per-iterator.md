@@ -4,6 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26 ("keep going until
 all done, the choice is your recommendation"). The first phase of the
 plan "rust-js: one representation per iterator". Extends
 [0871](0871-rev-is-stds.md) and [0561](0561-std-bodies.md).
+Closed by [1000](1000-the-default-stays-the-checked-rewrites.md): the
+default stays the recognizers' rewrites, checked against this meaning.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for programs; this
 is a test hook and a test.
