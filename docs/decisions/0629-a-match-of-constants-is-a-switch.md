@@ -350,3 +350,14 @@ reference, one whose `None` has its own arm, a `bool`'s; and mutations
 `payload-test-of-a-bool` (`mir/patterns.rs`), `facts-held-arms-unjoined`
 (`mir/local_facts.rs`, its find moved) and `last-clause-tail-kept`
 (`mir/tidy/switches.rs`).
+
+## Amended (2026-10-28): no last clause's jump is taken off
+
+The tail MIR copied into a `switch`'s last clause, `default: tag =
+"throw"; return tag;` before `return tag;`, isn't there now: the passes
+before `breaks_past_switches` leave the `switch`'s join where it's
+written, so its `default` is `tag = "throw";` already. No corpus case,
+lowering or port test, nor `option_constants_switch.rs` or a late-set
+`let tag; match .. { .. }`, reaches the check, and its mutation,
+`last-clause-tail-kept`, survived every run: the check is gone with it
+(ADR 0093).

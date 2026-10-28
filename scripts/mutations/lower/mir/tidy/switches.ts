@@ -326,15 +326,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "four guarded arms of symbols"],
   },
   {
-    name: "last-clause-tail-kept",
-    breaks: "a `switch`'s last clause keeps the jump it's followed by, `default: tag = \"throw\"; return tag;` before `return tag;`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "                last.pop();\n            }\n            if default.as_deref().is_some_and(does_nothing) {\n",
-    replace: "            }\n            if default.as_deref().is_some_and(does_nothing) {\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
-  },
-  {
     name: "fallen-to-own-case-not-absorbed",
     breaks: "a guarded arm that falls to nothing, `B | C if on => { .. }`, whose statements MIR placed after the chain, has none of them, so the `switch` of a `B if on_b` falling to it is refused: an `if` chain, or a labeled block, as React's attemptEarlyBailoutIfNoScheduledUpdate printed (ADR 0905, amended)",
     file: "src/lower/mir/tidy/switches.rs",

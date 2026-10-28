@@ -131,3 +131,16 @@ case "object":
   that ends a case is the case's breaks", and
   `test/port-performance-track.test.ts`'s "addValueToProperties' JSX
   branch is as written"; mutations of `exits` and `unwritten_else`.
+
+## Amended (2026-10-28): a loop that never goes on, whatever it breaks to
+
+`exits` asked too whether the loop named the block, `while (true) { ..
+break l; }`, a loop whose `break` goes on to the block's end, and took
+one that does to go on. No output depends on it: a loop's `break` of the
+block is its own `break` by then, and where one inside a `switch` still
+names the block (`loop { match .. { 3 => break, .. } }`), the guard kept
+stays a nested `if` until `loops`, which joins it as `branch ends` would
+have, `if (s !== 1 || c !== 1) { loop: while (true) { .. } }` either way.
+Its mutation, `loop-to-block-end-exits`, survived the corpus with its
+snapshots and each probe, so the question is gone with it (ADR 0093):
+a loop nothing falls out of ends a list, as a `return` does.
