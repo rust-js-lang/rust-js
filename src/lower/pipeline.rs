@@ -155,11 +155,12 @@ pub fn lower_crate<'tcx>(
         Some(analyzed) => analyzed,
         None => return Lowered::Crate(None),
     };
-    // Each module's default export, which a module of the crate imports as
-    // its default, not by a name of its own (ADR 0251), as every importer
-    // does (`default_exports::exported_as`).
-    let defaulted: HashSet<DefId> = (modules.iter())
-        .filter_map(|&module| super::default_exports::own_default(tcx, module))
+    // Each module's default export: its own, which a module of the crate
+    // imports as its default, not by a name of its own (ADR 0251), as every
+    // importer does (`default_exports::exported_as`); or another module's
+    // function, which that module exports for it (`exported_across_modules`).
+    let defaulted: HashSet<DefId> = (super::default_exports::defaults(tcx).into_iter())
+        .map(|(_, item)| item)
         .collect();
     // A library exports what its program does: what its consumers reach that
     // it doesn't, they compile (ADR 0914, amended). `@rust-js/std`, compiled

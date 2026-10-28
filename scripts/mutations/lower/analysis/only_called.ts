@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_argument_in_a_signature.rs$"],
   },
+  {
+    name: "default-only-called",
+    breaks: "a module's default, `js::export_default!(page)` of a private `fn page`, is taken for a function only the crate's calls reach, so its module's `page(3)` is all it's given, and its `n * 5` isn't wrapped where JS gives it 4000000000 (ADR 0577, amended)",
+    file: "src/lower/analysis/only_called.rs",
+    find: "            && !defaults.contains(&def_id)\n",
+    replace: "",
+    tests: ["test/modules.test.ts", "-t", "a module's default is called with whatever JS gives it"],
+  },
 ];

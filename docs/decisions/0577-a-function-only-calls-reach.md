@@ -104,3 +104,26 @@ const too early. It walks no constant only rustc evaluates
 never runs one, so no call in it reaches a function.
 `test/corpus/const_argument_in_a_signature.rs` holds it; mutation
 `only-called-walks-type-system-consts`.
+
+## Amendment: a module's default is called by JS
+
+A module's default export is what JS imports, whatever Rust's `pub`
+says: `js::export_default!(page)` of a private `fn page(n: u32)` that
+its module calls once, `page(3)`, was taken for a function only calls
+reach, so its `n * 5` went unwrapped and `page(4000000000)` from JS was
+`20000000000`, not Rust's wrapped `2820130816`. Each module's default,
+of either form, its own or another module's (`default_exports::defaults`),
+is no function only calls reach. Of another module's, `js::export_default!
+(super::helpers::twice)` of a `pub(crate) fn twice` nothing else names,
+`helpers.js` didn't export it, so the default's `export { twice as default }
+from "./helpers.js"` failed to load: that module exports it, as one another
+module calls (`exported_across_modules`). And the macro's `use
+super::helpers::thrice as _;`, which names it for rustc's check alone,
+renamed it in its module, `import { thrice as _ }` and `_(3)`: a `use` as
+`_` renames nothing. `test/modules.test.ts`, "a module's default is called
+with whatever JS gives it", holds them; mutations `default-only-called`,
+`reexported-default-unexported` and `use-as-underscore-renames`.
+`own_default`, which kept another module's function out of the defaults
+whose callers don't export them, is gone: that function is exported by
+its module now, whoever calls it, so its filter changed nothing, as its
+surviving mutation `own-default-of-another-module` showed.

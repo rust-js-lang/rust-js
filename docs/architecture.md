@@ -248,7 +248,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Formatter output and MIR writer calls | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
 | Function and binding references | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Bindings held by modules | `bindings.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |
-| A module's default export, its `pub use`s of its own items by other names (ADR 0596), and what a module exports an item of its own as, which every importer imports it by | `default_exports.rs` | `default_exports`, `default_declared`, `own_default`, `own_aliases`, `alias_named`, `exported_as` |
+| A module's default export, its `pub use`s of its own items by other names (ADR 0596), and what a module exports an item of its own as, which every importer imports it by | `default_exports.rs` | `default_exports`, `defaults`, `default_declared`, `own_aliases`, `alias_named`, `exported_as` |
 | What a module's `pub use`s re-export, from where, by what name, in what order, and which are refused (ADRs 0240, 0874); which a module's file has | `reexports.rs`; `analysis.rs` | `reexports`; `is_reexport` |
 | Trait dictionaries and evidence | `traits/routes.rs`, `traits/dictionaries.rs`, `traits/impls.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | Generic arguments and copied defaults | `traits/given.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |

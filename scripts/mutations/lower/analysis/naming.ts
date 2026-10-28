@@ -389,4 +389,20 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/modules.test.ts", "-t", "a use of one name is imported by its rust_js::name"],
   },
+  {
+    name: "reexported-default-unexported",
+    breaks: "another module's `pub(crate) fn twice` a module's default is, which no other module calls, isn't exported by its module, so the default's `export { twice as default } from \"./helpers.js\"` fails to load (ADR 0577, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        if fns.get(&item).is_some_and(|target| target.module != module) {\n",
+    replace: "        if false {\n",
+    tests: ["test/modules.test.ts", "-t", "a module's default is called with whatever JS gives it"],
+  },
+  {
+    name: "use-as-underscore-renames",
+    breaks: "`js::export_default!`'s `use super::helpers::thrice as _;` renames `thrice` in its module, `import { thrice as _ }` and `_(3)` (ADR 0577, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                        && (ident.name == tcx.item_name(def_id) || ident.name == rustc_span::kw::Underscore)\n",
+    replace: "                        && (ident.name == tcx.item_name(def_id))\n",
+    tests: ["test/modules.test.ts", "-t", "a module's default is called with whatever JS gives it"],
+  },
 ];

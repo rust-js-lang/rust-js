@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {
-    name: "own-default-of-another-module",
-    breaks: "another module's function a module's default re-exports is imported as its own module's default, which it isn't",
-    file: "src/lower/default_exports.rs",
-    find: "    default.filter(|item| (item.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module))\n",
-    replace: "    default\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
-  },
-  {
     name: "own-alias-importer-by-name",
     breaks: "another module imports `{ getCurrentTime }` of a module that exports it as `unstable_now` alone (ADR 0596, amended)",
     file: "src/lower/default_exports.rs",

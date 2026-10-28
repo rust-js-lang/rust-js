@@ -71,9 +71,15 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
         values.extend(mentions.values);
     }
     let visibilities = tcx.effective_visibilities(());
+    // A module's default export JS imports, though Rust's `pub` doesn't
+    // say so: `js::export_default!(page)` of a private `fn page`.
+    let defaults: HashSet<DefId> = (crate::lower::default_exports::defaults(tcx).into_iter())
+        .map(|(_, item)| item)
+        .collect();
     calls.retain(|&def_id, _| {
         def_id.as_local().is_some_and(|local| !visibilities.is_exported(local))
             && !values.contains(&def_id)
+            && !defaults.contains(&def_id)
             && (tcx.def_kind(def_id) == DefKind::Fn
                 || tcx.def_kind(def_id) == DefKind::AssocFn
                     && tcx.trait_of_assoc(def_id).is_none()

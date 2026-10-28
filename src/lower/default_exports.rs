@@ -105,18 +105,32 @@ pub(super) fn alias_named(tcx: TyCtxt<'_>, item: DefId, name: Symbol) -> Option<
         .map(|alias| alias.exported)
 }
 
-/// Whether `item` is its own module's default export (`exported_as`).
+/// Whether `item` is its own module's default export (`exported_as`): what
+/// that module's first `js::export_default!` makes the default, as a second
+/// is refused where the module is made. Not another module's function a
+/// module re-exports as its default, nor a binding it holds (ADR 0773's
+/// `HeldBinding`), which aren't that module's items.
 fn is_own_default(tcx: TyCtxt<'_>, item: DefId) -> bool {
-    (item.as_local()).is_some_and(|local| own_default(tcx, tcx.parent_module_from_def_id(local)) == Some(item))
+    (item.as_local()).is_some_and(|local| own_or_named(tcx, tcx.parent_module_from_def_id(local)) == Some(item))
 }
 
-/// The item of `module`'s own that's its default export, what its first
-/// `js::export_default!` makes the default, as a second is refused where
-/// the module is made: not another module's function it re-exports, nor a
-/// binding it holds (ADR 0773's `HeldBinding`).
-pub(super) fn own_default(tcx: TyCtxt<'_>, module: LocalModId) -> Option<DefId> {
-    let (default, _) = default_exports(tcx, module).into_iter().next()?;
-    default.filter(|item| (item.as_local()).is_some_and(|local| tcx.parent_module_from_def_id(local) == module))
+/// Each module's default export, by the module it's the default of: what
+/// JS imports and calls with any arguments, so no call of the crate's says
+/// what it's given (`only_called`); and, of another module's function,
+/// what that module exports for the default's `export { twice as default }
+/// from` to read (`exported_across_modules`), whoever else calls it.
+pub(super) fn defaults(tcx: TyCtxt<'_>) -> Vec<(LocalModId, DefId)> {
+    let mut modules = Vec::new();
+    tcx.hir_for_each_module(|module| modules.push(module));
+    (modules.into_iter())
+        .filter_map(|module| Some((module, own_or_named(tcx, module)?)))
+        .collect()
+}
+
+/// What `module`'s first `js::export_default!` makes its default, its own
+/// item or another module's.
+fn own_or_named(tcx: TyCtxt<'_>, module: LocalModId) -> Option<DefId> {
+    default_exports(tcx, module).into_iter().next()?.0
 }
 
 /// Each of a module's `js::export_default!`s, in its order: what it makes

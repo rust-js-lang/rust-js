@@ -401,7 +401,11 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
                     // Its `#[rust_js::name]`, the import's local name as
                     // written, `_jsxDEV` (ADR 0596, amended).
                     let given = bindings::given_name(tcx, item.owner_id.to_def_id());
-                    if given.is_none() && ident.name == tcx.item_name(def_id) {
+                    // Nor one that names it for nothing, `use page as _;`,
+                    // `js::export_default!(page)`'s.
+                    if given.is_none()
+                        && (ident.name == tcx.item_name(def_id) || ident.name == rustc_span::kw::Underscore)
+                    {
                         return None;
                     }
                     let alias = given.or_else(|| crate::lower::default_exports::alias_named(tcx, def_id, ident.name));
@@ -607,6 +611,13 @@ pub(super) fn exported_across_modules<'tcx>(
             {
                 exported.insert(*def_id);
             }
+        }
+    }
+    // Another module's function a module's default is, `export { twice as
+    // default } from "./helpers.js"`, which reads it there.
+    for (module, item) in crate::lower::default_exports::defaults(tcx) {
+        if fns.get(&item).is_some_and(|target| target.module != module) {
+            exported.insert(item);
         }
     }
     exported
