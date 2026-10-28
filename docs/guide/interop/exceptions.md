@@ -761,6 +761,12 @@ export function described(value) {
 - **`match catch_unwind(f) { Ok(()) => return, Err(e) => .. }` is a
   `try` that returns**, the `Err` arm its `catch`, and what follows the
   `match` after the `try` ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-2026-10-25-an-ok-arm-that-leaves-what-follows-reading-the-err)).
+- **An `Err` arm that ends the function returns from the `catch`**, where
+  the `Ok` arm can throw and so follows the `try`, its value a `let` the
+  `try` sets: React's throwAndUnwindWorkLoop, `let didFatal; try {
+  didFatal = throwException(..); } catch (error) { if (returnFiber !=
+  null) { ..; throw error; } else { panicOnRootError(..); return; } }`
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-2026-10-28-an-err-arm-that-ends-the-function-returns)).
   A `return` inside the closure, in a loop, is the function's own where
   the `try` ends the function, as nothing runs after it but its
   `finally` ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md#amended-2026-10-25-a-return-in-the-closure-of-a-try-that-ends-the-function)).

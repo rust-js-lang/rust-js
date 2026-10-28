@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     name: "try-kept-as-helper",
     breaks: "a `match` of what a JS call threw is `$try` and its `TAG`, not JS's `try`",
     file: "src/prepare.rs",
-    find: "    catches::try_catches(body);\n",
+    find: "    catches::try_catches(body, ends);\n",
     replace: "",
     tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown"],
   },
@@ -506,8 +506,8 @@ export const mutations: Mutation[] = [
     name: "left-out-param-named-field",
     breaks: "the one field a parameter's pattern leaves out keeps its `_field` name",
     file: "src/prepare.rs",
-    find: "    block(body);\n    left_out_params(params, body);\n",
-    replace: "    block(body);\n",
+    find: "    block(body, true);\n    left_out_params(params, body);\n",
+    replace: "    block(body, true);\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
   },
   {
@@ -817,5 +817,13 @@ export const mutations: Mutation[] = [
     "find": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
     "replace": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
     "tests": ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
+  },
+  {
+    name: "err-ending-a-block-returns",
+    breaks: "a `match` of `catch_unwind` that ends an `if`'s branch is taken to end the function, so its `catch` returns where what follows the `if` runs (ADR 0637, amended)",
+    file: "src/prepare.rs",
+    find: "    catches::try_catches(body, ends);\n",
+    replace: "    catches::try_catches(body, true);\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
   },
 ];

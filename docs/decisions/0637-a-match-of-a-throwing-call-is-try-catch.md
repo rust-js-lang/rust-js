@@ -165,3 +165,34 @@ same runs either way.
 
 Held by `test/corpus/catch_unwind_ok_returns.rs`'s `flushed`; mutation
 `ok-arm-leaving-err-after-kept` (`prepare/catches.ts`).
+
+## Amendment (2026-10-28): an `Err` arm that ends the function returns
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the same runs
+either way.
+
+React's throwAndUnwindWorkLoop, `match catch_unwind(|| throw_exception(..))
+{ Ok(did_fatal) => { if did_fatal { .. } } Err(error) => { if let
+Some(return_fiber) = .. { ..; resume_unwind(error) } else { .. } } }` at
+the end of its function (gap wl6 of the port), stayed a `$catchUnwind`
+result tested `.TAG === "Ok"`: its `Ok` arm can throw, so it goes after the
+`try`, which needs the `Err` arm to leave, and it ended without a `return`,
+the function's end being its own.
+
+**An `Err` arm that ends the function, nothing after the `match`, leaves
+it**: the `catch` ends with `return;`, in each branch of a last `if` that
+goes on (`ending_in_return`), and the `Ok` arm follows the `try`: `let
+didFatal; try { didFatal = throwException(x); } catch (error) { if
+(returnFiber != null) { ..; throw error; } else { panicOnRootError(x); return; } }`.
+Preparation tells a function's body from a block (`block_ending`); a
+`match` that ends an `if`'s branch goes on, so stays as it was.
+
+Readability (ADR 0565): `return;` grows from 9.1 to 9.2 in 10,000 lines,
+each a `catch`'s that ends a function, as upstream writes `panicOnRootError(..);
+return;`, where a `$catchUnwind` or `$try` result and its `.TAG` test went.
+
+Held by `test/lowering-unwind-arms.test.ts`, "an Err arm that ends the
+function returns from its catch", run where each arm runs and where the
+`Ok` arm throws; mutations `err-ending-function-goes-on`,
+`err-ending-return-after-its-if` (`prepare/catches.ts`) and
+`err-ending-a-block-returns` (`prepare.ts`).

@@ -31,7 +31,7 @@ pub fn module(module: &mut js::Module) {
     for item in &mut module.items {
         match item {
             js::Item::Const(constant) => expr(&mut constant.value),
-            js::Item::Statements(stmts) => block(stmts),
+            js::Item::Statements(stmts) => block(stmts, false),
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
@@ -713,7 +713,7 @@ fn declares_underscore(body: &[Stmt]) -> bool {
 /// it falls off its end there, as a person ends one (ADR 0299); and its
 /// parameters' patterns, as its body's (`left_out_params`).
 fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
-    block(body);
+    block(body, true);
     left_out_params(params, body);
     catches::tail_tries(body);
     if body
@@ -724,8 +724,9 @@ fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     }
 }
 
-fn block(body: &mut Vec<Stmt>) {
-    catches::try_catches(body);
+/// Of `body`, which `ends` a function, its end a return, or doesn't.
+fn block(body: &mut Vec<Stmt>, ends: bool) {
+    catches::try_catches(body, ends);
     left_out(body);
     for stmt in body.iter_mut() {
         if let Some(coalesced) = coalescing(stmt) {
@@ -763,18 +764,18 @@ fn block(body: &mut Vec<Stmt>) {
                 // Its test as a test, `!!x` the `x` it tests.
                 *e = e.tested();
                 expr(e);
-                block(a);
+                block(a, false);
                 if let Some(b) = b {
-                    block(b);
+                    block(b, false);
                 }
             }
             StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
                 // Its test as a test, as an `if`'s.
                 *cond = cond.tested();
                 expr(cond);
-                block(body);
+                block(body, false);
             }
-            StmtKind::Labeled(_, body) => block(body),
+            StmtKind::Labeled(_, body) => block(body, false),
             StmtKind::Switch {
                 discriminant,
                 cases,
@@ -783,19 +784,19 @@ fn block(body: &mut Vec<Stmt>) {
                 expr(discriminant);
                 for js::Case { values, body, .. } in cases.iter_mut() {
                     values.iter_mut().for_each(expr);
-                    block(body);
+                    block(body, false);
                 }
                 if let Some(default) = default {
-                    block(default);
+                    block(default, false);
                 }
             }
             StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
-                block(body);
-                block(finally);
+                block(body, false);
+                block(finally, false);
             }
             StmtKind::ForOf { iterable, body, .. } => {
                 expr(iterable);
-                block(body);
+                block(body, false);
             }
             StmtKind::For {
                 start,
@@ -806,7 +807,7 @@ fn block(body: &mut Vec<Stmt>) {
             } => {
                 expr(start);
                 expr(test);
-                block(body);
+                block(body, false);
                 if let Some(value) = step.value_mut() {
                     expr(value);
                 }
@@ -1296,7 +1297,7 @@ fn expr(e: &mut Expr) {
             );
             match concise {
                 true => {
-                    block(body);
+                    block(body, false);
                     left_out_params(params, body);
                 }
                 false => function_body(params, body),

@@ -4,10 +4,10 @@ import {
   $at,
   $borrow,
   $borrowMut,
-  $catchUnwind,
   $index,
   $panicMessage,
   $unborrow,
+  $unwound,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -34,15 +34,16 @@ function message(payload) {
 }
 
 function check(what, f, TDebug) {
-  const value$1 = $catchUnwind(f);
-  if (value$1.TAG === "Ok") {
-    const value = value$1._0;
-    console.log(`${what}: ${TDebug.fmt(value)}`);
-  } else {
-    const payload = value$1._0;
+  let value;
+  try {
+    value = f();
+  } catch (thrown) {
+    const payload = $unwound(thrown);
     const arg = message(payload);
     console.log(`${what}: ${arg}`);
+    return;
   }
+  console.log(`${what}: ${TDebug.fmt(value)}`);
 }
 
 function sum(queue) {

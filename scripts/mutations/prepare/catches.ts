@@ -392,4 +392,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_flag_return.rs$"],
   },
+  {
+    name: "err-ending-function-goes-on",
+    breaks: "an `Err` arm that ends the function, after an `Ok` arm that can throw, is no `catch`: the `match` stays a `$catchUnwind` result tested `.TAG === \"Ok\"` (ADR 0637, amended)",
+    file: "src/prepare/catches.rs",
+    find: "    let err = match ends && after.is_empty() && !leaves(err)",
+    replace: "    let err = match false && after.is_empty() && !leaves(err)",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
+  },
+  {
+    name: "err-ending-return-after-its-if",
+    breaks: "the `return;` that ends the `catch` is after its last `if`, `if (c) { throw error; } else { f(x); } return;`, not in the branch that goes on (ADR 0637, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        Some(StmtKind::If(_, then, Some(otherwise))) => {\n            for branch in [then, otherwise] {",
+    replace: "        Some(StmtKind::If(_, then, Some(otherwise))) if false => {\n            for branch in [then, otherwise] {",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
+  },
 ];

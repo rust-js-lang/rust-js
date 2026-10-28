@@ -10,38 +10,16 @@ use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
 /// payload `$unwound` makes of it.
 const THROWN: &str = "thrown";
 
-pub(super) fn try_catches(body: &mut Vec<Stmt>) {
+/// Of `body`, which `ends` a function or doesn't: where it ends, the
+/// function returns.
+pub(super) fn try_catches(body: &mut Vec<Stmt>, ends: bool) {
     unwound_lets(body);
-    // `$try(() => f())` whose result is ignored, `let _ = f();`, is `try {
-    // f(); } catch {}`: the call, what it threw dropped.
-    for stmt in body.iter_mut() {
-        if let StmtKind::Expr(e) = &stmt.kind
-            && let Some((call, _)) = e.caught()
-        {
-            let tried = vec![StmtKind::Expr(call).at(stmt.span)];
-            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, Vec::new());
-        }
-        // Whether it threw, returned, `match f() { Ok(_) => false, Err(_)
-        // => true }` or `f().is_err()`, is `try { f(); return false; }
-        // catch { return true; }` (ADR 0639).
-        if let StmtKind::Return(Some(e)) = &stmt.kind
-            && let Some((call, of_throw)) = threw(e)
-        {
-            let span = stmt.span;
-            let tried = vec![
-                StmtKind::Expr(call).at(span),
-                StmtKind::Return(Some(Expr::bool(!of_throw))).at(span),
-            ];
-            let caught = vec![StmtKind::Return(Some(Expr::bool(of_throw))).at(span)];
-            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, caught);
-        }
-    }
     let mut i = 0;
     while i < body.len() {
         // A `Result` tested where it's made, `if ($catchUnwind(f).TAG ===
         // "Err" && c)`, is one made first, then tested (ADR 0706, amended).
         if let Some((made, tested)) = made_where_tested(&body[i])
-            && let Some((caught, taken)) = chained_try_catch(&made, &tested, &body[..i], &body[i + 1..])
+            && let Some((caught, taken)) = chained_try_catch(&made, &tested, &body[..i], &body[i + 1..], ends)
         {
             body.splice(i..i + 1 + taken, caught);
         }
@@ -66,12 +44,42 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>) {
             .count();
         let at = i + 1 + declared;
         if at < body.len()
-            && let Some((caught, taken)) = chained_try_catch(&body[i], &body[at], &body[..i], &body[at + 1..])
+            && let Some((caught, taken)) = chained_try_catch(&body[i], &body[at], &body[..i], &body[at + 1..], ends)
         {
             body.splice(at..at + 1 + taken, caught);
             body.remove(i);
         }
         i += 1;
+    }
+    ignored_tries(body);
+}
+
+/// Of `body`, after the `match`es whose arms it takes in, each `$try`
+/// whose result is ignored, or whose throwing is returned.
+fn ignored_tries(body: &mut [Stmt]) {
+    // `$try(() => f())` whose result is ignored, `let _ = f();`, is `try {
+    // f(); } catch {}`: the call, what it threw dropped.
+    for stmt in body.iter_mut() {
+        if let StmtKind::Expr(e) = &stmt.kind
+            && let Some((call, _)) = e.caught()
+        {
+            let tried = vec![StmtKind::Expr(call).at(stmt.span)];
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, Vec::new());
+        }
+        // Whether it threw, returned, `match f() { Ok(_) => false, Err(_)
+        // => true }` or `f().is_err()`, is `try { f(); return false; }
+        // catch { return true; }` (ADR 0639).
+        if let StmtKind::Return(Some(e)) = &stmt.kind
+            && let Some((call, of_throw)) = threw(e)
+        {
+            let span = stmt.span;
+            let tried = vec![
+                StmtKind::Expr(call).at(span),
+                StmtKind::Return(Some(Expr::bool(!of_throw))).at(span),
+            ];
+            let caught = vec![StmtKind::Return(Some(Expr::bool(of_throw))).at(span)];
+            stmt.kind = StmtKind::TryCatch(js::applied_tried(tried), None, caught);
+        }
     }
 }
 
@@ -216,8 +224,14 @@ fn split_chain(test: &Expr) -> (Expr, Option<Expr>) {
 /// is the `if` of its `Err` alone, `c`'s `if` inside it, so the `catch`'s,
 /// `try { .. } catch (e) { if (c) { .. } }`; its `else`, where its arm
 /// leaves, after it, as what runs where the arm doesn't.
-fn chained_try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
-    if let Some(caught) = try_catch(made, tested, before, rest) {
+fn chained_try_catch(
+    made: &Stmt,
+    tested: &Stmt,
+    before: &[Stmt],
+    rest: &[Stmt],
+    ends: bool,
+) -> Option<(Vec<Stmt>, usize)> {
+    if let Some(caught) = try_catch(made, tested, before, rest, ends) {
         return Some(caught);
     }
     let StmtKind::Const(result, _) = &made.kind else {
@@ -225,7 +239,7 @@ fn chained_try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt])
     };
     let (tested, otherwise) = unchained(result, tested)?;
     let rest: Vec<Stmt> = otherwise.iter().chain(rest).cloned().collect();
-    let (mut caught, taken) = try_catch(made, &tested, before, &rest)?;
+    let (mut caught, taken) = try_catch(made, &tested, before, &rest, ends)?;
     // What it took of the `else` first, then of what followed the `if`.
     let kept = otherwise.len().saturating_sub(taken);
     caught.extend(otherwise[otherwise.len() - kept..].iter().cloned());
@@ -296,8 +310,10 @@ fn unchained(result: &str, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
 /// the `Ok` arm does is too where it can't throw, `try { return f(); }`;
 /// else it's after it, where the `Err` arm leaves, the `Ok`'s value a `let`
 /// the `try` sets, `let v; try { v = f(); } catch { return; } g(v);`.
-/// `before`, what's before it, which that `let` mustn't clash with.
-fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Option<(Vec<Stmt>, usize)> {
+/// `before`, what's before it, which that `let` mustn't clash with; an
+/// `Err` arm that ends what `ends` a function, `rest` empty, leaves, as the
+/// function returns there, its `catch` ending in `return;`.
+fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: bool) -> Option<(Vec<Stmt>, usize)> {
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
@@ -426,6 +442,16 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt]) -> Opti
     if reads != usize::from(held.is_some() && value_name.is_none()) {
         return None;
     }
+    // An `Err` arm that ends the function returns, where the `Ok` arm, after
+    // the `try`, would run next (ADR 0637, amended).
+    let returned;
+    let err = match ends && after.is_empty() && !leaves(err) && held.is_none() && !ok.iter().all(cannot_throw) {
+        true => {
+            returned = ending_in_return(err.to_vec());
+            returned.as_slice()
+        }
+        false => err,
+    };
     let span = made.span;
     // What unwound is the payload `$unwound` makes of what was thrown: the
     // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
@@ -527,6 +553,23 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
         }
         _ => {}
     }
+}
+
+/// `stmts`, each way they end with a `return;`: of a last `if` and its
+/// `else`, each that goes on, `if (c) { throw e; } else { f(); return; }`.
+fn ending_in_return(mut stmts: Vec<Stmt>) -> Vec<Stmt> {
+    let leaves = |stmts: &[Stmt]| stmts.last().is_some_and(js::ends);
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(StmtKind::If(_, then, Some(otherwise))) => {
+            for branch in [then, otherwise] {
+                if !leaves(branch) {
+                    *branch = ending_in_return(std::mem::take(branch));
+                }
+            }
+        }
+        _ => stmts.push(StmtKind::Return(None).at(js::Span::NONE)),
+    }
+    stmts
 }
 
 /// Whether `stmt` can't throw: what makes values, what leaves with one,

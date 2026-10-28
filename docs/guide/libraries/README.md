@@ -225,7 +225,7 @@ pub async fn load(url: &str) -> String {
 ```
 
 ```js
-import { $try, $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/runtime";
 
 export function mount() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
@@ -233,13 +233,15 @@ export function mount() {
   button.textContent = "Save";
   button.addEventListener("click", (event) => {
     const x = event.clientX;
-    const localStorage = $try(() => window.localStorage);
-    if (localStorage.TAG === "Ok") {
-      const storage = localStorage._0;
-      try {
-        storage.setItem("clicked-at", String(x));
-      } catch {}
+    let storage;
+    try {
+      storage = window.localStorage;
+    } catch {
+      return;
     }
+    try {
+      storage.setItem("clicked-at", String(x));
+    } catch {}
   });
   app.append(button);
 }
