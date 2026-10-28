@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     "name": "text-joined-to-text",
     "breaks": "`\"#\" + (\"\" + id)` keeps its `\"\" +`",
     "file": "src/js/make.rs",
-    "find": "            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
+    "find": "            && is_text(&lhs)\n",
     "replace": "            && false\n",
     "tests": [
       "test/bindings.test.ts",
@@ -517,5 +517,14 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Call(callee, args) if it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
     replace: "            ExprKind::Call(callee, args) if false && it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
+  {
+    name: "text-joined-unknown",
+    breaks: "text joined already isn't known text, so `\";\" + name + \":\" + (\"\" + value)` keeps its `\"\" +` (rd74)",
+    file: "src/js/make.rs",
+    find: "        ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),\n",
+    replace: "        ExprKind::Binary(Op::Add, lhs, _) => false && is_text(lhs),\n",
+    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+    snapshots: true,
   },
 ];

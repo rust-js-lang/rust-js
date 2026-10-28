@@ -121,3 +121,18 @@ Only which operand is read first differs, and `""` is a literal.
 Text joined to it still makes text of it: `"" + n + "px"` is `n + "px"`,
 and `"#" + ("" + id)` is `"#" + id`. React's `willCoercionThrow` is `try {
 "" + value; return false; } catch { return true; }`.
+
+## Amendment (2026-10-29): after text joined already, too
+
+`"#" + ("" + x)` was `"#" + x` only of a string or a template first. React
+DOM's createDangerousStringForStyles writes `";".to_owned() + name + ":" +
+&js::concat_text(value) + "px"`, whose `+` before the value is of
+`";" + name + ":"`, text too, so it read `";" + name + ":" + ("" + value)
++ "px"` where upstream's is `";" + name + ":" + value + "px"` (React port
+gap rd74). What's text whatever its parts are, a string, a template or a
+`+` of text to anything, which JS's `+` makes text (`make.rs`'s
+`is_text`), drops the `"" +` of what's joined to it: either way the value
+is made text by one `+` of it to a string. Held by `test/bindings.test.ts`'s
+"any value is read as JS reads it" (`styled`, run) and the mutation
+`text-joined-unknown`.
+

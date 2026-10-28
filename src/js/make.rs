@@ -806,9 +806,11 @@ impl Expr {
             return Expr::bin(Op::Add, (**x).clone(), rhs);
         }
         // `"#" + ("" + x)` is `"#" + x`: text joined to `x` makes text of it
-        // as `"" +` does.
+        // as `"" +` does. Of text joined already too, `";" + name + ":" +
+        // ("" + value)`, React DOM's `";" + name + ":" + value + "px"` (React
+        // port gap rd74).
         if op == Op::Add
-            && matches!(lhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
+            && is_text(&lhs)
             && let ExprKind::Binary(Op::Add, empty, x) = &rhs.kind
             && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
         {
@@ -1129,6 +1131,16 @@ fn typed_present(test: &Expr, place: &Expr) -> bool {
             matches!(&of.kind, ExprKind::Unary(UnaryOp::Typeof, typed) if typed.kind == place.kind)
                 && matches!(&kind.kind, ExprKind::Str(s) if s != "object" && s != "undefined")
         }
+        _ => false,
+    }
+}
+
+/// Whether `e` is text whatever its parts are: a string, a template, or
+/// a `+` of text to anything, which JS's `+` makes text.
+fn is_text(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Str(_) | ExprKind::Written(_) | ExprKind::Template(..) => true,
+        ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),
         _ => false,
     }
 }

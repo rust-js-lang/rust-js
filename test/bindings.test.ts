@@ -946,6 +946,10 @@ pub fn anchor(id: f64) -> String {
     "#".to_string() + &js::concat_text(id)
 }
 
+pub fn styled(name: &str, value: f64) -> String {
+    ";".to_owned() + name + ":" + &js::concat_text(value) + "px"
+}
+
 pub fn int_of(value: Option<&Unknown>) -> String {
     number::to_string(js::parse_int(value, Some(10)), None)
 }
@@ -985,6 +989,10 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect([lib.textOf(undefined), lib.textOf(12), lib.textOf({})].map((r) => r._0)).toEqual(["undefined", "12", "[object Object]"]);
   expect(lib.textOf(Symbol("s")).TAG).toBe("Err");
   expect([lib.px(1.5), lib.px(-0), lib.counted(2, "videos"), lib.anchor(2), lib.anchor(1e21)]).toEqual(["1.5px", "0px", "2 videos", "#2", "#1e+21"]);
+  // After text joined already, as React DOM's createDangerousStringForStyles
+  // writes it (rd74).
+  expect(js).toContain('return ";" + name + ":" + value + "px";');
+  expect([lib.styled("width", 2), lib.styled("top", -0)]).toEqual([";width:2px", ";top:0px"]);
   expect([lib.intOf("42px"), lib.intOf(undefined), lib.floatOf("1e21"), lib.floatOf("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
   const cyclic: any = {};
   cyclic.self = cyclic;
