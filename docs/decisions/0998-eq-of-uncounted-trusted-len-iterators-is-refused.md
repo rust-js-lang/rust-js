@@ -1,4 +1,4 @@
-# 0996. `eq()` of `TrustedLen` iterators rust-js can't count is refused where it shows
+# 0998. `eq()` of `TrustedLen` iterators rust-js can't count is refused where it shows
 
 Status: Accepted. Narrows #386 after
 [0992](0992-eq-of-trusted-len-iterators-asks-their-lengths.md).

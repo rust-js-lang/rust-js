@@ -172,7 +172,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of ones it can't count before stepping them, refused where what
         // comparing them runs can be seen: a function either holds, a map's,
         // or items with a destructor, which std's would leave unrun and drop
-        // as they are (ADR 0996, #386).
+        // as they are (ADR 0998, #386).
         let other_item = self.iterable_item(other_ty);
         let runs_code = |ty: &Ty<'tcx>| {
             ty.walk()
