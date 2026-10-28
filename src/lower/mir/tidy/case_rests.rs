@@ -12,12 +12,21 @@ use crate::lower::mir::hints::Switch;
 /// statements of the arm a guarded case falls to past the `match`, the
 /// `break inner` of each arm that reached them (ADR 0905); one case is
 /// all that reaches them where the others fall to it.
+///
+/// The case's `break inner` may end a branch of an `if` in it, a guard
+/// that otherwise falls to the next case, as a guarded arm that a guarded
+/// arm falls to has, `case HostSingleton: if (supportsSingletons) { break
+/// bb17; }`: `rest` that branch's. And a block that is the last of the
+/// blocks it's in, `bb29: { bb6: { bb17: { switch .. } .. } .. }`, of a
+/// chain of guarded arms each falling to the next, is the inner one's
+/// first, so the `switch` is the next one's (ADR 0905, amended).
 pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
     for stmt in stmts.iter_mut() {
         let StmtKind::Labeled(outer, list) = &mut stmt.kind else {
             continue;
         };
         let outer = outer.clone();
+        blocks_one_case_reaches(list);
         let Some(i) = (list.iter()).rposition(|s| matches!(s.kind, StmtKind::Labeled(..))) else {
             continue;
         };
@@ -64,24 +73,15 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
         let Some(case) = js::case_lists_mut(cases, default).nth(only) else {
             continue;
         };
-        let (
-            Some(Stmt {
-                kind: StmtKind::Break(Some(to)),
-                ..
-            }),
-            Some(rest_of_case),
-        ) = (case.last(), case.split_last().map(|(_, r)| r))
-        else {
+        let mut named = 0;
+        js::each_list(case, &mut |list| {
+            named += (list.iter())
+                .filter(|s| matches!(&s.kind, StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) if *l == inner))
+                .count();
+        });
+        let mut rest = Some(rest);
+        if named != 1 || !placed(case, &inner, &outer, &mut rest) {
             continue;
-        };
-        if *to != inner || js::names_jump(rest_of_case, &inner) {
-            continue;
-        }
-        case.pop();
-        let ends = rest.last().is_some_and(js::ends);
-        case.extend(rest);
-        if !ends {
-            case.push(StmtKind::Break(Some(outer.clone())).at(js::Span::NONE));
         }
         // The block, then its `break outer`, which its end does.
         list.truncate(i + 1);
@@ -93,6 +93,30 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
             list.pop();
         }
     }
+}
+
+/// `rest` in place of the `break inner` that ends `case` or a branch of an
+/// `if` in it, not in a loop, where a `continue` of no label in `rest`
+/// would be the loop's; then the `break outer` that ends the block it
+/// leaves where `rest` goes on. Whether it was.
+fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &str, rest: &mut Option<Vec<Stmt>>) -> bool {
+    if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == inner)
+        && let Some(rest) = rest.take()
+    {
+        case.pop();
+        let ends = rest.last().is_some_and(js::ends);
+        case.extend(rest);
+        if !ends {
+            case.push(StmtKind::Break(Some(outer.to_string())).at(js::Span::NONE));
+        }
+        return true;
+    }
+    case.iter_mut().any(|stmt| match &mut stmt.kind {
+        StmtKind::If(_, then, otherwise) => {
+            placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest))
+        }
+        _ => false,
+    })
 }
 
 /// Of `stmts`, a block `l: { ..; switch (..) { .. case B: break l; .. } ..

@@ -5,6 +5,25 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 
 export const mutations: Mutation[] = [
   {
+    name: "case-rest-in-guard-unplaced",
+    breaks: "a guarded arm's body that a guarded arm falls to stays past the `switch`, `case HostSingleton: if (supportsSingletons) { break; }` and `bb19`, not in its guard (ADR 0905, amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "            placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest))\n",
+    replace: "            false && (placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "case-rest-blocks-outer-first",
+    breaks: "of blocks a chain of guarded arms makes, `bb29: { bb6: { bb17: { switch .. } .. } .. }`, the outer is tried first, before the inner's `switch` is its own, and keeps its label (ADR 0905, amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "        let outer = outer.clone();\n        blocks_one_case_reaches(list);\n",
+    replace: "        let outer = outer.clone();\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
+    snapshots: true,
+  },
+
+  {
     name: "case-returns-joined-after-switch",
     breaks: "a case of an arm that returns breaks to the `return;` MIR joined after its `switch`, React's popToNextHostParent `break; } return;` (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",

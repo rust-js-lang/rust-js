@@ -476,3 +476,37 @@ is the `return` after its `switch` now; mutations
 `fallen-to-own-case-not-absorbed`, `default-past-match-kept`,
 `guard-break-kept`, `or-guard-untested` and `guard-parts-unjoined`
 (`mir/tidy/switches.ts`).
+
+## Amendment: a chain of guarded arms beside another is one `switch`
+
+React's commitDeletionEffectsOnFiber falls through two guarded arms in a
+row, `HostHoistable if supportsResources`, then `HostHoistable |
+HostSingleton if supportsSingletons`, to `HostHoistable | HostSingleton |
+HostComponent | HostText`, and has a second guarded arm,
+`ViewTransitionComponent if enableViewTransition`, falling to `Fragment`'s.
+MIR places each arm that a guard falls to past the `match`, in a block of
+its own: `bb288: { bb19: { switch (tag) { .. case HostSingleton: if
+(supportsSingletons) { break; } case HostComponent: case HostText: break
+bb19; .. } ..singleton..; break bb288; } ..host component.. }`.
+`blocks one case reaches` moved a block's rest into the one case that
+reaches it only where that case's last statement was the `break`, and it
+tried the outer block first, whose `switch` was still in the inner block.
+
+- **The case's one `break inner` may end a branch of an `if` in it**, the
+  guard that otherwise falls to the next case: the rest is that branch's,
+  `case HostSingleton: if (supportsSingletons) { ..; break; } // Fall
+  through`. Not in a loop in the case, where a `continue` of no label in
+  the rest would be the loop's; not where the case names the block twice,
+  which no program the corpus or the tests have makes (a guard of `||`
+  isn't a `switch`), so no mutation holds that guard.
+- **A block's own blocks are tried first**, so the inner one's rest is
+  its case's and its `switch` is the outer one's, whose rest is then the
+  next case's.
+
+The port's function is upstream's `switch`, with no label. Case
+([0262](0262-when-rust-and-js-disagree.md)): none observable; each rest
+moves to the one place that reaches it.
+
+Held by `test/corpus/guarded_arm_chains.rs`, against native Rust; mutations
+`case-rest-in-guard-unplaced` and `case-rest-blocks-outer-first`
+(`mir/tidy/case_rests.ts`).
