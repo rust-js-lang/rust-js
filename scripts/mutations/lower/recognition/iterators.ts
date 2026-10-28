@@ -212,23 +212,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
   {
-    name: "given-iterable-param-only",
-    breaks: "`into_iter()` of an associated type, `H::Item: IntoIterator`, is refused: only a type parameter is what its caller gives",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            _ => self.is_unknown(ty) && !self.is_generic_iter(ty),\n",
-    replace: "            _ => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_into_iter.rs$"],
-  },
-  {
-    name: "given-iterable-of-iterator",
-    breaks: "an associated type that's an iterator, `I::IntoIter`, a JS iterator already, is wrapped again, `Iterator.from(it)`",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            _ => self.is_unknown(ty) && !self.is_generic_iter(ty),\n",
-    replace: "            _ => self.is_unknown(ty),\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "map-not-closed",
     breaks: "a `map` of an iterator of items with a destructor is refused, not closed to drop them",
     file: "src/lower/recognition/iterators.rs",

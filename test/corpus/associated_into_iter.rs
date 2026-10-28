@@ -1,7 +1,6 @@
 // `into_iter()` of a type parameter's associated type, `H::Item: IntoIterator`,
-// as itertools' multi_cartesian_product steps each of its iterables: what
-// the caller gives, an array or a JS iterator, stepped by Iterator.from
-// (ADR 0061).
+// as itertools' multi_cartesian_product steps each of its iterables: by the
+// `IntoIterator` dictionary its caller gives (ADR 0976).
 fn lengths<H>(iters: H) -> Vec<usize>
 where
     H: Iterator,

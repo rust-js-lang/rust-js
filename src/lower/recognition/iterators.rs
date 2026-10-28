@@ -1045,16 +1045,12 @@ pub(in crate::lower) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: r
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    /// A type only a caller knows, a type parameter or one's associated
-    /// type, `H::Item: IntoIterator`: what it's given is an array or a JS
-    /// iterator, which `Iterator.from` steps either of (ADR 0061). Not an
-    /// associated type that's an iterator, `I::IntoIter`, a JS iterator
-    /// already.
+    /// A type parameter: what it's given is an array or a JS iterator,
+    /// which `Iterator.from` steps either of (ADR 0061). An associated type
+    /// bound by `IntoIterator`, `H::Item`, is given that bound's dictionary
+    /// (ADR 0976).
     pub(in crate::lower) fn is_given_iterable(&self, ty: ty::Ty<'tcx>) -> bool {
-        match ty.kind() {
-            ty::Param(_) => true,
-            _ => self.is_unknown(ty) && !self.is_generic_iter(ty),
-        }
+        matches!(ty.kind(), ty::Param(_))
     }
 
     pub(in crate::lower) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
