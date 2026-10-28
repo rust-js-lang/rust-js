@@ -967,21 +967,13 @@ React and JSX are [their own pages](README.md#react).
     `step_by`'s of it, a `rev()`'s of either
     ([0989](../decisions/0989-a-rev-hints-what-its-source-hints.md)), or `(0, None)`:
     an endless `n..`'s too, Rust's `(usize::MAX, None)`.
-15. `zip` in generic code makes one more of its first side's items where
-    its second ends first, as `Zip::next` does, also by `collect()` and
-    `fold`, where std's stops at the shorter: of sides only its caller knows
-    are `TrustedLen`. Where rustc knows the sides whole, it folds as std
-    does: by index ([ADR 0973](../decisions/0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)),
-    or as std's struct, of sides that know their length but that std can't
-    read by index, a `Vec`'s `into_iter()` or a `rev()`
-    ([ADR 0997](../decisions/0997-a-zip-that-folds-apart-is-stds-struct.md)).
-16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
+15. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
-17. Where the crate's iterator's impl writes its own `fold`, std's
+16. Where the crate's iterator's impl writes its own `fold`, std's
     consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
     an accumulator with a destructor that it drops, or that a panic in it
     unwinds, isn't dropped.
-18. A `VecDeque`'s `as_slices()` gives all its items first and none second,
+17. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
     Rust's ``called `Result::unwrap()` on an `Err` value`` panic.

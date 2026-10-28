@@ -1,6 +1,6 @@
 # 1014. Generic code's `eq` of `TrustedLen` iterators is refused at its caller
 
-Status: Accepted. Extends [0998](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md).
+Status: Accepted. Extends [0998](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md). Amended: a zip folded or stepped too, and the guide's difference 15 gone.
 Part of #386.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't be
@@ -43,3 +43,34 @@ decided against for now.
 - `test/diagnostics.test.ts`' "eq in generic code of two maps" checks the
   refusal through a generic caller. The guide's limitations list it.
 - The mutation is `generic-trusted-eq-allowed`.
+
+## Amendment: a zip folded or stepped (the guide's difference 15)
+
+The guide listed it as a difference from native Rust, though ADR 0262
+never decided it: a zip in generic code makes one more of its first side's
+items where its second ends first. Rust's `pairs(v.iter().map(f),
+w.iter().copied())`, `a.zip(b).collect()` in a generic `pairs`, runs `f`
+twice of `v`'s three items. The JS ran it three times. So do `for` loops
+over it, as std's `next()` of sides it reads by index stops at the
+shorter too. ADRs 0973 and 0997 made a zip rustc knows whole do as std's
+does. Inside generic code that rule can't apply.
+
+The analysis, renamed `callers_decide`, as its subject is what generic
+code asks that only its callers' types answer, records a zip of its type
+parameters two ways:
+- folded, by any `Iterator` method but `next`, `size_hint` and `by_ref`,
+  adapters too, as what they're folded by folds the zip;
+- or stepped, by `next()`.
+
+At a caller, it's refused where `zip_folds_to_the_shorter` says std's fold
+stops at the shorter side. It answers `Some(true)` of sides read by index
+and `Some(false)` of other `TrustedLen` ones; `folds_apart` is its
+`Some(false)`. A step is refused only of sides read by index, as a
+`TrustedLen` one's `next()` steps the first side once more, as JS does.
+Both only where a step of the first side runs code.
+
+- The guide's difference 15 is gone, and its limitations list it. Nothing
+  observable differs: where nothing runs, the extra step isn't seen.
+- `test/diagnostics.test.ts`' "a zip of a map collected in generic code"
+  and "a zip of a map stepped in generic code" check it. The mutations are
+  `generic-zip-fold-allowed` and `generic-zip-step-allowed`.

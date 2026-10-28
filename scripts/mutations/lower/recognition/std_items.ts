@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "zip-folding-apart-in-place",
     breaks: "a zip whose sides are `TrustedLen` but not both `TrustedRandomAccess`, made in place, is the recognizers' `$lazyZip`, whose `collect()` runs the longer side's closure once more than std's `SpecFold` (#380)",
     file: "src/lower/recognition/std_items.rs",
-    find: "    holds(a, trusted_len) && holds(b, trusted_len) && !(holds(a, random_access) && holds(b, random_access)) && runs_code\n",
-    replace: "    false && holds(a, trusted_len) && holds(b, trusted_len) && !(holds(a, random_access) && holds(b, random_access)) && runs_code\n",
+    find: "    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)\n",
+    replace: "    (runs_code && by_index).then_some(by_index)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
   {

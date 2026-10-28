@@ -535,15 +535,24 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
 /// a fold from its steps, so it's std's struct where it's made too (#380).
 /// Of a type rustc knows whole.
 pub(crate) fn folds_apart<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some((a, b)) = zipped_sources(tcx, ty) else {
-        return false;
-    };
+    zip_folds_to_the_shorter(tcx, ty) == Some(false)
+}
+
+/// Of a zip of type `ty`, rustc knowing it whole, where std's fold of it
+/// takes the shorter side's count of pairs, where `next()` steps `a` once
+/// more, and a step of `a` runs code, a closure's or a `fn`'s, or gives an
+/// item with a destructor: `Some(true)` of sides both `TrustedRandomAccess`,
+/// read by index (ADR 0973), `Some(false)` of sides both `TrustedLen` but not
+/// both that, by `SpecFold` (ADR 0997). `None` where its fold steps as
+/// `next()` does, or what it steps runs nothing.
+pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
+    let (a, b) = zipped_sources(tcx, ty)?;
     let typing_env = ty::TypingEnv::fully_monomorphized();
     let (Some(trusted_len), Some(random_access)) = (
         super::fact_trait(tcx, TypeFact::TrustedLen),
         super::fact_trait(tcx, TypeFact::RandomAccess),
     ) else {
-        return false;
+        return None;
     };
     let holds = |ty: Ty<'tcx>, tr: DefId| {
         let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
@@ -558,7 +567,8 @@ pub(crate) fn folds_apart<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         .walk()
         .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
         || item.needs_drop(tcx, typing_env);
-    holds(a, trusted_len) && holds(b, trusted_len) && !(holds(a, random_access) && holds(b, random_access)) && runs_code
+    let by_index = holds(a, random_access) && holds(b, random_access);
+    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)
 }
 
 /// Whether std's zip of `a` and `b`, `IntoIterator`s, reads each item by

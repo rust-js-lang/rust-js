@@ -1,8 +1,8 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
 mod back_stepped;
+mod callers_decide;
 mod cell_borrows;
-mod generic_eq;
 
 pub(super) use cell_borrows::{
     Borrow, Cell, CellBorrows, binding_call_runs_nothing, borrowed, may_be_cell, unsized_in_place,
@@ -964,7 +964,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).
-    generic_eq::refuse_generic_trusted_eqs(tcx, recognition, all_bodies, |item| {
+    callers_decide::refuse_what_callers_decide(tcx, recognition, all_bodies, |item| {
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
     });
     // A closure cloned apart, made by a function of what it holds, where a
