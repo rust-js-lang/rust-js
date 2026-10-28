@@ -562,7 +562,7 @@ thread_local! {
 }
 
 pub fn made() -> &'static AbortController {
-    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(js::unknown(*class), ()));
+    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(*class, ()));
     unsafe { js::cast(Some(controller)) }
 }
 `);

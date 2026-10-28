@@ -426,13 +426,16 @@ struct Locals {
     declared: IndexVec<Local, bool>,
     /// Each one the program names, not a macro of std's.
     user: IndexVec<Local, bool>,
+    /// Of those, each a `let`'s `#[rust_js::name]` names (ADR 0855).
+    given_name: IndexVec<Local, bool>,
     /// Each one a `String`, which `push_str` appends to by `+`.
     text: IndexVec<Local, bool>,
 }
 
 impl Locals {
     /// What tidy's last passes ask of them, by name: those the program
-    /// names (`user`), and its `String`s (`text`).
+    /// names (`user`), those it gives a JS name (`given`), and its
+    /// `String`s (`text`).
     fn named(&self) -> tidy::Named {
         let names = |of: &IndexVec<Local, bool>| -> HashSet<String> {
             (self.names.iter_enumerated())
@@ -442,6 +445,7 @@ impl Locals {
         };
         tidy::Named {
             user: names(&self.user),
+            given: names(&self.given_name),
             text: names(&self.text),
         }
     }

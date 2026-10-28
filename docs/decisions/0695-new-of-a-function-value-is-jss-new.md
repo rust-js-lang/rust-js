@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0225](0225-unknown-values.md), whose
 operators of a value of any shape were `js::get`, `js::set` and
-`js::has`.
+`js::has`. Amended by [1009](1009-a-constructor-is-held-as-a-typed-class.md):
+`js::new` of a typed `js::Class` is given what its constructor takes and
+makes its instance; a constructor the program writes is held as one.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: it's JS's `new`,
 which runs the constructor JS runs and throws where JS throws.
@@ -71,3 +73,13 @@ new class$(...rest);
 - `test/js-object.test.ts`, "React's component stack frame is found as
   upstream finds it": `new fn();`.
 - Mutation `js-new-this-called`: `new this()` a call, `fn()`.
+
+## Amendment (2026-10-28): a typed class
+
+[1009](1009-a-constructor-is-held-as-a-typed-class.md): `js::new(class,
+(a, b))` of a `Class<fn(A, B) -> T>` is given what the constructor takes,
+each argument rustc's to check, and gives a `&'static T`; of an untyped
+`Class` or a value of any shape, as above. A function the program writes
+is held as a `Class`, `Class::of(&f)`: `js::new(js::unknown(&f), ..)` is
+refused, naming it, and `js::new(js::unknown(class), ..)` of a `Class`,
+naming `js::new(class, ..)`.

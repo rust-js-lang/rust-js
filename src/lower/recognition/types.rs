@@ -1185,6 +1185,36 @@ pub(in crate::lower) fn is_any_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
 
+/// The name of `did` where it's a function of the js crate's root,
+/// `js::new` or `js::unknown`: which the refusal of a constructor held as
+/// a value of any shape asks (ADR 1009).
+pub(in crate::lower) fn js_root_fn(tcx: TyCtxt<'_>, did: DefId) -> Option<rustc_span::Symbol> {
+    (tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.def_kind(did) == DefKind::Fn
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root()))
+    .then(|| tcx.item_name(did))
+}
+
+/// Whether `did` is `js::Class`, a constructor function, typed by its
+/// signature or not (ADRs 0761, 1009).
+pub(in crate::lower) fn is_js_class(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "Class"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
+/// Whether `did` is `js::Class::of`, a function the program writes as the
+/// constructor it is (ADR 1009).
+pub(in crate::lower) fn is_class_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "of"
+        && tcx.opt_parent(did).is_some_and(|imp| {
+            tcx.def_kind(imp) == DefKind::Impl { of_trait: false }
+                && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(adt, _) if is_js_class(tcx, adt.did()))
+        })
+}
+
 /// Whether `did` is `js::function::bind`, `f.bind(thisArg, ...args)` (ADR
 /// 0907, amended).
 pub(in crate::lower) fn is_function_bind(tcx: TyCtxt<'_>, did: DefId) -> bool {

@@ -69,7 +69,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
             pass("declarations", |b, _| declarations(b)),
             pass("aliases", |b, h| {
-                aliases(b, h.captured, (&h.params.borrow(), h.kept), h.clones)
+                aliases(b, h.captured, (&h.params.borrow(), h.kept), (h.clones, &h.named.given))
             }),
             // A test an earlier one decided, `if (x != null) { return x; } ..
             // if (x != null)`, where nothing between changes what it reads:

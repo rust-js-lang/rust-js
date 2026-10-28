@@ -99,4 +99,12 @@ export const mutations: Mutation[] = [
     replace: "                let named = given.iter().find(|_| false);\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
   },
+  {
+    name: "given-let-names-unsaid",
+    breaks: "which locals a `let`'s `#[rust_js::name]` names isn't said to tidy, so an alias of one takes the alias's name",
+    file: "src/lower/mir/locals.rs",
+    find: "                        locals.given_name[place.local] = true;\n",
+    replace: "",
+    tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
+  },
 ];

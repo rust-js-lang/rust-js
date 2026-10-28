@@ -4,7 +4,9 @@ Status: Accepted (the user's decision, 2026-10-27, th1). Amends
 [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
 `self` as `this`, which a function made in a method now reads through a
 `const`. Amended: its last parameter of rest arguments as a value is JS's
-rest parameter (below).
+rest parameter (below). Amended by
+[1009](1009-a-constructor-is-held-as-a-typed-class.md): held by
+`Class::of`, its function is a constructor closed over what it captures.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for the function:
 its `this` is a parameter Rust sees, so what it reads is what JS gives it.
@@ -138,3 +140,17 @@ object's method, `this` and both arguments given on; a first parameter
 and the rest, from JS and from a Rust call spread; and the refusal of one
 before the last. Mutation `with-this-rest-one-value` (`binding_calls.ts`).
 
+
+## Amendment (2026-10-28): a constructor closed over what it captures
+
+React's `createSyntheticEvent(Interface)` makes a constructor per
+interface (gap rd64). [1009](1009-a-constructor-is-held-as-a-typed-class.md):
+**`Class::of(function::with_this(move |this, (a, b)| { .. this }))` is the
+function as a constructor**, typed by its tuple and what it gives,
+`Class<fn(A, B) -> T>` of a closure giving `this` cast to a `&'static T`.
+A `let` of it named by `#[rust_js::name]` is declared by that name, as JS
+names a constructor, `function SyntheticBaseEvent(reactName, ..) { ..
+return this; }`, and keeps it where it's moved into another `let`; its
+`prototype()` is `SyntheticBaseEvent.prototype`, which a struct literal of
+`with_this` fields is assigned to as upstream's object of `function ()`s.
+Case: none, the same function, `this` and `new` as JS's.

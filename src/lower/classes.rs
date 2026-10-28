@@ -424,6 +424,98 @@ pub(super) fn reject_misuse<'tcx>(
     reject_object_misuse(tcx) && valid
 }
 
+/// Report each constructor held as a value of any shape, which a `Class`
+/// holds, the one way (ADR 1009): a function constructed, `js::new(js::unknown(&fake), ())`,
+/// or whose prototype is read, `js::get(js::unknown(&fake), "prototype")`,
+/// of `Class::of(&fake)`; and a `Class` constructed as any value,
+/// `js::new(js::unknown(class), ())`, of `js::new(class, ..)`. False if
+/// there was one.
+pub(super) fn reject_constructors_as_values<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
+    use crate::lower::body_queries::strip;
+    use crate::lower::recognition::{is_class_of, is_js_class, js_root_fn};
+    let mut valid = true;
+    for body in bodies {
+        let thir = &body.thir;
+        // What's under a borrow, a deref and a coercion, as it's given.
+        let given = |mut e: thir::ExprId| loop {
+            e = strip(thir, e);
+            match thir[e].kind {
+                thir::ExprKind::Borrow { arg, .. } | thir::ExprKind::Deref { arg } => e = arg,
+                thir::ExprKind::PointerCoercion { source, .. } => e = source,
+                _ => break e,
+            }
+        };
+        let called = |e: thir::ExprId| match thir[e].kind {
+            thir::ExprKind::Call { fun, ref args, .. } => match *thir[strip(thir, fun)].ty.kind() {
+                ty::FnDef(did, generic_args) => Some((js_root_fn(tcx, did)?, generic_args, args)),
+                _ => None,
+            },
+            _ => None,
+        };
+        for expr in thir.exprs.iter() {
+            let thir::ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                continue;
+            };
+            let ty::FnDef(did, fn_args) = *thir[strip(thir, fun)].ty.kind() else {
+                continue;
+            };
+            // A closure is an arrow, which `new` throws of: no constructor.
+            if is_class_of(tcx, did) && matches!(fn_args.skip_binder().type_at(1).peel_refs().kind(), ty::Closure(..)) {
+                let why = "a closure is an arrow function, which `new` throws of: a constructor is a `fn` item, `Class::of(&f)`, or one `function::with_this` makes, `Class::of(function::with_this(..))`";
+                tcx.dcx().span_err(expr.span, format!("rust-js: {why} (ADR 1009)"));
+                valid = false;
+                continue;
+            }
+            let Some(name) = js_root_fn(tcx, did) else {
+                continue;
+            };
+            // Its first argument a value of any shape of what `js::unknown`
+            // or `js::unknown_of` is given.
+            let Some((of, generic_args, _)) = args.first().and_then(|&first| called(given(first))) else {
+                continue;
+            };
+            if !matches!(of.as_str(), "unknown" | "unknown_of") {
+                continue;
+            }
+            let held = generic_args.skip_binder().type_at(0).peel_refs();
+            let function = is_function(tcx, held);
+            let class = matches!(held.kind(), ty::Adt(adt, _) if is_js_class(tcx, adt.did()));
+            let prototype = || {
+                args.get(1).is_some_and(|&key| {
+                    matches!(&thir[given(key)].kind, thir::ExprKind::Literal { lit, .. }
+                        if matches!(lit.node, rustc_ast::LitKind::Str(key, _) if key.as_str() == "prototype"))
+                })
+            };
+            let why = match (name.as_str(), function, class) {
+                ("new", true, _) => {
+                    "a constructor is held as a `js::Class`, `Class::of(&f)`, which `js::new(class, (a, b))` constructs, not as a value of any shape"
+                }
+                ("get", true, _) if prototype() => {
+                    "a constructor is held as a `js::Class`, whose prototype is `Class::of(&f).prototype()`, not as a value of any shape"
+                }
+                ("new", _, true) => {
+                    "a `js::Class` is constructed as it is, `js::new(class, ..)`, not as a value of any shape"
+                }
+                _ => continue,
+            };
+            tcx.dcx().span_err(expr.span, format!("rust-js: {why} (ADR 1009)"));
+            valid = false;
+        }
+    }
+    valid
+}
+
+/// Whether `ty` is a function: an item, a closure, a pointer, a `dyn Fn`,
+/// or a box of one.
+fn is_function<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::FnDef(..) | ty::Closure(..) | ty::FnPtr(..) => true,
+        ty::Dynamic(predicates, ..) => predicates.principal_def_id().is_some_and(|did| tcx.is_fn_trait(did)),
+        ty::Adt(adt, args) if adt.is_box() => is_function(tcx, args.type_at(0)),
+        _ => false,
+    }
+}
+
 /// Report what a crate does with an object of methods that rust-js
 /// refuses (ADR 0943). False if there was one.
 fn reject_object_misuse(tcx: TyCtxt<'_>) -> bool {

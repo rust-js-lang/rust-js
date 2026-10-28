@@ -85,6 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             changed: IndexVec::from_elem_n(false, n),
             declared: IndexVec::from_elem_n(false, n),
             user: IndexVec::from_elem_n(false, n),
+            given_name: IndexVec::from_elem_n(false, n),
             text: IndexVec::from_elem_n(false, n),
         };
         let mut user: IndexVec<Local, Option<String>> = IndexVec::from_elem_n(None, n);
@@ -118,7 +119,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let named = given.iter().find(|(span, _)| *span == info.source_info.span);
                 user[place.local] = Some(match body.local_kind(place.local) {
                     LocalKind::Arg => crate::lower::parameter_name(self.tcx, body.source.def_id(), &name),
-                    _ if let Some((_, named)) = named => named.clone(),
+                    _ if let Some((_, named)) = named => {
+                        locals.given_name[place.local] = true;
+                        named.clone()
+                    }
                     _ => crate::lower::camel_case(&name),
                 });
                 locals.user[place.local] = true;

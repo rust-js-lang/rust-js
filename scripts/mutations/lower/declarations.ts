@@ -774,4 +774,12 @@ export const mutations: Mutation[] = [
     replace: "                    match is_nullable(self.tcx, field) {\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
+  {
+    name: "typed-class-declared-a-function",
+    breaks: "a typed `js::Class` is declared as a function, `(value: string) => unknown`, which TypeScript calls, not `new`s",
+    file: "src/lower/declarations.rs",
+    find: "                    constructor[\"construct\"] = json!(true);\n",
+    replace: "",
+    tests: ["test/js-constructors.test.ts", "-t", "a typed class is declared as its constructor's type"],
+  },
 ];

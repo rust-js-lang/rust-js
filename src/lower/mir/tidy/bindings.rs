@@ -659,12 +659,15 @@ pub(super) fn readable_temporaries(
 /// `b` was: the same value, an uncounted `Rc`'s clone the same object,
 /// `payload` of `const resolved = payload` (ADR 0846); and of what a
 /// closure captured by value, `kept`, which its maker never assigns
-/// again, as fixed in it (ADR 0879).
+/// again, as fixed in it (ADR 0879). Of a variable a `let`'s
+/// `#[rust_js::name]` names, `given`, and one it doesn't, `let made =
+/// js::unknown_of(synthetic_base_event)`: the name the program gave, for
+/// both (ADR 1009).
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &HashSet<String>,
     (params, kept): (&[js::Pattern], &HashSet<String>),
-    clones: &HashSet<String>,
+    (clones, given): (&HashSet<String>, &HashSet<String>),
 ) {
     let fixed: HashSet<String> = (params.iter())
         .flat_map(|param| param.names())
@@ -718,7 +721,8 @@ pub(super) fn aliases(
                 // A variable the program names, of one MIR's lowering made
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
-                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {
+                let named = given.contains(a.as_str()) && !given.contains(&b);
+                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind

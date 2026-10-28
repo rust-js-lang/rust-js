@@ -1341,6 +1341,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if is_rest(tcx, ty) {
                     return reference("Record", vec![keyword("string"), keyword("unknown")]);
                 }
+                // A typed class, `Class<fn(A) -> T>`, its constructor's type,
+                // `new (a: A) => T` (ADR 1009).
+                if super::recognition::is_js_class(tcx, did)
+                    && let Some(signature) = args.types().next()
+                    && let ty::FnPtr(..) = signature.kind()
+                {
+                    let sig = signature.fn_sig(tcx).skip_binder();
+                    let mut constructor = self.function_type(sig.inputs(), sig.output());
+                    constructor["construct"] = json!(true);
+                    return constructor;
+                }
                 // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
                 // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.

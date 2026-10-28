@@ -481,7 +481,7 @@ thread_local! {
 }
 
 pub fn controller() -> &'static AbortController {
-    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(js::unknown(*class), ()));
+    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(*class, ()));
     // Safety: each class makes an `AbortController`, or what React uses of one.
     unsafe { js::cast(Some(controller)) }
 }

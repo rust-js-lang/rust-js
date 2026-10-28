@@ -570,8 +570,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0692 A thrown `Error` is a panic's message and what JS threw, both](0692-a-thrown-error-is-a-panic-and-what-js-threw.md) *(amended by 0706: its `&JsError` of a `try` of panics alone is the `Error`, and resumed is `throw` of it; 0710: every payload's `&JsError` is what was thrown)*
 - [0693 A guard's scope is one `finally`, its `if`s, loops and `return`s in it](0693-a-guards-scope-is-one-finally-its-returns-in-it.md) *(amended by 0705: read as any body, its guard's fields its variables; amended: around a `catch`, one `try`, `catch` and `finally`; a function or a constant returned last, after it; the function's return place given from inside it)*
 - [0694 `ManuallyDrop::drop`, `extend` of what holds nothing, a matched call's value and `{}` of an `impl Display`](0694-four-refusals-of-drops-and-displays-lifted.md)
-- [0695 `new` of a function value is JS's `new`, `js::new`](0695-new-of-a-function-value-is-jss-new.md)
-- [0696 A constructor is a `fn` item, declared where it's written](0696-a-constructor-is-a-fn-item-where-its-written.md)
+- [0695 `new` of a function value is JS's `new`, `js::new`](0695-new-of-a-function-value-is-jss-new.md) *(amended by 1009: of a typed `js::Class`, given what its constructor takes)*
+- [0696 A constructor is a `fn` item, declared where it's written](0696-a-constructor-is-a-fn-item-where-its-written.md) *(amended by 1009: held as a `js::Class`, `Class::of(&fake)`)*
 - [0697 `delete` of a property is JS's `delete`, `js::delete`](0697-delete-is-jss-delete.md) *(amended by 0776: of any value)*
 - [0698 A `catch` handler gives a value or a promise, as TypeScript's](0698-a-catch-handler-gives-a-value-or-a-promise.md)
 - [0699 A `Map` of what a `WeakMap` keys is a `WeakMap`, for a fallback](0699-a-map-of-objects-is-a-weak-map.md) *(amended by 0849: a `js::Map` of any key)*
@@ -616,7 +616,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
-- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own)*
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own; amended by 1009: `js::Class` takes its constructor's signature)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md) *(amended: a `let` of the read that's only compared)*
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
@@ -756,7 +756,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
 - [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
 - [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)
-- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter)*
+- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter; amended by 1009: held by `Class::of`, a constructor closed over what it captures)*
 - [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)
 - [0974 A `while` that steps its variable last is a `for`](0974-a-while-that-steps-its-variable-last-is-a-for.md)
 - [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
@@ -793,6 +793,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision)*
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
+- [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

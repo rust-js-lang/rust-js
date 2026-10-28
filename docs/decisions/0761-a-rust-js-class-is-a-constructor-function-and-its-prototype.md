@@ -12,6 +12,9 @@ allowed. Extended by
 `js::class::<T>()` of a binding's type is the global class TypeScript
 names it. Extended by [0943](0943-an-object-of-methods-reading-this.md): a
 `#[rust_js::object]`'s methods are its literal's own, not a prototype's.
+Amended by [1009](1009-a-constructor-is-held-as-a-typed-class.md):
+`js::Class` takes its constructor's signature, `Class<fn(A, B) -> T>`,
+`js::class::<T>()` the untyped one it defaults to.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for what's kept, a
 value's fields and its methods' meaning; and a compile error where Rust's
@@ -406,3 +409,13 @@ native Rust; and mutations `class-instance-not-this`,
 (`lower/classes.rs`), `class-declared-by-its-struct-name`,
 `class-of-another-modules-struct-undeclared` (`lower/declarations.rs`) and
 `class-named-by-its-struct` (`lower/analysis/naming.rs`).
+
+## Amendment (2026-10-28): a typed `js::Class`
+
+[1009](1009-a-constructor-is-held-as-a-typed-class.md): `js::Class` is
+`Class<S = AnyConstructor>`, typed by a constructor's signature where
+`Class::of(f)` holds a function the program writes, `Class<fn(A, B) ->
+T>`, which `js::new(class, (a, b))` is given what it takes of and makes a
+`&'static T` of, and which its declaration is, `new (a: A, b: B) => T`.
+`js::class::<T>()` is the untyped `Class`, as before: a class's
+constructor's own call is `T::new(..)`.

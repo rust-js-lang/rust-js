@@ -361,9 +361,9 @@ pub fn held() {
 });
 
 // ADR 0695: JS's `new` of a function value is the js crate's, of a value
-// of any shape, as TypeScript has it of an `any`'s: `js::new(js::unknown(f),
-// (a, b))` is `new f(a, b)`, its arguments a rest parameter's. A closure is
-// an arrow, which `new` throws of, a panic.
+// of any shape, as TypeScript has it of an `any`'s: `js::new(f, (a, b))` is
+// `new f(a, b)`, its arguments a rest parameter's. An arrow JS gives is no
+// constructor, which `new` throws of, a panic.
 test("new of a function value is JS's new", async () => {
   const { js, lib, warnings } = await compiled("js-object-new", `use js::{IntoUnknown, Unknown};
 
@@ -371,9 +371,8 @@ pub fn made(class: &Unknown, a: f64, rest: &[&dyn IntoUnknown]) -> (&'static Unk
     (js::new(class, ()), js::new(class, (a, "b")), js::new(class, rest))
 }
 
-pub fn arrow() -> bool {
-    let f = || 1;
-    std::panic::catch_unwind(|| js::new(js::unknown(&f), ())).is_err()
+pub fn arrow(f: &'static Unknown) -> bool {
+    std::panic::catch_unwind(|| js::new(f, ())).is_err()
 }
 `);
   expect(warnings).toEqual([]);
@@ -387,14 +386,15 @@ pub fn arrow() -> bool {
   const [none, two, spread] = lib.made(Thing, 1, ["x", 2]);
   expect([none.args, two.args, spread.args]).toEqual([[], [1, "b"], ["x", 2]]);
   expect(none).toBeInstanceOf(Thing);
-  expect(lib.arrow()).toBe(true);
+  expect([lib.arrow(() => 1), lib.arrow(Thing)]).toEqual([true, false]);
 });
 
 // ADR 0696: a constructor Rust writes is a `fn` item, a function
 // declaration, constructed and with a `prototype`: where it's written, in
-// the innermost block that uses it, after its comments.
+// the innermost block that uses it, after its comments; held as a
+// `js::Class`, `Class::of(&f)` (ADR 1009).
 test("a constructor is a fn item, declared where it's written", async () => {
-  const { js, lib, warnings } = await compiled("js-object-constructor", `use js::Unknown;
+  const { js, lib, warnings } = await compiled("js-object-constructor", `use js::{Class, Unknown};
 
 pub fn point(x: f64) -> (bool, f64) {
     #[cfg_attr(rust_js, rust_js::name = "Point")]
@@ -407,12 +407,12 @@ pub fn point(x: f64) -> (bool, f64) {
         fn origin() -> Option<&'static Unknown> {
             None
         }
-        let prototype: &Unknown = unsafe { js::cast(js::get(js::unknown(&origin), "prototype")) };
+        let prototype = Class::of(&origin).prototype();
         js::set(prototype, "x", x);
-        let made = js::new(js::unknown(&origin), ());
+        let made = js::new(Class::of(&origin), ());
         return (js::get(made, "constructor") == Some(js::unknown(&origin)), unsafe { js::cast(js::get(made, "x")) });
     }
-    (js::get(js::new(js::unknown(&point), ()), "constructor") == Some(js::unknown(&point)), 0.0)
+    (js::get(js::new(Class::of(&point), ()), "constructor") == Some(js::unknown(&point)), 0.0)
 }
 `);
   expect(warnings).toEqual([]);
@@ -902,7 +902,7 @@ pub fn bound(f: &dyn Fn(u32) -> u32) -> u32 {
 // host without one, a `Map`. Run of a function component, a class, and an
 // async component whose rejection is silenced.
 test("React's component stack frame is found as upstream finds it", async () => {
-  const { js, lib, warnings } = await compiled("js-object-component-frame", `use js::{JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
+  const { js, lib, warnings } = await compiled("js-object-component-frame", `use js::{Class, JsError, JsObject, Kind, Promise, PropertyDescriptor, Unknown, WeakMap, object, reflect};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 thread_local! {
@@ -949,7 +949,7 @@ pub fn determine_component_frame_root(
                 panic!();
             }
             object::define_property(
-                unsafe { js::cast::<&Unknown>(js::get(js::unknown(&fake), "prototype")) },
+                Class::of(&fake).prototype(),
                 "props",
                 &PropertyDescriptor {
                     set: Some(&|_| panic!()),
@@ -965,7 +965,7 @@ pub fn determine_component_frame_root(
                 if let Err(x) = catch_unwind(fake) {
                     control = x.downcast_ref::<&'static JsError>().copied();
                 }
-                let prototype: &'static Unknown = unsafe { js::cast(js::get(js::unknown(r#fn), "prototype")) };
+                let prototype = Class::of(r#fn).prototype();
                 let prev_props = object::get_own_property_descriptor(Some(prototype), "props");
                 object::define_property(
                     prototype,
@@ -977,7 +977,7 @@ pub fn determine_component_frame_root(
                     },
                 );
                 let _restore_props = RestoreProps { prototype, prev_props };
-                js::new(js::unknown(r#fn), ());
+                js::new(Class::of(r#fn), ());
             }
         } else {
             control = Some(js::error::new(""));

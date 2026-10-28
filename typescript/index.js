@@ -681,6 +681,10 @@ function typeNode(t) {
     case "tuple":
       return f.createTupleTypeNode(t.elements.map(typeNode));
     case "function":
+      // A constructor's, `new (a: A) => T`, of a typed `js::Class` (ADR 1009).
+      if (t.construct) {
+        return f.createConstructorTypeNode(undefined, typeParameterNodes(t.typeParameters), t.params.map(param), typeNode(t.returns));
+      }
       return f.createFunctionTypeNode(typeParameterNodes(t.typeParameters), t.params.map(param), typeNode(t.returns));
     case "object":
       return f.createTypeLiteralNode(t.members.map(member));

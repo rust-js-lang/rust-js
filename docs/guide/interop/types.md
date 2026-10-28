@@ -1872,7 +1872,9 @@ export function removed(prev, next) {
 }
 ```
 - `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
-  `()` of none, or a slice spread, as a rest parameter's
+  `()` of none, or a slice spread, as a rest parameter's, of a value of
+  any shape or an untyped `js::Class`; of a typed one, what its
+  constructor takes, as below
   ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):
 
 ```rust
@@ -2354,14 +2356,23 @@ export function namedBy(name) {
   };
 }
 ```
-- **A constructor is a `fn` item**, a function declaration, which `new`
+- **A constructor is held as a `js::Class`**, `Class::of(f)` of a function
+  the program writes: a `fn` item, a function declaration, which `new`
   constructs and which has a `prototype`, declared where it's written, in
-  the block it's written in; a closure is an arrow
-  function, which `new` throws a `TypeError` of
-  ([ADR 0696](../../decisions/0696-a-constructor-is-a-fn-item-where-its-written.md)):
+  the block it's written in; or one `function::with_this` makes, closed
+  over what it captures. `Class::of` types it by its signature,
+  `Class<fn(A, B) -> T>`, so `js::new(class, (a, b))` is given what it
+  takes, each argument checked as a call's is, and gives a `&'static T`
+  where the function gives `this`, a `&'static T`; a value of any shape
+  where it gives nothing. Its `prototype()` is JS's. A closure is an arrow
+  function, which `new` throws a `TypeError` of, so `Class::of` of one is
+  refused; so is a constructor held as a value of any shape,
+  `js::new(js::unknown(&fake), ())`, naming `Class::of`
+  ([ADR 0696](../../decisions/0696-a-constructor-is-a-fn-item-where-its-written.md),
+  [ADR 1009](../../decisions/1009-a-constructor-is-held-as-a-typed-class.md)):
 
 ```rust
-use js::Unknown;
+use js::{Class, Unknown};
 
 pub fn sample(construct: bool) -> Option<&'static Unknown> {
     if construct {
@@ -2370,7 +2381,7 @@ pub fn sample(construct: bool) -> Option<&'static Unknown> {
         fn fake() -> Option<&'static Unknown> {
             None
         }
-        return js::get(js::new(js::unknown(&fake), ()), "props");
+        return js::get(js::new(Class::of(&fake), ()), "props");
     }
     None
 }
@@ -2383,6 +2394,99 @@ export function sample(construct) {
     function Fake() {}
     return new Fake().props;
   }
+}
+```
+
+  React's `createSyntheticEvent` makes a constructor per interface, closed
+  over it, its prototype's methods assigned, and its plugins construct
+  the one they hold: the `let`'s `#[rust_js::name]` names the function,
+  as JS's convention names a constructor, and its `this`, cast once, is
+  the event it makes:
+
+```rust
+use std::cell::Cell;
+
+use js::object::assign;
+use js::{Class, Unknown, function};
+
+fn function_that_returns_true() -> bool {
+    true
+}
+
+pub struct BaseSyntheticEvent {
+    #[cfg_attr(rust_js, rust_js::name = "_reactName")]
+    pub react_name: Cell<Option<&'static str>>,
+    pub native_event: Cell<&'static Unknown>,
+}
+
+unsafe impl js::Defined for BaseSyntheticEvent {}
+
+pub type SyntheticEventClass = Class<fn(Option<&'static str>, &'static Unknown) -> BaseSyntheticEvent>;
+
+struct SyntheticEventPrototype {
+    persist: Box<dyn Fn()>,
+    is_persistent: fn() -> bool,
+}
+
+unsafe impl js::Defined for SyntheticEventPrototype {}
+
+pub fn create_synthetic_event(
+    #[cfg_attr(rust_js, rust_js::name = "Interface")] interface: &'static Unknown,
+) -> &'static SyntheticEventClass {
+    #[cfg_attr(rust_js, rust_js::name = "SyntheticBaseEvent")]
+    let synthetic_base_event = Class::of(function::with_this(
+        move |this, (react_name, native_event): (Option<&'static str>, &'static Unknown)| {
+            // Safety: `new` gives its constructor the event it makes.
+            let this: &'static BaseSyntheticEvent = unsafe { js::cast(this) };
+            this.react_name.set(react_name);
+            this.native_event.set(native_event);
+            for prop_name in js::keys_in(interface) {
+                js::set(this, &prop_name, js::get(native_event, &prop_name));
+            }
+            this
+        },
+    ));
+    assign(
+        synthetic_base_event.prototype(),
+        (&SyntheticEventPrototype {
+            persist: function::with_this(|_, ()| {}),
+            is_persistent: function_that_returns_true,
+        },),
+    );
+    synthetic_base_event
+}
+
+pub fn dispatched(ctor: &'static SyntheticEventClass, native_event: &'static Unknown) -> Option<&'static str> {
+    let event = js::new(ctor, (Some("onClick"), native_event));
+    event.react_name.get()
+}
+```
+
+```js
+function functionThatReturnsTrue() {
+  return true;
+}
+
+export function createSyntheticEvent(Interface) {
+  function SyntheticBaseEvent(reactName, nativeEvent) {
+    // Safety: `new` gives its constructor the event it makes.
+    this._reactName = reactName;
+    this.nativeEvent = nativeEvent;
+    for (const propName in Interface) {
+      this[propName] = nativeEvent[propName];
+    }
+    return this;
+  }
+  Object.assign(SyntheticBaseEvent.prototype, {
+    persist: function () {},
+    isPersistent: functionThatReturnsTrue,
+  });
+  return SyntheticBaseEvent;
+}
+
+export function dispatched(ctor, nativeEvent) {
+  const event = new ctor("onClick", nativeEvent);
+  return event._reactName;
 }
 ```
 - **`==` of two is JS's `===`**; of two `Option<&Unknown>`, std's

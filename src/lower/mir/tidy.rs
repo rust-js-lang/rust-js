@@ -42,9 +42,10 @@ use self::{
 use super::hints::{LabeledBlock, Switch};
 
 /// What a body's last passes ask of its locals, by name: those the program
-/// names, and its `String`s.
+/// names, those a `let`'s `#[rust_js::name]` names, and its `String`s.
 pub(super) struct Named {
     pub(super) user: HashSet<String>,
+    pub(super) given: HashSet<String>,
     pub(super) text: HashSet<String>,
 }
 

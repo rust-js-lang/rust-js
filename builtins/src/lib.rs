@@ -821,18 +821,110 @@ pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool 
     unreachable!()
 }
 
-/// `new value(...arguments)`: what JS's `new` makes of a function, of a
-/// value of any shape, as TypeScript's `new` is of an `any`'s: a `fn` item,
-/// `js::new(js::unknown(&fake), ())`, or a function JS gives,
-/// `js::new(js::unknown(r#fn), (a, b))`; a closure is an arrow function,
-/// which JS throws a `TypeError` of, a panic, as of what's no constructor
-/// (ADR 0695). Its arguments are a rest parameter's, a tuple of them, `()`
-/// of none, or a slice spread.
+/// `new value(...arguments)`: what JS's `new` makes of a constructor. Of a
+/// typed [`Class`], `Class<fn(A, B) -> T>`, its arguments a tuple of what
+/// its constructor takes, `(a, b)`, each checked as a call's is, and what
+/// it makes a `&'static T`: React's `new SyntheticEventCtor(reactName, ..)`
+/// of `js::new(ctor, (react_name, ..))`. Of an untyped `Class`, a binding's
+/// global class or a crate's, `js::class::<T>()`, or of a value of any
+/// shape, a function JS gives, as TypeScript's `new` is of an `any`'s, its
+/// arguments a rest parameter's, a tuple of them, `()` of none, or a slice
+/// spread, and what it makes a value of any shape (ADR 0695, amended). A
+/// constructor the program writes is held as a `Class`, [`Class::of`]: a
+/// `js::unknown(&fake)` of one is refused, naming it. Of what's no
+/// constructor, an arrow, JS's `TypeError`, a panic.
 #[cfg_attr(rust_js, rust_js::link_name = "new this()")]
 #[cfg_attr(rust_js, rust_js::variadic)]
 #[allow(unused_variables)]
-pub fn new(this: &Unknown, arguments: impl Rest<dyn IntoUnknown>) -> &'static Unknown {
+pub fn new<C: Construct<A> + ?Sized, A>(this: &C, arguments: A) -> C::Instance {
     unreachable!()
+}
+
+/// What [`new`] constructs, given `A`, and what that makes: a typed
+/// [`Class`] of the tuple of its constructor's parameters, an untyped one,
+/// or a value of any shape of rest arguments. No program names it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't a constructor `new` is given `{A}` of",
+    note = "a `Class<fn(A, B) -> T>` is given a tuple of its parameters, `(a, b)`, `(a,)` of one and `()` of none; a constructor the program writes is held as `Class::of(&f)`"
+)]
+pub trait Construct<A> {
+    /// What `new` of it makes.
+    type Instance;
+}
+
+impl<A: Rest<dyn IntoUnknown>> Construct<A> for Unknown {
+    type Instance = &'static Unknown;
+}
+
+impl<A: Rest<dyn IntoUnknown>> Construct<A> for Class {
+    type Instance = &'static Unknown;
+}
+
+/// `Construct` of each typed `Class` of up to 12 parameters.
+macro_rules! constructs {
+    ($(($($a:ident),*))*) => {
+        $(
+            impl<T: 'static, $($a),*> Construct<($($a,)*)> for Class<fn($($a),*) -> T> {
+                type Instance = &'static T;
+            }
+            impl<R: Made, $($a),*> Signature for fn($($a),*) -> R {
+                type Class = fn($($a),*) -> R::Instance;
+            }
+        )*
+    };
+}
+
+constructs! {
+    ()
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, F)
+    (A, B, C, D, E, F, G)
+    (A, B, C, D, E, F, G, H)
+    (A, B, C, D, E, F, G, H, I)
+    (A, B, C, D, E, F, G, H, I, J)
+    (A, B, C, D, E, F, G, H, I, J, K)
+    (A, B, C, D, E, F, G, H, I, J, K, L)
+}
+
+/// What [`Class::of`] makes of a function's signature, `fn(A, B) -> R`: the
+/// class's, `fn(A, B) -> T`, `T` what `new` of it makes ([`Made`]). No
+/// program names it.
+#[diagnostic::on_unimplemented(
+    message = "a function of `{Self}` is no constructor `Class::of` types",
+    note = "a constructor takes up to 12 parameters and gives `this`, a `&'static T`, or nothing"
+)]
+pub trait Signature {
+    /// The class's signature.
+    type Class;
+}
+
+/// What `new` of a function that gives `Self` makes, as JS's `new` does: what
+/// it gives where that's an object, `this` of a `&'static T`, its own
+/// `return this;`; a value of any shape where it gives nothing, `()`, or an
+/// `Option`, `this` itself where it's `None`. No program names it.
+#[diagnostic::on_unimplemented(
+    message = "a constructor that gives `{Self}` makes no instance `new` can type",
+    note = "a constructor gives `this`, a `&'static T`, or nothing"
+)]
+pub trait Made {
+    /// What `new` of it makes.
+    type Instance;
+}
+
+impl<T> Made for &'static T {
+    type Instance = T;
+}
+
+impl Made for () {
+    type Instance = Unknown;
+}
+
+impl<T> Made for Option<T> {
+    type Instance = Unknown;
 }
 
 /// `throw value`: JS's `throw` of a value JS has, an `Error`, a promise,
@@ -851,12 +943,33 @@ pub fn throw(this: Option<&Unknown>) -> ! {
 /// A JS class's constructor function, `Component`, which [`class`] gives
 /// of a struct marked `#[rust_js::class]`, or of a binding's class: its
 /// `prototype`, which a port sets as JS does, `ComponentDummy.prototype =
-/// Component.prototype` (ADR 0761), and what [`new`] makes one of.
-pub struct Class(PhantomData<JsObject>);
+/// Component.prototype` (ADR 0761), and what [`new`] makes one of. Typed by
+/// its constructor's signature, `Class<fn(A, B) -> T>`, its parameters and
+/// what `new` makes, where [`Class::of`] makes it of a function the program
+/// writes; of none, `Class`, any constructor's.
+pub struct Class<S = AnyConstructor>(PhantomData<(JsObject, S)>);
 
-unsafe impl Defined for Class {}
+/// What an untyped [`Class`] is of: any constructor, given any arguments,
+/// making a value of any shape.
+pub enum AnyConstructor {}
 
-impl Class {
+unsafe impl<S> Defined for Class<S> {}
+
+impl<S> Class<S> {
+    /// A function the program writes as the constructor it is, typed by
+    /// its signature: `function::with_this(move |this, (a, b)| { .. this
+    /// })`'s, closed over what it captures, or a `fn` item's, `&fake`
+    /// (ADRs 0972, 0696, amended). The function itself, which `new` makes
+    /// a `&'static T` of where it gives `this`, a `&'static T`; a value of
+    /// any shape where it gives nothing or an `Option`. React's `function
+    /// SyntheticBaseEvent(..) { this._reactName = reactName; .. return this; }`
+    /// of `Class::of(function::with_this(move |this, (react_name, ..)| ..))`.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of<F: AnyFunction<M>, M: Signature<Class = S>>(this: F) -> &'static Class<S> {
+        unreachable!()
+    }
+
     /// [`C.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/prototype):
     /// what each instance `new C(..)` makes inherits from.
     #[cfg_attr(rust_js, rust_js::link_name = "get prototype")]

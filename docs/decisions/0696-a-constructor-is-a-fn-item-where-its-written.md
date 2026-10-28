@@ -1,7 +1,9 @@
 # 0696. A constructor is a `fn` item, declared where it's written
 
 Status: Accepted; amended below: in the block it's written in, not the
-innermost one that uses it. Amends [0308](0308-local-functions.md),
+innermost one that uses it; amended by
+[1009](1009-a-constructor-is-held-as-a-typed-class.md): it's held as a
+`js::Class`, `Class::of(&fake)`, not as a value of any shape. Amends [0308](0308-local-functions.md),
 whose function written in a body was declared in its body's own list,
 not the block it's written in, and without its comments.
 
@@ -128,3 +130,14 @@ the simplest test of "its block" that `Fake` passed.
 - `test/lowering-functions.test.ts`, "a function written in a body is
   declared in it": `twice` at its body's top, used in one `if`.
 - Mutation `written-fn-in-the-block-using-it`.
+
+## Amendment (2026-10-28): held as a `js::Class`
+
+[1009](1009-a-constructor-is-held-as-a-typed-class.md): the constructor
+is held as a `js::Class`, the one way: `js::new(Class::of(&fake), ())`,
+`Class::of(&fake).prototype()`, not `js::new(js::unknown(&fake), ())` and
+`js::cast(js::get(js::unknown(&fake), "prototype"))`, each refused naming
+the form. One closed over what it captures is `function::with_this`'s,
+`Class::of(function::with_this(..))`; `Class::of` of a closure, an arrow,
+is refused. Its JS is as above: `function Fake() {}`, `new Fake()`,
+`Fake.prototype`.

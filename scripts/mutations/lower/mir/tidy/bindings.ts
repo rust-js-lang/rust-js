@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     "name": "alias-takes-prop-name",
     "breaks": "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
+    "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
     "replace": "                if false {",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
@@ -137,8 +137,8 @@ export const mutations: Mutation[] = [
     "name": "alias-takes-temporary-name",
     "breaks": "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
     "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
-    "replace": "if !is_temporary(a) && captured.contains(&b) {",
+    "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
+    "replace": "if !is_temporary(a) && (captured.contains(&b) || named) {",
     "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
@@ -443,5 +443,13 @@ export const mutations: Mutation[] = [
     find: "                                *e = of.clone().or_at(e.span).or_at(at);\n",
     replace: "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "a while's test is its own, an if of a break the program wrote its if"],
+  },
+  {
+    name: "alias-of-a-given-name-renamed",
+    breaks: "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                let named = given.contains(a.as_str()) && !given.contains(&b);\n",
+    replace: "                let named = given.contains(a.as_str()) && false;\n",
+    tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
   },
 ];
