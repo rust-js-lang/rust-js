@@ -1424,6 +1424,11 @@ pub fn keeps_new(_new: u32) -> u32 {
     1
 }
 
+pub fn read(_current: Option<u32>, _seen: u32) -> u32 {
+    let it = || _seen;
+    _current.unwrap_or(it())
+}
+
 pub fn beside(_x: u32, x: u32) -> u32 {
     x
 }
@@ -1466,6 +1471,8 @@ pub static UPDATER: Updater = Updater {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function describeClientReference(ref) {");
   expect(js).toContain("export function keepsNew(_new) {");
+  // A parameter the body reads keeps the name it's read by, a closure's read too.
+  expect(js).toContain("export function read(_current, _seen) {");
   expect(js).toContain("export function beside(_x, x) {");
   expect(js).toContain("export function shadowing(_count) {");
   expect(js).toContain("(_total) => total");
@@ -1478,8 +1485,9 @@ pub static UPDATER: Updater = Updater {
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function describeClientReference(ref: string): string;");
   expect(declarations).toContain("export function keepsNew(_new: number): number;");
+  expect(declarations).toContain("export function read(_current: number | null | undefined, _seen: number): number;");
   expect(declarations).toContain("export function beside(_x: number, x: number): number;");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.describeClientReference("a"), lib.keepsNew(5), lib.beside(1, 2), lib.shadowing(9), lib.captured(3)(4), lib.handler()(1, 2), lib.shadowed(1)(2), lib.nested()(7), lib.UPDATER.isMounted(1), lib.UPDATER.update(4, 5)])
-    .toEqual(["client", 1, 2, 2, 3, 3, 3, 3, false, 4]);
+  expect([lib.describeClientReference("a"), lib.keepsNew(5), lib.read(undefined, 6), lib.beside(1, 2), lib.shadowing(9), lib.captured(3)(4), lib.handler()(1, 2), lib.shadowed(1)(2), lib.nested()(7), lib.UPDATER.isMounted(1), lib.UPDATER.update(4, 5)])
+    .toEqual(["client", 1, 6, 2, 2, 3, 3, 3, 3, false, 4]);
 });

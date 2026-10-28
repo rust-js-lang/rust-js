@@ -24,3 +24,9 @@ pub fn twice<T: Copy>(value: T) -> (T, T) {
 pub fn first<T: Copy>(items: &[T]) -> Option<T> {
     items.first().copied()
 }
+
+/// A parameter its body reads keeps its `_`, in the consumer's copy of it,
+/// read from its MIR, too (ADR 0678, amended): upstream's `_current`.
+pub fn current_or<T: Copy>(_current: Option<T>, fallback: T) -> T {
+    _current.unwrap_or(fallback)
+}

@@ -265,6 +265,7 @@ test("a library's Copy bound takes a copy only where one is given, and JS calls 
   expect(app).toContain("createContext({ x: 1 }, pointCopy)");
   expect(app).toContain("createContext(7)");
   expect(app).toContain("twice(8)");
+  expect(app).toContain("\nfunction currentOr(_current, fallback, TCopy) {\n");
   const lib = JSON.stringify(join(out, "dep", "lib.js"));
   const called = `const dep = await import(${lib});
 const object = { name: "default" };

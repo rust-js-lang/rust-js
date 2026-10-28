@@ -4,7 +4,8 @@ Status: Accepted. Amends [0573](0573-every-rust-name-is-camel-case-in-js.md),
 whose names kept a leading `_`: a parameter's is Rust's mark of one
 unused, which its JS name and its declaration's are without. Amended:
 a closure's parameter meets the bindings of the bodies it's in and its
-own, not a sibling closure's.
+own, not a sibling closure's. Amended: a parameter the body reads keeps
+its `_`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A parameter's name
 changes nothing a program does, and where it would, another binding's
@@ -132,3 +133,42 @@ them; and the mutations `unnamed-last-params-kept`,
 `unnamed-last-params-of-generics-too` and
 `unnamed-last-params-of-exported-too` (`lower/mir.ts`).
 
+
+## Amendment: a parameter the body reads keeps its `_` (2026-10-28)
+
+The user's decision. React's `mountLazyComponent(_current, workInProgress,
+elementType, renderLanes)` reads its `_current`, and the port's `fn
+mount_lazy_component(_current: Option<&Fiber>, ..)`, which reads it too,
+printed `function mountLazyComponent(current, ..)`. A `_` the body reads
+past isn't Rust's mark of one unused, which `unused_variables` asks for:
+it's the program's name.
+
+**A parameter's `_` goes only where the body doesn't read it**
+(`reads_parameter`): a path to its binding in the function's body, a
+closure's in it too, `|| _seen`; an `async fn`'s move of it into its
+future, `let _arg = _arg;`, which no program writes, is no read, and the
+binding it makes is the parameter; of a library's function its consumer
+compiles from MIR alone (ADR 0914), a use of its local, so both crates'
+copies name it alike.
+
+```rust
+pub fn current_or(_current: Option<u32>, fallback: u32) -> u32 {
+    _current.unwrap_or(fallback)
+}
+```
+```js
+export function currentOr(_current, fallback) {
+  return _current ?? fallback;
+}
+```
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): None, as before: a
+  name changes nothing a program does.
+- Held by `test/lowering-names.test.ts`'s "a parameter's leading
+  underscore isn't in its JS name" (`read(_current, _seen)`, a closure's
+  read), `test/crates.test.ts`'s "a library's Copy bound takes a copy
+  only where one is given" (`currentOr(_current, fallback, TCopy)` of the
+  consumer's MIR), the corpus's `future_sizes.rs` (`async function
+  test(arg)`), and the mutations `parameter-read-unmarked`,
+  `parameter-read-in-closure-unseen`, `parameter-async-move-read` and
+  `parameter-read-of-mir-unseen`.

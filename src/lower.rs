@@ -1084,14 +1084,18 @@ fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
 
 /// A parameter's name where it says none (ADR 0678): camelCase, without
 /// the leading `_` that tells Rust it's unused, `_ref`'s `ref`; but as Rust
-/// writes it where what's left is a word JS keeps, `_new`, or another
+/// writes it where what's left is a word JS keeps, `_new`, another
 /// binding's of its function, of a closure in it or around it too, `_x`
-/// beside an `x`.
+/// beside an `x`, or where the body reads it, upstream's `_current`, whose
+/// `_` is then the program's name and no mark of one unused (amended).
 fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
     let named = camel_case(name);
     let Some(unmarked) = named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) else {
         return named;
     };
+    if reads_parameter(tcx, function, name) {
+        return named;
+    }
     // Another crate's body, read from its MIR alone, a library's the crate
     // compiles (ADR 0914) or std's: its bindings, its MIR's.
     let names = match tcx.typeck_root_def_id(function).as_local() {
@@ -1106,6 +1110,106 @@ fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> Strin
         true => unmarked.to_string(),
         false => named,
     }
+}
+
+/// Whether `function`'s body reads its parameter `name`, a closure in it
+/// too (ADR 0678, amended): a path to the parameter's binding, of a body
+/// the crate has; of one read from its MIR alone, a use of its local.
+fn reads_parameter(tcx: TyCtxt<'_>, function: DefId, name: &str) -> bool {
+    use rustc_hir::intravisit::{self, Visitor};
+    let Some(local) = function.as_local() else {
+        use rustc_middle::mir::{
+            self as rmir,
+            visit::{PlaceContext, Visitor as _},
+        };
+        if !tcx.is_mir_available(function) {
+            return false;
+        }
+        let body = tcx.optimized_mir(function);
+        let Some(param) = (body.var_debug_info.iter()).find_map(|info| match info.value {
+            rmir::VarDebugInfoContents::Place(place)
+                if info.name.as_str() == name
+                    && place.projection.is_empty()
+                    && body.local_kind(place.local) == rmir::LocalKind::Arg =>
+            {
+                Some(place.local)
+            }
+            _ => None,
+        }) else {
+            return false;
+        };
+        struct Uses(rmir::Local, bool);
+        impl<'tcx> rmir::visit::Visitor<'tcx> for Uses {
+            fn visit_local(&mut self, local: rmir::Local, context: PlaceContext, _: rmir::Location) {
+                self.1 |= local == self.0 && context.is_use();
+            }
+        }
+        let mut uses = Uses(param, false);
+        uses.visit_body(body);
+        return uses.1;
+    };
+    let Some(body) = tcx.hir_maybe_body_owned_by(local) else {
+        return false;
+    };
+    let mut params = Vec::new();
+    for param in body.params {
+        param.pat.walk_always(|pat| {
+            if let rustc_hir::PatKind::Binding(_, id, ident, _) = pat.kind
+                && ident.name.as_str() == name
+            {
+                params.push(id);
+            }
+        });
+    }
+    struct Reads<'tcx> {
+        tcx: TyCtxt<'tcx>,
+        params: Vec<rustc_hir::HirId>,
+        read: bool,
+    }
+    impl<'tcx> Reads<'tcx> {
+        /// Whether `expr` is a path to one of the parameters.
+        fn names_one(&self, expr: &rustc_hir::Expr<'_>) -> bool {
+            matches!(expr.kind, rustc_hir::ExprKind::Path(rustc_hir::QPath::Resolved(None, path))
+                if matches!(path.res, rustc_hir::def::Res::Local(id) if self.params.contains(&id)))
+        }
+    }
+    impl<'tcx> Visitor<'tcx> for Reads<'tcx> {
+        fn visit_local(&mut self, local: &'tcx rustc_hir::LetStmt<'tcx>) {
+            // An `async fn`'s move of its parameter into its future, `let
+            // _arg = _arg;`, which no program writes: the binding it makes
+            // is the parameter the body reads.
+            if let Some(init) = local.init
+                && init.span.is_desugaring(rustc_span::DesugaringKind::Async)
+                && self.names_one(init)
+            {
+                local.pat.walk_always(|pat| {
+                    if let rustc_hir::PatKind::Binding(_, id, _, _) = pat.kind {
+                        self.params.push(id);
+                    }
+                });
+                return;
+            }
+            intravisit::walk_local(self, local);
+        }
+        fn visit_expr(&mut self, expr: &'tcx rustc_hir::Expr<'tcx>) {
+            if self.names_one(expr) {
+                self.read = true;
+            }
+            if let rustc_hir::ExprKind::Closure(closure) = expr.kind {
+                intravisit::walk_body(self, self.tcx.hir_body(closure.body));
+            }
+            intravisit::walk_expr(self, expr);
+        }
+    }
+    let mut reads = Reads {
+        tcx,
+        params,
+        read: false,
+    };
+    if !reads.params.is_empty() {
+        reads.visit_expr(body.value);
+    }
+    reads.read
 }
 
 /// The name of each binding of `root`'s body that `function`'s parameters

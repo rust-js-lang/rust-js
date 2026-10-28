@@ -2592,6 +2592,8 @@ export function delete$(tasks, at) {
   an `x`, it stays; a closure beside it doesn't count, `|_instance| false`
   beside `|instance, _callback| ..` is `(instance) => false`
   ([ADR 0678](../../decisions/0678-a-parameters-underscore-isnt-its-js-name.md)).
+  One the body reads keeps it, as the name it's read by, React's
+  `_current` (ADR 0678, amended).
   A function the crate doesn't export leaves its last `_` parameters out,
   `fn find_next_sibling(child: u32, _: &(), _: &())`'s `function
   findNextSibling(child)`, as JS ignores what it's given past them; an

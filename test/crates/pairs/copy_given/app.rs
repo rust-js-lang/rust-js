@@ -17,6 +17,9 @@ pub fn main() {
     let mut found = dep::first(&points).unwrap();
     found.x = 6;
     println!("{found:?} {:?}", points[0]);
+    let mut current = dep::current_or(None, Point { x: 7 });
+    current.x += 1;
+    println!("{current:?}");
     let numbers = dep::create_context(7);
     println!("{} {:?} {:?}", numbers.current_value2.get(), dep::twice(8), dep::first(&[9]));
 }
