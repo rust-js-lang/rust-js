@@ -659,8 +659,8 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| case_rests::rest_one_case_reaches(s, false))
             }),
             // A block's `break` in a `switch` it ends with: the case's own.
-            pass("breaks past switches", |b, _| {
-                js::statement_lists(b, &mut switches::breaks_past_switches)
+            pass("breaks past switches", |b, h| {
+                js::statement_lists(b, &mut |s| switches::breaks_past_switches(s, &h.written.switches))
             }),
             // A case's `break` to the `return;` after its `switch`, of an
             // arm the program wrote a `return` in: that `return;` (ADR

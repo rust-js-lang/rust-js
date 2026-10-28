@@ -1590,6 +1590,68 @@ export function name(tag, ty, viewTransitions, legacyOff) {
 }
 ```
 
+The arm fallen to may be guarded too, and fail to nothing, `B | C if on_c`
+before `_ => {}`: its case is its guard's `if`, `if (onC) { .. }`, a guard
+of `||` one `if` of it all, and what's written past the `match` follows
+the `switch`, each case that goes on to it ending with `break`, as React
+writes attemptEarlyBailoutIfNoScheduledUpdate (ADR 0905, amended):
+
+```rust
+use std::cell::Cell;
+
+pub const A: u8 = 1;
+pub const B: u8 = 2;
+pub const C: u8 = 3;
+
+pub struct Fiber {
+    pub tag: Cell<u8>,
+    pub lanes: Cell<u32>,
+}
+
+fn bailout(fiber: &Fiber) -> u32 {
+    fiber.lanes.get()
+}
+
+pub fn early_bailout(fiber: &Fiber, on_b: bool, on_c: bool) -> u32 {
+    match fiber.tag.get() {
+        A => fiber.lanes.set(1),
+        B if on_b => fiber.lanes.set(2),
+        B | C if on_c || fiber.lanes.get() > 4 => return 0,
+        _ => {}
+    }
+    bailout(fiber)
+}
+```
+
+```js
+export const A = 1;
+export const B = 2;
+export const C = 3;
+
+function bailout(fiber) {
+  return fiber.lanes;
+}
+
+export function earlyBailout(fiber, onB, onC) {
+  switch (fiber.tag) {
+    case A:
+      fiber.lanes = 1;
+      break;
+    case B:
+      if (onB) {
+        fiber.lanes = 2;
+        break;
+      }
+    // Fallthrough
+    case C:
+      if (onC || fiber.lanes > 4) {
+        return 0;
+      }
+  }
+  return bailout(fiber);
+}
+```
+
 A guarded arm just before a last `_` that does something falls through to
 the `default`, which Rust tries next, as React writes `describeFiber`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended):

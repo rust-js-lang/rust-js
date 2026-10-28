@@ -6,7 +6,9 @@ and [0629](0629-a-match-of-constants-is-a-switch.md), whose cases each
 ended where they went on. Amended below: the last clause has no `break`
 tidy ended it with; and a guard that falls to nothing beside one that
 falls to the next is a case too, and a case's `if` ends with no `break;`
-its end does.
+its end does; and the arm fallen to may be guarded and fall to nothing,
+what's past the `match` follows the `switch`, a guard is its case's
+`if`, of `||` too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe. Of each value, the `switch` runs the guards Rust runs, in
@@ -408,3 +410,69 @@ ends with its return", run; the mutations
 `case-returns-joined-after-switch`, `case-returns-joined-return-kept`
 (`mir/tidy/case_rests.ts`) and `default-tail-continue-kept`
 (`mir/tidy/jumps/continues.ts`).
+
+## Amendment: an arm fallen to that's guarded and falls to nothing (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps: each
+value runs the guards Rust runs, in order, and goes where Rust goes.
+
+React's attemptEarlyBailoutIfNoScheduledUpdate, as its port writes it
+(bw1 of the BeginWork port's gaps):
+
+```rust
+match fiber.tag.get() {
+    A => { .. }
+    B if on_b => { .. }
+    // Fallthrough
+    B | C if on_c => { ..; return update_c(fiber); }
+    _ => {}
+}
+bailout(fiber)
+```
+
+`B if on_b` falls to the next arm, which names `B` and more. MIR tests
+`B` once, so the next arm's case is `C`'s, as ADR 0905 makes it, and its
+statements MIR placed after the chain, as it places what's past the
+`match`. Only the cases of arms that went on to them, a guarded arm's
+that falls to the next, were given them; the next arm's own case, guarded
+and falling to nothing, wasn't, so the falling case's statements were no
+guard's `if` and the next's, and no `switch` was made: an `if` chain,
+`bailout(fiber)` returned in each branch, and in BeginWork's thirteen
+arms a labeled block, `bb3: { .. break bb3; }`.
+
+**What MIR placed after the chain, written in the arm the guarded arms
+fall to last, is that arm's own case's too**, where it's guarded and
+falls to nothing (`switches::switch_at`), so the `switch` is upstream's:
+`case B: if (onB) { ..; break; } // Fallthrough case C: if (onC) { ..
+return updateC(fiber); }`. And with it:
+
+- **A last `_ => {}`'s `default`, MIR's copy of what's written past the
+  `match` and ending in its `return`, at the end of what the chain
+  takes, follows the `switch`**, as written, `switch (..) { .. } return
+  bailout(fiber);`, each case's copy of that `return` its `break`, as a
+  `return` after the `switch` already made it (`returns_broken`). Not
+  where an `if` of an array's test is before the `switch`, nor where
+  what moves declares a name.
+- **A case that doesn't fall through, `if (!onC) { break; } ..;
+  return ..;`, MIR's test of a guard whose failing goes past the
+  `switch`, is the arm's `if (onC) { .. }`** (`guard_held`, after
+  `breaks_past_switches` made `break bb2` the `switch`'s `break`), and a
+  guard of `||` MIR tests in parts, `if (!legacy) { if (lanes === 0) {
+  break; } }`, is `if (legacy || lanes !== 0) { .. }`. Not a case that
+  falls through, where the `break` leaves and the `if`'s end would fall
+  into the next case.
+- **A guard of `||` tidy joined to the arm's test, `tag === OFFSCREEN &&
+  (legacy || mode !== 0)`, is where its first part is written**
+  (`test_at`), as one of `&&` was, so it's the guard's `if` in its case,
+  React's throwException's `case OffscreenComponent: if (disableLegacyMode
+  || ..) { .. }`, not an `if` chain.
+
+The comment written before the last `_ => {}`, which has no case, is
+printed before the `switch`: left as it was.
+
+Held by `test/corpus/switch_guard_shares_next.rs`, against native Rust,
+and `option_constants_switch`'s `fallen`, whose `default: return "none";`
+is the `return` after its `switch` now; mutations
+`fallen-to-own-case-not-absorbed`, `default-past-match-kept`,
+`guard-break-kept`, `or-guard-untested` and `guard-parts-unjoined`
+(`mir/tidy/switches.ts`).

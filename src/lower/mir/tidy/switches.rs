@@ -253,7 +253,7 @@ fn switch_at(
     // after the chain: not a guarded arm's that falls to nothing (ADR
     // 0636), whose failed guard goes past the `match`, as `_ => {}` does,
     // the `_`'s jump there in its chain's list after it.
-    let going_after: Vec<usize> = (going.iter().copied())
+    let mut going_after: Vec<usize> = (going.iter().copied())
         .filter(|&c| (arms.iter()).any(|arm| arm.span == cases[c].3 && (arm.guard.is_none() || arm.falls)))
         .collect();
     // Each arm a case: one that does nothing, left out, goes on too. Of
@@ -290,7 +290,10 @@ fn switch_at(
     // follows that's written in the arm they fall to last, up to the first
     // of what's written past it, where nothing there reads what it
     // declares: each case's that goes on to it, which each case that falls
-    // then has of the next's, and only the last of them its own.
+    // then has of the next's, and only the last of them its own. Of that
+    // arm's own case too where it's guarded and falls to nothing, `B | C if
+    // on => { .. }` before `_ => {}`: what follows is its statements, whose
+    // guard's `if` goes on to them (ADR 0905, amended).
     if falling
         && cases.len() == arms.len()
         && let Some(arm) = (after.first())
@@ -300,6 +303,10 @@ fn switch_at(
         let own = |s: &Stmt| written_at(s).is_none_or(|at| within(at, arm.span));
         let n = (after.iter()).take_while(|s| own(s)).count();
         if declared(&after[..n]).all(|name| js::mentions_in(&after[n..], name) == 0) {
+            let own_case: Vec<usize> = (going.iter().copied())
+                .filter(|&c| cases[c].3 == arm.span && !going_after.contains(&c))
+                .collect();
+            going_after.extend(own_case);
             for &c in &going_after {
                 cases[c].1.extend(after[..n].iter().cloned());
             }
@@ -336,12 +343,28 @@ fn switch_at(
             return None;
         }
     }
+    // A last `_ => {}`'s `default`, MIR's copy of what's written past the
+    // `match`, ending in its `return`, where that's the chain's end: after
+    // the `switch`, as written, `switch (..) { .. } return bailout(fiber);`,
+    // each case that went on to it going on past the `switch` (ADR 0905,
+    // amended).
+    let mut past = Vec::new();
+    if before.is_empty()
+        && stmts.len() == at + taken
+        && let Some((_, body, true, _)) = cases.last()
+        && body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)))
+        && (body.iter()).all(|s| written_at(s).is_some_and(|at| !within(at, written.span)))
+        && declared(body).next().is_none()
+    {
+        past = cases.pop().map(|(_, body, ..)| body).unwrap_or_default();
+        falls.pop();
+    }
     // A `return` MIR copied into a case of what follows the `match`, the
     // `return` after the `switch`: the case's `break`, as written.
     if let Some(Stmt {
         kind: StmtKind::Return(value),
         ..
-    }) = stmts.get(at + taken)
+    }) = past.last().or(stmts.get(at + taken))
     {
         for (_, body, ..) in cases.iter_mut() {
             returns_broken(body, value.as_ref(), written.span);
@@ -368,7 +391,8 @@ fn switch_at(
         default,
     };
     // Each `if` before it, its `else` the rest, where it goes on.
-    let written = (before.into_iter().rev()).fold(vec![switch.at(span)], |rest, (test, body, at)| {
+    let switched = std::iter::once(switch.at(span)).chain(past).collect();
+    let written = (before.into_iter().rev()).fold(switched, |rest, (test, body, at)| {
         match body.last().is_some_and(js::ends) {
             true => std::iter::once(StmtKind::If(test, body, None).at(at))
                 .chain(rest)
@@ -488,6 +512,55 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
     };
     let (test, then) = held;
     Some(StmtKind::If(test, then, None).at(first.span))
+}
+
+/// A case's `if (!guard) { break; } ..`, MIR's test of a guard whose
+/// failing goes past the `match`, where what follows leaves: `if (guard) {
+/// .. }`, as the arm is written, its case going on past the `switch` where
+/// the guard fails (ADR 0905, amended); of `a || b`, tested in parts, `if
+/// (!a) { if (!b) { break; } }`, `if (a || b) { .. }`. Only of a guard
+/// written of the arm what follows is written in.
+fn guard_held(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
+    let [first, rest @ ..] = &stmts[..] else {
+        return;
+    };
+    // Of a guard MIR tests in parts, `if (!a) { if (!b) { break; } }`, of
+    // `a || b`: each part.
+    let mut tests = Vec::new();
+    let mut then = std::slice::from_ref(first);
+    while let [
+        Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        },
+    ] = then
+    {
+        tests.push(test.clone());
+        then = inner;
+    }
+    let Some(test) = tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)) else {
+        return;
+    };
+    let broken = matches!(
+        then,
+        [Stmt {
+            kind: StmtKind::Break(None),
+            ..
+        }]
+    );
+    if !broken || !rest.last().is_some_and(js::ends) {
+        return;
+    }
+    // A guard written of the arm what follows is written in: not `I if
+    // legacy_off => {}` before `I => { .. }`, whose `if (legacyOff) {
+    // break; }` is as written (ADR 0905, amended).
+    let arm = (switches.iter().flat_map(|s| &s.arms))
+        .find(|arm| (arm.guard).is_some_and(|guard| test_at(&test, first.span).is_some_and(|at| within(at, guard))));
+    if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {
+        return;
+    }
+    let held = StmtKind::If(test.negated_test(), rest.to_vec(), None).at(first.span);
+    *stmts = vec![held];
 }
 
 /// Each `return value;` of a case's `stmts`, outside a loop, a `switch` or
@@ -1069,7 +1142,7 @@ fn tested_at(stmt: &Stmt) -> Option<u32> {
 /// where the program didn't, a pattern's and its guard's, the first's.
 fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
     match &test.kind {
-        ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),
+        ExprKind::Binary(Op::And | Op::Or, first, _) if test.span.is_none() => test_at(first, span),
         ExprKind::Unary(UnaryOp::Not, inner) if test.span.is_none() => test_at(inner, span),
         _ => [test.span, span].into_iter().find(|s| !s.is_none()).map(|s| s.lo),
     }
@@ -1164,7 +1237,7 @@ fn labels_in(stmts: &[Stmt], labels: &mut HashSet<String>) {
 /// what no case is, `switch (thenable.status) { case "fulfilled": .. }`, of
 /// `match status.as_deref() { Some("fulfilled") => .., _ => {} }` (ADR
 /// 0629, amended); a `default` of a `break` alone, nothing.
-pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
+pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
             let label = label.clone();
@@ -1219,6 +1292,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>) {
             for body in (cases.iter_mut().filter(|case| !case.falls).map(|case| &mut case.body)).chain(default.as_mut())
             {
                 ending_breaks(body);
+                guard_held(body, switches);
             }
             // The last case's `break`, which its end does (ADR 0629,
             // amended).

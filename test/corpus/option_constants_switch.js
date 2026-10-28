@@ -79,10 +79,8 @@ function fallen(kind) {
       if (ENABLE_C) {
         return "c";
       }
-      return "none";
-    default:
-      return "none";
   }
+  return "none";
 }
 
 function main() {
