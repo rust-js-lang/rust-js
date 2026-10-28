@@ -827,7 +827,8 @@ test("two uses naming one item apart are refused", () => {
 
 // A `#[rust_js::name]` on a `use` of one name is its import's name, React's
 // `import { ImmediatePriority as ImmediateSchedulerPriority }`; one without
-// is cased as the item, a thread-local of a primitive as Rust writes it.
+// is cased as the item's `#[rust_js::name]` is, `NormalPriority`'s
+// PascalCase `NormalSchedulerPriority` (ADR 0202, amended, rd79).
 // On a group or a glob, which it would name each the same, it's refused.
 test("a use of one name is imported by its rust_js::name", async () => {
   const dir = fixture("use-named");
@@ -855,7 +856,7 @@ pub fn both() -> u8 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("ImmediatePriority as ImmediateSchedulerPriority,");
-  expect(js).toContain("NormalPriority as NORMAL_SCHEDULER_PRIORITY,");
+  expect(js).toContain("NormalPriority as NormalSchedulerPriority,");
   expect((await import(join(dir, "lib.js"))).both()).toBe(4);
   const group = fixture("use-group-named");
   writeFileSync(
