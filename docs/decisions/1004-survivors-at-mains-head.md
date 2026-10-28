@@ -99,3 +99,30 @@ corpus and the mutation's own tests.
 
 Those eighteen mutations are caught or removed. The rest are listed on
 #382 until they are too.
+
+## Amendment: nightly 40752714381's iterator survivors
+
+The nightly of 6cce16f37 found more.
+- `zip-not-cloned-apart`: a zip cloned is std's struct, cloned by its
+  compiled `Zip::clone` (9dc8123b8). The cloned-apart form of one, a
+  `makeZip` factory, was a second way. It goes, `Parted::Zip` with it, and
+  `cloned_chains_and_cycles.js` is shorter.
+- `zip-side-array-uncloned`: a cloned-apart chain's other side given as a
+  `Vec` is never reached, as such a chain is std's struct too. The arm
+  goes; such a side is refused, not made.
+- `rev-length-unknown` and `generic-source-unclosed` name the cases that
+  fail under them.
+- `copied-back-uncompiled` is caught by `associated_double_ended`, now in
+  the forms test's default list.
+- `lent-iterator-unheld`, `generic-iterator-unheld` and
+  `iter-method-type-unrevealed` change only how the JS reads now, so they
+  check snapshots.
+- `maker-boxed-closure-lazy`: every `pub` thread-local is made as its
+  module loads (ADR 1006). So the case gains a private one, which the rule
+  still decides.
+
+Left open, on #382: `closing-not-dropped-when-done`,
+`take-try-fold-limit-kept` and `take-try-fold-limit-left-open`. They are
+the runtime's own closes of a source at its end or its limit. Every
+consumer found closes it there too, so no case shows them. Removing a
+defensive close is a decision, not a cleanup.

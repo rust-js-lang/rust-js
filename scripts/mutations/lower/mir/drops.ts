@@ -176,18 +176,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lent-iterator-unheld",
-    breaks: "an iterator a variable steps by `next()` and then moves into `drop` isn't held, so a zip's source drops at its first `None`, before the `println!` Rust drops it after (#392)",
+    breaks: "an iterator a variable steps by `next()` and then moves into `drop` isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
     file: "src/lower/mir/drops.rs",
     find: "            || lent\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(held_adapters_stepped_to_their_end|adapter_drops)\\.rs$"],
   },
   {
     name: "generic-iterator-unheld",
-    breaks: "a generic body's iterator of a type it's given, a parameter `impl Iterator` or `FromIterator`'s `items.into_iter()`, isn't held, so its source drops at its first `None`, before the body prints (#392)",
+    breaks: "a generic body's iterator of a type it's given, a parameter `impl Iterator` or `FromIterator`'s `items.into_iter()`, isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
     file: "src/lower/mir/drops.rs",
     find: "            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))\n",
     replace: "            && self.dropped_by_closing(ty)\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
   },
   {

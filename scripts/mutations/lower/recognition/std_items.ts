@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/std_items.rs",
     find: "    (\"Copied\", Some(\"DoubleEndedIterator\"), \"next_back\"),\n",
     replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^copied_structs_apart with"],
+    tests: ["test/iterator-forms.test.ts", "-t", "^(copied_structs_apart|associated_double_ended) with"],
   },
   {
     name: "meaning-only-made-everywhere",

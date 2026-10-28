@@ -2,7 +2,8 @@
 // createChildReconciler(true);`, a factory of a closure that captures its
 // flag. Its maker only makes a value, a boxed closure, which `Box::new` is
 // (ADR 0069), so the thread-local is made as its module loads, the value
-// itself, and a call of it is a call of the closure (ADR 0037, amended).
+// itself, and a call of it is a call of the closure (ADR 0037, amended): a
+// `pub` one, as every `pub` one is (ADR 1006), and the module's own too.
 use std::cell::Cell;
 
 thread_local! {
@@ -21,11 +22,13 @@ fn create_child_reconciler(should_track_side_effects: bool) -> Box<Reconciler> {
 thread_local! {
     pub static RECONCILE_CHILD_FIBERS: Box<Reconciler> = create_child_reconciler(true);
     pub static MOUNT_CHILD_FIBERS: Box<Reconciler> = create_child_reconciler(false);
+    static OWN_FIBERS: Box<Reconciler> = create_child_reconciler(true);
 }
 
 fn main() {
     let reconciled = RECONCILE_CHILD_FIBERS.with(|reconcile| reconcile(1));
     let mounted = MOUNT_CHILD_FIBERS.with(|mount| mount(1));
     let again = RECONCILE_CHILD_FIBERS.with(|reconcile| reconcile(4));
-    println!("{reconciled} {mounted} {again} {}", CALLS.get());
+    let own = OWN_FIBERS.with(|own| own(8));
+    println!("{reconciled} {mounted} {again} {own} {}", CALLS.get());
 }

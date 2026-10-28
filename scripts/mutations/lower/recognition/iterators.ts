@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "        if generic\n            || matches!",
     replace: "        if false\n            || matches!",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|generic_skip_of_owned_rev|skip_try_fold|adapter_of_a_value_given_as_it_is|cycled_iterators)\\.rs$"],
   },
   {
     name: "array-iterator-debug-misnamed",
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\" | \"std::iter::Rev\"\n",
     replace: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^(std_iterator_clones|len_made_in_place).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(std_iterator_clones|len_made_in_place|owned_maps_asked_their_length)\\.rs$"],
   },
   {
     name: "try-rfold-not-from-back",
@@ -574,14 +574,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
     snapshots: true,
-  },
-  {
-    name: "zip-not-cloned-apart",
-    breaks: "cloning a `zip` of what's cloned is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        \"std::iter::Zip\" => Parted::Zip,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
     name: "nths-its-own-never",

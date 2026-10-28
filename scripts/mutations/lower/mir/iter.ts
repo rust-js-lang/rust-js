@@ -24,6 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "        let iter_ty = self.reveal(receiver_ty.peel_refs());\n        if let Some(stepped) = self.given_iterator_call(",
     replace: "        let iter_ty = receiver_ty.peel_refs();\n        if let Some(stepped) = self.given_iterator_call(",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
   },
   {
@@ -352,14 +353,6 @@ export const mutations: Mutation[] = [
     find: "            made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));\n",
     replace: "            let _ = unfolded;\n            made.extend(dropped);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
-  },
-  {
-    name: "zip-side-array-uncloned",
-    breaks: "a cloned `zip`'s other side, given as a `Vec`, restarts where it was stepped",
-    file: "src/lower/mir/iter.rs",
-    find: "                (self.stepped_items(items), stored)\n",
-    replace: "                (items, stored)\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
     name: "map-hint-of-own-refused",

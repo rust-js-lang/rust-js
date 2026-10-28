@@ -1184,7 +1184,8 @@ pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(T
 
 /// Of std's adapter of type `ty` made of two parts alone, its parts: a
 /// `Map<I, F>`'s or a `Filter<I, P>`'s source and function, a `Chain<A,
-/// B>`'s or a `Zip<A, B>`'s two sources. What it keeps besides is where
+/// B>`'s two sources. Not a `Zip`, std's struct where it's cloned, which
+/// its compiled `Clone` clones (#382). What it keeps besides is where
 /// they are, a JS iterator's state being its sources' (ADR 0525), and a
 /// chain's, which half it's on, which an ended first half says (#181).
 pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Parted, Ty<'tcx>, Ty<'tcx>)> {
@@ -1193,7 +1194,6 @@ pub(crate) fn cloned_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Par
         "std::iter::Map" => Parted::Map,
         "std::iter::Filter" => Parted::Filter,
         "std::iter::Chain" => Parted::Chain,
-        "std::iter::Zip" => Parted::Zip,
         _ => return None,
     };
     Some((parted, args.type_at(0), args.type_at(1)))
@@ -1205,7 +1205,6 @@ pub(crate) enum Parted {
     Map,
     Filter,
     Chain,
-    Zip,
 }
 
 /// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.

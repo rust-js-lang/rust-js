@@ -15,11 +15,13 @@ function createChildReconciler(shouldTrackSideEffects) {
 
 export const reconcileChildFibers = createChildReconciler(true);
 export const mountChildFibers = createChildReconciler(false);
+const ownFibers = createChildReconciler(true);
 
 function main() {
   const reconciled = reconcileChildFibers(1);
   const mounted = mountChildFibers(1);
   const again = reconcileChildFibers(4);
-  console.log(`${reconciled} ${mounted} ${again} ${calls}`);
+  const own = ownFibers(8);
+  console.log(`${reconciled} ${mounted} ${again} ${own} ${calls}`);
 }
 //# sourceMappingURL=case.js.map

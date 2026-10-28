@@ -23,7 +23,6 @@ import {
   $iter,
   $iterator,
   $lazyChain,
-  $lazyZip,
   $next,
   $nextSome,
   $rangeNext,
@@ -116,15 +115,12 @@ function cycles() {
 }
 
 function clones() {
-  const iterIntoIterator = {
-    intoIter: (items) => items,
-    IntoIterIterator: () => ({ next: $next }),
-  };
-  const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const a = [1, 2];
   const b = [3];
-  const c = iterator_chain($iter(a), $iter(b), { next: $next }, iterIntoIterator);
-  const d = chainClone_clone(c, iterClone, iterClone);
+  const c = iterator_chain($iter(a), $iter(b), { next: $next }, intoIterator);
+  const d = chainClone_clone(c, clone, clone);
   console.log(`[${$foldToArray($roomForHint(c, 4, true)).join(", ")}] ${$count(d)}`);
   const makeChain = (a, b) =>
     $cloning($lazyChain(a, b), () =>
@@ -133,16 +129,16 @@ function clones() {
   console.log(
     `[${Array.from($cycleOf(makeChain($iter(a), $iter(b)), $clone, $next).take(7)).join(", ")}]`,
   );
-  const e = iterator_chain($iter(a), $iter(b), { next: $next }, iterIntoIterator);
+  const e = iterator_chain($iter(a), $iter(b), { next: $next }, intoIterator);
   $next(e);
   $next(e);
-  const f = chainClone_clone(e, iterClone, iterClone);
+  const f = chainClone_clone(e, clone, clone);
   console.log(
     `[${$foldToArray($roomForHint(e, 4, true)).join(", ")}] [${$foldToArray($roomForHint(f, 4, true)).join(", ")}]`,
   );
   const z = iterator_zip(
     $iter(a),
-    iterator_chain($iter(b), $iter(a), { next: $next }, iterIntoIterator),
+    iterator_chain($iter(b), $iter(a), { next: $next }, intoIterator),
     { next: $next },
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
     true,
@@ -153,25 +149,41 @@ function clones() {
     true,
   );
   console.log(
-    `${zipClone_clone(z, iterClone, chainClone(iterClone, iterClone)).reduce((n) => n + 1, 0)} [${$foldToArray(
+    `${zipClone_clone(z, clone, chainClone(clone, clone)).reduce((n) => n + 1, 0)} [${$foldToArray(
       $roomForHint(z, 8, true),
     )
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const makeZip = (a, b) =>
-    $cloning($lazyZip($iterator(a, $rangeNext), b), () =>
-      makeZip({ start: a.start, end: a.end }, $iter(b.items.slice(b.at, b.end))),
-    );
   console.log(
     `[${Array.from(
-      $cycleOf(makeZip({ start: 0, end: 3 }, $iter(Array.from("ab"))), $clone, $next).take(5),
+      $cycleOf(
+        iterator_zip(
+          { start: 0, end: 3 },
+          $iter(Array.from("ab")),
+          { next: $rangeNext },
+          intoIterator,
+          true,
+          true,
+          true,
+          false,
+          false,
+          false,
+        ),
+        (iterator) =>
+          zipClone_clone(
+            iterator,
+            { clone: (value) => ({ start: value.start, end: value.end }) },
+            clone,
+          ),
+        $next,
+      ).take(5),
     )
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );
   const m = iterator_map($iter(a), (x) => (x * 10) | 0);
-  const m2 = mapClone_clone(m, iterClone, { clone: (value) => value });
+  const m2 = mapClone_clone(m, clone, { clone: (value) => value });
   console.log(`[${$foldToArray(m).join(", ")}] ${m2.reduce((a, b) => (a + b) | 0, 0)}`);
   const makeFilter = (it, f) =>
     $cloning($iterator(it, $rangeNext).filter(f), () =>

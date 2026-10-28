@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let parted = crate::lower::recognition::cloned_parts(self.tcx, self.reveal(output));
-        let (Some((parted, _, stored)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
+        let (Some((parted, _, _)), [receiver_ty, other_ty, ..]) = (parted, arg_tys) else {
             return self.holding_function(def_id, (trait_id, arg_tys), values, output, span, made);
         };
         if values.len() != 2 || !self.iterator_cloned_apart(output) {
@@ -132,30 +132,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.next().expect("the receiver"),
             values.next().expect("its other part"),
         );
-        // A chain's or a zip's other side given as what makes an iterator,
-        // a `Vec`, an array or a slice: made the array's iterator here, and
-        // cloned as the iterator the adapter keeps, where it is (#181). One
-        // given as an iterator is as the receiver is, its JS value where it
-        // is; any other, refused.
+        // A chain's other side given as an iterator is as the receiver is,
+        // its JS value where it is; one given as what makes an iterator, a
+        // `Vec`, refused: a chain of one is std's struct where it's cloned,
+        // which its compiled `Clone` clones (#382).
         let iterates = matches!(parted, Parted::Map | Parted::Filter) || self.implements_iterator(other_ty);
-        let (other, other_ty) = match iterates {
-            true => (other, other_ty),
-            false if self.array_source(stored).is_some() => {
-                let items = self.iterable_items(other, other_ty, span, made)?;
-                (self.stepped_items(items), stored)
-            }
-            false => {
-                return Err(self.unsupported(
-                    span,
-                    &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
-                ));
-            }
-        };
+        if !iterates {
+            return Err(self.unsupported(
+                span,
+                &format!("cloning a `{output}` of a `{other_ty}` it makes an iterator of"),
+            ));
+        }
         let parts = [receiver, other];
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut));
         let names = match parted {
             Parted::Map | Parted::Filter => ["it", "f"],
-            Parted::Chain | Parted::Zip => ["a", "b"],
+            Parted::Chain => ["a", "b"],
         };
         let own = self.is_called_as_written(other_ty);
         let adapter = self.cloned_apart_adapter(
@@ -186,10 +178,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::call(Expr::member(a, name.as_str()), vec![callback])
                     }
                     Parted::Chain => Expr::call_helper("$lazyChain", vec![a, cx.as_js_iterator(b, other_ty, span)?]),
-                    Parted::Zip => {
-                        let b = cx.as_js_iterator(b, other_ty, span)?;
-                        cx.zipped((a, receiver_ty), (b, other_ty), span)?
-                    }
                 })
             },
         )?;

@@ -52,6 +52,7 @@ const few = [
   "flat_map_drops.rs",
   "held_enumerate.rs",
   "copied_structs_apart.rs",
+  "associated_double_ended.rs",
   "heap_pop_of_a_param.rs",
   "escape_iterators.rs",
   "held_zips.rs",
