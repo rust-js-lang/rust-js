@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "binding-class-any-name",
     breaks: "`js::class::<JsError>()` is `JsError`, a class TypeScript names no type by, which no host has: a `ReferenceError` where the refusal was (ADR 0911)",
     file: "src/lower/untagged.rs",
-    find: "            Written::Reference { from: None, name, .. } if name == class => Some(class),\n            _ => None,\n",
-    replace: "            _ => Some(class),\n",
+    find: "        written_types(self.tcx, did).is_some().then_some(class)\n",
+    replace: "        Some(class)\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "a binding's class is the global class"],
   },
   {
@@ -302,8 +302,8 @@ export const mutations: Mutation[] = [
     "name": "untagged-dict-a-class",
     "breaks": "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
     "file": "src/lower/untagged.rs",
-    "find": "            && matches!(written_types(self.tcx, adt.did()), Some(Written::Object(_)))",
-    "replace": "            && false",
+    "find": "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
+    "replace": "                Some(Written::Object(_)) => class(bindings::class_name(self.tcx, adt.did())),\n                Some(Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
     "tests": ["test/lowering-structs-enums.test.ts", "-t", "dictionary is told apart"]
   },
   {
@@ -345,5 +345,21 @@ export const mutations: Mutation[] = [
     find: "        if self.is_symbol_for(ty) {\n            return Some(Kind::Symbol);\n",
     replace: "        if false {\n            return Some(Kind::Symbol);\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "symbol is told by typeof"],
+  },
+  {
+    name: "untagged-class-by-rust-name",
+    breaks: "an untagged enum's JS object variant declared `#[rust_js::types = \"URL\"]` is tested `instanceof Url`, its Rust name, which JS has no class of (#391)",
+    file: "src/lower/untagged.rs",
+    find: "                Some(Written::Reference { from: None, name, .. }) => class(name),\n",
+    replace: "                Some(Written::Reference { from: None, .. }) => class(bindings::class_name(self.tcx, adt.did())),\n",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
+  },
+  {
+    name: "untagged-module-class-unimported",
+    breaks: "an untagged enum's variant of a module's type, `./shapes.js#Chart`, is tested `instanceof Chart` of a `Chart` its module never imports (#391)",
+    file: "src/lower/untagged.rs",
+    find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
+    replace: "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
   },
 ];

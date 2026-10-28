@@ -4,7 +4,7 @@
 //                  └─rust-js───► fib.js ──► actual results ───┴─► must be equal
 
 import { beforeAll, expect, test } from "bun:test";
-import { copyFileSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
 import { decode, expected, same, type Outcome } from "./oracle";
@@ -660,6 +660,65 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect(js).toContain("export function text(s) {\n  return s;\n}");
   expect(js).toContain("String(n)");
   expect(js).toContain('return typeof value !== "string";');
+});
+
+// #391: the class an untagged enum's JS object variant is tested by is the
+// one TypeScript names it, a global's, `instanceof URL` of a `Url` declared
+// `#[rust_js::types = "URL"]`, not of its Rust name; and a module's type,
+// `./shapes.js#Chart`, which an `instanceof` would read unimported, is
+// told apart as an object.
+test("an untagged enum's JS object is tested by the class TypeScript names", async () => {
+  const dir = fixture("untagged-declared-classes");
+  writeFileSync(join(dir, "shapes.js"), "export class Chart {}\n");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::JsObject;
+use std::marker::PhantomData;
+
+#[cfg_attr(rust_js, rust_js::types = "URL")]
+pub struct Url(PhantomData<JsObject>);
+
+#[cfg_attr(rust_js, rust_js::types = "./shapes.js#Chart")]
+pub struct Chart(PhantomData<JsObject>);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Link<'a> {
+    Url(&'a Url),
+    Text(&'a str),
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Drawn<'a> {
+    Chart(&'a Chart),
+    Charts(Vec<&'a Chart>),
+    Name(&'a str),
+}
+
+pub fn link(link: Link) -> String {
+    match link {
+        Link::Url(_) => "url".to_string(),
+        Link::Text(text) => text.to_string(),
+    }
+}
+
+pub fn drawn(drawn: Drawn) -> String {
+    match drawn {
+        Drawn::Chart(_) => "chart".to_string(),
+        Drawn::Charts(charts) => format!("{} charts", charts.len()),
+        Drawn::Name(name) => name.to_string(),
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("link instanceof URL");
+  expect(js).not.toContain("instanceof Url");
+  expect(js).not.toContain("instanceof Chart");
+  const lib = await import(join(dir, "lib.js"));
+  const { Chart } = await import(join(dir, "shapes.js"));
+  expect([lib.link(new URL("https://a.b")), lib.link("x")]).toEqual(["url", "x"]);
+  expect([lib.drawn(new Chart()), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "2 charts", "pie"]);
 });
 
 // A slice's `concat` of parts written out is an array of them, spread, as

@@ -729,7 +729,12 @@ export function size(input) {
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
-  two of one kind. A `RefCell` of an array or an object is that, and an
+  two of one kind. A JS type's class is the global its
+  `#[rust_js::types]` names, `types = "URL"`'s `instanceof URL`, or of a
+  type that declares none, its name's; a module's type, `types =
+  "chart.js#Chart"`, is an object, `typeof value === "object"`, as no
+  `instanceof` can name a class its module doesn't import
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A `RefCell` of an array or an object is that, and an
   `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
   an array, except where the crate has one as a box, `{ value }` or
   counted, an error. One without fields is its name's string, or `undefined`,

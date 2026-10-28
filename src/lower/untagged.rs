@@ -275,18 +275,28 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Kind::Test(test));
         }
-        // One TypeScript types as an object literal, `Dict`'s `{ [key: string]:
-        // T }`, is a plain object, of no class to test.
+        // Of any other JS object type, what TypeScript names it (#391): a
+        // global class, `#[rust_js::types = "HTMLElement"]`, which
+        // `instanceof` tests by that name; an object of no class
+        // `instanceof` can name where it's read, one TypeScript types as an
+        // object literal, `Dict`'s `{ [key: string]: T }`, `object`, or a
+        // module's type, `chart.js#Chart`, which an `instanceof` would read
+        // unimported; an array's or a function's, that; nothing JS can tell
+        // of `unknown` or a union. One TypeScript names nothing is the global
+        // class of its name, `RegExp`, `Intl.Collator` of `rust_js::name`.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
-            && matches!(written_types(self.tcx, adt.did()), Some(Written::Object(_)))
         {
-            return Some(Kind::Object);
-        }
-        if let ty::Adt(adt, _) = ty.kind()
-            && self.is_js_object(ty)
-        {
-            return Some(Kind::Class(bindings::class_name(self.tcx, adt.did()), Some(adt.did())));
+            let class = |name: String| Some(Kind::Class(name, Some(adt.did())));
+            return match written_types(self.tcx, adt.did()) {
+                None => class(bindings::class_name(self.tcx, adt.did())),
+                Some(Written::Reference { from: None, name, .. }) => class(name),
+                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),
+                Some(Written::Keyword(keyword)) if keyword == "object" => Some(Kind::Object),
+                Some(Written::Array { .. }) => Some(Kind::Array),
+                Some(Written::Function(_)) => Some(Kind::Function),
+                Some(Written::Keyword(_) | Written::Literal(_) | Written::Union(_)) => None,
+            };
         }
         let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();
         match ty.kind() {
@@ -317,13 +327,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// type TypeScript names otherwise, `object` or `unknown`, or doesn't,
     /// `JsError`, what JS threw, of no one class.
     pub(super) fn class_value(&self, ty: Ty<'tcx>) -> Option<String> {
+        // A class `untagged_kind` found of a global TypeScript names, not one
+        // it takes of a type's name.
         let Some(Kind::Class(class, Some(did))) = self.untagged_kind(ty) else {
             return None;
         };
-        match written_types(self.tcx, did)? {
-            Written::Reference { from: None, name, .. } if name == class => Some(class),
-            _ => None,
-        }
+        written_types(self.tcx, did).is_some().then_some(class)
     }
 
     /// What JS can tell `variant` is: its payload's kind, or of one without

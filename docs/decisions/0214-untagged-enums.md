@@ -12,7 +12,9 @@ without fields may be `undefined`, `#[rust_js::undefined]`, or `null`,
 `#[rust_js::null]`. Amended: a variant of a `RefCell` of an object is
 the object, of an `Rc` what it points at, below. Amended (2026-10-26):
 a `js::SymbolFor` payload is a symbol, and a derived `==` of payloads
-JS's `===` compares is `===`.
+JS's `===` compares is `===`. Amended (2026-10-28, #391): a JS object's
+class is the one its `#[rust_js::types]` names, and a module's type an
+object.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -247,3 +249,40 @@ by typeof, and its == is JS's ===", run as JS, and mutations
 `untagged-eq-structural`, `untagged-eq-of-a-float-same-value`,
 `untagged-option-eq-loose`, `untagged-eq-of-a-payload-compared-otherwise`
 (`std_impls.rs`) and `untagged-symbol-for-an-array` (`untagged.rs`).
+
+## Amendment: a JS object's class is the one TypeScript names (#391, 2026-10-28)
+
+A payload of a JS object type was tested `instanceof` its Rust name, or
+its `#[rust_js::name]`, whatever its `#[rust_js::types]` said. Two wrong
+answers came of it. A type declared as the guide declares one, a
+module's class, `#[rust_js::types = "chart.js#Chart"]`, was tested
+`instanceof Chart` of a `Chart` its module never imported, which throws.
+And one named apart from its class, `pub struct Url` of `types = "URL"`,
+was tested `instanceof Url`, of no class JS has, or another class than
+TypeScript's.
+
+**The class is what `#[rust_js::types]` names, where it names one**
+(`Recognition::untagged_kind`), as `js::class::<T>()`'s is (ADR 0911):
+
+- a global's, `types = "URL"`: `value instanceof URL`;
+- a module's type, `types = "chart.js#Chart"`: an object, `typeof value
+  === "object"`, the others' tests left out, as no `instanceof` can name
+  a class a module doesn't import; two such in one enum are refused as
+  any two objects are, where they're tested;
+- `object`, or an object literal's type (above): an object; an array's
+  type an array, a function's a function;
+- `unknown`, a union, a literal or another keyword: none JS can tell,
+  refused as a payload of no kind is, but as the `otherwise` variant.
+
+One TypeScript names nothing is the global class of its name, its
+`#[rust_js::name]` where given, as before: js's `RegExp`, `ArrayBuffer`,
+`Intl.Collator`. So a binding of a module's class declares its `types`,
+as the guide's do.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer,
+where the JS threw or tested another class.
+
+Held by `test/compiler.test.ts`, "an untagged enum's JS object is tested
+by the class TypeScript names", run as JS, and mutations
+`untagged-class-by-rust-name` and `untagged-module-class-unimported`
+(`untagged.rs`).
