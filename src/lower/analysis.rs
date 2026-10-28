@@ -572,6 +572,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
     pub quiet_locals: HashSet<LocalDefId>,
+    /// A library's thread-locals none of whose borrows here can meet
+    /// another, so none is counted (ADR 0863, amended, gap rd76).
+    pub quiet_library_keys: HashSet<DefId>,
     /// The thread-locals, by their keys, made where they're first used, as
     /// their initializer runs the crate's code or may panic (ADR 0037,
     /// amended): each `$local(() => init)`, read by calling it.
@@ -1046,6 +1049,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),
         &quiet,
     );
+    let quiet_library_keys = plain_locals::quiet_library_keys(tcx, all_bodies, &quiet);
     // Another module's write of a thread-local of a value or a `static
     // mut`, its module's variable, which JS lets only that module set (ADRs
     // 0270, 0096, amended).
@@ -1251,6 +1255,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         format_options,
         debug_hex,
         quiet_locals,
+        quiet_library_keys,
         lazy_locals,
         local_makers,
         exported_locals,

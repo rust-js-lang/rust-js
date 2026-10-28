@@ -78,6 +78,41 @@ pub(super) fn plain_thread_locals<'tcx>(
     plain
 }
 
+/// A library's thread-locals every lend of which in the crate, a
+/// `with_borrow`'s or a `with_borrow_mut`'s, runs what's `quiet` of its
+/// key, as `plain_thread_locals` asks of the crate's own: none of the
+/// crate's borrows of one can meet another, so none is counted, as its
+/// library counts none of its own (ADR 0863, amended, gap rd76). Not one
+/// lent by `with`, whose cell may be handed on.
+pub(super) fn quiet_library_keys<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &[&Body<'tcx>],
+    quiet: &dyn Fn(Given<'tcx>, DefId, bool) -> bool,
+) -> HashSet<DefId> {
+    let mut lent: std::collections::HashMap<DefId, bool> = Default::default();
+    for body in bodies {
+        let thir = &body.thir;
+        for expr in thir.exprs.iter() {
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                && let Some((id, _)) = fn_def(thir[fun].ty)
+                && (is_local_borrow(tcx, id) || is_local_with(tcx, id))
+                && let Some(&first) = args.first()
+                && let ExprKind::Borrow { arg, .. } = thir[strip(thir, first)].kind
+                && let ExprKind::NamedConst { def_id: key, .. } = thir[strip(thir, arg)].kind
+                && !key.is_local()
+            {
+                let name = tcx.item_name(id);
+                let quietly = name.as_str() != "with"
+                    && given(thir, args[1]).is_some_and(|given| quiet(given, key, name.as_str() != "with_borrow"));
+                *lent.entry(key).or_insert(true) &= quietly;
+            }
+        }
+    }
+    lent.into_iter()
+        .filter_map(|(key, quiet)| quiet.then_some(key))
+        .collect()
+}
+
 /// Whether `key` is its module's state whose JS is the value it holds or
 /// its `{ value }`, which a write replaces: a `static mut` of the crate's or
 /// a library's (ADR 0096, amended), or a thread-local of a `Cell`, or of a

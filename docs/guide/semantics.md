@@ -296,6 +296,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `RefCell<Vec<&dyn Fn()>>` of listeners, each borrowed for a moment, is
   their array
   ([0863](../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
+  A library's thread-local of one is read so by its consumer too, React
+  DOM's `CURRENT.with_borrow(|c| c.clone())` of the reconciler's `export
+  let current`, `current`, where what the closure runs can't borrow it;
+  and a guard of an assignment's place, `*c.borrow_mut() = f(v);`, is held
+  only once `f(v)`, which Rust evaluates first, has run (0863, amended).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be

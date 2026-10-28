@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "                    let mutable = true;\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
   },
+  {
+    name: "quiet-library-key-unasked",
+    breaks: "a library's thread-local is taken as borrowed quietly though a consumer's `with_borrow` runs the library's code that sets it, which Rust's `BorrowMutError` stops and JS wouldn't (ADR 0863, amended, gap rd76)",
+    file: "src/lower/analysis/plain_locals.rs",
+    find: "                *lent.entry(key).or_insert(true) &= quietly;\n",
+    replace: "                *lent.entry(key).or_insert(true) &= quietly || true;\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "borrowed quietly"],
+  },
 ];

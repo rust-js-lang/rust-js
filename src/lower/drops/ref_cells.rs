@@ -794,7 +794,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Some(Std::LocalBorrow { .. }) => {
                     let quiet = crate::lower::analysis::borrowed(recognition, thir, id).is_some_and(|b| {
-                        matches!(b.cell, Cell::Key(key) if key.as_local().is_some_and(|k| self.krate.quiet_locals.contains(&k)))
+                        matches!(b.cell, Cell::Key(key) if key.as_local().is_some_and(|k| self.krate.quiet_locals.contains(&k))
+                            || self.krate.quiet_library_keys.contains(&key))
                     });
                     !quiet
                 }

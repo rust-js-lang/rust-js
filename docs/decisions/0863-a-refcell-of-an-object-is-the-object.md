@@ -763,3 +763,39 @@ and the merge of the library's cells uncounted; and the mutations
 `unmet-of-a-float`, `unmet-of-any-value`, `unmet-never` and
 `unmet-of-a-handle-set-again` (`drops/facts.ts`).
 
+
+## Amendment: a library's thread-local, and an assignment's value
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; no borrow these
+leave unchecked can meet another, as before.
+
+Two refusals of React DOM's port, of a crate built against React's
+libraries, which borrow their cells unchecked (gaps rd76, rd32):
+
+- **A consumer's `with_borrow` of a library's thread-local `RefCell`**,
+  `CURRENT.with_borrow(|current| current.clone())` of the reconciler's
+  `ReactCurrentFiber`, was counted, as only the crate's own keys could be
+  quiet (`quiet_locals`), and refused as "held while code rust-js can't
+  see runs". **One every lend of which in the crate, a `with_borrow`'s or
+  a `with_borrow_mut`'s, runs what borrows nothing that may be its cell,
+  as the crate's own are asked (`plain_locals::quiet_library_keys`), isn't
+  counted**: `return current;`, upstream's `const child = current;`. One a
+  `with` lends, or whose closure runs the library's code, which may borrow
+  it, is counted as before, and refused where its library borrows it
+  unchecked.
+- **A guard of an assignment's place**, `*current.borrow_mut() =
+  js::concat_text(value);`, was taken as held while the whole statement
+  runs, its value too, a binding's or a library's call; Rust evaluates
+  the value first ("the assigned value operand is evaluated first"), so
+  **the guard is held while the place is read and written alone**, and
+  of a place whose old value has a destructor, which runs then, the whole
+  statement, as before (`drops/facts.rs`'s `momentary`).
+
+Held by `test/crates.test.ts`' two-crate cases `thread_local_ref_cell_read`
+and `assigned_after_its_value`, against native Rust;
+`test/cross-crate-items.test.ts`' "a library's thread-local is borrowed
+quietly only where nothing it runs may borrow it", whose `with_borrow`
+calling the library's `push`, which `with` lends its cell, is refused; and
+mutations `quiet-library-key-counted` (`drops/ref_cells.rs`),
+`assigned-value-held` (`drops/facts.rs`) and `quiet-library-key-unasked`
+(`analysis/plain_locals.rs`).

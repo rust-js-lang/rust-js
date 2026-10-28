@@ -481,6 +481,18 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             });
         let extents: Vec<ExprId> = match (if_then, extent) {
             (Some(both), _) => both.to_vec(),
+            // A guard of an assignment's place, `*c.borrow_mut() = f(v);`,
+            // is made after its value, which Rust evaluates first: held
+            // while its place is read and written, not while `f` runs (gap
+            // rd32). Of a value with a destructor written over, which runs
+            // while it's held, the whole statement, as before.
+            (None, Some(extent))
+                if let ExprKind::Assign { lhs, .. } = self.thir[strip(self.thir, extent)].kind
+                    && (lhs == e || self.stack.contains(&lhs))
+                    && !self.cx.drops_but_guards(self.thir[lhs].ty) =>
+            {
+                vec![lhs]
+            }
             (None, Some(extent)) => vec![extent],
             (None, None) => return,
         };

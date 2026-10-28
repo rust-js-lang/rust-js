@@ -1075,3 +1075,55 @@ pub fn pushed(x: &[Vec<u32>], y: &[Vec<u32>]) -> usize {
   const lib = await import(join(dir, "app", "lib.js"));
   expect([lib.log([null, null]), lib.pushed([[1], [2]], [[3]])]).toEqual([2, 1]);
 });
+
+// A library's thread-local `RefCell` none of whose borrows there can meet
+// another (ADR 0863) is read by a consumer's `with_borrow` as its module's
+// variable, `const child = current;` (gap rd76), where nothing it runs
+// meanwhile may borrow it: one whose closure calls the library's code that
+// sets it, which Rust's `BorrowMutError` stops, is refused.
+test("a library's thread-local is borrowed quietly only where nothing it runs may borrow it", () => {
+  const dir = fixture("cross-crate-quiet-key");
+  const dep = `use std::cell::RefCell;
+
+thread_local! {
+    pub static CURRENT: RefCell<Option<u32>> = const { RefCell::new(None) };
+}
+
+pub fn set_current(tag: Option<u32>) {
+    CURRENT.set(tag);
+}
+`;
+  const { app } = compiled(dir, dep, `use dep::CURRENT;
+
+pub fn current() -> Option<u32> {
+    CURRENT.with_borrow(|current| *current)
+}
+`);
+  expect(app).toContain("export function current() {\n  return current$1;\n}\n");
+  expect(() => compiled(dir, dep, `use dep::CURRENT;
+
+pub fn clash() {
+    CURRENT.with_borrow(|_| dep::set_current(None));
+}
+`)).toThrow("rust-js:");
+  // Nor one its library keeps as a cell, lent by `with`.
+  const log = `use std::cell::RefCell;
+
+thread_local! {
+    pub static LOG: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn push(entry: u32) {
+    LOG.with(|log| log.borrow_mut().push(entry));
+}
+`;
+  expect(() => compiled(dir, log, `use dep::LOG;
+
+pub fn clash() -> usize {
+    LOG.with_borrow(|log| {
+        dep::push(1);
+        log.len()
+    })
+}
+`)).toThrow("is held while code rust-js can't see runs");
+});

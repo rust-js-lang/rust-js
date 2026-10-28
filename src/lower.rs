@@ -416,6 +416,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The thread-locals each `with_borrow` of which can't ask whether it's
     /// borrowed, their module's variables (ADRs 0270, 0580).
     quiet_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,
+    /// A library's thread-locals none of whose borrows here can meet
+    /// another (`plain_locals::quiet_library_keys`, ADR 0863, amended).
+    quiet_library_keys: &'a HashSet<DefId>,
     /// The thread-locals made where they're first used, read by calling
     /// them (ADR 0037, amended).
     lazy_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,

@@ -239,4 +239,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(var)\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_set_again.rs$"],
   },
+  {
+    name: "assigned-value-held",
+    breaks: "a guard of an assignment's place, `*c.borrow_mut() = f(v);`, is taken as held while its value is evaluated, which Rust does first, so a library's `f` refuses it (ADR 0863, gap rd32)",
+    file: "src/lower/drops/facts.rs",
+    find: "                vec![lhs]\n",
+    replace: "                vec![extent]\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: assigned_after_its_value"],
+  },
 ];

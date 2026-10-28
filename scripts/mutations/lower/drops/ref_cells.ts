@@ -301,4 +301,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_generic_field_made.rs$"],
     snapshots: true,
   },
+  {
+    name: "quiet-library-key-counted",
+    breaks: "a consumer's `with_borrow` of a library's thread-local `RefCell` none of whose borrows can meet another is counted, and refused as held while code rust-js can't see runs, where upstream reads `const child = current;` (ADR 0863, amended, gap rd76)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                            || self.krate.quiet_library_keys.contains(&key))",
+    replace: "                            || false)",
+    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_ref_cell_read"],
+  },
 ];
