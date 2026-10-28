@@ -1073,8 +1073,10 @@ A variable given its value by a chain of more arms, each a value alone
 `const`, as `sign`'s value is one returned; a chain with an arm that's
 more, a call, an object, a conditional of its own, is given it by the
 chain, each arm its own, and a function's value of one returns it from
-each arm, never half a chain and half a conditional
-([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)):
+each arm, never half a chain and half a conditional; after an `else if
+let`'s binding, `const s = ..; if (s != null)`, the rest is a chain of its
+own, read so
+([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended):
 
 ```rust
 pub fn color(duration: f64) -> String {

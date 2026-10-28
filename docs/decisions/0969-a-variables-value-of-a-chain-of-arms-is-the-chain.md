@@ -143,7 +143,7 @@ run in the same order either way, each once.
   its own: their last two stay one conditional, as before. Taking that rest
   as a chain of its own reads better, but names a temporary `value$1` in
   the corpus' `dyn_any` (a grown `renamed x$1` share), so it waits for the
-  user (S/decisions-pending.md, rd23b).
+  user (S/decisions-pending.md, rd23b). Since: the amendment below.
 - The fold of two arms stays `returned_values`', which a chain's last link
   takes until `returned chains`: a `switch`'s `default: return s !== c ? 3
   : 4;` of a chain's rest is its conditional of two.
@@ -163,3 +163,23 @@ snapshots (each the chain), the corpus' `unit_given_to_js` and
 `option_bool_tested` (each one conditional) and the guide's `sign`;
 `lowering-strict-switches`' `mixed` and `lowering-bindings`' `compare` are
 one conditional, `lowering-branches`' `chained` the chain of its arrows.
+
+## Amendment: after an `else if let`'s binding, the rest is a chain of its own (rd23b)
+
+The coordinator applied the user's rule (pt3) to rd23b: the links after
+one an `else if let` binds first, `const s = ..; if (s != null) { return
+..; }`, are a chain of their own, read as any returned chain is: one nested
+conditional of plain arms, `return s != null ? s : n > 5 ? "big" :
+"small";`, else the chain as written, `if (s != null) { .. } else if (n >
+5) { .. } else { .. }`. Before, its first link was an `if` and its last
+two one conditional. Case ([0262](0262-when-rust-and-js-disagree.md)):
+None, the same tests in the same order.
+
+`returned_else_ifs` takes such a link for the chain's head where the
+statement before it declares what its test reads (`bound`). The corpus'
+`dyn_any` now names the `Option`'s Debug arrow's value `value$1`, a
+`const` where it was an arrow called in place; the readability baseline's
+`renamed x$1` share doesn't grow. `catch_unwind_typed_payloads`' last link
+is the chain's `else if`. Held by `test/lowering-returned-chains.test.ts`'
+"the rest of a returned chain after an else if let's binding is a chain of
+its own" and mutation `returned-chain-bound-rest-headless`.

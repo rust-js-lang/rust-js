@@ -179,9 +179,15 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
             _ => return,
         }
     };
-    // The head no link, which is a chain's of its own; each link after it
-    // an `else if` the program wrote.
-    if link(tested[0].0) || !tested[1..].iter().all(|(s, ..)| link(s)) {
+    // The head no link, which is a chain's of its own, or the link an
+    // `else if let` binds just before, `const s = ..; if (s != null)`, after
+    // which JS's chain is no more and the rest a chain of its own (the
+    // user's rule, pt3, rd23b); each link after it an `else if` the program
+    // wrote.
+    let bound = head > 0
+        && matches!(&stmts[head - 1].kind, StmtKind::Const(name, _) | StmtKind::Let(name, Some(_))
+            if tested[0].1.mentions_var(name));
+    if link(tested[0].0) && !bound || !tested[1..].iter().all(|(s, ..)| link(s)) {
         return;
     }
     let StmtKind::Return(Some(value)) = &last.kind else {

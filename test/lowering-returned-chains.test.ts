@@ -168,3 +168,41 @@ pub fn nested(n: i32, m: i32) -> i32 {
   expect([0, 4].map(lib.two as (n: number) => string)).toEqual(["zero", "many 4"]);
   expect([0, 5, 2, 7].map((n, i) => (lib.nested as (n: number, m: number) => number)(n, i === 3 ? 0 : 1))).toEqual([1, 2, 3, 4]);
 });
+
+// rd23b, the user's rule (pt3): after a link an `else if let` binds first,
+// `const s = ..; if (s != null)`, which ends JS's chain, the rest is a chain
+// of its own, one nested conditional of plain arms, else the chain as
+// written, not its last two links' conditional after an `if` of the first.
+test("the rest of a returned chain after an else if let's binding is a chain of its own", async () => {
+  const { js, lib } = await compiled("returned-chains-bound", `pub fn describe(x: Option<&'static str>, n: u32) -> &'static str {
+    if n == 0 {
+        "zero"
+    } else if let Some(s) = x.and_then(|x| x.strip_prefix("#")) {
+        s
+    } else if n > 5 {
+        "big"
+    } else {
+        "small"
+    }
+}
+
+pub fn named(x: Option<&'static str>, n: u32) -> String {
+    if n == 0 {
+        "zero".to_owned()
+    } else if let Some(s) = x.and_then(|x| x.strip_prefix("#")) {
+        format!("<{s}>")
+    } else if n > 5 {
+        "big".to_owned()
+    } else {
+        format!("{n} small")
+    }
+}`);
+  expect(js).toContain('  return s != null ? s : n > 5 ? "big" : "small";\n');
+  expect(js).toContain(
+    '  if (s != null) {\n    return `<${s}>`;\n  } else if (n > 5) {\n    return "big";\n  } else {\n    return `${n} small`;\n  }\n',
+  );
+  const describe = lib.describe as (x: string | undefined, n: number) => string;
+  const named = lib.named as (x: string | undefined, n: number) => string;
+  expect([describe("#a", 0), describe("#a", 9), describe("a", 9), describe(undefined, 2)]).toEqual(["zero", "a", "big", "small"]);
+  expect([named("#a", 3), named(undefined, 9), named("b", 2)]).toEqual(["<a>", "big", "2 small"]);
+});

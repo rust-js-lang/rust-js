@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "returned-chain-link-headed",
     breaks: "a chain's links after an arm more than a value, each plain, fold alone, `else { return n === 0 ? \"zero\" : .. }`, half a chain (ADR 0969, amended, rd23)",
     file: "src/lower/mir/tidy/value_chains.rs",
-    find: "    if link(tested[0].0) || ",
+    find: "    if link(tested[0].0) && !bound || ",
     replace: "    if ",
     tests: ["test/lowering-returned-chains.test.ts"],
   },
@@ -73,5 +73,13 @@ export const mutations: Mutation[] = [
     find: "                test.facts = test.facts.with(js::Known::Else);\n                *otherwise = Some(vec![unfolded]);\n                list.pop();\n",
     replace: "                let _ = (test, otherwise);\n                *list.last_mut().expect(\"walked\") = unfolded;\n",
     tests: ["test/lowering-returned-chains.test.ts"],
+  },
+  {
+    name: "returned-chain-bound-rest-headless",
+    breaks: "the links after an `else if let`'s binding stay an `if` and its last two's conditional, `if (s != null) { return s; } return n > 5 ? \"big\" : \"small\";`, not a chain of their own (rd23b)",
+    file: "src/lower/mir/tidy/value_chains.rs",
+    find: "    if link(tested[0].0) && !bound || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
+    replace: "    if link(tested[0].0) && (true || !bound) || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
+    tests: ["test/lowering-returned-chains.test.ts", "-t", "else if let"],
   },
 ];
