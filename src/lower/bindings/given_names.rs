@@ -3,7 +3,7 @@
 //! the body's HIR, as rustc keeps their attributes nowhere else.
 
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::LocalDefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Symbol, sym};
 
 /// Each of `owner`'s parameters' `#[rust_js::name = ".."]`, its JS name, React's
@@ -67,4 +67,36 @@ pub(in crate::lower) fn given_let_names(tcx: TyCtxt<'_>, owner: LocalDefId) -> V
             _ => None,
         })
         .collect()
+}
+
+/// What a `use .. as` renames `def_id` to, `alias`, as JS writes it: as
+/// the item's `#[rust_js::name]` is cased, where it has one, `use
+/// scheduler::IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY` of `IdlePriority`
+/// imports `IdleSchedulerPriority`, upstream's (React port gap rd79); else
+/// as its own name is (`cased_as`, ADR 0202, amended).
+pub(in crate::lower) fn alias_cased(tcx: TyCtxt<'_>, def_id: DefId, alias: &str) -> String {
+    (super::given_name(tcx, def_id).and_then(|given| cased_like(&given, alias)))
+        .unwrap_or_else(|| super::cased_as(tcx, def_id, alias))
+}
+
+/// `name` cased as `given`, an item's own JS name, is: camelCase of a
+/// camelCase one, `getCurrentPriorityLevel`, PascalCase of a PascalCase
+/// one, `IdlePriority`, and as it is of a SCREAMING one, `REACT_ELEMENT`.
+/// None of one of no case of these, `$$typeof`.
+fn cased_like(given: &str, name: &str) -> Option<String> {
+    let first = given.chars().next()?;
+    let word = given.chars().all(|c| c.is_ascii_alphanumeric());
+    if given
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+    {
+        return Some(name.to_string());
+    }
+    // Its words, of a `SCREAMING` alias or a `snake_case` one.
+    let camel = crate::lower::variable_case(name);
+    match (word, first.is_ascii_lowercase(), first.is_ascii_uppercase()) {
+        (true, true, _) => Some(camel),
+        (true, _, true) => Some(crate::lower::upper_first(&camel)),
+        _ => None,
+    }
 }

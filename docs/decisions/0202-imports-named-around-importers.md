@@ -128,3 +128,30 @@ wherever a `use` renames it.
 `use_renames_own_item`, against native Rust, and the mutation
 `own-item-renames-refused`; `test/modules.test.ts`' "two uses naming one
 item apart are refused" still holds the refusal.
+
+## Amendment (2026-10-29): a `use`'s name of an item its `#[rust_js::name]` names is cased as that name
+
+React DOM's ReactDOMEventListener writes upstream's `import {
+IdlePriority as IdleSchedulerPriority, getCurrentPriorityLevel as
+getCurrentSchedulerPriorityLevel } from 'scheduler'` as `use
+scheduler::{IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY,
+GET_CURRENT_PRIORITY_LEVEL as GET_CURRENT_SCHEDULER_PRIORITY_LEVEL}`, of
+thread-locals the scheduler names `IdlePriority` and
+`getCurrentPriorityLevel`. The alias was cased as the item's default name
+is, a primitive thread-local's as written, so it imported `IdlePriority as
+IDLE_SCHEDULER_PRIORITY` (React port gap rd79).
+
+**The name a `use .. as` renames an item to is cased as the item's own JS
+name is, where its `#[rust_js::name]` gives it one** (`bindings::alias_cased`):
+PascalCase of a PascalCase one, `IdleSchedulerPriority`; camelCase of a
+camelCase one, `getCurrentSchedulerPriorityLevel`; as written of a
+SCREAMING one, `MAX_LANE`'s `TOP`. A name of none of these cases,
+`$$typeof`, says nothing, and the item's kind decides, as before. The
+item's own default name is unchanged: a `#[rust_js::name]` repeating it
+is still refused.
+
+Held by `test/cross-crate-items.test.ts`'s "a use's name of an item its
+rust_js::name names is cased as that name" (in the library and its
+consumer, run) and the mutations `alias-cased-as-own`,
+`alias-pascal-camel` and `alias-screaming-cased`.
+

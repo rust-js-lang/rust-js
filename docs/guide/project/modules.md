@@ -120,7 +120,11 @@ item's own name is, a thread-local's camelCase, `use shared::object_is::OBJECT_I
 as IS;`'s `import is`, a function's camelCase as any name is: another module's function, a library's item, a module's default
 too, `import queueMacrotask from "../shared/enqueueTask.js"`, and a
 binding's export, `import { useId as makeId } from "react"`; by its
-`#[rust_js::name]` where it has one. A `use` of one name with a
+`#[rust_js::name]` where it has one. Of an item its own
+`#[rust_js::name]` names, as that name is cased: `use
+scheduler::IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY` of `IdlePriority` is
+`import { IdlePriority as IdleSchedulerPriority }`, of a camelCase one
+camelCase, of a SCREAMING one as written. A `use` of one name with a
 `#[rust_js::name]` of its own is imported by that, React's
 `#[cfg_attr(rust_js, rust_js::name = "ImmediateSchedulerPriority")] use
 scheduler::IMMEDIATE_PRIORITY as IMMEDIATE_SCHEDULER_PRIORITY;`'s

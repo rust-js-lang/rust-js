@@ -1166,3 +1166,44 @@ pub fn current(p: i32) -> i32 {
   const { current } = await import(join(dir, "app", "lib.js"));
   expect([current(32), current(8)]).toEqual([0, 8]);
 });
+
+// React port gap rd79: ReactDOMEventListener's `use
+// scheduler::{IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY, ..}` of the
+// scheduler's `IdlePriority` and `getCurrentPriorityLevel`, each its
+// `#[rust_js::name]`, imports them as upstream does, `IdlePriority as
+// IdleSchedulerPriority`: the name a `use` renames an item to is cased as
+// the item's own JS name is (ADR 0202, amended). A SCREAMING one's stays.
+test("a use's name of an item its rust_js::name names is cased as that name", async () => {
+  const dir = fixture("cross-crate-renamed-given");
+  const { dep, app } = compiled(dir, `pub mod scheduler {
+    thread_local! {
+        #[cfg_attr(rust_js, rust_js::name = "IdlePriority")]
+        pub static IDLE_PRIORITY: i32 = 5;
+    }
+    #[cfg_attr(rust_js, rust_js::name = "getCurrentPriorityLevel")]
+    pub static GET_CURRENT_PRIORITY_LEVEL: fn() -> i32 = || 5;
+    #[cfg_attr(rust_js, rust_js::name = "MAX_LANE")]
+    pub const MAX: i32 = 31;
+}
+
+use scheduler::IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY;
+
+pub fn idle_here() -> i32 {
+    IDLE_SCHEDULER_PRIORITY.with(|p| *p)
+}
+`, `use dep::scheduler::{
+    IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY, MAX as TOP,
+    GET_CURRENT_PRIORITY_LEVEL as GET_CURRENT_SCHEDULER_PRIORITY_LEVEL,
+};
+
+pub fn idle() -> bool {
+    GET_CURRENT_SCHEDULER_PRIORITY_LEVEL() == IDLE_SCHEDULER_PRIORITY.with(|p| *p) && TOP > 0
+}
+`);
+  expect(dep).toContain("IdlePriority as IdleSchedulerPriority");
+  expect(app).toContain("IdlePriority as IdleSchedulerPriority");
+  expect(app).toContain("getCurrentPriorityLevel as getCurrentSchedulerPriorityLevel");
+  expect(app).toContain("return getCurrentSchedulerPriorityLevel() === IdleSchedulerPriority && TOP > 0;");
+  const { idle } = await import(join(dir, "app", "lib.js"));
+  expect(idle()).toBe(true);
+});

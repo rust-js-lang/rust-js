@@ -221,7 +221,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0199 A component takes no drop of its type parameters](0199-components-take-no-drops.md)
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](0200-binding-props-borrow.md)
 - [0201 A component takes no dictionary, and an update makes no default it replaces](0201-components-take-no-dictionaries.md)
-- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing)*
+- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing; amended: a `use`'s name of an item its `#[rust_js::name]` names is cased as that name)*
 - [0203 A component's props are as written](0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
 - [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name)*
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
