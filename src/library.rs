@@ -248,6 +248,11 @@ pub struct Library {
     /// consumer keys a `Set` or a `Map` by each, and compares two by `===`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub identities: Vec<String>,
+    /// The keys of its functions each call of which is what it's given, a
+    /// transparent struct's `From` (ADRs 0264, 0584, amended): a consumer's
+    /// call of one is the value.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gives_argument: Vec<String>,
     /// Each of its structs' fields its consumers read a fact of, by key,
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -401,6 +406,9 @@ pub struct Exports {
     pub ref_cells: RefCellFacts,
     /// Its types equal only to themselves, by their keys (ADR 0864).
     pub identities: HashSet<String>,
+    /// Its functions each call of which is what it's given, by their keys
+    /// (ADR 0584, amended).
+    pub gives_argument: HashSet<String>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
     pub fields: HashMap<String, BTreeSet<FieldFact>>,
     pub items: HashMap<String, Imported>,
@@ -466,6 +474,7 @@ impl Dependencies {
                 makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
                 writers_take_options: library.writers_take_options,
                 identities: library.identities.into_iter().collect(),
+                gives_argument: library.gives_argument.into_iter().collect(),
                 fields: library
                     .fields
                     .into_iter()
@@ -604,6 +613,7 @@ impl Dependencies {
             makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
             writers_take_options: library.writers_take_options,
             identities: library.identities.into_iter().collect(),
+            gives_argument: library.gives_argument.into_iter().collect(),
             fields: library
                 .fields
                 .into_iter()

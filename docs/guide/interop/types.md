@@ -483,6 +483,16 @@ pub fn raw(user: &UserId) -> u32 {
 pub fn older(a: UserId, b: UserId) -> bool {
     a < b
 }
+
+impl From<u32> for UserId {
+    fn from(id: u32) -> Self {
+        UserId(id)
+    }
+}
+
+pub fn parsed(id: u32) -> UserId {
+    UserId::from(id)
+}
 ```
 
 ```js
@@ -511,6 +521,10 @@ export function raw(user) {
 export function older(a, b) {
   return a < b;
 }
+
+export function parsed(id) {
+  return id;
+}
 ```
 
 - **A struct with named fields is an object**, its fields camelCase
@@ -522,7 +536,11 @@ export function older(a, b) {
 - **A `#[repr(transparent)]` struct is its field.** `UserId(id)` is `id`, and
   `user.0` is `user`. Rust lays it out as its field, so JS has it as its
   field ([ADR 0584](../../decisions/0584-a-transparent-struct-is-its-field.md)),
-  and a derived order is its field's, `a < b` of numbers.
+  and a derived order is its field's, `a < b` of numbers. A `From`
+  between it and its field that makes it of what it's given, `UserId(id)`,
+  or reads its field, `user.0`, is that value too, a library's as well:
+  `UserId::from(id)` is `id`, as React DOM's `EventPriority::from(lane)` is
+  `lane` (the user's decision, ADR 0584, amended).
   A newtype without the attribute is an array of one, `[id]`.
 
 [Structs, enums and traits as JavaScript sees them](objects.md) covers

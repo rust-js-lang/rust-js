@@ -137,3 +137,50 @@ written through a `&mut` is still copied, as `contains_mutated` says. Case
 A: a function is the same function however it's copied. Held by
 `test/corpus/refcell_clone_through_rc.rs`'s `Task` and the mutation
 `transparent-of-no-object-cloned` (`std_impls.ts`).
+
+## Amendment (2026-10-29, the user's decision): its `From` is the value it's given
+
+React's reconciler keeps upstream's `opaque type EventPriority = Lane` as
+`#[repr(transparent)] pub struct EventPriority(Lane)`, made of a lane by
+`impl From<Lane> for EventPriority { fn from(lane) -> Self {
+EventPriority(lane) } }`. React DOM's getCurrentUpdatePriority, upstream's
+`return ReactDOMSharedInternals.p`, read
+`eventPriorityFromI32_from(ReactDOMSharedInternals.p)` and wrote a copy
+of the `from` that gives back its `lane` (gap rd62).
+
+The user's decision: **a single-field newtype's construction, its `From`
+and its field read print as the value itself.** Construction and field
+read did already (above); now:
+
+- **A `From` between a `#[repr(transparent)]` struct and its field whose
+  body makes the struct of its parameter, `EventPriority(lane)`, or reads
+  its field, `priority.0`, is the value it's given**, wherever it's
+  called: `EventPriority::from(lane)`, `lane.into()`,
+  `i32::from(priority)`, and `lane.map(EventPriority::from)`, which is
+  `lane`. It's ADR 0264's rule, a function each call of which is what
+  it's given (`patterns::gives_its_argument`, which `gives_own_name` was),
+  asked of the impl a trait's method resolves to or the `From` an
+  `into()` does (`callee`), so one nothing reads as a value is written
+  nowhere.
+- **A library's is too**, as its contract lists (`gives_argument`, by key,
+  `Foreign::gives_its_argument`): a consumer has no body of it to read.
+- Only a `From`, the conversion a newtype names: a crate's own function of
+  the same body, React's `eventPriorityToLane(priority)`, is called, as
+  upstream calls it. A `From` that does more, `Doubled(lane * 2)`, is
+  called; a newtype without `#[repr(transparent)]` is an array of one, and
+  its `From` makes one.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as the call gives
+what it's given, and runs nothing else.
+
+Consequences: a `From` taken as a value where it's not `map`'s,
+`lane.map(EventPriority::from)` aside, is the function still, and is
+written. `lane.map(EventPriority::from)` names it before `map` sees it's
+the value, so its `from` is written though no call reads it (a gap).
+
+Held by `test/corpus/newtype_conversions.rs` (run against Rust) and
+`test/cross-crate-items.test.ts`'s "a library's transparent struct's From
+is the value it's given", and the mutations `newtype-from-called`,
+`newtype-from-of-anything`, `newtype-from-unresolved` and
+`gives-argument-unlisted`.
+

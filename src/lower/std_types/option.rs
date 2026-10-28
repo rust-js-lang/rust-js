@@ -170,10 +170,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A function, or a closure of statements, is called with it.
             Std::OptionMap => {
                 let (option, f) = (arg(), arg());
-                // By a function giving each variant its own name, the option
-                // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
-                if let Some((function, _)) = crate::lower::fn_def(tys[1])
-                    && self.gives_own_name(function)
+                // By a function each call of which is what it's given, the
+                // option itself: `section.map(Section::as_str)` is `section`
+                // (ADR 0264), `lane.map(EventPriority::from)` `lane` (ADR
+                // 0584, amended).
+                if let Some((function, args)) = crate::lower::fn_def(tys[1])
+                    && self.gives_its_argument(self.callee(function, args).0)
                     && !self.boxed_payload(generic_args.type_at(0))
                     && !self.boxed_payload(generic_args.type_at(1))
                 {

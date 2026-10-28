@@ -88,3 +88,13 @@ Held by `test/lowering-structs-enums.test.ts`, "an enum's own names of
 the crate alone, called, are written nowhere", run; mutations
 `own-name-fn-written` and `own-name-fn-of-a-library-unwritten`
 (`lower/pipeline.ts`).
+
+## Amendment (2026-10-29): a transparent struct's `From` gives what it's given too
+
+`gives_own_name` is `gives_its_argument`, of either function each call of
+which is what it's given: this decision's, and a `From` between a
+`#[repr(transparent)]` struct and its field
+([0584](0584-a-transparent-struct-is-its-field.md), amended). It's asked
+of the impl a trait's method resolves to, and of a library's as its
+contract lists.
+

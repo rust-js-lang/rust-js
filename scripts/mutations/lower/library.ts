@@ -314,4 +314,12 @@ export const mutations: Mutation[] = [
     replace: ".iter().any(|&(_, rooted)| rooted == id)",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
+  {
+    name: "gives-argument-unlisted",
+    breaks: "a library's contract lists none of its functions that give what they're given, so a consumer calls `eventPriorityFromI32_from(p)`",
+    file: "src/lower/library.rs",
+    find: "            let mut keys: Vec<String> = (gives_argument.iter())\n",
+    replace: "            let mut keys: Vec<String> = (gives_argument.iter().take(0))\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "transparent struct's From"],
+  },
 ];

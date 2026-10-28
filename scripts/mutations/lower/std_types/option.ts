@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "own-name-map-called",
     breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/std_types/option.rs",
-    find: "                    && self.gives_own_name(function)\n",
-    replace: "                    && false && self.gives_own_name(function)\n",
+    find: "                    && self.gives_its_argument(self.callee(function, args).0)\n",
+    replace: "                    && false && self.gives_its_argument(self.callee(function, args).0)\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {

@@ -191,21 +191,24 @@ fn is_literal(value: &Expr) -> bool {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Is `def_id` the crate's function, of no type parameters, whose body is
-    /// a `match` of its one parameter, a fieldless enum, giving each variant
-    /// its own name, `Section::Learn => "learn"`? A variant is its name in JS
-    /// (ADR 0013), so it gives back what it's given (ADR 0264).
-    pub(super) fn gives_own_name(&self, def_id: DefId) -> bool {
-        gives_own_name(self.tcx, self.krate.bodies, def_id)
+    /// Is each call of `def_id` what it's given, in JS (`gives_its_argument`)?
+    /// A library's, as its contract says.
+    pub(super) fn gives_its_argument(&self, def_id: DefId) -> bool {
+        gives_its_argument(self.tcx, self.krate.bodies, def_id) || self.krate.foreign.gives_its_argument(def_id)
     }
 }
 
-/// Is `def_id` the crate's function, of no type parameters, whose body is
+/// Is `def_id` the crate's function, of no type parameters, each call of
+/// which is what it's given in JS, so one nothing reads as a value, of the
+/// crate's alone, is written nowhere (ADR 0264, amended)? One whose body is
 /// a `match` of its one parameter, a fieldless enum, giving each variant
-/// its own name, `Section::Learn => "learn"`? Each call of it is what it's
-/// given (ADR 0264), so one nothing reads as a value, of the crate's alone,
-/// is written nowhere (ADR 0264, amended).
-pub(super) fn gives_own_name<'tcx>(
+/// its own name, `Section::Learn => "learn"`: a variant is its name in JS
+/// (ADR 0013). Or a `From` between a `#[repr(transparent)]` struct and its
+/// field, which is the struct in JS (ADR 0584), of the struct made of its
+/// parameter, `EventPriority(lane)`, or its field read, `priority.0`: the
+/// user's decision, `EventPriority::from(lane)` is `lane` (ADR 0584,
+/// amended).
+pub(super) fn gives_its_argument<'tcx>(
     tcx: rustc_middle::ty::TyCtxt<'tcx>,
     bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
     def_id: DefId,
@@ -222,15 +225,14 @@ pub(super) fn gives_own_name<'tcx>(
         let thir = &body.thir;
         let [param] = &thir.params.raw[..] else { return false };
         let Some(PatKind::Binding {
-            var, subpattern: None, ..
+            var,
+            subpattern: None,
+            mode: BindingMode(ByRef::No, _),
+            ..
         }) = param.pat.as_deref().map(|pat| &pat.kind)
         else {
             return false;
         };
-        let ty::Adt(adt, _) = param.ty.kind() else { return false };
-        if !super::representation::is_string_enum(tcx, *adt) {
-            return false;
-        }
         let strip = |e| super::body_queries::strip(thir, e);
         let Some(root) = body.root() else { return false };
         let mut value = strip(root);
@@ -240,6 +242,30 @@ pub(super) fn gives_own_name<'tcx>(
                 return false;
             };
             value = strip(expr);
+        }
+        let given = |e| matches!(thir[strip(e)].kind, ExprKind::VarRef { id } if id == *var);
+        let converts = (tcx.trait_impl_of_assoc(def_id))
+            .and_then(|imp| tcx.impl_opt_trait_ref(imp))
+            .is_some_and(|tr| super::recognition::is_std_def(tcx, tr.skip_binder().def_id, StdItem::From));
+        if converts {
+            let transparent = |ty: Ty<'tcx>| match ty.kind() {
+                ty::Adt(adt, _) => super::recognition::transparent_field(tcx, *adt),
+                _ => None,
+            };
+            return match thir[value].kind {
+                ExprKind::Adt(ref made) => transparent(thir[value].ty).is_some_and(|at| {
+                    matches!(made.base, rustc_middle::thir::AdtExprBase::None)
+                        && matches!(&made.fields[..], [field] if field.name.as_usize() == at && given(field.expr))
+                }),
+                ExprKind::Field { lhs, name, .. } => {
+                    given(lhs) && transparent(thir[strip(lhs)].ty).is_some_and(|at| name.as_usize() == at)
+                }
+                _ => false,
+            };
+        }
+        let ty::Adt(adt, _) = param.ty.kind() else { return false };
+        if !super::representation::is_string_enum(tcx, *adt) {
+            return false;
         }
         let ExprKind::Match {
             scrutinee, ref arms, ..

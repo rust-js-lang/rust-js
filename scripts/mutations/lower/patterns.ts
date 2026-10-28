@@ -114,4 +114,21 @@ export const mutations: Mutation[] = [
     replace: " {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
+  {
+    name: "newtype-from-called",
+    breaks: "a transparent struct's `From` of its field is called, `eventPriorityFromI32_from(lane)`, not `lane`",
+    file: "src/lower/patterns.rs",
+    find: "        if converts {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "newtype-from-of-anything",
+    breaks: "a transparent struct's `From` that makes it of more than its parameter, `Doubled(lane * 2)`, is taken as the value it's given",
+    file: "src/lower/patterns.rs",
+    find: "[field] if field.name.as_usize() == at && given(field.expr))\n",
+    replace: "[field] if field.name.as_usize() == at)\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
+  },
 ];

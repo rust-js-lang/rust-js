@@ -852,6 +852,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
             return Ok(values.into_iter().next().expect("one"));
         }
+        // What a function gives what it's given of is that (ADRs 0264, 0584,
+        // amended): `section.as_str()`, `EventPriority::from(lane)`.
+        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {
+            return Ok(values.into_iter().next().expect("one"));
+        }
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
         let known = self.known_trait_call(def_id, generic_args);
@@ -918,11 +923,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
         if let Some(binding) = self.binding_called(def_id, generic_args) {
             return self.mir_binding_call(binding, (values, &arg_tys, nulled), span, out);
-        }
-        // A function giving each variant its own name gives what it's given,
-        // `section.as_str()` is `section` (ADR 0264).
-        if values.len() == 1 && self.gives_own_name(def_id) {
-            return Ok(values.into_iter().next().expect("one"));
         }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {

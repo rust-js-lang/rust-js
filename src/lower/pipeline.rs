@@ -629,6 +629,11 @@ pub fn lower_crate<'tcx>(
     // equal only to themselves, its contract's (ADR 0864, amended).
     let lowered = lowered_items.iter().map(|&(id, _)| id);
     let (identities, derived) = written_where_reached(tcx, (&trait_impls, &foreign), &function_bodies, lowered);
+    // Its functions each call of which is what it's given, which its
+    // contract lists for its consumers (ADR 0584, amended).
+    let gives_argument: Vec<DefId> = (function_bodies.keys().copied())
+        .filter(|&id| super::patterns::gives_its_argument(tcx, &function_bodies, id))
+        .collect();
     let edges = lowered_items
         .iter()
         .flat_map(|(_, item)| item.dependencies.uses.iter().copied());
@@ -1444,6 +1449,7 @@ pub fn lower_crate<'tcx>(
                         lazy_locals: &lazy_locals,
                         variables: &variables,
                         identities: &identities,
+                        gives_argument: &gives_argument,
                     },
                     (&trait_impls, &held.modules),
                     dependencies,

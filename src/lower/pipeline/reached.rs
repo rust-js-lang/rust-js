@@ -78,7 +78,7 @@ pub(super) fn written_where_reached<'tcx>(
         .chain(lowered.filter(|&id| {
             id.is_local()
                 && !super::super::library::reachable(tcx, id)
-                && super::super::patterns::gives_own_name(tcx, function_bodies, id)
+                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)
         }))
         .collect();
     (identities, derived)

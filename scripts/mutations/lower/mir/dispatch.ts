@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     "name": "mir-own-name-called",
     "breaks": "`section.as_str()` from MIR is `Section.as_str(section)`, not `section`",
     "file": "src/lower/mir/dispatch.rs",
-    "find": "        if values.len() == 1 && self.gives_own_name(def_id) {\n",
+    "find": "        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {\n",
     "replace": "        if values.len() == 1 && false {\n",
     "tests": ["test/lowering-structs-enums.test.ts", "-t", "a call giving each variant its own name"]
   },
@@ -656,5 +656,14 @@ export const mutations: Mutation[] = [
     find: "            ty::InstanceKind::Item(item) if bindings::is_binding(tcx, item) => Some((item, instance.args)),\n",
     replace: "",
     tests: ["test/webapi-bindings.test.ts", "-t", "index signature is Index"],
+  },
+  {
+    name: "newtype-from-unresolved",
+    breaks: "a trait's `from` called is asked of as it's named, not as the impl it resolves to, so `EventPriority::from(lane)` is called",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {\n",
+    replace: "        if values.len() == 1 && self.gives_its_argument(def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
+    snapshots: true,
   },
 ];

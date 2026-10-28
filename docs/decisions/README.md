@@ -283,7 +283,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0261 Defaults that do nothing don't move what's made beside them](0261-defaults-made-in-place.md)
 - [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function; a `RegExp`'s `test` and `replace` take text)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](0263-with-router.md)
-- [0264 A variant's own name is the variant](0264-enum-own-names.md)
+- [0264 A variant's own name is the variant](0264-enum-own-names.md) *(amended: a transparent struct's `From` gives what it's given too)*
 - [0265 A component a thread_local! holds takes props of any lifetime](0265-held-component-lifetimes.md)
 - [0266 Text kept where it isn't empty, or another, is ||](0266-text-or.md) *(amended by 0635: preparation writes the `||`, of every fallback)*
 - [0267 js::on_load! is what a module runs when it's loaded](0267-on-load.md)
@@ -467,7 +467,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0581 A closure called as a statement where it's made is its body](0581-a-closure-called-as-a-statement-is-its-body.md) *(extended by 0840: where a module's loaded, and as what a statement evaluates first; amended: in a closure a constant's value makes)*
 - [0582 `Rc::ptr_eq` of an object is its identity, uncounted](0582-ptr-eq-of-an-object-is-its-identity.md) *(amended by 0863: of an `Rc<RefCell<T>>` of an object too; extended by 0959: of an `Rc<dyn Fn>` made of a closure made with it)*
 - [0583 A global some hosts lack is an `Option`](0583-a-global-some-hosts-lack-is-an-option.md) *(superseded by 0597)*
-- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value)*
+- [0584 A `#[repr(transparent)]` struct is its field](0584-a-transparent-struct-is-its-field.md) *(amended: its clone, of what's no object, is its field's; its derived `<` is its field's; by 0913: std's `NeverShortCircuit` is its value; its `From` is the value it's given)*
 - [0585 A `RefCell`'s `replace` and `take` hold it for a moment](0585-a-refcells-replace-holds-it-for-a-moment.md) *(amended by 0863: of a `RefCell` of an object, in place, and `get_mut` for a moment)*
 - [0586 `#[rust_js::nullable]` is of a field that's an `Option`](0586-a-nullable-field-is-an-option.md) *(amended by 0772: or a `Cell` of one; amended: or a `Vec` of them, each item's `None` `null`; of a thread-local, and a binding's type parameter; of a field of a type parameter's value, and a thread-local a generic constructor makes; of a thread-local of an `Option` itself, and what one gives; of a `const`; of a constant's struct's field; amended: declared by the aliases its type is written of; amended by 0996: its `take()` stores `null`)*
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)

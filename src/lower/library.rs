@@ -68,6 +68,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) variables: &'a HashSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],
+    /// Its functions each call of which is what it's given (ADR 0584,
+    /// amended).
+    pub(super) gives_argument: &'a [DefId],
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -179,6 +182,7 @@ pub(super) fn exports<'tcx>(
         lazy_locals: _,
         variables,
         identities,
+        gives_argument,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -282,6 +286,14 @@ pub(super) fn exports<'tcx>(
         fields: contracts.fields.clone(),
         identities: {
             let mut keys: Vec<String> = (identities.iter())
+                .filter(|&&id| reachable(tcx, id))
+                .map(|&id| key(tcx, id))
+                .collect();
+            keys.sort();
+            keys
+        },
+        gives_argument: {
+            let mut keys: Vec<String> = (gives_argument.iter())
                 .filter(|&&id| reachable(tcx, id))
                 .map(|&id| key(tcx, id))
                 .collect();
@@ -811,6 +823,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         !id.is_local()
             && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
                 .is_some_and(|library| library.identities.contains(&key(self.tcx, id)))
+    }
+
+    /// Is each call of `id`, a library's function, what it's given, as its
+    /// contract says (ADR 0584, amended)?
+    pub(super) fn gives_its_argument(&self, id: DefId) -> bool {
+        !id.is_local()
+            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
+                .is_some_and(|library| library.gives_argument.contains(&key(self.tcx, id)))
     }
 
     /// Is `krate` a library's, one rust-js built for this crate to use, not

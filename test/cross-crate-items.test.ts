@@ -1127,3 +1127,42 @@ pub fn clash() -> usize {
 }
 `)).toThrow("is held while code rust-js can't see runs");
 });
+
+// The user's decision (React port gap rd62): a `From` between a
+// library's `#[repr(transparent)]` struct and its field is the value it's
+// given, as the struct is its field (ADR 0584, amended): React DOM's
+// `EventPriority::from(ReactDOMSharedInternals.p)` of the reconciler's
+// `EventPriority(Lane)` reads `ReactDOMSharedInternals.p`, as upstream's
+// getCurrentUpdatePriority does, and writes no `from` of its own.
+test("a library's transparent struct's From is the value it's given", async () => {
+  const dir = fixture("cross-crate-newtype-from");
+  const { app } = compiled(dir, `#[derive(Clone, Copy, PartialEq)]
+#[repr(transparent)]
+pub struct EventPriority(i32);
+
+impl From<i32> for EventPriority {
+    fn from(lane: i32) -> Self {
+        EventPriority(lane)
+    }
+}
+
+pub const DEFAULT_EVENT_PRIORITY: EventPriority = EventPriority(32);
+
+pub fn event_priority_to_lane(priority: EventPriority) -> i32 {
+    priority.0
+}
+`, `use dep::{DEFAULT_EVENT_PRIORITY, EventPriority, event_priority_to_lane};
+
+pub fn current(p: i32) -> i32 {
+    let priority = EventPriority::from(p);
+    if priority == DEFAULT_EVENT_PRIORITY {
+        return 0;
+    }
+    event_priority_to_lane(priority)
+}
+`);
+  expect(app).toContain("  const priority = p;\n");
+  expect(app).not.toContain("_from");
+  const { current } = await import(join(dir, "app", "lib.js"));
+  expect([current(32), current(8)]).toEqual([0, 8]);
+});
