@@ -20,11 +20,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drops-by-need-passed-as-used",
-    breaks: "a drop passed on counts as used, so `relay` keeps one `keep` doesn't use",
+    breaks: "a drop passed on counts as used, so `hand_on`, which passes its value on to itself and to `keep`, takes a drop neither uses, `handOn(value, steps, dropT)`",
     file: "src/lower/drops/uses.rs",
     find: "        if !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
     replace: "        if false && !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
-    tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_generic.rs$"],
+    snapshots: true,
   },
   {
     name: "drops-by-need-params-kept",

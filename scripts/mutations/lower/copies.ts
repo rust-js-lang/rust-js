@@ -28,11 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-type-shared",
-    breaks: "a library's type is read without a copy by a crate that never changes it itself, so a clone, or `ORIGIN`, is shared",
+    breaks: "a library's type is read without a copy by a crate that never changes it itself, so the copy it kept of a `Shape` its holder has is the object the library then grows in place",
     file: "src/lower/copies.rs",
     find: "                self.krate.foreign.in_library(adt.did())\n                    || (self.krate.compiled_once",
     replace: "                false\n                    || (self.krate.compiled_once",
-    tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
+    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum_library_changed"],
   },
   {
     name: "library-vec-shared",
@@ -77,11 +77,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crossing-mixed-enum-not-copied",
-    breaks: "an enum with a fieldless variant another crate may change isn't copied where it's read, so a consumer's change shows in the library's value",
+    breaks: "an enum with a fieldless variant another crate may change isn't copied where it's read, so the library's change in place of what holds one shows in the copy its consumer kept",
     file: "src/lower/copies.rs",
     find: "        shared && self.may_be_object(ty)",
     replace: "        shared && self.is_object(ty)",
-    tests: ["test/crates.test.ts", "-t", "copy_enum"],
+    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum_library_changed"],
   },
   {
     name: "untagged-copy-shared",
@@ -227,6 +227,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "                        && (args.regions().next().is_some()\n",
     replace: "                        && (false\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: ref_cells"],
+    tests: ["test/crates.test.ts", "-t", "a library.s RefCells are the values they hold"],
   },
 ];

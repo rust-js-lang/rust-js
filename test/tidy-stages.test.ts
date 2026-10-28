@@ -104,8 +104,11 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
         // read only by what it holds. That phase refuses the body as it
         // would however it was reached, so no JS is made to be wrong, and
         // there's none to run (ADR 0659, amended). A crash isn't a refusal,
-        // nor is one of the finished stage.
-        if (compiled.kind === "rejected" && end !== ends.at(-1)) continue;
+        // nor is one of the finished stage, nor JS rust-js wrote and can't
+        // read back, `const 3 = ..`, which is no phase's refusal but a
+        // stage's broken body.
+        const unreadable = compiled.error.includes("rust-js can't read the module it wrote");
+        if (compiled.kind === "rejected" && end !== ends.at(-1) && !unreadable) continue;
         problems.push(`after ${end}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
         continue;
       }

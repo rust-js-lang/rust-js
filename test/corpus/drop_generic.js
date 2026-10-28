@@ -57,6 +57,12 @@ function relay(value, dropU) {
   console.log("relayed");
 }
 
+// Passes its value on, to itself and to `keep`, which drops none: it takes
+// no drop either (ADR 0300).
+function handOn(value, steps) {
+  return steps === 0 ? keep(value) : handOn(value, steps - 1);
+}
+
 // Of an `impl Trait` argument, whose type parameter rustc names as it's
 // written: `dropDisplay`.
 function shown(x, Display, dropDisplay) {
@@ -77,7 +83,7 @@ function main() {
   consume(5);
   made(noisyDefault, noisyDrop_drop);
   made({ default: () => 0 });
-  const kept = keep(["b"]);
+  const kept = handOn(["b"], 2);
   const value = [["c"], ["d"]];
   try {
     const copy = first(value, { clone: (value) => value }, noisyDrop_drop);

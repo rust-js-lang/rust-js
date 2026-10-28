@@ -1164,3 +1164,25 @@ pub fn named_past(xs: &[String]) -> Vec<String> {
   expect(of("getArrayKind")).toContain("for (const value of array.slice(0, OBJECT_WIDTH_LIMIT)) {");
   expect(of("addValueToProperties")).toContain("for (const entry of value.slice(0, OBJECT_WIDTH_LIMIT)) {");
 });
+
+// ADR 0480: a clone of a `copied()` is a clone of the iterator it copies,
+// its `Clone` dictionary's where it's generic: each goes on apart from
+// where it was.
+test("a clone of a generic iterator's copied() is its clone", async () => {
+  const dir = fixture("copied-clone");
+  writeFileSync(join(dir, "lib.rs"), `fn apart<'a, I: Iterator<Item = &'a u32> + Clone>(it: I) -> (u32, u32) {
+    let mut copied = it.copied();
+    copied.next();
+    let again = copied.clone();
+    (copied.sum(), again.max().unwrap_or(0))
+}
+
+pub fn each(v: Vec<u32>) -> [(u32, u32); 3] {
+    [apart(v.iter()), apart(v.iter().rev()), apart(v.iter().skip(1))]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const again = IClone.clone(copied);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.each([1, 2, 3])).toEqual([[5, 3], [3, 2], [3, 3]]);
+});

@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unchecked-may-panic",
-    breaks: "`unwrap_unchecked()` is taken as one that may panic, so `first` keeps a drop",
+    breaks: "`unwrap_unchecked()` is taken as one that may panic, so a consumer that gives the library's `first` a value with a destructor compiles its own, to drop it where it panics",
     file: "src/lower/recognition/std_items.rs",
     find: "        \"unwrap_unchecked\" => Some(PureStd::Unchecked),\n",
     replace: "",

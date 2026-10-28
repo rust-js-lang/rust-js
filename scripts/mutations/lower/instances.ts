@@ -76,11 +76,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "instance-box-read-copied",
-    breaks: "optimized MIR's copy of a `Box` it reads through is taken for a copy of what it holds, and a consumer compiles the library's `grow`, whose `Box` deref it can't lower (ADR 0914, amended)",
+    breaks: "optimized MIR's copy of a `Box` it reads through is taken for a copy of what it holds, and a consumer compiles the library's `grow` itself, `const Tree = { grow(tree) { .. } }`, which it needn't (ADR 0914, amended)",
     file: "src/lower/instances.rs",
     find: "                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {\n",
     replace: "                    mir::Operand::Copy(place) if { let _ = &copy; true } => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: tree"],
+    tests: ["test/crates.test.ts", "-t", "grows a library.s boxed tree"],
   },
   {
     name: "instance-trait-call-unresolved",

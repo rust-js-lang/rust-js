@@ -544,7 +544,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.clone_value(place, source, span, out);\n",
     replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.clone_value(place, source, span, out);\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+    tests: ["test/lowering-iterators.test.ts", "-t", "a clone of a generic iterator.s copied"],
   },
   {
     name: "memchr-iter-clone-refused",

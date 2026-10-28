@@ -56,6 +56,16 @@ fn relay<U>(value: U) {
     println!("relayed");
 }
 
+// Passes its value on, to itself and to `keep`, which drops none: it takes
+// no drop either (ADR 0300).
+fn hand_on<T>(value: T, steps: u32) -> T {
+    if steps == 0 {
+        keep(value)
+    } else {
+        hand_on(value, steps - 1)
+    }
+}
+
 // Of an `impl Trait` argument, whose type parameter rustc names as it's
 // written: `dropDisplay`.
 fn shown(x: impl std::fmt::Display) -> String {
@@ -73,7 +83,7 @@ fn main() {
     consume(5);
     made::<Noisy>();
     made::<u8>();
-    let kept = keep(Noisy("b"));
+    let kept = hand_on(Noisy("b"), 2);
     let copy = first(vec![Noisy("c"), Noisy("d")]);
     relay(Noisy("e"));
     relay("text");

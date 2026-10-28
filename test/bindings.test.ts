@@ -759,11 +759,14 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   (globalThis as { calls?: number }).calls = 3;
   const lib = await import(join(dir, "mir.js"));
   expect([lib.count("a"), lib.countUnmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
-  writeFileSync(join(dir, "app.rs"), "pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub fn both() -> u32 {\n    counted::count(Loud(1)).0 + counted::count_unmarked(Loud(2)).0\n}\n");
+  writeFileSync(join(dir, "app.rs"), "pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {}\n}\npub fn both() -> u32 {\n    counted::count(Loud(1)).0 + counted::count_unmarked(Loud(2)).0 + counted::first(Loud(3), Some(4)).0\n}\n");
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(dir, "mir.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--extern", `counted=${join(dir, "libcounted.rmeta")}`]);
   const app = readFileSync(join(dir, "app.js"), "utf8");
   expect(app).toContain('import { count } from "./mir.js";');
+  // `first`'s `unwrap_unchecked` can't panic either: what its consumer
+  // compiles of it drops nothing where it would.
+  expect(app).toContain("function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
   expect(app).toContain("function countUnmarked(value, dropT) {\n  let n;\n  try {\n    n = globalThis.calls;\n  } catch (error) {\n    dropT?.(value);\n    throw error;\n  }\n");
 });
 

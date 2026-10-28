@@ -178,6 +178,15 @@ for (const name of readdirSync(triples).sort()) {
   }, 300_000);
 }
 
+// ADR 0914, amended: a consumer that grows a clone of a library's `Tree`
+// calls the library's own `grow`: the `Box` optimized MIR copies to read
+// through is no copy of what it holds, so `grow` copies nothing the
+// consumer changes, and isn't compiled again.
+test("a consumer that grows a library's boxed tree calls the library's method", () => {
+  const out = chain(pairs, "tree", ["dep", "app"]);
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain('import { Tree, sample } from "../dep/lib.js";\n');
+}, 300_000);
+
 // ADR 0693, amended: a library's function, which nothing assigns, returned
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {
@@ -414,6 +423,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // sides, as JS makes it (ADRs 0584, 0863).
   expect(dep).toContain("  queue.push(value);\n  return queue.length;\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  // What it changes, a `Vec` through a `Ref` a library's function borrows
+  // for a moment, is no `Vec` that function holds: it imports the library's
+  // `add_type`, not a copy compiled of its own (ADR 0914, amended).
+  expect(app).toContain('import { addType, enqueue, finish, shareTypes, start, types, visit } from "../dep/lib.js";\n');
   expect(app).toContain("  const queue = [\"q\"];\n");
   expect(app).toContain("  queue.push(\"s\");\n");
   expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");
