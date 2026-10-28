@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stepped-range-restepped",
+    breaks: "a range stepped from its start already, an `enumerate()`'s source, is stepped as a range again where it's made knowing its length: `(1..5).enumerate()` given to code stepping its back is `(false, 0)`, not `(true, 3)` (#385)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            Some((range, step)) if step.helper_name().is_some() && step.helper_name() == kind.step(false) => {\n",
+    replace: "            Some((range, step)) if false && step.helper_name().is_some() && step.helper_name() == kind.step(false) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+  },
+  {
+    name: "made-skipping-reread",
+    breaks: "a `$skipping` `as_exact_size` made already, a `rev()`'s source, is refused as an `ExactSizeIterator`: `first((0..10).skip(6).rev())` (#385)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && args.len() == 2\n            && callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" })\n",
+    replace: "            && args.len() == 99\n            && callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" })\n",
+    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+  },
+  {
     name: "enumerate-back-of-arrays-only",
     breaks: "an `enumerate()` made in place of what isn't an array's items, a `fuse()` of owned items, is refused where it's stepped from its back (#383)",
     file: "src/lower/iterators/knowing.rs",

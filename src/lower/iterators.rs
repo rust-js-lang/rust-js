@@ -132,6 +132,18 @@ pub(in crate::lower) fn stepped_value(e: &Expr) -> Option<Expr> {
     stepped_form(e).cloned()
 }
 
+/// `value` and `next` of `$iterator(value, next)`, stepped by `next`
+/// alone: a range stepped from its start (#385).
+pub(in crate::lower) fn stepped_alone(e: &Expr) -> Option<(&Expr, &Expr)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match args.as_slice() {
+        [value, next] if callee.helper_name() == Some("$iterator") => Some((value, next)),
+        _ => None,
+    }
+}
+
 /// `value` of `$iterator(value, next, ..)` or `$given(value, ..)`, whatever
 /// it stands for: the one reader of its form.
 pub(in crate::lower) fn stepped_form(e: &Expr) -> Option<&Expr> {

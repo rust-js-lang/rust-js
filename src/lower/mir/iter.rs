@@ -84,8 +84,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `size_hint` where it writes one, else std's `(0, None)`.
         let known = match mapped {
             true => {
+                // Or of a type parameter's, its JS iterator's, `$given`'s, which
+                // has its dictionary's `size_hint` (#385).
                 crate::lower::iterators::is_stepped_items(&it)
-                    || source_ty.is_some_and(|ty| self.is_user_iterator(ty) || self.maps_the_crates_own(ty))
+                    || source_ty.is_some_and(|ty| {
+                        self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)
+                    })
             }
             false => self.hints_its_size(iter_ty),
         };

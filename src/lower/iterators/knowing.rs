@@ -7,6 +7,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty`, a map's or a filter's, is one the crate steps from its
     /// back (ADR 0545), made knowing it where it's made: the one answer, of
     /// what's made and what's stepped.
+    /// `value`, a range of kind `kind`, as the range object its steps take:
+    /// itself, or of one stepped from its start already, `$iterator(range,
+    /// $rangeNext)`, an `enumerate()`'s source's, the range, not that
+    /// stepped as a range again (#385).
+    fn range_object(&self, value: Expr, kind: crate::lower::std_types::range::RangeKind) -> Expr {
+        match crate::lower::iterators::stepped_alone(&value) {
+            Some((range, step)) if step.helper_name().is_some() && step.helper_name() == kind.step(false) => {
+                range.clone()
+            }
+            _ => value,
+        }
+    }
+
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
     fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
         let range_back = self.range_kind(source.peel_refs()).and_then(|kind| kind.step(true));
@@ -213,6 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let (Some(kind), Some(len)) = (self.range_kind(ty), len)
             && let (Some(next), Some(from_back)) = (kind.step(false), kind.step(true))
         {
+            let value = self.range_object(value, kind);
             let from_back = back.then(|| Expr::helper(from_back));
             return Ok(stepped_ends(
                 value,
@@ -232,6 +246,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which they step from the back by, as std's `Skip` and `Take` of an
         // `ExactSizeIterator` do, and know their length (ADR 0542). Of items with a destructor,
         // which std drops as a `Vec`'s tail slice, refused below.
+        // One made so already, `$skipping(source, n)` of `as_exact_size`'s
+        // own, a `rev()`'s source (#385); not `closing`'s, given a drop.
+        if let Some((_, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && args.len() == 2
+            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })
+        {
+            return Ok(value);
+        }
         if let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty)
             && let Some((source_value, n)) = counted_parts(&value, skip)
             && (self.iterator_item(ty)).is_some_and(|item| self.drops(item) == crate::lower::drops::Drops::Nothing)
@@ -390,6 +413,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(kind) = self.range_kind(ty)
             && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
         {
+            let value = self.range_object(value, kind);
             return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
         }
         // `skip(n)` or `take(n)` made here, exact-sized as std's `Skip` and

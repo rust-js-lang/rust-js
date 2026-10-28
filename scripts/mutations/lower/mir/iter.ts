@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-map-hint-refused",
+    breaks: "`size_hint()` of a map of what's given as it is, `I: Clone`'s, is refused (#385)",
+    file: "src/lower/mir/iter.rs",
+    find: "self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)\n",
+    replace: "self.is_user_iterator(ty) || self.maps_the_crates_own(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+  },
+  {
     name: "iter-method-type-unrevealed",
     breaks: "a method of an `impl Iterator` a function gives is asked of the `impl`, not of what it is: `len()` of an `impl ExactSizeIterator` of a slice's `copied()` is refused (ADR 0985)",
     file: "src/lower/mir/iter.rs",
@@ -349,8 +357,8 @@ export const mutations: Mutation[] = [
     name: "map-hint-of-own-refused",
     breaks: "a map of the crate's iterator has its size_hint",
     file: "src/lower/mir/iter.rs",
-    find: "                    || source_ty.is_some_and(|ty| self.is_user_iterator(ty) || self.maps_the_crates_own(ty))",
-    replace: "                    || false",
+    find: "                        self.is_user_iterator(ty) || self.maps_the_crates_own(ty) || self.is_unknown(ty)\n",
+    replace: "                        self.is_unknown(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
