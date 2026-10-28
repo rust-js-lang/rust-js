@@ -8,7 +8,7 @@ nothing reaches.
 
 ## Context
 
-Main's nightly failed: 14 mutations survived at its head. Each was
+Main's nightly failed: 14 mutations survived at its head, and main's checks found more. Each was
 probed by reblessing the whole corpus under it, then checking the forms
 corpus and the mutation's own tests.
 
@@ -38,7 +38,31 @@ corpus and the mutation's own tests.
   for, an impl some of whose methods hold `A::IntoIter`, against native
   Rust.
 
+- Five are caught by tests that reach them again:
+  - `written-break-not-first`: React's `addValueToProperties`, whose
+    `break 'desc` ends a case, in the port's performance-track test, as
+    6ca2f9688 found too. The probes had missed it: the corpus doesn't
+    reach it.
+  - `dictionary-cache-runs-code`: the dictionary test's cycle of
+    dictionaries alone now holds a generic impl's cache and a dictionary
+    the other module reads. Under the mutation that cycle is refused.
+  - `moved-into-owner-unheld`: `iterator_moved_into_a_holder.rs`, a
+    `take` moved into `wrap(..)`'s `Holder` and stepped past its limit.
+    Under the mutation the rest drops before the `println!`.
+  - `null-nones-calls-unwritten`: lowering-nullable's nullable
+    function's result, 0faaa845d's. A new nullable-reads test,
+    `halved_lazy`, also reaches it: a call's `Option` kept in a variable
+    that a nullable field alone reads, whose `?? null` is where it's made.
+  - `unread-ref-held-at-write`: `if_let_mut_else_assign.rs`'s `named`.
+    Under the mutation it's `const f = found; f.push(v)`, so the mutation
+    checks snapshots.
+- One goes with the code it guarded, as nothing's JS depends on it:
+  - Tidy's "stored again" pass. The places that store a nullable value
+    store it again themselves, so the corpus, the examples, the React
+    tests and every test that mentions a nullable place are the same
+    without it.
+
 ## Consequences
 
-Those five mutations are caught or removed. The rest are listed on #382
-until they are too.
+Those eleven mutations are caught or removed. The rest are listed on
+#382 until they are too.

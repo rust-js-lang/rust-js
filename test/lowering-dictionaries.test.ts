@@ -127,7 +127,9 @@ pub mod counts {
 }
 `);
   // Dictionaries and their caches alone run nothing where they're made: a
-  // cycle of them compiles, as either's \`lib\` and \`iterator\` do.
+  // cycle of them compiles, as either's \`lib\` and \`iterator\` do, one a
+  // generic impl's cache, \`new WeakMap()\`, and the other a dictionary the
+  // first reads, \`tagDisplay\`, too.
   const quiet = fixture("dictionaries-in-a-cycle");
   writeFileSync(join(quiet, "lib.rs"), `use std::fmt;
 
@@ -136,7 +138,7 @@ pub mod wrapped {
 
     impl<T: std::fmt::Display> std::fmt::Display for Wrapped<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "({})", super::Boxed(&self.0))
+            write!(f, "({} {})", super::Boxed(&self.0), super::labeled(super::Tag))
         }
     }
 }
@@ -149,12 +151,26 @@ impl<T: fmt::Display> fmt::Display for Boxed<T> {
     }
 }
 
+pub struct Tag;
+
+impl fmt::Display for Tag {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "tag")
+    }
+}
+
+pub fn labeled<T: fmt::Display>(t: T) -> String {
+    format!("<{t}>")
+}
+
 pub fn shown(n: u32) -> String {
     wrapped::Wrapped(n).to_string()
 }
 `);
   run([compiler, join(quiet, "lib.rs"), "-o", join(quiet, "lib.js")]);
-  expect((await import(join(quiet, "lib.js"))).shown(4)).toBe("([4])");
+  expect(readFileSync(join(quiet, "wrapped.js"), "utf8")).toContain("const $wrappedDisplay = new WeakMap();");
+  expect(readFileSync(join(quiet, "wrapped.js"), "utf8")).toContain("labeled(undefined, tagDisplay)");
+  expect((await import(join(quiet, "lib.js"))).shown(4)).toBe("([4] <tag>)");
 
   // `counts`' thread-local is made where it's first used, so its load runs
   // nothing of `shapes`': the cycle compiles, and reads the dictionary once

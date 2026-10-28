@@ -42,6 +42,18 @@ function lastWord(words) {
   return seen ?? "";
 }
 
+function named(values) {
+  let found;
+  for (const v of values) {
+    if (found != null) {
+      found.push(v);
+    } else {
+      found = [(v * 10) >>> 0];
+    }
+  }
+  return found;
+}
+
 function reborrowed(c) {
   const p = [1];
   const q = [2];
@@ -95,6 +107,8 @@ function main() {
   const value$1 = collect([0, 1]);
   console.log(`${value$1 == null ? "None" : `Some([${value$1.join(", ")}])`}`);
   console.log(`${lastWord(["ab", "cd", "efgh", "ij"])}`);
+  const value$2 = named([6, 7]);
+  console.log(`${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`);
   console.log(`${reborrowed(true)}`);
   console.log(`${reborrowed(false)}`);
   console.log(`${rematched(true)}`);

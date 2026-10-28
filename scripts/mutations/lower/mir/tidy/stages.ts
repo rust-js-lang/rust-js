@@ -649,14 +649,6 @@ export const mutations: Mutation[] = [
     tests: ["test/js-object.test.ts", "-t", "an object.s property read where its test holds is one conditional"],
   },
   {
-    name: "mir-tidy-stored-again-off",
-    breaks: "a nullable place's `(__DEV__ ? fiber._debugTask : undefined) ?? null`, read in place, isn't stored again, `__DEV__ ? fiber._debugTask : null`",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"stored again\", |b, _| js::each_expr_mut(b, &mut Expr::store_again)),\n",
-    replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
-  },
-  {
     name: "skipped-tests-unrun",
     breaks: "an `if` of `&&`, `||` and `!` mixed is `if`s that leave a block MIR made, `bb42:`, React's popHydrationState (ADR 0946)",
     file: "src/lower/mir/tidy/stages.rs",

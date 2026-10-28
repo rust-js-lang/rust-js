@@ -346,3 +346,43 @@ pub fn dispatch() {
   lib.dispatch();
   expect(kept.map((dispatcher) => dispatcher.useId())).toEqual([1]);
 });
+
+// A call's `Option`, which may be `undefined`, kept in a variable a nullable
+// field alone reads: `?? null` where it's made, the variable read as it is.
+test("a call's Option a nullable field alone reads is null where it's made", async () => {
+  const dir = fixture("nullable-call-kept");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Lazy {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub label: Option<f64>,
+    pub seen: Cell<u32>,
+}
+
+fn halved(n: Option<f64>) -> Option<f64> {
+    match n {
+        Some(n) if n > 0.0 => Some(n / 2.0),
+        _ => None,
+    }
+}
+
+pub fn halved_lazy(count: &Cell<u32>, n: Option<f64>) -> Lazy {
+    let label = halved(n);
+    count.set(count.get() + 1);
+    Lazy {
+        label,
+        seen: Cell::new(count.get()),
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const label = halved(n) ?? null;\n");
+  expect(js).not.toContain("label: label ?? null");
+  const lib = await import(join(dir, "lib.js"));
+  const count = { value: 0 };
+  expect([4, -4, undefined].map((n) => lib.halvedLazy(count, n).label)).toEqual([2, null, null]);
+});

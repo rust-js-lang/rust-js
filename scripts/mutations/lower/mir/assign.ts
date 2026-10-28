@@ -354,10 +354,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unread-ref-held-at-write",
-    breaks: "`if let Some(found) = &mut found { found.push(v) } else { found = Some(..) }` holds the `&mut found` in the `else`, `const found$2 = found`, which the `if`'s branch reads undeclared",
+    breaks: "a `&mut found` read in one branch and not past the `else`'s write of `found` is held there, `const f = found; f.push(v)`, where it's `found.push(v)`",
     file: "src/lower/mir/assign.rs",
     find: "            .filter(|&l| read_past(state.body, at, l))\n",
     replace: "",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
   },
   {

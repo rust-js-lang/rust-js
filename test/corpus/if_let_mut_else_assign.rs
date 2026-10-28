@@ -2,8 +2,9 @@
 // place it refers to there: a variable another branch writes isn't held
 // for it, as nothing reads it past the write. Its `if let Some(found) =
 // &mut found` is `found` itself, and the `else`'s `found = ..` assigns it.
-// And a reborrow read past a reassignment in one branch, and in another, is
-// of what the reference was in each (ADR 0099).
+// So is one the program names, `let r = &mut found; match r { .. }`, whose
+// `None` arm writes `found`. And a reborrow read past a reassignment in one
+// branch, and in another, is of what the reference was in each (ADR 0099).
 
 fn collect(values: &[u32]) -> Option<Vec<u32>> {
     let mut found: Option<Vec<u32>> = None;
@@ -28,6 +29,18 @@ fn last_word(words: &[&str]) -> String {
         }
     }
     seen.unwrap_or_default()
+}
+
+fn named(values: &[u32]) -> Option<Vec<u32>> {
+    let mut found: Option<Vec<u32>> = None;
+    for &v in values {
+        let r = &mut found;
+        match r {
+            Some(f) => f.push(v),
+            None => found = Some(vec![v * 10]),
+        }
+    }
+    found
 }
 
 fn reborrowed(c: bool) -> String {
@@ -65,6 +78,7 @@ fn main() {
     println!("{:?}", collect(&[1, 2, 3, 0, 4]));
     println!("{:?}", collect(&[0, 1]));
     println!("{}", last_word(&["ab", "cd", "efgh", "ij"]));
+    println!("{:?}", named(&[6, 7]));
     println!("{}", reborrowed(true));
     println!("{}", reborrowed(false));
     println!("{}", rematched(true));

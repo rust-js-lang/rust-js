@@ -133,11 +133,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "moved-into-owner-unheld",
-    breaks: "a `take` moved into a `Peekable` the statement drops isn't held: `take(1).peekable().all(..)` drops what it has left before it prints (#243)",
+    breaks: "a `take` moved into a call whose value the body drops, `wrap(..)`'s `Holder<Take<..>>`, isn't held: what it has left drops as it reaches its limit, before the `println!` Rust drops it after (#243)",
     file: "src/lower/mir/drops.rs",
     find: "        dropped\n            || depth < 4\n",
     replace: "        dropped\n            || depth < 0\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^iterator_moved_into_a_holder.rs$"],
   },
   {
     name: "owner-closing-held-again",
