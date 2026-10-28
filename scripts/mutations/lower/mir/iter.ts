@@ -219,9 +219,9 @@ export const mutations: Mutation[] = [
     name: "held-function-unclosed",
     breaks: "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
     file: "src/lower/mir/iter.rs",
-    find: "        Ok(Some(Expr::call_helper(\n            \"$closing\",\n            vec![adapter, Expr::arrow(vec![\"it\".into()], body)],\n        )))\n",
-    replace: "        let _ = body;\n        Ok(Some(adapter))\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
+    find: "        Ok(Expr::call_helper(\n            \"$closing\",\n            vec![adapter, Expr::arrow(vec![\"it\".into()], body)],\n        ))\n",
+    replace: "        let _ = body;\n        Ok(adapter)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_function_drops|adapter_functions_dropped).rs$"],
   },
   {
     name: "consumed-held-function-kept",

@@ -218,13 +218,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(adapter) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
             return Ok(None);
         };
+        self.closing_function(adapter, (f, function), span).map(Some)
+    }
+
+    /// `adapter`, which holds `f`, a function of type `function` with a
+    /// destructor, closed to drop it: `$closing(adapter, (it) => {
+    /// it.return(); .. })`, its source closed, then its function dropped, as
+    /// Rust drops an adapter's fields (ADRs 0485, 0991).
+    pub(in crate::lower::mir) fn closing_function(
+        &mut self,
+        adapter: Expr,
+        (f, function): (Expr, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
         let it = Expr::var("it");
         let mut body = vec![StmtKind::Expr(Expr::call(Expr::member(it, "return"), Vec::new())).at(js::Span::NONE)];
         self.drop_value(f, function, span, &mut body)?;
-        Ok(Some(Expr::call_helper(
+        Ok(Expr::call_helper(
             "$closing",
             vec![adapter, Expr::arrow(vec!["it".into()], body)],
-        )))
+        ))
     }
 
     /// `held`, an iterator of type `receiver` its std method `method` took

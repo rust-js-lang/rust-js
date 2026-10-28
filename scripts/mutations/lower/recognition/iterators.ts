@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flat-map-function-unheld",
+    breaks: "a `flat_map()`'s function with a destructor isn't seen to be held by it, and is never dropped (ADR 0991)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            \"std::iter::FlatMap\" => Some(args.type_at(2)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
+  },
+  {
     name: "text-escape-not-chars",
     breaks: "a held text escape isn't std's iterator of its `char`s' array: `e.next()` of `'\u00e9'.escape_default()` is `$next` of an array, `it.next is not a function` (#379, ADR 0971)",
     file: "src/lower/recognition/iterators.rs",
@@ -303,24 +311,24 @@ export const mutations: Mutation[] = [
     name: "filter-not-back-stepped",
     breaks: "a filter of what knows its back isn't seen to know its own, and generic code's is refused from its back",
     file: "src/lower/recognition/iterators.rs",
-    find: "                    | \"std::iter::Filter\"\n                    | \"std::iter::FilterMap\"\n",
-    replace: "                    | \"std::iter::FilterMap\"\n",
+    find: "\"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"",
+    replace: "\"std::iter::Map\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
     name: "filter-map-not-back-stepped",
     breaks: "a `filter_map` of what knows its back isn't seen to know its own",
     file: "src/lower/recognition/iterators.rs",
-    find: "                    | \"std::iter::FilterMap\"\n                    | \"std::iter::Copied\"\n",
-    replace: "                    | \"std::iter::Copied\"\n",
+    find: "\"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"",
+    replace: "\"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::Copied\"",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
     name: "map-back-unknown",
     breaks: "a map of an iterator that knows its back doesn't, so `rfind` of a generic one's map is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: "                \"std::iter::Map\"\n                    | \"std::iter::Filter\"\n",
-    replace: "                \"std::iter::Filter\"\n",
+    find: "\"std::iter::Map\" | \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"",
+    replace: "\"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Copied\"",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
@@ -362,14 +370,6 @@ export const mutations: Mutation[] = [
     find: "            \"std::option::Iter\" | \"std::option::IntoIter\" | \"std::result::Iter\" | \"std::collections::linked_list::Iter\" | \"std::str::CharIndices\"\n",
     replace: "            \"std::result::Iter\" | \"std::collections::linked_list::Iter\" | \"std::str::CharIndices\"\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
-  },
-  {
-    name: "rev-not-back-stepped",
-    breaks: "a `rev()` of what knows its back isn't seen to know its own, so `memrchr_iter(..).rev()` is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "                    | \"std::iter::Copied\"\n                    | \"std::iter::Rev\"\n",
-    replace: "                    | \"std::iter::Copied\"\n",
-    tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches run"],
   },
   {
     name: "rev-length-unknown",
@@ -793,9 +793,9 @@ export const mutations: Mutation[] = [
     name: "inspect-holds-no-function",
     breaks: "an `Inspect` whose closure took what has a destructor is refused, not dropped after its source as a `Map`'s is",
     file: "src/lower/recognition/iterators.rs",
-    find: " | \"std::iter::SkipWhile\" | \"std::iter::Inspect\"\n",
-    replace: " | \"std::iter::SkipWhile\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^(std_inspect).rs$"],
+    find: "            | \"std::iter::MapWhile\"\n            | \"std::iter::Inspect\" => Some(args.type_at(1)),\n",
+    replace: "            | \"std::iter::MapWhile\" => Some(args.type_at(1)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|adapter_functions_dropped).rs$"],
   },
   {
     name: "chain-nths-no-slice",

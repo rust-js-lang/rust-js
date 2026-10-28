@@ -258,15 +258,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The function a lazy adapter of std's holds, `map(f)`'s `F` of a
     /// `Map<I, F>`, which drops with it, after its source, closed as it is
-    /// (ADR 0485): `map`'s, `filter`'s, `skip_while`'s and `inspect`'s.
+    /// (ADRs 0485, 0991): `map`'s, `filter`'s, `filter_map`'s,
+    /// `take_while`'s, `skip_while`'s, `map_while`'s, `inspect`'s and
+    /// `flat_map`'s, whose `F` is after what it flattens, `FlatMap<I, U, F>`.
     pub(crate) fn held_function(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        matches!(
-            std_path(self.tcx, adt.did()).as_str(),
-            "std::iter::Map" | "std::iter::Filter" | "std::iter::SkipWhile" | "std::iter::Inspect"
-        )
-        .then(|| args.type_at(1))
+        match std_path(self.tcx, adt.did()).as_str() {
+            "std::iter::Map"
+            | "std::iter::Filter"
+            | "std::iter::FilterMap"
+            | "std::iter::TakeWhile"
+            | "std::iter::SkipWhile"
+            | "std::iter::MapWhile"
+            | "std::iter::Inspect" => Some(args.type_at(1)),
+            "std::iter::FlatMap" => Some(args.type_at(2)),
+            _ => None,
+        }
     }
 
     /// The test an `extract_if()`'s iterator holds, of a `Vec`'s, a list's,
@@ -1207,18 +1215,14 @@ pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<T
 }
 
 /// Of std's adapter of type `ty` that steps from its back where its source
-/// does, `Map`, `Filter`, `FilterMap`, `Copied` or `Rev`, its source (ADRs
-/// 0455, 0480, 0526, 0530).
+/// does, `Map`, `Filter`, `FilterMap` or `Copied`, its source (ADRs 0455,
+/// 0480, 0526). A `rev()` made in place is read by its form (ADR 0987).
 pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map"
-                    | "std::iter::Filter"
-                    | "std::iter::FilterMap"
-                    | "std::iter::Copied"
-                    | "std::iter::Rev"
+                "std::iter::Map" | "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Copied"
             ) =>
         {
             Some(args.type_at(0))

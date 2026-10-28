@@ -975,6 +975,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             })
                         })
                         .collect::<R<Vec<_>>>()?;
+                    // A function it holds with a destructor, `inspect(f)`'s, in a
+                    // variable, dropped after its source as it's closed (ADR
+                    // 0991).
+                    let held = (this.recognition().held_function(output))
+                        .filter(|&function| this.drops(function) != crate::lower::drops::Drops::Nothing);
+                    let held = match (held, exprs.first().cloned()) {
+                        (Some(function), Some(f)) => {
+                            let f = match f.kind {
+                                js::ExprKind::Var(_) => f,
+                                _ => this.spill("f", f, out),
+                            };
+                            exprs[0] = f.clone();
+                            Some((f, function))
+                        }
+                        _ => None,
+                    };
                     if let Some(item) = dropping
                         && matches!(comb, IterComb::SkipWhile | IterComb::TakeWhile)
                     {
@@ -994,9 +1010,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => made.in_place(),
                         false => made,
                     };
-                    match matches!(comb, IterComb::Flatten | IterComb::FlatMap) && this.stepped_from_its_back(output) {
+                    let made = match matches!(comb, IterComb::Flatten | IterComb::FlatMap)
+                        && this.stepped_from_its_back(output)
+                    {
                         true => this.as_double_ended(made, output, span)?,
                         false => made,
+                    };
+                    match held {
+                        Some(held) => this.closing_function(made, held, span)?,
+                        None => made,
                     }
                 }))
             }),

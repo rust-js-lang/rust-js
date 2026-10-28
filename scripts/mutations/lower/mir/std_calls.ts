@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "combinator-function-undropped",
+    breaks: "what an `inspect()`'s, a `skip_while()`'s or a `flat_map()`'s function holds with a destructor is never dropped, where Rust drops it with the adapter (ADR 0991)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        Some(held) => this.closing_function(made, held, span)?,\n",
+    replace: "                        Some(_) => made,\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
+  },
+  {
     name: "wrapping-assigned-to-its-ref",
     breaks: "a `Wrapping`'s `op=` through a `&mut` a variable holds assigns the variable, not what it points at: a caller's never changes, and MIR's borrow is a `const` assigned (#309)",
     file: "src/lower/mir/std_calls.rs",

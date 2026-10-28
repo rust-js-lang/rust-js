@@ -2,6 +2,8 @@
 
 Status: Accepted. Extends [0465](0465-dropping-an-adapter-is-closing-it.md)
 and [0470](0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md).
+Extended by [0991](0991-every-adapter-holding-a-function-drops-it.md): each
+adapter that holds a function, a combinator's too.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.
