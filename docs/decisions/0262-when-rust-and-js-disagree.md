@@ -104,6 +104,16 @@ react.dev's TopNav passes the same closure instead.
   truth, `!selection.extend`: only an `extend` that's truthy and no
   function tells them apart. Listed in the guide's differences
   (`semantics.md`, 29).
+- **A `pub` thread-local's initializer runs as its module loads**, the
+  second case's, which the user decided (2026-10-28, gap rd51, ADR 1006):
+  React DOM's `export const ANIMATION_END =
+  getVendorPrefixedEventName('animationend')` is made where upstream makes
+  it, so JS's importers read its value. What the initializer prints, a
+  panic in it, and what it reads and changes are where its module loads,
+  where Rust has them at its first use; a `pub(crate)` one is made there.
+  One whose module's load can't make it before what it reads, an import
+  cycle's or one reading itself, is refused. Listed in the guide's
+  differences (`semantics.md`, 30).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

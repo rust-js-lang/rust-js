@@ -147,6 +147,7 @@ pub fn lower_crate<'tcx>(
         quiet_locals,
         lazy_locals,
         local_makers,
+        exported_locals,
         named_expressions,
         local_functions,
         local_consts,
@@ -510,6 +511,7 @@ pub fn lower_crate<'tcx>(
                 if !cyclic.is_empty() {
                     return Lowered::MadeWhereUsed(cyclic);
                 }
+                load_cycles::refuse_exported_out_of_order(tcx, &exported_locals, &fns, &imports);
                 let again = load_cycles::load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
                 if again.is_empty() {
                     break;

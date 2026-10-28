@@ -323,6 +323,21 @@ impl<'tcx> CellBorrows<'tcx> {
         }
     }
 
+    /// What std's `id`, called of `args`, may run of the crate's bodies, by
+    /// the bounds it's called under (`std_given`, ADR 0328), each of the
+    /// args its type says, where it does; `None` where it may run what
+    /// rust-js can't see. What a thread-local made as its module loads asks
+    /// of std's calls (ADR 0037, amended).
+    pub(in crate::lower) fn std_runs(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<Vec<(DefId, Option<ty::GenericArgsRef<'tcx>>)>> {
+        let given = std_given(recognition, &self.impls, id, args);
+        (!given.any).then_some(given.bodies)
+    }
+
     /// What each fn pointer the crate calls may be (ADR 0907), its owner's
     /// answers, for another analysis to ask.
     pub(in crate::lower) fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
@@ -483,7 +498,7 @@ enum Called<'tcx> {
 /// `instanceof`, but by a JS getter that calls back into Rust; whether the
 /// host has a global, `typeof X !== "undefined"`; JS's `null`, `js::null()`;
 /// and one that says it runs nothing, `#[rust_js::runs_nothing]` (ADR 0867).
-fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_binding(tcx, id)
         && (matches!(
             js_form(tcx, id),

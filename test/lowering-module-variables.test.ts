@@ -65,6 +65,57 @@ pub fn told() -> (bool, u32, u32, String) {
   expect(users.told()).toEqual([true, 1, 4, "on"]);
 });
 
+// React DOM's DOMEventNames, `export const ANIMATION_END =
+// getVendorPrefixedEventName('animationend')`, which SimpleEventPlugin's JS
+// imports: a `pub` thread-local is made as its module loads, after the
+// modules it imports, whatever its initializer runs, so a JS module
+// importing it reads its value, as its `.d.ts` says. Its initializer runs
+// as its module loads, where Rust runs it at its first use: what it prints
+// is printed then, the guide's listed difference (ADR 0037, amended, the
+// user's decision; React port gap rd51).
+test("a pub thread-local is made as its module loads, which a JS importer reads", async () => {
+  const dir = fixture("exported-made-at-load");
+  writeFileSync(join(dir, "lib.rs"), "pub mod event_names;\npub mod prefixes;\n");
+  writeFileSync(join(dir, "prefixes.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static PREFIXED: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn prefixed(name: &str) -> String {
+    println!("prefixing {name}");
+    PREFIXED.with_borrow_mut(|prefixed| prefixed.push(name.to_owned()));
+    "webkit".to_owned() + name
+}
+
+pub fn count() -> usize {
+    PREFIXED.with_borrow(Vec::len)
+}
+`);
+  writeFileSync(join(dir, "event_names.rs"), `use crate::prefixes::prefixed;
+
+thread_local! {
+    pub static ANIMATION_END: String = prefixed("animationend");
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "event_names.js"), "utf8")).toContain('export const ANIMATION_END = prefixed("animationend");\n');
+  expect(readFileSync(join(dir, "event_names.d.ts"), "utf8")).toContain("export const ANIMATION_END: string;\n");
+  writeFileSync(join(dir, "plugin.js"), 'import { ANIMATION_END } from "./event_names.js";\nexport const name = (type) => (type === ANIMATION_END ? "onAnimationEnd" : null);\n');
+  const printed: string[] = [];
+  const log = console.log;
+  console.log = (...line: unknown[]) => void printed.push(line.join(" "));
+  try {
+    const plugin = await import(join(dir, "plugin.js"));
+    expect(printed).toEqual(["prefixing animationend"]);
+    expect(plugin.name("webkitanimationend")).toBe("onAnimationEnd");
+    const prefixes = await import(join(dir, "prefixes.js"));
+    expect(prefixes.count()).toBe(1);
+  } finally {
+    console.log = log;
+  }
+});
+
 // React's `let callbacks = []`, set `callbacks = []` again: a thread-local
 // `RefCell` of an array its module sets whole is its `export let`, given
 // the new one there; another module's `set` writes the one it reads in

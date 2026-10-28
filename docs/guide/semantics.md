@@ -444,11 +444,20 @@ given, reads no `static` or thread-local, may not panic and calls only
 others that do and std's `const fn`s of no trait and `Box::new`, React's
 `createCursor(null)` and `createChildReconciler(true)`, unless that function's module imports the
 thread-local's back, which may load after it
-([0037](../decisions/0037-thread-locals.md), amended). A `pub` one made
-where it's first used is refused: a JS module importing it would read the
-function that makes it, not its value. Keep it `pub(crate)`, which the
-crate's modules read where they use it, and export a `pub fn` that reads
-it.
+([0037](../decisions/0037-thread-locals.md), amended).
+
+**A `pub` thread-local is made as its module loads, whatever its
+initializer runs**, after the modules it imports, as JS's `export const`
+is, so a JS module importing it reads its value: React DOM's
+`export const ANIMATION_END = getVendorPrefixedEventName("animationend");`.
+What its initializer prints, panics with or changes is done then, where
+Rust does it at its first use: the differences' list, 30. Its own module's
+items it reads are made before it. One whose module's load can't make it
+first is refused: one that runs code of a module in an import cycle with
+its own, one that reads itself, or one that calls a `dyn Fn` or a fn
+pointer that may be any function. Keep such a one `pub(crate)`, made where
+it's first used, and export a `pub fn` that reads it
+([1006](../decisions/1006-a-pub-thread-local-is-made-as-its-module-loads.md)).
 
 Differences:
 
@@ -1010,3 +1019,6 @@ React and JSX are [their own pages](README.md#react).
     selection.extend === "function"`, where React's ReactDOMSelection
     tests its truth, `!selection.extend`: they differ only of a member
     that's truthy and no function (ADR 0942, amended, the user's decision).
+30. A `pub` thread-local is made as its module loads, so what its
+    initializer prints, panics with, reads and changes is done then, where
+    Rust does it at its first use (ADR 1006, the user's decision).

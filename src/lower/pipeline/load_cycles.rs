@@ -74,6 +74,70 @@ pub(super) fn made_in_cycles(
     cyclic
 }
 
+/// Each `pub` thread-local, of `exported`, made as its module loads, as
+/// JS's importers read an `export const` (ADR 0037, amended), whose
+/// initializer may run or read, as it does, what may not be made yet:
+/// refused. What rust-js can't follow (`None`); itself, which it would read
+/// before it's made; or code of another module that may load after its
+/// own, one that reaches its own by what the crate's modules import of
+/// each other, `imports`, an import cycle. Its own module's `const`s and
+/// thread-locals are made before it where it reads them
+/// (`js::in_load_order`), and a module it imports, of no cycle, has loaded.
+pub(super) fn refuse_exported_out_of_order(
+    tcx: TyCtxt<'_>,
+    exported: &HashMap<rustc_span::def_id::LocalDefId, Option<Vec<DefId>>>,
+    fns: &HashMap<DefId, FnInfo>,
+    imports: &crate::lower::load_order::ModuleImports,
+) {
+    let module_of = |id: DefId| {
+        (fns.get(&id).or_else(|| fns.get(&tcx.typeck_root_def_id(id))))
+            .map(|info| info.module)
+            .or_else(|| id.as_local().map(|id| tcx.parent_module_from_def_id(id)))
+    };
+    let mut keys: Vec<_> = exported.keys().copied().collect();
+    keys.sort_by_key(|&key| tcx.def_span(key));
+    let advice = "keep it `pub(crate)`, which the crate's modules read where they first use it, and export a `pub fn` that reads it (ADR 0037, amended)";
+    for key in keys {
+        let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+        let refuse = |what: &str, why: &str| {
+            crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
+        };
+        let Some(reached) = &exported[&key] else {
+            refuse(
+                "a `pub` thread-local whose initializer may run what rust-js can't follow",
+                &format!(
+                    "it's made as its module loads, as JS's `export const` is, and its initializer calls a `dyn Fn`, a fn pointer that may be any function, or what a type parameter is given, which may run code of a module that hasn't loaded yet: call what it runs by its name, or {advice}"
+                ),
+            );
+            continue;
+        };
+        if reached.contains(&key.to_def_id()) {
+            refuse(
+                "a `pub` thread-local whose initializer reads itself",
+                &format!(
+                    "it's made as its module loads, as JS's `export const` is, so it would read itself before it's made: {advice}"
+                ),
+            );
+            continue;
+        }
+        let own = fns[&key.to_def_id()].module;
+        let cyclic = (reached.iter().filter_map(|&id| module_of(id)))
+            .find(|&module| module != own && imports.reaches(module, own));
+        if let Some(module) = cyclic {
+            refuse(
+                &format!(
+                    "a `pub` thread-local whose initializer runs or reads `{}` as its module loads, in an import cycle with `{}`",
+                    tcx.def_path_str(module.to_def_id()),
+                    tcx.def_path_str(own.to_def_id()),
+                ),
+                &format!(
+                    "it's made as its module loads, as JS's `export const` is, and that module may not have loaded yet: move one of them out of the cycle, or {advice}"
+                ),
+            );
+        }
+    }
+}
+
 /// A dictionary that's its module's `const` (ADR 0592) is made when its
 /// module loads. Where its module and one whose load runs code, a
 /// `js::on_load!` or a value made by a call, import each other, the other

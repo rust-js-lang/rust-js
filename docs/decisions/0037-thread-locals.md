@@ -1,6 +1,6 @@
 # 0037. `thread_local!` is a variable of its module
 
-Status: Accepted. Amended, below; last: a `pub` thread-local made where it's first used is refused.
+Status: Accepted. Amended, below; last: a `pub` thread-local is made as its module loads ([1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md)), where an amendment had refused one made where it's first used.
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -112,6 +112,7 @@ renders a table's memo; a mutation refuses it again.
 
 - [0270](0270-module-variables.md): A thread-local only read and set is its module's variable
 - [0306](0306-item-order.md): A module's items are where its Rust has them
+- [1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md): A `pub` thread-local is made as its module loads
 
 ## Amendment: one whose initializer runs the crate's code is made where it's first used
 
@@ -435,6 +436,12 @@ the ports, JSX and the module tests wrote the same JS, and its mutation,
 `lazy-local-path-unapplied`, survived. It went with its mutation.
 
 ## Amendment: a `pub` thread-local made where it's first used is refused
+
+Since [1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md)
+(the user's decision, rd51), a `pub` thread-local is made as its module
+loads, as upstream's `export const` is, and refused only where its
+module's load can't make it before what it reads. What follows is the
+history.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): D, refused, where a JS
 module importing it would have read another value.

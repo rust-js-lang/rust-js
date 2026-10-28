@@ -36,10 +36,12 @@ for (const [name, source, message, crate] of [
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
-  // A `pub` thread-local made where it's first used would be, to JS's
-  // importers, the function that makes it, where its declaration says its
-  // value (ADR 0037, amended; React port gap rd51).
-  ["a pub thread-local made where it's first used", "use std::cell::RefCell;\nthread_local! {\n    static CACHE: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };\n}\npub fn prefixed(name: &str) -> String {\n    CACHE.with_borrow_mut(|cache| cache.push(name.to_owned()));\n    \"webkit\".to_owned() + name\n}\nthread_local! {\n    pub static ANIMATION_END: String = prefixed(\"animationend\");\n}", "does not support a `pub` thread-local made where it's first used yet: its initializer runs the crate's code, or may panic, which Rust runs there, so JS's importers would read the function that makes it, not its value"],
+  // A `pub` thread-local is made as its module loads, as JS's importers
+  // read an `export const`; one whose initializer runs or reads what may
+  // not be made yet then is refused (ADR 0037, amended; React port gap rd51).
+  ["a pub thread-local of a module in an import cycle", "pub mod a {\n    thread_local! {\n        pub static NAME: String = Some(()).map(|()| crate::b::named()).unwrap_or_default();\n    }\n    pub fn base() -> &'static str {\n        \"a\"\n    }\n}\npub mod b {\n    pub fn named() -> String {\n        crate::a::base().to_owned()\n    }\n}", "does not support a `pub` thread-local whose initializer runs or reads `b` as its module loads, in an import cycle with `a` yet: it's made as its module loads, as JS's `export const` is, and that module may not have loaded yet"],
+  ["a pub thread-local that reads itself", "thread_local! {\n    pub static N: u32 = M.with(|m| *m);\n    static M: u32 = twice();\n}\nfn twice() -> u32 {\n    N.with(|n| *n) * 2\n}", "does not support a `pub` thread-local whose initializer reads itself yet: it's made as its module loads, as JS's `export const` is, so it would read itself before it's made"],
+  ["a pub thread-local of a dyn Fn's call", "thread_local! {\n    pub static N: u32 = call(&|| 3);\n}\nfn call(f: &dyn Fn() -> u32) -> u32 {\n    f()\n}", "does not support a `pub` thread-local whose initializer may run what rust-js can't follow yet"],
   // A `Cell` or a `RefCell` of one is (ADRs 0772, 0863); of a number isn't.
   ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<u32>,\n}", "is of a field that's an `Option`"],
   // An `Option` field's `None` is left out where it's made already (ADR 0810).

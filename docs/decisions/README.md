@@ -76,7 +76,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md)
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
 - [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`)*
-- [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused)*
+- [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads)*
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
 - [0030 `Option`: `Some(x)` is `x`, `None` is `undefined`](0030-option.md)
@@ -790,6 +790,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1003 A compiler's build is part of its identity](1003-a-compilers-build-is-its-identity.md)
 - [1004 The mutations surviving at main's head](1004-survivors-at-mains-head.md)
 - [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision)*
+- [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
+  {
+    name: "exported-local-cycle-unrefused",
+    breaks: "a `pub` thread-local made as its module loads that runs a module in an import cycle with its own compiles, and reads what that module hasn't made yet (ADR 0037, amended)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "            .find(|&module| module != own && imports.reaches(module, own));\n",
+    replace: "            .find(|&module| module != own && imports.reaches(module, own) && false);\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local of a module in an import cycle"],
+  },
+  {
+    name: "exported-local-self-read-unrefused",
+    breaks: "a `pub` thread-local made as its module loads whose initializer reads itself compiles, and throws reading itself before it's made (ADR 0037, amended)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "        if reached.contains(&key.to_def_id()) {\n",
+    replace: "        if false && reached.contains(&key.to_def_id()) {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local that reads itself"],
+  },
 ];
