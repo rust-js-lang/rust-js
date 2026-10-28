@@ -294,7 +294,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare/catches.rs",
     find: "    let ok_reads = match value_name.as_deref() == Some(result.as_str()) {\n        true => 0,\n",
     replace: "    let ok_reads = match value_name.as_deref() == Some(result.as_str()) {\n        true => js::mentions_in(ok, result),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
+    tests: ["test/corpus.test.ts", "-t", "^(catch_unwind_guard_returned|catch_unwind_nested_ok).rs$"],
+    snapshots: true,
   },
   {
     name: "cannot-throw-if-arms-unread",

@@ -307,7 +307,8 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "                ] => value.clone(),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
     replace: "                ] => Expr::call(f.clone(), Vec::new()),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
+    snapshots: true,
   },
   {
     name: "none-test-unfolded",
@@ -357,7 +358,8 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            Storage::NullForNone if nulled && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) => {\n",
     replace: "            Storage::NullForNone if false && nulled => {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"],
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_clone_through_rc|weak_cycle_set_after).rs$"],
+    snapshots: true,
   },
   {
     name: "null-for-none-uncoalesced",

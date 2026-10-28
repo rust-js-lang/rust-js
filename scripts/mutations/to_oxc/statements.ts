@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "        Op::BitAnd => AssignmentOperator::BitwiseAnd,\n",
     replace: "        Op::BitAnd => AssignmentOperator::BitwiseOR,\n",
-    tests: ["test/lowering-bits.test.ts", "-t", "assignment is its compound"],
+    tests: ["test/corpus.test.ts", "-t", "^(bitwise_operators|lane_bits).rs$"],
   },
   {
     name: "step-down-incremented",
