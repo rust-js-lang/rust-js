@@ -65,8 +65,8 @@ export const mutations: Mutation[] = [
     name: "flatten-back-stepped-unseen",
     breaks: "a flatten held in a variable, then stepped from its back, is made as it is, not knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "    if flattened_source(tcx, adapter).is_some() || given",
-    replace: "    if false || given",
+    find: "    if flattened_source(tcx, adapter).is_some() {",
+    replace: "    if false {",
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
   },
   {
@@ -75,14 +75,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                let given = hidden != asked;",
     replace: "                let given = false;",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
-  },
-  {
-    name: "given-chain-not-back-stepped",
-    breaks: "a chain given behind an impl is made knowing its back",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: " || given && chained_sources(tcx, adapter).is_some() {",
-    replace: " {",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
   {
