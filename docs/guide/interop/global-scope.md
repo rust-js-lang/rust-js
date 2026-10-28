@@ -86,6 +86,14 @@ The crates declare the globals every host has: `webapi::window`,
 value, whose functions are the `webapi::console` module's,
 `console::log((..))` ([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)).
 
+A global `static` reads the same each time, as Rust reads an immutable
+`static`, so inside an `if` that tested it, a test of it again is decided:
+`if DEV { if DEV && task.is_some() { .. } }` is `if (DEV) { if (task !=
+null) { .. } }`. A port of React's `if (__DEV__) { .. if (__DEV__ &&
+debugTask) { .. } }` reads `if (debugTask != null)` there, an accepted
+difference from upstream that runs the same
+([ADR 0262](../../decisions/0262-when-rust-and-js-disagree.md), pt6).
+
 ## Global functions
 
 A global function is a binding, as any JS function is: an ordinary function

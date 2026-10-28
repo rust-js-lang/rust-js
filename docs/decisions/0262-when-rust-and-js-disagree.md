@@ -104,6 +104,14 @@ react.dev's TopNav passes the same closure instead.
   truth, `!selection.extend`: only an `extend` that's truthy and no
   function tells them apart. Listed in the guide's differences
   (`semantics.md`, 29).
+- **A global `static` tested again inside the `if` that tested it is
+  decided there**, the first case's, which the user accepted (2026-10-28,
+  gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`
+  is `if (debugTask != null)` inside, tidy's decided tests (ADR 0564): an
+  immutable extern `static` reads the same each time, so `__DEV__ && x`
+  has `x`'s truth there and the `if` takes the same branch; nothing tells
+  them apart. Said in the guide's global values
+  (`interop/global-scope.md`).
 
 ## Amendment: the stack's depth
 
