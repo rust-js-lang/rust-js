@@ -1,6 +1,6 @@
 # 0037. `thread_local!` is a variable of its module
 
-Status: Accepted. Amended, below; last: a library's flag, and another module's, read as the module loads.
+Status: Accepted. Amended, below; last: a `pub` thread-local made where it's first used is refused.
 
 Case: A, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -433,3 +433,51 @@ again where tidy applies an arrow called where it's made (`applied
 arrows`). The first decided nothing: without it the corpus, the snapshots,
 the ports, JSX and the module tests wrote the same JS, and its mutation,
 `lazy-local-path-unapplied`, survived. It went with its mutation.
+
+## Amendment: a `pub` thread-local made where it's first used is refused
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): D, refused, where a JS
+module importing it would have read another value.
+
+React DOM's `DOMEventNames`, ported, writes upstream's `export const
+ANIMATION_END = getVendorPrefixedEventName('animationend')` as
+
+```rust
+thread_local! {
+    pub static ANIMATION_END: String = get_vendor_prefixed_event_name("animationend");
+}
+```
+
+whose initializer reads and writes `getVendorPrefixedEventName`'s
+thread-locals, so it's made where it's first used, as Rust makes it:
+`export const ANIMATION_END = $local(() => getVendorPrefixedEventName("animationend"))`.
+The crate's own modules read it by its call, `ANIMATION_END()`. Its
+declaration said `export const ANIMATION_END: string`, and
+`SimpleEventPlugin.js`, upstream's JS, which imports it, read the function
+`$local` makes in a `switch` of strings: a wrong answer, without an error.
+
+**A `pub` thread-local made where it's first used is refused** ("a `pub`
+thread-local made where it's first used .. so JS's importers would read
+the function that makes it, not its value"): JS's `export const` is made
+as its module loads, and one made where it's first used can't be that
+value. Write it `pub(crate)`, which the crate's modules read where they
+use it, as before, and a `pub fn` that reads it for JS. One made as its
+module loads, of an initializer that only makes a value, is exported as it
+was.
+
+Whether to make such a thread-local as its module loads instead, after
+the modules it imports, as upstream's JS does, is a difference from Rust
+where its initializer's effects are seen, which only the user decides
+(`decisions-pending.md`, rd51).
+
+### What holds it
+
+- `test/diagnostics.test.ts`, "a pub thread-local made where it's first
+  used"; `docs/guide/limitations.md`'s example.
+- Corpus `thread_local_exported_made`, against native Rust: a `pub`
+  thread-local made as its module loads, and a `pub(crate)` one made where
+  it's first used, read by another module, and given JS by a `pub fn`.
+  `thread_local_made_where_used`'s `START`, which no other module reads, is
+  no longer `pub`.
+- Mutations `exported-lazy-local-unrefused` and `lazy-local-refused-unexported`
+  (`analysis.rs`).

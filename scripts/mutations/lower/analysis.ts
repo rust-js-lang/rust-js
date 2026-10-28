@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "exported-lazy-local-unrefused",
+    breaks: "a `pub` thread-local made where it's first used is exported as the function that makes it, which JS's importers read for its value (ADR 0037, amended)",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&key| tcx.visibility(key).is_public())\n",
+    replace: "        .filter(|&key| tcx.visibility(key).is_public() && false)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local made where it's first used"],
+  },
+  {
+    name: "lazy-local-refused-unexported",
+    breaks: "a thread-local made where it's first used that no JS module imports, private or `pub(crate)`, is refused as if it were `pub` (ADR 0037, amended)",
+    file: "src/lower/analysis.rs",
+    find: "        .filter(|&key| tcx.visibility(key).is_public())\n",
+    replace: "        .filter(|&key| tcx.visibility(key).is_public() || true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_exported_made.rs$"],
+  },
+  {
     name: "untagged-counted-rc-unrefused",
     breaks: "an untagged enum's variant of an `Rc` the crate counts, `{ value, strong, weak }`, is tested `Array.isArray`, which it never is (ADR 0214, amended)",
     file: "src/lower/analysis.rs",

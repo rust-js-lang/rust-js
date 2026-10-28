@@ -79,7 +79,7 @@ mod start {
     thread_local! {
         // Its initializer reads `LIMIT` by its name, as written: it runs once
         // both modules have loaded.
-        pub static START: u32 = limit_plus_one() + LIMIT;
+        static START: u32 = limit_plus_one() + LIMIT;
     }
 
     pub fn read() -> u32 {

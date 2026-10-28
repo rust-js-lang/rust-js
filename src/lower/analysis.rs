@@ -1015,6 +1015,23 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             (foreign.item(key)).is_none_or(|item| item.calling.has(crate::library::ItemFact::Lazy))
         }),
     );
+    // A `pub` one made where it's first used is the function that makes it,
+    // which JS's importers would read for its value, as its declaration
+    // says it is: refused (ADR 0037, amended).
+    let mut lazy_exported: Vec<LocalDefId> = (lazy_locals.iter().copied())
+        .filter(|&key| tcx.visibility(key).is_public())
+        .collect();
+    lazy_exported.sort_by_key(|&key| tcx.def_span(key));
+    for key in lazy_exported {
+        super::refusal::refuse(
+            tcx,
+            tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key)),
+            super::refusal::Refused::Because(
+                "a `pub` thread-local made where it's first used",
+                "its initializer runs the crate's code, or may panic, which Rust runs there, so JS's importers would read the function that makes it, not its value: keep it `pub(crate)`, which the crate's modules read where they use it, and export a `pub fn` that reads it",
+            ),
+        );
+    }
     let quiet_locals = plain_locals::plain_thread_locals(
         tcx,
         all_bodies,

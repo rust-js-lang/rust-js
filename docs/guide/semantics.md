@@ -444,7 +444,11 @@ given, reads no `static` or thread-local, may not panic and calls only
 others that do and std's `const fn`s of no trait and `Box::new`, React's
 `createCursor(null)` and `createChildReconciler(true)`, unless that function's module imports the
 thread-local's back, which may load after it
-([0037](../decisions/0037-thread-locals.md), amended).
+([0037](../decisions/0037-thread-locals.md), amended). A `pub` one made
+where it's first used is refused: a JS module importing it would read the
+function that makes it, not its value. Keep it `pub(crate)`, which the
+crate's modules read where they use it, and export a `pub fn` that reads
+it.
 
 Differences:
 
