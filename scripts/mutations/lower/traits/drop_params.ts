@@ -38,11 +38,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "item-drops-of-dictionary-traits",
-    breaks: "an associated type of a trait whose dictionary has its drop takes a drop of its own too",
+    breaks: "an associated type of a trait whose dictionary has its drop takes a drop of its own too, `dropZOffset?.(offset)` where its dictionary's `ZZone.$dropOffset?.(offset)` drops it",
     file: "src/lower/traits/drop_params.rs",
     find: "        if !slotted || has_dictionary_of(tcx, foreign, bound.def_id(), self_ty) {\n",
     replace: "        if !slotted {\n",
-    tests: ["test/crates.test.ts", "-t", "consumer's iterator"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_type_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "nested-item-unslotted",

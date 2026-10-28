@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "        let first = body.iter().take_while(|s| s.only_makes_values()).count();\n",
     replace: "        let first = if body.iter().all(Stmt::only_makes_values) { body.len() } else { 0 };\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(cell_drops|take_destructors).rs$"],
     snapshots: true,
   },
   {

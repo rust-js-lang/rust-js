@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/bounds.rs",
     "find": "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));\n",
     "replace": "js::ExprKind::Var(v) if at_once);\n",
-    "tests": ["test/lowering-numbers.test.ts", "-t", "checked element set is one statement"]
+    "tests": ["test/lowering-collections.test.ts", "-t", "a table.s rows are as long as its row count"]
   },
   {
     name: "index-mut-known-checked",

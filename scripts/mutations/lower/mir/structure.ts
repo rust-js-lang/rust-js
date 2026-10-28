@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                stmt.span = written;\n",
     replace: "                let _ = (stmt, written);\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "returning nothing returns where"],
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a unit function.s early returns joined to its end"],
   },
   {
     name: "mir-bool-switch-negated-first",
