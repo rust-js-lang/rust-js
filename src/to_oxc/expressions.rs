@@ -844,6 +844,13 @@ fn escape(c: char, raw: &mut String) {
 }
 
 /// Replace the temporary concatenated source with the actual source files.
+///
+/// The map names nothing. oxc names an identifier by the Rust its span
+/// covers: a parameter's declaration, `callback: impl FnOnce(A) -> T`, a
+/// closure that became the function it calls, or `begin_work` for
+/// `beginWork`; and a stack trace through the map (source-map-support's,
+/// Node's) shows that name as the frame's. A frame is named as the JS names
+/// it, as a person's JS would be (ADR 0018, amended).
 pub(super) fn restore_sources<'a>(
     map: &'a SourceMap<'a>,
     sources: &'a crate::program::Sources,
@@ -855,7 +862,6 @@ pub(super) fn restore_sources<'a>(
     if let Some(i) = primary {
         ids.insert(i, out.set_source_and_content(&paths[&i], &sources.files[i].text));
     }
-    let names: Vec<_> = map.get_names().map(|name| out.add_name(name)).collect();
     for token in map.get_tokens() {
         if token.get_source_id().is_none() {
             out.add_token(token.get_dst_line(), token.get_dst_col(), 0, 0, None, None);
@@ -873,7 +879,7 @@ pub(super) fn restore_sources<'a>(
             token.get_src_line() - sources.files[i].line,
             token.get_src_col(),
             Some(id),
-            token.get_name_id().map(|id| names[id as usize]),
+            None,
         );
     }
     out.into_sourcemap()

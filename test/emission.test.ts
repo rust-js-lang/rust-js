@@ -81,6 +81,37 @@ test("source map points from fib.js back into fib.rs", async () => {
   }
 });
 
+// A stack trace through the map (Jest's source-map-support, Node's
+// --enable-source-maps) names a frame by the map's name where the frame is
+// called from, so a name would be what the frame shows: `callback: impl
+// FnOnce(A, B) -> T` for `callback(a, b)`, a closure's text for the function
+// it became, `begin_work` for `beginWork`. The frame shows the JS's own name,
+// as a person's JS would: the map has none (ADR 0018, amended).
+test("a source map names nothing, so a frame through it is named as the JS is", async () => {
+  const { fixture, compiler } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  const dir = fixture("source-map-names");
+  writeFileSync(join(dir, "lib.rs"), `pub fn run_with<A, B, T>(callback: impl FnOnce(A, B) -> T, a: A, b: B) -> T {
+    callback(a, b)
+}
+pub fn begin_work(current: Option<u32>, lanes: u32) -> u32 {
+    current.unwrap_or(lanes)
+}
+pub fn perform(current: Option<u32>, lanes: u32) -> u32 {
+    run_with(|current: Option<u32>, lanes: u32| begin_work(current, lanes), current, lanes)
+}
+pub fn perform_after(current: Option<u32>, lanes: u32) -> u32 {
+    let shift = lanes;
+    run_with(|current: Option<u32>, lanes: u32| begin_work(current, lanes) + shift, current, lanes)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return runWith(beginWork, current, lanes);");
+  const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
+  expect(map.names).toEqual([]);
+  expect((await import(join(dir, "lib.js"))).performAfter(null, 2)).toBe(4);
+});
 
 // JSX's output extension must participate in collision checks before writing.
 test("root and child output collisions leave no partial artifacts", async () => {

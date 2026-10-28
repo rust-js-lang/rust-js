@@ -97,12 +97,44 @@ THIR ──lower.rs──► js.rs AST ──to_oxc.rs──► oxc AST ──ox
   guards real behavior.
 - **Build cost**: oxc adds dependencies. A clean build is slower. Incremental
   builds are unaffected.
-- **Known gap**: renamed variables (`x` → `x$1`, see [0010](0010-naming-and-scopes.md))
-  aren't reliably recorded under their Rust names. oxc skips a mapping at the
-  same source position as the previous one, and an identifier often starts
-  where its enclosing expression does.
+- The map names nothing (amendment below).
 - **Known gap**: declared names (`const x = ..`, parameters) have no span of
   their own. The whole statement is mapped instead, which is enough for
   line-level stepping.
 - Minified output is now one option away (`CodegenOptions::minify`), but isn't
   exposed yet.
+
+## Amendment: the map names nothing
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): what the program does
+is the same; this is what tools show of it.
+
+**A source map rust-js writes has no `names`.** oxc names each identifier
+it prints by the source text its span covers, where that differs from the
+identifier. rust-js's spans are the Rust a JS node came from, rarely an
+identifier alone: a parameter's is its declaration, `callback: impl
+FnOnce(A, B) -> T`; a closure that became the function it calls,
+`runWith(beginWork, ..)`, has the closure's text; `beginWork`'s is
+`begin_work`. A stack trace through the map shows such a name as the
+frame's: source-map-support, Jest's, names a frame by the name at the
+position it's called from, so a frame through React's port showed eleven
+lines of Rust, `Some(Rc::clone(unit_of_work)), |current: ..| { .. }, ..)`,
+and React's own tests of an error's stack failed (the port's gap wl5).
+
+A name is what a tool shows for the JS identifier, so it would be right
+only as the JS's own name, which oxc leaves out, or as nothing. Without
+one, a frame is named as V8 names the JS, `beginWork`, as a person's JS
+would be, and the map still takes each position to its Rust.
+`restore_sources` in `src/to_oxc/expressions.rs`, where oxc's map becomes
+rust-js's, carries no name; formatting's remaps copy what it carries.
+
+Alternatives: names kept where the span is a Rust identifier alone,
+`begin_work`, which a debugger could show in place of `beginWork`; but a
+stack trace would show it too, a name the JS doesn't have, and spans that
+are an identifier alone aren't always that identifier's (a temporary held
+for a value). Names kept where they're valid JS identifiers: the same, and
+a parameter `a` whose span is `a: A` would still lose its name.
+
+`test/emission.test.ts`'s "a source map names nothing" compiles a renamed
+function, a closure that becomes the function it calls and parameters with
+types, and reads the map; mutation `source-map-names-kept`.

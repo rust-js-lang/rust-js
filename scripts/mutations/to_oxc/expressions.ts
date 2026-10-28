@@ -314,4 +314,49 @@ export const mutations: Mutation[] = [
     replace: "    raw.push('\"');\n    for c in text.chars() {\n        match c {\n            '\"' => raw.push_str(\"\\\\\\\"\"),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
   },
+  {
+    name: "source-map-names-kept",
+    breaks: "the map keeps oxc's names, the Rust each identifier's span covers, which a stack trace through it shows as a frame's name (ADR 0018, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: `    for token in map.get_tokens() {
+        if token.get_source_id().is_none() {
+            out.add_token(token.get_dst_line(), token.get_dst_col(), 0, 0, None, None);
+            continue;
+        }
+        let Some(i) = sources.file_at(token.get_src_line()) else {
+            continue;
+        };
+        let id = *ids
+            .entry(i)
+            .or_insert_with(|| out.set_source_and_content(&paths[&i], &sources.files[i].text));
+        out.add_token(
+            token.get_dst_line(),
+            token.get_dst_col(),
+            token.get_src_line() - sources.files[i].line,
+            token.get_src_col(),
+            Some(id),
+            None,
+        );`,
+    replace: `    let names: Vec<_> = map.get_names().map(|name| out.add_name(name)).collect();
+    for token in map.get_tokens() {
+        if token.get_source_id().is_none() {
+            out.add_token(token.get_dst_line(), token.get_dst_col(), 0, 0, None, None);
+            continue;
+        }
+        let Some(i) = sources.file_at(token.get_src_line()) else {
+            continue;
+        };
+        let id = *ids
+            .entry(i)
+            .or_insert_with(|| out.set_source_and_content(&paths[&i], &sources.files[i].text));
+        out.add_token(
+            token.get_dst_line(),
+            token.get_dst_col(),
+            token.get_src_line() - sources.files[i].line,
+            token.get_src_col(),
+            Some(id),
+            token.get_name_id().map(|id| names[id as usize]),
+        );`,
+    tests: ["test/emission.test.ts", "-t", "a source map names nothing"],
+  },
 ];
