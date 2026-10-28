@@ -51,3 +51,30 @@ pub fn pending(payload: Option<&'static Unknown>) -> bool {
   expect([lib.resolved({ _status: 1 } as never, count as never), lib.resolved({ _status: 0 } as never, count as never), count.value]).toEqual([true, false, 1]);
   expect(lib.pending({ _status: 0 } as never)).toBe(true);
 });
+
+// React's isSameOriginFrame, `try { // Reading href can throw. return
+// typeof iframe.contentWindow.location.href === 'string'; } catch (err) {
+// return false; }`: its port's comment, first in the `catch_unwind`
+// closure of one value, `unwrap_or(false)`'s, was before the `try` (ADR
+// 0444, amended).
+test("a comment before a catch_unwind closure's value is in the try", async () => {
+  const { js, lib } = await compiled("comment-in-a-closures-value", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+use js::{Kind, Unknown};
+
+pub fn is_text_href(frame: Option<&'static Unknown>) -> bool {
+    catch_unwind(AssertUnwindSafe(|| {
+        // Reading a cross-origin frame's href throws.
+        matches!(js::classify(js::get(js::get(frame, "location"), "href")), Kind::String(_))
+    }))
+    .unwrap_or(false)
+}
+`);
+  expect(js).toContain(`  try {
+    // Reading a cross-origin frame's href throws.
+    return typeof frame.location.href === "string";
+  } catch {
+    return false;
+  }`);
+  expect([lib.isTextHref({ location: { href: "a" } } as never), lib.isTextHref(undefined as never)]).toEqual([true, false]);
+});

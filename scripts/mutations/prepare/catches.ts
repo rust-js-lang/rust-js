@@ -408,4 +408,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(StmtKind::If(_, then, Some(otherwise))) if false => {\n            for branch in [then, otherwise] {",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
   },
+  {
+    name: "kept-ok-at-the-match",
+    breaks: "a `catch_unwind` closure of one value, `unwrap_or(false)`'s, its comment first, has it before the `try`, isSameOriginFrame's `// Reading href can throw.` (ADR 0444, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        return Some((vec![caught(vec![held.at(of_call)])], taken));\n",
+    replace: "        return Some((vec![caught(vec![held.at(span)])], taken));\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "catch_unwind closure's value"],
+  },
 ];

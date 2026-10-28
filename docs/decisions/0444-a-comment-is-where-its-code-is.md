@@ -494,3 +494,17 @@ visibility first, is passed over as a `let` with no JS is**
 `test/lowering-comments-items.test.ts`, "a comment before an item with no
 JS is before the next item that has".
 
+## Amendment: a comment before a `catch_unwind` closure's value is in the `try` (2026-10-28)
+
+React's isSameOriginFrame, `try { // Reading href can throw. return typeof
+iframe.contentWindow.location.href === 'string'; } catch (err) { return
+false; }`: its port's `catch_unwind(AssertUnwindSafe(|| { // ..
+\n matches!(..) })).unwrap_or(false)` had the comment before the `try`
+(React port gap rd28). Rule 2 above placed what's made of the caught call
+where the call is, a `const`'s and an assignment's; the `Ok`'s value
+returned as it is, `return f(x)`, kept the `match`'s place. It's the
+call's now too (`try_catch`, `prepare/catches.rs`).
+`test/lowering-comments-inside.test.ts`, "a comment before a
+catch_unwind closure's value is in the try"; mutation
+`kept-ok-at-the-match`.
+

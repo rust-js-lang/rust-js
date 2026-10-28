@@ -429,7 +429,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         }
     };
     let held = match ok {
-        [stmt] => kept(stmt).map(|kind| kind.at(stmt.span)),
+        [stmt] => kept(stmt),
         _ => None,
     };
     // Nothing else reads the `Result`: the `Ok` arm reads its value, where
@@ -490,8 +490,9 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     };
     let alone = StmtKind::Expr(call.clone()).at(of_call);
     let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
+    // The `Ok`'s value kept is the call's too, `return f(x)`.
     if let Some(held) = held {
-        return Some((vec![caught(vec![held])], taken));
+        return Some((vec![caught(vec![held.at(of_call)])], taken));
     }
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {
