@@ -296,7 +296,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](0274-next-data-fetching.md)
 - [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0861: a function's own parameter)*
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
-- [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md) *(amended: another's variable only where nothing runs before it's read; past a `try`'s start and a binding's call that runs nothing)*
+- [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md) *(amended: another's variable only where nothing runs before it's read; past a `try`'s start and a binding's call that runs nothing; amended: a module's variable read into a local, set and stored again is the variable)*
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
 - [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md) *(amended: a function of rest arguments keeps its arrow)*
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md) *(amended: a field that holds a cell keeps its key, `destroy: undefined`)*
@@ -781,8 +781,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`)*
 - [0995 A std body takes a JS iterator's dictionary where it's given none](0995-a-std-body-takes-a-js-iterators-dictionary-by-default.md)
 - [0996 A `take()` then tested is the place tested, taken where it's `Some`](0996-a-take-then-tested-is-the-place-tested.md) *(the user's decision)*
-- [0997 A `copied()` std compiles held is cloned by its struct](0997-a-compiled-copied-is-cloned-by-its-struct.md)
-- [0998 `eq()` of `TrustedLen` iterators rust-js can't count is refused where it shows](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md)
 - [0998 `eq()` of `TrustedLen` iterators rust-js can't count is refused where it shows](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md)
 - [0999 A `copied()` std compiles held is cloned by its struct](0999-a-compiled-copied-is-cloned-by-its-struct.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)

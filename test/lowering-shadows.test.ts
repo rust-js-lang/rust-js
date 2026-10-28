@@ -711,3 +711,78 @@ pub fn set_then_matched() -> u32 {
     12, 135, 6, true, 2,
   ]);
 });
+
+// ADR 0277, amended: a module's variable Rust reads into a local, sets and
+// stores again, FallbackCompositionState's getData, `let text =
+// TEXT.with_borrow(Clone::clone); .. TEXT.set(Some(text.clone()))`, is the
+// variable itself, upstream's `if (fallbackText) { return fallbackText; }
+// fallbackText = ..; return fallbackText;`, where each read is before
+// anything that may set it since the read or the last store. One read past
+// a call of the crate's that sets it keeps its local, as Rust reads what
+// it copied.
+test("a module's variable read into a local and stored again is the variable", async () => {
+  const dir = fixture("written-back");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+
+thread_local! {
+    static FALLBACK_TEXT: RefCell<Option<String>> = const { RefCell::new(None) };
+    static SEEN: Cell<usize> = const { Cell::new(0) };
+}
+
+pub fn get_data(end_value: &str) -> String {
+    if let Some(fallback_text) = FALLBACK_TEXT
+        .with_borrow(Clone::clone)
+        .filter(|text| !text.is_empty())
+    {
+        return fallback_text;
+    }
+    let fallback_text = end_value[1..].to_string();
+    FALLBACK_TEXT.set(Some(fallback_text.clone()));
+    fallback_text
+}
+
+fn reset() {
+    FALLBACK_TEXT.set(None);
+}
+
+pub fn kept(end_value: &str) -> String {
+    if let Some(fallback_text) = FALLBACK_TEXT
+        .with_borrow(Clone::clone)
+        .filter(|text| !text.is_empty())
+    {
+        reset();
+        return fallback_text;
+    }
+    let fallback_text = end_value.to_string();
+    FALLBACK_TEXT.set(Some(fallback_text.clone()));
+    fallback_text
+}
+
+pub fn peek(end_value: &str) -> String {
+    if let Some(fallback_text) = FALLBACK_TEXT
+        .with_borrow(Clone::clone)
+        .filter(|text| !text.is_empty())
+    {
+        return fallback_text;
+    }
+    let fallback_text = end_value.to_string();
+    SEEN.set(SEEN.get() + 1);
+    fallback_text
+}
+
+pub fn current() -> Option<String> {
+    FALLBACK_TEXT.with_borrow(Clone::clone)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function getData(endValue) {\n  if (fallbackText) {\n    return fallbackText;\n  }\n  fallbackText = $strSlice(endValue, 1);\n  return fallbackText;\n}");
+  expect(js).toContain("  let fallbackText$1 = fallbackText;\n  if (fallbackText$1) {\n    reset();\n    return fallbackText$1;\n  }\n");
+  // One set and never stored keeps its local, the variable unchanged.
+  expect(js).toContain("export function peek(endValue) {\n  let fallbackText$1 = fallbackText;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.peek("p")).toBe("p");
+  expect(lib.current()).toBe(undefined);
+  expect([lib.getData("xab"), lib.current(), lib.getData("xcd"), lib.kept("q"), lib.current(), lib.kept("r"), lib.current()])
+    .toEqual(["ab", "ab", "ab", "ab", undefined, "r", "r"]);
+});

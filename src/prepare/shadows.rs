@@ -11,6 +11,7 @@ use crate::js::{self, Expr, ExprKind, Function, Pattern, Stmt, StmtKind};
 pub(super) fn function(function: &mut Function) {
     let own = own_names(&function.params, &mut function.body);
     shadows(&mut function.body, &own);
+    written_back(&mut function.body, &own);
     // A closure's own parameter, shadowed in it, or a variable it declares,
     // `for (const arg of args)`'s: nothing outside it sets one (ADR 0853).
     js::each_expr_mut(&mut function.body, &mut |e| {
@@ -363,4 +364,114 @@ impl Walk {
             }
         }
     }
+}
+
+/// Each `let n$1 = n;` of `body` written back, a module's variable Rust
+/// reads into a local, sets and stores again, `let text = TEXT.with_borrow(
+/// Clone::clone); .. text = slice(..); TEXT.set(Some(text.clone()));`:
+/// `n` itself where `n$1` is `n` wherever it's read, `n = slice(..);`, as
+/// upstream's FallbackCompositionState writes `fallbackText` (ADR 0277,
+/// amended). Each write of `n$1` is right before its `n = n$1;`, nothing
+/// else sets `n` nor `n$1` in a closure, and each read of `n$1` is before
+/// anything that may run code since the `let` or the last write back, of
+/// `n` not the function's own.
+fn written_back(body: &mut Vec<Stmt>, own: &HashSet<String>) {
+    while let Some((alias, of)) = write_back(body, own) {
+        js::each_block_mut(body, &mut |stmts| {
+            stmts.retain(|s| match &s.kind {
+                StmtKind::Let(name, Some(value)) => {
+                    !(*name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+                }
+                StmtKind::Assign(target, value) => {
+                    !(matches!(&target.kind, ExprKind::Var(t) if *t == of)
+                        && matches!(&value.kind, ExprKind::Var(v) if *v == alias))
+                }
+                _ => true,
+            });
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+                e.kind = ExprKind::Var(of.clone());
+            }
+        });
+    }
+}
+
+/// A `let n$1 = n;` that `written_back` makes `n`, and `n`.
+fn write_back(body: &[Stmt], own: &HashSet<String>) -> Option<(String, String)> {
+    let mut lets = Vec::new();
+    js::each_list(body, &mut |list| {
+        for stmt in list {
+            if let StmtKind::Let(alias, Some(value)) = &stmt.kind
+                && let ExprKind::Var(of) = &value.kind
+                && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
+            {
+                lets.push((alias.clone(), of.clone()));
+            }
+        }
+    });
+    let in_closures = js::Writes::of(body).replaced_in_closures;
+    lets.into_iter().find(|(alias, of)| {
+        let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v == name);
+        // Each write of either: of `n$1` right before `n = n$1;`, of `n`
+        // only that.
+        let mut paired = true;
+        let mut written = false;
+        js::each_list(body, &mut |list| {
+            for (i, stmt) in list.iter().enumerate() {
+                match &stmt.kind {
+                    StmtKind::Assign(target, _) if is(target, alias) => {
+                        written = true;
+                        paired &= list.get(i + 1).is_some_and(
+                            |next| matches!(&next.kind, StmtKind::Assign(t, v) if is(t, of) && is(v, alias)),
+                        );
+                    }
+                    StmtKind::Assign(target, value) if is(target, of) => paired &= is(value, alias),
+                    StmtKind::Compound(_, target, _) if is(target, alias) || is(target, of) => paired = false,
+                    StmtKind::For { name, .. } if name == alias || name == of => paired = false,
+                    _ => {}
+                }
+            }
+        });
+        written
+            && paired
+            && !in_closures.contains(alias)
+            && !in_closures.contains(of)
+            && !read_later(body, alias)
+            && (own.contains(of) || synced_reads(body, alias, of, &mut false))
+    })
+}
+
+/// `read_before_code` of a `let n$1 = n;` written back: each read of
+/// `alias` before anything that may run code since the `let`, or since the
+/// last `of = alias;`, which makes them one again.
+fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
+    for stmt in stmts {
+        let ok = match &stmt.kind {
+            StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Var(t) if t == of)
+                    && matches!(&value.kind, ExprKind::Var(v) if v == alias) =>
+            {
+                *ran = false;
+                true
+            }
+            StmtKind::Let(name, Some(_)) if name == alias => true,
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t == alias) => {
+                read_first(value, alias, ran)
+            }
+            StmtKind::If(test, a, b) => {
+                let first = read_first(test, alias, ran);
+                let mut other = *ran;
+                let ok =
+                    synced_reads(a, alias, of, ran) && synced_reads(b.as_deref().unwrap_or(&[]), alias, of, &mut other);
+                *ran |= other;
+                first && ok
+            }
+            _ => read_before_code(std::slice::from_ref(stmt), alias, ran),
+        };
+        if !ok {
+            return false;
+        }
+    }
+    true
 }

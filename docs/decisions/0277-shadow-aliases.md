@@ -199,3 +199,42 @@ the copy a `const` of the loop's block.
   `shadow-read-later-in-place`, `shadow-read-after-set-in-place`,
   `shadow-stored-after-set-in-place`, `shadow-tested-after-set-in-place`
   and `shadow-switched-after-set-in-place`.
+
+## Amendment: a module's variable read, set and stored again is the variable (2026-10-28)
+
+React port gap rd35. react-dom-bindings' FallbackCompositionState caches
+its text in a module variable, `if (fallbackText) { return fallbackText;
+} .. fallbackText = endValue.slice(..); return fallbackText;`. Its port
+reads the thread-local into a local, sets it and stores it back:
+
+```rust
+if let Some(fallback_text) = FALLBACK_TEXT.with_borrow(Clone::clone).filter(|text| !text.is_empty()) {
+    return fallback_text;
+}
+let fallback_text = js::string::slice(end_value, 1.0, None);
+FALLBACK_TEXT.set(Some(fallback_text.clone()));
+fallback_text
+```
+
+which printed a second name of it, `let fallbackText$1 = fallbackText; ..
+fallbackText$1 = ..; fallbackText = fallbackText$1; return
+fallbackText$1;`: a `let`, set again, which this decision's `const`s
+aren't.
+
+**A `let n$1 = n;` whose every write is right before its store back, `n
+= n$1;`, is `n`** (`written_back`, in `prepare/shadows.rs`): `if
+(fallbackText) { return fallbackText; } fallbackText = endValue.slice(1);
+return fallbackText;`. Of `n` not the function's own, each read of `n$1`
+is before anything that may run code since the `let` or the last store,
+each of which makes the two one again (`synced_reads`); nothing else
+sets `n`, and no closure sets either nor reads `n$1`. One read past a
+call that may set `n`, or set and never stored, keeps its local.
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each read reads
+  the same value, and each store the same: the two are equal wherever the
+  local is read.
+- Held by `test/lowering-shadows.test.ts`, "a module's variable read into
+  a local and stored again is the variable", run, with one read past a
+  call that sets it and one never stored; mutations `written-back-off`,
+  `written-back-past-code`, `written-back-unsynced` and
+  `written-back-unpaired` (`prepare/shadows.ts`).

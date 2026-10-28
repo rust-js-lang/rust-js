@@ -776,6 +776,11 @@ export function last() {
   `None` the call is given for a type parameter's value is `null`,
   React's `createCursor(null)`; what it's given otherwise, and what other
   calls on the way are, as it is.
+- **One read into a `let`, set and stored back is the variable**: `if let
+  Some(text) = TEXT.with_borrow(Clone::clone) { return text; } let text =
+  ..; TEXT.set(Some(text.clone())); text` is `if (text) { return text; }
+  text = ..; return text;`, where nothing that may set it runs before a
+  read ([ADR 0277](../../decisions/0277-shadow-aliases.md), amended).
 - **A `with_borrow` closure that may borrow the cell again keeps the cell**,
   borrowed while the closure runs, so a second `borrow_mut()` panics as
   std's does. What a closure, or a function given to `with_borrow`, may
