@@ -590,3 +590,31 @@ mutations `written-thens-not-to-the-end` (`tidy/stages.ts`) and
 `docs/readability.txt`'s share of `return;` grows, 9.8 to 9.9 in 10,000
 lines, by that `if`'s: the `return;` the program wrote in it, which MIR
 joined to the function's end.
+
+## Amendment: a `?`'s way out is a guard first, as a `let … else`'s (2026-10-28, q1)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements
+run on each path; the guard's test negated holds where the other didn't.
+
+React's findHostInstance writes `const hostFiber =
+findCurrentHostFiber(fiber); if (hostFiber === null) { return null; }
+return getPublicInstance(hostFiber.stateNode);`. Its port's `let
+Some(host_fiber) = host_fiber else { return None; };` printed that, but
+clippy's `question_mark` makes it `let host_fiber = host_fiber?;`, which
+printed `if (hostFiber != null) { return getPublicInstance(..); } return
+null;`: MIR joins the `?`'s `return` with the function's, after the
+`Rc`'s drop, and nothing said the `?` is a guard.
+
+**A `?` is a guard's exit where it's written, as a `let … else`'s
+`else` is** (`Written::let_elses`, of each `?`'s desugared `match`):
+`let_else_first` makes `if (c) { s } e` the guard first, `if (!c) { e }
+s`, where `e`, its `return`, is written at the `?`; a `return`'s place is
+its value's, as each way of a `?` returns at the `?` itself. The
+guide's `title_of` reads `if (value == null) { return; } return ..;` so
+too, and a `let … else { return match .. }` whose value is written in its
+`else` is its guard first, `if (tag !== HostText) { .. }`.
+
+Held by `test/lowering-written-elses.test.ts`, "a ? of an Option<Rc> is
+its guard first", run in JS; mutations `question-exit-not-a-guard`
+(`hints.ts`) and `let-else-exit-at-its-statement`
+(`tidy/jumps/tried.ts`).

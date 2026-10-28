@@ -114,3 +114,42 @@ pub fn update_host_root(dehydrated: bool, wip: &Fiber, next: u32, prev: u32) -> 
     lib.updateHostRoot(dehydrated as never, { flags, child: 0 } as never, next as never, prev as never);
   expect([run(true, 4, 1, 1), run(true, 0, 1, 2), run(true, 0, 1, 1), run(false, 0, 1, 1), run(false, 0, 1, 2)]).toEqual([101, 1, 11, 7, 1]);
 });
+
+// React's findHostInstance: `const hostFiber = findCurrentHostFiber(fiber);
+// if (hostFiber === null) { return null; } return
+// getPublicInstance(hostFiber.stateNode);`. Its port's `let host_fiber =
+// host_fiber?;`, clippy's question_mark, of an `Option<Rc<T>>`, whose drop
+// MIR joins the two ways after, printed the guard turned, `if (hostFiber !=
+// null) { return ..; } return null;`: a `?`'s way out is a guard's, as a
+// `let … else`'s `else` is, first (q1, ADR 0879, amended).
+test("a ? of an Option<Rc> is its guard first", async () => {
+  const { js, lib } = await compiled(
+    "question-guard-first",
+    `use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub state: Cell<u32>,
+}
+
+fn current(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
+    (fiber.state.get() > 0).then(|| Rc::clone(fiber))
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn public_instance(state: u32) -> Option<u32> {
+    (state > 1).then_some(state * 2)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn instance(fiber: &Rc<Fiber>) -> Option<u32> {
+    let host_fiber = current(fiber);
+    let host_fiber = host_fiber?;
+    public_instance(host_fiber.state.get())
+}
+`,
+  );
+  expect(js).toContain("  const hostFiber = current(fiber);\n  if (hostFiber == null) {\n    return null;\n  }\n  return");
+  expect([lib.instance({ state: 0 } as never), lib.instance({ state: 4 } as never)]).toEqual([null, 8]);
+  expect(lib.instance({ state: 1 } as never)).toBe(null);
+});

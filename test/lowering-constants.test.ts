@@ -437,7 +437,8 @@ pub fn both(reason: u8, tag: u8) -> bool {
   expect(js).toContain("  if (reason === SuspendedOnInstanceAndReadyToContinue && tag === HostText) {\n");
   expect(js).toContain("  if (tag === HostComponent) {\n    return 2;\n");
   expect(js).toContain("  if (tag === HostComponent) {\n    return 1;\n");
-  expect(js).toContain("  if (tag === HostText) {\n    return 5;\n");
+  expect(js).toContain("  if (tag !== HostText) {\n");
+  expect(js).toContain("    return 4;\n  }\n  return 5;\n");
   // Of the inner tuple's first, not the outer's.
   expect(js).toMatch(/ return reason === SuspendedOnInstanceAndReadyToContinue && .*\] === HostComponent\n {4}\? 1\n/);
   // Of each `matches!`, written alike in core.

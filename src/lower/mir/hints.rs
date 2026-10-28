@@ -27,8 +27,9 @@ pub(super) struct Written {
     /// of a chain, which an `if let`'s binding, its JS `const`, keeps from
     /// being an `else if` (`written_elses`).
     pub else_ifs: Vec<js::Span>,
-    /// Where each `let … else`'s `else` is written: a guard's exit, which
-    /// stays where it's written, not a tail it's alike (`shared_tails`).
+    /// Where each `let … else`'s `else` is written, and each `?`: a guard's
+    /// exit, which stays where it's written, not a tail it's alike
+    /// (`shared_tails`), and comes first (`let_else_first`).
     pub let_elses: Vec<js::Span>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
@@ -374,6 +375,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        // And each `?`, whose way out is a guard's too, `if (x == null) {
+        // return null; }` before what reads its value (q1).
+        let tries = (self.frame.thir.exprs.iter()).filter_map(|e| match e.kind {
+            thir::ExprKind::Match {
+                match_source: rustc_hir::MatchSource::TryDesugar(_),
+                ..
+            } => Some(self.js_span(e.span)),
+            _ => None,
+        });
         let let_elses = (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
@@ -382,6 +392,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } => Some(self.js_span(self.frame.thir[block].span)),
                 _ => None,
             })
+            .chain(tries)
             .collect();
         Written {
             tables,

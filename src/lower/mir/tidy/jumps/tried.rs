@@ -88,14 +88,28 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
 /// guard, `if (!c) { break; }`, `if (!c) { e break; }`, its test marked so
 /// (`Known::Guard`), which no loop's head takes (ADR 0879, amended).
 pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_elses: &[js::Span]) {
-    let written_first =
-        |e: &[Stmt], s: &[Stmt]| matches!((first_written(e), first_written(s)), (Some(e), Some(s)) if e < s);
+    // Where a statement is written: a `return`'s where its value is, as each
+    // way of a `?` returns at the `?` (q1).
+    let place = |s: &Stmt| match &s.kind {
+        StmtKind::Return(Some(v)) if !v.span.is_none() => v.span,
+        _ => s.span,
+    };
+    let first = |list: &[Stmt]| match list.first() {
+        Some(
+            s @ Stmt {
+                kind: StmtKind::Return(_),
+                ..
+            },
+        ) if !place(s).is_none() => Some(place(s).lo),
+        _ => first_written(list),
+    };
+    let written_first = |e: &[Stmt], s: &[Stmt]| matches!((first(e), first(s)), (Some(e), Some(s)) if e < s);
     // The `let … else`'s `else` each of `exit`'s statements is written in,
     // and none of `then`'s; but its last, a jump MIR placed where the loop
     // or the body ends, which each `else` it ends shares.
     let let_else_exit = |exit: &[Stmt], then: &[Stmt]| {
-        let written = |s: &&Stmt| !s.span.is_none();
-        let within = |e: &js::Span, s: &Stmt| e.lo <= s.span.lo && s.span.hi <= e.hi;
+        let written = |s: &&Stmt| !place(s).is_none();
+        let within = |e: &js::Span, s: &Stmt| e.lo <= place(s).lo && place(s).hi <= e.hi;
         let exit = match exit.split_last() {
             Some((last, before))
                 if matches!(

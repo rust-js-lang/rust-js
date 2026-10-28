@@ -396,4 +396,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_code_after.rs$"],
     snapshots: true,
   },
+  {
+    name: "question-exit-not-a-guard",
+    breaks: "React's findHostInstance, `let host_fiber = host_fiber?;` of an `Option<Rc<T>>`, is `if (hostFiber != null) { return ..; } return null;`, the guard turned (q1, ADR 0879, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "            .chain(tries)\n",
+    replace: "",
+    tests: ["test/lowering-written-elses.test.ts", "-t", "guard first"],
+  },
 ];
