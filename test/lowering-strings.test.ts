@@ -652,7 +652,9 @@ pub fn unparsed() -> bool {
 // literal of them, as react.dev's RSC template writes its files: the same
 // properties, in the same order. Not of a `__proto__` key, which a literal
 // makes the object's prototype, nor of a key given twice, nor of a value
-// `undefined`, which an object's field leaves out (ADR 0280).
+// `undefined`, which an object's field leaves out (ADR 0280). A key is any
+// text, a `&str` too, as `HashMap::from` takes one, a comment between
+// entries kept.
 test("a dictionary of entries written out is an object literal", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("dict-literal");
@@ -675,6 +677,17 @@ pub fn missing() -> &'static Dict<Option<String>> {
 pub fn named(name: String, code: &str) -> &'static Dict<String> {
     dict::from_entries(vec![(name, code.to_string())])
 }
+// validAriaProperties, its keys text written out, as HashMap::from takes them.
+pub fn aria() -> &'static Dict<u8> {
+    dict::from_entries(vec![
+        ("aria-current", 0), // state
+        // Widget Attributes
+        ("role", 0),
+    ])
+}
+pub fn borrowed(name: &String) -> &'static Dict<u8> {
+    dict::from_entries(vec![(name, 1)])
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -687,6 +700,9 @@ pub fn named(name: String, code: &str) -> &'static Dict<String> {
   expect(Object.entries(lib.files("c"))).toEqual([["/index.html", "c"], ["main", "m"]]);
   expect(Object.keys(lib.proto("c"))).toEqual(["__proto__"]);
   expect(Object.keys(lib.missing())).toEqual(["a"]);
+  expect(js).toContain('return {\n    "aria-current": 0, // state\n    // Widget Attributes\n    role: 0,\n  };');
+  expect(js).toContain("return Object.fromEntries([[name, 1]]);");
+  expect([lib.aria(), lib.borrowed("x")]).toEqual([{ "aria-current": 0, role: 0 }, { x: 1 }]);
 });
 
 // ADR 0238: a `String` kept for good, `.leak()`, is the string itself, as

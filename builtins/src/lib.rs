@@ -977,10 +977,11 @@ impl<T: ?Sized> IntoUnknown for T {}
 pub trait Rest<T: ?Sized> {}
 
 /// What a rest parameter of `T`s takes as one of its arguments, an `A`: any
-/// value, of `dyn IntoUnknown`; text, of `str`; a number of its own type;
-/// and a union's members, or an interface and the ones that extend it, as
-/// webapi and node say (ADR 0640).
-#[diagnostic::on_unimplemented(message = "a rest parameter of `{Self}`s takes no `{A}`")]
+/// value, of `dyn IntoUnknown`; text, of `str`, a `&str`, a `&String` or a
+/// `String`; a number of its own type; and a union's members, or an
+/// interface and the ones that extend it, as webapi and node say (ADR
+/// 0640). And what [`dict::from_entries`] takes as a key, text.
+#[diagnostic::on_unimplemented(message = "a parameter of `{Self}`s takes no `{A}`")]
 pub trait Takes<A> {}
 
 impl<A> Takes<A> for dyn IntoUnknown {}
@@ -1269,10 +1270,16 @@ pub mod dict {
     }
 
     /// [`Object.fromEntries(entries)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries):
-    /// a dictionary of these keys and values.
+    /// a dictionary of these keys and values, each key text, a `&str` or a
+    /// `String`, as `HashMap::from` takes one: `dict::from_entries(vec![("aria-current",
+    /// 0), ..])`. Written out, each key a string, it's the object literal,
+    /// `{ "aria-current": 0, .. }` (ADR 0666).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
     #[allow(unused_variables)]
-    pub fn from_entries<T>(entries: Vec<(String, T)>) -> &'static Dict<T> {
+    pub fn from_entries<K, T>(entries: Vec<(K, T)>) -> &'static Dict<T>
+    where
+        str: Takes<K>,
+    {
         unreachable!()
     }
 }

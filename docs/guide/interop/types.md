@@ -2427,7 +2427,43 @@ export function name(tag, component, role) {
 }
 ```
 - `js::Json` is a JSON value, and `js::Dict<T>` a plain object of `T`s by
-  name, TypeScript's `Record<string, T>`.
+  name, TypeScript's `Record<string, T>`. One written out is
+  `dict::from_entries(vec![..])` of its keys, any text, as `HashMap::from`
+  takes them: each a string, it's the object literal, a comment between
+  them kept; JS reads it by any key, `ariaProperties[name]`, and so does
+  `dict::get`
+  ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md),
+  amended):
+
+```rust
+use js::{Dict, dict};
+
+thread_local! {
+    static ARIA_PROPERTIES: &'static Dict<u8> = dict::from_entries(vec![
+        ("aria-current", 0), // state
+        // Widget Attributes
+        ("aria-autocomplete", 0),
+        ("role", 0),
+    ]);
+}
+
+pub fn is_valid(name: &str) -> bool {
+    ARIA_PROPERTIES.with(|properties| dict::get(properties, name).is_some())
+}
+```
+
+```js
+const ariaProperties = {
+  "aria-current": 0, // state
+  // Widget Attributes
+  "aria-autocomplete": 0,
+  role: 0,
+};
+
+export function isValid(name) {
+  return ariaProperties[name] != null;
+}
+```
 
 ## Symbols
 

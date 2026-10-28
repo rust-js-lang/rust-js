@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose `PropertyDescriptor` and `ProxyHandler` were made empty, `{}`, and
-given what's set, and whose measure counted no `Object`.
+given what's set, and whose measure counted no `Object`. Amended below: a
+dictionary's keys written out are any text.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 function, given and giving what TypeScript types it as.
@@ -128,3 +129,40 @@ property descriptor is one dictionary, a struct, shared by `Object` and
 - `test/js-builtins.test.ts`, "Reflect and Proxy are JS's": a descriptor
   and a handler written as the objects they are.
 - `test/builtins-coverage.test.ts`: `Object`'s 23 statics.
+
+## Amendment (2026-10-28): a dictionary's keys written out are any text
+
+react-dom-bindings' data modules are object literals of string keys their
+consumers index, validAriaProperties' `{'aria-current': 0, // state ..}`,
+possibleStandardNames' `{accept: 'accept', 'accept-charset':
+'acceptCharset', ..}`. Their port is a `Dict` written out, which is the
+object literal (above), but `dict::from_entries` took `Vec<(String, T)>`,
+so each of hundreds of keys was `"aria-current".to_string()`, where
+`HashMap::from` takes `("aria-current", 0)`, and TypeScript's
+`Object.fromEntries` any `PropertyKey`. The port didn't find the form.
+
+**Its keys are any text, what a `str` takes (`js::Takes`): a `&str`, a
+`&String` or a `String`**, `dict::from_entries(vec![("aria-current", 0),
+..])`, all of them a JS string, so the JS is as before:
+
+```js
+const ariaProperties = {
+  "aria-current": 0, // state
+  // Widget Attributes
+  "aria-autocomplete": 0,
+};
+```
+
+- **`Takes` says what text is**, as it does of a rest parameter's
+  arguments (ADR 0640): one trait, its message now "a parameter of
+  `str`s takes no `u32`", not a rest's alone.
+- **The guide shows the form**, beside `js::Dict`
+  (interop/types.md), where the port looked for it and found none.
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): a key's text is
+  the same string either way.
+
+Held by `test/lowering-strings.test.ts`, "a dictionary of entries written
+out is an object literal": `&str` keys and a comment between entries, a
+`&String` key, run; and the guide's example. A binding's signature has no
+mutation: the test that calls it with `&str` doesn't compile without it.
+
