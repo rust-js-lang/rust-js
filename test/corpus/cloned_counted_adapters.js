@@ -16,6 +16,7 @@ import {
   $count,
   $debugStr,
   $exactLen,
+  $foldToArray,
   $iter,
   $next,
   $nextBack,
@@ -52,7 +53,7 @@ function main() {
   $next(first);
   const rest = takeClone_clone(first, rangeClone);
   console.log(
-    `[${$roomForHint(first, 4, true).toArray().join(", ")}] ${rest.reduce((a, b) => (a + b) | 0, 0)}`,
+    `[${$foldToArray($roomForHint(first, 4, true)).join(", ")}] ${rest.reduce((a, b) => (a + b) | 0, 0)}`,
   );
 
   const tail = iterator_skip({ start: 1, end: 6 }, 2, { next: $rangeNext });
@@ -60,10 +61,10 @@ function main() {
   const stepped = tail;
   $next(stepped);
   const after = skipClone_clone(stepped, rangeClone);
-  const collect = $roomForHint(fresh, 4, true).toArray();
-  const value = $roomForHint(stepped, 4, true).toArray();
+  const collect = $foldToArray($roomForHint(fresh, 4, true));
+  const value = $foldToArray($roomForHint(stepped, 4, true));
   console.log(
-    `[${collect.join(", ")}] [${value.join(", ")}] [${$roomForHint(after, 4, true).toArray().join(", ")}]`,
+    `[${collect.join(", ")}] [${value.join(", ")}] [${$foldToArray($roomForHint(after, 4, true)).join(", ")}]`,
   );
 
   const window = {

@@ -3,6 +3,7 @@
 import {
   iterator_map,
   iterator_peekable,
+  mapIterator___iteratorGetUnchecked,
   peekableDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
@@ -78,7 +79,12 @@ function main() {
         undefined,
         loudDrop_drop,
       ),
-      { next: $next, fold: $foldOf },
+      {
+        next: $next,
+        fold: $foldOf,
+        getUnchecked: (iterator, i) =>
+          mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }, loudDrop_drop),
+      },
       undefined,
       loudDrop_drop,
     );

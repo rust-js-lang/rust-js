@@ -4,6 +4,8 @@ Status: Accepted, under the user's goal of 2026-10-26 ("keep going until
 all done, the choice is your recommendation"). Amends
 [0139](0139-lazy-chains.md)'s amendment and the semantics' difference 15;
 extends [0465](0465-dropping-an-adapter-is-closing-it.md). Leaves #380 open.
+Narrowed further by [0997](0997-a-zip-that-folds-apart-is-stds-struct.md):
+sides that know their length but aren't read by index fold as std's too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. A
 closure ran once more in JS than in Rust.

@@ -8746,23 +8746,41 @@ export function zipZipImplAB_fold(
   dropAItem,
   dropBItem,
 ) {
-  return zipSpecFold_specFold(
-    zip,
-    init,
-    f,
-    AIterator,
-    BIterator,
-    ARandomAccess,
-    ARandomAccessNoCoerce,
-    BRandomAccess,
-    BRandomAccessNoCoerce,
-    dropA,
-    dropB,
-    dropAcc,
-    dropF,
-    dropAItem,
-    dropBItem,
-  );
+  return ATrustedLen && BTrustedLen
+    ? zipSpecFoldTrustedLenTrustedLen_specFold(
+        zip,
+        init,
+        f,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        ARandomAccessNoCoerce,
+        BRandomAccess,
+        BRandomAccessNoCoerce,
+        dropA,
+        dropB,
+        dropAcc,
+        dropF,
+        dropAItem,
+        dropBItem,
+      )
+    : zipSpecFold_specFold(
+        zip,
+        init,
+        f,
+        AIterator,
+        BIterator,
+        ARandomAccess,
+        ARandomAccessNoCoerce,
+        BRandomAccess,
+        BRandomAccessNoCoerce,
+        dropA,
+        dropB,
+        dropAcc,
+        dropF,
+        dropAItem,
+        dropBItem,
+      );
 }
 
 export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fold(
@@ -9359,6 +9377,76 @@ export function zipSpecFold_specFold(
       return result;
     }
     init = f(init, x);
+  }
+}
+
+export function zipSpecFoldTrustedLenTrustedLen_specFold(
+  zip,
+  init,
+  f,
+  AIterator = { next: $next },
+  BIterator = { next: $next },
+  ARandomAccess,
+  ARandomAccessNoCoerce,
+  BRandomAccess,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+  dropAcc,
+  dropF,
+  dropAItem,
+  dropBItem,
+) {
+  while (true) {
+    const value =
+      ARandomAccess && BRandomAccess
+        ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_sizeHint(
+            zip,
+            dropA,
+            dropB,
+            dropAItem,
+            dropBItem,
+          )
+        : ARandomAccessNoCoerce && BRandomAccessNoCoerce
+          ? zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_sizeHint(
+              zip,
+              AIterator,
+              BIterator,
+              dropA,
+              dropB,
+              dropAItem,
+              dropBItem,
+            )
+          : zipZipImplAB_sizeHint(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
+    let more;
+    let upper;
+    if (value[1] != null) {
+      upper = value[1];
+      more = false;
+    } else {
+      upper = 4294967295;
+      more = true;
+    }
+    const iter = { start: 0, end: upper };
+    while (true) {
+      if (!(iter.start < iter.end)) {
+        if (!more) {
+          const result = init;
+          dropF?.(f);
+          zip.return();
+          return result;
+        }
+        break;
+      }
+      const old = iter.start;
+      iter.start = (old + 1) >>> 0;
+      let option = AIterator.next(zip.a);
+      const val = $someValue(option);
+      option = BIterator.next(zip.b);
+      const val$1 = $someValue(option);
+      const pair = [val, val$1];
+      init = f(init, pair);
+    }
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { iterator_map } from "@rust-js/std/iter.js";
 import {
+  $foldToArray,
   $iter,
   $lazyChain,
   $lazyTakeWhile,
@@ -132,7 +133,7 @@ function main() {
     v.values().map((x) => noisy("other", x)),
   ).toArray();
   console.log(`[${short.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const back = doubled(v).toArray();
+  const back = $foldToArray(doubled(v));
   console.log(`[${back.join(", ")}]`);
   const joined = $lazyChain(
     $iter($slice(v, 0, 1)),

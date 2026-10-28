@@ -3,11 +3,13 @@
 import {
   $cmp,
   $debugStr,
+  $foldToArray,
   $iter,
   $iterator,
   $lazyRange,
   $lazyZip,
   $rangeFromNext,
+  $roomForHint,
   $sortedKeys,
 } from "@rust-js/runtime";
 
@@ -17,8 +19,7 @@ export function entry() {
 
 function main() {
   console.log(
-    `[${$lazyZip([1, 2], ["a", "b"])
-      .toArray()
+    `[${$foldToArray($roomForHint($lazyZip([1, 2], ["a", "b"]), 8, true))
       .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
       .join(", ")}]`,
   );
@@ -32,14 +33,12 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${$lazyZip($lazyRange(1, 4), $iter(v.toReversed()))
-      .toArray()
+    `[${$foldToArray($roomForHint($lazyZip($lazyRange(1, 4), $iter(v.toReversed())), 8, true))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$lazyZip(5 == null ? [] : [5], [1, 2])
-      .toArray()
+    `[${$foldToArray($roomForHint($lazyZip(5 == null ? [] : [5], [1, 2]), 8, true))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

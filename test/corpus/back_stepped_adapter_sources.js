@@ -10,6 +10,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
   $byteLen,
@@ -43,7 +44,11 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6];
   const doubled = iterator_map($iter(v), (x) => (x * 2) | 0);
-  const odd = iterator_map(doubled, (x) => (x + 1) | 0, { next: $next, fold: $foldOf });
+  const odd = iterator_map(doubled, (x) => (x + 1) | 0, {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: mapIterator___iteratorGetUnchecked,
+  });
   let last = mapDoubleEndedIterator_nextBack(odd, {
     next_back: mapDoubleEndedIterator_nextBack,
     rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),

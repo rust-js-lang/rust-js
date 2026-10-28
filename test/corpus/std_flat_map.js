@@ -6,6 +6,7 @@ import {
   iterator_flatMap,
 } from "@rust-js/std/iter.js";
 import {
+  $foldToArray,
   $iter,
   $lazyRange,
   $next,
@@ -141,7 +142,7 @@ function main() {
     console.log(
       `${value$1 == null ? "None" : `Some(${value$1})`} (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
     );
-    console.log(`[${$roomForHint(held.pairs, 4, true).toArray().join(", ")}]`);
+    console.log(`[${$foldToArray($roomForHint(held.pairs, 4, true)).join(", ")}]`);
 
     // Made in place, stepped where it's made.
     const total = $lazyRange(1, 4)

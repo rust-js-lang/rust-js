@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-last-by-next",
+    breaks: "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "|| drops_none && self.compiled_struct_at(iter_ty, span) {",
+    replace: "|| false && drops_none && self.compiled_struct_at(iter_ty, span) {",
+    tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
+  },
+  {
     name: "uncounted-eq-compared",
     breaks: "`eq()` of two maps of unequal lengths, which rust-js can't count, steps and compares their items, running closures Rust's `SpecIterEq` never runs (ADR 0998)",
     file: "src/lower/mir/iter/closing.rs",

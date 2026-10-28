@@ -1088,14 +1088,15 @@ pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
 
 // ADR 0139 amended: `zip` is `$lazyZip`, its first side's item taken
 // before its second's, as `Zip::next` does: one more of `a`'s where `b`
-// ends first, which std's `collect` of two slices skips (semantics, 15).
+// ends first. Of a side that isn't `TrustedLen`, a filter's, as std folds
+// it too; of two that are, std's struct (ADR 0997).
 test("zip takes its first side's item before its second's", () => {
   const dir = fixture("zip-first-side");
   writeFileSync(
     join(dir, "lib.rs"),
     `pub fn main() {
     let v = [1, 2, 3];
-    let z: Vec<_> = v.iter().map(|x| { println!("a{x}"); x }).zip([10, 20]).collect();
+    let z: Vec<_> = v.iter().filter(|x| { println!("a{x}"); true }).zip([10, 20]).collect();
     println!("{z:?}");
 }
 `,

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "trusted-collect-by-next",
+    breaks: "`collect()` of std's struct that's `TrustedLen`, a zip's, steps it by `next()`, not its `fold` as std's `extend_trusted` does: its closure runs once more (#380)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                    None if folded => Expr::call_helper(\"$foldToArray\", vec![it]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
+  },
+  {
     name: "endless-collect-unchecked",
     breaks: "`(0..).map(f).collect::<Vec<_>>()`, a `TrustedLen` with no upper bound, maps without end where Rust panics `capacity overflow` before any item's made (ADR 0940)",
     file: "src/lower/mir/iter/collect.rs",

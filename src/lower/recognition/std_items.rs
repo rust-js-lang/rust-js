@@ -465,7 +465,6 @@ const MEANING_ONLY: &[&str] = &[
     "MapWhile",
     "Scan",
     "Copied",
-    "Zip",
 ];
 
 thread_local! {
@@ -526,6 +525,40 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
         let tr = ty::TraitRef::new(tcx, trusted, [ty]);
         tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
     })
+}
+
+/// Whether `ty` is a zip std folds otherwise than it steps it, where that
+/// shows: of sides both `TrustedLen` but not both `TrustedRandomAccess`,
+/// whose `SpecFold` takes the shorter's count of pairs, where `next()` steps
+/// `a` once more, and a step of `a` runs code, a closure's or a `fn`'s, or
+/// gives an item with a destructor. The recognizers' JS iterator can't tell
+/// a fold from its steps, so it's std's struct where it's made too (#380).
+/// Of a type rustc knows whole.
+pub(crate) fn folds_apart<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let Some((a, b)) = zipped_sources(tcx, ty) else {
+        return false;
+    };
+    let typing_env = ty::TypingEnv::fully_monomorphized();
+    let (Some(trusted_len), Some(random_access)) = (
+        super::fact_trait(tcx, TypeFact::TrustedLen),
+        super::fact_trait(tcx, TypeFact::RandomAccess),
+    ) else {
+        return false;
+    };
+    let holds = |ty: Ty<'tcx>, tr: DefId| {
+        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
+        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+    };
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let item = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, iterator, "Item"), [a]);
+    let item = tcx
+        .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(item))
+        .unwrap_or(item);
+    let runs_code = a
+        .walk()
+        .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
+        || item.needs_drop(tcx, typing_env);
+    holds(a, trusted_len) && holds(b, trusted_len) && !(holds(a, random_access) && holds(b, random_access)) && runs_code
 }
 
 /// Whether std's zip of `a` and `b`, `IntoIterator`s, reads each item by
@@ -791,14 +824,17 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
             };
             // Of one whose impl a fact picks, `FlattenCompat`'s `size_hint`
             // of a `OneShot`'s or not, both impls' (ADR 0899).
+            // And where rustc resolves its default, which a fact picks all the
+            // same, `SpecFold`'s of a zip on `TrustedLen` (#380).
+            let spec = super::fact_specialization(tcx, typing_env, callee, args);
             let called: Vec<DefId> = match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args) {
-                Ok(Some(instance)) => match instance.def {
-                    ty::InstanceKind::Item(called) => vec![called],
-                    _ => Vec::new(),
-                },
-                _ => super::fact_specialization(tcx, typing_env, callee, args)
-                    .map(|spec| spec.methods().collect())
-                    .unwrap_or_default(),
+                Ok(Some(instance)) if spec.as_ref().is_none_or(|spec| spec.selected.0 != instance.def_id()) => {
+                    match instance.def {
+                        ty::InstanceKind::Item(called) => vec![called],
+                        _ => Vec::new(),
+                    }
+                }
+                _ => spec.map(|spec| spec.methods().collect()).unwrap_or_default(),
             };
             for called in called {
                 if matches!(tcx.def_kind(called), DefKind::Fn | DefKind::AssocFn)

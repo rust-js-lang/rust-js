@@ -8,7 +8,16 @@ import {
   mapClone_clone,
   mapIterator_next,
 } from "@rust-js/std/iter.js";
-import { $clone, $cloning, $given, $iter, $next, $rangeNext, $roomForHint } from "@rust-js/runtime";
+import {
+  $clone,
+  $cloning,
+  $foldToArray,
+  $given,
+  $iter,
+  $next,
+  $rangeNext,
+  $roomForHint,
+} from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -56,8 +65,8 @@ function main() {
   const copy = mapClone_clone(it, rangeClone, clone);
   const value = $next(copy);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  console.log(`[${$roomForHint(it, 4, true).toArray().join(", ")}]`);
-  console.log(`[${$roomForHint(copy, 4, true).toArray().join(", ")}]`);
+  console.log(`[${$foldToArray($roomForHint(it, 4, true)).join(", ")}]`);
+  console.log(`[${$foldToArray($roomForHint(copy, 4, true)).join(", ")}]`);
 
   const makeFilter = (it, f) =>
     $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
@@ -103,7 +112,7 @@ function main() {
   const rest = mapClone_clone(tripled, rangeClone, clone$1);
   mapIterator_next(rest, { next: $rangeNext });
   console.log(
-    `[${$roomForHint(rest, 4, true).toArray().join(", ")}] [${$roomForHint(tripled, 4, true).toArray().join(", ")}]`,
+    `[${$foldToArray($roomForHint(rest, 4, true)).join(", ")}] [${$foldToArray($roomForHint(tripled, 4, true)).join(", ")}]`,
   );
 
   const even = evensOf({ start: 1, end: 7 }, { next: $rangeNext }, rangeClone);
@@ -120,7 +129,7 @@ function main() {
   const after = chainClone_clone(bothRanges, rangeClone, rangeClone);
   chainIterator_next(after, { next: $rangeNext }, { next: $rangeNext });
   console.log(
-    `[${$roomForHint(after, 4, true).toArray().join(", ")}] [${$roomForHint(bothRanges, 4, true).toArray().join(", ")}]`,
+    `[${$foldToArray($roomForHint(after, 4, true)).join(", ")}] [${$foldToArray($roomForHint(bothRanges, 4, true)).join(", ")}]`,
   );
 
   const holder = {
@@ -129,7 +138,7 @@ function main() {
   const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone$1) };
   $next(again.it);
   console.log(
-    `[${$roomForHint(again.it, 4, true).toArray().join(", ")}] [${$roomForHint(holder.it, 4, true).toArray().join(", ")}]`,
+    `[${$foldToArray($roomForHint(again.it, 4, true)).join(", ")}] [${$foldToArray($roomForHint(holder.it, 4, true)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

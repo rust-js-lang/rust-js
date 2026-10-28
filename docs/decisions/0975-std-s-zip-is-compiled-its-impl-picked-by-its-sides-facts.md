@@ -7,6 +7,9 @@ representation per iterator", its second phase. Extends
 [0543](0543-a-held-peekable-keeps-what-it-peeked-at.md)'s facts that pick an impl, and
 [0932](0932-an-adapter-compiled-as-its-meaning-alone.md)'s adapters compiled as
 their meaning alone.
+Amended by [0997](0997-a-zip-that-folds-apart-is-stds-struct.md): `Zip` is
+std's struct in every build where it's held, or folds apart; a fact
+specialization picks where rustc resolves its default.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. std's
 zip of two `TrustedRandomAccess` sides runs a longer side's closure less

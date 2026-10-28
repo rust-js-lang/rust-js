@@ -207,10 +207,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => it,
             };
+            // Of std's struct that's `TrustedLen`, by its `fold`, as std's
+            // `extend_trusted` collects it, a zip's `SpecFold` (#380).
+            let folded = self.compiled_struct_at(iter_ty, span)
+                && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
+                    None if folded => Expr::call_helper("$foldToArray", vec![it]),
                     None => method("toArray", it, Vec::new()),
                 },
             }

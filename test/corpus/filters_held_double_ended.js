@@ -5,6 +5,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std/iter.js";
 import {
   $filterEnds,
@@ -93,7 +94,16 @@ function main() {
     true,
   ).toArray();
   const both = evensOrTens(true);
-  const next = twoIterator_next(both, { next: $next }, { next: $next, fold: $foldOf });
+  const next = twoIterator_next(
+    both,
+    { next: $next },
+    {
+      next: $next,
+      fold: $foldOf,
+      getUnchecked: (iterator, i) =>
+        mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+    },
+  );
   const arg = twoDoubleEndedIterator_nextBack(
     both,
     { next_back: $nextBack },

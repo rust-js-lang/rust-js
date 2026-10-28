@@ -13,6 +13,7 @@ import {
 import {
   $closing,
   $dropEach,
+  $foldToArray,
   $iter,
   $iterator,
   $mapEnds,
@@ -157,18 +158,20 @@ function main() {
   );
   // Shown or cloned where it's made, by its own compiled impl.
   const rev = iterator_rev($iter(v));
-  const value$7 = $roomForHint(
-    revClone_clone(
-      iterator_rev(
-        { start: 1, end: 4 },
-        { next: $rangeNext },
-        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  const value$7 = $foldToArray(
+    $roomForHint(
+      revClone_clone(
+        iterator_rev(
+          { start: 1, end: 4 },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+        { clone: (value) => ({ start: value.start, end: value.end }) },
       ),
-      { clone: (value) => ({ start: value.start, end: value.end }) },
+      4,
+      true,
     ),
-    4,
-    true,
-  ).toArray();
+  );
   console.log(`${revDebug_fmt(rev, undefined, iterDebug)} [${value$7.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

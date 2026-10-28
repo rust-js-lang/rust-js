@@ -299,7 +299,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if self.recognition().lasts_its_own(iter_ty) {
+        // Or of std's struct, of items with nothing to drop, by its own
+        // `last`, its compiled `fold`'s, a zip's `SpecFold` (#380).
+        let drops_none = item.is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing);
+        if self.recognition().lasts_its_own(iter_ty) || drops_none && self.compiled_struct_at(iter_ty, span) {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
             return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));
         }

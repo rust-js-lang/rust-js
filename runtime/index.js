@@ -1767,6 +1767,17 @@ export function $foldOf(it, init, f) {
   return it.fold(init, f);
 }
 
+// `collect()` into a `Vec` of a `TrustedLen` iterator, as std's
+// `extend_trusted` does it: each item through its `fold`, std's compiled one
+// where it's std's struct, a zip's `SpecFold` say, which steps no item past
+// its shorter side's (#380).
+export function $foldToArray(it) {
+  return it.fold([], (items, x) => {
+    items.push(x);
+    return items;
+  });
+}
+
 // `it`, an iterator a variable or a temporary holds, which its owner drops
 // where Rust drops it, at its scope's or its statement's end: held, so
 // nothing it steps is dropped as it's done or ends early, but as it's

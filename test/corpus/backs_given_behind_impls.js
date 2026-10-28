@@ -12,6 +12,7 @@ import {
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
   revExactSizeIterator_len,
   takeIDoubleEndedIterator_nextBack,
@@ -63,6 +64,12 @@ function tens(x) {
 }
 function main() {
   const iterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  };
   const takeDoubleEndedIterator = {
     next_back: (iterator) =>
       takeIDoubleEndedIterator_nextBack(
@@ -174,7 +181,7 @@ function main() {
   );
   const held = iterator_rev(
     iterator_map({ start: 1, end: 5 }, tens, { next: $rangeNext }),
-    { next: $next, fold: $foldOf },
+    mapIterator,
     {
       next_back: (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
@@ -201,7 +208,7 @@ function main() {
     },
   );
   const next = $next(held);
-  const value$2 = revDoubleEndedIterator_nextBack(held, { next: $next, fold: $foldOf });
+  const value$2 = revDoubleEndedIterator_nextBack(held, mapIterator);
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${revExactSizeIterator_len(held, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }) })}`,
   );

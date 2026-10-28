@@ -9,6 +9,7 @@ import {
 import {
   $charIndices,
   $debugStr,
+  $foldToArray,
   $iter,
   $next,
   $nextBack,
@@ -89,7 +90,7 @@ function main() {
   $next(back);
   const value$2 = revDoubleEndedIterator_nextBack(back);
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} [${revClone_clone(back, intoIterClone).toArray().join(", ")}] ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} [${$foldToArray(revClone_clone(back, intoIterClone)).join(", ")}] ${revExactSizeIterator_len(back, { len: (iterator) => iterator.len() })}`,
   );
   const value$3 = reversedTwice(
     $iter([1, 2, 3]),

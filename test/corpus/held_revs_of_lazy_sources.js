@@ -6,6 +6,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
 } from "@rust-js/std/iter.js";
 import {
@@ -28,6 +29,12 @@ function tens(x) {
   return (x * 10) >>> 0;
 }
 function main() {
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  };
   const v = [1, 2, 3, 4, 5];
   const a = iterator_rev($filterEnds($iter(v), (x) => x % 2 === 1));
   const next = $next(a);
@@ -47,7 +54,7 @@ function main() {
   );
   const c = iterator_rev(
     iterator_map({ start: 1, end: 6 }, tens, { next: $rangeNext }),
-    { next: $next, fold: $foldOf },
+    mapIterator,
     {
       next_back: (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
@@ -74,7 +81,7 @@ function main() {
     },
   );
   const value$3 = $next(c);
-  const value$4 = revDoubleEndedIterator_nextBack(c, { next: $next, fold: $foldOf });
+  const value$4 = revDoubleEndedIterator_nextBack(c, mapIterator);
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );

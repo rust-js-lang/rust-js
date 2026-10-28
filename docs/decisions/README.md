@@ -781,6 +781,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`)*
 - [0995 A std body takes a JS iterator's dictionary where it's given none](0995-a-std-body-takes-a-js-iterators-dictionary-by-default.md)
 - [0996 A `take()` then tested is the place tested, taken where it's `Some`](0996-a-take-then-tested-is-the-place-tested.md) *(the user's decision)*
+- [0997 A zip std folds otherwise than it steps is std's struct](0997-a-zip-that-folds-apart-is-stds-struct.md)
 - [0998 `eq()` of `TrustedLen` iterators rust-js can't count is refused where it shows](0998-eq-of-uncounted-trusted-len-iterators-is-refused.md)
 - [0999 A `copied()` std compiles held is cloned by its struct](0999-a-compiled-copied-is-cloned-by-its-struct.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)

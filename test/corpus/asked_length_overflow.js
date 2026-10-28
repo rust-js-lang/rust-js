@@ -2,6 +2,7 @@
 
 import { iterator_map } from "@rust-js/std/iter.js";
 import {
+  $foldToArray,
   $iterator,
   $panicMessage,
   $range,
@@ -106,7 +107,7 @@ function main() {
           .length,
     );
     const endless = iterator_map({ start: 0 }, made, { next: $rangeFromNext });
-    check("collect held endless", () => $roomForHint(endless, 1, true, true).toArray().length);
+    check("collect held endless", () => $foldToArray($roomForHint(endless, 1, true, true)).length);
     const n = 3;
     check("collect(3)", () => $range(0, n, 1).map(made));
     check("collect empty", () => $range(n, 1, 4));

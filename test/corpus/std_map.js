@@ -9,6 +9,7 @@ import {
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
   revExactSizeIterator_len,
 } from "@rust-js/std/iter.js";
@@ -18,6 +19,7 @@ import {
   $cycleOf,
   $exactLen,
   $foldOf,
+  $foldToArray,
   $iter,
   $iterator,
   $next,
@@ -152,7 +154,7 @@ function main() {
     .toArray();
   console.log(`[${cycled.join(", ")}]`);
   console.log(
-    `[${$roomForHint(again.it, 4, true).toArray().join(", ")}] [${$roomForHint(holder.it, 4, true).toArray().join(", ")}]`,
+    `[${$foldToArray($roomForHint(again.it, 4, true)).join(", ")}] [${$foldToArray($roomForHint(holder.it, 4, true)).join(", ")}]`,
   );
 
   // Made in place: part of a filter cloned apart, and cycled.
@@ -184,7 +186,7 @@ function main() {
   const cubes = iterator_map($iter(v), (x) => Math.imul(Math.imul(x, x) >>> 0, x) >>> 0);
   const back = iterator_rev(
     cubes,
-    { next: $next, fold: $foldOf },
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
     {
       next_back: mapDoubleEndedIterator_nextBack,
       rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),
@@ -199,7 +201,11 @@ function main() {
         ),
     },
   );
-  const value$4 = revDoubleEndedIterator_nextBack(back, { next: $next, fold: $foldOf });
+  const value$4 = revDoubleEndedIterator_nextBack(back, {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: mapIterator___iteratorGetUnchecked,
+  });
   const value$5 = $next(back);
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${revExactSizeIterator_len(back, { len: (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }) })}`,

@@ -10,6 +10,7 @@ import {
   $count,
   $iter,
   $iterator,
+  $last,
   $lazyRange,
   $lent,
   $next,
@@ -45,7 +46,7 @@ function summed(it, IIterator, IClone, PeekableClone) {
   const total = p.reduce((acc, x) => (acc + x) >>> 0, 0);
   const again = PeekableClone.clone(copy);
   const third = $lent(again).drop(2).take(1).toArray()[0];
-  return [total, $count(copy), third, again.toArray().at(-1)];
+  return [total, $count(copy), third, $last(again)];
 }
 
 function main() {

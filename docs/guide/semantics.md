@@ -934,12 +934,14 @@ React and JSX are [their own pages](README.md#react).
     `step_by`'s of it, a `rev()`'s of either
     ([0989](../decisions/0989-a-rev-hints-what-its-source-hints.md)), or `(0, None)`:
     an endless `n..`'s too, Rust's `(usize::MAX, None)`.
-15. `zip` makes one more of its first side's items where its second ends
-    first, as `Zip::next` does, also by `collect()` and `fold`, where std's
-    stops at the shorter: of sides that know their length but that std
-    can't read by index, a `Vec`'s `into_iter()` or a `rev()` (#380). Of
-    sides it can, a `map` of a range or of a slice's items, it stops at the
-    shorter as std does (ADR 0973).
+15. `zip` in generic code makes one more of its first side's items where
+    its second ends first, as `Zip::next` does, also by `collect()` and
+    `fold`, where std's stops at the shorter: of sides only its caller knows
+    are `TrustedLen`. Where rustc knows the sides whole, it folds as std
+    does: by index ([ADR 0973](../decisions/0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)),
+    or as std's struct, of sides that know their length but that std can't
+    read by index, a `Vec`'s `into_iter()` or a `rev()`
+    ([ADR 0997](../decisions/0997-a-zip-that-folds-apart-is-stds-struct.md)).
 16. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
 17. Where the crate's iterator's impl writes its own `fold`, std's

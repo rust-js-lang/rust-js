@@ -8,6 +8,7 @@ import {
   enumerateDoubleEndedIterator_rfold,
   enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
+  enumerateIterator___iteratorGetUnchecked,
   iterator_enumerate,
   iterator_take,
   takeClone,
@@ -99,7 +100,7 @@ function main() {
   );
   const value$1 = ends(
     iterator_enumerate($iter(v)),
-    { next: $next, fold: $foldOf },
+    { next: $next, fold: $foldOf, getUnchecked: enumerateIterator___iteratorGetUnchecked },
     {
       next_back: (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator),
       rfold: (iterator, init, f) =>

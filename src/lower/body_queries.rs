@@ -1025,6 +1025,7 @@ fn in_place_adapters<'tcx>(
             if let ty::FnDef(maker, _) = *thir[fun].ty.kind()
                 && super::recognition::makes_held_compiled(tcx, maker)
                 && !held_to_clone
+                && !super::recognition::folds_apart(tcx, thir[arg].ty)
             {
                 given.push((fn_span, at, callee, index, maker));
             }
