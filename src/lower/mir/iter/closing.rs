@@ -143,6 +143,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         // A range's, or the crate's, stepped as one, as `chain`'s and `zip`'s are.
         let other = self.as_js_iterator(other, other_ty, span)?;
+        // Of two `TrustedLen` iterators, std's `SpecIterEq` asks their
+        // lengths first, and gives `false` of unequal ones with no item
+        // stepped or compared (ADR 0992): each counted where it's made,
+        // before it's stepped, as `len_in_place` counts it.
+        let trusted_len =
+            crate::lower::recognition::fact_trait(self.tcx, crate::lower::recognition::TypeFact::TrustedLen);
+        let other_iter = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, other_ty);
+        let lengths = match trusted_len {
+            Some(trusted)
+                if [iter_ty, other_iter]
+                    .iter()
+                    .all(|&ty| self.recognition().implements_trait(ty, trusted)) =>
+            {
+                let mut spilled = Vec::new();
+                let source = crate::lower::iterators::closed_parts(&it).map_or(&it, |(source, _)| source);
+                let a = self.counted_before_stepping(source, iter_ty, &mut spilled);
+                // What's given whole, a `Vec` or an array: its length.
+                let b = match self.slice_item(other_ty.peel_refs()) {
+                    Some(_) if !self.implements_iterator(other_ty) => Some(Expr::member(other.clone(), "length")),
+                    _ => self.counted_before_stepping(&other, other_iter, &mut spilled),
+                };
+                (a.zip(b)).filter(|_| spilled.is_empty())
+            }
+            _ => None,
+        };
         let other = match self.closing_drop(other_ty, span)? {
             Some(drop) => {
                 let it = self.js_iterator(other);
@@ -159,13 +184,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;
         let mut list = vec![it, other];
-        if compare.is_some() || drop_a.is_some() || drop_b.is_some() {
+        if compare.is_some() || drop_a.is_some() || drop_b.is_some() || lengths.is_some() {
             list.push(compare.unwrap_or_else(Expr::undefined));
         }
-        if drop_a.is_some() || drop_b.is_some() {
+        if drop_a.is_some() || drop_b.is_some() || lengths.is_some() {
             list.push(drop_a.unwrap_or_else(Expr::undefined));
         }
-        list.extend(drop_b);
+        if drop_b.is_some() || lengths.is_some() {
+            list.push(drop_b.unwrap_or_else(Expr::undefined));
+        }
+        list.extend(lengths.map(|(a, b)| Expr::array(vec![a, b])));
         let same = Expr::call_helper("$iterEq", list);
         Ok(match ne {
             true => Expr::unary(js::UnaryOp::Not, same),

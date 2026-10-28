@@ -13,7 +13,8 @@ use super::*;
 /// `OneShot`, which the caller's fact of it, `IFused` or `UOneShot`, picks
 /// between (ADRs 0473, 0543, 0899). Another specialization, on a trait that
 /// isn't a fact, `TrustedLen`'s, is std's optimization of the one selected,
-/// which changes nothing a program sees (`optimized_default`).
+/// which changes nothing a program sees (`optimized_default`); but for
+/// `SpecIterEq`'s, which `eq()`'s lowering asks itself (ADR 0992).
 pub(crate) struct FactSpecialization<'tcx> {
     /// The method of the impl selected, and the impls' arguments.
     pub(crate) selected: (DefId, ty::GenericArgsRef<'tcx>),

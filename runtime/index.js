@@ -12392,11 +12392,14 @@ export function $cmpItems(a, b, cmp) {
 // left where the other ended; each closed as it ends, which drops what it
 // holds, `b` first, as std's are dropped (ADR 0465). `a` is stepped by its
 // `tryFold`, as std's `iter_compare` steps it by `try_for_each`, and `b` by
-// its `next`.
-export function $iterEq(a, b, eq, dropA, dropB) {
+// its `next`. Of two `TrustedLen` ones, given their `lengths`, std's
+// `SpecIterEq`: of unequal ones, `false`, with none of their items stepped
+// or compared, each closed, `b` first (ADR 0992).
+export function $iterEq(a, b, eq, dropA, dropB, lengths) {
   const x = a[Symbol.iterator]();
   const y = b[Symbol.iterator]();
   try {
+    if (lengths !== undefined && lengths[0] !== lengths[1]) return false;
     let same = true;
     const stopped = $lent(x).tryFold(
       false,

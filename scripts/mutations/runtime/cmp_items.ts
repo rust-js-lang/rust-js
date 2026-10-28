@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "iter-eq-lengths-unread",
+    breaks: "`eq()` of two `Vec`s' iterators of unequal lengths compares their items, dropping them in pairs, where std's `SpecIterEq` gives `false` with none compared (ADR 0992)",
+    file: "src/runtime/cmp_items.js",
+    find: "    if (lengths !== undefined && lengths[0] !== lengths[1]) return false;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^eq_of_unequal_lengths.rs$"],
+  },
+  {
     name: "iter-eq-pair-undropped",
     breaks: "`eq` of items with a destructor drops none of the other side's pairs",
     file: "src/runtime/cmp_items.js",

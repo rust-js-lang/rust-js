@@ -132,6 +132,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         None
     }
 
+    /// How many `it`, an iterator of type `ty`, has left before it's
+    /// stepped: of an array's items, a `$iter` made here or held, where it
+    /// is (`items_left`); of another made in place, `len_in_place`'s count.
+    pub(in crate::lower::mir) fn counted_before_stepping(
+        &mut self,
+        it: &Expr,
+        ty: Ty<'tcx>,
+        made: &mut Vec<Stmt>,
+    ) -> Option<Expr> {
+        match self.steps_an_array(ty.peel_refs()) {
+            true => Some(self.items_left(it.clone(), made)),
+            false => self.len_in_place(it, ty, made),
+        }
+    }
+
     /// Whether std's iterator `ty` is a `$iter` of an array, as
     /// `std_iterator` makes it: an array's own, a string's `chars()`,
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a

@@ -776,6 +776,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0989 A `rev()` hints what its source hints](0989-a-rev-hints-what-its-source-hints.md)
 - [0990 A filter of an array's items the crate steps from its back is made knowing it](0990-a-filter-of-an-arrays-items-stepped-from-its-back.md)
 - [0991 Every adapter that holds a function drops it](0991-every-adapter-holding-a-function-drops-it.md)
+- [0992 `eq()` of two `TrustedLen` iterators asks their lengths first](0992-eq-of-trusted-len-iterators-asks-their-lengths.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

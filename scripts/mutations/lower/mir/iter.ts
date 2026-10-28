@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n",
     replace: "            )\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(consumed_adapter_drops|cloned_items_from_both_ends).rs$"],
     snapshots: true,
   },
   {
@@ -306,7 +306,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            false => self.is_user_iterator(receiver) || compiled || holds_function,\n",
     replace: "            false => self.is_user_iterator(receiver) || holds_function,\n",
-    tests: ["test/crates.test.ts", "-t", "its peekable drops what it holds"],
+    tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "size-hint-undictionaried",

@@ -1633,6 +1633,7 @@ function main() {
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,
+      [tmp$27.end - tmp$27.at, tmp$28.length],
     );
   } catch (error) {
     if (fused$live) {
@@ -1740,6 +1741,7 @@ function main() {
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,
+      [tmp$30.end - tmp$30.at, value$10.length],
     );
   } catch (error) {
     if (fused$live) {

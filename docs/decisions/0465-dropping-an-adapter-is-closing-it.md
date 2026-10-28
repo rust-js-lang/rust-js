@@ -6,6 +6,8 @@ from `take` and `skip` to std's lazy adapters, and
 [0190](0190-generic-no-destructor.md). Amended by
 [0570](0570-a-closing-source-is-dropped-when-done.md): a source is dropped
 when it's done, not only when it's closed.
+Amended by [0992](0992-eq-of-trusted-len-iterators-asks-their-lengths.md):
+`eq()` of two `TrustedLen` iterators of unequal lengths compares none.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)) for what's dropped and
 how many times; B for when, where an adapter ends before what it steps,

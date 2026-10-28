@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "iter-eq-not-trusted",
+    breaks: "`eq()` of two `TrustedLen` iterators isn't given their lengths, and compares items std's `SpecIterEq` never steps (ADR 0992)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "                (a.zip(b)).filter(|_| spilled.is_empty())\n",
+    replace: "                (a.zip(b)).filter(|_| false && spilled.is_empty())\n",
+    tests: ["test/corpus.test.ts", "-t", "^eq_of_unequal_lengths.rs$"],
+  },
+  {
     "name": "mir-user-by-ref-wrapped",
     "breaks": "`by_ref()` of the crate's iterator from MIR is a JS iterator over it, which its own `next` doesn't step",
     "file": "src/lower/mir/iter/closing.rs",
