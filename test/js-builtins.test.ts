@@ -586,18 +586,18 @@ test("Atomics are JS's, of a view of a shared buffer", async () => {
   const dir = fixture("js-atomics");
   writeFileSync(join(dir, "lib.rs"), `use js::{WaitAsyncValue, WaitResult, atomics, big_int64_array, int32_array, shared_array_buffer};
 pub fn counted() -> (i32, i32, i32, i64, bool, bool) {
-    let shared = shared_array_buffer::new(16);
+    let shared = shared_array_buffer::new(16.0);
     let counts = int32_array::new_with_buffer(shared, None, None);
     atomics::add(counts, 0, 5);
     let before = atomics::sub(counts, 0, 2);
     atomics::compare_exchange(counts, 1, 0, 9);
-    let wide = big_int64_array::new(1);
+    let wide = big_int64_array::new(1.0);
     atomics::store(wide, 0, 7);
     let waited = matches!(atomics::wait(counts, 0, 0, None), WaitResult::NotEqual);
     (before, atomics::load(counts, 0), atomics::load(counts, 1), atomics::or(wide, 0, 8), waited, counts.buffer().growable())
 }
 pub async fn waited() -> bool {
-    let counts = int32_array::new_with_buffer(shared_array_buffer::new(4), None, None);
+    let counts = int32_array::new_with_buffer(shared_array_buffer::new(4.0), None, None);
     match atomics::wait_async(counts, 0, 0, Some(1.0)).value {
         WaitAsyncValue::Waiting(promise) => matches!(promise.await, WaitResult::TimedOut),
         WaitAsyncValue::Ended(_) => false,
@@ -672,19 +672,19 @@ test("typed arrays and their buffers are JS's", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{array_buffer, big_int64_array, data_view, float64_array, int8_array, uint8_array};
 pub fn floats() -> (f64, Option<f64>, u32, String) {
     let a = float64_array::from(&[1.5, -2.0, 3.25]);
-    a.set_index(1, 4.0);
+    a.set_index(1.0, 4.0);
     let doubled = a.map(|x, _| x * 2.0);
     let sorted = a.to_sorted(Some(Box::new(|x, y| y.partial_cmp(&x).unwrap())));
     let shifted = sorted.map(|x, i| x + i as f64);
-    (doubled.reduce(|sum, x, _| sum + x, 0.0), a.at(-1), float64_array::BYTES_PER_ELEMENT, shifted.slice(Some(1), None).join(Some("|")))
+    (doubled.reduce(|sum, x, _| sum + x, 0.0), a.at(-1.0), float64_array::BYTES_PER_ELEMENT, shifted.slice(Some(1.0), None).join(Some("|")))
 }
 pub fn bytes() -> (u32, u32, i8, Vec<u8>) {
-    let buffer = array_buffer::new(8);
+    let buffer = array_buffer::new(8.0);
     let view = data_view::new(buffer, None, None);
-    view.set_int16(0, -2, true);
+    view.set_int16(0.0, -2.0, true);
     let bytes = uint8_array::new_with_buffer(buffer, None, None);
     let signed = int8_array::of((1, -1, 127));
-    (buffer.byte_length(), bytes.length(), signed.get(1).unwrap_or(0), bytes.subarray(Some(0), Some(2)).values().collect())
+    (buffer.byte_length(), bytes.length(), signed.get(1.0).unwrap_or(0), bytes.subarray(Some(0.0), Some(2.0)).values().collect())
 }
 pub fn bigs() -> (i64, bool) {
     let a = big_int64_array::from(&[1, -2, 3]);
@@ -717,16 +717,16 @@ test("an ArrayBufferView is any typed array or DataView, and isView takes any va
   writeFileSync(join(dir, "lib.rs"), `use js::{ArrayBufferView, Kind, Unknown, array_buffer, data_view, float64_array, uint8_array};
 
 pub fn bytes_of(view: &ArrayBufferView) -> Vec<u8> {
-    uint8_array::new_with_buffer(view.buffer(), Some(view.byte_offset()), Some(view.byte_length()))
+    uint8_array::new_with_buffer(view.buffer(), Some(f64::from(view.byte_offset())), Some(f64::from(view.byte_length())))
         .values()
         .collect()
 }
 
 pub fn of_each() -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    let data = data_view::new(array_buffer::new(4), Some(1), Some(2));
-    data.set_uint8(0, 7);
+    let data = data_view::new(array_buffer::new(4.0), Some(1.0), Some(2.0));
+    data.set_uint8(0.0, 7.0);
     let bytes = uint8_array::of((1, 2, 3));
-    (bytes_of(float64_array::of((1.0,))), bytes_of(data), bytes_of(bytes.subarray(Some(1), None)))
+    (bytes_of(float64_array::of((1.0,))), bytes_of(data), bytes_of(bytes.subarray(Some(1.0), None)))
 }
 
 pub fn described(value: Option<&Unknown>) -> String {
@@ -769,8 +769,8 @@ js::export_default! {
     fn binary_to_comparable_string(view: &ArrayBufferView) -> String {
         string::from_char_code(uint8_array::new_with_buffer(
             view.buffer(),
-            Some(view.byte_offset()),
-            Some(view.byte_length()),
+            Some(f64::from(view.byte_offset())),
+            Some(f64::from(view.byte_length())),
         ))
     }
 }
@@ -782,7 +782,7 @@ pub fn written() -> (String, String, String, String) {
 }
 
 pub fn of_view() -> String {
-    binary_to_comparable_string(uint8_array::of((97, 98, 99)).subarray(Some(1), None))
+    binary_to_comparable_string(uint8_array::of((97, 98, 99)).subarray(Some(1.0), None))
 }
 
 pub fn largest(byte: u8) -> f64 {

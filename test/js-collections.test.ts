@@ -360,3 +360,49 @@ pub fn text(deps: &[Option<&'static Unknown>]) -> String {
   expect(js).toContain('  return `[${deps.join(", ")}]`;\n');
   expect(ran(dir, `import { text } from "./lib.js"; console.log(text([1, null, "a", undefined, true]));`)).toBe("[1, , a, , true]\n");
 });
+
+// React's SchedulerProfiling logs into an Int32Array and grows it by copying,
+// `newEventLog.set(eventLog)`, of numbers: `ms * 1000` and a task's id. A
+// typed array takes what TypeScript says, `ArrayLike<number>` to `set` and
+// `from`, another typed array too, and a `number` for each length, index,
+// offset and element, an `f64` JS converts as it stores it: past 2^31 an
+// Int32Array's element wraps, as upstream's does, where `as i32` saturated
+// (ADR 0283, amended). A `BigInt64Array`'s element is its `i64` still.
+test("a typed array takes numbers and another typed array as TypeScript types them", () => {
+  const { dir, js } = compiled("typed-array-numbers", `use std::cell::Cell;
+
+use js::{Int32Array, big_int64_array, int32_array};
+
+thread_local! {
+    static EVENT_LOG_SIZE: Cell<f64> = const { Cell::new(4.0) };
+}
+
+pub fn grow(event_log: &Int32Array) -> &'static Int32Array {
+    EVENT_LOG_SIZE.set(EVENT_LOG_SIZE.get() * 2.0);
+    let new_event_log = int32_array::new(EVENT_LOG_SIZE.get() * 4.0);
+    new_event_log.set(event_log, None);
+    new_event_log
+}
+
+pub fn log(event_log: &Int32Array, ms: f64, id: f64, index: f64) {
+    event_log.set(&[1.0, ms * 1000.0, id], Some(index));
+}
+
+pub fn made(items: &[f64]) -> (f64, Option<i32>, i64) {
+    let a = int32_array::from(items);
+    a.set_index(0.0, 2.5);
+    let b = int32_array::from(&*a);
+    let wide = big_int64_array::from(&[1, -2]);
+    (f64::from(b.length()), b.at(-1.0), wide.get(1.0).unwrap_or(0))
+}
+`);
+  expect(js).toContain("const newEventLog = new Int32Array(eventLogSize * 4);\n  newEventLog.set(eventLog);\n");
+  expect(js).toContain("eventLog.set([1, ms * 1000, id], index);");
+  expect(js).toContain("const b = Int32Array.from(a);");
+  const out = ran(dir, `import { grow, log, made } from "./lib.js";
+const log0 = new Int32Array(16);
+log(log0, 3e6, 7, 2);
+const grown = grow(log0);
+console.log(JSON.stringify([Array.from(log0.subarray(0, 6)), grown.length, Array.from(grown.subarray(0, 6)), made([9, 4.7, -1.2]).map(Number)]));`);
+  expect(out).toBe(`${JSON.stringify([[0, 0, 1, 3e9 | 0, 7, 0], 32, [0, 0, 1, 3e9 | 0, 7, 0], [3, -1, -2]])}\n`);
+});

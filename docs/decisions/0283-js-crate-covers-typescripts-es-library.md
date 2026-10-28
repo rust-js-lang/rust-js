@@ -1,6 +1,6 @@
 # 0283. The js crate covers TypeScript's ES library, and a test holds it
 
-Status: Accepted. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
+Status: Accepted. Amended by [0994](0994-a-number-a-binding-takes-is-typescripts-number.md): a typed array takes numbers, `f64`s, and to `set` and `from` any `ArrayLike` of them. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
 Amended by [0741](0741-an-array-buffer-view-is-what-each-view-derefs-to.md): each view
 derefs to an `ArrayBufferView`, and `isView` takes any value.
 Amended by [0698](0698-a-catch-handler-gives-a-value-or-a-promise.md): `catch`'s handler

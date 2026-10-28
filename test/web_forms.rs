@@ -52,8 +52,8 @@ pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
 /// and read, `canvas.width = 320`.
 pub fn canvas_size() -> (u32, u32) {
     let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas", None));
-    canvas.set_width(320);
-    canvas.set_height(200);
+    canvas.set_width(320.0);
+    canvas.set_height(200.0);
     (canvas.width(), canvas.height())
 }
 
@@ -136,11 +136,11 @@ pub fn iterated(headers: &webapi::Headers, list: &webapi::DOMTokenList) -> (Vec<
 /// SVG name is the class it's an alias of, `SVGPoint` a `DOMPoint`; and a
 /// union of a typedef is named as it's written, `string | BufferSource`.
 pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f32, f64, &'static webapi::FontFace) {
-    let data = buffer.get_channel_data(0);
+    let data = buffer.get_channel_data(0.0);
     let point = svg.create_svg_point();
     point.set_x(2.0);
-    let face = webapi::font_face::new("Mono", js::uint8_array::new(4), None);
-    (data.get(0).unwrap_or(0.0), point.x(), face)
+    let face = webapi::font_face::new("Mono", js::uint8_array::new(4.0), None);
+    (data.get(0.0).unwrap_or(0.0), point.x(), face)
 }
 
 /// A stringifier is `to_string()`, JS's `toString()`: of `stringifier;`,
@@ -177,7 +177,7 @@ pub fn listed(list: &webapi::NodeList, headers: &webapi::Headers) -> (usize, Vec
 /// an input's `labels`, `HTMLLabelElement`s.
 pub fn selected(el: &webapi::Element, input: &webapi::HTMLInputElement) -> (Vec<f64>, Option<String>) {
     let widths = el.query_selector_all("p").values().map(|p| p.get_bounding_client_rect().width()).collect();
-    let label = input.labels().and_then(|labels| labels.item(0)).map(|label| label.html_for());
+    let label = input.labels().and_then(|labels| labels.item(0.0)).map(|label| label.html_for());
     (widths, label)
 }
 

@@ -513,7 +513,12 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (name === "WindowProxy") return rustType({ ...t, idlType: "Window" }, at);
   const alias = windowAliases.get(name);
   if (alias) return rustType({ ...t, idlType: alias }, at);
-  if (NUMBERS[name]) return NUMBERS[name];
+  // A number a function takes, or a setter, is TypeScript's `number`, an
+  // `f64`, which the host converts as WebIDL says, `ToUint32` of an
+  // `unsigned long`'s, wrapping: `range.setStart(node, offset)` of any
+  // number, as JS's caller gives it. One it gives is its own type, which
+  // WebIDL's conversion made it (ADR 0994).
+  if (NUMBERS[name]) return at === "param" && name !== "boolean" ? "f64" : NUMBERS[name];
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
   // A callback a function takes is a closure, given what JS calls it with

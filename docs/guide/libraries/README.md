@@ -161,6 +161,12 @@ What it has:
   ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md));
   of an object or an array as one, `kind.object()`'s `&JsObject`
   ([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)).
+  A typed array takes what TypeScript types it to: a number, an `f64`,
+  for each length, index, offset and element, which JS converts as it
+  stores it, an `Int32Array`'s wrapping, a `BigInt64Array`'s element its
+  `i64`; and to `set` and `from` any `ArrayLike` of numbers, another typed
+  array too, `grown.set(event_log, None)`
+  ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
   Each typed array and a `DataView` derefs to an `ArrayBufferView`,
   TypeScript's, of its `buffer()`, `byte_offset()` and `byte_length()`:
   what a function of any view takes, `view: &ArrayBufferView`; and
@@ -264,6 +270,11 @@ How WebIDL maps to Rust, one rule for each:
   `input.value()`, `input.set_value("x")`.
 - **Inheritance is `Deref`:** an `&HTMLButtonElement` has `Element`'s and
   `Node`'s methods, and goes where an `&Element` does.
+- **A number it takes is TypeScript's `number`, an `f64`,** an `unsigned
+  long`'s too, which the browser converts as WebIDL says, wrapping:
+  `range.set_start(node, offset)` of any number, `labels.item(0.0)`. One
+  it gives is its own type, a `u32` of an `unsigned long`
+  ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
 - **An argument a caller may leave out is an `Option`,** and a trailing
   `None` is no argument: `window.fetch(url, None)` is `window.fetch(url)`
   ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
