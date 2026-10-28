@@ -495,7 +495,9 @@ fn gives_more<'tcx>(
             _ => super::representation::may_look_like_none(&calls.recognition, given),
         };
         (drops && !takes(index, ParamFact::Drop) && body_may_drop(calls, (callee, index), may_drop))
-            || (nullish && takes(index, ParamFact::Unboxed))
+            || (nullish
+                && takes(index, ParamFact::Unboxed)
+                && body_may_box(calls, (callee, index), &mut HashSet::new()))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     })
@@ -586,6 +588,82 @@ fn body_may_drop<'tcx>(
     drops
 }
 
+/// Whether a library's `id` may make a `Some` of its type parameter
+/// `index`, whose box an export that boxes none leaves out (ADR 0051,
+/// amended): an `Option` of what holds one is the type of a place its MIR
+/// has, or of a closure's it makes, or it gives one to a function of its
+/// library's that may, or to std's, which may. Not given to a binding,
+/// JS's, which makes no `Option` of it, nor to a closure, a `dyn Fn` or a
+/// fn pointer, which takes it as its own maker's code gives it. So React's
+/// `runWithFiberInDEV(fiber, () => { .. })` of React DOM's, given `()`s,
+/// is the reconciler's export (gap rd75b).
+fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: &mut HashSet<DefId>) -> bool {
+    if !seen.insert(id) {
+        return false;
+    }
+    let tcx = calls.tcx;
+    let holds = |ty: Ty<'tcx>| {
+        ty.walk()
+            .filter_map(|arg| arg.as_type())
+            .any(|ty| matches!(ty.kind(), ty::Param(p) if p.index == index))
+    };
+    let boxes = |ty: Ty<'tcx>| {
+        ty.walk().filter_map(|arg| arg.as_type()).any(|ty| match ty.kind() {
+            ty::Adt(adt, args) => {
+                tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option) && args.types().any(holds)
+            }
+            _ => false,
+        })
+    };
+    if !tcx.is_mir_available(id) {
+        return true;
+    }
+    let body = tcx.optimized_mir(id);
+    if body.local_decls.iter().any(|decl| boxes(decl.ty)) {
+        return true;
+    }
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && let mir::Rvalue::Aggregate(kind, _) = &assign.1
+                && let mir::AggregateKind::Closure(closure, _) = **kind
+                && body_may_box(calls, (closure, index), seen)
+            {
+                return true;
+            }
+        }
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            continue;
+        };
+        let given = args.iter().any(|arg| holds(arg.node.ty(&body.local_decls, tcx)));
+        let Some((callee, callee_args)) = func.const_fn_def() else {
+            continue;
+        };
+        let generic = callee_args.types().any(holds);
+        if !given && !generic {
+            continue;
+        }
+        let asks = if super::bindings::is_binding(tcx, callee)
+            || tcx
+                .trait_of_assoc(callee)
+                .is_some_and(|tr| tcx.fn_trait_kind_from_def_id(tr).is_some())
+        {
+            false
+        } else if compiled_here(calls.foreign, tcx, callee) {
+            (0..callee_args.len() as u32).any(|at| {
+                (callee_args.get(at as usize).and_then(|arg| arg.as_type())).is_some_and(holds)
+                    && body_may_box(calls, (callee, at), seen)
+            })
+        } else {
+            true
+        };
+        if asks {
+            return true;
+        }
+    }
+    false
+}
+
 /// Refuses an instance's read of its library's private state: a static or
 /// a thread-local its library doesn't export, which a function compiled in
 /// another crate can't reach, as its library's own code has the one there
@@ -629,6 +707,37 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
                 "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
                 tcx.def_path_str(root),
                 tcx.def_path_str(def),
+            ));
+        }
+    }
+    // A thread-local its library makes its module's variable, `export let
+    // last` (ADR 0270, amended), which only that module's JS can set: an
+    // import can't be assigned. Set, by `set`, `take`, `replace`,
+    // `with_borrow_mut` or its cell lent by `with`, of the type it holds.
+    let variable =
+        |def: DefId| (calls.foreign.item(def)).is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable));
+    let keys: Vec<DefId> = (read.read.iter().copied())
+        .filter(|&def| !def.is_local() && variable(def))
+        .collect();
+    let held = |key: DefId| match tcx.type_of(key).instantiate_identity().skip_normalization().kind() {
+        ty::Adt(_, args) => args.types().next(),
+        _ => None,
+    };
+    for (callee, args) in called(body) {
+        let sets = super::recognition::local_key_sets(tcx, callee);
+        // What the key it's called of holds, of its impl's `LocalKey<Cell<T>>`.
+        let of = (tcx.inherent_impl_of_assoc(callee)).and_then(|imp| {
+            match tcx.type_of(imp).instantiate(tcx, args).skip_normalization().kind() {
+                ty::Adt(_, key_args) => key_args.types().next(),
+                _ => None,
+            }
+        });
+        if sets && let Some(&key) = keys.iter().find(|&&key| held(key).is_some() && held(key) == of) {
+            let root = tcx.typeck_root_def_id(id);
+            tcx.dcx().err(format!(
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it sets `{}`, its library's module variable, which JS lets only that module set (ADR 0270, amended): set it in a `pub fn` of that library that takes nothing to copy or drop, and call that",
+                tcx.def_path_str(root),
+                tcx.def_path_str(key),
             ));
         }
     }

@@ -153,8 +153,10 @@ serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
   crate's JS hasn't, a destructor among them, or a function that copies
   what the crate changes in place, is refused where it reads its
   library's private `static` or thread-local, or calls or reads a binding
-  its library names by a path relative to its own file; a binding's
-  `static` of a global, React's `__DEV__`, it reads as its library does
+  its library names by a path relative to its own file, or sets its
+  library's module variable, `export let`, which JS can't assign; a
+  binding's `static` of a global, React's `__DEV__`, it reads as its
+  library does
   ([ADR 0914](../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
 - A crate that would share what a library it uses represents otherwise
   is refused: counting an `Rc` of a type the library counts none of

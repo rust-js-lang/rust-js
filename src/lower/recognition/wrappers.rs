@@ -620,6 +620,15 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
     }
 }
 
+/// Does `id`, a thread-local's method, set what it holds or lend its
+/// cell: `set`, `take`, `replace`, `with_borrow_mut` or `with` (ADR 0270,
+/// amended)?
+pub(in crate::lower) fn local_key_sets(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    local_key_access(tcx, id) == Some(true)
+        || is_local_with(tcx, id)
+        || (local_key_access(tcx, id).is_some() && tcx.item_name(id).as_str() == "with_borrow_mut")
+}
+
 /// Is `id` a thread-local's `with`, which lends its closure the cell
 /// itself (ADR 0037)?
 pub(in crate::lower) fn is_local_with(tcx: TyCtxt<'_>, id: DefId) -> bool {

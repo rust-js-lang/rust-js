@@ -654,3 +654,37 @@ Held by `test/crates.test.ts`' "a library's function its consumer compiles
 is refused where it reads its library's private state" (`dep::unbounded`,
 of `Infinity`, and `dep::limited`), and mutations
 `instance-binding-static-private` and `instance-relative-static-read`.
+
+## Amendment: a `()` given is the export's where nothing boxes it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; the export does
+what the copy would.
+
+React DOM's `runWithFiberInDEV(ancestor, () => { .. })` compiled the
+reconciler's function itself (gap rd75b), where upstream imports it from
+`'react-reconciler/src/ReactCurrentFiber'`: its `()` arguments may look
+like `None`, and the reconciler's own calls give none, so its export takes
+each `Some` of them unboxed (ADR 0051, amended). But it makes no `Some` of
+them. **A call giving what may look like `None` to a type parameter its
+export takes unboxed compiles its own only where the function may make a
+`Some` of it** (`instances::body_may_box`): an `Option` of what holds one
+is the type of a place in its MIR or a closure's it makes, or it gives one
+to its library's function that may, or to std's, which may. Not to a
+binding, nor to a closure, a `dyn Fn` or a fn pointer, which take it as
+their maker's code gives it. `wrapped(())`, `Some(value)`, is still the
+consumer's own, boxing it.
+
+And a copy compiled for another reason is refused where **it sets its
+library's module variable**, a thread-local its library makes `export let`
+(ADR 0270, amended), by `set`, `take`, `replace`, `with_borrow_mut` or
+`with`: JS can't assign an import, and the copy threw `TypeError:
+Assignment to constant variable.` where Rust runs, a wrong answer found
+here. "but it sets `dep::LAST`, its library's module variable, which JS
+lets only that module set".
+
+Held by `test/crates.test.ts`' two-crate case `generic_given_unit`, against
+native Rust, and its "a library's generic function given what may look like
+None is its export where it makes no Some of it", which reads the import;
+"… private state", `dep::remember(4, Loud(7))`; and mutations
+`instance-unit-given-copied`, `instance-box-unseen` and
+`instance-sets-library-variable`.
