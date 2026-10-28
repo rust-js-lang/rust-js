@@ -604,7 +604,7 @@ pub fn plain() -> String {
 
 // A RegExp of a pattern and flags written as they are is a literal, as JS
 // writes one, `/%s/g` (ADR 0243); one JS can't parse is made as it was,
-// to throw when it runs.
+// to throw when it runs, its flags left out where there are none.
 test("a RegExp of a pattern as it is written is a literal", async () => {
   const dir = fixture("regex-literals");
   writeFileSync(join(dir, "lib.rs"), `use js::reg_exp;
@@ -632,6 +632,11 @@ pub fn joined(text: &str) -> String {
 pub fn unparsed() -> bool {
     reg_exp::new("(", "").test("(")
 }
+
+// isAttributeNameSafe's, made at run time: no flags are none written.
+pub fn attribute_name(start: &str, text: &str) -> bool {
+    reg_exp::new(&("^[".to_owned() + start + "]*$"), "").test(text)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -639,13 +644,15 @@ pub fn unparsed() -> bool {
   expect(js).toContain('text.replace(/a\\/b|[/]/g, "-")');
   expect(js).toContain('text.replace(/(?:)/, "^")');
   expect(js).toContain('new RegExp("\\n", "g")');
-  expect(js).toContain('new RegExp("(", "")');
+  expect(js).toContain('new RegExp("(")');
+  expect(js).toContain('return new RegExp("^[" + start + "]*$").test(text);');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.placeholders("%s and %s")).toBe("_ and _");
   expect(lib.slashes("a/b /")).toBe("- -");
   expect(lib.emptied("x")).toBe("^x");
   expect(lib.joined("a\nb")).toBe("a b");
   expect(() => lib.unparsed()).toThrow(SyntaxError);
+  expect([lib.attributeName("a-z", "abc"), lib.attributeName("a-z", "aB")]).toEqual([true, false]);
 });
 
 // A dictionary of entries written out, each key a string, is an object

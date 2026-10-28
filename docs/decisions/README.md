@@ -262,7 +262,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused)*
 - [0241 Text right before text is in braces](0241-adjacent-text.md)
 - [0242 A `dyn ReactNode` is the node itself](0242-dyn-react-node.md)
-- [0243 A RegExp of a pattern as it's written is a literal](0243-regex-literals.md)
+- [0243 A RegExp of a pattern as it's written is a literal](0243-regex-literals.md) *(amended: no flags are left out)*
 - [0244 A value taken apart through a shared reference is destructured](0244-destructuring-through-references.md)
 - [0245 next/legacy/image, and a module's imports named by its own](0245-legacy-image-and-module-import-names.md)
 - [0246 A type parameter of a function needs no copy of its own](0246-function-parameters-need-no-copy.md)

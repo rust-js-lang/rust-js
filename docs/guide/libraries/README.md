@@ -134,8 +134,9 @@ What it has:
 - **`json`** is `JSON.parse` and `JSON.stringify`; a Rust value's JSON is
   serde's, below.
 - **`RegExp`**, made by `reg_exp::new`, a literal `/^\d+$/` of a pattern
-  written out ([ADR 0243](../../decisions/0243-regex-literals.md)), with
-  `test`, `exec` and `reg_exp::replace`.
+  written out, and `new RegExp(pattern)` of one made at run time and no
+  flags, `""` ([ADR 0243](../../decisions/0243-regex-literals.md),
+  amended), with `test`, `exec` and `reg_exp::replace`.
 - **Timers:** `set_timeout`, `set_interval`, their `clear_*`.
 - **Where JS's answer isn't Rust's, JS's by name:** `js::string`'s
   methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,

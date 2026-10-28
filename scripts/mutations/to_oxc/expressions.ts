@@ -359,4 +359,20 @@ export const mutations: Mutation[] = [
         );`,
     tests: ["test/emission.test.ts", "-t", "a source map names nothing"],
   },
+  {
+    name: "regexp-empty-flags-written",
+    breaks: "isAttributeNameSafe's `new RegExp(pattern)` of a pattern made at run time is `new RegExp(pattern, \"\")` (ADR 0243, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>\n",
+    replace: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty() && false) =>\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
+  },
+  {
+    name: "regexp-any-flags-dropped",
+    breaks: "`new RegExp(pattern, \"g\")` of a pattern made at run time loses its flags, a search that isn't global",
+    file: "src/to_oxc/expressions.rs",
+    find: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>\n",
+    replace: "                && matches!(&flags.kind, ExprKind::Str(_)) =>\n",
+    tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
+  },
 ];

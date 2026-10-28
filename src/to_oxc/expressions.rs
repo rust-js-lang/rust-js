@@ -276,7 +276,7 @@ impl<'a> Cx<'a> {
                 Expression::new_identifier(sp, self.name(&literal), b)
             }
             ExprKind::New(callee, args) => {
-                let args = args.iter().map(argument);
+                let args = without_empty_flags(callee, args).iter().map(argument);
                 Expression::new_new_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), b)
             }
         }
@@ -639,6 +639,22 @@ fn regex_literal(callee: &js::Expr, args: &[js::Expr]) -> Option<String> {
         .parse()
         .ok()?;
     Some(format!("/{body}/{flags}"))
+}
+
+/// `new RegExp(pattern, "")`'s arguments as JS writes them, `new
+/// RegExp(pattern)`: flags left out are `""` (ECMAScript's
+/// RegExpInitialize), so the same expression, as isAttributeNameSafe makes
+/// its pattern at run time (ADR 0243, amended). Any other's as they are.
+fn without_empty_flags<'e>(callee: &js::Expr, args: &'e [js::Expr]) -> &'e [js::Expr] {
+    match args {
+        [pattern, flags]
+            if matches!(&callee.kind, ExprKind::Var(name) if name == "RegExp")
+                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>
+        {
+            std::slice::from_ref(pattern)
+        }
+        _ => args,
+    }
 }
 
 /// Can `s` be JSX text as it is? Braces and angle brackets start JSX, `&` an

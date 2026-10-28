@@ -1,6 +1,7 @@
 # 0243. A RegExp of a pattern as it's written is a literal
 
-Status: Accepted. Extends [0102](0102-js-and-webapi.md).
+Status: Accepted. Extends [0102](0102-js-and-webapi.md). Amended: no flags,
+`""`, are left out of one made at run time (below).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -49,3 +50,23 @@ reg_exp::new(r"^/\d+$", "m")
 - **It's tested**: a compiler test makes a literal, one with a `/` in and
   out of a class, an empty one, and one with a line break and one JS
   can't parse made as they run; mutations break each case.
+
+## Amendment (2026-10-28): no flags are left out
+
+react-dom-bindings' isAttributeNameSafe makes its pattern at run time,
+`new RegExp('^[' + ATTRIBUTE_NAME_START_CHAR + '][' + ATTRIBUTE_NAME_CHAR
++ ']*$')`, of no flags. The port's `reg_exp::new(&pattern, "")` printed
+`new RegExp(.., "")` (gap rd14), an argument no one writes.
+
+**`new RegExp(pattern, "")` is printed `new RegExp(pattern)`**: flags
+left out are `""` (ECMAScript's RegExpInitialize), so it's the same
+expression, and `""` evaluates nothing. The binding keeps its `flags:
+&str`, one form for every call, as a literal's `/(?:)/` of `""` is; an
+`Option<&str>` would change each of its callers for a spelling the
+printer owns. Case N ([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/lowering-strings.test.ts`'s "a RegExp of a pattern as it is
+written is a literal", `attribute_name`, run; mutations
+`regexp-empty-flags-written` and `regexp-any-flags-dropped`
+(`to_oxc/expressions.ts`).
+
