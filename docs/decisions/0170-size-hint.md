@@ -1,6 +1,8 @@
 # 0170. `size_hint()` where its answer is known
 
-Status: Accepted. Extends [0164](0164-double-ended-iterators.md).
+Status: Accepted. Extends [0164](0164-double-ended-iterators.md). Narrowed
+by [0989](0989-a-rev-hints-what-its-source-hints.md): a `rev()` of what
+generic code steps hints what its source hints.
 
 Case: B, D ([0262](0262-when-rust-and-js-disagree.md)).
 

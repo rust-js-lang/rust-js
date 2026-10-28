@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/size_hint.js",
     find: "  if (typeof it.of?.next === \"function\") return $sizeHint(it.of);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^hint_through_a_given_value.rs$"],
   },
   {
     name: "size-hint-dictionary-unasked",
