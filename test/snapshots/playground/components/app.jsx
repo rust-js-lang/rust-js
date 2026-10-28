@@ -72,7 +72,7 @@ export function App() {
       const loaded = await load(stat);
       const e = loaded.examples[0];
       const first = e != null ? [e.name, e.root, e.files.slice()] : undefined;
-      if (first != null) {
+      if (first !== undefined) {
         const [name, root, files] = first;
         if (!cancelled) {
           const texts = await loadExample(name, files);
@@ -202,7 +202,7 @@ export function App() {
   }
   function newFile() {
     const answer = window.prompt("New file, e.g. math.rs or geometry/shape.rs:");
-    if (answer == null) {
+    if (answer === null) {
       return;
     }
     const path = $trim(answer);

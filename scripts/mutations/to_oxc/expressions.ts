@@ -399,4 +399,12 @@ export const mutations: Mutation[] = [
     replace: "            let (text, right) = parse(tokens, at, 7, literal, int32)?;",
     tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
   },
+  {
+    name: "strict-presence-unprinted",
+    breaks: "an `Option`'s test of the one `None` it can be is printed `x != null`, where upstream's `currentEvent === undefined` is what it says (ADR 0298, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                let strict = js::strict_presence(e);\n",
+    replace: "                let strict: Option<(js::Op, js::Expr)> = None;\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
+  },
 ];

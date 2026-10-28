@@ -24,7 +24,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let span = state.body.local_decls[place.local].source_info.span;
             return Err(self.unsupported(span, "copying a closure that changes what it captured"));
         }
-        match self.mir_operand_read(state, operand, out)? {
+        let read = self.mir_operand_read(state, operand, out)?;
+        match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);
                 Ok(Value::Expr(self.copy_if_needed(e, ty)))
@@ -527,5 +528,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             }
         }
+    }
+}
+
+/// What `operand` reads, `read`, and of an `Option` whose `None` is only
+/// one of `undefined` and `null`, or a reference to one, that it is
+/// (`OptionWrites::nones`): its test says which (ADR 0298, amended).
+pub(super) fn none_read<'tcx>(state: &State<'_, 'tcx>, operand: &Operand<'tcx>, read: Value<'tcx>) -> Value<'tcx> {
+    let none = (operand.place())
+        .filter(|place| matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]))
+        .and_then(|place| state.facts.options().nones.get(&place.local).copied());
+    let said = |e: Expr, none| Expr {
+        facts: e.facts.with(none),
+        ..e
+    };
+    match (read, none) {
+        (Value::Expr(e), Some(none)) => Value::Expr(said(e, none)),
+        (Value::Place(e), Some(none)) => Value::Place(said(e, none)),
+        (read, _) => read,
     }
 }

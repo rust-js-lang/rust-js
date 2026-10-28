@@ -29,7 +29,7 @@ function main() {
     console.log(`drop ${a[0]}`);
     return result;
   }
-  const value = none != null ? f(none) : undefined;
+  const value = none !== undefined ? f(none) : undefined;
   if (none == null) {
     console.log(`drop ${a[0]}`);
   }

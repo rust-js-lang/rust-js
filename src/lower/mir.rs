@@ -460,6 +460,11 @@ struct OptionWrites {
     /// `#[rust_js::nullable]` fields: their `None` is `null` where it's made,
     /// `c ? v : null` (ADR 0275).
     null_nones: std::collections::HashSet<Local>,
+    /// The `Option`s whose `None` is only `undefined`, or only `null`, as
+    /// each of their writes gives (`mir_nones`): each read of one says so,
+    /// `Known::NoneUndefined`, and its test is `x !== undefined` (ADR 0298,
+    /// amended).
+    nones: HashMap<Local, js::Known>,
     /// The locals only ever `Some(..)`, and shared references to one: never
     /// `None`, so `==` to one is `===` (`strictly_equal`).
     made_some: std::collections::HashSet<Local>,

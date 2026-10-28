@@ -86,7 +86,7 @@ export function sameSlots(a, b) {
 /** A string inside. */
 export function label(n) {
   const name = n > 0 ? String(n) : undefined;
-  return name != null ? name + "!" : "none";
+  return name !== undefined ? name + "!" : "none";
 }
 
 function double(n) {
@@ -181,7 +181,7 @@ export function chainedStatement(n) {
   const h = half(n);
   if (h != null) {
     const value = h > 0 ? [h, (h + 1) | 0] : undefined;
-    if (value != null && value[0] < 10) {
+    if (value !== undefined && value[0] < 10) {
       const a = value[0];
       const b = value[1];
       total = (a + b) | 0;

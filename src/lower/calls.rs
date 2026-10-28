@@ -8,7 +8,7 @@ use super::recognition::Catching;
 
 use super::{FnCx, R};
 use crate::js;
-use crate::js::{Expr, StmtKind};
+use crate::js::{Expr, Known, StmtKind};
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -220,6 +220,24 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
     super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()
 }
 
+/// What a call of `def_id` gives for `None` where it's only one of
+/// `undefined` and `null`, as an `Option`'s fact (ADR 0298, amended): of a
+/// binding whose result TypeScript types `T | null`,
+/// `#[rust_js::nullable]`'s, `null`, and `T | undefined`,
+/// `#[rust_js::optional]`'s, `undefined`. Not a trait's method's, as
+/// `gives_null_for_none` isn't; nor the crate's own nullable function's,
+/// which may give back as it is a nullable field's value that an object
+/// JS made holds `undefined` in.
+pub(super) fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> Option<Known> {
+    if !super::bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() {
+        return None;
+    }
+    if super::bindings::nullable_result(tcx, def_id) {
+        return Some(Known::NoneNull);
+    }
+    super::bindings::optional_result(tcx, def_id).then_some(Known::NoneUndefined)
+}
+
 /// What an `and_then` of `f` gives, of `then`, `f`'s call: `then`, as
 /// `given_by` has it, where what it's of is `Some`, and its `None` where
 /// that's `None`, `null` where `f` `gives_null_for_none`, as `f`'s own
@@ -227,11 +245,16 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
 /// getComponentNameFromOwner(owner) : null` (ADR 0841, amended); else
 /// `undefined`, as a `None` is.
 /// Of a closure, where what it gives is such a call, never `undefined`,
-/// `|i| try_hydrate_activity(fiber, i)`'s, the same (ADR 0841, amended).
+/// `|i| try_hydrate_activity(fiber, i)`'s, the same (ADR 0841, amended);
+/// not a binding's, which TypeScript types `T | null`, whose `undefined`
+/// where what it's of is `None` is JS's `labels?.item(0)` (ADR 0298,
+/// amended).
 pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Expr) -> (Expr, Expr) {
     let none = match f.kind() {
         ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr::null(),
-        ty::Closure(..) if then.facts.has(crate::js::Known::Defined) => Expr::null(),
+        // Not a binding's, `|labels| labels.item(0)`, whose `?.` reads as
+        // JS's, `labels?.item(0)` (ADR 0298, amended).
+        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),
         _ => Expr::undefined(),
     };
     (given_by(tcx, f, then), none)
@@ -243,12 +266,21 @@ pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Exp
 /// A binding getter's read too, React's `ReactSharedInternals.T`, which its
 /// declaration says is `null` for `None` (ADR 0638, amended), whatever
 /// else is known of it. A closure's value isn't asked.
+/// And, of an `Option` it gives, what its `None` is where it's only one
+/// (`none_given_by`), which its test says (ADR 0298, amended).
 pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
-    match f.kind() {
-        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) => Expr {
-            facts: value.facts.with(crate::js::Known::Defined),
-            ..value
-        },
-        _ => value,
+    let ty::FnDef(def_id, _) = *f.kind() else {
+        return value;
+    };
+    let mut facts = value.facts;
+    if gives_null_for_none(tcx, def_id) {
+        facts = facts.with(Known::Defined);
     }
+    let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
+    if let Some(none) = none_given_by(tcx, def_id)
+        && matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+    {
+        facts = facts.with(none);
+    }
+    Expr { facts, ..value }
 }

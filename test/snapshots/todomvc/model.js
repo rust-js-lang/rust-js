@@ -84,7 +84,7 @@ export function load() {
     return [];
   }
   const json = storage.getItem(KEY);
-  if (json != null) {
+  if (json !== null) {
     try {
       return JSON.parse(json);
     } catch {

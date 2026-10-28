@@ -101,6 +101,16 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
     nullable_alone(tcx, def_id)
 }
 
+/// Whether a binding says its result's `None` is `undefined`, never
+/// `null`, `#[rust_js::optional]` alone on it, TypeScript's `T |
+/// undefined`: `window.event` (ADR 0298, amended). Of the crate's own
+/// functions it says nothing: their `None` is `undefined` where they make
+/// it, but what they return may be a value JS gave.
+pub(in crate::lower) fn optional_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
+    super::is_binding(tcx, def_id) && tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
+}
+
 /// Why a function's `#[rust_js::nullable]` is refused, where its result
 /// isn't an `Option`. Where the result holds one, an array's or a tuple's,
 /// its `None`s are `null` where they're written `js::null()` (ADR 0935,

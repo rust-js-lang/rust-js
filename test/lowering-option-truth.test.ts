@@ -461,3 +461,90 @@ pub fn text_there(v: Option<&'static js::Unknown>) -> bool {
   const task = { callback: (timedOut: boolean) => void seen.push(timedOut) };
   expect([lib.run(task), task.callback, lib.run({ callback: undefined }), lib.run({ callback: 3 }), seen, lib.objectThere(null), lib.objectThere({}), lib.textThere("")]).toEqual([true, undefined, false, false, [true], false, true, true]);
 });
+
+// ADR 0298, amended by the user (2026-10-28): an `Option`'s test says the
+// `None` it can be. A binding TypeScript types `T | undefined`,
+// `window.event`, `#[rust_js::optional]`, is tested `=== undefined`, as
+// React's resolveUpdatePriority writes `if (currentEvent === undefined)`;
+// one it types `T | null`, `node.textContent`, `#[rust_js::nullable]`,
+// `!== null`, and a nullable function gives it as it is (rd66); one that
+// may be either, made of both or given, `!= null`.
+test("an Option's test says the None it can be", async () => {
+  const dir = fixture("none-kinds");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Node, Window};
+
+pub fn priority(window: &Window) -> usize {
+    let Some(current_event) = window.event() else {
+        return 32;
+    };
+    current_event.r#type().len()
+}
+
+pub fn text_len(node: &Node) -> usize {
+    match node.text_content() {
+        Some(text) => text.len(),
+        None => 0,
+    }
+}
+
+pub fn has_text(node: &Node) -> bool {
+    node.text_content().is_some()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn text_of(node: &Node) -> Option<String> {
+    node.text_content()
+}
+
+pub fn either(node: &Node, window: &Window, text: bool) -> bool {
+    let found = if text { node.text_content().map(|_| 1) } else { window.event().map(|_| 2) };
+    found.is_some()
+}
+
+pub fn given(text: Option<String>) -> bool {
+    let copy = text;
+    copy.is_none()
+}
+
+pub fn reassigned(mut count: Option<u32>, reset: bool) -> bool {
+    if reset {
+        count = None;
+    }
+    count.is_some()
+}
+
+pub struct Holder {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub child: Option<u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn child_of(holder: &Holder) -> Option<u32> {
+    holder.child
+}
+
+pub fn has_child(holder: &Holder) -> bool {
+    child_of(holder).is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("webapi", "js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const currentEvent = window.event;\n  if (currentEvent === undefined) {\n    return 32;\n  }\n");
+  expect(js).toContain("  const text = node.textContent;\n  return text !== null ? $byteLen(text) : 0;\n");
+  expect(js).toContain("  return node.textContent !== null;\n");
+  expect(js).toContain("export function textOf(node) {\n  return node.textContent;\n}");
+  expect(js).toContain("  return found != null;\n");
+  expect(js).toContain("  return copy == null;\n");
+  expect(js).toContain("  return count != null;\n");
+  expect(js).toContain("  return childOf(holder) != null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const event = { type: "click" };
+  expect([lib.priority({ event: undefined }), lib.priority({ event }), lib.textLen({ textContent: null }), lib.textLen({ textContent: "ab" })]).toEqual([32, 5, 0, 2]);
+  expect([lib.hasText({ textContent: null }), lib.hasText({ textContent: "" }), lib.textOf({ textContent: null })]).toEqual([false, true, null]);
+  expect([lib.either({ textContent: null }, {}, true), lib.either({}, { event: undefined }, false), lib.either({}, { event }, false)]).toEqual([false, false, true]);
+  expect([lib.given(null), lib.given(undefined), lib.given("")]).toEqual([true, true, false]);
+  expect([lib.reassigned(null, false), lib.reassigned(0, false), lib.reassigned(0, true)]).toEqual([false, true, false]);
+  // A nullable field of an object JS made may be left out, `undefined`:
+  // the crate's nullable function gives it as it is, so either.
+  expect([lib.hasChild({}), lib.hasChild({ child: null }), lib.hasChild({ child: 0 })]).toEqual([false, false, true]);
+});

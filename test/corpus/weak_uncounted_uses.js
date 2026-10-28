@@ -27,7 +27,7 @@ function main() {
   console.log(`${nodeNamed_name(kid)}`);
   const maybe = $some(null);
   const none = undefined;
-  console.log(`${maybe != null} ${none != null}`);
+  console.log(`${maybe != null} ${none !== undefined}`);
   const links = [
     {
       to: null,

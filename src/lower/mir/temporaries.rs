@@ -411,7 +411,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             values.push(match pend.filter(|_| admitted) {
                 Some(local) => {
                     let at = state.pending.iter().position(|(l, _)| *l == local).expect("pending");
-                    state.pending.remove(at).1
+                    let read = state.pending.remove(at).1;
+                    super::operands::none_read(state, operand, read)
                 }
                 None => self.mir_operand(state, operand, out)?,
             });

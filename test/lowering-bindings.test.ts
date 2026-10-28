@@ -1430,7 +1430,7 @@ pub fn task(name: &str) -> Option<&'static ConsoleTask> {
   expect(js).toContain(`// eslint-disable-next-line react-internal/no-production-logging
 const createTask$1 = DEV ? console.createTask : undefined;
 
-const createTask = createTask$1 != null ? (name) => createTask$1(name) : noTask;
+const createTask = createTask$1 !== undefined ? (name) => createTask$1(name) : noTask;
 `);
   expect(js).not.toContain("tmp");
   expect(js).not.toContain("(() =>");

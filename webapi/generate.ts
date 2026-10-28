@@ -128,6 +128,7 @@ const EXTRA: Record<string, Fn[]> = {
       jsName: "get console.createTask",
       params: [],
       result: "Option<&'static dyn Fn(&str) -> &'static ConsoleTask>",
+      none: "undefined",
       doc: [
         "[Chrome](https://developer.chrome.com/docs/devtools/console/api#createtask): `console.createTask`,",
         "the function that makes a [`ConsoleTask`] of a name, whose `run` DevTools shows the stack of",
@@ -840,8 +841,19 @@ const skipped = new Map<string, number>();
 const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
 /** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275);
- * `variadic`, its last a rest parameter's tuple (ADR 0640). */
-type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[]; typeParams?: string[]; variadic?: boolean };
+ * `none`, what its `Option` result's `None` is to JS where it's only one
+ * (`noneOf`); `variadic`, its last a rest parameter's tuple (ADR 0640). */
+type Fn = {
+  name: string;
+  jsName: string;
+  params: string[];
+  result: string;
+  doc: string[];
+  nullable?: string[];
+  none?: "null" | "undefined";
+  typeParams?: string[];
+  variadic?: boolean;
+};
 
 /** The interfaces a rest parameter's arguments are, `...streams:
  * MediaStream[]`'s: each `Takes` a reference to it, and to each that
@@ -1049,6 +1061,19 @@ function functionsOf(declared: Interface): Fn[] {
   // A result that may be `null` is an `Option`: `None` in Rust (ADR 0030).
   const nullable = (t: IdlType) => t.nullable || typedefs.get(t.idlType as string)?.nullable;
   const orNull = (rust: string, t: IdlType) => (nullable(t) ? `Option<${rust}>` : rust);
+  // What an `Option` result's `None` is to JS, as WebIDL and TypeScript
+  // type it: only `null` of a nullable type, `T | null`, which
+  // `#[rust_js::nullable]` says; only `undefined` of a union with
+  // `undefined`, `T | undefined`, `window.event`'s, which
+  // `#[rust_js::optional]` says; either, said by neither, of any other,
+  // `any`'s (ADR 0298, amended).
+  const noneOf = (t: IdlType, result: string): Fn["none"] => {
+    if (!result.startsWith("Option<")) return undefined;
+    const members = isUnion(t) ? flatMembers(t) : [t];
+    const nulls = nullable(t) || members.some((m) => m.nullable);
+    const undefineds = members.some((m) => m.idlType === "undefined");
+    return nulls && !undefineds ? "null" : undefineds && !nulls ? "undefined" : undefined;
+  };
 
   // Arguments up to the first optional one, each of the one type it takes:
   // a union's is its enum (ADR 0215).
@@ -1174,7 +1199,8 @@ function functionsOf(declared: Interface): Fn[] {
       if (m.special === "static") {
         const result = rustType(m.idlType!, "result");
         if (typeof result === "string") {
-          fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: orNull(result, m.idlType!), doc: [`[MDN](${mdn(i.name, m.name)})`] });
+          const given = orNull(result, m.idlType!);
+          fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given) });
         } else {
           skip(result.skip);
         }
@@ -1193,7 +1219,8 @@ function functionsOf(declared: Interface): Fn[] {
         const event = listens.get(i.name)?.get(m.name!.slice(2)) ?? "Event";
         const name = snake(m.name!);
         if (handler === HANDLERS.OnErrorEventHandler) unions.set(ERROR_ARG.name, ERROR_ARG);
-        fns.push({ name, jsName: `get ${m.name}`, params: self, result: `Option<&'static dyn ${handler.get(typeName(event))}>`, doc });
+        const held = `Option<&'static dyn ${handler.get(typeName(event))}>`;
+        fns.push({ name, jsName: `get ${m.name}`, params: self, result: held, doc, none: noneOf(m.idlType!, held) });
         fns.push({
           name: `set_${name}`,
           jsName: `set ${m.name}`,
@@ -1210,7 +1237,8 @@ function functionsOf(declared: Interface): Fn[] {
       // A getter whose type isn't supported (a union, say) is skipped, but
       // its setter can still take the union's enum.
       if (typeof result === "string") {
-        fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: self, result: orNull(result, m.idlType!), doc });
+        const given = orNull(result, m.idlType!);
+        fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: self, result: given, doc, none: noneOf(m.idlType!, given) });
       } else {
         skip(result.skip);
       }
@@ -1258,7 +1286,8 @@ function functionsOf(declared: Interface): Fn[] {
       const v = form(base, sig, m.arguments ?? []);
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: orNull(result, m.idlType!), doc, variadic: v.variadic });
+      const given = orNull(result, m.idlType!);
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given) });
     }
   }
 
@@ -1471,6 +1500,9 @@ function generic(f: Fn): string {
     `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(f.jsName)})]`,
     ...(f.variadic ? ["    #[cfg_attr(rust_js, rust_js::variadic)]"] : []),
     ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
+    // Its result's `None`, where JS gives only one (`noneOf`).
+    ...(f.none === "null" ? ["    #[cfg_attr(rust_js, rust_js::nullable)]"] : []),
+    ...(f.none === "undefined" ? ["    #[cfg_attr(rust_js, rust_js::optional)]"] : []),
     ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose

@@ -212,6 +212,13 @@ impl<'a> Cx<'a> {
                 Expression::new_unary_expression(sp, op, self.expr(arg), b)
             }
             ExprKind::Binary(op, l, r) => {
+                // An `Option`'s test of the one `None` it can be, `x !==
+                // undefined` (ADR 0298, amended).
+                let strict = js::strict_presence(e);
+                let (op, r) = match &strict {
+                    Some((op, none)) => (op, none),
+                    None => (op, &**r),
+                };
                 // Its right operand's comments are before it (ADR 0444,
                 // amended), placed as a branch's are.
                 let (l, r) = (self.expr(l), self.branch(r));

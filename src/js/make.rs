@@ -27,11 +27,12 @@ impl Expr {
 
     /// This, which lowering knows is never `undefined`, a `Some`'s value
     /// (`Known::Defined`); one it knows otherwise of, a getter's read say,
-    /// as it is.
+    /// as it is. What it knows of the `None` it can be, of an `Option`'s
+    /// read (`Known::NoneNull`), is no other knowledge.
     pub fn defined(self) -> Expr {
-        match self.facts.is_empty() {
+        match self.facts.of_presence() == self.facts {
             true => Expr {
-                facts: Facts::of(Known::Defined),
+                facts: self.facts.with(Known::Defined),
                 ..self
             },
             false => self,
@@ -41,7 +42,11 @@ impl Expr {
     /// Whether `option`, an `Option`, is `set`: `option != null`, or `==
     /// null` where it's not, whatever it holds (ADR 0298, amended by the
     /// user, 2026-10-28: one form, never its truth). The one test of an
-    /// `Option`'s being there, which `null_test` reads.
+    /// `Option`'s being there, which `null_test` reads. Of one whose `None`
+    /// is only `undefined` or only `null` (`Known::NoneUndefined`,
+    /// `Known::NoneNull`), the test says so, written `option !== undefined`
+    /// or `option !== null` (`stmt_walk::strict_presence`; ADR 0298,
+    /// amended by the user, 2026-10-28: by what its `None` can be).
     pub fn presence(option: Expr, set: bool) -> Expr {
         // Of one made where it's tested, `t ? v : undefined` of a `v`
         // that's there, the test it's made by, `t` (ADR 0910).
@@ -52,7 +57,15 @@ impl Expr {
             let test = (**test).clone();
             return if set { test } else { test.negated_test() };
         }
-        Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null())
+        let none = option.facts.of_presence();
+        let test = Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null());
+        match none == Facts::of(Known::NoneUndefined) || none == Facts::of(Known::NoneNull) {
+            true => Expr {
+                facts: test.facts.and(none),
+                ..test
+            },
+            false => test,
+        }
     }
 
     /// This, the property a binding's write assigns, which a setter may
@@ -657,8 +670,10 @@ impl Expr {
                 Op::LooseEq => Op::LooseNe,
                 _ => Op::LooseEq,
             };
+            // An `Option`'s presence negated says what its `None` is, as
+            // the test did (`Known::NoneUndefined`).
             return Expr {
-                facts: Facts::NONE,
+                facts: arg.facts.of_presence(),
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
             };
@@ -970,7 +985,9 @@ impl Expr {
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if self.facts.has(Known::Defined) || self.facts.has(Known::Item) => false,
+            _ if self.facts.has(Known::Defined) || self.facts.has(Known::Item) || self.facts.has(Known::NoneNull) => {
+                false
+            }
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(_)

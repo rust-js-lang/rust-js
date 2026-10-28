@@ -58,6 +58,25 @@ pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
     }
 }
 
+/// How a test of being set is written, of an `Option` whose `None` is only
+/// one of `undefined` and `null` (`Known::NoneUndefined`,
+/// `Known::NoneNull`, `Expr::presence`'s): `x !== undefined` or `x !==
+/// null`, and `===` of one not set, as upstream's JS tests `window.event`
+/// and `node.textContent` (ADR 0298, amended). `None` of any other test,
+/// written `x != null` as it is.
+pub(crate) fn strict_presence(test: &Expr) -> Option<(Op, Expr)> {
+    let set = null_test(test, true).is_some();
+    if !set && null_test(test, false).is_none() {
+        return None;
+    }
+    let none = match test.facts.of_presence() {
+        f if f == Facts::of(Known::NoneUndefined) => Expr::undefined(),
+        f if f == Facts::of(Known::NoneNull) => Expr::null(),
+        _ => return None,
+    };
+    Some((if set { Op::Ne } else { Op::Eq }, none))
+}
+
 /// Whether `place`, what a `take()` writes, is one rust-js made, read and
 /// written as a path: a variable, or a field of one, `root.cancel`, a
 /// plain data property none of whose reads a getter answers (ADR 0996),

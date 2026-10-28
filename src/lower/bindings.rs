@@ -24,6 +24,7 @@ pub(super) use imports::{Export, js_import, module_binding, namespace_name};
 pub(super) use nullable::{
     is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_const_refused, nullable_init,
     nullable_items, nullable_local, nullable_option, nullable_params, nullable_result, of_type_parameter,
+    optional_result,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 

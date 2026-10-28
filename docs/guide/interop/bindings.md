@@ -772,7 +772,7 @@ export async function open(other) {
   }
   const tree = result._0;
   const at = find(editor, "fn");
-  if (at != null) {
+  if (at !== null) {
     select(editor, [at, (at + 2) >>> 0]);
   } else {
     select(editor, null);
@@ -823,8 +823,13 @@ export async function open(other) {
   default_value: T)`, it's where it's given an `Option`, `createCursor(null)`,
   and any other value as it is, `createCursor(0)`
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
-  Reading a result, `None` is `undefined` or `null` either way
-  ([ADR 0275](../../decisions/0275-nullable-writes-null.md)).
+  Of a binding, it says JS gives `null` for its result's `None`,
+  TypeScript's `T | null`, so its test is `=== null`; `#[rust_js::optional]`
+  says `undefined`, `T | undefined`, tested `=== undefined`, as
+  `window.event()`'s is, `if (currentEvent === undefined)`. One that says
+  neither may give either, tested `== null`; the webapi crate says each
+  as WebIDL types it
+  ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
 - **`#[rust_js::variadic]` makes the last parameter the rest
   arguments** ([ADR 0221](../../decisions/0221-variadic-bindings.md)). A
   TypeScript rest parameter, `log(...data: any[])`, is `impl js::Rest<T>`
@@ -1022,6 +1027,7 @@ See [Components and props](../react/components.md).
 | Attribute | Says |
 |---|---|
 | `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null` |
+| `#[rust_js::optional]` | its result's `None` is `undefined`, TypeScript's `T \| undefined`, never `null` |
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |

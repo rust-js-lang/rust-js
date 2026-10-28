@@ -16,6 +16,9 @@ user (2026-10-28), which supersedes the decisions that test an `Option`
 by its truth: an `Option` is tested against `null`, whatever it holds,
 one output form** (below, "One form: an `Option` is tested against
 `null`"). An `Option<bool>`'s `Some(true)`, the value's truth, is kept.
+**Amended by the user again (2026-10-28): the test says the `None` it can
+be, `=== undefined` or `=== null` where it's only one** (below, "A test
+says the `None` it can be").
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -462,3 +465,91 @@ itself, `!!o` of a value's `!o`, so the three branches that negate it no
 longer each take its truth: `negated-and-untruthed` holds it for all three
 (`negated-value-untruthed` and `negated-or-untruthed`, of the branch no
 test reached, `o ? f() : true`, gone with them).
+
+## Amendment: a test says the `None` it can be (2026-10-28, the user's decision)
+
+React's resolveUpdatePriority reads `const currentEvent = window.event;
+if (currentEvent === undefined)`, and its fiber code `!== null`; the
+port's `let Some(current_event) = window.event() else { .. }` printed
+`currentEvent == null`, the one form above. **The user decided: an
+`Option`'s test prints by what its `None` can actually be**: `===
+undefined` / `!== undefined` where it can only be `undefined`, `===
+null` / `!== null` where it can only be `null`, and `== null` / `!=
+null` where both can occur or the origin is unknown. Correctness first:
+strict only where the representation guarantees the other value can't
+occur, including values that cross from JS; in doubt, `== null`.
+
+**What says it.** `Expr::presence`, the one test, reads two facts of the
+`Option` it tests, `Known::NoneUndefined` and `Known::NoneNull`, and
+puts the one it has on the test it makes, `x != null` still, so every
+pass that reads a presence test (`null_test`: `??`, `?.`, guards) reads
+it as before; its negation keeps it (`Facts::of_presence`), and the
+printer writes it `x !== undefined` or `x !== null`
+(`stmt_walk::strict_presence`). A test rebuilt without it is `!= null`,
+correct of either. The facts come from:
+
+- **A binding's result**, as it declares it (`calls::none_given_by`):
+  `#[rust_js::nullable]`, TypeScript's `T | null`, as of the crate's own
+  functions already, and `#[rust_js::optional]`, `T | undefined`, which
+  says the same of a binding that `#[rust_js::optional]` says of a field,
+  that it may be absent, `undefined`. The webapi generator says each as
+  WebIDL types it: a nullable type's result `nullable` (1,287 of them,
+  `node.textContent`, `input.selectionStart`, `onclick`), a union with
+  `undefined`'s `optional` (`window.event`, `customElements.get`, the
+  hand-written `console.createTask`, which a host may lack), neither of
+  `any`'s `Option<&Unknown>`, nor of one nullable and `undefined` both.
+  A binding is trusted as declared, as its types are (semantics.md).
+- **A MIR local each of whose writes is a `Some(..)` or gives one `None`
+  alone, the same** (`OptionWrites::nones`, `mir/patterns.rs`): the
+  crate's `None`, `undefined`; a call of such a binding; a copy of
+  another such local, or a shared borrow of one. Never a parameter, which
+  JS may give either; nor a local written any other way, a field's read
+  (an object JS made may hold `undefined` in a nullable field), a cast's,
+  a `take()`'s, a call of the crate's own (which may give back what JS
+  gave), in part, through a `&mut` to the whole or a raw pointer. Each
+  read of one, an operand's or a pending temporary's (`operands::
+  none_read`), says it.
+
+A `Some(v)` adds no `None`: where `v` is itself `null`, a value Rust
+holds as `Some`, `!== undefined` says so where `!= null` said `None`, so
+the strict test is never further from Rust than the loose one.
+
+**What's left `== null`, though upstream writes `!== null`**: a
+`#[rust_js::nullable]` field's read, a nullable thread-local's and the
+crate's own nullable function's result. Each stores `null` for `None`,
+but what it stores as it is, `nulled` (a nullable field read again), may
+be `undefined` where an object JS made, cast or given to a JS-facing
+function, left the field out: strict tests of them need a crate-wide fact
+that no value of the struct crosses in from JS, not made yet.
+
+**And of `and_then`** (ADR 0841, amended): a closure of a nullable
+binding's call, `|labels| labels.item(0)`, gives `undefined` where what
+it's of is `None`, JS's `input.labels?.item(0)`, not `option != null ?
+option.item(0) : null`; the crate's own nullable function's keeps `null`.
+`Expr::defined` of a read that says its `None` is no other knowledge,
+and `NoneNull` is never `undefined` (`may_be_undefined`), so a nullable
+binding's value kept in a variable is stored as it is, `internals.T =
+prevTransition`. The mutation `nullable-getter-coalesced` is gone: a
+getter's `Defined` is now also its `NoneNull`, two answers of one fact,
+the second the one its test reads.
+
+This also fixes React port gap rd66: `textContent`'s `string | null` is
+known `null` for `None`, so a nullable function returning it is `return
+node.textContent;`, no `?? null`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Of a value whose
+`None` is only `undefined`, `=== undefined` and `== null` agree on every
+value its representation holds, as `=== null` does of one only `null`.
+
+Held by `test/lowering-option-truth.test.ts`, "an Option's test says the
+None it can be" (run in Node: `window.event`'s, `textContent`'s, either's,
+a parameter's, a reassigned one's, a nullable field JS left out read
+through the crate's nullable function), `test/corpus/option_none_kinds.rs`
+against native Rust, and the mutations `presence-none-kind-unsaid`,
+`presence-none-kind-unnegated`, `defined-of-a-presence-read-kept-out`
+(`js/make.ts`), `strict-presence-kinds-swapped` (`js/stmt_walk.ts`),
+`strict-presence-unprinted` (`to_oxc/expressions.ts`),
+`nones-of-a-reassigned-parameter`, `nones-of-a-copy-of-what-js-gave`,
+`nones-through-a-mut-borrow`, `nones-of-any-call` (`lower/mir/patterns.ts`),
+`none-given-by-the-crates-nullable-function` and
+`and-then-of-a-binding-nulled` (`lower/calls.ts`).

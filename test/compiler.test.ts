@@ -840,7 +840,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // Each WebIDL type a function gives, as it is: a constant is its value.
   expect(js).toContain("const names = el.getAttributeNames();\n  const languages = navigator.languages;\n  const into = new TextEncoder().encodeInto(\"hi\", bytes);\n  return [names, languages.length, blob.size, param.value, 1, into.written];");
   // An event handler property is set to a closure, or to `null`.
-  expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = button.onclick != null;\n  button.onclick = null;\n  return set;");
+  expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = button.onclick !== null;\n  button.onclick = null;\n  return set;");
   expect(js).toContain("return new WebSocket(url);");
   expect(js).toContain('const style = el.style;\n  style.backgroundColor = "red";\n  return style.webkitLineClamp;');
   expect(js).toContain("nodes.forEach((node, i, list) => {");
@@ -856,7 +856,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A static attribute and a static method beside an instance's of its name.
   expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
   // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
-  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror != null;');
+  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror !== null;');
   // `[Symbol.iterator]`, `Iterator.from(list)`.
   expect(js).toContain("const count = Iterator.from(list).reduce((n) => n + 1, 0);\n  const names = Array.from(headers).map(([name]) => name);");
   // A list's items collected, `Array.from` of it.
@@ -864,7 +864,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   // An `ObservableArray`, an array.
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
-  expect(js).toContain('return registry.get("x-card") != null;');
+  expect(js).toContain('return registry.get("x-card") !== undefined;');
   const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined } = await import(join(target, "web_forms.js"));
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.

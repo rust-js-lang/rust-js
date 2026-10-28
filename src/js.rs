@@ -571,10 +571,6 @@ impl Facts {
         self.0 & Facts::of(known).0 != 0
     }
 
-    pub fn is_empty(self) -> bool {
-        self.0 == 0
-    }
-
     /// These and `known`.
     pub fn with(self, known: Known) -> Facts {
         Facts(self.0 | Facts::of(known).0)
@@ -583,6 +579,13 @@ impl Facts {
     /// These and `other`'s.
     pub fn and(self, other: Facts) -> Facts {
         Facts(self.0 | other.0)
+    }
+
+    /// What an `Option`'s presence test says of the `None` it tests for,
+    /// `Known::NoneUndefined` or `Known::NoneNull`, which a test made
+    /// again of the same `Option`, its negation, keeps.
+    pub fn of_presence(self) -> Facts {
+        Facts(self.0 & (Facts::of(Known::NoneUndefined).0 | Facts::of(Known::NoneNull).0))
     }
 
     /// What a test says of its `if`, not of its value: a written `else`
@@ -691,6 +694,21 @@ pub enum Known {
     /// `if (a) { ..; return; } else if (b) { return; }` (ADR 0237,
     /// amended), not an `if` after.
     Else,
+    /// Of an `Option`, that its `None` is only ever `undefined`, never
+    /// `null`, as its representation guarantees: a binding's result
+    /// TypeScript types `T | undefined`, `#[rust_js::optional]`'s,
+    /// `window.event`, or a variable each of whose writes is one, a
+    /// `Some(..)` or the crate's `None` (`OptionWrites::nones`). Of its
+    /// test, `x != null`, the test is written `x !== undefined`
+    /// (`stmt_walk::strict_presence`, ADR 0298, amended).
+    NoneUndefined,
+    /// Of an `Option`, that its `None` is only ever `null`, never
+    /// `undefined`: a call of a function whose result is
+    /// `#[rust_js::nullable]`, a binding's TypeScript types `T | null`,
+    /// `node.textContent`, or a variable each of whose writes is one or a
+    /// `Some(..)`. Of its test, `x != null`, the test is written `x !==
+    /// null` (ADR 0298, amended).
+    NoneNull,
     /// The test of a `let … else`'s guard, `if (parentA == null) { break; }`,
     /// where the program wrote it: never the test of the loop it's first in,
     /// `while ((parentA = a.return) != null)` (ADRs 0860, 0879, amended).

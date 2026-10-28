@@ -902,7 +902,10 @@ export function hasSetImmediate() {
 - **A binding is trusted as declared.** One returning
   `Result<T, &JsError>` makes what JS throws an `Err`; any other lets it
   propagate, as a panic. Declare `Option` where JS may give `null`. A
-  value JS gives is trusted to be of its type too. An `Option` is tested
+  value JS gives is trusted to be of its type too: a binding's
+  `#[rust_js::nullable]` result, TypeScript's `T | null`, is tested `===
+  null`, and its `#[rust_js::optional]` one, `T | undefined`, `===
+  undefined`. An `Option` is tested
   against `null`, whatever it holds, so a JS caller's `false` where an
   exported function's `Option<&dyn Fn()>` is asked is `Some`, as Rust's
   `None` is JS's `null` and `undefined` alone

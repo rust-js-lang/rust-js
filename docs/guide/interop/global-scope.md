@@ -1102,7 +1102,7 @@ function noTask(name) {
 
 const createTask$1 = DEV ? console.createTask : undefined;
 
-const createTask = createTask$1 != null ? (name) => createTask$1(name) : noTask;
+const createTask = createTask$1 !== undefined ? (name) => createTask$1(name) : noTask;
 
 export function task(name) {
   return createTask(name);

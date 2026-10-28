@@ -48,7 +48,7 @@ function described(tag, owned, flags, log) {
       }
   }
   let owner = 2;
-  while (owner != null) {
+  while (owner !== undefined) {
     info += "/";
     owner = owner > 0 ? owner - 1 : undefined;
   }

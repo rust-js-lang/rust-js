@@ -100,6 +100,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/target)
     #[cfg_attr(rust_js, rust_js::link_name = "get target")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn target(&self) -> Option<&'static EventTarget> {
@@ -108,6 +109,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/srcElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get srcElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn src_element(&self) -> Option<&'static EventTarget> {
@@ -116,6 +118,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/currentTarget)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentTarget")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_target(&self) -> Option<&'static EventTarget> {
@@ -370,6 +373,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/ownerDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn owner_document(&self) -> Option<&'static Document> {
@@ -386,6 +390,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/parentNode)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_node(&self) -> Option<&'static Node> {
@@ -394,6 +399,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/parentElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_element(&self) -> Option<&'static Element> {
@@ -418,6 +424,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/firstChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get firstChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn first_child(&self) -> Option<&'static Node> {
@@ -426,6 +433,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/lastChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get lastChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_child(&self) -> Option<&'static Node> {
@@ -434,6 +442,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/previousSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get previousSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_sibling(&self) -> Option<&'static Node> {
@@ -442,6 +451,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/nextSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get nextSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_sibling(&self) -> Option<&'static Node> {
@@ -450,6 +460,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get nodeValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn node_value(&self) -> Option<String> {
@@ -466,6 +477,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/textContent)
     #[cfg_attr(rust_js, rust_js::link_name = "get textContent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn text_content(&self) -> Option<String> {
@@ -531,6 +543,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/lookupPrefix)
     #[cfg_attr(rust_js, rust_js::link_name = "lookupPrefix")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn lookup_prefix(&self, namespace: &str) -> Option<String> {
@@ -539,6 +552,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/lookupNamespaceURI)
     #[cfg_attr(rust_js, rust_js::link_name = "lookupNamespaceURI")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn lookup_namespace_uri(&self, prefix: &str) -> Option<String> {
@@ -683,6 +697,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/previousElementSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get previousElementSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_element_sibling(&self) -> Option<&'static Element> {
@@ -691,6 +706,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/nextElementSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get nextElementSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_element_sibling(&self) -> Option<&'static Element> {
@@ -822,6 +838,7 @@ impl Text {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/assignedSlot)
     #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
@@ -1067,6 +1084,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/namespaceURI)
     #[cfg_attr(rust_js, rust_js::link_name = "get namespaceURI")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn namespace_uri(&self) -> Option<String> {
@@ -1075,6 +1093,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prefix)
     #[cfg_attr(rust_js, rust_js::link_name = "get prefix")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prefix(&self) -> Option<String> {
@@ -1179,6 +1198,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribute")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attribute(&self, qualified_name: &str) -> Option<String> {
@@ -1187,6 +1207,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttributeNS")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attribute_ns(&self, namespace: &str, local_name: &str) -> Option<String> {
@@ -1255,6 +1276,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNode)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttributeNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attribute_node(&self, qualified_name: &str) -> Option<&'static Attr> {
@@ -1263,6 +1285,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAttributeNodeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttributeNodeNS")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attribute_node_ns(&self, namespace: &str, local_name: &str) -> Option<&'static Attr> {
@@ -1271,6 +1294,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNode)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttributeNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_attribute_node(&self, attr: &Attr) -> Option<&'static Attr> {
@@ -1279,6 +1303,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNodeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttributeNodeNS")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_attribute_node_ns(&self, attr: &Attr) -> Option<&'static Attr> {
@@ -1303,6 +1328,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/shadowRoot)
     #[cfg_attr(rust_js, rust_js::link_name = "get shadowRoot")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shadow_root(&self) -> Option<&'static ShadowRoot> {
@@ -1311,6 +1337,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/customElementRegistry)
     #[cfg_attr(rust_js, rust_js::link_name = "get customElementRegistry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn custom_element_registry(&self) -> Option<&'static CustomElementRegistry> {
@@ -1319,6 +1346,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/closest)
     #[cfg_attr(rust_js, rust_js::link_name = "closest")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn closest(&self, selectors: &str) -> Option<&'static Element> {
@@ -1367,6 +1395,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/insertAdjacentElement)
     #[cfg_attr(rust_js, rust_js::link_name = "insertAdjacentElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn insert_adjacent_element(&self, r#where: &str, element: &Element) -> Option<&'static Element> {
@@ -1392,6 +1421,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfullscreenchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -1409,6 +1439,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfullscreenerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -1551,6 +1582,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/firstElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn first_element_child(&self) -> Option<&'static Element> {
@@ -1559,6 +1591,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/lastElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_element_child(&self) -> Option<&'static Element> {
@@ -1614,6 +1647,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/querySelector)
     #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
@@ -1630,6 +1664,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/previousElementSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get previousElementSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_element_sibling(&self) -> Option<&'static Element> {
@@ -1638,6 +1673,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/nextElementSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get nextElementSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_element_sibling(&self) -> Option<&'static Element> {
@@ -1685,6 +1721,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
     #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
@@ -1693,6 +1730,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/role)
     #[cfg_attr(rust_js, rust_js::link_name = "get role")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn role(&self) -> Option<String> {
@@ -1709,6 +1747,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaActiveDescendantElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaActiveDescendantElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_active_descendant_element(&self) -> Option<&'static Element> {
@@ -1725,6 +1764,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaAtomic)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaAtomic")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_atomic(&self) -> Option<String> {
@@ -1741,6 +1781,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaAutoComplete)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaAutoComplete")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_auto_complete(&self) -> Option<String> {
@@ -1757,6 +1798,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBrailleLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBrailleLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_braille_label(&self) -> Option<String> {
@@ -1773,6 +1815,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBrailleRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBrailleRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_braille_role_description(&self) -> Option<String> {
@@ -1789,6 +1832,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBusy)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBusy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_busy(&self) -> Option<String> {
@@ -1805,6 +1849,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaChecked)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaChecked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_checked(&self) -> Option<String> {
@@ -1821,6 +1866,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColCount")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_count(&self) -> Option<String> {
@@ -1837,6 +1883,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_index(&self) -> Option<String> {
@@ -1853,6 +1900,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_index_text(&self) -> Option<String> {
@@ -1869,6 +1917,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_span(&self) -> Option<String> {
@@ -1885,6 +1934,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaControlsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaControlsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_controls_elements(&self) -> Option<&'static [&'static Element]> {
@@ -1901,6 +1951,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaCurrent)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaCurrent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_current(&self) -> Option<String> {
@@ -1917,6 +1968,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescribedByElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDescribedByElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_described_by_elements(&self) -> Option<&'static [&'static Element]> {
@@ -1933,6 +1985,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_description(&self) -> Option<String> {
@@ -1949,6 +2002,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDetailsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDetailsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_details_elements(&self) -> Option<&'static [&'static Element]> {
@@ -1965,6 +2019,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDisabled)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDisabled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_disabled(&self) -> Option<String> {
@@ -1981,6 +2036,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaErrorMessageElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaErrorMessageElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_error_message_elements(&self) -> Option<&'static [&'static Element]> {
@@ -1997,6 +2053,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaExpanded)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaExpanded")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_expanded(&self) -> Option<String> {
@@ -2013,6 +2070,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaFlowToElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaFlowToElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_flow_to_elements(&self) -> Option<&'static [&'static Element]> {
@@ -2029,6 +2087,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaHasPopup)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaHasPopup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_has_popup(&self) -> Option<String> {
@@ -2045,6 +2104,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaHidden)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaHidden")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_hidden(&self) -> Option<String> {
@@ -2061,6 +2121,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaInvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaInvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_invalid(&self) -> Option<String> {
@@ -2077,6 +2138,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaKeyShortcuts)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaKeyShortcuts")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_key_shortcuts(&self) -> Option<String> {
@@ -2093,6 +2155,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_label(&self) -> Option<String> {
@@ -2109,6 +2172,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabelledByElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLabelledByElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_labelled_by_elements(&self) -> Option<&'static [&'static Element]> {
@@ -2125,6 +2189,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLevel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLevel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_level(&self) -> Option<String> {
@@ -2141,6 +2206,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLive)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLive")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_live(&self) -> Option<String> {
@@ -2157,6 +2223,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaModal)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaModal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_modal(&self) -> Option<String> {
@@ -2173,6 +2240,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiLine)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaMultiLine")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_multi_line(&self) -> Option<String> {
@@ -2189,6 +2257,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiSelectable)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaMultiSelectable")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_multi_selectable(&self) -> Option<String> {
@@ -2205,6 +2274,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaOrientation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_orientation(&self) -> Option<String> {
@@ -2221,6 +2291,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOwnsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaOwnsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_owns_elements(&self) -> Option<&'static [&'static Element]> {
@@ -2237,6 +2308,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPlaceholder)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPlaceholder")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_placeholder(&self) -> Option<String> {
@@ -2253,6 +2325,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPosInSet)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPosInSet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_pos_in_set(&self) -> Option<String> {
@@ -2269,6 +2342,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPressed)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPressed")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_pressed(&self) -> Option<String> {
@@ -2285,6 +2359,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaReadOnly")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_read_only(&self) -> Option<String> {
@@ -2301,6 +2376,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRelevant)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRelevant")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_relevant(&self) -> Option<String> {
@@ -2317,6 +2393,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRequired)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRequired")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_required(&self) -> Option<String> {
@@ -2333,6 +2410,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_role_description(&self) -> Option<String> {
@@ -2349,6 +2427,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowCount")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_count(&self) -> Option<String> {
@@ -2365,6 +2444,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_index(&self) -> Option<String> {
@@ -2381,6 +2461,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_index_text(&self) -> Option<String> {
@@ -2397,6 +2478,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_span(&self) -> Option<String> {
@@ -2413,6 +2495,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSelected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSelected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_selected(&self) -> Option<String> {
@@ -2429,6 +2512,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSetSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSetSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_set_size(&self) -> Option<String> {
@@ -2445,6 +2529,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSort)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_sort(&self) -> Option<String> {
@@ -2461,6 +2546,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMax)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueMax")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_max(&self) -> Option<String> {
@@ -2477,6 +2563,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMin)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueMin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_min(&self) -> Option<String> {
@@ -2493,6 +2580,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueNow)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueNow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_now(&self) -> Option<String> {
@@ -2509,6 +2597,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_text(&self) -> Option<String> {
@@ -2593,6 +2682,7 @@ pub mod document {
 impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/rootElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get rootElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn root_element(&self) -> Option<&'static SVGSVGElement> {
@@ -2609,6 +2699,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/activeViewTransition)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeViewTransition")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_view_transition(&self) -> Option<&'static ViewTransition> {
@@ -2617,6 +2708,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementFromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "elementFromPoint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn element_from_point(&self, x: impl Into<f64>, y: impl Into<f64>) -> Option<&'static Element> {
@@ -2633,6 +2725,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn caret_position_from_point(&self, x: impl Into<f64>, y: impl Into<f64>, options: Option<CaretPositionFromPointOptions<'_>>) -> Option<&'static CaretPosition> {
@@ -2641,6 +2734,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/scrollingElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollingElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scrolling_element(&self) -> Option<&'static Element> {
@@ -2713,6 +2807,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/doctype)
     #[cfg_attr(rust_js, rust_js::link_name = "get doctype")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn doctype(&self) -> Option<&'static DocumentType> {
@@ -2721,6 +2816,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/documentElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get documentElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn document_element(&self) -> Option<&'static Element> {
@@ -2897,6 +2993,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfullscreenchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -2914,6 +3011,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfullscreenerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -2931,6 +3029,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/location)
     #[cfg_attr(rust_js, rust_js::link_name = "get location")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn location(&self) -> Option<&'static Location> {
@@ -3029,6 +3128,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/body)
     #[cfg_attr(rust_js, rust_js::link_name = "get body")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn body(&self) -> Option<&'static HTMLElement> {
@@ -3045,6 +3145,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/head)
     #[cfg_attr(rust_js, rust_js::link_name = "get head")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn head(&self) -> Option<&'static HTMLHeadElement> {
@@ -3109,6 +3210,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/currentScript)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentScript")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_script(&self) -> Option<HTMLOrSVGScriptElement<'static>> {
@@ -3125,6 +3227,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn open_with_url_and_name_and_features(&self, url: &str, name: &str, features: &str) -> Option<&'static Window> {
@@ -3162,6 +3265,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/defaultView)
     #[cfg_attr(rust_js, rust_js::link_name = "get defaultView")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn default_view(&self) -> Option<&'static Window> {
@@ -3258,6 +3362,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreadystatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreadystatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreadystatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3275,6 +3380,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvisibilitychange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvisibilitychange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvisibilitychange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3439,6 +3545,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerlockchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3456,6 +3563,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerlockerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3490,6 +3598,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getSelection)
     #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_selection(&self) -> Option<&'static Selection> {
@@ -3562,6 +3671,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getElementById)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_element_by_id(&self, element_id: &str) -> Option<&'static Element> {
@@ -3594,6 +3704,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/customElementRegistry)
     #[cfg_attr(rust_js, rust_js::link_name = "get customElementRegistry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn custom_element_registry(&self) -> Option<&'static CustomElementRegistry> {
@@ -3602,6 +3713,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fullscreen_element(&self) -> Option<&'static Element> {
@@ -3610,6 +3722,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/activeElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_element(&self) -> Option<&'static Element> {
@@ -3618,6 +3731,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
@@ -3626,6 +3740,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pointerLockElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pointer_lock_element(&self) -> Option<&'static Element> {
@@ -3650,6 +3765,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/firstElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn first_element_child(&self) -> Option<&'static Element> {
@@ -3658,6 +3774,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/lastElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_element_child(&self) -> Option<&'static Element> {
@@ -3713,6 +3830,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/querySelector)
     #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
@@ -3753,6 +3871,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -3770,6 +3889,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -3787,6 +3907,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -3804,6 +3925,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onanimationcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -3821,6 +3943,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionrun)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -3838,6 +3961,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -3855,6 +3979,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -3872,6 +3997,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontransitioncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -3889,6 +4015,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3906,6 +4033,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onauxclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -3923,6 +4051,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforeinput)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -3940,6 +4069,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforematch)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3957,6 +4087,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3974,6 +4105,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onblur)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -3991,6 +4123,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4008,6 +4141,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4025,6 +4159,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncanplaythrough)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4042,6 +4177,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4059,6 +4195,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -4076,6 +4213,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4093,6 +4231,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4110,6 +4249,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4127,6 +4267,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextmenu)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -4144,6 +4285,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4161,6 +4303,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncopy)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -4178,6 +4321,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4195,6 +4339,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oncut)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -4212,6 +4357,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondblclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4229,6 +4375,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrag)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4246,6 +4393,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4263,6 +4411,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4280,6 +4429,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4297,6 +4447,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragover)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4314,6 +4465,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondragstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4331,6 +4483,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondrop)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -4348,6 +4501,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ondurationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4365,6 +4519,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onemptied)
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4382,6 +4537,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4399,6 +4555,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
@@ -4416,6 +4573,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4433,6 +4591,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onformdata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
@@ -4450,6 +4609,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninput)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -4467,6 +4627,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/oninvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4484,6 +4645,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeydown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -4501,6 +4663,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeypress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -4518,6 +4681,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onkeyup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -4535,6 +4699,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4552,6 +4717,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadeddata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4569,6 +4735,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadedmetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4586,6 +4753,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4603,6 +4771,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousedown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4620,6 +4789,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4637,6 +4807,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4654,6 +4825,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmousemove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4671,6 +4843,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4688,6 +4861,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4705,6 +4879,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onmouseup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -4722,6 +4897,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpaste)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -4739,6 +4915,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4756,6 +4933,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4773,6 +4951,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onplaying)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4790,6 +4969,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4807,6 +4987,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onratechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4824,6 +5005,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onreset)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4841,6 +5023,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4858,6 +5041,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4875,6 +5059,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4892,6 +5077,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsecuritypolicyviolation)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
@@ -4909,6 +5095,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4926,6 +5113,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onseeking)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4943,6 +5131,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4960,6 +5149,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4977,6 +5167,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -4994,6 +5185,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
@@ -5011,6 +5203,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onsuspend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5028,6 +5221,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontimeupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5045,6 +5239,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5062,6 +5257,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onvolumechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5079,6 +5275,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwaiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5096,6 +5293,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5113,6 +5311,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5130,6 +5329,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkitanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5147,6 +5347,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwebkittransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5164,6 +5365,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onwheel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
@@ -5181,6 +5383,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5198,6 +5401,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5215,6 +5419,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5232,6 +5437,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5249,6 +5455,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5266,6 +5473,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5283,6 +5491,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5300,6 +5509,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5317,6 +5527,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5334,6 +5545,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5351,6 +5563,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -5368,6 +5581,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5385,6 +5599,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -5402,6 +5617,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -5419,6 +5635,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -5436,6 +5653,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -5453,6 +5671,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -5526,6 +5745,7 @@ pub mod document_fragment {
 impl DocumentFragment {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/getElementById)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_element_by_id(&self, element_id: &str) -> Option<&'static Element> {
@@ -5542,6 +5762,7 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/firstElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn first_element_child(&self) -> Option<&'static Element> {
@@ -5550,6 +5771,7 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/lastElementChild)
     #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_element_child(&self) -> Option<&'static Element> {
@@ -5605,6 +5827,7 @@ impl DocumentFragment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/querySelector)
     #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
@@ -5648,6 +5871,7 @@ impl DOMTokenList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<String> {
@@ -5784,6 +6008,7 @@ pub mod node_list {
 impl<T> NodeList<T> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static T> {
@@ -5860,6 +6085,7 @@ impl HTMLCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static Element> {
@@ -5868,6 +6094,7 @@ impl HTMLCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCollection/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<&'static Element> {
@@ -5989,6 +6216,7 @@ impl AbortSignal {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6034,6 +6262,7 @@ pub mod html_element {
 impl HTMLElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/scrollParent)
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollParent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn scroll_parent(&self) -> Option<&'static Element> {
@@ -6042,6 +6271,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetParent)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetParent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn offset_parent(&self) -> Option<&'static Element> {
@@ -6146,6 +6376,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/hidden)
     #[cfg_attr(rust_js, rust_js::link_name = "get hidden")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn hidden(&self) -> Option<BoolOrNumberOrStr<'static>> {
@@ -6357,6 +6588,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/popover)
     #[cfg_attr(rust_js, rust_js::link_name = "get popover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn popover(&self) -> Option<String> {
@@ -6421,6 +6653,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -6438,6 +6671,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -6455,6 +6689,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -6472,6 +6707,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onanimationcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -6489,6 +6725,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionrun)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -6506,6 +6743,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -6523,6 +6761,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -6540,6 +6779,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontransitioncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -6557,6 +6797,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6574,6 +6815,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onauxclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -6591,6 +6833,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforeinput)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -6608,6 +6851,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforematch)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6625,6 +6869,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&ToggleEvent) -> Option<&'static Unknown>> {
@@ -6642,6 +6887,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onblur)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6659,6 +6905,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6676,6 +6923,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6693,6 +6941,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncanplaythrough)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6710,6 +6959,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6727,6 +6977,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -6744,6 +6995,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6761,6 +7013,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncommand(&self) -> Option<&'static dyn Fn(&CommandEvent) -> Option<&'static Unknown>> {
@@ -6778,6 +7031,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6795,6 +7049,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextmenu)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -6812,6 +7067,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6829,6 +7085,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncopy)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -6846,6 +7103,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -6863,6 +7121,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oncut)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -6880,6 +7139,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondblclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -6897,6 +7157,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrag)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6914,6 +7175,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6931,6 +7193,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6948,6 +7211,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6965,6 +7229,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragover)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6982,6 +7247,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondragstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -6999,6 +7265,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondrop)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -7016,6 +7283,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ondurationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7033,6 +7301,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onemptied)
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7050,6 +7319,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7067,6 +7337,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
@@ -7084,6 +7355,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7101,6 +7373,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onformdata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
@@ -7118,6 +7391,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninput)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -7135,6 +7409,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/oninvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7152,6 +7427,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeydown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -7169,6 +7445,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeypress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -7186,6 +7463,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onkeyup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -7203,6 +7481,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7220,6 +7499,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadeddata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7237,6 +7517,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadedmetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7254,6 +7535,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7271,6 +7553,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousedown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7288,6 +7571,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7305,6 +7589,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7322,6 +7607,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmousemove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7339,6 +7625,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7356,6 +7643,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7373,6 +7661,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onmouseup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -7390,6 +7679,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpaste)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -7407,6 +7697,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7424,6 +7715,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7441,6 +7733,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onplaying)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7458,6 +7751,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7475,6 +7769,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onratechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7492,6 +7787,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onreset)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7509,6 +7805,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7526,6 +7823,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7543,6 +7841,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7560,6 +7859,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsecuritypolicyviolation)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
@@ -7577,6 +7877,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7594,6 +7895,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onseeking)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7611,6 +7913,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7628,6 +7931,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7645,6 +7949,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7662,6 +7967,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
@@ -7679,6 +7985,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onsuspend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7696,6 +8003,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontimeupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7713,6 +8021,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7730,6 +8039,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onvolumechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7747,6 +8057,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwaiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7764,6 +8075,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7781,6 +8093,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7798,6 +8111,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkitanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7815,6 +8129,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwebkittransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -7832,6 +8147,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onwheel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
@@ -7849,6 +8165,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7866,6 +8183,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7883,6 +8201,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7900,6 +8219,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7917,6 +8237,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7934,6 +8255,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7951,6 +8273,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7968,6 +8291,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -7985,6 +8309,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -8002,6 +8327,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -8019,6 +8345,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -8036,6 +8363,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -8053,6 +8381,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -8070,6 +8399,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -8087,6 +8417,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -8104,6 +8435,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -8121,6 +8453,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -8732,6 +9065,7 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/commandForElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get commandForElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn command_for_element(&self) -> Option<&'static Element> {
@@ -8764,6 +9098,7 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -8957,6 +9292,7 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/popoverTargetElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get popoverTargetElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn popover_target_element(&self) -> Option<&'static Element> {
@@ -9448,6 +9784,7 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -9956,6 +10293,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -9964,6 +10302,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/files)
     #[cfg_attr(rust_js, rust_js::link_name = "get files")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn files(&self) -> Option<&'static FileList> {
@@ -10092,6 +10431,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/list)
     #[cfg_attr(rust_js, rust_js::link_name = "get list")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn list(&self) -> Option<&'static HTMLDataListElement> {
@@ -10356,6 +10696,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/valueAsDate)
     #[cfg_attr(rust_js, rust_js::link_name = "get valueAsDate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn value_as_date(&self) -> Option<&'static JsObject> {
@@ -10471,6 +10812,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/labels)
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn labels(&self) -> Option<&'static NodeList<HTMLLabelElement>> {
@@ -10488,6 +10830,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionStart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_start(&self) -> Option<f64> {
@@ -10504,6 +10847,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionEnd")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_end(&self) -> Option<f64> {
@@ -10520,6 +10864,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionDirection)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionDirection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_direction(&self) -> Option<String> {
@@ -10611,6 +10956,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/popoverTargetElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get popoverTargetElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn popover_target_element(&self) -> Option<&'static Element> {
@@ -10671,6 +11017,7 @@ pub mod html_label_element {
 impl HTMLLabelElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLabelElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -10695,6 +11042,7 @@ impl HTMLLabelElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLabelElement/control)
     #[cfg_attr(rust_js, rust_js::link_name = "get control")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn control(&self) -> Option<&'static HTMLElement> {
@@ -10899,6 +11247,7 @@ impl HTMLOptionElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -11031,6 +11380,7 @@ impl HTMLOutputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOutputElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -11264,6 +11614,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -11368,6 +11719,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static HTMLOptionElement> {
@@ -11376,6 +11728,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<&'static HTMLOptionElement> {
@@ -11625,6 +11978,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -12029,6 +12383,7 @@ pub mod html_table_element {
 impl HTMLTableElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/caption)
     #[cfg_attr(rust_js, rust_js::link_name = "get caption")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn caption(&self) -> Option<&'static HTMLTableCaptionElement> {
@@ -12062,6 +12417,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/tHead)
     #[cfg_attr(rust_js, rust_js::link_name = "get tHead")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn t_head(&self) -> Option<&'static HTMLTableSectionElement> {
@@ -12095,6 +12451,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/tFoot)
     #[cfg_attr(rust_js, rust_js::link_name = "get tFoot")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn t_foot(&self) -> Option<&'static HTMLTableSectionElement> {
@@ -13011,6 +13368,7 @@ impl HTMLIFrameElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement/contentDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_document(&self) -> Option<&'static Document> {
@@ -13019,6 +13377,7 @@ impl HTMLIFrameElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement/contentWindow)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentWindow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_window(&self) -> Option<&'static Window> {
@@ -13027,6 +13386,7 @@ impl HTMLIFrameElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement/getSVGDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "getSVGDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_svg_document(&self) -> Option<&'static Document> {
@@ -13191,6 +13551,7 @@ impl HTMLCanvasElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_context(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<RenderingContext<'static>> {
@@ -13510,6 +13871,7 @@ impl HTMLLinkElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -13774,6 +14136,7 @@ impl HTMLLinkElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/sheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get sheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -13974,6 +14337,7 @@ impl HTMLStyleElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLStyleElement/sheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get sheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -14106,6 +14470,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14123,6 +14488,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14140,6 +14506,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14157,6 +14524,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14174,6 +14542,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
@@ -14191,6 +14560,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14208,6 +14578,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onlanguagechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14225,6 +14596,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14242,6 +14614,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14259,6 +14632,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onoffline)
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14276,6 +14650,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ononline)
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14293,6 +14668,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14310,6 +14686,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14327,6 +14704,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14344,6 +14722,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14361,6 +14740,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14378,6 +14758,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14395,6 +14776,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14412,6 +14794,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -14429,6 +14812,7 @@ impl HTMLBodyElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -15179,6 +15563,7 @@ impl HTMLEmbedElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLEmbedElement/getSVGDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "getSVGDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_svg_document(&self) -> Option<&'static Document> {
@@ -15295,6 +15680,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -15335,6 +15721,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/contentDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_document(&self) -> Option<&'static Document> {
@@ -15343,6 +15730,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/contentWindow)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentWindow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_window(&self) -> Option<&'static Window> {
@@ -15351,6 +15739,7 @@ impl HTMLObjectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement/getSVGDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "getSVGDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_svg_document(&self) -> Option<&'static Document> {
@@ -15708,6 +16097,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onenterpictureinpicture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onenterpictureinpicture(&self) -> Option<&'static dyn Fn(&PictureInPictureEvent) -> Option<&'static Unknown>> {
@@ -15725,6 +16115,7 @@ impl HTMLVideoElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onleavepictureinpicture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onleavepictureinpicture(&self) -> Option<&'static dyn Fn(&PictureInPictureEvent) -> Option<&'static Unknown>> {
@@ -16007,6 +16398,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/mediaKeys)
     #[cfg_attr(rust_js, rust_js::link_name = "get mediaKeys")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn media_keys(&self) -> Option<&'static MediaKeys> {
@@ -16015,6 +16407,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onencrypted)
     #[cfg_attr(rust_js, rust_js::link_name = "get onencrypted")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onencrypted(&self) -> Option<&'static dyn Fn(&MediaEncryptedEvent) -> Option<&'static Unknown>> {
@@ -16032,6 +16425,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/onwaitingforkey)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaitingforkey")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaitingforkey(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -16057,6 +16451,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/error)
     #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self) -> Option<&'static MediaError> {
@@ -16081,6 +16476,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/srcObject)
     #[cfg_attr(rust_js, rust_js::link_name = "get srcObject")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn src_object(&self) -> Option<MediaProvider<'static>> {
@@ -16105,6 +16501,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -17440,6 +17837,7 @@ impl HTMLFieldSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -17557,6 +17955,7 @@ pub mod html_legend_element {
 impl HTMLLegendElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLegendElement/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -17842,6 +18241,7 @@ impl HTMLScriptElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -18224,6 +18624,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onorientationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onorientationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -18273,6 +18674,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/visualViewport)
     #[cfg_attr(rust_js, rust_js::link_name = "get visualViewport")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn visual_viewport(&self) -> Option<&'static VisualViewport> {
@@ -18477,6 +18879,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/event)
     #[cfg_attr(rust_js, rust_js::link_name = "get event")]
+    #[cfg_attr(rust_js, rust_js::optional)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn event(&self) -> Option<&'static Event> {
@@ -18681,6 +19084,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/top)
     #[cfg_attr(rust_js, rust_js::link_name = "get top")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn top(&self) -> Option<&'static Window> {
@@ -18705,6 +19109,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/parent)
     #[cfg_attr(rust_js, rust_js::link_name = "get parent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent(&self) -> Option<&'static Window> {
@@ -18713,6 +19118,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/frameElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get frameElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn frame_element(&self) -> Option<&'static Element> {
@@ -18721,6 +19127,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn open(&self, url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
@@ -18770,6 +19177,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
     #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prompt(&self, message: Option<&str>, default: Option<&str>) -> Option<String> {
@@ -18822,6 +19230,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondeviceorientation(&self) -> Option<&'static dyn Fn(&DeviceOrientationEvent) -> Option<&'static Unknown>> {
@@ -18839,6 +19248,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientationabsolute")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondeviceorientationabsolute(&self) -> Option<&'static dyn Fn(&DeviceOrientationEvent) -> Option<&'static Unknown>> {
@@ -18856,6 +19266,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondevicemotion")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondevicemotion(&self) -> Option<&'static dyn Fn(&DeviceMotionEvent) -> Option<&'static Unknown>> {
@@ -18890,6 +19301,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
     #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_selection(&self) -> Option<&'static Selection> {
@@ -18906,6 +19318,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -18923,6 +19336,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -18940,6 +19354,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -18957,6 +19372,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onanimationcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -18974,6 +19390,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionrun)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -18991,6 +19408,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -19008,6 +19426,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -19025,6 +19444,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontransitioncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -19042,6 +19462,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19059,6 +19480,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onauxclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -19076,6 +19498,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeinput)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -19093,6 +19516,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforematch)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19110,6 +19534,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19127,6 +19552,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onblur)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblur(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19144,6 +19570,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19161,6 +19588,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19178,6 +19606,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncanplaythrough)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19195,6 +19624,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19212,6 +19642,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -19229,6 +19660,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19246,6 +19678,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19263,6 +19696,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19280,6 +19714,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextmenu)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -19297,6 +19732,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19314,6 +19750,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncopy)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -19331,6 +19768,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19348,6 +19786,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oncut)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -19365,6 +19804,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondblclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19382,6 +19822,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrag)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19399,6 +19840,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19416,6 +19858,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19433,6 +19876,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19450,6 +19894,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragover)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19467,6 +19912,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondragstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19484,6 +19930,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondrop)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -19501,6 +19948,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondurationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19518,6 +19966,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onemptied)
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19535,6 +19984,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19552,6 +20002,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
@@ -19569,6 +20020,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfocus(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19586,6 +20038,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onformdata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
@@ -19603,6 +20056,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninput)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -19620,6 +20074,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/oninvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19637,6 +20092,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeydown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -19654,6 +20110,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeypress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -19671,6 +20128,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onkeyup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -19688,6 +20146,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19705,6 +20164,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadeddata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19722,6 +20182,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadedmetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19739,6 +20200,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19756,6 +20218,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousedown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19773,6 +20236,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19790,6 +20254,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19807,6 +20272,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmousemove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19824,6 +20290,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19841,6 +20308,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19858,6 +20326,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmouseup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -19875,6 +20344,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpaste)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -19892,6 +20362,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19909,6 +20380,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19926,6 +20398,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onplaying)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19943,6 +20416,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19960,6 +20434,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onratechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19977,6 +20452,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onreset)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -19994,6 +20470,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20011,6 +20488,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20028,6 +20506,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20045,6 +20524,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsecuritypolicyviolation)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
@@ -20062,6 +20542,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20079,6 +20560,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onseeking)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20096,6 +20578,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20113,6 +20596,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20130,6 +20614,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20147,6 +20632,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
@@ -20164,6 +20650,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onsuspend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20181,6 +20668,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontimeupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20198,6 +20686,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20215,6 +20704,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onvolumechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20232,6 +20722,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwaiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20249,6 +20740,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20266,6 +20758,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20283,6 +20776,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkitanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20300,6 +20794,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwebkittransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20317,6 +20812,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onwheel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
@@ -20334,6 +20830,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20351,6 +20848,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20368,6 +20866,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20385,6 +20884,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20402,6 +20902,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20419,6 +20920,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20436,6 +20938,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20453,6 +20956,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20470,6 +20974,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20487,6 +20992,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20504,6 +21010,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -20521,6 +21028,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20538,6 +21046,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20555,6 +21064,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -20572,6 +21082,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -20589,6 +21100,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -20606,6 +21118,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -20623,6 +21136,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent) -> Option<&'static Unknown>> {
@@ -20640,6 +21154,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&GamepadEvent) -> Option<&'static Unknown>> {
@@ -20657,6 +21172,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20674,6 +21190,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20691,6 +21208,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>> {
@@ -20708,6 +21226,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onhashchange(&self) -> Option<&'static dyn Fn(&HashChangeEvent) -> Option<&'static Unknown>> {
@@ -20725,6 +21244,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlanguagechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20742,6 +21262,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -20759,6 +21280,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -20776,6 +21298,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onoffline)
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20793,6 +21316,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ononline)
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -20810,6 +21334,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagehide(&self) -> Option<&'static dyn Fn(&PageTransitionEvent) -> Option<&'static Unknown>> {
@@ -20827,6 +21352,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&PageRevealEvent) -> Option<&'static Unknown>> {
@@ -20844,6 +21370,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageshow(&self) -> Option<&'static dyn Fn(&PageTransitionEvent) -> Option<&'static Unknown>> {
@@ -20861,6 +21388,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageswap(&self) -> Option<&'static dyn Fn(&PageSwapEvent) -> Option<&'static Unknown>> {
@@ -20878,6 +21406,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpopstate(&self) -> Option<&'static dyn Fn(&PopStateEvent) -> Option<&'static Unknown>> {
@@ -20895,6 +21424,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent) -> Option<&'static Unknown>> {
@@ -20912,6 +21442,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstorage(&self) -> Option<&'static dyn Fn(&StorageEvent) -> Option<&'static Unknown>> {
@@ -20929,6 +21460,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&PromiseRejectionEvent) -> Option<&'static Unknown>> {
@@ -20946,6 +21478,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -21457,6 +21990,7 @@ impl Storage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/key)
     #[cfg_attr(rust_js, rust_js::link_name = "key")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn key(&self, index: impl Into<f64>) -> Option<String> {
@@ -21465,6 +21999,7 @@ impl Storage {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/getItem)
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_item(&self, key: &str) -> Option<String> {
@@ -21646,6 +22181,7 @@ pub mod drag_event {
 impl DragEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/dataTransfer)
     #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
@@ -21706,6 +22242,7 @@ impl ToggleEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/source)
     #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn source(&self) -> Option<&'static Element> {
@@ -21836,6 +22373,7 @@ pub mod submit_event {
 impl SubmitEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/submitter)
     #[cfg_attr(rust_js, rust_js::link_name = "get submitter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn submitter(&self) -> Option<&'static HTMLElement> {
@@ -21970,6 +22508,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/onresourcetimingbufferfull)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresourcetimingbufferfull")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresourcetimingbufferfull(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -22057,6 +22596,7 @@ pub mod ui_event {
 impl UIEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/view)
     #[cfg_attr(rust_js, rust_js::link_name = "get view")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn view(&self) -> Option<&'static Window> {
@@ -22126,6 +22666,7 @@ pub mod focus_event {
 impl FocusEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/relatedTarget)
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedTarget")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn related_target(&self) -> Option<&'static EventTarget> {
@@ -22314,6 +22855,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/relatedTarget)
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedTarget")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn related_target(&self) -> Option<&'static EventTarget> {
@@ -22544,6 +23086,7 @@ pub mod input_event {
 impl InputEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/dataTransfer)
     #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
@@ -22560,6 +23103,7 @@ impl InputEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/data)
     #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn data(&self) -> Option<String> {
@@ -22978,6 +23522,7 @@ pub mod clipboard_event {
 impl ClipboardEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/clipboardData)
     #[cfg_attr(rust_js, rust_js::link_name = "get clipboardData")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn clipboard_data(&self) -> Option<&'static DataTransfer> {
@@ -23226,6 +23771,7 @@ impl CSSStyleDeclaration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/parentRule)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentRule")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_rule(&self) -> Option<&'static CSSRule> {
@@ -32107,6 +32653,7 @@ impl MediaQueryList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&MediaQueryListEvent) -> Option<&'static Unknown>> {
@@ -32195,6 +32742,7 @@ pub mod intersection_observer {
 impl IntersectionObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/root)
     #[cfg_attr(rust_js, rust_js::link_name = "get root")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn root(&self) -> Option<ElementOrDocument<'static>> {
@@ -32305,6 +32853,7 @@ impl IntersectionObserverEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntry/rootBounds)
     #[cfg_attr(rust_js, rust_js::link_name = "get rootBounds")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn root_bounds(&self) -> Option<&'static DOMRectReadOnly> {
@@ -32406,6 +32955,7 @@ impl Headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, name: &str) -> Option<String> {
@@ -32627,6 +33177,7 @@ impl Request {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/body)
     #[cfg_attr(rust_js, rust_js::link_name = "get body")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn body(&self) -> Option<&'static ReadableStream> {
@@ -32806,6 +33357,7 @@ impl Response {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/body)
     #[cfg_attr(rust_js, rust_js::link_name = "get body")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn body(&self) -> Option<&'static ReadableStream> {
@@ -32932,6 +33484,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, name: &str) -> Option<FormDataEntryValue<'static>> {
@@ -33240,6 +33793,7 @@ impl TouchList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static Touch> {
@@ -33640,6 +34194,7 @@ pub mod url {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
     #[cfg_attr(rust_js, rust_js::link_name = "URL.parse")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parse(url: &str, base: Option<&str>) -> Option<&'static URL> {
@@ -34381,6 +34936,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ownerSVGElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get ownerSVGElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn owner_svg_element(&self) -> Option<&'static SVGSVGElement> {
@@ -34389,6 +34945,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/viewportElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get viewportElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn viewport_element(&self) -> Option<&'static SVGElement> {
@@ -34397,6 +34954,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -34414,6 +34972,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -34431,6 +34990,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -34448,6 +35008,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -34465,6 +35026,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionrun)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -34482,6 +35044,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -34499,6 +35062,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -34516,6 +35080,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontransitioncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -34533,6 +35098,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34550,6 +35116,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onauxclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -34567,6 +35134,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforeinput)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -34584,6 +35152,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforematch)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34601,6 +35170,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34618,6 +35188,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onblur)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblur(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
@@ -34635,6 +35206,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34652,6 +35224,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34669,6 +35242,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncanplaythrough)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34686,6 +35260,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34703,6 +35278,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -34720,6 +35296,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34737,6 +35314,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34754,6 +35332,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34771,6 +35350,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextmenu)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -34788,6 +35368,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34805,6 +35386,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncopy)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -34822,6 +35404,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -34839,6 +35422,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oncut)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -34856,6 +35440,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondblclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -34873,6 +35458,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrag)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34890,6 +35476,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34907,6 +35494,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34924,6 +35512,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34941,6 +35530,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragover)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34958,6 +35548,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondragstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34975,6 +35566,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondrop)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -34992,6 +35584,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ondurationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35009,6 +35602,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onemptied)
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35026,6 +35620,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35043,6 +35638,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
@@ -35060,6 +35656,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfocus(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
@@ -35077,6 +35674,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onformdata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
@@ -35094,6 +35692,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninput)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -35111,6 +35710,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/oninvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35128,6 +35728,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeydown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -35145,6 +35746,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeypress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -35162,6 +35764,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onkeyup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -35179,6 +35782,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35196,6 +35800,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadeddata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35213,6 +35818,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadedmetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35230,6 +35836,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35247,6 +35854,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousedown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35264,6 +35872,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35281,6 +35890,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35298,6 +35908,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmousemove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35315,6 +35926,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35332,6 +35944,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35349,6 +35962,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onmouseup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -35366,6 +35980,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpaste)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -35383,6 +35998,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35400,6 +36016,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35417,6 +36034,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onplaying)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35434,6 +36052,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35451,6 +36070,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onratechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35468,6 +36088,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onreset)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35485,6 +36106,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35502,6 +36124,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35519,6 +36142,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35536,6 +36160,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsecuritypolicyviolation)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
@@ -35553,6 +36178,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35570,6 +36196,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onseeking)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35587,6 +36214,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35604,6 +36232,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35621,6 +36250,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35638,6 +36268,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
@@ -35655,6 +36286,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onsuspend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35672,6 +36304,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontimeupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35689,6 +36322,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35706,6 +36340,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onvolumechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35723,6 +36358,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwaiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35740,6 +36376,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35757,6 +36394,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35774,6 +36412,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkitanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35791,6 +36430,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwebkittransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -35808,6 +36448,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onwheel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
@@ -35825,6 +36466,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35842,6 +36484,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35859,6 +36502,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35876,6 +36520,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35893,6 +36538,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35910,6 +36556,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35927,6 +36574,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35944,6 +36592,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35961,6 +36610,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35978,6 +36628,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -35995,6 +36646,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -36012,6 +36664,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36029,6 +36682,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36046,6 +36700,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -36063,6 +36718,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -36080,6 +36736,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -36097,6 +36754,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -36248,6 +36906,7 @@ impl SVGGraphicsElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getCTM)
     #[cfg_attr(rust_js, rust_js::link_name = "getCTM")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_ctm(&self) -> Option<&'static DOMMatrix> {
@@ -36256,6 +36915,7 @@ impl SVGGraphicsElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getScreenCTM)
     #[cfg_attr(rust_js, rust_js::link_name = "getScreenCTM")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_screen_ctm(&self) -> Option<&'static DOMMatrix> {
@@ -36537,6 +37197,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getElementById)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_element_by_id(&self, element_id: &str) -> Option<&'static Element> {
@@ -36639,6 +37300,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36656,6 +37318,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36673,6 +37336,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36690,6 +37354,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36707,6 +37372,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
@@ -36724,6 +37390,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36741,6 +37408,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onlanguagechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36758,6 +37426,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36775,6 +37444,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36792,6 +37462,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onoffline)
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36809,6 +37480,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ononline)
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36826,6 +37498,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36843,6 +37516,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36860,6 +37534,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36877,6 +37552,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36894,6 +37570,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36911,6 +37588,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36928,6 +37606,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36945,6 +37624,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -36962,6 +37642,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/onunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -37333,6 +38014,7 @@ impl SVGStyleElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGStyleElement/sheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get sheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -37385,6 +38067,7 @@ impl SVGScriptElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGScriptElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -38187,6 +38870,7 @@ impl SVGImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGImageElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "get crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cross_origin(&self) -> Option<String> {
@@ -39150,6 +39834,7 @@ pub mod svg_animation_element {
 impl SVGAnimationElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/targetElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get targetElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn target_element(&self) -> Option<&'static SVGElement> {
@@ -39158,6 +39843,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onbegin)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbegin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbegin(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -39175,6 +39861,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -39192,6 +39879,7 @@ impl SVGAnimationElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement/onrepeat)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrepeat")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrepeat(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -42157,6 +42845,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/effect)
     #[cfg_attr(rust_js, rust_js::link_name = "get effect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn effect(&self) -> Option<&'static AnimationEffect> {
@@ -42173,6 +42862,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/timeline)
     #[cfg_attr(rust_js, rust_js::link_name = "get timeline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timeline(&self) -> Option<&'static AnimationTimeline> {
@@ -42245,6 +42935,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onfinish)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfinish")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfinish(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
@@ -42262,6 +42953,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
@@ -42279,6 +42971,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/onremove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onremove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onremove(&self) -> Option<&'static dyn Fn(&AnimationPlaybackEvent) -> Option<&'static Unknown>> {
@@ -42368,6 +43061,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get startTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start_time(&self) -> Option<CSSNumberish<'static>> {
@@ -42384,6 +43078,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
@@ -42400,6 +43095,7 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/overallProgress)
     #[cfg_attr(rust_js, rust_js::link_name = "get overallProgress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn overall_progress(&self) -> Option<f64> {
@@ -42476,6 +43172,7 @@ pub mod animation_playback_event {
 impl AnimationPlaybackEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/currentTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
@@ -42484,6 +43181,7 @@ impl AnimationPlaybackEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/timelineTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get timelineTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn timeline_time(&self) -> Option<CSSNumberish<'static>> {
@@ -42499,6 +43197,7 @@ pub struct AnimationTimeline(PhantomData<JsObject>);
 impl AnimationTimeline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationTimeline/currentTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
@@ -42507,6 +43206,7 @@ impl AnimationTimeline {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationTimeline/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<CSSNumberish<'static>> {
@@ -42543,6 +43243,7 @@ pub mod attr {
 impl Attr {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Attr/namespaceURI)
     #[cfg_attr(rust_js, rust_js::link_name = "get namespaceURI")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn namespace_uri(&self) -> Option<String> {
@@ -42551,6 +43252,7 @@ impl Attr {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Attr/prefix)
     #[cfg_attr(rust_js, rust_js::link_name = "get prefix")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prefix(&self) -> Option<String> {
@@ -42591,6 +43293,7 @@ impl Attr {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Attr/ownerElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get ownerElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn owner_element(&self) -> Option<&'static Element> {
@@ -42720,6 +43423,7 @@ pub mod audio_buffer_source_node {
 impl AudioBufferSourceNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/buffer)
     #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer(&self) -> Option<&'static AudioBuffer> {
@@ -42927,6 +43631,7 @@ pub mod audio_data {
 impl AudioData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioData/format)
     #[cfg_attr(rust_js, rust_js::link_name = "get format")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn format(&self) -> Option<String> {
@@ -43069,6 +43774,7 @@ impl AudioDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioDecoder/ondequeue)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -43226,6 +43932,7 @@ impl AudioEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioEncoder/ondequeue)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -43799,6 +44506,7 @@ pub mod audio_scheduled_source_node {
 impl AudioScheduledSourceNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -43911,6 +44619,7 @@ impl AudioWorkletNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/onprocessorerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprocessorerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprocessorerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
@@ -43972,6 +44681,7 @@ impl AuthenticatorAssertionResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorAssertionResponse/userHandle)
     #[cfg_attr(rust_js, rust_js::link_name = "get userHandle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn user_handle(&self) -> Option<&'static ArrayBuffer> {
@@ -44032,6 +44742,7 @@ impl AuthenticatorAttestationResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorAttestationResponse/getPublicKey)
     #[cfg_attr(rust_js, rust_js::link_name = "getPublicKey")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_public_key(&self) -> Option<&'static ArrayBuffer> {
@@ -44154,6 +44865,7 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -44574,6 +45286,7 @@ impl BroadcastChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -44591,6 +45304,7 @@ impl BroadcastChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BroadcastChannel/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -45419,6 +46133,7 @@ impl CSSImportRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSImportRule/styleSheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get styleSheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn style_sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -45427,6 +46142,7 @@ impl CSSImportRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSImportRule/layerName)
     #[cfg_attr(rust_js, rust_js::link_name = "get layerName")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn layer_name(&self) -> Option<String> {
@@ -45435,6 +46151,7 @@ impl CSSImportRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSImportRule/supportsText)
     #[cfg_attr(rust_js, rust_js::link_name = "get supportsText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn supports_text(&self) -> Option<String> {
@@ -45581,6 +46298,7 @@ impl CSSKeyframesRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule/findRule)
     #[cfg_attr(rust_js, rust_js::link_name = "findRule")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn find_rule(&self, select: &str) -> Option<&'static CSSKeyframeRule> {
@@ -47423,6 +48141,7 @@ impl CSSPropertyRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSPropertyRule/initialValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get initialValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn initial_value(&self) -> Option<String> {
@@ -47596,6 +48315,7 @@ impl CSSRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRule/parentRule)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentRule")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_rule(&self) -> Option<&'static CSSRule> {
@@ -47604,6 +48324,7 @@ impl CSSRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRule/parentStyleSheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentStyleSheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_style_sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -47639,6 +48360,7 @@ pub mod css_rule_list {
 impl CSSRuleList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSRuleList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static CSSRule> {
@@ -47767,6 +48489,7 @@ pub mod css_scope_rule {
 impl CSSScopeRule {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScopeRule/start)
     #[cfg_attr(rust_js, rust_js::link_name = "get start")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn start(&self) -> Option<String> {
@@ -47775,6 +48498,7 @@ impl CSSScopeRule {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScopeRule/end)
     #[cfg_attr(rust_js, rust_js::link_name = "get end")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn end(&self) -> Option<String> {
@@ -48076,6 +48800,7 @@ pub mod css_style_sheet {
 impl CSSStyleSheet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/ownerRule)
     #[cfg_attr(rust_js, rust_js::link_name = "get ownerRule")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn owner_rule(&self) -> Option<&'static CSSRule> {
@@ -48655,6 +49380,7 @@ impl CSSVariableReferenceValue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/fallback)
     #[cfg_attr(rust_js, rust_js::link_name = "get fallback")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fallback(&self) -> Option<&'static CSSUnparsedValue> {
@@ -49134,6 +49860,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/createPattern)
     #[cfg_attr(rust_js, rust_js::link_name = "createPattern")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_pattern(&self, image: impl IntoCanvasImageSource, repetition: &str) -> Option<&'static CanvasPattern> {
@@ -49817,6 +50544,7 @@ impl CaretPosition {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CaretPosition/getClientRect)
     #[cfg_attr(rust_js, rust_js::link_name = "getClientRect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_client_rect(&self) -> Option<&'static DOMRect> {
@@ -50014,6 +50742,7 @@ impl CloseWatcher {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -50031,6 +50760,7 @@ impl CloseWatcher {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -50084,6 +50814,7 @@ pub mod command_event {
 impl CommandEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/source)
     #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn source(&self) -> Option<&'static Element> {
@@ -50259,6 +50990,7 @@ pub mod convolver_node {
 impl ConvolverNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/buffer)
     #[cfg_attr(rust_js, rust_js::link_name = "get buffer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn buffer(&self) -> Option<&'static AudioBuffer> {
@@ -50419,6 +51151,7 @@ impl CookieStore {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&CookieChangeEvent) -> Option<&'static Unknown>> {
@@ -50666,6 +51399,7 @@ impl CustomElementRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::optional)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, name: &str) -> Option<&'static JsObject> {
@@ -50674,6 +51408,7 @@ impl CustomElementRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/getName)
     #[cfg_attr(rust_js, rust_js::link_name = "getName")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_name(&self, constructor: Box<dyn FnMut() -> &'static HTMLElement>) -> Option<String> {
@@ -52207,6 +52942,7 @@ impl DOMRectList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static DOMRect> {
@@ -52242,6 +52978,7 @@ impl DOMStringList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<String> {
@@ -52269,6 +53006,7 @@ pub struct DataTransferItem(PhantomData<JsObject>);
 impl DataTransferItem {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItem/webkitGetAsEntry)
     #[cfg_attr(rust_js, rust_js::link_name = "webkitGetAsEntry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn webkit_get_as_entry(&self) -> Option<&'static FileSystemEntry> {
@@ -52302,6 +53040,7 @@ impl DataTransferItem {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItem/getAsFile)
     #[cfg_attr(rust_js, rust_js::link_name = "getAsFile")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_as_file(&self) -> Option<&'static File> {
@@ -52337,6 +53076,7 @@ impl DataTransferItemList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add(&self, data: &str, r#type: &str) -> Option<&'static DataTransferItem> {
@@ -52345,6 +53085,7 @@ impl DataTransferItemList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItemList/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn add_with_file(&self, data: &File) -> Option<&'static DataTransferItem> {
@@ -52530,6 +53271,7 @@ pub mod device_orientation_event {
 impl DeviceOrientationEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/alpha)
     #[cfg_attr(rust_js, rust_js::link_name = "get alpha")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn alpha(&self) -> Option<f64> {
@@ -52538,6 +53280,7 @@ impl DeviceOrientationEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/beta)
     #[cfg_attr(rust_js, rust_js::link_name = "get beta")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn beta(&self) -> Option<f64> {
@@ -52546,6 +53289,7 @@ impl DeviceOrientationEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/gamma)
     #[cfg_attr(rust_js, rust_js::link_name = "get gamma")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn gamma(&self) -> Option<f64> {
@@ -52658,6 +53402,7 @@ impl DocumentPictureInPicture {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPicture/onenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onenter(&self) -> Option<&'static dyn Fn(&DocumentPictureInPictureEvent) -> Option<&'static Unknown>> {
@@ -52934,6 +53679,7 @@ pub struct ElementInternals(PhantomData<JsObject>);
 impl ElementInternals {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/shadowRoot)
     #[cfg_attr(rust_js, rust_js::link_name = "get shadowRoot")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shadow_root(&self) -> Option<&'static ShadowRoot> {
@@ -52951,6 +53697,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/form)
     #[cfg_attr(rust_js, rust_js::link_name = "get form")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form(&self) -> Option<&'static HTMLFormElement> {
@@ -53024,6 +53771,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/role)
     #[cfg_attr(rust_js, rust_js::link_name = "get role")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn role(&self) -> Option<String> {
@@ -53040,6 +53788,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaActiveDescendantElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaActiveDescendantElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_active_descendant_element(&self) -> Option<&'static Element> {
@@ -53056,6 +53805,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaAtomic)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaAtomic")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_atomic(&self) -> Option<String> {
@@ -53072,6 +53822,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaAutoComplete)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaAutoComplete")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_auto_complete(&self) -> Option<String> {
@@ -53088,6 +53839,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBrailleLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBrailleLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_braille_label(&self) -> Option<String> {
@@ -53104,6 +53856,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBrailleRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBrailleRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_braille_role_description(&self) -> Option<String> {
@@ -53120,6 +53873,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBusy)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaBusy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_busy(&self) -> Option<String> {
@@ -53136,6 +53890,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaChecked)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaChecked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_checked(&self) -> Option<String> {
@@ -53152,6 +53907,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColCount")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_count(&self) -> Option<String> {
@@ -53168,6 +53924,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_index(&self) -> Option<String> {
@@ -53184,6 +53941,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_index_text(&self) -> Option<String> {
@@ -53200,6 +53958,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaColSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_col_span(&self) -> Option<String> {
@@ -53216,6 +53975,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaControlsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaControlsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_controls_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53232,6 +53992,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaCurrent)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaCurrent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_current(&self) -> Option<String> {
@@ -53248,6 +54009,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescribedByElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDescribedByElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_described_by_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53264,6 +54026,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_description(&self) -> Option<String> {
@@ -53280,6 +54043,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDetailsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDetailsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_details_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53296,6 +54060,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDisabled)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaDisabled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_disabled(&self) -> Option<String> {
@@ -53312,6 +54077,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaErrorMessageElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaErrorMessageElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_error_message_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53328,6 +54094,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaExpanded)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaExpanded")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_expanded(&self) -> Option<String> {
@@ -53344,6 +54111,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaFlowToElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaFlowToElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_flow_to_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53360,6 +54128,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaHasPopup)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaHasPopup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_has_popup(&self) -> Option<String> {
@@ -53376,6 +54145,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaHidden)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaHidden")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_hidden(&self) -> Option<String> {
@@ -53392,6 +54162,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaInvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaInvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_invalid(&self) -> Option<String> {
@@ -53408,6 +54179,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaKeyShortcuts)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaKeyShortcuts")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_key_shortcuts(&self) -> Option<String> {
@@ -53424,6 +54196,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_label(&self) -> Option<String> {
@@ -53440,6 +54213,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabelledByElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLabelledByElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_labelled_by_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53456,6 +54230,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLevel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLevel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_level(&self) -> Option<String> {
@@ -53472,6 +54247,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLive)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaLive")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_live(&self) -> Option<String> {
@@ -53488,6 +54264,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaModal)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaModal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_modal(&self) -> Option<String> {
@@ -53504,6 +54281,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaMultiLine)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaMultiLine")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_multi_line(&self) -> Option<String> {
@@ -53520,6 +54298,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaMultiSelectable)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaMultiSelectable")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_multi_selectable(&self) -> Option<String> {
@@ -53536,6 +54315,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaOrientation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_orientation(&self) -> Option<String> {
@@ -53552,6 +54332,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOwnsElements)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaOwnsElements")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_owns_elements(&self) -> Option<&'static [&'static Element]> {
@@ -53568,6 +54349,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPlaceholder)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPlaceholder")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_placeholder(&self) -> Option<String> {
@@ -53584,6 +54366,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPosInSet)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPosInSet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_pos_in_set(&self) -> Option<String> {
@@ -53600,6 +54383,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPressed)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaPressed")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_pressed(&self) -> Option<String> {
@@ -53616,6 +54400,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaReadOnly")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_read_only(&self) -> Option<String> {
@@ -53632,6 +54417,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRelevant)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRelevant")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_relevant(&self) -> Option<String> {
@@ -53648,6 +54434,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRequired)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRequired")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_required(&self) -> Option<String> {
@@ -53664,6 +54451,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_role_description(&self) -> Option<String> {
@@ -53680,6 +54468,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowCount)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowCount")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_count(&self) -> Option<String> {
@@ -53696,6 +54485,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_index(&self) -> Option<String> {
@@ -53712,6 +54502,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_index_text(&self) -> Option<String> {
@@ -53728,6 +54519,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaRowSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_row_span(&self) -> Option<String> {
@@ -53744,6 +54536,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSelected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSelected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_selected(&self) -> Option<String> {
@@ -53760,6 +54553,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSetSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSetSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_set_size(&self) -> Option<String> {
@@ -53776,6 +54570,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSort)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaSort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_sort(&self) -> Option<String> {
@@ -53792,6 +54587,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueMax)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueMax")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_max(&self) -> Option<String> {
@@ -53808,6 +54604,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueMin)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueMin")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_min(&self) -> Option<String> {
@@ -53824,6 +54621,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueNow)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueNow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_now(&self) -> Option<String> {
@@ -53840,6 +54638,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueText)
     #[cfg_attr(rust_js, rust_js::link_name = "get ariaValueText")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn aria_value_text(&self) -> Option<String> {
@@ -53891,6 +54690,7 @@ impl EncodedAudioChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -53951,6 +54751,7 @@ impl EncodedVideoChunk {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -54185,6 +54986,7 @@ impl EventSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onopen)
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -54202,6 +55004,7 @@ impl EventSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -54219,6 +55022,7 @@ impl EventSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -54289,6 +55093,7 @@ pub mod file_list {
 impl FileList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static File> {
@@ -54403,6 +55208,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/result)
     #[cfg_attr(rust_js, rust_js::link_name = "get result")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn result(&self) -> Option<StrOrArrayBuffer<'static>> {
@@ -54411,6 +55217,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/error)
     #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self) -> Option<&'static DOMException> {
@@ -54419,6 +55226,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -54436,6 +55244,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -54453,6 +55262,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -54470,6 +55280,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -54487,6 +55298,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -54504,6 +55316,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/onloadend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadend(&self) -> Option<&'static dyn Fn(&ProgressEvent) -> Option<&'static Unknown>> {
@@ -55216,6 +56029,7 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloading)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloading")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloading(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
@@ -55233,6 +56047,7 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingdone)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadingdone")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadingdone(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
@@ -55250,6 +56065,7 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/onloadingerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadingerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadingerror(&self) -> Option<&'static dyn Fn(&FontFaceSetLoadEvent) -> Option<&'static Unknown>> {
@@ -55684,6 +56500,7 @@ impl GPUCanvasContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/getConfiguration)
     #[cfg_attr(rust_js, rust_js::link_name = "getConfiguration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_configuration(&self) -> Option<GPUCanvasConfiguration> {
@@ -56279,6 +57096,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/onuncapturederror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onuncapturederror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onuncapturederror(&self) -> Option<&'static dyn Fn(&GPUUncapturedErrorEvent) -> Option<&'static Unknown>> {
@@ -57895,6 +58713,7 @@ impl GeolocationCoordinates {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates/altitude)
     #[cfg_attr(rust_js, rust_js::link_name = "get altitude")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn altitude(&self) -> Option<f64> {
@@ -57903,6 +58722,7 @@ impl GeolocationCoordinates {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates/altitudeAccuracy)
     #[cfg_attr(rust_js, rust_js::link_name = "get altitudeAccuracy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn altitude_accuracy(&self) -> Option<f64> {
@@ -57911,6 +58731,7 @@ impl GeolocationCoordinates {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates/heading)
     #[cfg_attr(rust_js, rust_js::link_name = "get heading")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn heading(&self) -> Option<f64> {
@@ -57919,6 +58740,7 @@ impl GeolocationCoordinates {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates/speed)
     #[cfg_attr(rust_js, rust_js::link_name = "get speed")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn speed(&self) -> Option<f64> {
@@ -58028,6 +58850,7 @@ impl HTMLAllCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<HTMLCollectionOrElement<'static>> {
@@ -58036,6 +58859,7 @@ impl HTMLAllCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, name_or_index: Option<&str>) -> Option<HTMLCollectionOrElement<'static>> {
@@ -58200,6 +59024,7 @@ pub mod html_form_controls_collection {
 impl HTMLFormControlsCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<RadioNodeListOrElement<'static>> {
@@ -58332,6 +59157,7 @@ impl HTMLFrameElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameElement/contentDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentDocument")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_document(&self) -> Option<&'static Document> {
@@ -58340,6 +59166,7 @@ impl HTMLFrameElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameElement/contentWindow)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentWindow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_window(&self) -> Option<&'static Window> {
@@ -58440,6 +59267,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepadconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58457,6 +59285,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongamepaddisconnected(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58474,6 +59303,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onafterprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58491,6 +59321,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeprint")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeprint(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58508,6 +59339,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onbeforeunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<String>> {
@@ -58525,6 +59357,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onhashchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onhashchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onhashchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58542,6 +59375,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onlanguagechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlanguagechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlanguagechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58559,6 +59393,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58576,6 +59411,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58593,6 +59429,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onoffline)
     #[cfg_attr(rust_js, rust_js::link_name = "get onoffline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onoffline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58610,6 +59447,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ononline)
     #[cfg_attr(rust_js, rust_js::link_name = "get ononline")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ononline(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58627,6 +59465,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagehide)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagehide")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagehide(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58644,6 +59483,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpagereveal)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpagereveal")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpagereveal(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58661,6 +59501,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageshow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58678,6 +59519,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpageswap)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpageswap")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpageswap(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58695,6 +59537,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onpopstate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpopstate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpopstate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58712,6 +59555,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onrejectionhandled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrejectionhandled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrejectionhandled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58729,6 +59573,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onstorage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstorage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstorage(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58746,6 +59591,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunhandledrejection)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunhandledrejection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunhandledrejection(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -58763,6 +59609,7 @@ impl HTMLFrameSetElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onunload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -59694,6 +60541,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -59711,6 +60559,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -59728,6 +60577,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -59745,6 +60595,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/onversionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onversionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onversionchange(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
@@ -60193,6 +61044,7 @@ pub mod idb_open_db_request {
 impl IDBOpenDBRequest {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onblocked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblocked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblocked(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
@@ -60210,6 +61062,7 @@ impl IDBOpenDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBOpenDBRequest/onupgradeneeded)
     #[cfg_attr(rust_js, rust_js::link_name = "get onupgradeneeded")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onupgradeneeded(&self) -> Option<&'static dyn Fn(&IDBVersionChangeEvent) -> Option<&'static Unknown>> {
@@ -60263,6 +61116,7 @@ impl IDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/error)
     #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self) -> Option<&'static DOMException> {
@@ -60271,6 +61125,7 @@ impl IDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/source)
     #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn source(&self) -> Option<IDBObjectStoreOrIDBIndexOrIDBCursor<'static>> {
@@ -60279,6 +61134,7 @@ impl IDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/transaction)
     #[cfg_attr(rust_js, rust_js::link_name = "get transaction")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transaction(&self) -> Option<&'static IDBTransaction> {
@@ -60295,6 +61151,7 @@ impl IDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onsuccess)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuccess")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuccess(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -60312,6 +61169,7 @@ impl IDBRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBRequest/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -60389,6 +61247,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/error)
     #[cfg_attr(rust_js, rust_js::link_name = "get error")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn error(&self) -> Option<&'static DOMException> {
@@ -60423,6 +61282,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -60440,6 +61300,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/oncomplete)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncomplete")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncomplete(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -60457,6 +61318,7 @@ impl IDBTransaction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBTransaction/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -60518,6 +61380,7 @@ impl IDBVersionChangeEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/newVersion)
     #[cfg_attr(rust_js, rust_js::link_name = "get newVersion")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_version(&self) -> Option<f64> {
@@ -60923,6 +61786,7 @@ impl ImageTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrackList/selectedTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedTrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selected_track(&self) -> Option<&'static ImageTrack> {
@@ -61003,6 +61867,7 @@ pub mod keyframe_effect {
 impl KeyframeEffect {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/target)
     #[cfg_attr(rust_js, rust_js::link_name = "get target")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn target(&self) -> Option<&'static Element> {
@@ -61019,6 +61884,7 @@ impl KeyframeEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/pseudoElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get pseudoElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pseudo_element(&self) -> Option<String> {
@@ -61152,6 +62018,7 @@ impl LargestContentfulPaint {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/LargestContentfulPaint/element)
     #[cfg_attr(rust_js, rust_js::link_name = "get element")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn element(&self) -> Option<&'static Element> {
@@ -61168,6 +62035,7 @@ impl LargestContentfulPaint {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/LargestContentfulPaint/presentationTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get presentationTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn presentation_time(&self) -> Option<f64> {
@@ -61274,6 +62142,7 @@ impl MIDIAccess {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIAccess/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&MIDIConnectionEvent) -> Option<&'static Unknown>> {
@@ -61335,6 +62204,7 @@ pub mod midi_connection_event {
 impl MIDIConnectionEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/port)
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn port(&self) -> Option<&'static MIDIPort> {
@@ -61371,6 +62241,7 @@ pub mod midi_input {
 impl MIDIInput {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInput/onmidimessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmidimessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmidimessage(&self) -> Option<&'static dyn Fn(&MIDIMessageEvent) -> Option<&'static Unknown>> {
@@ -61488,6 +62359,7 @@ pub mod midi_message_event {
 impl MIDIMessageEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/data)
     #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn data(&self) -> Option<&'static Uint8Array> {
@@ -61633,6 +62505,7 @@ impl MIDIPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/manufacturer)
     #[cfg_attr(rust_js, rust_js::link_name = "get manufacturer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn manufacturer(&self) -> Option<String> {
@@ -61641,6 +62514,7 @@ impl MIDIPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn name(&self) -> Option<String> {
@@ -61657,6 +62531,7 @@ impl MIDIPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/version)
     #[cfg_attr(rust_js, rust_js::link_name = "get version")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn version(&self) -> Option<String> {
@@ -61681,6 +62556,7 @@ impl MIDIPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIPort/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&MIDIConnectionEvent) -> Option<&'static Unknown>> {
@@ -61758,6 +62634,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationstart(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -61775,6 +62652,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationiteration(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -61792,6 +62670,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationend(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -61809,6 +62688,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onanimationcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onanimationcancel(&self) -> Option<&'static dyn Fn(&AnimationEvent) -> Option<&'static Unknown>> {
@@ -61826,6 +62706,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionrun)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionrun")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionrun(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -61843,6 +62724,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionstart(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -61860,6 +62742,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitionend(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -61877,6 +62760,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontransitioncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontransitioncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontransitioncancel(&self) -> Option<&'static dyn Fn(&TransitionEvent) -> Option<&'static Unknown>> {
@@ -61894,6 +62778,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -61911,6 +62796,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onauxclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onauxclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onauxclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -61928,6 +62814,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforeinput)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforeinput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforeinput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -61945,6 +62832,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforematch)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforematch")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforematch(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -61962,6 +62850,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onbeforetoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbeforetoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbeforetoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -61979,6 +62868,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onblur)
     #[cfg_attr(rust_js, rust_js::link_name = "get onblur")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onblur(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
@@ -61996,6 +62886,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncancel(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62013,6 +62904,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62030,6 +62922,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncanplaythrough)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncanplaythrough")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncanplaythrough(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62047,6 +62940,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62064,6 +62958,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -62081,6 +62976,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62098,6 +62994,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncommand)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncommand")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncommand(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62115,6 +63012,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62132,6 +63030,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextmenu)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextmenu")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextmenu(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -62149,6 +63048,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62166,6 +63066,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncopy)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncopy")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncopy(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -62183,6 +63084,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62200,6 +63102,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oncut)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncut")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncut(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -62217,6 +63120,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondblclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondblclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondblclick(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62234,6 +63138,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrag)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrag")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrag(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62251,6 +63156,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragend(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62268,6 +63174,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragenter(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62285,6 +63192,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragleave(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62302,6 +63210,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragover)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragover(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62319,6 +63228,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondragstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondragstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondragstart(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62336,6 +63246,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondrop)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondrop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondrop(&self) -> Option<&'static dyn Fn(&DragEvent) -> Option<&'static Unknown>> {
@@ -62353,6 +63264,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ondurationchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondurationchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondurationchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62370,6 +63282,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onemptied)
     #[cfg_attr(rust_js, rust_js::link_name = "get onemptied")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onemptied(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62387,6 +63300,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62404,6 +63318,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
@@ -62421,6 +63336,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onfocus)
     #[cfg_attr(rust_js, rust_js::link_name = "get onfocus")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onfocus(&self) -> Option<&'static dyn Fn(&FocusEvent) -> Option<&'static Unknown>> {
@@ -62438,6 +63354,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onformdata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onformdata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onformdata(&self) -> Option<&'static dyn Fn(&FormDataEvent) -> Option<&'static Unknown>> {
@@ -62455,6 +63372,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninput)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninput")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninput(&self) -> Option<&'static dyn Fn(&InputEvent) -> Option<&'static Unknown>> {
@@ -62472,6 +63390,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/oninvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "get oninvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oninvalid(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62489,6 +63408,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeydown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeydown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeydown(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -62506,6 +63426,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeypress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeypress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeypress(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -62523,6 +63444,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onkeyup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeyup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeyup(&self) -> Option<&'static dyn Fn(&KeyboardEvent) -> Option<&'static Unknown>> {
@@ -62540,6 +63462,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62557,6 +63480,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadeddata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadeddata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadeddata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62574,6 +63498,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadedmetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadedmetadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadedmetadata(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62591,6 +63516,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62608,6 +63534,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousedown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousedown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousedown(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62625,6 +63552,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseenter(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62642,6 +63570,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseleave(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62659,6 +63588,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmousemove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmousemove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmousemove(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62676,6 +63606,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseout(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62693,6 +63624,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseover(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62710,6 +63642,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onmouseup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmouseup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmouseup(&self) -> Option<&'static dyn Fn(&MouseEvent) -> Option<&'static Unknown>> {
@@ -62727,6 +63660,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpaste)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaste")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaste(&self) -> Option<&'static dyn Fn(&ClipboardEvent) -> Option<&'static Unknown>> {
@@ -62744,6 +63678,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62761,6 +63696,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplay)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplay")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplay(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62778,6 +63714,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onplaying)
     #[cfg_attr(rust_js, rust_js::link_name = "get onplaying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onplaying(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62795,6 +63732,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62812,6 +63750,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onratechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onratechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onratechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62829,6 +63768,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onreset)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreset")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreset(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62846,6 +63786,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62863,6 +63804,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62880,6 +63822,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62897,6 +63840,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsecuritypolicyviolation)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsecuritypolicyviolation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsecuritypolicyviolation(&self) -> Option<&'static dyn Fn(&SecurityPolicyViolationEvent) -> Option<&'static Unknown>> {
@@ -62914,6 +63858,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeked)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeked")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeked(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62931,6 +63876,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onseeking)
     #[cfg_attr(rust_js, rust_js::link_name = "get onseeking")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onseeking(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62948,6 +63894,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62965,6 +63912,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62982,6 +63930,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onstalled)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstalled")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstalled(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -62999,6 +63948,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsubmit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsubmit(&self) -> Option<&'static dyn Fn(&SubmitEvent) -> Option<&'static Unknown>> {
@@ -63016,6 +63966,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onsuspend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsuspend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsuspend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63033,6 +63984,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontimeupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63050,6 +64002,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontoggle)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontoggle")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontoggle(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63067,6 +64020,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onvolumechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvolumechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvolumechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63084,6 +64038,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwaiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwaiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwaiting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63101,6 +64056,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63118,6 +64074,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationiteration)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationiteration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationiteration(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63135,6 +64092,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkitanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkitanimationstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkitanimationstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63152,6 +64110,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwebkittransitionend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwebkittransitionend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwebkittransitionend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63169,6 +64128,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onwheel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onwheel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onwheel(&self) -> Option<&'static dyn Fn(&WheelEvent) -> Option<&'static Unknown>> {
@@ -63186,6 +64146,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerover(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63203,6 +64164,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerenter(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63220,6 +64182,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerdown(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63237,6 +64200,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointermove(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63254,6 +64218,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerrawupdate(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63271,6 +64236,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerup(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63288,6 +64254,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointercancel(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63305,6 +64272,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerout(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63322,6 +64290,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpointerleave(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63339,6 +64308,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongotpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63356,6 +64326,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
     #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onlostpointercapture(&self) -> Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>> {
@@ -63373,6 +64344,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63390,6 +64362,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectionchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63407,6 +64380,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchstart(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -63424,6 +64398,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchend(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -63441,6 +64416,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchmove(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -63458,6 +64434,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontouchcancel(&self) -> Option<&'static dyn Fn(&TouchEvent) -> Option<&'static Unknown>> {
@@ -63647,6 +64624,7 @@ pub mod media_devices {
 impl MediaDevices {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/ondevicechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondevicechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondevicechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63784,6 +64762,7 @@ impl MediaEncryptedEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/initData)
     #[cfg_attr(rust_js, rust_js::link_name = "get initData")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn init_data(&self) -> Option<&'static ArrayBuffer> {
@@ -63942,6 +64921,7 @@ impl MediaKeySession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onkeystatuseschange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onkeystatuseschange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onkeystatuseschange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -63959,6 +64939,7 @@ impl MediaKeySession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySession/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MediaKeyMessageEvent) -> Option<&'static Unknown>> {
@@ -64048,6 +65029,7 @@ impl MediaKeyStatusMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::optional)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, key_id: impl IntoBufferSource) -> Option<String> {
@@ -64169,6 +65151,7 @@ impl MediaList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<String> {
@@ -64346,6 +65329,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64363,6 +65347,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onstop)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstop")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstop(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64380,6 +65365,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/ondataavailable)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondataavailable")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondataavailable(&self) -> Option<&'static dyn Fn(&BlobEvent) -> Option<&'static Unknown>> {
@@ -64397,6 +65383,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64414,6 +65401,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onresume)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresume")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresume(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64431,6 +65419,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
@@ -64516,6 +65505,7 @@ pub struct MediaSession(PhantomData<JsObject>);
 impl MediaSession {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/metadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get metadata")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn metadata(&self) -> Option<&'static MediaMetadata> {
@@ -64674,6 +65664,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceopen)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceopen")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsourceopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64691,6 +65682,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsourceended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64708,6 +65700,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/onsourceclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsourceclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsourceclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -64841,6 +65834,7 @@ impl MediaStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/getTrackById)
     #[cfg_attr(rust_js, rust_js::link_name = "getTrackById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_track_by_id(&self, track_id: &str) -> Option<&'static MediaStreamTrack> {
@@ -64883,6 +65877,7 @@ impl MediaStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onaddtrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddtrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onaddtrack(&self) -> Option<&'static dyn Fn(&MediaStreamTrackEvent) -> Option<&'static Unknown>> {
@@ -64900,6 +65895,7 @@ impl MediaStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStream/onremovetrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovetrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onremovetrack(&self) -> Option<&'static dyn Fn(&MediaStreamTrackEvent) -> Option<&'static Unknown>> {
@@ -65081,6 +66077,7 @@ impl MediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onmute)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmute")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmute(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -65098,6 +66095,7 @@ impl MediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onunmute)
     #[cfg_attr(rust_js, rust_js::link_name = "get onunmute")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onunmute(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -65123,6 +66121,7 @@ impl MediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/onended)
     #[cfg_attr(rust_js, rust_js::link_name = "get onended")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onended(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -65339,6 +66338,7 @@ impl MessagePort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -65356,6 +66356,7 @@ impl MessagePort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -65373,6 +66374,7 @@ impl MessagePort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -65456,6 +66458,7 @@ impl MimeTypeArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static MimeType> {
@@ -65464,6 +66467,7 @@ impl MimeTypeArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeTypeArray/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<&'static MimeType> {
@@ -65556,6 +66560,7 @@ impl MutationRecord {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/previousSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get previousSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_sibling(&self) -> Option<&'static Node> {
@@ -65564,6 +66569,7 @@ impl MutationRecord {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/nextSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "get nextSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_sibling(&self) -> Option<&'static Node> {
@@ -65572,6 +66578,7 @@ impl MutationRecord {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/attributeName)
     #[cfg_attr(rust_js, rust_js::link_name = "get attributeName")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn attribute_name(&self) -> Option<String> {
@@ -65580,6 +66587,7 @@ impl MutationRecord {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/attributeNamespace)
     #[cfg_attr(rust_js, rust_js::link_name = "get attributeNamespace")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn attribute_namespace(&self) -> Option<String> {
@@ -65588,6 +66596,7 @@ impl MutationRecord {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/oldValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get oldValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn old_value(&self) -> Option<String> {
@@ -65623,6 +66632,7 @@ impl NamedNodeMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static Attr> {
@@ -65631,6 +66641,7 @@ impl NamedNodeMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/getNamedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "getNamedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_named_item(&self, qualified_name: &str) -> Option<&'static Attr> {
@@ -65639,6 +66650,7 @@ impl NamedNodeMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/getNamedItemNS)
     #[cfg_attr(rust_js, rust_js::link_name = "getNamedItemNS")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_named_item_ns(&self, namespace: &str, local_name: &str) -> Option<&'static Attr> {
@@ -65647,6 +66659,7 @@ impl NamedNodeMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/setNamedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "setNamedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_named_item(&self, attr: &Attr) -> Option<&'static Attr> {
@@ -65655,6 +66668,7 @@ impl NamedNodeMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/setNamedItemNS)
     #[cfg_attr(rust_js, rust_js::link_name = "setNamedItemNS")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_named_item_ns(&self, attr: &Attr) -> Option<&'static Attr> {
@@ -65763,6 +66777,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/formData)
     #[cfg_attr(rust_js, rust_js::link_name = "get formData")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn form_data(&self) -> Option<&'static FormData> {
@@ -65771,6 +66786,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/downloadRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "get downloadRequest")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn download_request(&self) -> Option<String> {
@@ -65795,6 +66811,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/sourceElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get sourceElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn source_element(&self) -> Option<&'static Element> {
@@ -65857,6 +66874,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/currentEntry)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentEntry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_entry(&self) -> Option<&'static NavigationHistoryEntry> {
@@ -65874,6 +66892,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/transition)
     #[cfg_attr(rust_js, rust_js::link_name = "get transition")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transition(&self) -> Option<&'static NavigationTransition> {
@@ -65882,6 +66901,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/activation)
     #[cfg_attr(rust_js, rust_js::link_name = "get activation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn activation(&self) -> Option<&'static NavigationActivation> {
@@ -65946,6 +66966,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onnavigate(&self) -> Option<&'static dyn Fn(&NavigateEvent) -> Option<&'static Unknown>> {
@@ -65963,6 +66984,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigatesuccess)
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigatesuccess")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onnavigatesuccess(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -65980,6 +67002,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/onnavigateerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onnavigateerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onnavigateerror(&self) -> Option<&'static dyn Fn(&ErrorEvent) -> Option<&'static Unknown>> {
@@ -65997,6 +67020,7 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/oncurrententrychange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncurrententrychange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncurrententrychange(&self) -> Option<&'static dyn Fn(&NavigationCurrentEntryChangeEvent) -> Option<&'static Unknown>> {
@@ -66021,6 +67045,7 @@ pub struct NavigationActivation(PhantomData<JsObject>);
 impl NavigationActivation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationActivation/from)
     #[cfg_attr(rust_js, rust_js::link_name = "get from")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn from(&self) -> Option<&'static NavigationHistoryEntry> {
@@ -66081,6 +67106,7 @@ pub mod navigation_current_entry_change_event {
 impl NavigationCurrentEntryChangeEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent/navigationType)
     #[cfg_attr(rust_js, rust_js::link_name = "get navigationType")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn navigation_type(&self) -> Option<String> {
@@ -66180,6 +67206,7 @@ pub mod navigation_history_entry {
 impl NavigationHistoryEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/url)
     #[cfg_attr(rust_js, rust_js::link_name = "get url")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn url(&self) -> Option<String> {
@@ -66228,6 +67255,7 @@ impl NavigationHistoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry/ondispose)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondispose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondispose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66410,6 +67438,7 @@ impl NodeIterator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/filter)
     #[cfg_attr(rust_js, rust_js::link_name = "get filter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn filter(&self) -> Option<&'static JsObject> {
@@ -66418,6 +67447,7 @@ impl NodeIterator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/nextNode)
     #[cfg_attr(rust_js, rust_js::link_name = "nextNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_node(&self) -> Option<&'static Node> {
@@ -66426,6 +67456,7 @@ impl NodeIterator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/previousNode)
     #[cfg_attr(rust_js, rust_js::link_name = "previousNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_node(&self) -> Option<&'static Node> {
@@ -66503,6 +67534,7 @@ pub mod notification {
 impl Notification {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclick)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclick")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclick(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66520,6 +67552,7 @@ impl Notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onshow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onshow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onshow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66537,6 +67570,7 @@ impl Notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66554,6 +67588,7 @@ impl Notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66619,6 +67654,7 @@ impl Notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/silent)
     #[cfg_attr(rust_js, rust_js::link_name = "get silent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn silent(&self) -> Option<bool> {
@@ -66764,6 +67800,7 @@ impl OfflineAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> Option<f64> {
@@ -66772,6 +67809,7 @@ impl OfflineAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/oncomplete)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncomplete")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncomplete(&self) -> Option<&'static dyn Fn(&OfflineAudioCompletionEvent) -> Option<&'static Unknown>> {
@@ -66857,6 +67895,7 @@ impl OffscreenCanvas {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_context(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<OffscreenRenderingContext<'static>> {
@@ -66881,6 +67920,7 @@ impl OffscreenCanvas {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextlost)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextlost")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextlost(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -66898,6 +67938,7 @@ impl OffscreenCanvas {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/oncontextrestored)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontextrestored")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontextrestored(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -67155,6 +68196,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/createPattern)
     #[cfg_attr(rust_js, rust_js::link_name = "createPattern")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_pattern(&self, image: impl IntoCanvasImageSource, repetition: &str) -> Option<&'static CanvasPattern> {
@@ -68005,6 +69047,7 @@ pub mod page_reveal_event {
 impl PageRevealEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/viewTransition)
     #[cfg_attr(rust_js, rust_js::link_name = "get viewTransition")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn view_transition(&self) -> Option<&'static ViewTransition> {
@@ -68049,6 +69092,7 @@ pub mod page_swap_event {
 impl PageSwapEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/activation)
     #[cfg_attr(rust_js, rust_js::link_name = "get activation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn activation(&self) -> Option<&'static NavigationActivation> {
@@ -68057,6 +69101,7 @@ impl PageSwapEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/viewTransition)
     #[cfg_attr(rust_js, rust_js::link_name = "get viewTransition")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn view_transition(&self) -> Option<&'static ViewTransition> {
@@ -68501,6 +69546,7 @@ impl PaymentMethodChangeEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/methodDetails)
     #[cfg_attr(rust_js, rust_js::link_name = "get methodDetails")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn method_details(&self) -> Option<&'static JsObject> {
@@ -68577,6 +69623,7 @@ impl PaymentRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/shippingOption)
     #[cfg_attr(rust_js, rust_js::link_name = "get shippingOption")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shipping_option(&self) -> Option<String> {
@@ -68585,6 +69632,7 @@ impl PaymentRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/shippingType)
     #[cfg_attr(rust_js, rust_js::link_name = "get shippingType")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shipping_type(&self) -> Option<String> {
@@ -68593,6 +69641,7 @@ impl PaymentRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingaddresschange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onshippingaddresschange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onshippingaddresschange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
@@ -68610,6 +69659,7 @@ impl PaymentRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onshippingoptionchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onshippingoptionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onshippingoptionchange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
@@ -68627,6 +69677,7 @@ impl PaymentRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/onpaymentmethodchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpaymentmethodchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpaymentmethodchange(&self) -> Option<&'static dyn Fn(&PaymentMethodChangeEvent) -> Option<&'static Unknown>> {
@@ -68749,6 +69800,7 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/shippingOption)
     #[cfg_attr(rust_js, rust_js::link_name = "get shippingOption")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn shipping_option(&self) -> Option<String> {
@@ -68757,6 +69809,7 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/payerName)
     #[cfg_attr(rust_js, rust_js::link_name = "get payerName")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn payer_name(&self) -> Option<String> {
@@ -68765,6 +69818,7 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/payerEmail)
     #[cfg_attr(rust_js, rust_js::link_name = "get payerEmail")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn payer_email(&self) -> Option<String> {
@@ -68773,6 +69827,7 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/payerPhone)
     #[cfg_attr(rust_js, rust_js::link_name = "get payerPhone")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn payer_phone(&self) -> Option<String> {
@@ -68797,6 +69852,7 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/onpayerdetailchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpayerdetailchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpayerdetailchange(&self) -> Option<&'static dyn Fn(&PaymentRequestUpdateEvent) -> Option<&'static Unknown>> {
@@ -68913,6 +69969,7 @@ impl PerformanceEventTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceEventTiming/target)
     #[cfg_attr(rust_js, rust_js::link_name = "get target")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn target(&self) -> Option<&'static Node> {
@@ -69283,6 +70340,7 @@ impl PerformancePaintTiming {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformancePaintTiming/presentationTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get presentationTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn presentation_time(&self) -> Option<f64> {
@@ -69785,6 +70843,7 @@ impl PermissionStatus {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PermissionStatus/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -69905,6 +70964,7 @@ impl PictureInPictureWindow {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -69973,6 +71033,7 @@ impl Plugin {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static MimeType> {
@@ -69981,6 +71042,7 @@ impl Plugin {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Plugin/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<&'static MimeType> {
@@ -70025,6 +71087,7 @@ impl PluginArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static Plugin> {
@@ -70033,6 +71096,7 @@ impl PluginArray {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PluginArray/namedItem)
     #[cfg_attr(rust_js, rust_js::link_name = "namedItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn named_item(&self, name: &str) -> Option<&'static Plugin> {
@@ -70153,6 +71217,7 @@ impl ProcessingInstruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/getAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribute")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attribute(&self, name: &str) -> Option<String> {
@@ -70195,6 +71260,7 @@ impl ProcessingInstruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/sheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get sheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -70415,6 +71481,7 @@ impl PublicKeyCredential {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential/authenticatorAttachment)
     #[cfg_attr(rust_js, rust_js::link_name = "get authenticatorAttachment")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn authenticator_attachment(&self) -> Option<String> {
@@ -70496,6 +71563,7 @@ impl PushSubscription {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/expirationTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get expirationTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn expiration_time(&self) -> Option<f64> {
@@ -70512,6 +71580,7 @@ impl PushSubscription {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/getKey)
     #[cfg_attr(rust_js, rust_js::link_name = "getKey")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_key(&self, name: &str) -> Option<&'static ArrayBuffer> {
@@ -70551,6 +71620,7 @@ impl PushSubscriptionOptions {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscriptionOptions/applicationServerKey)
     #[cfg_attr(rust_js, rust_js::link_name = "get applicationServerKey")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn application_server_key(&self) -> Option<&'static ArrayBuffer> {
@@ -70619,6 +71689,7 @@ impl RTCDTMFSender {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/ontonechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontonechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontonechange(&self) -> Option<&'static dyn Fn(&RTCDTMFToneChangeEvent) -> Option<&'static Unknown>> {
@@ -70740,6 +71811,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/maxPacketLifeTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxPacketLifeTime")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_packet_life_time(&self) -> Option<f64> {
@@ -70748,6 +71820,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/maxRetransmits)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxRetransmits")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_retransmits(&self) -> Option<f64> {
@@ -70772,6 +71845,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/id)
     #[cfg_attr(rust_js, rust_js::link_name = "get id")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn id(&self) -> Option<f64> {
@@ -70812,6 +71886,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onopen)
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -70829,6 +71904,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onbufferedamountlow)
     #[cfg_attr(rust_js, rust_js::link_name = "get onbufferedamountlow")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onbufferedamountlow(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -70846,6 +71922,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&RTCErrorEvent) -> Option<&'static Unknown>> {
@@ -70863,6 +71940,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclosing)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclosing")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclosing(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -70880,6 +71958,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -70906,6 +71985,7 @@ impl RTCDataChannel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -71071,6 +72151,7 @@ impl RTCDtlsTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71088,6 +72169,7 @@ impl RTCDtlsTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&RTCErrorEvent) -> Option<&'static Unknown>> {
@@ -71243,6 +72325,7 @@ impl RTCError {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sdpLineNumber)
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpLineNumber")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sdp_line_number(&self) -> Option<f64> {
@@ -71251,6 +72334,7 @@ impl RTCError {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sctpCauseCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get sctpCauseCode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sctp_cause_code(&self) -> Option<f64> {
@@ -71259,6 +72343,7 @@ impl RTCError {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/receivedAlert)
     #[cfg_attr(rust_js, rust_js::link_name = "get receivedAlert")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn received_alert(&self) -> Option<f64> {
@@ -71267,6 +72352,7 @@ impl RTCError {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sentAlert)
     #[cfg_attr(rust_js, rust_js::link_name = "get sentAlert")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sent_alert(&self) -> Option<f64> {
@@ -71346,6 +72432,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/sdpMid)
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpMid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sdp_mid(&self) -> Option<String> {
@@ -71354,6 +72441,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/sdpMLineIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpMLineIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sdp_m_line_index(&self) -> Option<f64> {
@@ -71362,6 +72450,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/foundation)
     #[cfg_attr(rust_js, rust_js::link_name = "get foundation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn foundation(&self) -> Option<String> {
@@ -71370,6 +72459,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/component)
     #[cfg_attr(rust_js, rust_js::link_name = "get component")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn component(&self) -> Option<String> {
@@ -71378,6 +72468,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/priority)
     #[cfg_attr(rust_js, rust_js::link_name = "get priority")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn priority(&self) -> Option<f64> {
@@ -71386,6 +72477,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/address)
     #[cfg_attr(rust_js, rust_js::link_name = "get address")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn address(&self) -> Option<String> {
@@ -71394,6 +72486,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/protocol)
     #[cfg_attr(rust_js, rust_js::link_name = "get protocol")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn protocol(&self) -> Option<String> {
@@ -71402,6 +72495,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/port)
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn port(&self) -> Option<f64> {
@@ -71410,6 +72504,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn r#type(&self) -> Option<String> {
@@ -71418,6 +72513,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/tcpType)
     #[cfg_attr(rust_js, rust_js::link_name = "get tcpType")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn tcp_type(&self) -> Option<String> {
@@ -71426,6 +72522,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/relatedAddress)
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedAddress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn related_address(&self) -> Option<String> {
@@ -71434,6 +72531,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/relatedPort)
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedPort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn related_port(&self) -> Option<f64> {
@@ -71442,6 +72540,7 @@ impl RTCIceCandidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/usernameFragment)
     #[cfg_attr(rust_js, rust_js::link_name = "get usernameFragment")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn username_fragment(&self) -> Option<String> {
@@ -71518,6 +72617,7 @@ impl RTCIceTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71535,6 +72635,7 @@ impl RTCIceTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/ongatheringstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ongatheringstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ongatheringstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71552,6 +72653,7 @@ impl RTCIceTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceTransport/onselectedcandidatepairchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onselectedcandidatepairchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onselectedcandidatepairchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71637,6 +72739,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/localDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get localDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn local_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71645,6 +72748,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/currentLocalDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentLocalDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_local_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71653,6 +72757,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/pendingLocalDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get pendingLocalDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pending_local_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71669,6 +72774,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/remoteDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get remoteDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remote_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71677,6 +72783,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/currentRemoteDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentRemoteDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_remote_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71685,6 +72792,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/pendingRemoteDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "get pendingRemoteDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pending_remote_description(&self) -> Option<&'static RTCSessionDescription> {
@@ -71733,6 +72841,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/canTrickleIceCandidates)
     #[cfg_attr(rust_js, rust_js::link_name = "get canTrickleIceCandidates")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn can_trickle_ice_candidates(&self) -> Option<bool> {
@@ -71776,6 +72885,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onnegotiationneeded)
     #[cfg_attr(rust_js, rust_js::link_name = "get onnegotiationneeded")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onnegotiationneeded(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71793,6 +72903,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onicecandidate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onicecandidate(&self) -> Option<&'static dyn Fn(&RTCPeerConnectionIceEvent) -> Option<&'static Unknown>> {
@@ -71810,6 +72921,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicecandidateerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onicecandidateerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onicecandidateerror(&self) -> Option<&'static dyn Fn(&RTCPeerConnectionIceErrorEvent) -> Option<&'static Unknown>> {
@@ -71827,6 +72939,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onsignalingstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onsignalingstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onsignalingstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71844,6 +72957,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/oniceconnectionstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oniceconnectionstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oniceconnectionstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71861,6 +72975,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onicegatheringstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onicegatheringstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onicegatheringstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71878,6 +72993,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/onconnectionstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnectionstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onconnectionstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -71961,6 +73077,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ontrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontrack(&self) -> Option<&'static dyn Fn(&RTCTrackEvent) -> Option<&'static Unknown>> {
@@ -71978,6 +73095,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/sctp)
     #[cfg_attr(rust_js, rust_js::link_name = "get sctp")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sctp(&self) -> Option<&'static RTCSctpTransport> {
@@ -71994,6 +73112,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/ondatachannel)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondatachannel")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondatachannel(&self) -> Option<&'static dyn Fn(&RTCDataChannelEvent) -> Option<&'static Unknown>> {
@@ -72055,6 +73174,7 @@ pub mod rtc_peer_connection_ice_error_event {
 impl RTCPeerConnectionIceErrorEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/address)
     #[cfg_attr(rust_js, rust_js::link_name = "get address")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn address(&self) -> Option<String> {
@@ -72063,6 +73183,7 @@ impl RTCPeerConnectionIceErrorEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/port)
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn port(&self) -> Option<f64> {
@@ -72131,6 +73252,7 @@ pub mod rtc_peer_connection_ice_event {
 impl RTCPeerConnectionIceEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/candidate)
     #[cfg_attr(rust_js, rust_js::link_name = "get candidate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn candidate(&self) -> Option<&'static RTCIceCandidate> {
@@ -72148,6 +73270,7 @@ pub mod rtc_rtp_receiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/getCapabilities)
     #[cfg_attr(rust_js, rust_js::link_name = "RTCRtpReceiver.getCapabilities")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities> {
@@ -72166,6 +73289,7 @@ impl RTCRtpReceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/transport)
     #[cfg_attr(rust_js, rust_js::link_name = "get transport")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transport(&self) -> Option<&'static RTCDtlsTransport> {
@@ -72206,6 +73330,7 @@ impl RTCRtpReceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/jitterBufferTarget)
     #[cfg_attr(rust_js, rust_js::link_name = "get jitterBufferTarget")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn jitter_buffer_target(&self) -> Option<f64> {
@@ -72255,6 +73380,7 @@ pub mod rtc_rtp_sender {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/getCapabilities)
     #[cfg_attr(rust_js, rust_js::link_name = "RTCRtpSender.getCapabilities")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_capabilities(kind: &str) -> Option<RTCRtpCapabilities> {
@@ -72265,6 +73391,7 @@ pub mod rtc_rtp_sender {
 impl RTCRtpSender {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/track)
     #[cfg_attr(rust_js, rust_js::link_name = "get track")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn track(&self) -> Option<&'static MediaStreamTrack> {
@@ -72273,6 +73400,7 @@ impl RTCRtpSender {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/transport)
     #[cfg_attr(rust_js, rust_js::link_name = "get transport")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transport(&self) -> Option<&'static RTCDtlsTransport> {
@@ -72323,6 +73451,7 @@ impl RTCRtpSender {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/dtmf)
     #[cfg_attr(rust_js, rust_js::link_name = "get dtmf")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn dtmf(&self) -> Option<&'static RTCDTMFSender> {
@@ -72346,6 +73475,7 @@ pub struct RTCRtpTransceiver(PhantomData<JsObject>);
 impl RTCRtpTransceiver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/mid)
     #[cfg_attr(rust_js, rust_js::link_name = "get mid")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn mid(&self) -> Option<String> {
@@ -72386,6 +73516,7 @@ impl RTCRtpTransceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/currentDirection)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentDirection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn current_direction(&self) -> Option<String> {
@@ -72456,6 +73587,7 @@ impl RTCSctpTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/maxMessageSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxMessageSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_message_size(&self) -> Option<f64> {
@@ -72464,6 +73596,7 @@ impl RTCSctpTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/maxChannels)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxChannels")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_channels(&self) -> Option<f64> {
@@ -72472,6 +73605,7 @@ impl RTCSctpTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -72984,6 +74118,7 @@ pub struct ReadableByteStreamController(PhantomData<JsObject>);
 impl ReadableByteStreamController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/byobRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "get byobRequest")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn byob_request(&self) -> Option<&'static ReadableStreamBYOBRequest> {
@@ -72992,6 +74127,7 @@ impl ReadableByteStreamController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/desiredSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get desiredSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn desired_size(&self) -> Option<f64> {
@@ -73086,6 +74222,7 @@ pub struct ReadableStreamBYOBRequest(PhantomData<JsObject>);
 impl ReadableStreamBYOBRequest {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/view)
     #[cfg_attr(rust_js, rust_js::link_name = "get view")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn view(&self) -> Option<&'static Uint8Array> {
@@ -73119,6 +74256,7 @@ pub struct ReadableStreamDefaultController(PhantomData<JsObject>);
 impl ReadableStreamDefaultController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/desiredSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get desiredSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn desired_size(&self) -> Option<f64> {
@@ -73258,6 +74396,7 @@ impl RemotePlayback {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnecting)
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnecting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onconnecting(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -73275,6 +74414,7 @@ impl RemotePlayback {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/onconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -73292,6 +74432,7 @@ impl RemotePlayback {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/ondisconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondisconnect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondisconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -74686,6 +75827,7 @@ impl SVGTransformList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/consolidate)
     #[cfg_attr(rust_js, rust_js::link_name = "consolidate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn consolidate(&self) -> Option<&'static SVGTransform> {
@@ -74975,6 +76117,7 @@ impl ScreenOrientation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScreenOrientation/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75020,6 +76163,7 @@ pub mod script_processor_node {
 impl ScriptProcessorNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScriptProcessorNode/onaudioprocess)
     #[cfg_attr(rust_js, rust_js::link_name = "get onaudioprocess")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onaudioprocess(&self) -> Option<&'static dyn Fn(&AudioProcessingEvent) -> Option<&'static Unknown>> {
@@ -75081,6 +76225,7 @@ pub mod scroll_timeline {
 impl ScrollTimeline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/source)
     #[cfg_attr(rust_js, rust_js::link_name = "get source")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn source(&self) -> Option<&'static Element> {
@@ -75236,6 +76381,7 @@ pub struct Selection(PhantomData<JsObject>);
 impl Selection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/anchorNode)
     #[cfg_attr(rust_js, rust_js::link_name = "get anchorNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn anchor_node(&self) -> Option<&'static Node> {
@@ -75252,6 +76398,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/focusNode)
     #[cfg_attr(rust_js, rust_js::link_name = "get focusNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn focus_node(&self) -> Option<&'static Node> {
@@ -75521,6 +76668,7 @@ pub mod serial_port {
 impl SerialPort {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/onconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "get onconnect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75538,6 +76686,7 @@ impl SerialPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/ondisconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondisconnect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondisconnect(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75563,6 +76712,7 @@ impl SerialPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/readable)
     #[cfg_attr(rust_js, rust_js::link_name = "get readable")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn readable(&self) -> Option<&'static ReadableStream> {
@@ -75571,6 +76721,7 @@ impl SerialPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/writable)
     #[cfg_attr(rust_js, rust_js::link_name = "get writable")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn writable(&self) -> Option<&'static WritableStream> {
@@ -75680,6 +76831,7 @@ impl ServiceWorker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onstatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75697,6 +76849,7 @@ impl ServiceWorker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75742,6 +76895,7 @@ pub mod service_worker_container {
 impl ServiceWorkerContainer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/controller)
     #[cfg_attr(rust_js, rust_js::link_name = "get controller")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn controller(&self) -> Option<&'static ServiceWorker> {
@@ -75791,6 +76945,7 @@ impl ServiceWorkerContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/oncontrollerchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncontrollerchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncontrollerchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -75808,6 +76963,7 @@ impl ServiceWorkerContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -75825,6 +76981,7 @@ impl ServiceWorkerContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -75894,6 +77051,7 @@ impl ServiceWorkerRegistration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/installing)
     #[cfg_attr(rust_js, rust_js::link_name = "get installing")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn installing(&self) -> Option<&'static ServiceWorker> {
@@ -75902,6 +77060,7 @@ impl ServiceWorkerRegistration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/waiting)
     #[cfg_attr(rust_js, rust_js::link_name = "get waiting")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn waiting(&self) -> Option<&'static ServiceWorker> {
@@ -75910,6 +77069,7 @@ impl ServiceWorkerRegistration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/active)
     #[cfg_attr(rust_js, rust_js::link_name = "get active")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active(&self) -> Option<&'static ServiceWorker> {
@@ -75958,6 +77118,7 @@ impl ServiceWorkerRegistration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/onupdatefound)
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdatefound")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onupdatefound(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76059,6 +77220,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/onslotchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onslotchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onslotchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76134,6 +77296,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/customElementRegistry)
     #[cfg_attr(rust_js, rust_js::link_name = "get customElementRegistry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn custom_element_registry(&self) -> Option<&'static CustomElementRegistry> {
@@ -76142,6 +77305,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/fullscreenElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fullscreen_element(&self) -> Option<&'static Element> {
@@ -76150,6 +77314,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/activeElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_element(&self) -> Option<&'static Element> {
@@ -76158,6 +77323,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pictureInPictureElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
@@ -76166,6 +77332,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pointerLockElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pointer_lock_element(&self) -> Option<&'static Element> {
@@ -76226,6 +77393,7 @@ impl SharedWorker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76351,6 +77519,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdatestart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdatestart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onupdatestart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76368,6 +77537,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdate)
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onupdate(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76385,6 +77555,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onupdateend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onupdateend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onupdateend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76402,6 +77573,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76419,6 +77591,7 @@ impl SourceBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBuffer/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76508,6 +77681,7 @@ impl SourceBufferList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onaddsourcebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddsourcebuffer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onaddsourcebuffer(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76525,6 +77699,7 @@ impl SourceBufferList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SourceBufferList/onremovesourcebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovesourcebuffer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onremovesourcebuffer(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -76696,6 +77871,7 @@ impl SpeechRecognitionResult {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static SpeechRecognitionAlternative> {
@@ -76739,6 +77915,7 @@ impl SpeechRecognitionResultList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static SpeechRecognitionResult> {
@@ -76799,6 +77976,7 @@ impl SpeechSynthesis {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis/onvoiceschanged)
     #[cfg_attr(rust_js, rust_js::link_name = "get onvoiceschanged")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onvoiceschanged(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -77048,6 +78226,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/voice)
     #[cfg_attr(rust_js, rust_js::link_name = "get voice")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn voice(&self) -> Option<&'static SpeechSynthesisVoice> {
@@ -77112,6 +78291,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onstart(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77129,6 +78309,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onend(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77146,6 +78327,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&SpeechSynthesisErrorEvent) -> Option<&'static Unknown>> {
@@ -77163,6 +78345,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onpause)
     #[cfg_attr(rust_js, rust_js::link_name = "get onpause")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onpause(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77180,6 +78363,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onresume)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresume")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresume(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77197,6 +78381,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onmark)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmark")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmark(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77214,6 +78399,7 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/onboundary)
     #[cfg_attr(rust_js, rust_js::link_name = "get onboundary")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onboundary(&self) -> Option<&'static dyn Fn(&SpeechSynthesisEvent) -> Option<&'static Unknown>> {
@@ -77391,6 +78577,7 @@ pub mod storage_event {
 impl StorageEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/key)
     #[cfg_attr(rust_js, rust_js::link_name = "get key")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn key(&self) -> Option<String> {
@@ -77399,6 +78586,7 @@ impl StorageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/oldValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get oldValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn old_value(&self) -> Option<String> {
@@ -77407,6 +78595,7 @@ impl StorageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/newValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get newValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_value(&self) -> Option<String> {
@@ -77423,6 +78612,7 @@ impl StorageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/storageArea)
     #[cfg_attr(rust_js, rust_js::link_name = "get storageArea")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn storage_area(&self) -> Option<&'static Storage> {
@@ -77597,6 +78787,7 @@ impl StylePropertyMapReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::optional)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, property: &str) -> Option<&'static CSSStyleValue> {
@@ -77644,6 +78835,7 @@ impl StyleSheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/href)
     #[cfg_attr(rust_js, rust_js::link_name = "get href")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn href(&self) -> Option<String> {
@@ -77652,6 +78844,7 @@ impl StyleSheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/ownerNode)
     #[cfg_attr(rust_js, rust_js::link_name = "get ownerNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn owner_node(&self) -> Option<ElementOrProcessingInstruction<'static>> {
@@ -77660,6 +78853,7 @@ impl StyleSheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/parentStyleSheet)
     #[cfg_attr(rust_js, rust_js::link_name = "get parentStyleSheet")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_style_sheet(&self) -> Option<&'static CSSStyleSheet> {
@@ -77668,6 +78862,7 @@ impl StyleSheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/title)
     #[cfg_attr(rust_js, rust_js::link_name = "get title")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn title(&self) -> Option<String> {
@@ -77719,6 +78914,7 @@ pub mod style_sheet_list {
 impl StyleSheetList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheetList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn item(&self, index: impl Into<f64>) -> Option<&'static CSSStyleSheet> {
@@ -77955,6 +79151,7 @@ impl TaskSignal {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/onprioritychange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprioritychange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprioritychange(&self) -> Option<&'static dyn Fn(&TaskPriorityChangeEvent) -> Option<&'static Unknown>> {
@@ -78306,6 +79503,7 @@ impl TextTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/cues)
     #[cfg_attr(rust_js, rust_js::link_name = "get cues")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cues(&self) -> Option<&'static TextTrackCueList> {
@@ -78314,6 +79512,7 @@ impl TextTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/activeCues)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeCues")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_cues(&self) -> Option<&'static TextTrackCueList> {
@@ -78340,6 +79539,7 @@ impl TextTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrack/oncuechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get oncuechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn oncuechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -78385,6 +79585,7 @@ pub mod text_track_cue {
 impl TextTrackCue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/track)
     #[cfg_attr(rust_js, rust_js::link_name = "get track")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn track(&self) -> Option<&'static TextTrack> {
@@ -78457,6 +79658,7 @@ impl TextTrackCue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onenter)
     #[cfg_attr(rust_js, rust_js::link_name = "get onenter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onenter(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -78474,6 +79676,7 @@ impl TextTrackCue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCue/onexit)
     #[cfg_attr(rust_js, rust_js::link_name = "get onexit")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onexit(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -78518,6 +79721,7 @@ impl TextTrackCueList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackCueList/getCueById)
     #[cfg_attr(rust_js, rust_js::link_name = "getCueById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_cue_by_id(&self, id: &str) -> Option<&'static TextTrackCue> {
@@ -78570,6 +79774,7 @@ impl TextTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/getTrackById)
     #[cfg_attr(rust_js, rust_js::link_name = "getTrackById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_track_by_id(&self, id: &str) -> Option<&'static TextTrack> {
@@ -78578,6 +79783,7 @@ impl TextTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onchange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -78595,6 +79801,7 @@ impl TextTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onaddtrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get onaddtrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onaddtrack(&self) -> Option<&'static dyn Fn(&TrackEvent) -> Option<&'static Unknown>> {
@@ -78612,6 +79819,7 @@ impl TextTrackList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextTrackList/onremovetrack)
     #[cfg_attr(rust_js, rust_js::link_name = "get onremovetrack")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onremovetrack(&self) -> Option<&'static dyn Fn(&TrackEvent) -> Option<&'static Unknown>> {
@@ -78735,6 +79943,7 @@ pub struct TransformStreamDefaultController(PhantomData<JsObject>);
 impl TransformStreamDefaultController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/desiredSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get desiredSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn desired_size(&self) -> Option<f64> {
@@ -78793,6 +80002,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/filter)
     #[cfg_attr(rust_js, rust_js::link_name = "get filter")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn filter(&self) -> Option<&'static JsObject> {
@@ -78817,6 +80027,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/parentNode)
     #[cfg_attr(rust_js, rust_js::link_name = "parentNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn parent_node(&self) -> Option<&'static Node> {
@@ -78825,6 +80036,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/firstChild)
     #[cfg_attr(rust_js, rust_js::link_name = "firstChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn first_child(&self) -> Option<&'static Node> {
@@ -78833,6 +80045,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/lastChild)
     #[cfg_attr(rust_js, rust_js::link_name = "lastChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_child(&self) -> Option<&'static Node> {
@@ -78841,6 +80054,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/previousSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "previousSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_sibling(&self) -> Option<&'static Node> {
@@ -78849,6 +80063,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/nextSibling)
     #[cfg_attr(rust_js, rust_js::link_name = "nextSibling")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_sibling(&self) -> Option<&'static Node> {
@@ -78857,6 +80072,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/previousNode)
     #[cfg_attr(rust_js, rust_js::link_name = "previousNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn previous_node(&self) -> Option<&'static Node> {
@@ -78865,6 +80081,7 @@ impl TreeWalker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/nextNode)
     #[cfg_attr(rust_js, rust_js::link_name = "nextNode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn next_node(&self) -> Option<&'static Node> {
@@ -78900,6 +80117,7 @@ impl URLPattern {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/exec)
     #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn exec(&self, input: Option<&dyn IntoURLPatternInput>, base_url: Option<&str>) -> Option<URLPatternResult> {
@@ -79033,6 +80251,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get(&self, name: &str) -> Option<String> {
@@ -79175,6 +80394,7 @@ pub mod vtt_cue {
 impl VTTCue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/region)
     #[cfg_attr(rust_js, rust_js::link_name = "get region")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn region(&self) -> Option<&'static VTTRegion> {
@@ -79604,6 +80824,7 @@ pub mod video_color_space {
 impl VideoColorSpace {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/primaries)
     #[cfg_attr(rust_js, rust_js::link_name = "get primaries")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn primaries(&self) -> Option<String> {
@@ -79612,6 +80833,7 @@ impl VideoColorSpace {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/transfer)
     #[cfg_attr(rust_js, rust_js::link_name = "get transfer")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn transfer(&self) -> Option<String> {
@@ -79620,6 +80842,7 @@ impl VideoColorSpace {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/matrix)
     #[cfg_attr(rust_js, rust_js::link_name = "get matrix")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn matrix(&self) -> Option<String> {
@@ -79628,6 +80851,7 @@ impl VideoColorSpace {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/fullRange)
     #[cfg_attr(rust_js, rust_js::link_name = "get fullRange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn full_range(&self) -> Option<bool> {
@@ -79704,6 +80928,7 @@ impl VideoDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoDecoder/ondequeue)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -79825,6 +81050,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/ondequeue)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondequeue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ondequeue(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -79905,6 +81131,7 @@ pub mod video_frame {
 impl VideoFrame {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/format)
     #[cfg_attr(rust_js, rust_js::link_name = "get format")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn format(&self) -> Option<String> {
@@ -79929,6 +81156,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/codedRect)
     #[cfg_attr(rust_js, rust_js::link_name = "get codedRect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn coded_rect(&self) -> Option<&'static DOMRectReadOnly> {
@@ -79937,6 +81165,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/visibleRect)
     #[cfg_attr(rust_js, rust_js::link_name = "get visibleRect")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn visible_rect(&self) -> Option<&'static DOMRectReadOnly> {
@@ -79961,6 +81190,7 @@ impl VideoFrame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -80331,6 +81561,7 @@ impl VisualViewport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onresize)
     #[cfg_attr(rust_js, rust_js::link_name = "get onresize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onresize(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -80348,6 +81579,7 @@ impl VisualViewport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscroll)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscroll")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscroll(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -80365,6 +81597,7 @@ impl VisualViewport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VisualViewport/onscrollend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onscrollend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onscrollend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -80505,6 +81738,7 @@ impl WakeLockSentinel {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLockSentinel/onrelease)
     #[cfg_attr(rust_js, rust_js::link_name = "get onrelease")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onrelease(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -80558,6 +81792,7 @@ pub mod wave_shaper_node {
 impl WaveShaperNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/curve)
     #[cfg_attr(rust_js, rust_js::link_name = "get curve")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn curve(&self) -> Option<&'static Float32Array> {
@@ -82339,6 +83574,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getContextAttributes)
     #[cfg_attr(rust_js, rust_js::link_name = "getContextAttributes")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_context_attributes(&self) -> Option<WebGLContextAttributes> {
@@ -82355,6 +83591,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getSupportedExtensions)
     #[cfg_attr(rust_js, rust_js::link_name = "getSupportedExtensions")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_supported_extensions(&self) -> Option<Vec<String>> {
@@ -82363,6 +83600,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getExtension)
     #[cfg_attr(rust_js, rust_js::link_name = "getExtension")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_extension(&self, name: &str) -> Option<&'static JsObject> {
@@ -82591,6 +83829,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/createShader)
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_shader(&self, r#type: impl Into<f64>) -> Option<&'static WebGLShader> {
@@ -82814,6 +84053,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getActiveAttrib)
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveAttrib")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_active_attrib(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
@@ -82822,6 +84062,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getActiveUniform)
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniform")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_active_uniform(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
@@ -82830,6 +84071,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getAttachedShaders)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttachedShaders")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attached_shaders(&self, program: &WebGLProgram) -> Option<Vec<&'static WebGLShader>> {
@@ -82886,6 +84128,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getProgramInfoLog)
     #[cfg_attr(rust_js, rust_js::link_name = "getProgramInfoLog")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_program_info_log(&self, program: &WebGLProgram) -> Option<String> {
@@ -82910,6 +84153,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getShaderPrecisionFormat)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderPrecisionFormat")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_precision_format(&self, shadertype: impl Into<f64>, precisiontype: impl Into<f64>) -> Option<&'static WebGLShaderPrecisionFormat> {
@@ -82918,6 +84162,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getShaderInfoLog)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderInfoLog")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_info_log(&self, shader: &WebGLShader) -> Option<String> {
@@ -82926,6 +84171,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getShaderSource)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderSource")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_source(&self, shader: &WebGLShader) -> Option<String> {
@@ -82950,6 +84196,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getUniformLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformLocation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_uniform_location(&self, program: &WebGLProgram, name: &str) -> Option<&'static WebGLUniformLocation> {
@@ -83863,6 +85110,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "getQuery")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_query(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static WebGLQuery> {
@@ -83939,6 +85187,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/fenceSync)
     #[cfg_attr(rust_js, rust_js::link_name = "fenceSync")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fence_sync(&self, condition: impl Into<f64>, flags: impl Into<f64>) -> Option<&'static WebGLSync> {
@@ -84050,6 +85299,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getTransformFeedbackVarying)
     #[cfg_attr(rust_js, rust_js::link_name = "getTransformFeedbackVarying")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_transform_feedback_varying(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
@@ -84102,6 +85352,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getUniformIndices)
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformIndices")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_uniform_indices(&self, program: &WebGLProgram, uniform_names: &[&str]) -> Option<Vec<f64>> {
@@ -84134,6 +85385,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getActiveUniformBlockName)
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniformBlockName")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_active_uniform_block_name(&self, program: &WebGLProgram, uniform_block_index: impl Into<f64>) -> Option<String> {
@@ -85525,6 +86777,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getContextAttributes)
     #[cfg_attr(rust_js, rust_js::link_name = "getContextAttributes")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_context_attributes(&self) -> Option<WebGLContextAttributes> {
@@ -85541,6 +86794,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getSupportedExtensions)
     #[cfg_attr(rust_js, rust_js::link_name = "getSupportedExtensions")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_supported_extensions(&self) -> Option<Vec<String>> {
@@ -85549,6 +86803,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getExtension)
     #[cfg_attr(rust_js, rust_js::link_name = "getExtension")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_extension(&self, name: &str) -> Option<&'static JsObject> {
@@ -85777,6 +87032,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/createShader)
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_shader(&self, r#type: impl Into<f64>) -> Option<&'static WebGLShader> {
@@ -86000,6 +87256,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getActiveAttrib)
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveAttrib")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_active_attrib(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
@@ -86008,6 +87265,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getActiveUniform)
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniform")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_active_uniform(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
@@ -86016,6 +87274,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getAttachedShaders)
     #[cfg_attr(rust_js, rust_js::link_name = "getAttachedShaders")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_attached_shaders(&self, program: &WebGLProgram) -> Option<Vec<&'static WebGLShader>> {
@@ -86072,6 +87331,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getProgramInfoLog)
     #[cfg_attr(rust_js, rust_js::link_name = "getProgramInfoLog")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_program_info_log(&self, program: &WebGLProgram) -> Option<String> {
@@ -86096,6 +87356,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getShaderPrecisionFormat)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderPrecisionFormat")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_precision_format(&self, shadertype: impl Into<f64>, precisiontype: impl Into<f64>) -> Option<&'static WebGLShaderPrecisionFormat> {
@@ -86104,6 +87365,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getShaderInfoLog)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderInfoLog")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_info_log(&self, shader: &WebGLShader) -> Option<String> {
@@ -86112,6 +87374,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getShaderSource)
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderSource")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_shader_source(&self, shader: &WebGLShader) -> Option<String> {
@@ -86136,6 +87399,7 @@ impl WebGLRenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/getUniformLocation)
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformLocation")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_uniform_location(&self, program: &WebGLProgram, name: &str) -> Option<&'static WebGLUniformLocation> {
@@ -86869,6 +88133,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onopen)
     #[cfg_attr(rust_js, rust_js::link_name = "get onopen")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onopen(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -86886,6 +88151,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -86903,6 +88169,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onclose)
     #[cfg_attr(rust_js, rust_js::link_name = "get onclose")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onclose(&self) -> Option<&'static dyn Fn(&CloseEvent) -> Option<&'static Unknown>> {
@@ -86945,6 +88212,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -87149,6 +88417,7 @@ impl WebTransportDatagramDuplexStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/incomingMaxAge)
     #[cfg_attr(rust_js, rust_js::link_name = "get incomingMaxAge")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn incoming_max_age(&self) -> Option<f64> {
@@ -87165,6 +88434,7 @@ impl WebTransportDatagramDuplexStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/outgoingMaxAge)
     #[cfg_attr(rust_js, rust_js::link_name = "get outgoingMaxAge")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn outgoing_max_age(&self) -> Option<f64> {
@@ -87225,6 +88495,7 @@ impl WebTransportError {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/streamErrorCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get streamErrorCode")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stream_error_code(&self) -> Option<f64> {
@@ -87375,6 +88646,7 @@ impl Worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87392,6 +88664,7 @@ impl Worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessage)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessage")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessage(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -87409,6 +88682,7 @@ impl Worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/onmessageerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onmessageerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onmessageerror(&self) -> Option<&'static dyn Fn(&MessageEvent) -> Option<&'static Unknown>> {
@@ -87543,6 +88817,7 @@ impl WritableStreamDefaultWriter {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/desiredSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get desiredSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn desired_size(&self) -> Option<f64> {
@@ -87668,6 +88943,7 @@ pub mod xml_http_request {
 impl XMLHttpRequest {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/onreadystatechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onreadystatechange")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onreadystatechange(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87793,6 +89069,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/getResponseHeader)
     #[cfg_attr(rust_js, rust_js::link_name = "getResponseHeader")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_response_header(&self, name: &str) -> Option<String> {
@@ -87850,6 +89127,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/responseXML)
     #[cfg_attr(rust_js, rust_js::link_name = "get responseXML")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn response_xml(&self) -> Option<&'static Document> {
@@ -87886,6 +89164,7 @@ pub mod xml_http_request_event_target {
 impl XMLHttpRequestEventTarget {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadstart")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadstart(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87903,6 +89182,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onprogress)
     #[cfg_attr(rust_js, rust_js::link_name = "get onprogress")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onprogress(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87920,6 +89200,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onabort)
     #[cfg_attr(rust_js, rust_js::link_name = "get onabort")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onabort(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87937,6 +89218,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onerror)
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onerror(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87954,6 +89236,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onload)
     #[cfg_attr(rust_js, rust_js::link_name = "get onload")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onload(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87971,6 +89254,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/ontimeout)
     #[cfg_attr(rust_js, rust_js::link_name = "get ontimeout")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn ontimeout(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -87988,6 +89272,7 @@ impl XMLHttpRequestEventTarget {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequestEventTarget/onloadend)
     #[cfg_attr(rust_js, rust_js::link_name = "get onloadend")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn onloadend(&self) -> Option<&'static dyn Fn(&Event) -> Option<&'static Unknown>> {
@@ -88187,6 +89472,7 @@ impl XPathResult {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/singleNodeValue)
     #[cfg_attr(rust_js, rust_js::link_name = "get singleNodeValue")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn single_node_value(&self) -> Option<&'static Node> {
@@ -88211,6 +89497,7 @@ impl XPathResult {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/iterateNext)
     #[cfg_attr(rust_js, rust_js::link_name = "iterateNext")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn iterate_next(&self) -> Option<&'static Node> {
@@ -88219,6 +89506,7 @@ impl XPathResult {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathResult/snapshotItem)
     #[cfg_attr(rust_js, rust_js::link_name = "snapshotItem")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn snapshot_item(&self, index: impl Into<f64>) -> Option<&'static Node> {
@@ -90637,6 +91925,7 @@ pub mod console {
     /// haven't. No TypeScript lib declares it: it's typed as React's Flow declares it,
     /// `createTask(label: string): ConsoleTask` (ADR 0811).
     #[cfg_attr(rust_js, rust_js::link_name = "get console.createTask")]
+    #[cfg_attr(rust_js, rust_js::optional)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_task() -> Option<&'static dyn Fn(&str) -> &'static ConsoleTask> {
@@ -90873,6 +92162,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn open(url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
@@ -90898,6 +92188,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
     #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn prompt(message: Option<&str>, default: Option<&str>) -> Option<String> {
@@ -90959,6 +92250,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
     #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_selection() -> Option<&'static Selection> {

@@ -96,7 +96,7 @@ export function handlers(button) {
   button.onclick = (e) => {
     e.preventDefault();
   };
-  const set = button.onclick != null;
+  const set = button.onclick !== null;
   button.onclick = null;
   return set;
 }
@@ -189,7 +189,7 @@ export function staticsRead() {
 export function onErrors(button) {
   button.onerror = (e) => typeof e === "string";
   window.onbeforeunload = () => undefined;
-  return button.onerror != null;
+  return button.onerror !== null;
 }
 
 /**
@@ -253,6 +253,6 @@ export function adopted(sheet) {
  * `customElements.get(name)`, a class, or none.
  */
 export function defined(registry) {
-  return registry.get("x-card") != null;
+  return registry.get("x-card") !== undefined;
 }
 //# sourceMappingURL=web_forms.js.map

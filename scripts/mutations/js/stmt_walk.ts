@@ -296,4 +296,12 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Member(object, _) => taken_place(object),\n        _ => true,\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a binding of what take\\(\\) gives names it"],
   },
+  {
+    name: "strict-presence-kinds-swapped",
+    breaks: "`window.event`, whose `None` is `undefined`, is tested `=== null`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended)",
+    file: "src/js/stmt_walk.rs",
+    find: "        f if f == Facts::of(Known::NoneUndefined) => Expr::undefined(),\n        f if f == Facts::of(Known::NoneNull) => Expr::null(),\n",
+    replace: "        f if f == Facts::of(Known::NoneUndefined) => Expr::null(),\n        f if f == Facts::of(Known::NoneNull) => Expr::undefined(),\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
+  },
 ];

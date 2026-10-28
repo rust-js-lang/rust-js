@@ -292,6 +292,142 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// The locals `OptionWrites::nones` says: an `Option`, or a shared
+    /// reference to one, each of whose writes is a `Some(..)` or gives one
+    /// `None` alone, the same: the crate's `None`, `undefined`; a call that
+    /// gives one (`calls::none_given_by`), `window.event`'s `undefined` or
+    /// a `#[rust_js::nullable]` function's `null`; a copy of another such,
+    /// or a borrow of one. Never a parameter, which JS may give either, nor
+    /// one written any other way, a field's read, a cast's, a `take()`'s,
+    /// through a `&mut` or a pointer, or in part (ADR 0298, amended).
+    fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashMap<Local, js::Known> {
+        // What a write gives: a `None` of one kind, a `Some` (`None` here),
+        // or what another local holds.
+        enum Write {
+            Made(Option<js::Known>),
+            Of(Local),
+        }
+        let tcx = self.tcx;
+        let option = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
+        let mut writes: HashMap<Local, Vec<Write>> = HashMap::new();
+        let mut unknown: std::collections::HashSet<Local> = Default::default();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let assign = match &statement.kind {
+                mir::StatementKind::Assign(assign) => assign,
+                mir::StatementKind::SetDiscriminant { place, .. } => {
+                    unknown.insert(place.local);
+                    continue;
+                }
+                _ => continue,
+            };
+            // Borrowed whole to be written, or pointed to: what's written
+            // through it, `*slot = given`, is another's write.
+            match &assign.1 {
+                Rvalue::RawPtr(_, of) => {
+                    unknown.insert(of.local);
+                }
+                Rvalue::Ref(_, BorrowKind::Mut { .. }, of)
+                    if !of.is_indirect()
+                        && !matches!(of.projection.first(), Some(mir::ProjectionElem::Downcast(..))) =>
+                {
+                    unknown.insert(of.local);
+                }
+                _ => {}
+            }
+            if !assign.0.projection.is_empty() {
+                unknown.insert(assign.0.local);
+                continue;
+            }
+            let write = match &assign.1 {
+                Rvalue::Aggregate(kind, _)
+                    if let AggregateKind::Adt(did, variant, ..) = **kind
+                        && tcx.is_lang_item(did, LangItem::Option) =>
+                {
+                    Write::Made((variant.as_u32() == 0).then_some(js::Known::NoneUndefined))
+                }
+                Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) if read.projection.is_empty() => {
+                    Write::Of(read.local)
+                }
+                Rvalue::Ref(_, BorrowKind::Shared, of)
+                    if matches!(of.projection.as_slice(), [] | [mir::ProjectionElem::Deref]) =>
+                {
+                    Write::Of(of.local)
+                }
+                _ => {
+                    unknown.insert(assign.0.local);
+                    continue;
+                }
+            };
+            writes.entry(assign.0.local).or_default().push(write);
+        }
+        for block in body.basic_blocks.iter() {
+            match &block.terminator().kind {
+                mir::TerminatorKind::Call { func, destination, .. } => {
+                    let given =
+                        (func.const_fn_def()).and_then(|(def_id, _)| crate::lower::calls::none_given_by(tcx, def_id));
+                    match given {
+                        Some(none) if destination.projection.is_empty() => {
+                            writes
+                                .entry(destination.local)
+                                .or_default()
+                                .push(Write::Made(Some(none)));
+                        }
+                        _ => {
+                            unknown.insert(destination.local);
+                        }
+                    }
+                }
+                mir::TerminatorKind::Yield { resume_arg, .. } => {
+                    unknown.insert(resume_arg.local);
+                }
+                _ => {}
+            }
+        }
+        // Each written only so: no parameter, nor the return, every write
+        // of it one of those above, none in part.
+        let known = |local: Local| {
+            local != mir::RETURN_PLACE
+                && local.as_usize() > body.arg_count
+                && !unknown.contains(&local)
+                && !locals.borrowed[local]
+                && option(body.local_decls[local].ty)
+                && writes.get(&local).is_some_and(|w| w.len() == locals.writes[local])
+        };
+        // What each holds, until none changes: `Err` of one that may hold
+        // either, `Ok(None)` of one only ever `Some`.
+        let mut held: HashMap<Local, Result<Option<js::Known>, ()>> =
+            (writes.keys()).filter(|&&l| known(l)).map(|&l| (l, Ok(None))).collect();
+        loop {
+            let mut changed = false;
+            for (&local, each) in &writes {
+                let Some(&now) = held.get(&local) else { continue };
+                let mut next = now;
+                for write in each {
+                    let given = match *write {
+                        Write::Made(none) => Ok(none),
+                        Write::Of(of) => held.get(&of).copied().unwrap_or(Err(())),
+                    };
+                    next = match (next, given) {
+                        (Err(()), _) | (_, Err(())) => Err(()),
+                        (Ok(None), other) | (other, Ok(None)) => other,
+                        (Ok(Some(a)), Ok(Some(b))) if a == b => Ok(Some(a)),
+                        _ => Err(()),
+                    };
+                }
+                if next != now {
+                    held.insert(local, next);
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        (held.into_iter())
+            .filter_map(|(local, none)| Some((local, none.ok()??)))
+            .collect()
+    }
+
     /// What `body`'s writes say of its `Option`s.
     pub(super) fn mir_option_writes(
         &self,
@@ -301,6 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> OptionWrites {
         OptionWrites {
             null_nones: self.mir_null_nones(body, locals),
+            nones: self.mir_nones(body, locals),
             made_some: self.mir_made_some(body, promoted, locals),
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),

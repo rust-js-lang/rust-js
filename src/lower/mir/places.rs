@@ -12,7 +12,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let e = self.place_expr(state, place, span, out)?;
+        let mut e = self.place_expr(state, place, span, out)?;
+        // An `Option` whose `None` is only one of `undefined` and `null`,
+        // its own or through a reference to it: its read says which (ADR
+        // 0298, amended).
+        if matches!(place.projection.as_slice(), [] | [PlaceElem::Deref])
+            && let Some(&none) = state.facts.options().nones.get(&place.local)
+        {
+            e.facts = e.facts.with(none);
+        }
         // A field's path, `element.editable`: whether it's a `bool`, which
         // tidy writes an `||` of as one.
         if let Some(path) = tidy::field_path(&e) {

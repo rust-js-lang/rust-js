@@ -2422,6 +2422,14 @@ export function isAdult(p) {
 - An `Option` is tested against `null`, whatever it holds: `x != null`
   and `x == null`, `if (owner == null)` and `while (owner != null)`, never
   by its truth, so `Some(0)`, `Some("")` and `Some(false)` are there
+  ([ADR 0298](../../decisions/0298-truthy-options.md), amended). Where
+  its `None` can only be one of `undefined` and `null`, it's tested
+  against that one: `window.event()`, which TypeScript types `Event |
+  undefined`, `if (currentEvent === undefined)`; `node.text_content()`,
+  `string | null`, `text !== null`; and a variable each of whose writes is
+  a `Some(..)` or your own `None`, `first === undefined`. What may hold
+  either stays `== null`: a parameter, which JS may give either, a
+  field's value, what a call of your own gives, or what a `&mut` wrote
   ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
   `is_some()`, `if let Some(..)`, `while let Some(..)`, `?` and what
   `filter_map` keeps all test it so. A `let` of `is_some()` that only

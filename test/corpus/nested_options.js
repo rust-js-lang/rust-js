@@ -61,7 +61,7 @@ function main() {
     );
   }
   const found = table.length > 1 ? $some(undefined) : undefined;
-  console.log(`${found == null ? "None" : "Some(())"} ${found != null}`);
+  console.log(`${found == null ? "None" : "Some(())"} ${found !== undefined}`);
   console.log(
     `${depth(undefined)} ${depth($some(undefined))} ${depth($some($some(undefined)))} ${depth(4)}`,
   );

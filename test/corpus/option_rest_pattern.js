@@ -7,7 +7,7 @@ export function entry() {
 function main() {
   const none = undefined;
   const some = 3;
-  if (none != null) {
+  if (none !== undefined) {
     console.log("None matched Some(..)");
   }
   if (some != null) {
