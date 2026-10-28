@@ -477,6 +477,67 @@ pub fn key(section: Option<Section>) -> Option<&'static str> {
   expect([image("learn"), image("blog"), title("learn"), title("blog")]).toEqual(["/images/og-learn.png", "/images/og-blog.png", "learn page", "news page"]);
 });
 
+// ADR 0264, amended (h08b): React's `HookType`'s `name(self)`, of the
+// crate alone, each call of which is the hook type itself, is written
+// nowhere, as upstream has no such function; one read as a value is
+// written, which that value calls, and a library's, which another crate's
+// JS calls.
+test("an enum's own names of the crate alone, called, are written nowhere", async () => {
+  const dir = fixture("own-names-unwritten");
+  writeFileSync(join(dir, "lib.rs"), `pub mod types {
+    #[derive(Clone, Copy)]
+    pub enum HookType {
+        #[cfg_attr(rust_js, rust_js::name = "useState")]
+        UseState,
+        #[cfg_attr(rust_js, rust_js::name = "useEffect")]
+        UseEffect,
+    }
+
+    impl HookType {
+        pub(crate) fn name(self) -> &'static str {
+            match self {
+                HookType::UseState => "useState",
+                HookType::UseEffect => "useEffect",
+            }
+        }
+
+        pub(crate) fn label(self) -> &'static str {
+            match self {
+                HookType::UseState => "useState",
+                HookType::UseEffect => "useEffect",
+            }
+        }
+
+        pub fn as_str(self) -> &'static str {
+            match self {
+                HookType::UseState => "useState",
+                HookType::UseEffect => "useEffect",
+            }
+        }
+    }
+}
+
+use types::HookType;
+
+pub fn describe(hook: HookType) -> String {
+    format!("hook {} {}", hook.name(), hook.as_str())
+}
+
+pub fn labeled(hooks: &[HookType]) -> Vec<&'static str> {
+    let label: fn(HookType) -> &'static str = HookType::label;
+    hooks.iter().map(|&h| label(h)).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const types = readFileSync(join(dir, "types.js"), "utf8");
+  expect(types).not.toContain("name(");
+  expect(types).toContain("label(hookType) {\n    return hookType;\n  }");
+  // A library's, which another crate's JS calls, is written.
+  expect(types).toContain("asStr(hookType) {\n    return hookType;\n  }");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.describe("useState"), lib.labeled(["useEffect", "useState"])]).toEqual(["hook useState useState", ["useEffect", "useState"]]);
+});
+
 // A unit struct named `#[rust_js::name]` is that string, as a fieldless
 // variant is (ADR 0013): `webapi`'s event names, `Click`, are types whose
 // value is `"click"` (ADR 0223). One without a name holds nothing.

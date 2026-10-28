@@ -567,7 +567,40 @@ export function area(shape) {
 
 - **A variant without fields is its name**, `"Red"`, or its
   `#[rust_js::name]`, `"dark-green"`
-  ([ADR 0013](../../decisions/0013-fieldless-enums.md)).
+  ([ADR 0013](../../decisions/0013-fieldless-enums.md)). So a function
+  that gives each variant its own name gives what it's given, a call of
+  it the value itself; one of the crate's alone that's only called, as
+  React's `HookType`'s `name(self)` is, is written nowhere
+  ([ADR 0264](../../decisions/0264-enum-own-names.md), amended):
+
+```rust
+#[derive(Clone, Copy)]
+pub enum HookType {
+    #[cfg_attr(rust_js, rust_js::name = "useState")]
+    UseState,
+    #[cfg_attr(rust_js, rust_js::name = "useEffect")]
+    UseEffect,
+}
+
+impl HookType {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            HookType::UseState => "useState",
+            HookType::UseEffect => "useEffect",
+        }
+    }
+}
+
+pub fn describe(hook: HookType) -> String {
+    format!("hook {}", hook.name())
+}
+```
+
+```js
+export function describe(hook) {
+  return `hook ${hook}`;
+}
+```
 - **A variant of an enum under a `#[repr(..)]` of an integer is its
   number**, as rustc numbers it, `ArrayKind::Empty` `0`, where JS keeps a
   kind as a number, React's `const Pending = 0;`: each variant is its

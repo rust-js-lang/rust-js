@@ -196,12 +196,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its own name, `Section::Learn => "learn"`? A variant is its name in JS
     /// (ADR 0013), so it gives back what it's given (ADR 0264).
     pub(super) fn gives_own_name(&self, def_id: DefId) -> bool {
-        let Some(body) = self.krate.bodies.get(&def_id) else {
+        gives_own_name(self.tcx, self.krate.bodies, def_id)
+    }
+}
+
+/// Is `def_id` the crate's function, of no type parameters, whose body is
+/// a `match` of its one parameter, a fieldless enum, giving each variant
+/// its own name, `Section::Learn => "learn"`? Each call of it is what it's
+/// given (ADR 0264), so one nothing reads as a value, of the crate's alone,
+/// is written nowhere (ADR 0264, amended).
+pub(super) fn gives_own_name<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    bodies: &std::collections::HashMap<DefId, &super::Body<'tcx>>,
+    def_id: DefId,
+) -> bool {
+    {
+        let Some(body) = bodies.get(&def_id) else {
             return false;
         };
         // Not one kept out of line, `#[inline(never)]` (ADR 0649): its call
         // is its call.
-        if self.tcx.generics_of(def_id).count() != 0 || super::recognition::is_noinline(self.tcx, def_id) {
+        if tcx.generics_of(def_id).count() != 0 || super::recognition::is_noinline(tcx, def_id) {
             return false;
         }
         let thir = &body.thir;
@@ -213,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         let ty::Adt(adt, _) = param.ty.kind() else { return false };
-        if !super::representation::is_string_enum(self.tcx, *adt) {
+        if !super::representation::is_string_enum(tcx, *adt) {
             return false;
         }
         let strip = |e| super::body_queries::strip(thir, e);
@@ -244,7 +259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if subpatterns.is_empty()
                         && matches!(thir[strip(arm.body)].kind, ExprKind::Literal { lit, neg: false }
                             if matches!(lit.node, LitKind::Str(text, _)
-                                if text.as_str() == super::bindings::variant_name(self.tcx, adt.variant(variant_index)))))
+                                if text.as_str() == super::bindings::variant_name(tcx, adt.variant(variant_index)))))
         })
     }
 }

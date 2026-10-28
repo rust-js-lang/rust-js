@@ -2,9 +2,11 @@
 
 mod holes;
 mod load_cycles;
+mod reached;
 
 use self::holes::{Holes, fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
+use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, module_file, module_symbol, static_value};
@@ -595,72 +597,10 @@ pub fn lower_crate<'tcx>(
     // Only the drops each function uses (ADR 0300).
     drops_observed.keep(&takes_used_drops, &mut drop_params, &mut lowered_items);
 
-    // What's written only where it's reached: derived Debug implementations,
-    // a marker trait's dictionaries, which only a `dyn` reads (ADR 0307),
-    // a `Hash`'s and a `Hasher`'s, which a map never calls (ADR 0463),
-    // and those only generic code reads, their methods called as they are
-    // anywhere else (`read_only_generically`); and a `PartialEq` of a type
-    // equal only to itself, whose `==` is `===` and whose sets and maps
-    // are JS's (ADR 0864, amended).
-    // Adjacency lists rather than scanning every edge again for every reached function.
-    let recognition = super::recognition::Recognition {
-        tcx,
-        typing_env: ty::TypingEnv::fully_monomorphized(),
-        trait_impls: &trait_impls,
-        foreign: &foreign,
-    };
-    // A `PartialEq` whose `==` is `===`, whatever its `Hash`; and of a
-    // type equal only to itself, whose `Hash` is its address's too.
-    let identity_eq = |id: DefId, trait_id: DefId, keyed: bool| {
-        let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
-        tcx.is_lang_item(trait_id, rustc_hir::attrs::lang_items::LangItem::PartialEq)
-            && match keyed {
-                true => super::std_impls::equal_only_to_itself(&recognition, &function_bodies, ty),
-                false => super::std_impls::eq_by_address(&recognition, &function_bodies, ty),
-            }
-    };
-    // Its types equal only to themselves, which its contract lists for its
-    // consumers (ADR 0864, amended).
-    let identities: Vec<DefId> = (trait_impls.iter())
-        .filter(|&&id| {
-            identity_eq(
-                id,
-                tcx.impl_trait_ref(id)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .def_id,
-                true,
-            )
-        })
-        .filter_map(|&id| tcx.type_of(id).instantiate_identity().skip_normalization().ty_adt_def())
-        .map(|adt| adt.did())
-        .collect();
-    let derived: HashSet<DefId> = trait_impls
-        .iter()
-        .filter(|&&id| {
-            let trait_id = tcx
-                .impl_trait_ref(id)
-                .instantiate_identity()
-                .skip_normalization()
-                .def_id;
-            super::recognition::known_derive(tcx, id)
-                || super::traits::is_marker(tcx, &foreign, trait_id)
-                || super::recognition::is_hashing(tcx, trait_id)
-                || identity_eq(id, trait_id, false)
-                // A library's the crate compiles itself, only what it uses
-                // of it (ADR 0914, amended).
-                || foreign.is_instance(id)
-        })
-        .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
-        .chain(trait_impls.iter().copied().filter(|&id| {
-            let trait_id = tcx
-                .impl_trait_ref(id)
-                .instantiate_identity()
-                .skip_normalization()
-                .def_id;
-            super::traits::read_only_generically(tcx, trait_id)
-        }))
-        .collect();
+    // What's written only where it's reached (`reached.rs`), and the types
+    // equal only to themselves, its contract's (ADR 0864, amended).
+    let lowered = lowered_items.iter().map(|&(id, _)| id);
+    let (identities, derived) = written_where_reached(tcx, (&trait_impls, &foreign), &function_bodies, lowered);
     let edges = lowered_items
         .iter()
         .flat_map(|(_, item)| item.dependencies.uses.iter().copied());

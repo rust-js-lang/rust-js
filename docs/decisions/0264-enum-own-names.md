@@ -1,7 +1,8 @@
 # 0264. A variant's own name is the variant
 
 Status: Accepted. Extends [0013](0013-fieldless-enums.md) and
-[0233](0233-match-reads-a-table.md).
+[0233](0233-match-reads-a-table.md). Amended below: one of the crate's alone,
+only called, is written nowhere.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -60,3 +61,30 @@ and a call, as before.
 
 - **So is `o.map(f)` of a binding that's the value itself**, `text.map(js::unknown)`
   is `text`.
+
+## Amendment: one of the crate's alone, only called, is written nowhere (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing reads it.
+
+React's port of ReactInternalTypes gives its `HookType` a `pub(crate) fn
+name(self) -> &'static str`, matching each variant to its name (h08b of
+the port's gaps). Each call of it is the hook type itself, as this
+decision makes it, `${hookName}`, so nothing in the JS reads it; but it
+was still written, `export const HookType = { name(hookType) { return
+hookType; } }`, in a file upstream has types alone in. Upstream has no
+such function.
+
+**A function that gives each variant its own name, which no other crate
+reaches (`library::reachable`), is written only where something reads it
+as a value** (`pipeline.rs`, with what's written only where it's reached,
+ADR 0307): its calls, each what it's given, don't. One a `fn` pointer
+holds is written, which that pointer calls; a `pub` one of a library,
+which another crate's JS calls, is written as before. So the port's
+ReactInternalTypes is upstream's, with no `HookType` object.
+`patterns::gives_own_name` is the one test of the function, the calls'
+and this one's.
+
+Held by `test/lowering-structs-enums.test.ts`, "an enum's own names of
+the crate alone, called, are written nowhere", run; mutations
+`own-name-fn-written` and `own-name-fn-of-a-library-unwritten`
+(`lower/pipeline.ts`).

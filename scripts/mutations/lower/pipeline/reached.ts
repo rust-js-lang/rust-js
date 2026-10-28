@@ -1,0 +1,71 @@
+// Mutations of src/lower/pipeline/reached.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "marker-dictionary-written",
+    breaks: "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
+    file: "src/lower/pipeline/reached.rs",
+    find: "            super::super::recognition::known_derive(tcx, id)\n                || super::super::traits::is_marker(tcx, foreign, trait_id)\n",
+    replace: "            super::super::recognition::known_derive(tcx, id)\n",
+    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
+  },
+  {
+    name: "generic-only-dictionary-kept-unread",
+    breaks: "a crate's `Deref` or operator impl's dictionary is written where nothing reads it",
+    file: "src/lower/pipeline/reached.rs",
+    find: "super::super::traits::read_only_generically(tcx, trait_of(id))",
+    replace: "false",
+    tests: ["test/corpus.test.ts", "-t", "^(user_deref|as_deref|bitwise_operators).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "identity-eq-written-unreached",
+    breaks: "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || identity_eq(id, trait_id, false)\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+  },
+  {
+    name: "hash-impls-written-unreached",
+    breaks: "a `Hash` impl nothing calls is written, where a map never calls it",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || super::super::recognition::is_hashing(tcx, trait_id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "identity-eq-dictionary-always-written",
+    breaks: "the dictionary of a `PartialEq` of `ptr::eq` without a `Hash` is written though nothing reads it",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || identity_eq(id, trait_id, false)\n",
+    replace: "                || identity_eq(id, trait_id, true)\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
+  },
+  {
+    name: "instance-impl-kept-unused",
+    breaks: "an impl a consumer compiles writes its dictionary though only its method is called, `labelDebug` (ADR 0914, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || foreign.is_instance(id)\n        })\n",
+    replace: "        })\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+  },
+  {
+    name: "own-name-fn-written",
+    breaks: "a fieldless enum's `pub(crate) fn name(self)`, each call of which is the value itself, is still written, `export const HookType = { name(hookType) { return hookType; } }`, which nothing reads (ADR 0264, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                && super::super::patterns::gives_own_name(tcx, function_bodies, id)\n",
+    replace: "                && super::super::patterns::gives_own_name(tcx, function_bodies, id)\n                && false\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names of the crate alone, called, are written nowhere"],
+  },
+  {
+    name: "own-name-fn-of-a-library-unwritten",
+    breaks: "a library's `pub fn as_str(self)` giving each variant its own name, which another crate's JS calls, is written nowhere (ADR 0264, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                && !super::super::library::reachable(tcx, id)\n                && super::super::patterns::gives_own_name",
+    replace: "                && super::super::patterns::gives_own_name",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names of the crate alone, called, are written nowhere"],
+  },
+];
