@@ -137,8 +137,8 @@ function finished(exitStatus, lanes, log) {
       break;
     case 4:
       if (!onlyTransitions(lanes) && !onlyRetries(lanes)) {
-        break;
         // Commit the placeholder.
+        break;
       }
     // Fallthrough
     case 6:

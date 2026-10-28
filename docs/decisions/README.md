@@ -612,7 +612,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0750 A temporary is read past a method, and in the block after it](0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's)*
 - [0751 A binding only an arm's guard reads isn't written in the arm](0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](0752-an-unwrapped-function-called-panics-first.md)
-- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0862: after a block's last code, and before a function's `None` at its end)*
+- [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0862: after a block's last code, and before a function's `None` at its end; amended: a `break;` rust-js writes after them is after them)*
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)

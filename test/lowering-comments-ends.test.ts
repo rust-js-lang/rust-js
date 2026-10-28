@@ -92,3 +92,56 @@ pub fn instance(tag: u8) -> Option<u32> {
   expect(js).toContain("  // TODO: Implement this on ActivityComponent.\n  return null;\n}");
   expect([lib.instance(31 as never), lib.instance(1 as never)]).toEqual([1, null]);
 });
+
+// ADR 0753, amended: a `match` arm of only comments, ReactFiberApplyGesture's
+// `case HostPortal: { // TODO: .. break; }`, and a guarded arm's,
+// finishConcurrentRender's `// Commit the placeholder.` before its
+// `break;`, keep their comments before the `break;` tidy ends them with,
+// not in the next case nor past the `break;`.
+test("an arm of only comments keeps them before its break", async () => {
+  const { js, lib } = await compiled("comment-arm-break", `pub fn visit(tag: u8, log: &mut Vec<u8>) {
+    match tag {
+        0 => {
+            log.push(0);
+        }
+        4 => {
+            // TODO: Consider what should happen to Portals.
+        }
+        _ => {
+            log.push(9);
+        }
+    }
+}
+
+fn includes(lanes: u32, lane: u32) -> bool {
+    lanes & lane != 0
+}
+
+pub fn finish(status: u32, lanes: u32, log: &mut Vec<u32>) {
+    match status {
+        4 if !includes(lanes, 1) && !includes(lanes, 2) => {
+            // Commit the placeholder.
+        }
+        4 | 5 => {
+            log.push(1);
+            return;
+        }
+        6 => {}
+        _ => panic!("Unknown root exit status."),
+    }
+    log.push(2);
+}
+`);
+  expect(js).toContain("    case 4:\n      // TODO: Consider what should happen to Portals.\n      break;\n    default:\n      log.push(9);\n");
+  expect(js).toContain("      if (!includes(lanes, 1) && !includes(lanes, 2)) {\n        // Commit the placeholder.\n        break;\n      }\n");
+  const seen = (f: (log: number[]) => void) => {
+    const log: number[] = [];
+    f(log);
+    return log;
+  };
+  expect([0, 4, 7].map((tag) => seen((log) => (lib.visit as (t: number, l: number[]) => void)(tag, log)))).toEqual([[0], [], [9]]);
+  const finish = lib.finish as (s: number, l: number, log: number[]) => void;
+  expect([seen((log) => finish(4, 4, log)), seen((log) => finish(4, 1, log)), seen((log) => finish(5, 3, log)), seen((log) => finish(6, 3, log))])
+    .toEqual([[2], [1], [1], [2]]);
+  expect(() => finish(7, 0, [])).toThrow("Unknown root exit status.");
+});

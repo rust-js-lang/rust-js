@@ -5,7 +5,7 @@ a comment with no statement after it in its block is printed there.
 Supersedes its consequence that an `else` of only comments is no `else`.
 Amended: a branch a function's end empties is no branch either (below). Extended by
 [0862](0862-a-comment-at-a-bodys-end-is-there.md): a block's comments after its last
-code, and a function's before the `None` it gives at its end.
+code, and a function's before the `None` it gives at its end. Amended: a `break;` rust-js writes after them is after them.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -88,3 +88,24 @@ Held by `test/lowering-early-exits.test.ts`'s "an if let a macro's function
 ends with is no empty then and an else", which compiles and runs the port's
 shape, and mutation `mir-tidy-tail-return-emptied-then-kept`. No other
 `{} else` is in the corpus's, the snapshots' or the guide's JS.
+
+## Amendment: a `break;` after them is after them (2026-10-28)
+
+React port gaps ag4 and ag3 (ReactFiberApplyGesture's `case HostPortal:
+{ // TODO: .. break; }`) and finishConcurrentRender's guarded arm, `case
+RootSuspendedWithDelay: if (..) { // Commit the placeholder. break; }`.
+A `match` arm of only comments is a case or a branch whose `break;` rust-js
+writes, a case's by the printer (`case_body`), a branch's by tidy, with no
+Rust of its own: the comments, given to oxc as comments whose node is
+gone, were printed before what followed the `break;`, the next case's
+first statement, or past the `break;` before the block's `}`.
+
+**A statement rust-js made right after a block's comments is where they
+end**, so oxc prints them before it: `case 4: // TODO .. break;`, `if (..)
+{ // Commit the placeholder. break; }`, as upstream writes them
+(`push_stmts`, `case_body`).
+
+- Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+- Held by `test/lowering-comments-ends.test.ts`, "an arm of only comments
+  keeps them before its break", run; mutations `case-break-before-comments`
+  and `made-after-comments-unplaced` (`to_oxc/statements.ts`).

@@ -319,10 +319,19 @@ impl<'a> Cx<'a> {
                 continue;
             }
             let mut statement = self.stmt(s);
+            // One rust-js made right after a block's comments, a `break;`
+            // tidy ends a case or a branch with: where they end, so they're
+            // before it, in its block, not past it (ADR 0753, amended).
+            let after_comments = (i.checked_sub(1).map(|at| &stmts[at]))
+                .filter(|before| matches!(before.kind, StmtKind::Comments) && !before.span.is_none());
+            if s.span.is_none()
+                && let Some(comments) = after_comments
+            {
+                *oxc_span::GetSpanMut::span_mut(&mut statement) = Span::new(comments.span.lo, comments.span.lo);
             // One rust-js made, a temporary, with no Rust of its own: at the
             // start of the next that has, whose comments it's printed after
             // (ADR 0444), the first of its JS.
-            if s.span.is_none()
+            } else if s.span.is_none()
                 && let Some(next) = stmts[i + 1..].iter().find(|n| !n.span.is_none())
             {
                 *oxc_span::GetSpanMut::span_mut(&mut statement) = Span::new(next.span.lo, next.span.lo);
@@ -347,7 +356,15 @@ impl<'a> Cx<'a> {
         };
         let mut stmts = self.stmts(body);
         if !falls_out && !body.last().is_some_and(js::ends) {
-            stmts.push(Statement::new_break_statement(SPAN, None, &self.b));
+            // After the case's comments, where they end, so they're before
+            // it (ADR 0753, amended): `case 4: // TODO .. break;`.
+            let at = match body.last() {
+                Some(end) if matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {
+                    Span::new(end.span.lo, end.span.lo)
+                }
+                _ => SPAN,
+            };
+            stmts.push(Statement::new_break_statement(at, None, &self.b));
         }
         let declares = body.iter().any(|s| {
             matches!(
