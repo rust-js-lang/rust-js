@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-copied-cloned-as-source",
+    breaks: "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0997)",
+    file: "src/lower/std_impls.rs",
+    find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n            && !held_compiled\n",
+    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "copied_clone_of_its_own"],
+  },
+  {
     name: "eq-items-fixed-names",
     breaks: "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
     file: "src/lower/std_impls.rs",
@@ -542,8 +550,8 @@ export const mutations: Mutation[] = [
     name: "copied-clone-refused",
     breaks: "a clone of a `copied()` is refused, though it's the iterator it copies",
     file: "src/lower/std_impls.rs",
-    find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.copied_clone(place, (ty, source), span, out);\n",
-    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.copied_clone(place, (ty, source), span, out);\n",
+    find: "            && !held_compiled\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
+    replace: "            && false\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a clone of a generic iterator.s copied"],
   },
   {

@@ -31,6 +31,7 @@ beforeAll(() => {
 // build that isn't one fails.
 const few = [
   "std_rev.rs",
+  "copied_clone_of_its_own.rs",
   "std_inspect.rs",
   "std_flatten.rs",
   "std_flat_map.rs",

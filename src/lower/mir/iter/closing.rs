@@ -150,12 +150,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let trusted_len =
             crate::lower::recognition::fact_trait(self.tcx, crate::lower::recognition::TypeFact::TrustedLen);
         let other_iter = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, other_ty);
-        let lengths = match trusted_len {
-            Some(trusted)
-                if [iter_ty, other_iter]
-                    .iter()
-                    .all(|&ty| self.recognition().implements_trait(ty, trusted)) =>
-            {
+        let trusted = trusted_len.is_some_and(|trusted| {
+            [iter_ty, other_iter]
+                .iter()
+                .all(|&ty| self.recognition().implements_trait(ty, trusted))
+        });
+        let lengths = match trusted {
+            true => {
                 let mut spilled = Vec::new();
                 let source = crate::lower::iterators::closed_parts(&it).map_or(&it, |(source, _)| source);
                 let a = self.counted_before_stepping(source, iter_ty, &mut spilled);
@@ -166,8 +167,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 (a.zip(b)).filter(|_| spilled.is_empty())
             }
-            _ => None,
+            false => None,
         };
+        // Of ones it can't count before stepping them, refused where what
+        // comparing them runs can be seen: a function either holds, a map's,
+        // or items with a destructor, which std's would leave unrun and drop
+        // as they are (ADR 0996, #386).
+        let other_item = self.iterable_item(other_ty);
+        let runs_code = |ty: &Ty<'tcx>| {
+            ty.walk()
+                .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
+        };
+        if lengths.is_none()
+            && trusted
+            && ([iter_ty, other_iter].iter().any(runs_code)
+                || [item, other_item]
+                    .iter()
+                    .any(|&t| self.drops(t) != crate::lower::drops::Drops::Nothing))
+        {
+            return Err(self.unsupported(
+                span,
+                "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them",
+            ));
+        }
         let other = match self.closing_drop(other_ty, span)? {
             Some(drop) => {
                 let it = self.js_iterator(other);
@@ -179,7 +201,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => it,
             false => self.closing(it, iter_ty, span)?,
         };
-        let other_item = self.iterable_item(other_ty);
         let compare = self.item_eq((item, other_item), span)?;
         let drop_a = self.std_drop_function(item, span)?;
         let drop_b = self.std_drop_function(other_item, span)?;

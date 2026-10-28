@@ -253,7 +253,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {
             return Ok(Expr::call_helper("$clone", vec![place]));
         }
-        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
+        // A `copied()` std compiles held, `--std-iterators`', its struct too.
+        if let Some(source) = super::recognition::copied_source(self.tcx, ty)
+            && !held_compiled
+        {
             return self.copied_clone(place, (ty, source), span, out);
         }
         // A channel's sender: one more, of the same queue (ADR 0142).

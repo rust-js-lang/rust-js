@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "uncounted-eq-compared",
+    breaks: "`eq()` of two maps of unequal lengths, which rust-js can't count, steps and compares their items, running closures Rust's `SpecIterEq` never runs (ADR 0996)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if lengths.is_none()\n            && trusted\n",
+    replace: "        if false\n            && lengths.is_none()\n            && trusted\n",
+    tests: ["test/diagnostics.test.ts", "-t", "eq of two maps of unequal lengths"],
+  },
+  {
     name: "iter-eq-not-trusted",
     breaks: "`eq()` of two `TrustedLen` iterators isn't given their lengths, and compares items std's `SpecIterEq` never steps (ADR 0992)",
     file: "src/lower/mir/iter/closing.rs",

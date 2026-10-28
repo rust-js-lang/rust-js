@@ -5,6 +5,8 @@ and [0181](0181-iterator-clones.md); accepts part of the
 [iterators draft](draft/cloned-and-buffering-iterators.md).
 Amended by [0984](0984-a-map-or-filter-cloned-apart-keeps-its-back.md): one
 stepped from its back is made knowing it.
+Amended by [0997](0997-a-compiled-copied-is-cloned-by-its-struct.md): a
+`copied()` std compiles held is cloned by its struct.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): a clone of an iterator
 is where the iterator is, with a clone of its closure, as Rust's `Clone` of

@@ -129,6 +129,10 @@ for (const [name, source, message, crate] of [
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
   ["collecting into a Result of an Rc slice", 'pub fn f(v: Vec<Result<(u8, u8), ()>>) -> Result<std::rc::Rc<[(u8, u8)]>, ()> { v.into_iter().collect() }', "does not support `collect` into a `std::rc::Rc<[(u8, u8)]>`"],
+  // std's `eq` of two `TrustedLen` iterators asks their lengths first; of maps held in MIR's
+  // temporaries, which rust-js can't count before stepping them, refused, as their closures
+  // would run where Rust's don't (ADR 0996, #386).
+  ["eq of two maps of unequal lengths", 'pub fn f(v: &[u32], w: &[u32]) -> bool { v.iter().map(|x| { println!("a"); *x }).eq(w.iter().map(|x| { println!("b"); *x })) }', "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them"],
   // A `scan` holds its state too, so a function it holds with a destructor isn't closed for (ADR 0991).
   ["a function with a destructor a lazy scan holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> Vec<u32> { v.iter().scan(0, move |a, x| { let r = &d; *a += x + r.0; Some(*a) }).collect() }', "a function that holds a value with a destructor, kept by what it's given to"],
   // A refused `len()` names its adapter's type, not its closures', which name where they're written.
