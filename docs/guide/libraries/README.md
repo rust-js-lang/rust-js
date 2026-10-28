@@ -283,6 +283,12 @@ How WebIDL maps to Rust, one rule for each:
   `input.set_selection_start(start)` of an `Option<f64>`; text made here
   is given by its `as_str()`, `set_text_content(n.to_string().as_str())`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md), amended).
+- **A value the DOM makes text of takes any value**, `impl
+  IntoUnknown`, whatever TypeScript's `string` says, as the DOM's
+  `ToString` takes one: `node.set_attribute("tabindex", 3)`,
+  `set_attribute_ns`, `style.set_property(name, value, None)` and
+  `set_css_float`
+  ([ADR 1013](../../decisions/1013-a-value-the-dom-makes-text-of-takes-any-value.md)).
 - **An index signature is std's `Index`:** TypeScript's `[index:
   number]: HTMLOptionElement` of an `HTMLOptionsCollection` is `impl
   Index<usize>`, so `options[i].value()` is `options[i].value`, a

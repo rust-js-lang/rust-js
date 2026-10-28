@@ -485,6 +485,13 @@ const ANY = "<any>";
 // The `any` parameters the browser copies with its structured clone, by
 // operation and parameter: a value only of a type it copies as it is,
 // `js::StructuredClone` (ADR 0225). WebIDL doesn't say which they are.
+/** The values the DOM makes text of, whatever TypeScript's `string` says,
+ * by WebIDL's `ToString`, which React DOM gives them as they are,
+ * `node.setAttribute(name, value)` of a number or a `bool`: any value,
+ * `impl IntoUnknown`, as JS takes one (the user's decision, React port gap
+ * d13a). Each `Interface.member`, its value the last parameter. */
+const STRINGIFIED = new Set(["Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute", "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat"]);
+
 const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
 
 // The console's logging operations, which run no code but the host's and
@@ -1299,6 +1306,13 @@ function functionsOf(declared: Interface): Fn[] {
       const given = orNull(result, m.idlType!);
       fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given) });
     }
+  }
+
+  // A value the DOM makes text of takes any value (`STRINGIFIED`).
+  for (const f of fns) {
+    if (!STRINGIFIED.has(`${i.name}.${f.jsName}`)) continue;
+    const at = f.params.findIndex((p) => p.startsWith("value: "));
+    if (at >= 0) f.params[at] = "value: impl IntoUnknown";
   }
 
   // `for..of`'s `[Symbol.iterator]`, where TypeScript has it: a function of

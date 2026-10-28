@@ -1221,7 +1221,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_attribute(&self, qualified_name: &str, value: &str) {
+    pub fn set_attribute(&self, qualified_name: &str, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -1230,7 +1230,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_attribute_ns(&self, namespace: &str, qualified_name: &str, value: &str) {
+    pub fn set_attribute_ns(&self, namespace: &str, qualified_name: &str, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -23869,7 +23869,7 @@ impl CSSStyleDeclaration {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_property(&self, property: &str, value: &str, priority: Option<&str>) {
+    pub fn set_property(&self, property: &str, value: impl IntoUnknown, priority: Option<&str>) {
         unreachable!()
     }
 
@@ -23930,7 +23930,7 @@ impl CSSStyleProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "set cssFloat")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_css_float(&self, value: &str) {
+    pub fn set_css_float(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -71587,7 +71587,7 @@ impl ProcessingInstruction {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_attribute(&self, name: &str, value: &str) {
+    pub fn set_attribute(&self, name: &str, value: impl IntoUnknown) {
         unreachable!()
     }
 

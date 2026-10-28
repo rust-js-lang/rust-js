@@ -749,3 +749,32 @@ pub fn first_tag(root: &Element) -> String {
   expect(options.map((o) => o.selected)).toEqual([false, true]);
   expect(lib.firstTag({ querySelectorAll: () => [{ tagName: "INPUT" }] })).toBe("INPUT");
 });
+
+// The user's decision (React port gap d13a): a value the DOM makes text of,
+// whatever TypeScript's `string` says, takes any value, `impl IntoUnknown`,
+// as React DOM gives it, `node.setAttribute(name, value)` of a number or a
+// `bool`, no `js::cast::<&str>(..)`.
+test("a value the DOM makes text of takes any value", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-stringified-values");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{CSSStyleDeclaration, Element};
+
+pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, name: &String) {
+    node.set_attribute("tabindex", 3);
+    node.set_attribute("hidden", true);
+    node.set_attribute("title", name);
+    node.set_attribute_ns("http://www.w3.org/1999/xlink", "href", value);
+    style.set_property("--x", 1.5, None);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  node.setAttribute("tabindex", 3);\n  node.setAttribute("hidden", true);\n  node.setAttribute("title", name);\n');
+  expect(js).toContain('  style.setProperty("--x", 1.5);\n');
+  const lib = await import(join(dir, "lib.js"));
+  const attributes: Record<string, string> = {};
+  const node = { setAttribute: (n: string, v: unknown) => void (attributes[n] = String(v)), setAttributeNS: (_: string, n: string, v: unknown) => void (attributes[n] = String(v)) };
+  const props: Record<string, string> = {};
+  lib.set(node, { setProperty: (n: string, v: unknown) => void (props[n] = String(v)) }, 0, "Save");
+  expect([attributes, props]).toEqual([{ tabindex: "3", hidden: "true", title: "Save", href: "0" }, { "--x": "1.5" }]);
+});
