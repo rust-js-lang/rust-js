@@ -4,28 +4,15 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether `ty`, a map's or a filter's, is one the crate steps from its
-    /// back (ADR 0545), made knowing it where it's made: the one answer, of
-    /// what's made and what's stepped.
-    /// `value`, a range of kind `kind`, as the range object its steps take:
-    /// itself, or of one stepped from its start already, `$iterator(range,
-    /// $rangeNext)`, an `enumerate()`'s source's, the range, not that
-    /// stepped as a range again (#385).
-    fn range_object(&self, value: Expr, kind: crate::lower::std_types::range::RangeKind) -> Expr {
-        match crate::lower::iterators::stepped_alone(&value) {
-            Some((range, step)) if step.helper_name().is_some() && step.helper_name() == kind.step(false) => {
-                range.clone()
-            }
-            _ => value,
-        }
-    }
-
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
     fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
         let range_back = self.range_kind(source.peel_refs()).and_then(|kind| kind.step(true));
         crate::lower::iterators::reversal(value, range_back)
     }
 
+    /// Whether `ty`, a map's or a filter's, is one the crate steps from its
+    /// back (ADR 0545), made knowing it where it's made: the one answer, of
+    /// what's made and what's stepped.
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         (self.krate.back_stepped).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
     }
@@ -33,8 +20,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an adapter of type `ty` is explicit (ADR 0542): of a kind the
     /// crate's types hold, which keeps its source and its state wherever the
     /// crate makes one. The one answer, of what's made and what's asked of it.
+    /// Never one compiled where it's held, `Enumerate`'s, which code asking
+    /// this relies on (ADR 0871): checked in a debug build.
     pub(in crate::lower) fn explicit_adapter(&self, ty: ty::Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Adt(adapter, _) if self.krate.explicit_adapters.contains(&adapter.did()))
+        let ty::Adt(adapter, _) = ty.peel_refs().kind() else {
+            return false;
+        };
+        let explicit = self.krate.explicit_adapters.contains(&adapter.did());
+        debug_assert!(
+            !explicit || !crate::lower::recognition::is_held_compiled_def(self.tcx, adapter.did()),
+            "an explicit adapter compiled where it's held, {ty}",
+        );
+        explicit
     }
 
     /// Whether `$sizeHint` finds the size of an iterator of type `ty` held
@@ -226,7 +223,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let (Some(kind), Some(len)) = (self.range_kind(ty), len)
             && let (Some(next), Some(from_back)) = (kind.step(false), kind.step(true))
         {
-            let value = self.range_object(value, kind);
+            // Of one stepped from its start already, an `enumerate()`'s
+            // source's, the range it steps (#385).
+            let value = stepped_value(&value).unwrap_or(value);
             let from_back = back.then(|| Expr::helper(from_back));
             return Ok(stepped_ends(
                 value,
@@ -413,7 +412,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(kind) = self.range_kind(ty)
             && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
         {
-            let value = self.range_object(value, kind);
             return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
         }
         // `skip(n)` or `take(n)` made here, exact-sized as std's `Skip` and

@@ -62,7 +62,25 @@ corpus and the mutation's own tests.
     tests and every test that mentions a nullable place are the same
     without it.
 
+- Of those main's checks found:
+  - `double-ended-of-a-js-iterator-again`: `as_double_ended` unwraps a
+    stepped iterator, `$iterator(range, $rangeNext)`, by `stepped_value`,
+    the one reader of that form. ADR 1002's `range_object` did the same
+    for ranges alone, a second way. It's gone, and `as_exact_size`'s
+    range rule reads `stepped_value` too, so the mutation is caught again.
+    `stepped-range-restepped` is now `as_exact_size`'s.
+  - `filter-made-here-backless` fails four cases a filter made in place
+    and stepped from its back is in. Its tests now name them.
+  - `enumerate-explicit-too`: an explicit adapter is never one compiled
+    where it's held (ADR 0871), which the code asking `explicit_adapter`
+    relies on, as 003efa32e removed what read one. That's now checked in
+    a debug build, so a held `Enumerate` that's explicit too panics.
+  - `negation-spilled`: the JSX lowering's reading of `!x` as reading the
+    same as `x` changes no element. Every JSX and React test is the same
+    without it, so it goes. A new test checks that a prop of `!hidden`
+    before a later child's statements stays in place.
+
 ## Consequences
 
-Those eleven mutations are caught or removed. The rest are listed on
+Those fifteen mutations are caught or removed. The rest are listed on
 #382 until they are too.

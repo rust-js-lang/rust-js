@@ -322,7 +322,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "enumerate-explicit-too",
-    breaks: "a held `Enumerate` is also an explicit adapter, `$enumerate`, beside std's struct",
+    breaks: "a held `Enumerate` is also an explicit adapter beside std's struct, which code asking `explicit_adapter` relies on it never is: the debug build's check of it panics",
     file: "src/lower/analysis.rs",
     find: "    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));\n",
     replace: "",

@@ -277,6 +277,35 @@ pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::
   expect(renderToStaticMarkup(createElement(() => lib.Preview(false, undefined)))).toBe("<div><p></p></div>");
 });
 
+// A negation of what reads the same, a state's \`!hidden\`, reads the same
+// after a later child's statements, a block's, so a prop of it is in place,
+// not \`const disabled = !hidden\` before them.
+test("a negation of a state's value is read in place before a later child's statements", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_state};
+pub fn Shown() -> JSX::Element {
+    let (hidden, _) = use_state(|| false);
+    let hidden = *hidden;
+    jsx! {
+        <div>
+            <input disabled={!hidden} />
+            <span>{{
+                let mut parts = vec!["a"];
+                parts.push("b");
+                parts.join("-")
+            }}</span>
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("      <input disabled={!hidden} />\n");
+  expect(jsx).not.toContain("const disabled");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => lib.Shown()))).toBe('<div><input disabled=""/><span>a-b</span></div>');
+});
+
 // react.dev's Page: its feed's test, `isHomePage || isBlogIndex`, shows an
 // import, `Head`, which no later child's statement can change, so it's in
 // place, not `const condition = ..` before them.

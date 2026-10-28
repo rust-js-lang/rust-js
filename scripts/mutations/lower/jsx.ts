@@ -99,14 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-props.test.ts", "-t", "no dictionary"],
   },
   {
-    name: "negation-spilled",
-    breaks: "a negation of what reads the same is spilled before a later child's statement: `const condition = !!error`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),\n",
-    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev.s Preview tests its error in place"],
-  },
-  {
     name: "jsx-null-test-captured",
     breaks: "an element shown where a number's `Option` is there, `height != null && ..`, has its test in a `const condition` before the JSX",
     file: "src/lower/jsx.rs",

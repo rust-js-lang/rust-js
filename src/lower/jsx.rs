@@ -129,12 +129,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `value` reads the same wherever it's read: a constant, a
     /// function, an import, or a variable nothing writes again, a `const`
-    /// of `out`'s, a field of a plain Rust value of one, and `!` of them,
-    /// which runs no code of its own: `!done`.
+    /// of `out`'s, or a field of a plain Rust value of one.
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
-            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
             // `error != null`, an `Option`'s test (ADR 0298, amended), reads as
             // `error` does.
             js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {

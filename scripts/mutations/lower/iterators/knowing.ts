@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "stepped-range-restepped",
     breaks: "a range stepped from its start already, an `enumerate()`'s source, is stepped as a range again where it's made knowing its length: `(1..5).enumerate()` given to code stepping its back is `(false, 0)`, not `(true, 3)` (#385)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            Some((range, step)) if step.helper_name().is_some() && step.helper_name() == kind.step(false) => {\n",
-    replace: "            Some((range, step)) if false && step.helper_name().is_some() && step.helper_name() == kind.step(false) => {\n",
+    find: "            // source's, the range it steps (#385).\n            let value = stepped_value(&value).unwrap_or(value);\n",
+    replace: "            // source's, the range it steps (#385).\n",
     tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
   },
   {
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            && method == \"filter\"\n            && let [p] = args.as_slice()\n",
     replace: "            && method == \"filtered\"\n            && let [p] = args.as_slice()\n",
-    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(filter_ends|rev_given_to_generic_code|user_iterator_ends|returned_slice_iters|own_back_through_adapters)\\.rs$"],
   },
   {
     name: "enumerate-back-unknown",
