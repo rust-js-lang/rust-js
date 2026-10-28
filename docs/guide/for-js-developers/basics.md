@@ -2038,7 +2038,8 @@ export function lastNamed(names) {
   of the body after it, not an `else` ([ADR
   0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md));
   a `continue` that ends an arm of a chain of `if`s too, `else if (..) {
-  ..; continue; }`, with no label where the arms meet ([ADR
+  ..; continue; }`, with no label where the arms meet, and none where the
+  chain's end falls out to the rest of the body ([ADR
   0745](../../decisions/0745-a-continue-in-a-chain-is-where-it-is-written.md));
   and guards of `continue`s first in a loop that `break`s, each its own
   `if`, its comment inside it, as React's hydration diffs write a `for…in`

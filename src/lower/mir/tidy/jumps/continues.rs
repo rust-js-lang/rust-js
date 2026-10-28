@@ -372,25 +372,65 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
 /// { a } else { b; break l; } continue;`, as `jumps past blocks` leaves a
 /// `continue` the program wrote in `a`: the jump where the other branch
 /// ends, `if (c) { a; continue; } else { b; break l; }`, where it goes on
-/// from (ADR 0745).
+/// from (ADR 0745). Of an `else if` chain, each of its arms that goes on,
+/// where one leaves: `if (a) { x } else if (b) { y } else { break l; }
+/// continue;` is `if (a) { x; continue; } else if (b) { y; continue; } else
+/// { break l; }`, as React's commitBeforeMutationEffects_begin writes each
+/// arm's `continue` (ADR 0745, amended).
 pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
+    // An `else` that is one `if` with an `else` of its own: the chain's
+    // next link.
+    fn linked(otherwise: &[Stmt]) -> bool {
+        matches!(
+            otherwise,
+            [Stmt {
+                kind: StmtKind::If(_, _, Some(_)),
+                ..
+            }]
+        )
+    }
+    // Whether each arm of the chain `stmt`, an `if` with an `else`, begins
+    // leaves, in order.
+    fn arms(stmt: &Stmt, leaves: &mut Vec<bool>) {
+        let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
+            unreachable!("an `if` with an `else`")
+        };
+        leaves.push(then.last().is_some_and(ends));
+        if linked(otherwise) {
+            arms(&otherwise[0], leaves);
+        } else {
+            leaves.push(otherwise.last().is_some_and(ends));
+        }
+    }
+    // An `if` one branch of which leaves, its `else` whole; or a chain
+    // only whose last `else` does, what MIR makes of its fall-through: not
+    // a chain of arms that leave each their own way, a `match`'s, which
+    // `switches` reads as they are.
+    let into_arms = |stmt: &Stmt| {
+        let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
+            return false;
+        };
+        if then.last().is_some_and(ends) != otherwise.last().is_some_and(ends) {
+            return true;
+        }
+        let mut leaves = Vec::new();
+        arms(stmt, &mut leaves);
+        matches!(&leaves[..], [going_on @ .., true] if going_on.iter().all(|leaves| !leaves))
+    };
     let mut i = 0;
     while i + 1 < stmts.len() {
-        let going_on = match &stmts[i].kind {
-            StmtKind::If(_, then, Some(otherwise))
-                if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_)) =>
-            {
-                let (a, b) = (then.last().is_some_and(ends), otherwise.last().is_some_and(ends));
-                (a != b).then_some(b)
-            }
-            _ => None,
-        };
-        if let Some(in_then) = going_on {
+        if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_)) && into_arms(&stmts[i]) {
             let jump = stmts.remove(i + 1);
             let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
-            if in_then { then } else { otherwise }.push(jump);
+            // An `else if` given it has it in each of its own arms that goes
+            // on as its list's turn comes, after this one's.
+            for arm in [then, otherwise] {
+                if !arm.last().is_some_and(ends) {
+                    arm.push(jump.clone());
+                }
+            }
         }
         i += 1;
     }

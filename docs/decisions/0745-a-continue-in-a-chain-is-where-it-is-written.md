@@ -89,3 +89,39 @@ for one where the body ends anyway: `if (key in next) { checked++; } else
 `tests_continue`'s, has what goes on after it after it again**, its
 `continue` kept: `if (c) { a; continue; } b`, as written. `mut_ref_loop.rs`
 reads as its Rust does too. Held by the mutation `written-continue-elsed`.
+
+## Amendment: each arm of an `else if` chain that goes on has the jump
+
+React's commitBeforeMutationEffects_begin ends two arms of an `else if`
+chain with a `continue` and falls out of the chain's end to the loop
+body's rest:
+
+```rust
+if is_hidden {
+    ..;
+    continue;
+} else if current.as_ref().is_some_and(|c| c.lanes.get() == 7) {
+    ..;
+    continue;
+}
+```
+
+MIR joins the two `continue`s after the chain, and its fall-through is a
+`break` past them: `bb107: { if (isHidden) { .. } else if (..) { .. } else
+{ break bb107; } continue; }`. `jumps into branches` moved a jump only
+into one of two branches, the `if`'s `then` or its `else` whole, and the
+`else` here, the chain's rest, doesn't leave as a whole. **Of a chain only
+whose last `else` leaves, each arm before it has the jump**, `if (isHidden)
+{ ..; continue; } else if (..) { ..; continue; }`, and `branch ends` then
+drops the `else { break bb107; }` and its label. A chain of arms that leave
+each their own way, as a `match`'s guarded arms make, `if (tag === 3) { if
+(..) { break bb6; } } else { if (tag === 5) { break bb6; } else { break
+bb25; } } break bb25;`, stays as it is, so `switches` reads its cases
+(`test/lowering-switch-fallthrough.test.ts`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a jump
+moves to each place that goes on to it.
+
+Held by the corpus case `continue_arms_of_else_if` (native-compared) and
+the mutations `jumps-into-chain-arms-uncounted` and
+`jumps-into-arms-that-leave-their-own-way`.

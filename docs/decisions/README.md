@@ -605,7 +605,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0742 A block's label the program wrote is its name in JS](0742-a-label-the-program-wrote-is-its-name.md) *(amended by 0790: its `break`s are where they're written, a case's `break;` where it ends a case; amended: a loop's `return` MIR joined past a block is a `return`)*
 - [0743 A part of a chain of tests an earlier test decides is left out](0743-a-part-of-a-chain-a-test-decides-is-left-out.md)
 - [0744 A value or what it falls back to is `||`](0744-a-value-or-its-fallback-is-or.md)
-- [0745 A `continue` in a chain of `if`s is where it's written](0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays; extended by 0754: a `return` some arms go on to is in each; 0755: a `return` after a block is each of its `break`s)*
+- [0745 A `continue` in a chain of `if`s is where it's written](0745-a-continue-in-a-chain-is-where-it-is-written.md) *(amended: a written `continue` its rest made an `else` stays; amended: each arm of an `else if` chain that goes on has the jump; extended by 0754: a `return` some arms go on to is in each; 0755: a `return` after a block is each of its `break`s)*
 - [0746 A length held in a variable shows the slice at least so long, and a `push` makes one long](0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)
 - [0747 `unwrap()` of a throwing call each branch makes is each call](0747-unwrap-of-a-throwing-call-each-branch-makes.md)
 - [0748 A `for` of a slice's first items is of its part, `xs.slice(0, n)`](0748-a-for-of-a-slices-first-items-is-of-its-part.md)
