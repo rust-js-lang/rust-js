@@ -2160,9 +2160,10 @@ export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRend
 ```
 - **Of some, it's a `Box<dyn Fn(..)>` of the parameters `f` has left**,
   as long-lived as what it keeps: each argument a value of a `Copy` type,
-  or what a parameter borrows, an `Rc` of a `&Rc`, lent to each call as a
-  closure lends what it keeps. `Rc::from` shares it, and a binding's
-  function bound is its JS function itself
+  or what a parameter borrows, an `Rc` of a `&Rc`, an `Option<Rc>` of an
+  `Option<&Rc>`, lent to each call as a closure lends what it keeps. A
+  function of up to 16 parameters binds any number of them. `Rc::from`
+  shares it, and a binding's function bound is its JS function itself
   ([ADR 0907](../../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md),
   amended):
 

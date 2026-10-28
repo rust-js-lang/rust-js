@@ -369,7 +369,7 @@ impl<T: Defined + ?Sized> AnyShape<()> for T {}
 /// is which one, rustc's to infer, as [`AnyShape`]'s is.
 pub trait AnyFunction<M: ?Sized> {}
 
-/// A function of each arity up to 12, its marker the `fn` pointer of its
+/// A function of each arity up to 16, its marker the `fn` pointer of its
 /// signature: of any shape, and any function.
 macro_rules! functions {
     ($(($($a:ident),*))*) => {
@@ -533,7 +533,7 @@ pub mod function {
     /// What a function `F`, of the signature `M`, a `fn` pointer's, is with
     /// its first arguments `L` bound, [`bind`]'s: of none, `F` itself, and
     /// of some, a function of the parameters it has left, which lives as
-    /// long as what it keeps, `'l`. Of each signature of up to 12
+    /// long as what it keeps, `'l`. Of each signature of up to 16
     /// parameters and each count of them bound. No program names it.
     #[diagnostic::on_unimplemented(
         message = "`{L}` aren't the first arguments a function `{Self}` takes",
@@ -551,16 +551,18 @@ pub mod function {
     /// What a bound function keeps of an argument it's given first for a
     /// parameter of `P`: a value of a `Copy` type, which each call is given
     /// as it is, or what a parameter borrows, `Rc<Fiber>` of a
-    /// `&Rc<Fiber>`, which each call is lent, as a closure lends what it
-    /// keeps. In JS each is the value itself.
+    /// `&Rc<Fiber>`, or of an `Option<&Rc<Fiber>>` an `Option<Rc<Fiber>>`,
+    /// which each call is lent, as a closure lends what it keeps,
+    /// `errors.as_ref()`. In JS each is the value itself.
     #[diagnostic::on_unimplemented(
         message = "a bound function can't keep a `{Self}` for a parameter of `{P}`",
-        note = "it keeps a value of a `Copy` type, or what a parameter borrows: `fiber` of a `&Rc<Fiber>`"
+        note = "it keeps a value of a `Copy` type, or what a parameter borrows: `fiber` of a `&Rc<Fiber>`, `errors` of an `Option<&Rc<Errors>>`"
     )]
     pub trait Keeps<P> {}
 
     impl<T: Copy> Keeps<T> for T {}
     impl<T> Keeps<&T> for T {}
+    impl<T> Keeps<Option<&T>> for Option<T> {}
 
     /// `Bound` of one signature, each count of its first parameters bound
     /// but none: `$k`, each kept as an `$x`, and `$r` left.
@@ -598,6 +600,10 @@ pub mod function {
         [A B C D E F1 G H I J] [XA XB XC XD XE XF XG XH XI XJ]
         [A B C D E F1 G H I J K] [XA XB XC XD XE XF XG XH XI XJ XK]
         [A B C D E F1 G H I J K L] [XA XB XC XD XE XF XG XH XI XJ XK XL]
+        [A B C D E F1 G H I J K L M] [XA XB XC XD XE XF XG XH XI XJ XK XL XM]
+        [A B C D E F1 G H I J K L M N] [XA XB XC XD XE XF XG XH XI XJ XK XL XM XN]
+        [A B C D E F1 G H I J K L M N O] [XA XB XC XD XE XF XG XH XI XJ XK XL XM XN XO]
+        [A B C D E F1 G H I J K L M N O P] [XA XB XC XD XE XF XG XH XI XJ XK XL XM XN XO XP]
     }
 }
 
@@ -615,6 +621,10 @@ functions! {
     (A, B, C, D, E, F1, G, H, I, J)
     (A, B, C, D, E, F1, G, H, I, J, K)
     (A, B, C, D, E, F1, G, H, I, J, K, L)
+    (A, B, C, D, E, F1, G, H, I, J, K, L, M)
+    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N)
+    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O)
+    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O, P)
 }
 
 /// Whether `value` is [truthy](https://developer.mozilla.org/docs/Glossary/Truthy),
@@ -1044,7 +1054,7 @@ macro_rules! rest_number {
 
 rest_number!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
 
-/// A tuple of up to 12, each item one `T` takes.
+/// A tuple of up to 16, each item one `T` takes.
 macro_rules! rest {
     ($(($($a:ident),*))*) => {
         $(
@@ -1067,6 +1077,10 @@ rest! {
     (A, B, C, D, E, F, G, H, I, J)
     (A, B, C, D, E, F, G, H, I, J, K)
     (A, B, C, D, E, F, G, H, I, J, K, L)
+    (A, B, C, D, E, F, G, H, I, J, K, L, M)
+    (A, B, C, D, E, F, G, H, I, J, K, L, M, N)
+    (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)
+    (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)
 }
 
 /// A value that's never `undefined` nor `null` in JS, as `None` is: an

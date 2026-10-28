@@ -246,3 +246,75 @@ pub fn held() -> Box<dyn Fn() -> bool> {
   );
   expect(error).toContain("`js::function::with_this` takes a closure written in its call");
 });
+
+// `function::bind` of upstream's widest, React's `completeRoot.bind(null,
+// root, finishedWork, ..)`: fifteen arguments, as many as a function takes
+// (ADR 0907, amended), each nullable one, `null | Array<..>`, kept as the
+// `Option` of what its `Option<&T>` parameter borrows and lent to each call,
+// `errors.as_ref()`; an `Option` of an `Option` and of a `()` too, whose
+// JS is each's own.
+test("a function bound to fifteen arguments, each an Option of what its parameter borrows", async () => {
+  const { js, lib } = await compiled("function-bind-wide", `use std::rc::Rc;
+
+use js::{Kind, function};
+
+pub struct Errors(pub Vec<u32>);
+
+#[allow(clippy::too_many_arguments)]
+fn complete(
+    root: &Rc<u32>,
+    errors: Option<&Rc<Errors>>,
+    nested: Option<&Option<u32>>,
+    unit: Option<&()>,
+    name: Option<&String>,
+    a: u32,
+    b: u32,
+    c: u32,
+    d: u32,
+    e: u32,
+    f: u32,
+    g: u32,
+    h: u32,
+    reason: &'static str,
+    end: f64,
+) -> String {
+    let errors = errors.map_or(0, |errors| errors.0.len());
+    let nested = match nested {
+        Some(Some(n)) => i64::from(*n),
+        Some(None) => -1,
+        None => -2,
+    };
+    let sum = a + b + c + d + e + f + g + h;
+    let name = name.map_or("none", |n| n.as_str());
+    format!("{root} {errors} {nested} {} {name} {sum} {reason} {end}", unit.is_some())
+}
+
+pub fn later(
+    root: &Rc<u32>,
+    errors: Option<Rc<Errors>>,
+    nested: Option<Option<u32>>,
+    unit: Option<()>,
+    name: Option<String>,
+) -> Box<dyn Fn() -> String> {
+    function::bind(
+        complete,
+        Some(&Kind::Null),
+        (Rc::clone(root), errors, nested, unit, name, 1, 2, 3, 4, 5, 6, 7, 8, "Throttled", 2.5),
+    )
+}
+
+pub fn run() -> String {
+    let root = Rc::new(7);
+    let some = later(&root, Some(Rc::new(Errors(vec![1, 2]))), Some(None), Some(()), Some("n".to_string()));
+    let none = later(&root, None, None, None, None);
+    let held = later(&root, None, Some(Some(4)), None, None);
+    format!("{} | {} | {} | {}", some(), some(), none(), held())
+}
+`);
+  expect(js.replace(/\s+/g, " ")).toContain(
+    `return complete.bind( null, root, errors, nested, unit, name, 1, 2, 3, 4, 5, 6, 7, 8, "Throttled", 2.5, );`,
+  );
+  expect(lib.run()).toBe(
+    "7 2 -1 true n 36 Throttled 2.5 | 7 2 -1 true n 36 Throttled 2.5 | 7 0 -2 false none 36 Throttled 2.5 | 7 0 4 false none 36 Throttled 2.5",
+  );
+});

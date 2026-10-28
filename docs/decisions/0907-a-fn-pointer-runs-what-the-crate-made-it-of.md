@@ -319,7 +319,8 @@ own `bind`, and what each call is given is what Rust gives it.
 - A parameter left that borrows, `fn(&str)` of `f(fiber, label: &str)`
   with `fiber` bound, has the one lifetime rustc infers, not `for<'a>`; a
   closure is the way where it must be any.
-- Up to 12 parameters, as `AnyFunction`'s.
+- Up to 16 parameters, as `AnyFunction`'s (12 before the amendment
+  below).
 
 Held by `test/js-object.test.ts`, "a function bound to its first
 arguments is a function of the parameters left" (dispatch's `Rc`s lent,
@@ -359,3 +360,55 @@ one bound in part; the guide's `log_measure`; mutations
 `bound-method-an-arrow`, `bound-none-left-out-of-a-part` and
 `bound-none-kept`.
 
+
+## Amendment: sixteen parameters, and an `Option` of what a parameter borrows
+
+React's ReactFiberWorkLoop binds fourteen and fifteen arguments,
+`completeRootWhenReady.bind(null, root, finishedWork,
+workInProgressRootRecoverableErrors, ..)` and `completeRoot.bind(null,
+root, finishedWork, lanes, recoverableErrors, ..)`, and several of them
+are nullable, `recoverableErrors: null | Array<CapturedValue<mixed>>`,
+`finishedWork: null | Fiber`, whose parameters are `Option<&T>`. Its
+port's `function::bind(complete_root, Some(&Kind::Null), (Rc::clone(root),
+errors, ..))` was refused twice: past twelve, and "a bound function can't
+keep a `Option<Rc<Errors>>` for a parameter of `Option<&Rc<Errors>>`". The
+port wrote a closure, `Box::new(move || complete_root(&root, errors.as_ref(),
+..))`, an arrow where upstream's is the bound function (the port's gap wl3).
+
+**`AnyFunction`, `AnyShape`, a rest's tuple and `Bound` are of up to 16
+parameters**, upstream's fifteen and one more; **and a bound function keeps
+an `Option<T>` for a parameter of `Option<&T>`**, lent to each call as
+`kept.as_ref()`, as it keeps a `T` for a `&T`. In JS each is the value
+itself: a reference is what it borrows, so an `Option<&T>` is what an
+`Option<T>` is, `null`-or-`undefined` of `None`, an `Option` of an
+`Option` the same box of each. The impl is one more of `Keeps`, the one
+rule of what a bound function keeps; it overlaps neither other, as an
+`Option<T>` is never an `Option<&T>` of itself. `with_this`'s
+`Parameters` stays at 12: no upstream function reads its `this` of more.
+
+```rust
+function::bind(
+    complete_root,
+    Some(&Kind::Null),
+    (Rc::clone(root), finished_work, lanes, recoverable_errors, transitions, ..),
+)
+```
+
+```js
+completeRoot.bind(null, root, finishedWork, lanes, recoverableErrors, transitions, ..)
+```
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the binding is JS's
+own `bind`, and each call is given what Rust lends it.
+
+Held by `test/js-functions.test.ts`'s "a function bound to fifteen
+arguments, each an Option of what its parameter borrows": an
+`Option<Rc<..>>`, an `Option<Option<u32>>`, an `Option<()>` and an
+`Option<String>` kept, each `Some` and `None`, the bound function called
+twice. Each is a type of `builtins/src/lib.rs`, which no mutation list
+covers (mutations are the compiler's, ADR 0093): taking the impl or an
+arity out fails that test's compile.
+
+Not covered: a parameter left that borrows still has one lifetime (Limits,
+above), React's `callback.bind(null, instance)` of a view transition's
+`callback(instance, types)` (the port's gap wl1).
