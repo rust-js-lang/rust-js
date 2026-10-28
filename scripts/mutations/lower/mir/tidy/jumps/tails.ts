@@ -371,12 +371,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-if-value-of-mir-branches",
-    breaks: "a value written `if c { x } else { false }` is `c && x`, the `&&` MIR makes the same branches of, not the conditional written (ADR 0879)",
+    breaks: "a value written with an `if` isn't seen as written, so one of what isn't a `bool`, `c ? o : false`, is the `&&` MIR makes of the same branches, not the conditional written (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        match (of(then, a) && of(otherwise, b), of(then, b) && of(otherwise, a)) {\n",
     replace: "        match (false, false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-bool-ternaries.test.ts", "-t", "a written if or match of a bool literal branch is && or \\|\\|"],
   },
   {
     name: "written-turned-value-returned-as-mir-has-it",
