@@ -99,3 +99,33 @@ while (i < queue.length) {
   `std-impls-walk-every-part`, `std-impl-bounds-skipped`,
   `derived-methods-run-anything`, `derive-walk-skipped`,
   `fn-pointer-clone-runs-it`.
+
+## Amendment: std's function given to std's runs what a call of it runs
+
+Case: A, as above.
+
+React's ReactFiberWorkLoop keeps `pendingViewTransitionEvents`, a
+`null` or an array of callbacks, and pushes each, `if
+(pendingViewTransitionEvents === null) pendingViewTransitionEvents = [];
+pendingViewTransitionEvents.push(event)`. Its port, `EVENTS.with_borrow_mut(
+|events| events.get_or_insert_with(Vec::new).push(event))` of a
+`RefCell<Option<Vec<&dyn Fn(&[String])>>>`, made the thread-local a
+checked cell, `$withBorrowMut(events, ..)`, where the same of a
+`Vec<u32>` was a `let` (the port's gap wl2). `get_or_insert_with`'s
+`F: FnOnce() -> T` is `Vec::<&dyn Fn(..)>::new`, a function item of std's,
+and `bound_runs` walked each type it's of, the `dyn Fn` among them, as
+what the bound may call: anything.
+
+**A function item of std's given by a bound is called as std's code is:
+it runs what a call of it runs, `std_given`'s of its own bounds**, the
+one rule a direct call of it has (`called`'s `Called::Std`). `Vec::new`
+has none with methods, and runs nothing; a cell's own `Clone::clone`,
+`.map(RefCell::clone)`, still borrows it. A function of the crate's,
+given so, is still its body, which may borrow the cell held:
+`get_or_insert_with(first_hooks)` of one that reads the thread-local
+panics `RefCell already mutably borrowed`, as Rust's does.
+
+Held by `test/lowering-cell-borrows.test.ts`'s "std's function given to
+std's runs what its bounds say, not what it's of", both; mutation
+`std-function-given-its-types`.
+

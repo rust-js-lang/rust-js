@@ -722,3 +722,49 @@ pub fn render() {
   lib.render();
   expect(seen).toEqual([{ n: 1 }]);
 });
+
+// React's `pendingViewTransitionEvents ??= []; ..push(event)`, a thread-local
+// `RefCell<Option<Vec<F>>>` of functions: std's function given to std's,
+// `get_or_insert_with(Vec::new)`, runs what its own bounds say, as a call
+// of it does, not each type it's of: `Vec::<F>::new` calls no `F`. One the
+// crate makes, given so, still runs its body (ADR 0868, amended).
+test("std's function given to std's runs what its bounds say, not what it's of", async () => {
+  const dir = fixture("std-function-given");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static PENDING: RefCell<Option<Vec<&'static dyn Fn(&[String])>>> = const { RefCell::new(js::null()) };
+    static HOOKS: RefCell<Option<Vec<fn() -> u32>>> = const { RefCell::new(None) };
+}
+
+pub fn push_event(event: &'static dyn Fn(&[String])) {
+    PENDING.with_borrow_mut(|events| events.get_or_insert_with(Vec::new).push(event));
+}
+
+pub fn pending_count() -> usize {
+    PENDING.with_borrow(|events| events.as_ref().map_or(0, Vec::len))
+}
+
+fn first_hooks() -> Vec<fn() -> u32> {
+    let pushed = HOOKS.with_borrow(|hooks| hooks.as_ref().map_or(0, Vec::len));
+    vec![|| 1, if pushed == 0 { || 2 } else { || 3 }]
+}
+
+pub fn push_hook(hook: fn() -> u32) -> u32 {
+    HOOKS.with_borrow_mut(|hooks| hooks.get_or_insert_with(first_hooks).push(hook));
+    HOOKS.with_borrow(|hooks| hooks.iter().flatten().map(|hook| hook()).sum())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("let pending = null;");
+  expect(js).toContain("  pending ??= [];\n  pending.push(event);\n");
+  // \`first_hooks\` borrows HOOKS while \`get_or_insert_with\` holds it.
+  expect(js).toContain("$withBorrowMut(");
+  const lib = await import(join(dir, "lib.js"));
+  lib.pushEvent(() => {});
+  lib.pushEvent(() => {});
+  expect(lib.pendingCount()).toBe(2);
+  expect(() => lib.pushHook(() => 4)).toThrow("RefCell already mutably borrowed");
+});

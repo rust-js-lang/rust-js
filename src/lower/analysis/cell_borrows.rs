@@ -798,6 +798,16 @@ fn bound_runs<'tcx>(
             ty::FnDef(f, args) if f.is_local() && !is_binding(tcx, f) => {
                 given.bodies.push((f, Some(args.skip_binder())))
             }
+            // Std's, `get_or_insert_with(Vec::new)`'s, called by an `Fn`
+            // trait: what a call of it runs, by its own bounds (ADR 0868),
+            // not each type it's of, `Vec::<F>::new`'s `F`.
+            ty::FnDef(f, args) if recognition.is_std(f) => {
+                walk.skip_current_subtree();
+                let of = std_given(recognition, impls, f, args.skip_binder());
+                given.cells.extend(of.cells);
+                given.bodies.extend(of.bodies);
+                given.any |= of.any;
+            }
             ty::Adt(..) if recognition.is_borrowed_cell(part) => given.cells.push(Borrow {
                 cell: Cell::Type(tcx.erase_and_anonymize_regions(part)),
                 mutable: !recognition.is_std_type(part, StdItem::RefCell),

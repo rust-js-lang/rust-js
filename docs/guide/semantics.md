@@ -382,6 +382,10 @@ borrowed while it runs, `$withBorrowMut(log, (log) => ..)`, and a second
 borrow throws as Rust's panics
 ([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 [0587](../decisions/0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)).
+A function of std's given so, `get_or_insert_with(Vec::new)`, runs what
+its bounds say, as a call of it does: nothing of a `Vec` of callbacks
+([0868](../decisions/0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md),
+amended).
 So is one whose module hands on its cell, `with(bump)`, or the `&mut`
 of what it holds, `with_borrow_mut(|depth| fill(depth))`; a `with` lends
 its closure the cell, which, used in place, is the variable too,

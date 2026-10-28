@@ -388,4 +388,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_of_a_field_borrow.rs$"],
     snapshots: true,
   },
+  {
+    name: "std-function-given-its-types",
+    breaks: "std's function given to std's, `get_or_insert_with(Vec::new)`, runs what each type it's of may, a `Vec<fn()>`'s `fn()`, so the thread-local is a checked cell, `$withBorrowMut(events, ..)` (ADR 0868, amended)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            ty::FnDef(f, args) if recognition.is_std(f) => {\n",
+    replace: "            ty::FnDef(f, args) if false && recognition.is_std(f) => {\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "std's function given to std's"],
+  },
 ];
