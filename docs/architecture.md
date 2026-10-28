@@ -48,7 +48,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`; `typescript/` prints the declaration model |
-| Library contracts, configuration, hooks and path utilities | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
+| Library contracts, configuration, hooks and path utilities; a crate's npm package and what its entry re-exports (ADR 1008) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
@@ -165,7 +165,7 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | Owned output; no rustc |
+| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
@@ -353,7 +353,11 @@ map adjustment and final artifact assembly.
 A compiled library has JS plus a versioned `src/library.rs` contract embedded
 in the host manifest. It carries exported item identities, trait requirements,
 held bindings, input fingerprints and crate identity; rustc metadata alone
-cannot describe JS linkage. Consumers validate library/compiler identity and
+cannot describe JS linkage. Of a crate whose directory has a `package.json`,
+`src/packages.rs` reads its package and what its entry re-exports, by
+`to_oxc::entry_exports`, as artifact planning asks; a consumer imports what
+the entry re-exports by the package's name where Node finds it
+([ADR 1008](decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)). Consumers validate library/compiler identity and
 required dependencies. Cargo provides build configuration and caching;
 `src/cargo.rs` makes compiler identity visible to Cargo's fingerprints.
 

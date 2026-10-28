@@ -32,7 +32,8 @@ pub struct OutputPlan {
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     /// What the build read besides the crate, once planned: the app's
-    /// Prettier configs (ADR 0381) and `bound`, which Cargo is told of.
+    /// Prettier configs (ADR 0381), `bound`, and a library's `package.json`
+    /// and its entries (ADR 1008), which Cargo is told of.
     pub read: Vec<PathBuf>,
     /// The JS files of the program's own the crate's bindings import, and
     /// what they import, which lowering read (`LocalJs`, ADR 0031,
@@ -483,7 +484,31 @@ impl OutputPlan {
         // What the build read: the crate, and the JS files of its own its
         // bindings import (ADR 0031, amended).
         let sources = sources.into_iter().chain(self.bound.iter().cloned());
-        let sources: Vec<PathBuf> = sources.map(|p| absolute(&p)).collect::<Result<_, _>>()?;
+        let mut sources: Vec<PathBuf> = sources.map(|p| absolute(&p)).collect::<Result<_, _>>()?;
+        let mut packaged = Vec::new();
+        // A library's package, of a crate Cargo builds, whose directory is
+        // its own, and what its root re-exports of its modules, read by oxc:
+        // its `package.json` and entries what the build read (ADR 1008).
+        if let Some(library) = lowered.library.as_mut().filter(|_| self.settings.cargo) {
+            let exported: Vec<Vec<String>> = lowered.modules.iter().map(exports).collect();
+            let modules = (lowered.modules.iter().zip(&exported))
+                .map(|(module, exports)| {
+                    let files = vec![
+                        absolute(&self.js_path(&module.path))?,
+                        absolute(&self.in_source(module)?)?,
+                    ];
+                    Ok(crate::packages::Module {
+                        path: &module.path,
+                        files,
+                        exports,
+                    })
+                })
+                .collect::<Result<Vec<_>, String>>()?;
+            let read = crate::packages::read(&self.settings.dir, &modules, to_oxc::entry_exports)?;
+            library.package = read.package;
+            packaged.clone_from(&read.files);
+            sources.extend(read.files);
+        }
         if let Some(library) = &mut lowered.library {
             library.inputs = sources
                 .iter()
@@ -587,7 +612,9 @@ impl OutputPlan {
         }
 
         let (mut artifacts, configs) = self.generate(lowered.modules, &lowered.sources)?;
-        self.read = configs.into_iter().chain(self.bound.iter().cloned()).collect();
+        self.read = (configs.into_iter().chain(self.bound.iter().cloned()))
+            .chain(packaged)
+            .collect();
         if let Some((path, write)) = self.dep_info.take() {
             extra.push(Artifact {
                 path: absolute(&path)?,

@@ -54,6 +54,7 @@ mod lower;
 mod manifest;
 mod names;
 mod output;
+mod packages;
 mod panic_runtime;
 mod paths;
 mod prepare;
@@ -474,7 +475,8 @@ impl Drop for Stage {
 /// A build: rustc run with rust-js's callbacks, then what it made published
 /// and checked. Its error, whichever step's, `main` says.
 fn compile(build: command::Build) -> Result<ExitCode, String> {
-    let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
+    let read_settings = settings::read(&build.input, build.cargo)?;
+    let mut dependencies = library::Dependencies::load(&build.dependencies, &build.output, &read_settings.dir)?;
     // Every crate's JS calls std's compiled bodies from `@rust-js/std`, but
     // that crate's own, which is them (ADR 0561).
     if !build.std_bodies {
@@ -501,7 +503,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
     let settings = settings::Settings {
         declarations,
-        ..settings::read(&input, cargo)?
+        ..read_settings
     };
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();

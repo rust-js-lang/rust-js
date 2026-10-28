@@ -34,7 +34,7 @@ use self::trailing::{Inside, Trailing, own_line_after_value, own_line_before_val
 use self::arms::{Arm, arm_starts, else_if_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
 pub(crate) use self::expressions::*;
-pub(crate) use self::loads::loaded_modules;
+pub(crate) use self::loads::{entry_exports, loaded_modules};
 use self::openings::{leading_statements, macro_opening, match_opening, type_alias, unsafe_opening};
 
 use std::path::PathBuf;

@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
+  {
+    name: "package-entry-unread-by-cargo",
+    breaks: "a library's package.json and entry aren't what Cargo is told its build read, so an edit of either leaves its consumer importing what its entry no longer re-exports (ADR 1008)",
+    file: "src/output.rs",
+    find: "            .chain(packaged)\n",
+    replace: "            .chain(packaged.into_iter().take(0))\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

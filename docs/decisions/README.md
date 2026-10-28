@@ -433,7 +433,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0411 An iterator given as it is is stepped by its dictionary](0411-an-iterator-given-as-it-is-has-its-dictionary.md) *(amended by 0690: the crate's own `fold` and `nth` in it, `$given`)*
 - [0412 `rust-js build` is its own process](0412-rust-js-build-is-its-own-process.md)
 - [0413 A declaration means the same under every tsconfig](0413-a-declaration-means-the-same-under-every-tsconfig.md)
-- [0414 A library is shared on npm, as ReScript's are](0414-a-library-on-npm-as-rescripts-are.md)
+- [0414 A library is shared on npm, as ReScript's are](0414-a-library-on-npm-as-rescripts-are.md) *(extended by 1008: what a package's entry re-exports is imported by its name)*
 - [0415 A crate of crates.io's is compiled into the app, where it can be](0415-a-crate-of-crates-io-in-an-app.md)
 - [0416 `RangeBounds` in generic code: a dictionary of the range's bounds](0416-range-bounds-in-generic-code.md)
 - [0417 An allocation is an array of slots](0417-an-allocation-is-an-array-of-slots.md)
@@ -792,6 +792,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision; amended: one another module's JS imports keeps its JS)*
 - [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision)*
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
+- [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

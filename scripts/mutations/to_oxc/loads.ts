@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     replace: "        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {\n            if it.import_kind.is_type() {\n",
     tests: test,
   },
+  {
+    name: "entry-statements-plain",
+    breaks: "a package's entry that runs code of its own as it loads is read as re-exports alone, so its re-exports are imported by the package's name and that code runs where the Rust runs none (ADR 1008)",
+    file: "src/to_oxc/loads.rs",
+    find: "            _ => entry.plain = false,\n",
+    replace: "            _ => {}\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

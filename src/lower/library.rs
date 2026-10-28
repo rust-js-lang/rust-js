@@ -289,6 +289,8 @@ pub(super) fn exports<'tcx>(
             keys
         },
         types: declared_types(tcx),
+        // Its package, which artifact planning reads (ADR 1008).
+        package: None,
     }
 }
 

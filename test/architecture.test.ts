@@ -20,7 +20,7 @@ const layers = {
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
-    "src/paths.rs"],
+    "src/paths.rs", "src/packages.rs"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
 };
 const layerOf = (file: string) =>

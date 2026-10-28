@@ -1,10 +1,11 @@
 //! What a JS file loads, read by oxc: the modules it imports, which may
-//! load the crate's modules where it loads (ADR 0031, amended).
+//! load the crate's modules where it loads (ADR 0031, amended); and what a
+//! package's entry re-exports (ADR 1008).
 
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
     Argument, CallExpression, ExportAllDeclaration, ExportFromDeclaration, Expression, ImportDeclaration,
-    ImportExpression,
+    ImportExpression, Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
@@ -85,6 +86,48 @@ pub fn loaded_modules(code: &str) -> Option<Vec<String>> {
             Some((!loads.unnamed).then_some(loads.named))
         })
         .flatten()
+}
+
+/// What `code`, a package's entry, exports (`packages::Entry`), read as
+/// JS, as a package's file is: its `export { .. } from`s and `export *
+/// from`s, and whether it's those alone. An error, where it isn't JS,
+/// Flow's types in it, saying where the parse stopped.
+pub fn entry_exports(code: &str) -> Result<crate::packages::Entry, String> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
+    if let Some(error) = parsed.diagnostics.errors().next() {
+        let at = error.labels.iter().next().map_or(0, |label| label.offset() as usize);
+        let line = code[..at.min(code.len())].matches('\n').count() + 1;
+        let text = code.lines().nth(line - 1).unwrap_or("").trim();
+        return Err(format!("{error}, at line {line}: `{text}`"));
+    }
+    let mut entry = crate::packages::Entry {
+        reexports: Vec::new(),
+        own: Vec::new(),
+        plain: true,
+    };
+    for statement in &parsed.program.body {
+        match statement {
+            Statement::ExportFromDeclaration(it) => {
+                for specifier in &it.specifiers {
+                    entry.reexports.push(crate::packages::Reexport::Named {
+                        from: it.source.value.to_string(),
+                        name: specifier.local.name().to_string(),
+                        exported: specifier.exported.name().to_string(),
+                    });
+                }
+            }
+            Statement::ExportAllDeclaration(it) => match &it.exported {
+                Some(namespace) => entry.own.push(namespace.name().to_string()),
+                None => entry.reexports.push(crate::packages::Reexport::All {
+                    from: it.source.value.to_string(),
+                }),
+            },
+            Statement::EmptyStatement(_) => {}
+            _ => entry.plain = false,
+        }
+    }
+    Ok(entry)
 }
 
 #[cfg(test)]

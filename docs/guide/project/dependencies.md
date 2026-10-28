@@ -291,6 +291,36 @@ import { greet } from "@acme/greet/src/lib.js";
 A JS app imports the author's JS as it imports any package. See
 [Emitting modules](modules.md#libraries) for how to publish one.
 
+### A package's entry
+
+A crate whose directory has a `package.json`, a workspace's member too,
+may have an entry of its own, as React's `packages/react/index.js` is:
+
+```js
+// packages/react/index.js, the package's "main"
+export {Children, createElement} from './src/ReactClient';
+```
+
+An item the entry re-exports is imported by the package's name, as
+upstream writes it, where Node finds that package from the consumer
+([ADR 1008](../../decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)):
+
+```js
+// of `use react_isomorphic::react_client::CHILDREN;`
+import { Children } from "react";
+```
+
+- **Re-exports alone**: `export { .. } from` and `export * from` of the
+  crate's modules. An entry with code of its own imports nothing by the
+  package's name.
+- **Every condition's entry**: where `exports["."]` names several, by
+  conditions, each must re-export the item from its module by one name;
+  else it's imported by its module's file.
+- **An item of its own module**: one the module re-exports of another is
+  imported by its own module's file.
+- **JS, not Flow**: an entry with types in it is refused, naming it. Keep
+  its types in a `.d.ts` beside it, `index.d.ts`.
+
 ## Versions
 
 - **rust-js's own packages are one version**: `@rust-js/build`,

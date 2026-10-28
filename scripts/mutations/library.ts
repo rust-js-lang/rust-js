@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                makes_dropping_fn_dyns: false,\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
   },
+  {
+    name: "package-imported-wherever-installed",
+    breaks: "a library's item its package's entry re-exports is imported by the package's name where Node finds no copy of the package from the consumer, or another's, which fails to load or is another module (ADR 1008)",
+    file: "src/library.rs",
+    find: ".filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));",
+    replace: ";",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

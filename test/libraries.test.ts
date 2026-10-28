@@ -5,7 +5,7 @@
 // package's name.
 
 import { beforeAll, expect, test } from "bun:test";
-import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
@@ -206,4 +206,80 @@ test("a library packed by npm is built into an app by each package manager's ins
     const checked = build(dir, "--check");
     expect({ manager, code: checked.code, stderr: checked.stderr }).toEqual({ manager, code: 0, stderr: "" });
   }
+}, 600_000);
+
+// A package's entry, React's `index.js`, `export {Children} from
+// './src/ReactClient'`, is what a consumer imports a library's item by,
+// where every entry of its root re-exports it from its module, by the
+// package's name (ADR 1008): `import {Children} from 'react'`, one module
+// instance with what's imported by its file. An entry that isn't JS,
+// Flow's types in it, is refused, naming it.
+test("an item a package's entry re-exports is imported by the package's name", () => {
+  const dir = fixture("package-entry");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["kids", "dom"]\nresolver = "3"\n');
+  for (const [name, more] of [["kids", ""], ["dom", '\n[dependencies]\nkids = { path = "../kids" }\n']]) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n${more}`);
+  }
+  const kids = join(dir, "kids");
+  const manifest = (exports?: unknown) =>
+    writeFileSync(join(kids, "package.json"), JSON.stringify({ name: "@acme/kids", type: "module", main: "index.js", exports }));
+  manifest();
+  writeFileSync(join(kids, "src", "lib.rs"), "pub mod client;\npub mod hooks;\n");
+  writeFileSync(join(kids, "src", "client.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static BUMPS: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn bump() {
+    BUMPS.with(|bumps| bumps.set(bumps.get() + 1));
+}
+
+pub fn count() -> u32 {
+    BUMPS.with(Cell::get)
+}
+`);
+  writeFileSync(join(kids, "src", "hooks.rs"), "pub fn hook() -> u32 {\n    7\n}\n");
+  const entry = "export {bump} from './src/client.js';\nexport * from './src/hooks.js';\n";
+  writeFileSync(join(kids, "index.js"), entry);
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub fn run() -> u32 {\n    kids::client::bump();\n    kids::client::bump();\n    kids::client::count() * 10 + kids::hooks::hook()\n}\n");
+  mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
+  symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
+  mkdirSync(join(dir, "node_modules", "@rust-js"));
+  symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
+  const built = () => build(join(dir, "dom"));
+  expect(built().stderr).toBe("");
+  expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
+  expect(js()).toContain('import { count } from "../../kids/src/client.js";\n');
+  expect(ran()).toBe("27");
+  // Each condition's entry, the package's to choose: `bump` only where
+  // every one re-exports it, the library rebuilt as its package.json changes.
+  writeFileSync(join(kids, "server.js"), "export * from './src/hooks.js';\n");
+  manifest({ ".": { server: "./server.js", default: "./index.js" } });
+  expect(built().stderr).toBe("");
+  expect(js()).toContain('import { hook } from "@acme/kids";\n');
+  expect(js()).toContain('import { bump, count } from "../../kids/src/client.js";\n');
+  expect(ran()).toBe("27");
+  // An entry that runs more than its re-exports as it loads, which the
+  // Rust doesn't, and a package Node finds no copy of from the crate's JS,
+  // or another: each by its file, as the Rust has it.
+  const byFiles = 'import { bump, count } from "../../kids/src/client.js";\nimport { hook } from "../../kids/src/hooks.js";\n';
+  manifest();
+  writeFileSync(join(kids, "index.js"), `${entry}console.log("loaded");\n`);
+  expect(built().stderr).toBe("");
+  expect(js()).toContain(byFiles);
+  writeFileSync(join(kids, "index.js"), entry);
+  rmSync(join(dir, "node_modules", "@acme", "kids"));
+  expect(built().stderr).toBe("");
+  expect(js()).toContain(byFiles);
+  expect(ran()).toBe("27");
+  // Flow's, which oxc doesn't read.
+  writeFileSync(join(kids, "index.js"), `export type Kid = number;\n${entry}`);
+  const refused = built();
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain(`rust-js can't read \`${realpathSync(join(kids, "index.js"))}\`, package \`@acme/kids\`'s entry, as JavaScript`);
+  expect(refused.stderr).toContain("keep only JS in it, its types in a `.d.ts` beside it, `index.d.ts`");
 }, 600_000);

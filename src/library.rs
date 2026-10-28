@@ -256,6 +256,14 @@ pub struct Library {
     /// amended): a consumer's declarations import it from that module's.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub types: Vec<DeclaredType>,
+    /// Its npm package, where its crate's directory has a `package.json`
+    /// that names one (ADR 1008), read by `packages::read`: its
+    /// `package.json` and entries are of its `inputs`. None of `@rust-js/std`,
+    /// nor of a library written before, which a consumer imports by its
+    /// files, as it did; a compiler before this one is another build,
+    /// whose manifests are refused (ADR 1003).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<crate::packages::Package>,
 }
 
 /// A type a library's module declares and exports, by rustc's key for it,
@@ -410,8 +418,9 @@ pub struct Dependencies {
 }
 
 impl Dependencies {
-    /// Read and validate complete dependency artifacts before compilation starts.
-    pub fn load(paths: &[std::path::PathBuf], output: &Path) -> Result<Self, String> {
+    /// Read and validate complete dependency artifacts before compilation
+    /// starts, for a crate whose JS is in `dir` and `output`'s.
+    pub fn load(paths: &[std::path::PathBuf], output: &Path, dir: &Path) -> Result<Self, String> {
         let mut result = Self::default();
         let mut needed: Vec<(String, String)> = Vec::new();
         let output = crate::paths::absolute(output)?;
@@ -480,10 +489,23 @@ impl Dependencies {
                 }
                 Ok(crate::paths::specifier(parent, &module.file))
             };
+            // What its package's root re-exports, by the package's name,
+            // where Node finds that package from the crate's JS (ADR 1008).
+            let package = (library.package.as_ref())
+                .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
+            let imported_from = |module: &Vec<String>, export: String| -> Result<(String, String), String> {
+                let entry = package.and_then(|package| {
+                    (package.exports.iter())
+                        .find(|reexport| &reexport.module == module && reexport.export == export)
+                        .map(|reexport| (package.name.clone(), reexport.entry.clone()))
+                });
+                entry.map_or_else(|| Ok((specifier(module)?, export)), Ok)
+            };
             for item in library.items {
+                let (from, export) = imported_from(&item.module, item.exported_as())?;
                 let imported = Imported {
-                    from: specifier(&item.module)?,
-                    export: item.exported_as(),
+                    from,
+                    export,
                     name: item.export,
                     member: item.member,
                     calling: item.calling,
@@ -503,10 +525,11 @@ impl Dependencies {
                 }
             }
             for held in library.held {
+                let (from, export) = imported_from(&held.module, held.export)?;
                 let imported = HeldImport {
                     binding: held.binding,
-                    from: specifier(&held.module)?,
-                    export: held.export,
+                    from,
+                    export,
                     name: held.name,
                 };
                 if exports.held.insert((held.holder, held.rust_name), imported).is_some() {
