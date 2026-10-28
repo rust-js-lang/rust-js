@@ -128,13 +128,9 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 /// guard's value or a `Cow`'s text, and a collection's `extend` and
 /// `from_iter`, of any items, where its own type is known, whatever it
 /// holds, a `MutexGuard<C>`'s (ADRs 0394, 0445, 0450). An `IntoIterator`'s
-/// but one of a reference to a type only a caller knows (ADR 0457). A
-/// hasher's, and a `Hash`'s, where its types are known: a std hasher's own
-/// method, a crate's hasher's provided one, a std type's writes (ADR 0463).
+/// but one of a reference to a type only a caller knows (ADR 0457).
 pub(super) fn std_written_in_place(tcx: TyCtxt<'_>, trait_id: DefId, self_ty: Ty<'_>, known_here: bool) -> bool {
-    let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite)
-        || is_std_def(tcx, trait_id, StdItem::IoWrite)
-        || crate::lower::recognition::is_hashing(tcx, trait_id);
+    let writer = is_std_def(tcx, trait_id, StdItem::FmtWrite) || is_std_def(tcx, trait_id, StdItem::IoWrite);
     let holder = tcx.is_lang_item(trait_id, LangItem::Deref)
         || tcx.is_lang_item(trait_id, LangItem::DerefMut)
         || crate::lower::recognition::is_extend(tcx, trait_id)

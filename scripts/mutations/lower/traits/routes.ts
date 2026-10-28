@@ -112,14 +112,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "hashing-by-dictionary-where-known",
-    breaks: "a `Hash` or `Hasher` call whose types are known is a dictionary's, given its hasher unboxed",
-    file: "src/lower/traits/routes.rs",
-    find: "        || is_std_def(tcx, trait_id, StdItem::IoWrite)\n        || crate::lower::recognition::is_hashing(tcx, trait_id);\n",
-    replace: "        || is_std_def(tcx, trait_id, StdItem::IoWrite);\n",
-    tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
-  },
-  {
     name: "sum-dictionary-written-everywhere",
     breaks: "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
     file: "src/lower/traits/routes.rs",
