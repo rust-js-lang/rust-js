@@ -156,10 +156,12 @@ pub(in crate::lower::mir::tidy) fn written_breaks_of_last_loops(body: &mut [Stmt
             }
         }
     }
+    // The loop before the `return;` the function ends with, MIR's, too (ag6).
+    let end = body.len() - usize::from(body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))));
     if let Some(Stmt {
         kind: StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. },
         ..
-    }) = body.last_mut()
+    }) = body[..end].last_mut()
     {
         broken(body, breaks);
     }

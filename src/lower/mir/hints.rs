@@ -384,6 +384,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } => Some(self.js_span(e.span)),
             _ => None,
         });
+        // And each arm that never goes on of a `match` a `let` is given, `let
+        // pairs = match e { Some(p) if .. => p, _ => { return; } };`, a
+        // `let … else` of a guard (ag6).
+        let thir = &self.frame.thir;
+        let arm_exits = (thir.stmts.iter())
+            .filter_map(|stmt| match stmt.kind {
+                thir::StmtKind::Let {
+                    initializer: Some(init),
+                    else_block: None,
+                    ..
+                } => match &thir[self.strip(init)].kind {
+                    thir::ExprKind::Match {
+                        arms,
+                        match_source: rustc_hir::MatchSource::Normal,
+                        ..
+                    } => Some(arms.iter().map(|&arm| &thir[thir[arm].body])),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .flatten()
+            .filter(|body| self.diverges(body))
+            .map(|body| self.js_span(body.span));
         let let_elses = (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match stmt.kind {
                 thir::StmtKind::Let {
@@ -393,6 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .chain(tries)
+            .chain(arm_exits)
             .collect();
         Written {
             tables,
@@ -454,6 +478,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         blocks.into_iter().map(|(_, block)| block).collect()
+    }
+
+    /// Whether `e` never goes on: a `return`, a `break` or a `continue`, a
+    /// block that ends with one, or a value of `!`, given as another type.
+    fn diverges(&self, e: &thir::Expr<'tcx>) -> bool {
+        let thir = &self.frame.thir;
+        match &e.kind {
+            thir::ExprKind::Scope { value, .. } => self.diverges(&thir[*value]),
+            thir::ExprKind::Return { .. }
+            | thir::ExprKind::Break { .. }
+            | thir::ExprKind::Continue { .. }
+            | thir::ExprKind::NeverToAny { .. } => true,
+            thir::ExprKind::Block { block } => {
+                let block = &thir[*block];
+                match (block.expr, block.stmts.last()) {
+                    (Some(value), _) => self.diverges(&thir[value]),
+                    (None, Some(&last)) => {
+                        matches!(thir[last].kind, thir::StmtKind::Expr { expr, .. } if self.diverges(&thir[expr]))
+                    }
+                    (None, None) => false,
+                }
+            }
+            _ => e.ty.is_never(),
+        }
     }
 
     /// Each `match` the program wrote, not a macro, `matches!`, of three

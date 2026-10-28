@@ -618,3 +618,32 @@ Held by `test/lowering-written-elses.test.ts`, "a ? of an Option<Rc> is
 its guard first", run in JS; mutations `question-exit-not-a-guard`
 (`hints.ts`) and `let-else-exit-at-its-statement`
 (`tidy/jumps/tried.ts`).
+
+## Amendment: a `let` of a `match` whose other arm leaves is a guard first (2026-10-28, ag6)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as a `let … else`'s
+guard first.
+
+React's trackDeletedPairViewTransitions writes `if
+(appearingViewTransitions === null || appearingViewTransitions.size === 0)
+{ // We've found all. return; }` and the rest after it. Its port, `let
+pairs = match PAIRS.with_borrow(Clone::clone) { Some(pairs) if
+!pairs.borrow().is_empty() => pairs, _ => { // We've found all. return; }
+};`, a `let … else` a guard makes a `match` of, printed the rest inside
+`if (pairs != null && pairs.size !== 0) { .. return; }`, the comment
+lost, and the loop's written `break` a `return;`.
+
+**An arm that never goes on, a `return`, a `break` or a `continue`, of a
+`match` a `let` is given, is a guard's exit, as a `let … else`'s `else`
+is** (`Written::let_elses`, `hints.rs`'s `diverges`), so `let_else_first`
+makes it the guard first, its comment with it. And the loop the function
+ends with keeps its written `break` before MIR's `return;` after it too
+(`written_breaks_of_last_loops`, ADR 0684).
+
+Held by `test/corpus/match_arm_guard_first.rs`, against native Rust;
+mutations `arm-exit-not-a-guard` (`hints.ts`) and
+`last-loop-before-return-unseen` (`tidy/jumps/continues.ts`).
+
+`docs/readability.txt`'s share of `return;` grows, 9.9 to 10 in 10,000
+lines, by that case's two guards' `return;`s, each one the program
+wrote, as upstream's.

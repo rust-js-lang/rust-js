@@ -302,4 +302,13 @@ export const mutations: Mutation[] = [
     replace: "                        && true =>\n                {\n                    then[0] = Stmt {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
+  {
+    name: "last-loop-before-return-unseen",
+    breaks: "a loop the function ends with, before MIR's `return;`, prints the program's `break` as `return;` (ag6, ADR 0684, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "    let end = body.len() - usize::from(body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))));\n",
+    replace: "    let end = body.len();\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
+    snapshots: true,
+  },
 ];

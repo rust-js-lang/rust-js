@@ -404,4 +404,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-elses.test.ts", "-t", "guard first"],
   },
+  {
+    name: "arm-exit-not-a-guard",
+    breaks: "React's trackDeletedPairViewTransitions, `let pairs = match e { Some(p) if .. => p, _ => { return; } };`, is the rest inside `if (pairs != null && pairs.size !== 0) { .. }`, its comment lost (ag6, ADR 0879, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "            .chain(arm_exits)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
+    snapshots: true,
+  },
 ];
