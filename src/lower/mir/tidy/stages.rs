@@ -473,6 +473,13 @@ pub(super) const STAGES: &[Stage] = &[
                 let (elses, returns, booleans) = (unswitched(h), h.returns, h.booleans);
                 js::statement_lists(b, &mut |s| returned_values(s, &elses, returns, booleans))
             }),
+            // A function's value of an `else if` chain, of what `strict
+            // switches` made no `switch` of: one nested conditional of plain
+            // values, `return a ? x : b ? y : z;`, or the whole chain, its
+            // last link's two arms as written (ADR 0969, amended).
+            pass("returned chains", |b, h| {
+                js::statement_lists(b, &mut |s| returned_else_ifs(s, &h.written.links, h.returns))
+            }),
             // An `if` those emptied, an `if let` whose binding is only read,
             // gone, its test kept where it does anything, as it ensures
             // (#247).

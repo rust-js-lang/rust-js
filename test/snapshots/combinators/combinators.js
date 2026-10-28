@@ -33,8 +33,11 @@ function half(n) {
 function parse(c) {
   if (c === "1") {
     return { TAG: "Ok", _0: 1 };
+  } else if (c === "2") {
+    return { TAG: "Ok", _0: 2 };
+  } else {
+    return { TAG: "Err", _0: `bad ${c}` };
   }
-  return c === "2" ? { TAG: "Ok", _0: 2 } : { TAG: "Err", _0: `bad ${c}` };
 }
 export function options(n) {
   const h = half(n);

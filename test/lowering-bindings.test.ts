@@ -1062,7 +1062,7 @@ pub fn not_less(a: &Unknown, b: &Unknown) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (a === b) {\n    return 0;\n  }\n  return a < b ? -1 : 1;\n");
+  expect(js).toContain("  return a === b ? 0 : a < b ? -1 : 1;\n");
   expect(js).toContain("  return a > b;\n");
   expect(js).toContain("  return $partialCmp(a, b) <= 0;\n");
   // Not \`!(a < b)\`, as of floats (ADR 0966): the helper may run a

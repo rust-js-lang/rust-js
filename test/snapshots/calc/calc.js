@@ -168,12 +168,13 @@ export function caesar(s, k) {
         return String.fromCharCode(
           (((((((c.codePointAt(0) & 255) - 97) & 255) + k) & 255) % 26) + 97) & 255,
         );
+      } else if (/^[A-Z]$/.test(c)) {
+        return String.fromCharCode(
+          (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
+        );
+      } else {
+        return c;
       }
-      return /^[A-Z]$/.test(c)
-        ? String.fromCharCode(
-            (((((((c.codePointAt(0) & 255) - 65) & 255) + k) & 255) % 26) + 65) & 255,
-          )
-        : c;
     })
     .join("");
 }

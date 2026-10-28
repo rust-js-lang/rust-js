@@ -1,6 +1,7 @@
 //! Tidy's chains of arms a variable's value is given by: each arm its own,
 //! as the chain is written, but where every arm is a value alone, one
-//! nested conditional (ADR 0969, amended).
+//! nested conditional (ADR 0969, amended); and a function's value of such
+//! a chain, each arm's `return`, alike (`returned_else_ifs`).
 
 use super::*;
 
@@ -105,4 +106,159 @@ pub(super) fn assigned_through(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
         }
         _ => None,
     }
+}
+
+/// The value of an `else if` chain `stmts` end with, the user's rule of a
+/// variable's (`plain_chain_of`) for a function's (React's rd23): its arms
+/// each a plain value (`plain`) its `return` gives, none the program wrote
+/// but the chain's own, `return if a { x } else if ..;`, one nested
+/// conditional, `return a ? x : b ? y : z;`, each value where its arm is;
+/// and otherwise the chain as written, its last link's two arms, which
+/// `returned_values` folded alone, `else { return b ? y : z; }`, half a
+/// chain and half a conditional, its own again: `else if (b) { return y; }
+/// else { return z; }`. Not after a link an `else if let` binds first, a
+/// `const`, where JS's chain is no more (`written_elses`) and its links are
+/// each an `if` of its own.
+pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], returns: &[js::Span]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // A link of a chain, an `else if`, at its condition, where MIR puts
+    // its `if`, and the `return` `returned_values` folded it into.
+    let link = |s: &Stmt| links.iter().any(|l| within(l, s.span));
+    let Some(mut head) = stmts.iter().rposition(|s| matches!(s.kind, StmtKind::If(..))) else {
+        return;
+    };
+    // The chain's head, of links each an `if` after the last, where each
+    // leaves.
+    let guard = |s: &Stmt| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(ends));
+    while head > 0 && guard(&stmts[head - 1]) && link(&stmts[head]) {
+        head -= 1;
+    }
+    let span = stmts[head].span;
+    // A plain value its `return` gives, MIR's, or the one the program wrote
+    // of the chain.
+    let valued = |s: &Stmt| match &s.kind {
+        StmtKind::Return(Some(value))
+            if plain(value)
+                && (!written(returns, s.span) || returns.iter().any(|r| within(r, s.span) && within(r, span))) =>
+        {
+            Some(spanned(value, s.span))
+        }
+        _ => None,
+    };
+    // The chain's links in turn, each its test and its arm, and the last
+    // `return` of the chain, a link's two folded.
+    let mut tested: Vec<(&Stmt, &Expr, &[Stmt])> = Vec::new();
+    let mut list = &stmts[head..];
+    let last = loop {
+        match list {
+            [
+                link @ Stmt {
+                    kind: StmtKind::If(test, then, Some(otherwise)),
+                    ..
+                },
+            ] => {
+                tested.push((link, test, then));
+                list = otherwise;
+            }
+            [
+                link @ Stmt {
+                    kind: StmtKind::If(test, then, None),
+                    ..
+                },
+                rest @ ..,
+            ] if then.last().is_some_and(ends) => {
+                tested.push((link, test, then));
+                list = rest;
+            }
+            [
+                last @ Stmt {
+                    kind: StmtKind::Return(Some(_)),
+                    ..
+                },
+            ] => break last,
+            _ => return,
+        }
+    };
+    // The head no link, which is a chain's of its own; each link after it
+    // an `else if` the program wrote.
+    if link(tested[0].0) || !tested[1..].iter().all(|(s, ..)| link(s)) {
+        return;
+    }
+    let StmtKind::Return(Some(value)) = &last.kind else {
+        unreachable!("matched")
+    };
+    let folded = match &value.kind {
+        ExprKind::Cond(test, yes, no) if link(last) => Some((&**test, &**yes, &**no)),
+        _ => None,
+    };
+    let arms = tested.len() + 1 + usize::from(folded.is_some());
+    if arms < 3 {
+        return;
+    }
+    let mut values: Option<Vec<(Expr, Expr)>> = (tested.iter())
+        .map(|(_, test, then)| match then {
+            [arm] => valued(arm).map(|v| ((*test).clone(), v)),
+            _ => None,
+        })
+        .collect();
+    let rest = match folded {
+        Some((test, yes, no)) => {
+            if let Some(values) = &mut values
+                && plain(yes)
+                && plain(no)
+            {
+                values.push((test.clone(), yes.clone()));
+            }
+            no.clone()
+        }
+        None => valued(last).unwrap_or_else(|| value.clone()),
+    };
+    if let Some(values) = values.filter(|v| v.len() == arms - 1)
+        && plain(&rest)
+    {
+        let value = (values.into_iter().rev()).fold(rest, |no, (test, yes)| Expr::cond(test, yes, no));
+        stmts.truncate(head);
+        stmts.push(StmtKind::Return(Some(value)).at(span));
+        return;
+    }
+    // The chain as written: its last link's arms each its own.
+    let Some((test, yes, no)) = folded else {
+        return;
+    };
+    let at = last.span;
+    let ret = |v: &Expr| vec![StmtKind::Return(Some(v.clone())).at(at)];
+    let test = Expr {
+        facts: test.facts.with(js::Known::Else),
+        ..test.clone()
+    };
+    let unfolded = StmtKind::If(test, ret(yes), Some(ret(no))).at(at);
+    // In the link before's `else`, which the program wrote, where that's
+    // a guard still, as `written_elses` leaves one of two returns alone.
+    fn place(list: &mut Vec<Stmt>, unfolded: Stmt) {
+        match list.as_mut_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::If(_, _, Some(otherwise)),
+                    ..
+                },
+            ] => place(otherwise, unfolded),
+            [
+                ..,
+                Stmt {
+                    kind: StmtKind::If(test, _, otherwise @ None),
+                    ..
+                },
+                _,
+            ] => {
+                test.facts = test.facts.with(js::Known::Else);
+                *otherwise = Some(vec![unfolded]);
+                list.pop();
+            }
+            [.., last] => *last = unfolded,
+            [] => unreachable!("walked"),
+        }
+    }
+    let mut chain = stmts.split_off(head);
+    place(&mut chain, unfolded);
+    stmts.extend(chain);
 }

@@ -1448,7 +1448,8 @@ pub fn chained(n: u32) -> fn(u32) -> u32 {
   expect(js).toContain('const pick = typeof rustJsFast !== "undefined" ? rustJsFast : (n) => (n * 2) >>> 0;');
   expect(js).toContain("  const f = flag ? (n) => (n + 1) >>> 0 : (n) => (n * 3) >>> 0;\n");
   expect(js).toContain('  let f;\n  if (flag) {\n    console.log("one");\n');
-  expect(js).toContain("  if (n === 0) {\n    return (n) => (n + 1) >>> 0;\n  }\n");
+  // The whole chain, each arm its own (ADR 0969, amended).
+  expect(js).toContain("  if (n === 0) {\n    return (n) => (n + 1) >>> 0;\n  } else if (n === 1) {\n    return (n) => (n + 2) >>> 0;\n  } else {\n    return (n) => (n + 3) >>> 0;\n  }\n");
   const globals = globalThis as { rustJsFast?: (n: number) => number };
   const lib = await import(join(dir, "lib.js"));
   expect([lib.picked(4), lib.local(true, 2), lib.local(false, 2), lib.chained(1)(1)]).toEqual([8, 5, 9, 3]);

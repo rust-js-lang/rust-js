@@ -1051,10 +1051,7 @@ pub fn fee(member: bool, amount: f64) -> f64 {
 
 ```js
 export function sign(n) {
-  if (n < 0) {
-    return "negative";
-  }
-  return n === 0 ? "zero" : "positive";
+  return n < 0 ? "negative" : n === 0 ? "zero" : "positive";
 }
 
 export function fee(member, amount) {
@@ -1065,8 +1062,10 @@ export function fee(member, amount) {
 
 A variable given its value by a chain of more arms, each a value alone
 (a string or a number literal, or a name), is one nested conditional, a
-`const`; a chain with an arm that's more, a call, an object, a conditional
-of its own, is given it by the chain, each arm its own
+`const`, as `sign`'s value is one returned; a chain with an arm that's
+more, a call, an object, a conditional of its own, is given it by the
+chain, each arm its own, and a function's value of one returns it from
+each arm, never half a chain and half a conditional
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)):
 
 ```rust

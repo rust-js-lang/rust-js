@@ -3,7 +3,8 @@
 Status: Accepted. Records and extends the rule fd6e76df1 made (MIR keeps a
 variable's value of three arms a chain) to chains of any length. Amended
 below: a chain whose every arm is a plain value is one nested conditional
-(the user's decision of 2026-10-27).
+(the user's decision of 2026-10-27), and a function's value of a chain is
+the chain's too (the user's decision of 2026-10-28, rd23).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -110,3 +111,55 @@ comment before the chain, lost before, is kept, `nested_loop_jumps`,
 `docs/readability.txt` is blessed with it: no shape's count changed, but
 the chains' 36 lines fewer make `renamed x$1`'s same 8,095 a larger share,
 696.8 to 697 in 10,000 lines.
+
+## Amendment: a function's value of a chain is the chain's too
+
+The user decided, of React DOM's ReactDOMUnknownPropertyHook (rd23), that
+the rule above applies to a function's value as to a variable's: **an
+`else if` chain the function returns the value of, every arm a plain
+value, is one nested conditional, `return n < 0 ? "negative" : n === 0 ?
+"zero" : "positive";`; any arm more, a call, a template, an object, and it
+is the whole chain, each arm its `return`**, never half a chain and half a
+conditional. Before, `returned_values` folded the chain's last link's two
+arms alone, `if (a) { return ..; } else if (b) { return ..; } else {
+return c ? "an empty string" : (a template); }`, and left
+the rest, the shape the first amendment removed from a variable's value.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above: the tests
+run in the same order either way, each once.
+
+- `hints.rs` records each `else if`'s own condition (`Written::links`), a
+  link of a chain after its head.
+- `value_chains.rs`'s `returned_else_ifs`, the pass `chains/returned
+  chains`, after `strict switches` has made its `switch`es of chains of
+  `js::strict_equals` (ADR 0958), which read the last link folded: of a
+  chain the list ends with, of three arms or more, its links after the
+  head each a written `else if`, it folds every plain arm into one
+  conditional (`plain`, the variable's test), and otherwise gives the last
+  link its two arms again, `else if (c) { return ..; } else { return ..;
+  }`, in the `else` of the link before where `written_elses` left that a
+  guard. Not after a link an `else if let` bound first, `const s = ..; if
+  (s != null)`, which ends JS's chain (ADR 0237), its links each an `if` of
+  its own: their last two stay one conditional, as before. Taking that rest
+  as a chain of its own reads better, but names a temporary `value$1` in
+  the corpus' `dyn_any` (a grown `renamed x$1` share), so it waits for the
+  user (S/decisions-pending.md, rd23b).
+- The fold of two arms stays `returned_values`', which a chain's last link
+  takes until `returned chains`: a `switch`'s `default: return s !== c ? 3
+  : 4;` of a chain's rest is its conditional of two.
+- A `match` that's no `switch` (ADR 0629) isn't an `else if` chain and is
+  as before; so is a chain whose last link `conditional` made an `&&` or
+  `||` of `bool`s, the user's rule for those.
+
+Alternatives: keep the half fold (two forms in one value); fold only by
+`returned_values`' bottom-up walk, which can't know a chain's other arms
+when it folds its last link.
+
+Held by `test/lowering-returned-chains.test.ts`; mutations
+`returned-chain-plain-unfolded`, `returned-chain-last-link-folded`,
+`returned-chain-link-headed`, `returned-chain-guard-unelsed` and
+`else-if-links-unrecorded`. Re-blessed: `calc`'s and `combinators`'
+snapshots (each the chain), the corpus' `unit_given_to_js` and
+`option_bool_tested` (each one conditional) and the guide's `sign`;
+`lowering-strict-switches`' `mixed` and `lowering-bindings`' `compare` are
+one conditional, `lowering-branches`' `chained` the chain of its arrows.

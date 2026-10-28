@@ -413,4 +413,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
     snapshots: true,
   },
+  {
+    name: "else-if-links-unrecorded",
+    breaks: "no `else if` is a link of a chain, so a function's value of one keeps its last link folded, `else { return thing === \"\" ? .. : .. }`, half a chain (ADR 0969, amended, rd23)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)),\n",
+    replace: "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)).filter(|_| false),\n",
+    tests: ["test/lowering-returned-chains.test.ts"],
+  },
 ];

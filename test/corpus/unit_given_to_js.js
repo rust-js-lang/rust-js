@@ -6,13 +6,13 @@ export function entry() {
 
 /** What JS says a value is, `typeof value`: of `()`, `"undefined"`. */
 function kind(value) {
-  if (value.impl.typeId() === "()") {
-    return "undefined";
-  } else if (value.impl.typeId() === "f64" || value.impl.typeId() === "u8") {
-    return "number";
-  } else {
-    return value.impl.typeId() === "&str" ? "string" : "object";
-  }
+  return value.impl.typeId() === "()"
+    ? "undefined"
+    : value.impl.typeId() === "f64" || value.impl.typeId() === "u8"
+      ? "number"
+      : value.impl.typeId() === "&str"
+        ? "string"
+        : "object";
 }
 
 function main() {

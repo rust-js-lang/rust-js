@@ -27,6 +27,10 @@ pub(super) struct Written {
     /// of a chain, which an `if let`'s binding, its JS `const`, keeps from
     /// being an `else if` (`written_elses`).
     pub else_ifs: Vec<js::Span>,
+    /// Each `else if`'s own condition: a link of a chain after its first,
+    /// whose value is the chain's, never two arms of its own folded
+    /// (`returned_values`, ADR 0969, amended).
+    pub links: Vec<js::Span>,
     /// Where each `let … else`'s `else` is written, and each `?`: a guard's
     /// exit, which stays where it's written, not a tail it's alike
     /// (`shared_tails`), and comes first (`let_else_first`).
@@ -264,6 +268,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let links: Vec<js::Span> = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If {
+                    else_opt: Some(otherwise),
+                    ..
+                } => match self.frame.thir[self.strip(otherwise)].kind {
+                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
         // Where each `&&` or `||` the program wrote is.
         let logicals: Vec<js::Span> = (self.frame.thir.exprs.iter())
             .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
@@ -425,6 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             thens,
             elses,
             else_ifs,
+            links,
             let_elses,
             logicals,
             strict_tests,

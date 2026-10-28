@@ -182,7 +182,9 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
   }
   return false;
 }`);
-  expect(js).toContain("  if (selector.typeof === componentType) {\n    return 1;\n  } else if (selector.value === roleType) {");
+  // Of two subjects, no `switch`: a chain of plain values, one conditional
+  // (ADR 0969, amended).
+  expect(js).toContain("  return selector.typeof === componentType\n    ? 1\n    : selector.value === roleType\n      ? 2\n");
   expect(js).toContain("    case roleType:\n      return 2;\n    default:\n      return 3;\n  }\n}");
   expect(js).toContain("export function twoWays(selector, log) {\n  if (selector.typeof === componentType) {");
   expect(js).toContain("    case b:\n      return 2;\n    default:\n      return s !== c ? 3 : 4;\n  }\n}");

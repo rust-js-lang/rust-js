@@ -9,13 +9,7 @@ function warned(seen, key) {
 }
 
 function label(flag) {
-  if (flag) {
-    return "on";
-  } else if (flag) {
-    return "never";
-  } else {
-    return !flag ? "off" : "never";
-  }
+  return flag ? "on" : flag ? "never" : !flag ? "off" : "never";
 }
 
 function countdown(flags) {
