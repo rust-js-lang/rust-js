@@ -1182,7 +1182,7 @@ pub fn each(v: Vec<u32>) -> [(u32, u32); 3] {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const again = IClone.clone(copied);\n");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const again = $givenClone(copied, IClone.clone);\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.each([1, 2, 3])).toEqual([[5, 3], [3, 2], [3, 3]]);
 });

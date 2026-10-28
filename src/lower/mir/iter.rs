@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an adapter of type `ty` is its source itself in JS: a
     /// `copied()`, or a `cloned()` of what needs no clone, each item as it
     /// is (ADR 0547). The one answer, of what's made and what's dropped.
-    fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
         let item = || {
             self.iterator_item(ty)
                 .is_some_and(|item| !self.needs_clone(item.peel_refs()))

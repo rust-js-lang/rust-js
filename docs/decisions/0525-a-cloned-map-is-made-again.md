@@ -102,3 +102,34 @@ Held by `test/corpus/cloned_chains_and_cycles.rs`, against native Rust, and
 by the mutations `chain-not-cloned-apart`, `zip-not-cloned-apart`,
 `zip-side-array-uncloned` and `cycle-of-cloned-apart-refused`.
 
+
+## Amended (#384): a `copied()` of the crate's own, or of what generic code is given
+
+"A `copied()` is the iterator it copies" held of std's iterators, whose JS
+value is their JS iterator, and not of the crate's own, which is stepped
+as `$iterator(value, next)`, nor of what generic code is given, which
+`$given` makes a JS iterator of where its dictionary is the crate's. A
+clone of either was a clone of that JS iterator as the value it steps:
+`{ ...copied }`, which threw, or `IClone.clone(copied)`, an empty clone,
+`(5, 0)` where Rust gives `(5, 3)`.
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the clone is where
+the iterator is, apart from it, as Rust's `Clone` of a `Copied` is.
+
+- **Of the crate's own, a clone is a JS iterator of a clone of its
+  value**, stepped as it is: `copied.with({ ...copied.of })`, `$iterator`'s
+  `with`.
+- **Of what generic code is given, `$givenClone(copied, IClone.clone)`**:
+  where `$given` made a JS iterator of the value, which it marks `given`,
+  one of the value's clone, marked too, so a clone of the clone is one;
+  else the value's clone, as before.
+- **Refused**: one closed to drop what it steps, the crate's own with a
+  destructor or one generic code is given its drop of, `$closing(it,
+  drop)`; and a copy of items something changes in place, `source.map((item)
+  => ({ ...item }))`, a JS iterator of JS's (`is_its_source`). Each threw
+  before; each is in [the limitations](../guide/limitations.md).
+
+Held by `test/corpus/copied_clone_of_its_own.rs`, against native Rust, and
+by the mutations `copied-own-clone-spread`, `copied-given-clone-by-dictionary`,
+`given-clone-of-the-wrapper`, `given-clone-unmarked`,
+`copied-dropped-clone-allowed` and `copied-copying-clone-allowed`.

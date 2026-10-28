@@ -574,7 +574,8 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
   if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);
   it.of = iterator;
-  // Another of a value of its type, stepped as it is: a clone's (ADR 0473).
+  // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
+  // amended).
   it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
@@ -617,7 +618,7 @@ export function $given(value, iterator, boxed = false, back, len) {
     && (back === undefined || own(back, { next_back: $nextBack }))) {
     return value;
   }
-  return $iterator(
+  const it = $iterator(
     value,
     iterator.next,
     boxed,
@@ -631,6 +632,20 @@ export function $given(value, iterator, boxed = false, back, len) {
     back?.nthBack,
     back?.tryRfold,
   );
+  // Made of the value, which `$givenClone` clones.
+  it.given = true;
+  return it;
+}
+
+// A clone of `it`, what generic code's `copied()` of a value it was given
+// is, `$given`'s, by `clone`, the value's `Clone` (#384): where `$given`
+// made a JS iterator of the value, another of the value's clone, stepped
+// as it is; else the value itself, `clone`'s.
+export function $givenClone(it, clone) {
+  if (it.given !== true) return clone(it);
+  const again = it.with(clone(it.of));
+  again.given = true;
+  return again;
 }
 
 // A map's `insert(k, v)`: `Some` of the value it had, boxed where it looks

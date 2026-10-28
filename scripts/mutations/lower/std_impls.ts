@@ -542,8 +542,8 @@ export const mutations: Mutation[] = [
     name: "copied-clone-refused",
     breaks: "a clone of a `copied()` is refused, though it's the iterator it copies",
     file: "src/lower/std_impls.rs",
-    find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.clone_value(place, source, span, out);\n",
-    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.clone_value(place, source, span, out);\n",
+    find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {\n            return self.copied_clone(place, (ty, source), span, out);\n",
+    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty).filter(|_| false) {\n            return self.copied_clone(place, (ty, source), span, out);\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a clone of a generic iterator.s copied"],
   },
   {
@@ -738,22 +738,6 @@ export const mutations: Mutation[] = [
     find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n",
     replace: "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_map|lazy_iterator_clone).rs$"],
-  },
-  {
-    name: "in-place-part-cloned-held",
-    breaks: "a `Map` made in place, part of a `filter` cloned apart, is cloned by std's compiled `Clone` of a struct it isn't",
-    file: "src/lower/std_impls.rs",
-    find: "        match self.iterator_cloned_apart(ty) {\n            true => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
-    replace: "        match false {\n            true => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(std_map|lazy_iterator_clone|cloned_chains_and_cycles).rs$"],
-  },
-  {
-    name: "in-place-part-copied-held",
-    breaks: "a `copied()` of a `Map` made in place, part of a `filter` cloned apart, clones the `Map` as std's struct",
-    file: "src/lower/std_impls.rs",
-    find: "            return self.clone_in_place(place, source, span, out);\n",
-    replace: "            return self.clone_value(place, source, span, out);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(lazy_iterator_clone).rs$"],
   },
   {
     name: "library-identity-unread",

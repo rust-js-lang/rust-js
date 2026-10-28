@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "given-js-iterator-wrapped",
     breaks: "a compiled `Peekable`'s source that is a JS iterator is stepped through a wrapper, so `chain(..).peekable().last()` drops each item as it passes it, not by each side's `last` (#276)",
     file: "src/runtime/iterator.js",
-    find: "    return value;\n  }\n  return $iterator(",
-    replace: "  }\n  return $iterator(",
+    find: "    return value;\n  }\n  const it = $iterator(",
+    replace: "  }\n  const it = $iterator(",
     tests: ["test/corpus.test.ts", "-t", "peekable_source_own_steps"],
   },
   {
@@ -122,5 +122,21 @@ export const mutations: Mutation[] = [
     find: "  hint ??= $rangeHintOf(next);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
+  },
+  {
+    name: "given-clone-of-the-wrapper",
+    breaks: "a clone of generic code's `copied()` of the crate's own iterator clones the JS iterator `$given` made of it, `(5, 0)` where Rust gives `(5, 3)` (#384)",
+    file: "src/runtime/iterator.js",
+    find: "  if (it.given !== true) return clone(it);\n",
+    replace: "  return clone(it);\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_clone_of_its_own.rs$"],
+  },
+  {
+    name: "given-clone-unmarked",
+    breaks: "a clone of a clone of generic code's `copied()` of the crate's own iterator clones the JS iterator the first clone made (#384)",
+    file: "src/runtime/iterator.js",
+    find: "  again.given = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_clone_of_its_own.rs$"],
   },
 ];

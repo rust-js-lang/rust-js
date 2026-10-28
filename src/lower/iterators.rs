@@ -2,6 +2,7 @@
 //! what ends it (ADRs 0036, 0055, 0128), lazy where Rust's order can be seen
 //! (ADR 0139), and what a chain that owns its items drops (ADR 0098).
 
+mod clones;
 mod dictionaries;
 mod eager;
 mod ends;

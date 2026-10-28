@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call_helper("$clone", vec![place]));
         }
         if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
-            return self.clone_value(place, source, span, out);
+            return self.copied_clone(place, (ty, source), span, out);
         }
         // A channel's sender: one more, of the same queue (ADR 0142).
         if self.recognition().channel_end(ty) == Some(super::recognition::ChannelEnd::Sender) {
@@ -649,26 +649,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `(name) => <clone of name>`.
-    /// `clone_value` of an iterator made in place, a part of an adapter
-    /// cloned apart or what `cycle()` takes: the JS iterator it is, an adapter
-    /// std compiles too, whose clone makes it again (ADR 0525, ADR 0871).
-    pub(in crate::lower) fn clone_in_place(
-        &mut self,
-        place: Expr,
-        ty: Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let ty = self.reveal(ty);
-        if let Some(source) = super::recognition::copied_source(self.tcx, ty) {
-            return self.clone_in_place(place, source, span, out);
-        }
-        match self.iterator_cloned_apart(ty) {
-            true => Ok(Expr::call_helper("$clone", vec![place])),
-            false => self.clone_value(place, ty, span, out),
-        }
-    }
-
     pub(super) fn clone_fn(&mut self, name: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut body = Vec::new();
         let value = self.clone_value(Expr::var(name), ty, span, &mut body)?;
