@@ -998,3 +998,8 @@ React and JSX are [their own pages](README.md#react).
     String's, String's is called. React's warnValidStyle, given a style
     value, is the one port it's accepted in (ADR 0262, amended, the user's
     decision).
+29. Whether a value has a method is asked by its type,
+    `js::is_function((selection, Selection::extend))`, `typeof
+    selection.extend === "function"`, where React's ReactDOMSelection
+    tests its truth, `!selection.extend`: they differ only of a member
+    that's truthy and no function (ADR 0942, amended, the user's decision).

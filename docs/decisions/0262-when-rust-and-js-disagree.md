@@ -97,6 +97,13 @@ react.dev's TopNav passes the same closure instead.
   neither a style value React is given. No binding takes any value: one
   looser than TypeScript would be a second form. Listed in the guide's
   differences (`semantics.md`, 28).
+- **A method a value may lack is asked by its type,
+  `js::is_function((selection, Selection::extend))`, `typeof selection.extend
+  === "function"`**, the second case's, which the user decided
+  (2026-10-28, gap opt1, ADR 0942, amended), where upstream tests its
+  truth, `!selection.extend`: only an `extend` that's truthy and no
+  function tells them apart. Listed in the guide's differences
+  (`semantics.md`, 29).
 
 ## Amendment: the stack's depth
 

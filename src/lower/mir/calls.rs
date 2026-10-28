@@ -412,16 +412,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::bin(Op::Eq, typeof_, Expr::str("function")).or_at(self.js_span(span)),
             ));
         }
-        // A path of bindings, each read from the one before (ADR 0624).
+        // A path of bindings, each read from the one before (ADR 0624); or
+        // from a value, its first, `(selection, Selection::extend)`'s
+        // `typeof selection.extend === "function"` (ADR 0942, amended).
         if let Some(arg) = args.first()
             && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()
             && !steps.is_empty()
         {
-            let path = self.defined_path(steps, asked, span)?;
-            return self.mir_defined_parts(Some(path), asked, span);
+            if let Some(value_ty) = value_first(steps) {
+                let path = self.defined_path(&steps[1..], Some(value_ty), asked, span)?;
+                let mut values = self.take_operands(state, &[&arg.node], out)?;
+                let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
+                    return Err(self.unsupported(
+                        span,
+                        &format!("`{}` of a path whose value isn't written in it", asked.function()),
+                    ));
+                };
+                return self.mir_defined_parts(Some(path), Some(items.swap_remove(0)), asked, span);
+            }
+            let path = self.defined_path(steps, None, asked, span)?;
+            return self.mir_defined_parts(Some(path), None, asked, span);
         }
         let Some(arg) = args.first() else {
-            return self.mir_defined_parts(None, asked, span);
+            return self.mir_defined_parts(None, None, asked, span);
         };
         let given = arg.node.ty(&body.local_decls, tcx);
         // A std function that's `Math`'s, its function's, `typeof
@@ -430,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(function) = self.math_function(f, f_args)
             && let js::ExprKind::Member(_, name) = function.kind
         {
-            return self.mir_defined_parts(Some(format!("Math.{name}")), asked, span);
+            return self.mir_defined_parts(Some(format!("Math.{name}")), None, asked, span);
         }
         let global = match *given.kind() {
             // `js::SymbolFor`, `Symbol.for`, which a host may lack (ADR 0964).
@@ -457,7 +470,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => None,
             },
         };
-        self.mir_defined_parts(global, asked, span)
+        self.mir_defined_parts(global, None, asked, span)
+    }
+
+    /// Whether a call of `js::is_defined` or `js::is_function`, binding
+    /// `def_id`, given `args`, reads a value it's given, of a function's
+    /// type or a path's first (`value_first`), which it reads, where a
+    /// global's argument isn't (`unread_defined_operands`).
+    pub(super) fn reads_a_value(
+        &self,
+        body: &mir::Body<'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) -> bool {
+        let path_from_value = (args.first()).is_some_and(|arg| {
+            matches!(*arg.node.ty(&body.local_decls, self.tcx).kind(), ty::Tuple(steps) if value_first(steps).is_some())
+        });
+        path_from_value || self.asks_of_value(body, def_id, args)
     }
 
     /// Whether a call of binding `def_id` given `args` is `js::is_function`
@@ -511,7 +540,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the last alone, whether it's a function, as upstream's `typeof
     /// performance.getEntriesByType === 'function'` asks, which throws where
     /// the host hasn't `performance` (ADR 0942, amended).
-    fn mir_defined_parts(&self, global: Option<String>, asked: Asked, span: Span) -> R<Option<Expr>> {
+    /// Of a path from a value, `base`, each part is a member of it, the
+    /// value itself no global, so not asked of.
+    fn mir_defined_parts(
+        &self,
+        global: Option<String>,
+        base: Option<Expr>,
+        asked: Asked,
+        span: Span,
+    ) -> R<Option<Expr>> {
         // Each part of its path, `typeof console !== "undefined" && typeof
         // console.log !== "undefined"`: a host may lack any of them.
         let parts: Vec<&str> = global
@@ -527,10 +564,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             ));
         }
-        let mut read = self.js_ref(parts[0]);
+        let from_value = base.is_some();
+        let mut read = base.unwrap_or_else(|| self.js_ref(parts[0]));
         let mut tests = Vec::new();
         for (k, part) in parts.iter().enumerate() {
-            if k > 0 {
+            if k > 0 || from_value {
                 read = Expr::member(read, part.to_string());
             }
             let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
@@ -538,7 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if k + 1 == parts.len() {
                     tests.push(Expr::bin(Op::Eq, typeof_, Expr::str("function")));
                 }
-            } else if k + 1 == parts.len() || !(k == 0 && every_host_has(part)) {
+            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(part)) {
                 tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
             }
         }
@@ -554,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// before gives, its first a global's binding (ADR 0624):
     /// `(Window::document, Document::create_element::<Div>)` is
     /// `window.document.createElement`.
-    fn defined_path(&self, steps: &[ty::Ty<'tcx>], asked: Asked, span: Span) -> R<String> {
+    fn defined_path(&self, steps: &[ty::Ty<'tcx>], from: Option<ty::Ty<'tcx>>, asked: Asked, span: Span) -> R<String> {
         let tcx = self.tcx;
         let refused = || {
             self.unsupported(
@@ -565,8 +603,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )
         };
+        if from.is_some() && steps.is_empty() {
+            return Err(refused());
+        }
         let mut path = String::new();
-        let mut gives: Option<ty::Ty<'tcx>> = None;
+        let mut gives: Option<ty::Ty<'tcx>> = from;
         for (k, step) in steps.iter().enumerate() {
             let Some((f, args)) = crate::lower::fn_def(*step) else {
                 return Err(refused());
@@ -589,7 +630,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if !bindings::is_method(tcx, f) || of != Some(before.peel_refs()) {
                         return Err(refused());
                     }
-                    format!("{path}.{name}")
+                    match path.is_empty() {
+                        true => name.to_string(),
+                        false => format!("{path}.{name}"),
+                    }
                 }
             };
             gives = Some(sig.output());
@@ -712,6 +756,14 @@ fn member_read(tcx: rustc_middle::ty::TyCtxt<'_>, method: rustc_span::def_id::De
 enum Asked {
     Defined,
     Function,
+}
+
+/// The value a path of `steps` starts from, its first, where that's no
+/// binding, `(selection, Selection::extend)`'s `selection` (ADR 0942,
+/// amended): `None` of a path of bindings.
+fn value_first<'tcx>(steps: &[ty::Ty<'tcx>]) -> Option<ty::Ty<'tcx>> {
+    let first = *steps.first()?;
+    (steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)
 }
 
 impl Asked {

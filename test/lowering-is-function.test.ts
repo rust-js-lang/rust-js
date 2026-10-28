@@ -267,3 +267,38 @@ pub fn maybe(callback: &Option<Callback>) -> bool {
     given.map((v) => Array(4).fill(typeof v === "function")),
   );
 });
+
+// React's ReactDOMSelection feature-tests a method of a value it's given,
+// `if (!selection.extend && start > end)`, as IE 11 has no `extend`. A
+// path's first step may be a value, its next a method of it,
+// `js::is_function((selection, Selection::extend))`: `typeof
+// selection.extend === "function"`, which the user accepted for
+// upstream's truth test (ADR 0942, amended). `js::is_defined` of one asks
+// each member, never the value, which is no global.
+test("js::is_function of a path from a value asks its member", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("is-function-value-path");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Node, Selection};
+
+pub fn set_offsets(selection: &Selection, node: &Node, start: f64, end: f64) -> bool {
+    if !js::is_function((selection, Selection::extend)) && start > end {
+        return false;
+    }
+    selection.extend(node, Some(end));
+    true
+}
+
+pub fn has_extend(selection: &Selection) -> bool {
+    js::is_defined((selection, Selection::extend))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof selection.extend !== "function" && start > end) {');
+  expect(js).toContain('return typeof selection.extend !== "undefined";');
+  const lib = await import(join(dir, "lib.js"));
+  const extended: unknown[] = [];
+  const modern = { extend: (node: unknown, offset: unknown) => void extended.push([node, offset]) };
+  expect([lib.setOffsets(modern, "n", 5, 2), lib.setOffsets({}, "n", 5, 2), lib.hasExtend(modern), lib.hasExtend({})]).toEqual([true, false, true, false]);
+  expect(extended).toEqual([["n", 2]]);
+});

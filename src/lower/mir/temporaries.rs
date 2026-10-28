@@ -42,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 bindings::js_form(self.tcx, def_id),
                 bindings::JsForm::Defined | bindings::JsForm::Function
             )
-            || self.asks_of_value(state.body, def_id, args)
+            || self.reads_a_value(state.body, def_id, args)
         {
             return;
         }

@@ -257,6 +257,13 @@ export function hasTimers() {
 }
 ```
 
+A path may start from a value, its next step a method of it:
+`js::is_function((selection, Selection::extend))` is `typeof
+selection.extend === "function"`, as React feature-tests a selection, and
+`js::is_defined` of one asks each member, never the value
+([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
+amended).
+
 Of a value of a function's type that JS gives, which a JS caller may give
 as anything, it asks the value: a `fn`, a `dyn Fn` lent or boxed, an `impl
 Fn`, a transparent struct of one, or an `Option` of one. React's scheduler

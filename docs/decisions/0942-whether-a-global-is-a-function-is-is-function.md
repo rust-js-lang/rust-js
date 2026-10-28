@@ -7,7 +7,8 @@ second question; and [0887](0887-std-items-that-are-math-are-math.md)'s
 `Math`, which every host has, to ECMAScript's first edition's globals.
 Amended: a chain of its tests reads as written, a comment before it kept;
 and of a value of a function's type JS gives, it asks the value; and of a
-path it asks the last part alone, not each before it (below).
+path it asks the last part alone, not each before it; and a path may start
+from a value (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -265,5 +266,38 @@ a binding's global is a function": `typeof rustJsKit.hook === "function"`
 throwing where `rustJsKit` is missing, and `is_defined` before it false
 there; `typeof Symbol.for === "function"` of "js::SymbolFor is
 Symbol.for"; the guide's `logRender`. Mutation `is-function-asks-each-part`
+(`mir/calls.ts`).
+
+## Amendment (2026-10-28, the user's decision): a path may start from a value
+
+React's ReactDOMSelection feature-tests a method of a value it's given:
+
+```js
+// IE 11 uses modern selection, but doesn't support the extend method.
+if (!selection.extend && start > end) {
+```
+
+TypeScript declares `Selection.extend`, so it's no optional property (ADR
+0811's form), and a path started at a global's binding (gap opt1): the
+port could only read `js::get(selection, "extend")`.
+
+**A path's first step may be a value, each next a method of what the one
+before gives, `js::is_function((selection, Selection::extend))`**:
+`typeof selection.extend === "function"`. One form, the path's, extended
+(`value_first`); `js::is_defined` of one asks each member, `typeof
+selection.extend !== "undefined"`, never the value, which is no global.
+The value is read where it's written, as a value `js::is_function` is
+given is (`reads_a_value`). A step that isn't a method of what the one
+before gives, a parent's method through `Deref`, is refused as before.
+
+**Accepted difference** (the user's decision, ADR 0262's second case):
+upstream's `!selection.extend` is a truth test, `typeof .. !==
+"function"` a type test. They differ only of an `extend` that's truthy
+and not a function, which no host's `Selection` has. Listed in the
+guide's differences (`semantics.md`, 29).
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_function of a path
+from a value asks its member", run of a selection with and without
+`extend`; mutations `value-path-refused` and `value-path-member-unread`
 (`mir/calls.ts`).
 
