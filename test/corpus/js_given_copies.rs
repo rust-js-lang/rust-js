@@ -53,6 +53,19 @@ pub fn echo<T>(x: T) -> T {
     x
 }
 
+/// Of a function that calls itself, which its copy alike it calls as
+/// itself: one function, `count`, of `length`'s JS and the Rust's `()`.
+fn count<T>(items: &[T], n: usize) -> usize {
+    match items {
+        [] => n,
+        [_, rest @ ..] => count(rest, n + 1),
+    }
+}
+
+pub fn length<T>(items: &[T]) -> usize {
+    count(items, 0)
+}
+
 fn main() {
     println!("{} {}", relay(()).is_some(), relay(None::<i32>).is_some());
     println!("{:?} {:?}", relay(5), relay("five"));
@@ -67,4 +80,5 @@ fn main() {
     println!("{:?}", doubled(3));
     echo(());
     println!("{}", echo(8));
+    println!("{} {}", count(&[(), ()], 0), length(&[1, 2, 3]));
 }

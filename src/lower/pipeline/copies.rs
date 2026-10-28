@@ -58,12 +58,17 @@ pub(super) fn settle(
                 continue;
             }
             let module = fns[id].module;
-            let this = alike(&copy.function, module, &renamed);
             let earlier = (copies.iter())
                 .filter(|((of, other), _)| of == id && other < at && !same.contains_key(&(*of, *other)))
                 .map(|((_, other), copy)| (Some(*other), &copy.function));
-            let found = (main(*id).map(|function| (None, function)).into_iter().chain(earlier))
-                .find(|(_, other)| alike(other, module, &renamed) == this);
+            // Each read as if it were the one it's asked to be alike, so a
+            // copy that calls itself, a walk of a tree, is alike one that
+            // calls itself.
+            let found = (main(*id).map(|function| (None, function)).into_iter().chain(earlier)).find(|(to, other)| {
+                let mut as_if = renamed.clone();
+                as_if.insert(named(*id, Some(*at)), named(*id, settled(&same, *id, *to)).2);
+                alike(other, module, &as_if) == alike(&copy.function, module, &as_if)
+            });
             if let Some((to, _)) = found {
                 same.insert((*id, *at), to);
                 changed = true;

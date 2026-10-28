@@ -58,6 +58,22 @@ export function echo(x) {
   return x;
 }
 
+/**
+ * Of a function that calls itself, which its copy alike it calls as
+ * itself: one function, `count`, of `length`'s JS and the Rust's `()`.
+ */
+function count(items, n) {
+  if (items.length === 0) {
+    return n;
+  }
+  const rest = items.slice(1);
+  return count(rest, (n + 1) >>> 0);
+}
+
+export function length(items) {
+  return count(items, 0);
+}
+
 function main() {
   console.log(`${relayBoxed(undefined) != null} ${relayBoxed(undefined) != null}`);
   const value = relay(5);
@@ -81,5 +97,6 @@ function main() {
   console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
   echo(undefined);
   console.log(`${echo(8)}`);
+  console.log(`${count([undefined, undefined], 0)} ${length([1, 2, 3])}`);
 }
 //# sourceMappingURL=case.js.map

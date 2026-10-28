@@ -362,8 +362,10 @@ function pickBoxed(x, keep) {
 - **A copy made alike another is left out**, its calls calling that one
   (`pipeline/copies.rs`): after the crate is lowered, each copy whose JS,
   each call of a copy named as what that copy is, reads as its function's
-  own or an earlier copy's is that one. A function whose `T` is never in
-  an `Option`, `doubled<T>`, is one function.
+  own or an earlier copy's is that one, read as if it were that one, so
+  a copy that calls itself, a walk of a tree, is alike one that does
+  (React port gap rd61). A function whose `T` is never in an `Option`,
+  `doubled<T>`, is one function.
 - **A library's export says each type parameter of a function JS calls
   is unboxed** (`unboxed`, library ABI 10), as its JS is: a consumer that
   gives one what may look like `None` compiles its own (ADR 0914).
@@ -404,4 +406,5 @@ which its own Rust gives an `Option`, from JS; `sortWith` sorts what JS
 gives with `$sort`. Mutations `js-given-copy-unrouted`,
 `js-given-facing-boxed`, `js-given-passed-on-boxed`, `js-given-not-nullish`,
 `js-given-boxed`, `js-given-copy-kept`, `js-given-copy-unimported`,
-`js-given-call-unrouted` and `js-given-value-unrouted`.
+`js-given-call-unrouted`, `js-given-value-unrouted` and
+`js-given-copy-self-call-apart`.
