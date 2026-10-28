@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-copied-lengthless",
+    breaks: "a `copied()` of an iterator generic code is given as it is, bound by `ExactSizeIterator`, is the JS iterator `$given` makes without its `len`, whose `len()` throws (#387)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, true)\n",
+    replace: "            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
+  },
+  {
     name: "len-in-place-map-unread",
     breaks: "`len()` of a `map` made in place isn't its source's: `v.iter().map(f).len()` is refused (ADR 0986)",
     file: "src/lower/mir/iter/sources.rs",

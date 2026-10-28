@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
   },
   {
+    name: "copied-items-mapped-lengthless",
+    breaks: "a `copied()` that knows its length, of items copied as it steps, is JS's `map` of them, whose `len()` throws (#387)",
+    file: "src/lower/mir/iter.rs",
+    find: "                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,\n",
+    replace: "                Some(item) => self.copied_items(it, item, false, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
+  },
+  {
     name: "iter-method-type-unrevealed",
     breaks: "a method of an `impl Iterator` a function gives is asked of the `impl`, not of what it is: `len()` of an `impl ExactSizeIterator` of a slice's `copied()` is refused (ADR 0985)",
     file: "src/lower/mir/iter.rs",

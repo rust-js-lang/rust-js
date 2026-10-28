@@ -580,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(kept) = self.back_kept(std_method, &receiver, (iter_ty, output), (&mut values, arg_tys), span)? {
             return Ok(Some(kept));
         }
-        let it = self.as_js_iterator(receiver, iter_ty, span)?;
+        let it = self.method_source(receiver, iter_ty, (std_method, output), span)?;
         let it = match lent {
             true => self.lent_iterator(it),
             false => it,
@@ -650,7 +650,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
             Some(IterMethod::Copied | IterMethod::Cloned) => match item {
-                Some(item) => self.copied_items(it, item, span)?,
+                Some(item) => self.copied_items(it, item, self.knows_its_length(output), span)?,
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
@@ -688,8 +688,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `copied()` or `cloned()` of an iterator of `item`s, references: a
     /// copy of what each points at, once. Of an item that's a reference
     /// to a reference, `&&Fiber`, the reference, which a copy is itself,
-    /// not what it points at, so the items as they are.
-    fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// not what it points at, so the items as they are. Of one that knows
+    /// its length, `ends`, a map that knows it too, `$mapEnds` (#387).
+    fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, ends: bool, span: Span) -> R<Expr> {
         let x = self.fresh("item");
         let mut body = Vec::new();
         let pointee = match *item.kind() {
@@ -701,10 +702,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-        Ok(Expr::call(
-            Expr::member(it, "map"),
-            vec![Expr::arrow(vec![x.into()], body)],
-        ))
+        let copy = Expr::arrow(vec![x.into()], body);
+        Ok(match ends {
+            true => Expr::call_helper("$mapEnds", vec![it, copy]),
+            false => Expr::call(Expr::member(it, "map"), vec![copy]),
+        })
     }
 
     fn counted(

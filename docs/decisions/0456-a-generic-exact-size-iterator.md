@@ -77,3 +77,22 @@ iterator stay refused. ADR 0262's case: C, an error where Rust is fine.
 Held by `test/corpus/rposition_of_lazy.rs` and the mutations
 `rposition-of-lazy-refused`, `exact-size-enumerate-unmade` and
 `rposition-of-user-refused`.
+
+## Amendment: a `copied()` that knows its length is made knowing it
+
+`knows_its_length` says a `copied()` knows its length where its source
+does, and a type parameter given as it is (ADR 0411) where its bounds give
+`ExactSizeIterator`. But the `copied()` of such a parameter was the JS
+iterator `$given(it, IIterator)` made without its `len`, and a copy of
+items copied as it steps, structs something changes, was JS's `map` of
+them, which knows no length either, so `copied.len()` threw where Rust
+gives the count (#387, a wrong answer). Now a `copied()` whose type knows
+its length is made knowing it: of a parameter given as it is, `$given(it,
+IIterator, false, undefined, IExactSizeIterator.len)`; of items copied as
+it steps, `$mapEnds(it, (item) => ({ ...item }))`, whose `len` is its
+source's. A copy of one whose length nothing can ask is made as before.
+ADR 0262's case: C, Rust's behavior preserved. Held by
+`test/corpus/copied_given_len.rs` (the crate's own iterator and a slice's,
+given as they are and not, lent, and of structs copied as it steps) and
+the mutations `given-copied-lengthless` and
+`copied-items-mapped-lengthless`.

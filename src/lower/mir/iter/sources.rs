@@ -33,6 +33,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `value`, an iterator of type `ty`, as the JS iterator a std method
+    /// of it, `method`, giving an `output`, steps: `as_js_iterator`'s, but
+    /// of a `copied()` that knows its length, which knows it too, as what
+    /// reads its `len()` asks (#387): of a type parameter given as it is,
+    /// the JS iterator made of it given its length.
+    pub(super) fn method_source(
+        &mut self,
+        value: Expr,
+        ty: Ty<'tcx>,
+        (method, output): (Option<IterMethod>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        if method == Some(IterMethod::Copied)
+            && self.knows_its_length(output)
+            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, true)
+        {
+            return Ok(it);
+        }
+        self.as_js_iterator(value, ty, span)
+    }
+
     /// How many items a `$iter` of an array has left, its `len()`: of one
     /// made here, `$iter(v)`, which nothing has stepped, its array's length,
     /// `v.length`; else `it.end - it.at`, `it` held if it's made here.
