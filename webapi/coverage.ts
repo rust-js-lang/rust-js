@@ -19,6 +19,10 @@ export type Members = {
   lists: Map<string, string>;
   /** Its properties TypeScript types as a function, `onclick`'s `((ev) => any) | null`. */
   functions: Set<string>;
+  /** The class its index signature's items are, `[index: number]: T`, its
+   * own or its parent's of the type it's given, `HTMLOptionsCollection`'s
+   * `HTMLOptionElement` of `HTMLCollectionOf<HTMLOptionElement>`. */
+  indexed?: string;
 };
 
 /** Whether TypeScript's `type` is a function's, or none, `| null`. */
@@ -67,6 +71,32 @@ export async function typescript(): Promise<Map<string, Members>> {
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
+  // Each interface's declarations, its type parameters and parents, for
+  // the class its index signature's items are.
+  const declared = new Map<string, any[]>();
+  for (const d of declarations as any[]) if (d.kind === "interface") declared.set(d.name, [...(declared.get(d.name) ?? []), d]);
+  const indexed = (name: string, seen: Set<string>): string | undefined => {
+    if (seen.has(name)) return undefined;
+    seen.add(name);
+    const ds = declared.get(name) ?? [];
+    const params = ds.flatMap((d) => (d.typeParameters ?? []).map((p: any) => p.name));
+    for (const d of ds) {
+      const index = d.members.find((m: any) => m.kind === "index" && m.key?.keyword === "number");
+      if (index?.type?.kind === "reference" && !params.includes(index.type.name)) return index.type.name;
+      if (index) return undefined;
+    }
+    for (const e of ds.flatMap((d) => d.extends)) {
+      if (e.kind !== "reference") continue;
+      const parentDs = declared.get(e.name) ?? [];
+      const parentParams = parentDs.flatMap((d) => (d.typeParameters ?? []).map((p: any) => p.name));
+      const index = parentDs.flatMap((d) => d.members).find((m: any) => m.kind === "index" && m.key?.keyword === "number");
+      const at = index?.type?.kind === "reference" ? parentParams.indexOf(index.type.name) : -1;
+      if (at >= 0 && e.args[at]?.kind === "reference") return e.args[at].name;
+      const inherited = indexed(e.name, seen);
+      if (inherited) return inherited;
+    }
+    return undefined;
+  };
   for (const d of declarations as any[]) {
     if (d.kind === "interface") {
       const m = of(d.name);
@@ -113,7 +143,7 @@ export async function typescript(): Promise<Map<string, Members>> {
       for (const e of of(n).extends) add(e, seen);
     };
     add(name, new Set());
-    out.set(name, { ...m, members, methods, lists, functions });
+    out.set(name, { ...m, members, methods, lists, functions, indexed: indexed(name, new Set()) });
   }
   return out;
 }

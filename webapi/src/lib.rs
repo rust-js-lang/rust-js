@@ -11,7 +11,7 @@
 //! Import `EventTargetExt` for `button.add_event_listener(Click, |e| ..)` (ADR 0282).
 
 use core::marker::PhantomData;
-use core::ops::Deref;
+use core::ops::{Deref, Index};
 use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, IntoUnknown, JsError, JsObject, Promise, Rest, SharedArrayBuffer, StructuredClone, Takes, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
 
 unsafe extern "Rust" {
@@ -6041,6 +6041,18 @@ impl DOMTokenList {
 #[cfg_attr(rust_js, rust_js::types = "NodeListOf<T>")]
 pub struct NodeList<T = Node>(PhantomData<JsObject>, PhantomData<T>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl<T> Index<usize> for NodeList<T> {
+    type Output = T;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &T {
+        unreachable!()
+    }
+}
+
 pub mod node_list {
     use super::*;
 
@@ -6109,6 +6121,18 @@ impl<T> NodeList<T> {
 /// [`HTMLCollection`](https://developer.mozilla.org/docs/Web/API/HTMLCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLCollection")]
 pub struct HTMLCollection(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for HTMLCollection {
+    type Output = Element;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Element {
+        unreachable!()
+    }
+}
 
 pub mod html_collection {
     use super::*;
@@ -9430,6 +9454,18 @@ impl Deref for HTMLFormElement {
     fn deref(&self) -> &HTMLElement {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const HTMLElement) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for HTMLFormElement {
+    type Output = Element;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Element {
+        unreachable!()
     }
 }
 
@@ -18662,6 +18698,18 @@ impl Deref for Window {
     fn deref(&self) -> &EventTarget {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const EventTarget) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for Window {
+    type Output = Window;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Window {
+        unreachable!()
     }
 }
 
@@ -33834,6 +33882,18 @@ impl Touch {
 #[cfg_attr(rust_js, rust_js::types = "TouchList")]
 pub struct TouchList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for TouchList {
+    type Output = Touch;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Touch {
+        unreachable!()
+    }
+}
+
 pub mod touch_list {
     use super::*;
 
@@ -46294,6 +46354,18 @@ impl Deref for CSSKeyframesRule {
     }
 }
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for CSSKeyframesRule {
+    type Output = CSSKeyframeRule;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &CSSKeyframeRule {
+        unreachable!()
+    }
+}
+
 pub mod css_keyframes_rule {
     use super::*;
 
@@ -47013,6 +47085,18 @@ pub mod css_nested_declarations {
 /// [`CSSNumericArray`](https://developer.mozilla.org/docs/Web/API/CSSNumericArray)
 #[cfg_attr(rust_js, rust_js::types = "CSSNumericArray")]
 pub struct CSSNumericArray(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for CSSNumericArray {
+    type Output = CSSNumericValue;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &CSSNumericValue {
+        unreachable!()
+    }
+}
 
 pub mod css_numeric_array {
     use super::*;
@@ -48414,6 +48498,18 @@ impl CSSRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSRuleList")]
 pub struct CSSRuleList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for CSSRuleList {
+    type Output = CSSRule;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &CSSRule {
+        unreachable!()
+    }
+}
+
 pub mod css_rule_list {
     use super::*;
 
@@ -49058,6 +49154,18 @@ impl Deref for CSSTransformValue {
     fn deref(&self) -> &CSSStyleValue {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const CSSStyleValue) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for CSSTransformValue {
+    type Output = CSSTransformComponent;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &CSSTransformComponent {
+        unreachable!()
     }
 }
 
@@ -52989,6 +53097,18 @@ impl DOMQuad {
 #[cfg_attr(rust_js, rust_js::types = "DOMRectList")]
 pub struct DOMRectList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for DOMRectList {
+    type Output = DOMRect;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &DOMRect {
+        unreachable!()
+    }
+}
+
 pub mod dom_rect_list {
     use super::*;
 
@@ -53122,6 +53242,18 @@ impl DataTransferItem {
 /// [`DataTransferItemList`](https://developer.mozilla.org/docs/Web/API/DataTransferItemList)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItemList")]
 pub struct DataTransferItemList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for DataTransferItemList {
+    type Output = DataTransferItem;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &DataTransferItem {
+        unreachable!()
+    }
+}
 
 pub mod data_transfer_item_list {
     use super::*;
@@ -55192,6 +55324,18 @@ impl External {
 /// [`FileList`](https://developer.mozilla.org/docs/Web/API/FileList)
 #[cfg_attr(rust_js, rust_js::types = "FileList")]
 pub struct FileList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for FileList {
+    type Output = File;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &File {
+        unreachable!()
+    }
+}
 
 pub mod file_list {
     use super::*;
@@ -58942,6 +59086,18 @@ impl GeolocationPositionError {
 #[cfg_attr(rust_js, rust_js::types = "HTMLAllCollection")]
 pub struct HTMLAllCollection(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for HTMLAllCollection {
+    type Output = Element;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Element {
+        unreachable!()
+    }
+}
+
 pub mod html_all_collection {
     use super::*;
 
@@ -59113,6 +59269,18 @@ impl Deref for HTMLFormControlsCollection {
     fn deref(&self) -> &HTMLCollection {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const HTMLCollection) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for HTMLFormControlsCollection {
+    type Output = Element;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Element {
+        unreachable!()
     }
 }
 
@@ -59974,6 +60142,18 @@ impl Deref for HTMLOptionsCollection {
     fn deref(&self) -> &HTMLCollection {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const HTMLCollection) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for HTMLOptionsCollection {
+    type Output = HTMLOptionElement;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &HTMLOptionElement {
+        unreachable!()
     }
 }
 
@@ -61873,6 +62053,18 @@ impl ImageTrack {
 /// [`ImageTrackList`](https://developer.mozilla.org/docs/Web/API/ImageTrackList)
 #[cfg_attr(rust_js, rust_js::types = "ImageTrackList")]
 pub struct ImageTrackList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for ImageTrackList {
+    type Output = ImageTrack;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &ImageTrack {
+        unreachable!()
+    }
+}
 
 impl ImageTrackList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrackList/ready)
@@ -66553,6 +66745,18 @@ impl MimeType {
 #[cfg_attr(rust_js, rust_js::types = "MimeTypeArray")]
 pub struct MimeTypeArray(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for MimeTypeArray {
+    type Output = MimeType;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &MimeType {
+        unreachable!()
+    }
+}
+
 pub mod mime_type_array {
     use super::*;
 
@@ -66726,6 +66930,18 @@ impl MutationRecord {
 /// [`NamedNodeMap`](https://developer.mozilla.org/docs/Web/API/NamedNodeMap)
 #[cfg_attr(rust_js, rust_js::types = "NamedNodeMap")]
 pub struct NamedNodeMap(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for NamedNodeMap {
+    type Output = Attr;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Attr {
+        unreachable!()
+    }
+}
 
 pub mod named_node_map {
     use super::*;
@@ -71104,6 +71320,18 @@ impl PictureInPictureWindow {
 #[cfg_attr(rust_js, rust_js::types = "Plugin")]
 pub struct Plugin(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for Plugin {
+    type Output = MimeType;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &MimeType {
+        unreachable!()
+    }
+}
+
 pub mod plugin {
     use super::*;
 
@@ -71172,6 +71400,18 @@ impl Plugin {
 /// [`PluginArray`](https://developer.mozilla.org/docs/Web/API/PluginArray)
 #[cfg_attr(rust_js, rust_js::types = "PluginArray")]
 pub struct PluginArray(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for PluginArray {
+    type Output = Plugin;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &Plugin {
+        unreachable!()
+    }
+}
 
 pub mod plugin_array {
     use super::*;
@@ -73930,6 +74170,18 @@ impl Deref for RadioNodeList {
     }
 }
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for RadioNodeList {
+    type Output = HTMLInputElement;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &HTMLInputElement {
+        unreachable!()
+    }
+}
+
 pub mod radio_node_list {
     use super::*;
 
@@ -75266,6 +75518,18 @@ impl SVGLength {
 #[cfg_attr(rust_js, rust_js::types = "SVGLengthList")]
 pub struct SVGLengthList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SVGLengthList {
+    type Output = SVGLength;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SVGLength {
+        unreachable!()
+    }
+}
+
 pub mod svg_length_list {
     use super::*;
 
@@ -75380,6 +75644,18 @@ impl SVGNumber {
 /// [`SVGNumberList`](https://developer.mozilla.org/docs/Web/API/SVGNumberList)
 #[cfg_attr(rust_js, rust_js::types = "SVGNumberList")]
 pub struct SVGNumberList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SVGNumberList {
+    type Output = SVGNumber;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SVGNumber {
+        unreachable!()
+    }
+}
 
 pub mod svg_number_list {
     use super::*;
@@ -75849,6 +76125,18 @@ impl SVGTransform {
 /// [`SVGTransformList`](https://developer.mozilla.org/docs/Web/API/SVGTransformList)
 #[cfg_attr(rust_js, rust_js::types = "SVGTransformList")]
 pub struct SVGTransformList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SVGTransformList {
+    type Output = SVGTransform;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SVGTransform {
+        unreachable!()
+    }
+}
 
 pub mod svg_transform_list {
     use super::*;
@@ -77777,6 +78065,18 @@ impl Deref for SourceBufferList {
     }
 }
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SourceBufferList {
+    type Output = SourceBuffer;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SourceBuffer {
+        unreachable!()
+    }
+}
+
 pub mod source_buffer_list {
     use super::*;
 
@@ -77967,6 +78267,18 @@ impl SpeechRecognitionEvent {
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResult")]
 pub struct SpeechRecognitionResult(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SpeechRecognitionResult {
+    type Output = SpeechRecognitionAlternative;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SpeechRecognitionAlternative {
+        unreachable!()
+    }
+}
+
 pub mod speech_recognition_result {
     use super::*;
 
@@ -78010,6 +78322,18 @@ impl SpeechRecognitionResult {
 /// [`SpeechRecognitionResultList`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResultList")]
 pub struct SpeechRecognitionResultList(PhantomData<JsObject>);
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for SpeechRecognitionResultList {
+    type Output = SpeechRecognitionResult;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &SpeechRecognitionResult {
+        unreachable!()
+    }
+}
 
 pub mod speech_recognition_result_list {
     use super::*;
@@ -79019,6 +79343,18 @@ impl StyleSheet {
 #[cfg_attr(rust_js, rust_js::types = "StyleSheetList")]
 pub struct StyleSheetList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for StyleSheetList {
+    type Output = CSSStyleSheet;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &CSSStyleSheet {
+        unreachable!()
+    }
+}
+
 pub mod style_sheet_list {
     use super::*;
 
@@ -79818,6 +80154,18 @@ impl TextTrackCue {
 #[cfg_attr(rust_js, rust_js::types = "TextTrackCueList")]
 pub struct TextTrackCueList(PhantomData<JsObject>);
 
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for TextTrackCueList {
+    type Output = TextTrackCue;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &TextTrackCue {
+        unreachable!()
+    }
+}
+
 pub mod text_track_cue_list {
     use super::*;
 
@@ -79860,6 +80208,18 @@ impl Deref for TextTrackList {
     fn deref(&self) -> &EventTarget {
         // Never runs: rust-js compiles this `Deref` to the object itself.
         unsafe { &*(self as *const Self as *const EventTarget) }
+    }
+}
+
+/// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
+impl Index<usize> for TextTrackList {
+    type Output = TextTrack;
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    fn index(&self, index: usize) -> &TextTrack {
+        unreachable!()
     }
 }
 

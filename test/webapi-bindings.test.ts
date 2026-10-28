@@ -712,3 +712,40 @@ pub fn texts(node: &Node, other: &Node, text: Option<&str>) {
   lib.texts(node, other, undefined);
   expect([node.textContent, other.textContent]).toEqual([null, null]);
 });
+
+// React port gap rd68: TypeScript's index signature, `[index: number]:
+// HTMLOptionElement`, is std's `Index`, so ReactDOMSelect's
+// `options[i].value` and ReactDOMInput's `group[i]` read as JS reads them,
+// no `$unwrap(options.item(i))` nor cast: a binding's `impl Index` is the
+// binding its method declares, `get []`.
+test("a collection's index signature is Index, options[i]", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-index-signature");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, HTMLSelectElement};
+
+pub fn select(node: &HTMLSelectElement, value: &str) -> String {
+    let options = node.options();
+    for i in 0..options.length() as usize {
+        if options[i].value() == value {
+            options[i].set_selected(true);
+        }
+    }
+    options[0].value()
+}
+
+pub fn first_tag(root: &Element) -> String {
+    let group = root.query_selector_all("input");
+    group[0].tag_name()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    if (options[i].value === value) {\n      options[i].selected = true;\n    }\n");
+  expect(js).toContain("  return options[0].value;\n");
+  expect(js).toContain("  return group[0].tagName;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const options = [{ value: "a", selected: false }, { value: "b", selected: false }];
+  expect(lib.select({ options }, "b")).toBe("a");
+  expect(options.map((o) => o.selected)).toEqual([false, true]);
+  expect(lib.firstTag({ querySelectorAll: () => [{ tagName: "INPUT" }] })).toBe("INPUT");
+});

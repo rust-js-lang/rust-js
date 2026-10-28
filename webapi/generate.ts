@@ -1458,7 +1458,7 @@ line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`
 line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| ..)\` (ADR 0282).`);
 line();
 line(`use core::marker::PhantomData;`);
-line(`use core::ops::Deref;`);
+line(`use core::ops::{Deref, Index};`);
 line(`use js::{${[...BUILTINS, "Defined", "IntoUnknown", "JsError", "JsObject", "Promise", "Rest", "StructuredClone", "Takes", "Unknown"].sort().join(", ")}};`);
 line();
 line(`unsafe extern "Rust" {`);
@@ -1612,6 +1612,25 @@ for (const name of INTERFACES) {
     line(`    fn deref(&self) -> &${parent} {`);
     line(`        // Never runs: rust-js compiles this \`Deref\` to the object itself.`);
     line(`        unsafe { &*(self as *const Self as *const ${parent}) }`);
+    line(`    }`);
+    line(`}`);
+  }
+  // TypeScript's index signature, `[index: number]: HTMLOptionElement`: an
+  // item read by `[]`, `options[i]`, as JS reads it, of the class
+  // TypeScript says, a `NodeList`'s its `T` (rd68).
+  const item = typescriptDom.get(jsName(i))?.indexed;
+  if (item && known.has(item)) {
+    const output = listOf ? "T" : typeName(item);
+    line();
+    line(`/// \`list[index]\`, TypeScript's index signature: the item at \`index\`, as JS reads it.`);
+    line(`impl${listOf ? "<T>" : ""} Index<usize> for ${type}${listOf ? "<T>" : ""} {`);
+    line(`    type Output = ${output};`);
+    line();
+    line(`    #[cfg_attr(rust_js, rust_js::link_name = "get []")]`);
+    line(`    // rust-js writes its JS: the body never runs, nor reads a parameter.`);
+    line(`    #[allow(unused_variables)]`);
+    line(`    fn index(&self, index: usize) -> &${output} {`);
+    line(`        unreachable!()`);
     line(`    }`);
     line(`}`);
   }

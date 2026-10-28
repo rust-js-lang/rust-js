@@ -283,6 +283,14 @@ How WebIDL maps to Rust, one rule for each:
   `input.set_selection_start(start)` of an `Option<f64>`; text made here
   is given by its `as_str()`, `set_text_content(n.to_string().as_str())`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md), amended).
+- **An index signature is std's `Index`:** TypeScript's `[index:
+  number]: HTMLOptionElement` of an `HTMLOptionsCollection` is `impl
+  Index<usize>`, so `options[i].value()` is `options[i].value`, a
+  `NodeList<T>`'s item a `T`, `group[i]`. As TypeScript's type, it's
+  trusted: an index past the end is JS's `undefined`, and a method called
+  on it throws JS's `TypeError`, not Rust's panic; `item(i)`, an
+  `Option`, asks
+  ([ADR 1011](../../decisions/1011-a-bindings-index-signature-is-index.md)).
 - **Inheritance is `Deref`:** an `&HTMLButtonElement` has `Element`'s and
   `Node`'s methods, and goes where an `&Element` does.
 - **A number is TypeScript's `number`, an `f64`,** given and taken, an

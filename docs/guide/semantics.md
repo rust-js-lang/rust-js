@@ -905,7 +905,10 @@ export function hasSetImmediate() {
   value JS gives is trusted to be of its type too: a binding's
   `#[rust_js::nullable]` result, TypeScript's `T | null`, is tested `===
   null`, and its `#[rust_js::optional]` one, `T | undefined`, `===
-  undefined`. An `Option` is tested
+  undefined`; a collection's index signature, `options[i]`, is an item
+  past the end too, JS's `undefined`, whose method throws a `TypeError`
+  where Rust's `Index` panics
+  ([1011](../decisions/1011-a-bindings-index-signature-is-index.md)). An `Option` is tested
   against `null`, whatever it holds, so a JS caller's `false` where an
   exported function's `Option<&dyn Fn()>` is asked is `Some`, as Rust's
   `None` is JS's `null` and `undefined` alone

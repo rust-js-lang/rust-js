@@ -916,8 +916,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
-        if bindings::is_binding(tcx, def_id) || crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
-            return self.mir_binding_call((def_id, generic_args), (values, &arg_tys, nulled), span, out);
+        if let Some(binding) = self.binding_called(def_id, generic_args) {
+            return self.mir_binding_call(binding, (values, &arg_tys, nulled), span, out);
         }
         // A function giving each variant its own name gives what it's given,
         // `section.as_str()` is `section` (ADR 0264).
@@ -1256,5 +1256,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`{name}`, from its MIR")));
             }
         }))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The binding a call of `def_id` is, given `args`: itself, or the
+    /// registry's symbol's read (ADR 0634); or, of a std trait's method, the
+    /// binding a binding's impl of it declares, an index signature's
+    /// `Index::index`, `options[i]` (ADR 1011).
+    fn binding_called(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)> {
+        let tcx = self.tcx;
+        if bindings::is_binding(tcx, def_id) || crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
+            return Some((def_id, args));
+        }
+        tcx.trait_of_assoc(def_id)?;
+        let instance = crate::lower::items::resolve_instance_in(tcx, self.typing_env, def_id, args).ok()??;
+        match instance.def {
+            ty::InstanceKind::Item(item) if bindings::is_binding(tcx, item) => Some((item, instance.args)),
+            _ => None,
+        }
     }
 }

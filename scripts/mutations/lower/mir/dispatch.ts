@@ -649,4 +649,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some();\n",
     tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
   },
+  {
+    name: "index-of-a-binding-impl-refused",
+    breaks: "a binding's `impl Index`, TypeScript's index signature, isn't the binding its method declares, so ReactDOMSelect's `options[i].value` is refused as calling `std::ops::Index::index` (rd68)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            ty::InstanceKind::Item(item) if bindings::is_binding(tcx, item) => Some((item, instance.args)),\n",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "index signature is Index"],
+  },
 ];
