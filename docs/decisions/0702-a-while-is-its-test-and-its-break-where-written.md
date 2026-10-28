@@ -511,11 +511,24 @@ program didn't label: its `switch`'s cases can't leave it without one,
 which upstream has none of, so it stays MIR's, `default: ..; continue; }
 break;`. Nor where `rest` declares what the loop's body before it does.
 
-Still to do of cm4: the guarded arm, `SINGLETON if SUPPORTS_SINGLETONS`,
-that falls to an unguarded one, `SINGLETON | COMPONENT`, whose statements
-MIR shares in a block after the `switch` (`bb12`), and the `?? null` of a
-nullable cell's stores.
+Of such a loop's turn MIR made a block, `b: { switch (..) { .. break b;
+} rest; continue; } break;`, the block's `break`s leave the loop as its
+end does: each is the loop's `break` of the program's label, and the
+block its statements. And the guarded arm, `SINGLETON if
+SUPPORTS_SINGLETONS`, that falls to an unguarded one, `SINGLETON |
+COMPONENT`, whose statements MIR shares in a block after the `switch`,
+`bb12`, is that arm's case's, `blocks_one_case_reaches` (ADR 0905,
+amended) taking a block whose `switch` the rest of the turn follows,
+`parent = current.return; continue;`, which the other cases go on to, as
+it took one followed by its `break outer`. So commitDeletionEffects'
+loop is upstream's: `findParent: while (parent != null) { switch (tag) {
+case HostSingleton: if (supportsSingletons) { .. break findParent; }
+break; } // Fallthrough case HostComponent: ..; break findParent; .. }
+parent = current.return; }`. Left: `const current = parent; const tag =
+current.tag;`, read in place where nothing else holds a block, and the
+`?? null` of a nullable cell's stores.
 
 Held by `test/corpus/while_let_at_end.rs`, against native Rust;
-mutations `loop-end-return-kept` (`mir/tidy/jumps/labels.ts`) and
-`loop-left-by-cases-unlabeled` (`mir/tidy/case_rests.ts`).
+mutations `loop-end-return-kept` (`mir/tidy/jumps/labels.ts`),
+`loop-left-by-cases-unlabeled`, `turn-block-left-by-cases-kept` and
+`case-rest-past-a-turns-end-kept` (`mir/tidy/case_rests.ts`).

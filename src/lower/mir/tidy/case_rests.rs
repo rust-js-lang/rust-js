@@ -33,15 +33,24 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
         let inner = inner.clone();
         // `.. switch (..) { .. } break outer;`, or a `switch` that leaves
         // itself, the `switch` alone naming `inner`, by one case's last
-        // statement.
+        // statement; or one followed by what leaves, the rest of a loop's
+        // turn, `parent = parent.return; continue;`, which the other cases
+        // go on to (ADR 0702, amended).
         let broken = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if *l == outer);
-        let end = body.len() - usize::from(broken);
-        let Some((switch, before)) = body[..end].split_last_mut() else {
+        let Some(at) = (body.iter()).rposition(|s| matches!(s.kind, StmtKind::Switch { .. })) else {
             continue;
         };
-        if !(broken || js::ends(switch)) || js::names_jump(before, &inner) {
+        let (head, tail) = body.split_at_mut(at);
+        let (switch, tail) = tail.split_first_mut().expect("the switch");
+        let left = match tail {
+            [] => js::ends(switch),
+            [_] if broken => true,
+            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, &inner),
+        };
+        if !left || js::names_jump(head, &inner) {
             continue;
         }
+        let broken = broken && tail.len() == 1;
         let StmtKind::Switch { cases, default, .. } = &mut switch.kind else {
             continue;
         };
@@ -222,7 +231,9 @@ pub(super) fn returns_of_cases(stmts: &mut Vec<Stmt>, switches: &[Switch], retur
 /// `default`'s `rest` after the `switch`, `findParent: while (..) { switch
 /// (..) { case A: ..; break findParent; } rest }`, as React's
 /// commitDeletionEffects writes it (ADR 0702, amended). Not a loop the
-/// program didn't label, whose label upstream has none of.
+/// program didn't label, whose label upstream has none of. And of a block
+/// MIR made of the turn, `b: { switch (..) { .. break b; } rest; continue;
+/// } break;`, each `break b` the loop's, the block its statements.
 pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
@@ -237,6 +248,27 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         };
         let written = written.clone();
         let own = |l: &Option<String>| l.is_none() || *l == *label;
+        // `b: { ..; continue; } break;`, a block MIR made of the turn whose
+        // `break`s leave the loop, as its end does: its statements, each
+        // `break b` the loop's `break` of the program's label.
+        if let [.., block, last] = &body[..]
+            && let StmtKind::Labeled(b, inner) = &block.kind
+            && crate::lower::mir::is_block_label(b)
+            && matches!(&last.kind, StmtKind::Break(l) if own(l))
+            && matches!(inner.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if own(l))
+            && !super::declared(inner).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))
+        {
+            let b = b.clone();
+            body.pop();
+            let StmtKind::Labeled(_, mut inner) = body.pop().expect("the block").kind else {
+                unreachable!("matched")
+            };
+            inner.pop();
+            relabel(&mut inner, &b, &written);
+            body.extend(inner);
+            *label = Some(written);
+            continue;
+        }
         let [.., switch, last] = &body[..] else {
             continue;
         };
@@ -297,4 +329,15 @@ fn leaving(stmts: &mut [Stmt], written: &str) {
             _ => {}
         }
     }
+}
+
+/// Each `break from` in `stmts`, however deep, `break to`.
+fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
+    js::statement_lists(stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == from) {
+                stmt.kind = StmtKind::Break(Some(to.to_string()));
+            }
+        }
+    });
 }

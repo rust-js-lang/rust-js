@@ -73,7 +73,38 @@ fn labeled(fiber: &Rc<Fiber>) {
     HOST_PARENT.set(HOST_PARENT.get() + 1);
 }
 
+// A guarded arm falling to an unguarded one, whose statements MIR shares
+// past the `match`: `case 1: if (singletons) { .. } // Fallthrough case 2:
+// ..; break findParent;`.
+fn guarded(fiber: &Rc<Fiber>, singletons: bool) {
+    let mut parent = Some(Rc::clone(fiber));
+    'find_parent: while let Some(current) = parent {
+        match current.tag.get() {
+            1 if singletons => {
+                if current.state.get() > 15 {
+                    HOST_PARENT.set(current.state.get());
+                    break 'find_parent;
+                }
+            }
+            1 | 2 => {
+                HOST_PARENT.set(current.state.get() + 1000);
+                break 'find_parent;
+            }
+            3 => {
+                HOST_PARENT.set(current.state.get() + 100);
+                break 'find_parent;
+            }
+            _ => {}
+        }
+        parent = current.parent.borrow().clone();
+    }
+}
+
 fn main() {
+    for singletons in [true, false] {
+        guarded(&chain(&[1, 1, 4, 2]), singletons);
+        println!("{}", HOST_PARENT.get());
+    }
     find_host_parent(&chain(&[1, 1, 2, 2]));
     println!("{}", HOST_PARENT.get());
     find_host_parent(&chain(&[1, 3]));

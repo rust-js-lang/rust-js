@@ -59,7 +59,40 @@ function labeled(fiber) {
   hostParent = (hostParent + 1) >>> 0;
 }
 
+// A guarded arm falling to an unguarded one, whose statements MIR shares
+// past the `match`: `case 1: if (singletons) { .. } // Fallthrough case 2:
+// ..; break findParent;`.
+function guarded(fiber, singletons) {
+  let parent = fiber;
+  findParent: while (parent != null) {
+    const current = parent;
+    const tag = current.tag;
+    switch (tag) {
+      case 1:
+        if (singletons) {
+          if (current.state > 15) {
+            hostParent = current.state;
+            break findParent;
+          }
+          break;
+        }
+      // Fallthrough
+      case 2:
+        hostParent = (current.state + 1000) >>> 0;
+        break findParent;
+      case 3:
+        hostParent = (current.state + 100) >>> 0;
+        break findParent;
+    }
+    parent = current.parent;
+  }
+}
+
 function main() {
+  for (const singletons of [true, false]) {
+    guarded(chain([1, 1, 4, 2]), singletons);
+    console.log(`${hostParent}`);
+  }
   findHostParent(chain([1, 1, 2, 2]));
   console.log(`${hostParent}`);
   findHostParent(chain([1, 3]));

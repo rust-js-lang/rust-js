@@ -46,4 +46,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },
+  {
+    name: "case-rest-past-a-turns-end-kept",
+    breaks: "an arm a guarded arm falls to, whose statements MIR shares past a `switch` followed by the rest of the loop's turn, stays a block, `bb12: { switch (..) { case 2: break bb12; } parent = ..; continue; } ..`, not its case's (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, &inner),\n",
+    replace: "            _ => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "turn-block-left-by-cases-kept",
+    breaks: "a block MIR made of a labeled loop's turn, `bb42: { switch (..) { .. break bb42; } ..; continue; } break;`, stays, not each `break bb42` the loop's `break findParent;` (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "            && crate::lower::mir::is_block_label(b)\n",
+    replace: "            && crate::lower::mir::is_block_label(b)\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
+    snapshots: true,
+  },
 ];
