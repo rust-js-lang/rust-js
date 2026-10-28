@@ -46,17 +46,6 @@ function $closing(it, drop, slices = true) {
   // Its length, its iterator's, where it knows it: what an `enumerate`
   // stepped from its back counts by (#211).
   if (it.len !== undefined) closing.len = () => it.len();
-  // Its iterator's back and length, a use site's, given it where it's
-  // asked, as `$knowing` gives a compiled std iterator's (ADR 0561, #225).
-  if (it.knowing !== undefined) {
-    closing.knowing = (back, size, rfold, nthBack, tryRfold) => {
-      it.knowing(back, size, rfold, nthBack, tryRfold);
-      if (it.len !== undefined) closing.len = () => it.len();
-      if (it.rfold !== undefined) closing.rfold = rfoldClosing;
-      if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-      if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
-    };
-  }
   // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
   if (!Object.hasOwn(closing, "advanceBy") && Object.hasOwn(it, "advanceBy")) {
     closing.advanceBy = (m, drop) => it.advanceBy(m, drop);

@@ -107,14 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
-    name: "closing-knowing-unpassed",
-    breaks: "a compiled `fuse()` closed to drop it isn't given its back and length where they're asked, and a map of it stepped from its back throws (#225)",
-    file: "src/runtime/closing.js",
-    find: "  if (it.knowing !== undefined) {\n    closing.knowing",
-    replace: "  if (false) {\n    closing.knowing",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
-  },
-  {
     name: "closing-held-closed-when-done",
     breaks: "a held source closed to drop it drops what it holds as it's done, not where its owner drops it (#206)",
     file: "src/runtime/closing.js",
