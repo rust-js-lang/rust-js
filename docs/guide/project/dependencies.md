@@ -323,6 +323,9 @@ import { Children } from "react";
 import { Children } from "../../react/src/ReactClient.js";
 ```
 
+- **A root that only re-exports what the entry does writes no JS**: a
+  `react.rs` of `mod`s and `pub use`s the entry re-exports from the same
+  modules is no `react.js`, the entry already its package's.
 - **The path you write decides**: through the crate's root, by the
   package's name; through the item's module, by its module's file. A crate
   that names an item both ways imports it by the package's name.

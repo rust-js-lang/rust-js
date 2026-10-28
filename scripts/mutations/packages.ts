@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: test,
   },
+  {
+    name: "entry-root-unmatched",
+    breaks: "a crate's root that re-exports what its package's entry doesn't writes no JS, its re-exports lost (ADR 1008, amended)",
+    file: "src/packages.rs",
+    find: "            .any(|export| &export.module == from && &export.export == name && &export.entry == alias)",
+    replace: "            .all(|export| &export.module == from && &export.export == name && &export.entry == alias)",
+    tests: test,
+  },
 ];

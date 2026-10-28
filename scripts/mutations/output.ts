@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "            .chain(packaged.into_iter().take(0))\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
+  {
+    name: "entry-root-written",
+    breaks: "a crate's root whose only job is re-exporting what its package's hand-written entry does writes its JS anyway, a second entry, React's react.js beside index.js (the user's decision, ADR 1008, amended)",
+    file: "src/output.rs",
+    find: "                lowered.modules.retain(|module| !entry_is_root(package, module));\n",
+    replace: "                lowered.modules.retain(|module| !entry_is_root(package, module) || true);\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

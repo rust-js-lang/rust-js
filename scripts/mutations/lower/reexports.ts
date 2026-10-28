@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = (\n                statement,\n                &what,\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub use of std's function"],
   },
+  {
+    name: "reexports-alone-of-anything",
+    breaks: "a crate's root with an item of its own is taken as re-exporting alone, so it writes no JS where its package's entry re-exports its `pub use`s, its item lost (ADR 1008, amended)",
+    file: "src/lower/reexports.rs",
+    find: "            _ => super::analysis::is_reexport(tcx, item),\n",
+    replace: "            _ => true,\n",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

@@ -88,6 +88,11 @@ pub struct LoweredModule {
     /// its `.d.ts` is all that's written of it (the user's decision, ADR
     /// 1005).
     pub types_only: bool,
+    /// Whether it's the crate's root and holds nothing but its `mod`s,
+    /// its imports and `pub use`s its file re-exports: written not at all
+    /// where its package's entry re-exports each from the same module
+    /// (the user's decision, ADR 1008, amended).
+    pub reexports_alone: bool,
 }
 
 /// Named exports used from one Rust module, before its JS path is resolved.

@@ -520,8 +520,16 @@ impl OutputPlan {
                 .collect::<Result<Vec<_>, String>>()?;
             let read = crate::packages::read(&self.settings.dir, &modules, to_oxc::entry_exports)?;
             library.package = read.package;
+            let hand_written = read.hand_written;
             packaged.clone_from(&read.files);
             sources.extend(read.files);
+            // A root whose only job is re-exporting what the package's
+            // entry re-exports, each from the same module, is that entry's
+            // already: none of its own (the user's decision, ADR 1008,
+            // amended).
+            if let Some(package) = library.package.as_ref().filter(|_| hand_written) {
+                lowered.modules.retain(|module| !entry_is_root(package, module));
+            }
         }
         if let Some(library) = &mut lowered.library {
             library.inputs = sources
@@ -735,6 +743,30 @@ impl OutputPlan {
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
     }
+}
+
+/// Whether `module` is a crate's root whose only job, `reexports_alone`,
+/// is re-exporting what `package`'s hand-written entry re-exports: each of
+/// its `pub use`s of one of the crate's modules, as the entry re-exports
+/// it (`packages::reexports_each`), and nothing else of its own. It writes
+/// no JS of its own then (the user's decision, ADR 1008, amended).
+fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredModule) -> bool {
+    let mut reexports = Vec::new();
+    for reexport in &module.reexports {
+        let js::ImportFrom::Module(from) = &reexport.from else {
+            return false;
+        };
+        reexports.extend((reexport.named.iter()).map(|(name, alias)| (from.clone(), name.clone(), alias.clone())));
+    }
+    module.path.is_empty()
+        && module.reexports_alone
+        && !reexports.is_empty()
+        && module.items.is_empty()
+        && module.default_export.is_none()
+        && module.aliases.is_empty()
+        && module.packages.is_empty()
+        && module.directives.is_empty()
+        && crate::packages::reexports_each(package, &reexports)
 }
 
 /// What `module` exports, by name, as it's printed: its exported functions,

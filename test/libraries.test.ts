@@ -5,7 +5,7 @@
 // package's name.
 
 import { beforeAll, expect, test } from "bun:test";
-import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
@@ -265,6 +265,11 @@ pub fn count() -> u32 {
   expect(js()).toContain('import { count } from "../../kids/src/client.js";\n');
   expect(js()).toContain('import { other } from "../../kids/src/hooks.js";\n');
   expect(ran()).toBe("27");
+  // Its root re-exports what the entry does, each from the same module,
+  // and nothing else: no JS of its own, the entry's already (ADR 1008,
+  // amended), as React's react.rs is no react.js.
+  const rootJs = join(kids, "src", "lib.js");
+  expect(existsSync(rootJs)).toBe(false);
   // The default condition's entry alone, another the host's to choose
   // (ADR 0262's exception), the library rebuilt as its package.json changes.
   writeFileSync(join(kids, "server.js"), "export * from './src/hooks.js';\n");
@@ -281,10 +286,18 @@ pub fn count() -> u32 {
   writeFileSync(join(kids, "index.js"), `${entry}console.log("loaded");\n`);
   expect(built().stderr).toBe("");
   expect(js()).toContain(byFiles);
+  // Whose re-exports are then its root's own, as before.
+  expect(readFileSync(rootJs, "utf8")).toContain("export { bump } from \"./client.js\";\n");
   writeFileSync(join(kids, "index.js"), entry);
   rmSync(join(dir, "node_modules", "@acme", "kids"));
   expect(built().stderr).toBe("");
   expect(js()).toContain(byFiles);
+  expect(existsSync(rootJs)).toBe(false);
+  // A root with an item of its own writes its JS, a type's too.
+  writeFileSync(join(kids, "src", "lib.rs"), `${readFileSync(join(kids, "src", "lib.rs"), "utf8")}\npub type Count = u32;\n`);
+  expect(built().stderr).toBe("");
+  expect(readFileSync(rootJs, "utf8")).toContain("export { bump } from \"./client.js\";\n");
+  expect(readFileSync(join(kids, "src", "lib.d.ts"), "utf8")).toContain("export type Count = number;");
   expect(ran()).toBe("27");
   // Flow's, which oxc doesn't read.
   writeFileSync(join(kids, "index.js"), `export type Kid = number;\n${entry}`);

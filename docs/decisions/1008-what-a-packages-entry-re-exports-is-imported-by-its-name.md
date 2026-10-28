@@ -165,3 +165,25 @@ exception listed in ADR 0262's Consequences and the guide's differences
   which the host's `exports` check still holds. `test/libraries.test.ts`'
   ADR 0414 tests say `@acme/greet`; its `exports` test refuses a hidden
   `./src/loud.js`. Mutation `package-root-module-by-file`.
+
+## Amendment: a root that re-exports what the entry does writes nothing
+
+The user's decision (2026-10-28). Case: none; what JS imports is the
+entry, which already exports each.
+
+React's `react.rs`, to be named through, `pub use react_client::CHILDREN;`,
+wrote `packages/react/react.js`, `export {Children} from
+'./src/ReactClient.js'`, beside upstream's `index.js`: a second entry.
+**A crate's root whose only job is re-exporting what its package's
+hand-written entry re-exports writes no JS and no `.d.ts` of its own**:
+every item it holds but its `mod`s, its own `use`s and `extern crate`s is
+a `pub use` its file re-exports (`reexports::reexports_alone`), and each
+of those is of one of the crate's modules, by the name the entry gives
+it, from the same module (`output::entry_is_root`, `packages::reexports_each`). A root with any
+other item, a type's too, or a `pub use` the entry doesn't re-export so,
+writes its JS as before; so does one whose package's root is its own
+JS, ADR 0414's `src/lib.js`. Held by `test/libraries.test.ts`' entry
+test (no `kids/src/lib.js`; one written where the entry runs code of its
+own, and with a `pub type`) and mutations `entry-root-written`
+(`output.rs`), `entry-root-unmatched` (`packages.rs`) and
+`reexports-alone-of-anything` (`lower/reexports.rs`).

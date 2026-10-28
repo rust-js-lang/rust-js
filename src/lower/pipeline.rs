@@ -1222,6 +1222,7 @@ pub fn lower_crate<'tcx>(
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
                 types_only: false,
+                reexports_alone: module == CRATE_MOD_ID && super::reexports::reexports_alone(tcx, module),
             };
             // One of types alone has no JS of its own: what it imports is
             // what its items read, of which it has none (the user's

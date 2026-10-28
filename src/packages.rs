@@ -76,6 +76,9 @@ pub struct Module<'a> {
 pub struct Read {
     pub files: Vec<PathBuf>,
     pub package: Option<Package>,
+    /// Whether its entry is a JS file of its own, not the crate's root
+    /// module's, which a root re-exporting it alone needn't repeat.
+    pub hand_written: bool,
 }
 
 /// The package of the crate in `dir`, of `modules`, where a `package.json`
@@ -94,6 +97,7 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
     let mut read = Read {
         files: vec![crate::paths::absolute(&manifest)?],
         package: None,
+        hand_written: false,
     };
     let Some(name) = json["name"].as_str() else {
         return Ok(read);
@@ -122,6 +126,7 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
                 return Ok(read);
             }
             read.files.push(file.clone());
+            read.hand_written = true;
             let code = std::fs::read_to_string(&file).map_err(|e| format!("{}: {e}", file.display()))?;
             let parsed = parse(&code).map_err(|error| {
                 format!(
@@ -252,4 +257,16 @@ pub fn installed(dir: &Path, name: &str) -> Option<PathBuf> {
         .map(|dir| dir.join("node_modules").join(name))
         .find(|candidate| candidate.join("package.json").is_file())
         .and_then(|found| crate::paths::absolute(&found).ok())
+}
+
+/// Whether `package`'s entry re-exports each of `reexports`, a crate's
+/// root's `pub use`s, each by the module it's of, its name there and the
+/// name the root gives it: by that name, from the same module. A root of
+/// those alone writes no JS of its own then (`output::entry_is_root`, the
+/// user's decision, ADR 1008, amended).
+pub fn reexports_each(package: &Package, reexports: &[(Vec<String>, String, String)]) -> bool {
+    (reexports.iter()).all(|(from, name, alias)| {
+        (package.exports.iter())
+            .any(|export| &export.module == from && &export.export == name && &export.entry == alias)
+    })
 }

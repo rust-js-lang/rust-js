@@ -366,3 +366,20 @@ fn exported_in(
         })
     })
 }
+
+/// Whether each item `module` holds but its `mod`s and its own imports, a
+/// `use` not `pub` or an `extern crate`, is a `pub use` its file re-exports (`is_reexport`):
+/// a crate's root whose only job is re-exporting, which writes no JS of its
+/// own where its package's entry re-exports each from the same module
+/// (the user's decision, ADR 1008, amended).
+pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+    tcx.hir_module_free_items(module).all(|id| {
+        let item = tcx.hir_item(id);
+        match item.kind {
+            // Its `mod`s, and std's prelude rustc gives every crate.
+            hir::ItemKind::Mod(..) | hir::ItemKind::ExternCrate(..) => true,
+            hir::ItemKind::Use(..) if !tcx.visibility(item.owner_id).is_public() => true,
+            _ => super::analysis::is_reexport(tcx, item),
+        }
+    })
+}
