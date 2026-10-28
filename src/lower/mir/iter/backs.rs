@@ -57,8 +57,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 it if crate::lower::iterators::is_stepped_items(&it) => crate::lower::iterators::iterated(it),
                 it => Expr::call_helper("$rest", vec![it]),
             },
-            // A `$iter` of an array, just made: the array.
-            None if crate::lower::iterators::is_stepped_items(&receiver) => crate::lower::iterators::iterated(receiver),
             // Of such an array's skipped and taken from, the array
             // sliced: no closure runs over it.
             None if counted_chain(&receiver) => sliced(&receiver),

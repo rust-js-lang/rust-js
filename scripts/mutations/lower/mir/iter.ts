@@ -293,15 +293,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
   {
-    name: "copied-behind-impl-unseen",
-    breaks: "a `copied()` given back as an `impl Iterator` isn't seen for the copy of its source it is, and is refused",
-    file: "src/lower/mir/iter.rs",
-    find: "        // Behind the `impl Iterator` it's given back as too.\n        let ty = self.reveal(ty);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^copied_given_back.rs$"],
-    snapshots: true,
-  },
-  {
     name: "compiled-iterator-not-dropped-after",
     breaks: "a generic `Peekable` consumed, `p.sum()`'s, isn't dropped after by the drops it's given, so what it holds with a destructor is never dropped",
     file: "src/lower/mir/iter.rs",

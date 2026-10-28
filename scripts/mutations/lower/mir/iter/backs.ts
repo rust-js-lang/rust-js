@@ -19,15 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(boxed_array_iter|fused_iterator|str_bytes|sales_report|matrix_strings).rs$"],
   },
   {
-    name: "mir-rev-of-fresh-iter-rest",
-    breaks: "`rev()` of a boxed array's iterator just made is `$rest($iter(…))` reversed, not the array's",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "            None if crate::lower::iterators::is_stepped_items(&receiver) => crate::lower::iterators::iterated(receiver),\n",
-    replace: "            None if crate::lower::iterators::is_stepped_items(&receiver) => Expr::call_helper(\"$rest\", vec![receiver]),\n",
-    tests: ["test/corpus.test.ts","-t","^boxed_array_iter.rs$"],
-    snapshots: true,
-  },
-  {
     "name": "mir-rev-of-fresh-copied",
     "breaks": "`xs.iter().rev()` from MIR copies the array first, `$rest($iter(xs)).toReversed()`",
     "file": "src/lower/mir/iter/backs.rs",

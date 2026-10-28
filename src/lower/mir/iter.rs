@@ -370,8 +370,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `copied()`, or a `cloned()` of what needs no clone, each item as it
     /// is (ADR 0547). The one answer, of what's made and what's dropped.
     fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
-        // Behind the `impl Iterator` it's given back as too.
-        let ty = self.reveal(ty);
         let item = || {
             self.iterator_item(ty)
                 .is_some_and(|item| !self.needs_clone(item.peel_refs()))
