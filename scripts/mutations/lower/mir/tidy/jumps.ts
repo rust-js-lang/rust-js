@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if broken_in_then(body, &continues) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(signed_counter|signed_index).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
     snapshots: true,
   },
   {

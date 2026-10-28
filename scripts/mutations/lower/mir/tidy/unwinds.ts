@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        StmtKind::Try(body, _) | StmtKind::TryCatch(body, ..) => body.first().and_then(written_at),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^struct_update_drops.rs$"],
     snapshots: true,
   },
   {

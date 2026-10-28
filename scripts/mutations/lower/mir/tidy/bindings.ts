@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                if named.contains(base) || module.contains(base) {\n",
     replace: "                if named.contains(base) {\n",
-    tests: ["test/link.test.ts", "-t", "module-load statements"],
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_reads_another_set.rs$"],
   },
   {
     name: "alias-of-changing-set-between",
@@ -240,8 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
     replace: "                        true => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
-    snapshots: true,
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
   {
     name: "temporary-names-unsuggested",
@@ -326,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) => {\n",
     replace: "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) && false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_value_after_loop.rs$"],
     snapshots: true,
   },
   {

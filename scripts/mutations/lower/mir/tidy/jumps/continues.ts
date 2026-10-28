@@ -42,7 +42,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
     replace: "                Some(StmtKind::If(_, _, None)) if false => {\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
+    tests: ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-continued-block-kept",

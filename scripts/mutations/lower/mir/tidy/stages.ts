@@ -184,7 +184,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "            pass(\"copied bindings\", |b, h| {\n                js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))\n            }),\n",
     "replace": "",
-    "tests": ["test/lowering-names.test.ts", "-t", "copy binding of a variable is the variable"]
+    "tests": ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+    "snapshots": true
   },
   {
     "name": "mir-tidy-tuple-reads-kept",
