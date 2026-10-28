@@ -28,11 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-class-any-name",
-    breaks: "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so `js::class::<JsError>()` is `JsError`, which no host has, and an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`: a `ReferenceError` where the refusal was (ADR 0911, #391)",
+    breaks: "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`, a `ReferenceError`, and `js::class::<Tag>()` is `Tag`, not an object of no class (ADR 0911, #391)",
     file: "src/lower/untagged.rs",
-    find: "                None => None,\n",
-    replace: "                None => class(bindings::class_name(self.tcx, adt.did())),\n",
-    tests: ["test/webapi-bindings.test.ts", "test/diagnostics.test.ts", "-t", "a binding's class is the global class|an untagged enum's variant of (a JS object of no declared class|what JS threw)"],
+    find: "                None if self.is_js_error(ty) => None,\n                None => Some(Kind::Object),\n",
+    replace: "                None if self.is_js_error(ty) => None,\n                None => class(bindings::class_name(self.tcx, adt.did())),\n",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
   },
   {
     name: "untagged-literal-any",
@@ -361,5 +361,13 @@ export const mutations: Mutation[] = [
     find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
     replace: "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
     tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
+  },
+  {
+    name: "untagged-js-error-an-object",
+    breaks: "an untagged enum's variant of `JsError`, whatever JS threw, a string or a number too, is tested as an object, not refused (#391)",
+    file: "src/lower/untagged.rs",
+    find: "                None if self.is_js_error(ty) => None,\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "an untagged enum's variant of what JS threw"],
   },
 ];

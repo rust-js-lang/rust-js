@@ -214,10 +214,9 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variant of a RefCell the crate boxes", '#[rust_js::untagged] pub enum E { A(std::cell::RefCell<Vec<f64>>), B(f64) }\npub fn boxed<T>(v: T) -> std::cell::RefCell<T> { std::cell::RefCell::new(v) }\npub fn f() -> E { E::A(boxed(vec![1.0])) }\npub fn g(e: &E) -> usize { match e { E::A(a) => a.borrow().len(), E::B(_) => 0 } }', "in this crate it's `{ value }`"],
   ["an untagged enum's variant of an Rc the crate counts", '#[rust_js::untagged] pub enum E { A(std::rc::Rc<Vec<f64>>), B(f64) }\npub fn f(e: &E) -> usize { match e { E::A(a) => std::rc::Rc::strong_count(a), E::B(_) => 0 } }', "in this crate it's counted"],
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
-  // A JS object type's class is what its `types` names: one that declares
-  // none may name no class JS has, `instanceof Tag` throwing (#391).
-  ["an untagged enum's variant of a JS object of no declared class", "#[rust_js::untagged] pub enum E<'a> { A(&'a Tag), B(&'a str) }\npub struct Tag(std::marker::PhantomData<js::JsObject>);\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "`Tag` declares no `#[rust_js::types]`", "js"],
-  ["an untagged enum's variant of what JS threw", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::JsError), B(f64) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "`JsError` declares no `#[rust_js::types]`", "js"],
+  // `JsError`, whatever JS threw, may be of any kind, and an `instanceof
+  // JsError` throws (#391).
+  ["an untagged enum's variant of what JS threw", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::JsError), B(f64) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell a `&'a js::JsError` from another variant's value", "js"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
   ["writing a u128", 'pub fn f(n: u128) -> String { serde_json::to_string(&n).unwrap() }', "does not support", "serde"],

@@ -233,24 +233,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ty
     }
 
-    /// The JS object type a payload of type `ty` is, where it declares no
-    /// `#[rust_js::types]` nor `#[rust_js::test]`: one whose class JS can't
-    /// be told, as nothing says one of its name exists, `instanceof Tag`
-    /// of an undeclared `Tag` throwing (#391).
-    pub(super) fn undeclared_js_object(&self, ty: Ty<'tcx>) -> Option<DefId> {
-        let ty = self.untagged_payload(ty);
-        match ty.kind() {
-            ty::Adt(adt, _)
-                if self.is_js_object(ty)
-                    && written_types(self.tcx, adt.did()).is_none()
-                    && bindings::test_of(self.tcx, adt.did()).is_none() =>
-            {
-                Some(adt.did())
-            }
-            _ => None,
-        }
-    }
-
     /// What JS can tell a payload of type `ty` is, if anything: not an
     /// `Option`'s `undefined`, a `()`, a generic `T` or an enum.
     pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
@@ -306,16 +288,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // object literal, `Dict`'s `{ [key: string]: T }`, `object`, or a
         // module's type, `chart.js#Chart`, which an `instanceof` would read
         // unimported; an array's or a function's, that; nothing JS can tell
-        // of `unknown` or a union. One TypeScript names nothing has no class
-        // JS can be told exists, a global of its name or none, refused
-        // (`undeclared_js_object`): the js crate's `RegExp` declares
-        // `types = "RegExp"`, as each of its global classes does.
+        // of `unknown` or a union. One TypeScript names nothing is an object
+        // of no class JS can be told exists, as a module's type is, never
+        // `instanceof` a global of its name, which may be none (#391): the
+        // js crate's `RegExp` declares `types = "RegExp"`, as each of its
+        // global classes does. `JsError`, whatever JS threw, of any kind,
+        // is none JS can tell.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
         {
             let class = |name: String| Some(Kind::Class(name, Some(adt.did())));
             return match written_types(self.tcx, adt.did()) {
-                None => None,
+                None if self.is_js_error(ty) => None,
+                None => Some(Kind::Object),
                 Some(Written::Reference { from: None, name, .. }) => class(name),
                 Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),
                 Some(Written::Keyword(keyword)) if keyword == "object" => Some(Kind::Object),
@@ -847,18 +832,12 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                 }
                 let ty = field.ty(tcx, args).skip_normalization();
                 let Some(kind) = recognition.untagged_kind(ty) else {
-                    let message = match recognition.undeclared_js_object(ty) {
-                        Some(did) => {
-                            let name = tcx.item_name(did);
-                            format!(
-                                "JS can't tell a `{ty}` from another variant's value: `{name}` declares no `#[rust_js::types]`, so no class JS has is known to be its, and an `instanceof {name}` of none throws; declare what TypeScript names it, a global class, `#[rust_js::types = \"{name}\"]`, a module's, `\"module#{name}\"`, or `\"object\"` (ADR 0214, #391)"
-                            )
-                        }
-                        None => format!(
+                    error(
+                        span,
+                        format!(
                             "JS can't tell a `{ty}` from another variant's value: an untagged enum's variant holds a string, a number, a `bool`, an array, a JS object, a function or a struct (ADR 0214)"
                         ),
-                    };
-                    error(span, message);
+                    );
                     continue;
                 };
                 // Two variants of one kind are told apart nowhere but where

@@ -277,7 +277,7 @@ TypeScript's.
 One TypeScript names nothing is the global class of its name, its
 `#[rust_js::name]` where given, as before: js's `RegExp`, `ArrayBuffer`,
 `Intl.Collator`. So a binding of a module's class declares its `types`,
-as the guide's do. (No longer: one that declares none is refused, the
+as the guide's do. (No longer: one that declares none is an object, the
 amendment below.)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer,
@@ -288,41 +288,44 @@ by the class TypeScript names", run as JS, and mutations
 `untagged-class-by-rust-name` and `untagged-module-class-unimported`
 (`untagged.rs`).
 
-## Amendment: a JS object type that declares no class is refused (#391, 2026-10-28)
 
-The global class of a type's name was still a guess where it declared no
-`#[rust_js::types]`: `pub struct Tag(PhantomData<JsObject>)` in an
+## Amendment: a JS object type that declares no class is an object (#391, 2026-10-28)
+
+Where a type declared no `#[rust_js::types]`, the class was still taken to
+be the global of its name. `pub struct Tag(PhantomData<JsObject>)` in an
 untagged enum was `named instanceof Tag`, and js's `JsError`, whatever JS
 threw, `thrown instanceof JsError`. Neither class exists, so the match
 threw `ReferenceError: Tag is not defined` where Rust returns the other
 variant's answer.
 
-**A JS object type's class is only what its `types` names; as a
-variant's payload, one that declares neither `types` nor a `test` is
-refused** (`Recognition::undeclared_js_object`): "`Tag` declares no
-`#[rust_js::types]`, so no class JS has is known to be its, and an
-`instanceof Tag` of none throws; declare what TypeScript names it". The
-`otherwise` variant, which is tested by no class, may still hold one.
-The js crate's global classes declare theirs, as `Map`, `Set` and `Error`
-did: `Date`, `RegExp`, `Promise<T>`, `ArrayBuffer`, `SharedArrayBuffer`,
-`DataView`, the typed arrays and `Intl`'s nine classes. A function that
-takes or gives one is typed so in its `.d.ts`, `pattern(r: RegExp):
-RegExp`, where it was `any`. What they aren't, `JsError`, `Segments`, a
-timer's id, a `RegExpMatch`, declares no class and is refused as a
-payload, as it should be. `js::class::<T>()` asks the same
-(`class_value`), so it now takes `js::class::<Date>()` too.
+**A JS object type's class is only what its `types` names. One that
+declares none is an object of no class JS can be told exists,
+`typeof value === "object"`, as a module's type is** (above). Its
+`PhantomData<JsObject>` says it's an object, and nothing says which
+class. Two such in one enum are refused where they're tested, as any two
+objects are. `JsError` is the exception (`Recognition::is_js_error`):
+what was thrown may be a string or a number, so it's a payload JS can't
+tell, and it's refused as one.
 
-A `types` that names a TypeScript type no global class has, an
-interface's, is still taken for a class; a binding declares what
-TypeScript says, and the guide's do.
+The js crate's global classes declare their `types`, as `Map`, `Set` and
+`Error` did, so they're still tested by their class: `Date`, `RegExp`,
+`Promise<T>`, `ArrayBuffer`, `SharedArrayBuffer`, `DataView`, the typed
+arrays and `Intl`'s nine classes. A function that takes or gives one is
+typed so in its `.d.ts`, `pattern(r: RegExp): RegExp`, where it was
+`any`, and `js::class::<Date>()` is now `Date` (ADR 0911). What isn't a
+class declares none: a `Segments`, a timer's id, a `RegExpMatch`.
 
-Case ([0262](0262-when-rust-and-js-disagree.md)): D, refused, where the
-JS threw.
+A `types` that names a TypeScript interface no global class has is still
+taken for a class. A binding declares what TypeScript says, and the
+guide's bindings do.
 
-Held by `test/diagnostics.test.ts`, "an untagged enum's variant of a JS
-object of no declared class" and "of what JS threw"; by
-`test/compiler.test.ts`, "an untagged enum's JS object is tested by the
-class TypeScript names", whose `js::RegExp` and `js::intl::Collator`
-variants are run as JS; and by the mutation `binding-class-any-name`,
-retargeted to the refusal. `test/untagged.rs` declares its `Error` and
-`TypeError` classes' `types`.
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer, where
+the JS threw; D, refused, for `JsError`.
+
+Held by `test/compiler.test.ts`, "an untagged enum's JS object is tested
+by the class TypeScript names", whose undeclared `Tag` and whose
+`js::RegExp` and `js::intl::Collator` variants are run as JS; by
+`test/diagnostics.test.ts`, "an untagged enum's variant of what JS
+threw"; and by the mutations `binding-class-any-name` (retargeted) and
+`untagged-js-error-an-object`. `test/untagged.rs` declares the `types` of
+its `Error` and `TypeError` classes, which it tests by `instanceof`.

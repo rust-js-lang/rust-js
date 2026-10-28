@@ -756,9 +756,9 @@ export function size(input) {
   crate's `Date`, `RegExp`, `Promise`, buffers and `Intl` classes declare
   theirs; a module's type, `types = "chart.js#Chart"`, is an object,
   `typeof value === "object"`, as no `instanceof` can name a class its
-  module doesn't import. A type that declares none, or `JsError`, what JS
-  threw, is an error as a variant's payload, not `instanceof` a class of
-  its name JS may not have
+  module doesn't import, and so is a type that declares none, never
+  `instanceof` a class of its name JS may not have. `JsError`, what JS
+  threw, may be any value, and is an error as a variant's payload
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A `RefCell` of an array or an object is that, and an
   `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
   an array, except where the crate has one as a box, `{ value }` or

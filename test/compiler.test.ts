@@ -666,9 +666,9 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
 // one TypeScript names it, a global's, `instanceof URL` of a `Url` declared
 // `#[rust_js::types = "URL"]`, not of its Rust name; and a module's type,
 // `./shapes.js#Chart`, which an `instanceof` would read unimported, is
-// told apart as an object. The js crate's global classes declare theirs,
-// `js::RegExp` and `js::intl::Collator` (one that declares none is refused,
-// diagnostics.test.ts).
+// told apart as an object, as one that declares nothing is, never
+// `instanceof Tag` of a `Tag` JS may not have. The js crate's global
+// classes declare theirs, `js::RegExp` and `js::intl::Collator`.
 test("an untagged enum's JS object is tested by the class TypeScript names", async () => {
   const dir = fixture("untagged-declared-classes");
   writeFileSync(join(dir, "shapes.js"), "export class Chart {}\n");
@@ -682,6 +682,21 @@ pub struct Url(PhantomData<JsObject>);
 
 #[cfg_attr(rust_js, rust_js::types = "./shapes.js#Chart")]
 pub struct Chart(PhantomData<JsObject>);
+
+pub struct Tag(PhantomData<JsObject>);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Named<'a> {
+    Tag(&'a Tag),
+    Text(&'a str),
+}
+
+pub fn named(named: Named) -> String {
+    match named {
+        Named::Tag(_) => "tag".to_string(),
+        Named::Text(text) => text.to_string(),
+    }
+}
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Link<'a> {
@@ -738,6 +753,8 @@ pub fn drawn(drawn: Drawn) -> String {
   expect([lib.drawn(new Chart()), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "2 charts", "pie"]);
   expect(js).toContain("pattern instanceof RegExp");
   expect(js).toContain("pattern instanceof Intl.Collator");
+  expect(js).not.toContain("instanceof Tag");
+  expect([lib.named({ any: "tag" }), lib.named("x")]).toEqual(["tag", "x"]);
   expect([lib.pattern(/a/), lib.pattern(new Intl.Collator()), lib.pattern("x")]).toEqual(["regex", "collator", "x"]);
 });
 
