@@ -487,15 +487,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(it, "len"), Vec::new())
                 }
                 (Some(IterMethod::Len), None) if array => self.items_left(it, made),
-                // A chain made here of an array's items, which nothing else
-                // steps, skipped or taken from, no closure of its to run: its
-                // items' count, `$iter(xs).drop(1).toArray().length`, which is
-                // `xs.slice(1).length`.
-                (Some(IterMethod::Len), None) if counted_chain(&it) => {
-                    Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
-                }
                 // One made in place, by what each of its adapters counts of
-                // its source: a range of numbers' count (ADR 0986).
+                // its source: a range of numbers' count, an array's items
+                // skipped, `Math.max(xs.length - n, 0)` (ADR 0986).
                 (Some(IterMethod::Len), _) if let Some(len) = self.len_in_place(&it, iter_ty, made) => len,
                 _ => {
                     // Its type's name, not its closures', which name where they're written.

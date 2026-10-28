@@ -75,18 +75,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering-iterators.test.ts", "-t", "an iterator's len from MIR"]
   },
   {
-    "name": "mir-counted-chain-len-refused",
-    "breaks": "`xs.iter().skip(1).len()` from MIR is refused, not `xs.slice(1).length`",
-    "file": "src/lower/mir/iter.rs",
-    "find": "                (Some(IterMethod::Len), None) if counted_chain(&it) => {\n",
-    "replace": "                (Some(IterMethod::Len), None) if false && counted_chain(&it) => {\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "str_bytes"
-    ]
-  },
-  {
     "name": "mir-next-through-mut-refused",
     "breaks": "`next` of a `&mut` to the crate's iterator from MIR is refused, not its own",
     "file": "src/lower/mir/iter.rs",

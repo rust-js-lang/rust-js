@@ -67,7 +67,12 @@ knows neither, and stays refused.
 ## Consequences
 
 `v.iter().map(f).len()` is `v.length`, and `v.iter().skip(k).map(f).len()`
-is `Math.max(v.length - k, 0)`. No other snapshot changed.
+is `Math.max(v.length - k, 0)`. `len()`'s rule for an array's items skipped
+or taken from, `counted_chain`'s `v.slice(9).length`, counted the same
+construct a second way. It's removed, with its mutation,
+`mir-counted-chain-len-refused`: `v.iter().take(9).len()` is
+`Math.min(v.length, 9)`, as `take(2).map(f)`'s is (`len_made_in_place`,
+`str_bytes`).
 
 `test/corpus/len_made_in_place.rs` checks each form against native Rust,
 including a map whose function counts its calls. The mutations are

@@ -71,7 +71,7 @@ function main() {
   const before = rest.end - rest.at;
   const next = $next(rest);
   console.log(`${before} ${next == null ? "None" : `Some(${next})`} ${rest.end - rest.at}`);
-  console.log(`${[1, 2, 3].slice(1).length}`);
+  console.log(`${Math.max([1, 2, 3].length - 1, 0)}`);
   // A clone of it is what it has left, as a slice's is (ADR 0181).
   const first = $iter(Array.from(new TextEncoder().encode("héllo")));
   $next(first);

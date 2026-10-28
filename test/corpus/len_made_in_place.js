@@ -40,8 +40,8 @@ function main() {
   const arg = v.map((x, i) => [i, x]).toReversed().length;
   console.log(`${v.length} ${arg}`);
   console.log(`${v.length}`);
-  console.log(`${v.slice(1).toReversed().length} ${v.slice(9).length}`);
-  console.log(`${Math.min(v.length, 2)} ${v.slice(0, 9).length}`);
+  console.log(`${v.slice(1).toReversed().length} ${Math.max(v.length - 9, 0)}`);
+  console.log(`${Math.min(v.length, 2)} ${Math.min(v.length, 9)}`);
   console.log(`${v.length}`);
   console.log(`${Math.min(Math.max(Math.max(10 - 0, 0) - 3, 0), 4)}`);
   console.log(
