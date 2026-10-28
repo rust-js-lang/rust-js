@@ -46,7 +46,7 @@ function same(a, b, TPartialEq) {
   return TPartialEq.eq(a, b);
 }
 function biggest(v, TOrd) {
-  return $maxBy(v, TOrd.cmp, true);
+  return $maxBy(v, TOrd.cmp);
 }
 function hashed(t, THash) {
   const h = new $SipHasher(1, 3);

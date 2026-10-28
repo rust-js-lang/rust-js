@@ -14,22 +14,14 @@ function write(o, v) {
 }
 
 function read(o, v, TPartialEq) {
-  if (o.value != null) {
-    const x = $someMut(o);
-    return TPartialEq.eq(x.value, v);
-  } else {
-    return false;
-  }
+  return o.value != null ? TPartialEq.eq(o.value, v) : false;
 }
 
 function setIfConsistent(old, new$, TPartialEq) {
-  if (old.value != null) {
-    const old$1 = $someMut(old);
-    if (!TPartialEq.eq(old$1.value, new$)) {
-      return { TAG: "Err" };
-    }
+  if (old.value != null && !TPartialEq.eq(old.value, new$)) {
+    return { TAG: "Err" };
   }
-  old.value = $some(new$);
+  old.value = new$;
   return { TAG: "Ok" };
 }
 

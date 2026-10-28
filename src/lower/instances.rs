@@ -304,6 +304,7 @@ pub(super) struct Analyzed<'a, 'tcx> {
 /// What the analyzed crate asks of its calls of a library's functions.
 struct Calls<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
+    recognition: super::recognition::Recognition<'a, 'tcx>,
     foreign: &'a super::library::Foreign<'a, 'tcx>,
     /// Whether a value of a type that's no type parameter runs a destructor
     /// where it's dropped, as the crate drops it.
@@ -314,6 +315,8 @@ struct Calls<'a, 'tcx> {
     copied: &'a HashSet<(DefId, u32)>,
     /// And given a `Clone` dictionary (ADR 0914, amended).
     clones: &'a HashSet<(DefId, u32)>,
+    /// And given nothing that may look like `None` (ADR 0051, amended).
+    unboxed: &'a HashSet<(DefId, u32)>,
     /// Whether a value of a type is its own clone, as the crate counts its
     /// `Rc`s.
     clones_itself: &'a dyn Fn(Ty<'tcx>) -> bool,
@@ -347,11 +350,13 @@ pub(super) fn needed<'tcx>(
     let clones_itself = |t: Ty<'tcx>| super::analysis::clones_itself(tcx, counted, t);
     let calls = Calls {
         tcx,
+        recognition,
         foreign,
         runs: &runs,
         drop_params,
         copied: given.copied,
         clones: given.clones,
+        unboxed: given.unboxed,
         clones_itself: &clones_itself,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
@@ -483,7 +488,14 @@ fn gives_more<'tcx>(
             ty::Param(param) => calls.clones.contains(&(caller, param.index)),
             _ => !(calls.clones_itself)(given),
         };
+        // A value that may look like `None`, whose `Some` an export that
+        // boxes none gives as it is (ADR 0051, amended).
+        let nullish = match given.kind() {
+            ty::Param(param) => !calls.unboxed.contains(&(caller, param.index)),
+            _ => super::representation::may_look_like_none(&calls.recognition, given),
+        };
         (drops && !takes(index, ParamFact::Drop) && body_may_drop(calls, (callee, index), may_drop))
+            || (nullish && takes(index, ParamFact::Unboxed))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     })

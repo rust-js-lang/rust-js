@@ -8,7 +8,6 @@ import {
   $nextSome,
   $rangeNext,
   $some,
-  $someMut,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -26,29 +25,29 @@ function byAsMut(slot, IIterator) {
   if (value == null) {
     return;
   }
-  return IIterator.next($someValue(value));
+  return IIterator.next(value);
 }
 
 function made(slot, f, IIterator) {
-  slot.value ??= $some(f());
-  return IIterator.next($someValue(slot.value));
+  slot.value ??= f();
+  return IIterator.next(slot.value);
 }
 
 function given(slot, x, IIterator) {
-  slot.value ??= $some(x);
-  return IIterator.next($someValue(slot.value));
+  slot.value ??= x;
+  return IIterator.next(slot.value);
 }
 
 function bumped(slot, by, TDefault, TAddAssign) {
-  slot.value ??= $some(TDefault.default());
-  const held = $someMut({
+  slot.value ??= TDefault.default();
+  const held = {
     get value() {
       return slot.value;
     },
     set value(value) {
       slot.value = value;
     },
-  });
+  };
   TAddAssign.addAssign(held, by);
   return held.value;
 }

@@ -21,8 +21,11 @@ use std::path::Path;
 /// amended) are none of a library written before, whose types its
 /// consumers' declarations have as `any`, as they had. 9: a type
 /// parameter's `Clone` takes its dictionary only where its own crate's
-/// calls give one, a fact of it, `clone` (ADR 0914, amended).
-pub const VERSION: u32 = 9;
+/// calls give one, a fact of it, `clone` (ADR 0914, amended). 10: a
+/// type parameter's `Some` is the value where its crate's calls give it
+/// nothing that may look like `None`, a fact of it, `unboxed` (ADR 0051,
+/// amended).
+pub const VERSION: u32 = 10;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -148,6 +151,10 @@ pub enum ParamFact {
     /// It takes no destructor, which its consumers' calls are checked for
     /// (ADR 0190).
     NoDrop,
+    /// A `Some` of it is the value, never a box: its crate's calls give it
+    /// nothing that may look like `None`, and a consumer that gives one
+    /// compiles its own (ADR 0051, amended; library ABI 10).
+    Unboxed,
 }
 
 impl TypeParam {

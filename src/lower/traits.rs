@@ -143,6 +143,8 @@ pub(super) struct Given<'a> {
     pub copied: &'a HashSet<(DefId, u32)>,
     pub clones: &'a HashSet<(DefId, u32)>,
     pub stepped: &'a HashSet<(DefId, u32, DefId)>,
+    /// The type parameters a `Some` of which is the value (ADR 0051, amended).
+    pub unboxed: &'a HashSet<(DefId, u32)>,
 }
 
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a

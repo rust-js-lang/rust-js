@@ -247,6 +247,52 @@ pub(in crate::lower) fn cloned_params<'tcx>(
     )
 }
 
+/// The type parameters of the crate's own functions a `Some` of which is
+/// the value itself, never a box (ADR 0051, amended): of a function only
+/// its crate's calls call (`copies_by_callers`), those none of its calls
+/// gives what may look like `None`, `()` or an `Option`
+/// (`representation::may_look_like_none`), or a type parameter of its own
+/// that may be one. Every other is given one, a JS caller's `R` too, which
+/// is any JS value and so is given as it is, as TypeScript's `R | undefined`
+/// says; a library's consumer that gives one compiles its own (ADR 0914).
+pub(in crate::lower) fn unboxed_params<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    items: &HashSet<DefId>,
+) -> HashSet<(DefId, u32)> {
+    let tcx = recognition.tcx;
+    let foreign = recognition.foreign;
+    let nullish = given_params(
+        tcx,
+        all_bodies,
+        (items.iter(), &|id| items.contains(&id)),
+        foreign,
+        &|id| type_params(tcx, id),
+        &|ty| !crate::lower::representation::may_look_like_none(recognition, ty),
+    );
+    (items.iter().copied())
+        .filter(|&id| copies_by_callers(tcx, foreign, id) && tcx.typeck_root_def_id(id) == id)
+        .flat_map(|id| type_params(tcx, id).into_iter().map(move |index| (id, index)))
+        .filter(|param| !nullish.contains(param))
+        .collect()
+}
+
+/// Each type parameter of `id`'s, its parents' too, by index.
+fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+    if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) {
+        return Vec::new();
+    }
+    let generics = tcx.generics_of(id);
+    (0..generics.count() as u32)
+        .filter(|&index| {
+            matches!(
+                generics.param_at(index as usize, tcx).kind,
+                ty::GenericParamDefKind::Type { .. }
+            )
+        })
+        .collect()
+}
+
 /// The type parameters of `items`, the crate's, whose bound `bounded` says
 /// takes what does to a value what its trait does, a copy or a clone: every
 /// one of a function a dictionary may call, and of the others those a

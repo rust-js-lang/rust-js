@@ -7,9 +7,8 @@ import {
   $displayF64,
   $div,
   $iter,
-  $nextSome,
+  $next,
   $rem,
-  $someValue,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -20,9 +19,8 @@ function total(values, zero, TAdd, TCopy) {
   let sum = TCopy ? TCopy.copy(zero) : zero;
   const iter = $iter(values);
   let value;
-  while ((value = $nextSome(iter)) != null) {
-    const value$1 = $someValue(value);
-    const v = TCopy ? TCopy.copy(value$1) : value$1;
+  while ((value = $next(iter)) != null) {
+    const v = TCopy ? TCopy.copy(value) : value;
     sum = TAdd.add(TCopy ? TCopy.copy(sum) : sum, TCopy ? TCopy.copy(v) : v);
   }
   return TCopy ? TCopy.copy(sum) : sum;

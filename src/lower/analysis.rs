@@ -42,7 +42,7 @@ pub(super) use closures::{ClosureFacts, clone_shares};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
-use mutation::{cloned_params, copied_params, mutated_types};
+use mutation::{cloned_params, copied_params, mutated_types, unboxed_params};
 pub(super) use mutation::{clones_by_itself, copies_by_callers};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
@@ -532,6 +532,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The type parameters whose `Clone` bound takes its dictionary (ADR
     /// 0914, amended).
     pub clones: HashSet<(DefId, u32)>,
+    /// The type parameters a `Some` of which is the value, no caller giving
+    /// what may look like `None` (ADR 0051, amended).
+    pub unboxed: HashSet<(DefId, u32)>,
     /// The type parameters given as they are whose `Iterator` dictionary,
     /// or an extension's, is given, as they're stepped by it (ADRs 0411,
     /// 0487), with the trait's id.
@@ -941,6 +944,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The type parameters whose `Clone` bound takes its dictionary: those a
     // caller gives what isn't its own clone (ADR 0914, amended).
     let clones = cloned_params(tcx, all_bodies, &item_set, &foreign, &counted);
+    // The type parameters a `Some` of which is the value: those no caller
+    // gives what may look like `None` (ADR 0051, amended).
+    let unboxed = unboxed_params(&recognition, all_bodies, &item_set);
 
     // What each body may borrow, of the crate's cells (ADR 0580).
     let cell_borrows = CellBorrows::of_crate(
@@ -1109,6 +1115,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         copied: &copied,
         clones: &clones,
         stepped: &stepped,
+        unboxed: &unboxed,
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
@@ -1153,6 +1160,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         drop_params,
         copied,
         clones,
+        unboxed,
         stepped,
         type_facts,
         failing,

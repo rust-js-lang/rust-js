@@ -391,7 +391,6 @@ export function largest(xs, TOrd, TCopy) {
   return $maxBy(
     xs.values().map((item) => (TCopy ? TCopy.copy(item) : item)),
     TOrd.cmp,
-    true,
   );
 }
 

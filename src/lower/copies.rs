@@ -109,6 +109,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         item = next;
                     }
                     let boxed = item != inner;
+                    // Of a value that's its own copy, a type parameter's no
+                    // caller gives a copy function, the `Option` itself, not
+                    // `value == null ? value : value` (ADR 0289, amended).
+                    let probe = Expr::var("value");
+                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {
+                        return place;
+                    }
                     return once(place, &|o| {
                         let mut none = Expr::bin(Op::LooseEq, o.clone(), Expr::null());
                         if boxed {

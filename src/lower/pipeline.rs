@@ -127,6 +127,7 @@ pub fn lower_crate<'tcx>(
         mut drop_params,
         copied,
         clones,
+        unboxed,
         stepped,
         type_facts,
         failing,
@@ -189,6 +190,7 @@ pub fn lower_crate<'tcx>(
         copied: &copied,
         clones: &clones,
         stepped: &stepped,
+        unboxed: &unboxed,
     };
     // The library functions the crate's calls give more than they take,
     // compiled here first, before anything is lowered (ADR 0914).

@@ -9,7 +9,7 @@ export function entry() {
 const Delayed = {
   total(delayed, IIterator, IClone, BBorrowU32) {
     let sum = 0;
-    for (const b of $iterator(IClone.clone(delayed.items), IIterator.next, true)) {
+    for (const b of $iterator(IClone.clone(delayed.items), IIterator.next)) {
       sum = (sum + BBorrowU32.borrow(b)) >>> 0;
     }
     return sum;

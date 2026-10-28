@@ -17,11 +17,9 @@ import {
   $lazyScan,
   $lowerExp,
   $maxBy,
-  $nextSome,
+  $next,
   $partialCmp,
   $range,
-  $some,
-  $someValue,
   $splitOff,
   $toFixed,
   $totalCmp,
@@ -70,15 +68,15 @@ function configDebug_fmt(config) {
 
 function largest(items, TPartialOrd) {
   const it = $iter(items);
-  const value = $nextSome(it);
+  const value = $next(it);
   if (value != null) {
-    let best = $someValue(value);
+    let best = value;
     for (const x of it) {
       if (TPartialOrd.partialCmp(x, best) > 0) {
         best = x;
       }
     }
-    return $some(best);
+    return best;
   }
   return;
 }

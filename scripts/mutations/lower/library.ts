@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "        _ if dyn_shape => true,\n",
     tests: ["test/crates.test.ts", "-t", "a library's checked cell of a Vec of dyn Fns"],
   },
+  {
+    name: "library-unboxed-unwritten",
+    breaks: "a library's contract says none of its type parameters is unboxed, so a consumer that gives `flush_sync` a `()` calls the export, whose `Some(())` is `undefined` (ADR 0051, amended)",
+    file: "src/lower/library.rs",
+    find: "        param(&mut params, index).marks.insert(ParamFact::Unboxed);\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "unboxed function"],
+  },
 ];

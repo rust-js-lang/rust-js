@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "ty::Adt(_, made) => made.types().next().is_some_and(|_| false),",
     tests: ["test/cross-crate-items.test.ts", "-t", "of a concat is imported"],
   },
+  {
+    name: "instance-gives-nullish-unasked",
+    breaks: "a consumer that gives a library's unboxed type parameter a `()` calls the export, whose `Some(())` is `undefined`, `None` (ADR 0051, amended)",
+    file: "src/lower/instances.rs",
+    find: "            || (nullish && takes(index, ParamFact::Unboxed))\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "unboxed function"],
+  },
 ];

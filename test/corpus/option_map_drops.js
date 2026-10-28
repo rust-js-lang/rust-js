@@ -17,7 +17,7 @@ function make(n) {
 }
 
 function wrapped(value) {
-  return value != null ? [$someValue(value)] : undefined;
+  return value != null ? [value] : undefined;
 }
 
 // Drops `value` where it doesn't keep it: a generic `Option<T>`, whose

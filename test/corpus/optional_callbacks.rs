@@ -25,6 +25,21 @@ where
     f.map(|f| f(f(n)))
 }
 
+// A trait's method is called through its dictionary, by callers no walk
+// sees, so its type parameters may be given anything: its `F`, bound by
+// `FnOnce`, is still the function.
+trait Runner {
+    fn run<F: FnOnce() -> i32>(&self, f: Option<F>) -> Option<i32>;
+}
+
+struct Plain;
+
+impl Runner for Plain {
+    fn run<F: FnOnce() -> i32>(&self, f: Option<F>) -> Option<i32> {
+        if let Some(f) = f { Some(f()) } else { None }
+    }
+}
+
 fn main() {
     let three = flush_sync(Some(|| 3));
     let none = flush_sync(None::<fn() -> i32>);
@@ -42,4 +57,5 @@ fn main() {
     let added = twice(Some(&add), 1);
     let not_added = twice(None::<&fn(i32) -> i32>, 1);
     println!("{added:?} {not_added:?}");
+    println!("{:?} {:?}", Plain.run(Some(|| 6)), Plain.run(None::<fn() -> i32>));
 }

@@ -12,7 +12,6 @@ import {
   $ptrBytes,
   $ptrTyped,
   $realloc,
-  $some,
   $unwrap,
   $unwrapOk,
   $vecFromRaw,
@@ -53,7 +52,7 @@ const Buf = {
       return;
     }
     buf.len = (buf.len - 1) >>> 0;
-    return $some($ptrAdd(buf.ptr, buf.len).value);
+    return $ptrAdd(buf.ptr, buf.len).value;
   },
 
   intoVec(buf) {

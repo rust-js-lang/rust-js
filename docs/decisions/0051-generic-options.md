@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -219,3 +219,85 @@ code that reads it agree whatever either knows.
 FnOnce`, of an `F: FnMut` through `as_mut()`, and of a `&F` where `F: Fn`,
 `R` an `Option` and a `()` among them, against native Rust; mutation
 `callable-param-some-boxed`.
+
+## Amendment: a type parameter no call gives what may look like `None`
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a JS caller's
+results changed, given a box its declaration doesn't name; each Rust
+caller's are what they were.
+
+The port's `flush_sync<R>(f: Option<impl FnOnce() -> R>) -> Option<R>`
+printed `return f != null ? $some(f()) : undefined;`. React's JS callers
+of it, react-test-renderer's `unstable_flushSync`, react-noop's
+`flushSync` and ReactDOMClientFB, are given what the callback gives,
+upstream's `R | void`; a callback that gives `undefined` or `null` got
+`{ $someNone: 0 }` or `{ $someNone: 0, $value: null }` back, which the
+declaration rust-js prints, `R | null | undefined`, doesn't name either.
+No Rust caller gave `R` anything: only JS calls it, and JS's `R` is any
+value, which has no Rust type to be an `Option` of.
+
+**A type parameter that no call gives what may look like `None` is never
+boxed: a `Some` of it is the value.** Rust can tell `Some(None)` from
+`None` only of a value of a type that may look like `None`, `()`, an
+`Option`, a unit struct, a type parameter; if no call gives the
+parameter one, no value of it is ever `undefined` or `null` in Rust, and
+`$some(x)` is `x` of every value it's given. So the box is left out where
+it would never be made, and a JS caller is given the value its callback
+gives, `undefined` too, as TypeScript's `R | undefined` says:
+
+```js
+export function flushSync(f) {
+  if (f != null) {
+    return f();
+  }
+}
+```
+
+- **Which parameters**, `unboxed_params` in
+  `src/lower/analysis/mutation.rs`, as ADR 0289 finds a `Copy` bound's
+  and ADR 0914, amended, a `Clone` bound's: of a function only its
+  crate's calls call (`copies_by_callers`), each type parameter none of
+  its calls gives a type that may look like `None`
+  (`representation::may_look_like_none`, which sees through references,
+  `Box`, `Rc` and `Pin` and takes any `Weak` and any type parameter as
+  one, never less than `can_be_nullish`), nor a type parameter of its own
+  that's given one: `relay<U>(x: U) { wrap(x) }` passes `U`'s on to
+  `wrap`'s `T`. A function a dictionary calls, a trait's or an impl's,
+  and what it passes its own on to, is given anything, as before.
+  `defined_by_its_bounds` (`representation/options.rs`) asks it, of the
+  body's owner, beside a function trait's bound and a binding's.
+- **Where a call gives one, the box stays**, in that function and every
+  one it passes it on to: `relay(())`'s `Some(())` is `Some`. A JS caller
+  of that function is given the box, as before: its crate's own Rust
+  needs it.
+- **A library's export says which of its parameters are unboxed**, a
+  fact of each, `unboxed` (library ABI 10). A consumer whose call gives
+  one of them what may look like `None` compiles its own (ADR 0914),
+  which boxes it: `dep::flush_sync(Some(|| ()))`'s `is_some()` is `true`.
+  `@rust-js/std`'s functions are called by every program and compiled by
+  none: none of theirs is unboxed.
+- **What a copy of one is**: an `Option<T>` of a `T: Copy` whose copy is
+  the value, `items.last().copied()`, is the `Option` itself, `return
+  items.at(-1);`, not `value == null ? value : value` (`copies.rs`).
+
+Alternatives: a bound the program writes, `R: Defined`, bends the Rust to
+the compiler, which AGENTS.md rules out; a JS-facing export that unboxes
+what it returns makes two functions of one, and a Rust caller in another
+crate would have to call the other; boxing only where the instantiation
+is known, at run time, can't be done: a Rust `()` and a JS callback's
+`undefined` are the same value. Cost: a crate-wide walk of each call's
+type arguments, which `given_params` already makes of `Copy` and `Clone`
+bounds; generic code called with numbers alone reads plainer, `first`'s
+`items[0]`, not `$someAt(items, 0)`.
+
+`examples/generic_options.rs`'s `flush_sync` is called by
+`test/compiler.test.ts`'s JS with callbacks that give `undefined`,
+`null` and `5`; `test/corpus/unboxed_type_params.rs` gives a relay, a
+generic type's methods, a function pointer, a closure in generic code
+and a trait impl's method `()` and `Option`s, against native Rust;
+`test/corpus/optional_callbacks.rs` keeps a trait method's `F: FnOnce`
+unboxed by its bound alone; `test/cross-crate-items.test.ts` "a consumer
+giving what may look like None compiles its own of an unboxed function".
+Mutations `unboxed-param-given`, `nullish-passed-on`,
+`unboxed-library-fact` and `instance-gives-nullish`.
+

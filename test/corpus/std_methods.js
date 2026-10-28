@@ -9,7 +9,6 @@ import {
   $displayF32,
   $displayF64,
   $print,
-  $some,
   $sortedEntries,
 } from "@rust-js/runtime";
 
@@ -37,7 +36,7 @@ const Stack = {
 
 function swapIn(slot, value) {
   const old = slot.value;
-  slot.value = $some(value);
+  slot.value = value;
   return old;
 }
 

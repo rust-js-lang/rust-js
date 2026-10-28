@@ -11,7 +11,7 @@ function loudDrop_drop(loud) {
 }
 
 function pick(o, d, dropT) {
-  const value = $someValue(o ?? $some(d));
+  const value = o ?? d;
   if (o != null) {
     dropT?.(d);
   }
@@ -19,7 +19,7 @@ function pick(o, d, dropT) {
 }
 
 function maybe(keep, v, dropT) {
-  const value = keep ? $some(v) : undefined;
+  const value = keep ? v : undefined;
   if (!keep) {
     dropT?.(v);
   }

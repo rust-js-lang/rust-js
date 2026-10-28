@@ -910,7 +910,8 @@ test("an Option of a generic T is its value, boxed only when that looks like Non
   const js = await Bun.file(join(target, "generic_options.js")).text();
   expect(js).toContain("export function pick(x, keep) {\n  if (keep) {\n    return $some(x);");
   expect(js).toContain("  return $someValue(pick(x, keep) ?? $some(fallback));");
-  expect(js).toContain("  return option != null ? $some(f($someValue(option))) : undefined;");
+  // `mapped`'s `U` is given a `bool` and an `i32`, neither like `None`.
+  expect(js).toContain("  return option != null ? f($someValue(option)) : undefined;");
   expect(js).toContain("  return $pop(xs);");
   // Code that isn't generic keeps `Some(x)` as `x`.
   expect(await Bun.file(join(target, "options.js")).text()).not.toContain("$some");
@@ -919,6 +920,14 @@ test("an Option of a generic T is its value, boxed only when that looks like Non
   expect(genericOptions.pick("a", true)).toBe("a");
   expect(genericOptions.pick(undefined, true)).toEqual({ $someNone: 0 });
   expect(genericOptions.pick(undefined, false)).toBeUndefined();
+  // A type parameter only JS gives, as React's flushSyncFromReconciler's
+  // `R`, is given as it is: what the callback gives, `undefined` or `null`
+  // too (ADR 0051, amended).
+  expect(js).toContain("export function flushSync(f) {\n  if (f != null) {\n    return f();\n  }\n}");
+  expect(genericOptions.flushSync(() => undefined)).toBeUndefined();
+  expect(genericOptions.flushSync(() => null)).toBeNull();
+  expect(genericOptions.flushSync(() => 5)).toBe(5);
+  expect(genericOptions.flushSync(undefined)).toBeUndefined();
 });
 
 // ADR 0052: the crate's own `Default`, `From` and `Clone`. A clone is a copy
@@ -1189,7 +1198,9 @@ test("versions' JS: struct update in Rust's order, scan, drain and total_cmp", a
   const js = await Bun.file(join(target, "versions.js")).text();
   expect(js).toContain("{\n      major: 0,\n      minor: 9,\n      patch: 0,\n    }");
   expect(js).toContain("const v = {\n    patch: tick(order, 1),\n    major: tick(order, 2),\n    minor: made(order).minor,\n  };");
-  expect(js).toContain("const value = $nextSome(it);");
+  // `largest`'s `T` is given numbers alone, none like `None`: its first
+  // item is the value, no box (ADR 0051, amended).
+  expect(js).toContain("const value = $next(it);");
   expect(js).toContain("fs.sort((a, b) => $totalCmp(a, b));");
   expect(js).toContain("const tail = $splitOff(v, 5);");
   expect(js).toContain("$lowerExp(1234.5)");

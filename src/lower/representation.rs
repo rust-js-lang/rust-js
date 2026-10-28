@@ -21,6 +21,9 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 mod cells;
+mod options;
+
+pub(in crate::lower) use options::may_look_like_none;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,
@@ -234,66 +237,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
         );
         Ok(Expr::index(table, name))
-    }
-
-    /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
-    /// which are the value itself (ADR 0023), but for a counted `Rc`, an
-    /// object of its own (ADR 0320), and a `&mut` that's a cell, a handle
-    /// on its place (ADR 0099), even of a generic `T`.
-    fn payload(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
-        loop {
-            ty = match ty.kind() {
-                _ if self.is_cell(ty) => return ty,
-                ty::Ref(_, inner, _) => *inner,
-                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => args.type_at(0),
-                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => args.type_at(0),
-                _ => return ty,
-            };
-        }
-    }
-
-    /// An `Option<T>` whose `T` might look like `None`: a type parameter, or
-    /// a `()` or an `Option` itself. `Some` of it is boxed when it does
-    /// (ADR 0051).
-    pub(super) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
-        let payload = self.payload(ty);
-        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
-    }
-
-    /// Is `ty` a type parameter its bounds say is never `undefined` or
-    /// `null`, so `Some` of one is the value itself? One a binding of its
-    /// bound reads, `node.sortIndex` of `T: Node`, as the binding takes on
-    /// trust (ADR 0307); or one bound by `FnOnce`, `FnMut` or `Fn`, a JS
-    /// function whatever it is (ADR 0051, amended).
-    pub(super) fn defined_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Param(_)) && (self.read_by_its_bounds(ty) || self.is_callable(ty))
-    }
-
-    fn read_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Param(_))
-            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
-                clause.as_trait_clause().is_some_and(|bound| {
-                    bound.self_ty().skip_binder() == ty
-                        && (self.tcx.associated_items(bound.def_id()).in_definition_order())
-                            .any(|item| item.is_method() && bindings::is_binding(self.tcx, item.def_id))
-                })
-            })
-    }
-
-    /// Can a `T` be `undefined` or `null` in JS? Then `Option<T>` can't be
-    /// `T` itself: `Some(())` and `None` would be the same value.
-    pub(super) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.payload(ty);
-        ty.is_unit()
-            || (super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
-            || self.option_of(ty).is_some()
-            // `undefined` before it's written (ADR 0332).
-            || self.recognition().uninit_of(ty).is_some()
-            // An uncounted `Weak::new()`, `null` (ADR 0843).
-            || self.uncounted_weak(ty).is_some()
-            || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
-            // An untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676).
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::untagged::holds_nullish(self.tcx, *adt))
     }
 
     /// Does a `ty` have one value, as a zero-sized type does: `()`, a unit

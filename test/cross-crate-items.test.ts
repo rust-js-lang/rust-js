@@ -861,6 +861,45 @@ test("a consumer cloning what isn't its own clone compiles its own of the functi
   expect(apart()).toEqual([[1], [1, 2]]);
 });
 
+// A library's generic function its own crate gives nothing that may look
+// like \`None\` makes its \`Some\` the value, as React's reconciler's
+// flushSyncFromReconciler gives its JS caller what the callback gives; a
+// consumer that gives it \`()\` or an \`Option\` compiles its own, whose
+// \`Some(None)\` is boxed, still \`Some\` (ADR 0051, amended). One the
+// library itself gives an \`Option\` boxes in its own JS, and is called.
+test("a consumer giving what may look like None compiles its own of an unboxed function", async () => {
+  const dir = fixture("cross-crate-unboxed");
+  const { dep, app } = compiled(dir, `pub fn flush_sync<R>(f: Option<impl FnOnce() -> R>) -> Option<R> {
+    if let Some(f) = f { Some(f()) } else { None }
+}
+
+pub fn wrap<T>(x: T) -> Option<T> {
+    Some(x)
+}
+
+pub fn wrapped_none() -> bool {
+    wrap(None::<u8>).is_some()
+}
+`, `pub fn plain() -> Option<u32> {
+    dep::flush_sync(Some(|| 3))
+}
+
+pub fn units() -> (bool, bool, bool) {
+    let unit = dep::flush_sync(Some(|| ())).is_some();
+    let none = dep::flush_sync(Some(|| None::<u8>)).is_some();
+    (unit, none, dep::wrap(()).is_some())
+}
+`);
+  expect(dep).toContain("export function flushSync(f) {\n  if (f != null) {\n    return f();\n  }\n}");
+  expect(dep).toContain("export function wrap(x) {\n  return $some(x);\n}");
+  expect(app).toContain("function flushSync(f) {\n  if (f != null) {\n    return $some(f());\n  }\n}");
+  expect(app).not.toContain("function wrap(");
+  const { plain, units } = await import(join(dir, "app", "lib.js"));
+  expect([plain(), units()]).toEqual([3, [true, true, true]]);
+  const library = await import(join(dir, "dep", "lib.js"));
+  expect([library.flushSync(() => undefined), library.flushSync(() => null), library.wrappedNone()]).toEqual([undefined, null, true]);
+});
+
 // React's reconciler reads a context, `readContext(CacheContext)`, of
 // `react`'s `ReactContext<T>`, whose `_currentValue` is a `RefCell<T>` it
 // borrows unchecked: `read_context<T: Clone>` clones it under the borrow, and

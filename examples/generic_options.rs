@@ -58,6 +58,13 @@ pub fn first_of<T>(xs: &[T]) -> Option<&T> {
     xs.first()
 }
 
+/// Called by JS alone, as React's `flushSyncFromReconciler(fn)` is: no
+/// call gives `R` what may look like `None`, so its `Some` is what `f`
+/// gives, `undefined` too, as TypeScript's `R | undefined` says.
+pub fn flush_sync<R>(f: Option<impl FnOnce() -> R>) -> Option<R> {
+    if let Some(f) = f { Some(f()) } else { None }
+}
+
 // A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these
 // ask about the generic ones without making one.
 pub fn tried_some<T>(x: T, keep: bool) -> bool {

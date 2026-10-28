@@ -229,4 +229,13 @@ export const mutations: Mutation[] = [
     replace: "                        && (false\n",
     tests: ["test/crates.test.ts", "-t", "a library.s RefCells are the values they hold"],
   },
+  {
+    name: "own-copy-option-tested",
+    breaks: "a copy of an `Option` of a value that's its own copy tests it, `value == null ? value : value` (ADR 0051, amended)",
+    file: "src/lower/copies.rs",
+    find: "                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {\n",
+    replace: "                    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
+    snapshots: true,
+  },
 ];

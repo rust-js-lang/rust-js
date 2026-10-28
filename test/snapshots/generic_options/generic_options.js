@@ -46,7 +46,7 @@ export function unwrapped(x) {
 
 export function mapped(x, f) {
   const option = pick(x, true);
-  return option != null ? $some(f($someValue(option))) : undefined;
+  return option != null ? f($someValue(option)) : undefined;
 }
 
 /** `?` on an `Option<T>`. */
@@ -66,6 +66,17 @@ export function popped(xs) {
 
 export function firstOf(xs) {
   return $someAt(xs, 0);
+}
+
+/**
+ * Called by JS alone, as React's `flushSyncFromReconciler(fn)` is: no
+ * call gives `R` what may look like `None`, so its `Some` is what `f`
+ * gives, `undefined` too, as TypeScript's `R | undefined` says.
+ */
+export function flushSync(f) {
+  if (f != null) {
+    return f();
+  }
 }
 
 // A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these

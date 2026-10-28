@@ -41,8 +41,7 @@ function found(value, fallback, dropT) {
   let mapped;
   if (value != null) {
     try {
-      const value$1 = $someValue(value);
-      mapped = value$1;
+      mapped = value;
     } finally {
       dropT?.(fallback);
     }
@@ -61,8 +60,7 @@ function dNamed_fromName(name) {
 
 function parse(name, BNamed) {
   const option = BNamed.fromName(name);
-  const result =
-    option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${name}` };
+  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${name}` };
   if (result.TAG === "Err") {
     return result;
   }
@@ -78,9 +76,7 @@ function parseFlag(flag, BNamed) {
     const flag$1 = flag.slice(2);
     const option = BNamed.fromName(flag$1);
     const result =
-      option != null
-        ? { TAG: "Ok", _0: $someValue(option) }
-        : { TAG: "Err", _0: `bad hex ${flag$1}` };
+      option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `bad hex ${flag$1}` };
     if (result.TAG === "Err") {
       return result;
     }
@@ -88,9 +84,7 @@ function parseFlag(flag, BNamed) {
   } else {
     const option = BNamed.fromName(flag);
     const result =
-      option != null
-        ? { TAG: "Ok", _0: $someValue(option) }
-        : { TAG: "Err", _0: `unknown ${flag}` };
+      option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${flag}` };
     if (result.TAG === "Err") {
       return result;
     }
@@ -105,7 +99,7 @@ function parsePair(a, b, both, BNamed, dropB) {
   if (both) {
     const option = BNamed.fromName(a);
     const result$1 =
-      option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
+      option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${a}` };
     let result;
     if (result$1.TAG === "Err") {
       result = result$1;
@@ -123,13 +117,13 @@ function parsePair(a, b, both, BNamed, dropB) {
     }
     let okOrElse;
     try {
-      okOrElse = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
+      okOrElse = tmp != null ? { TAG: "Ok", _0: tmp } : { TAG: "Err", _0: tmp$1() };
     } catch (error) {
       dropB?.(_0);
       throw error;
     }
     if (okOrElse.TAG !== "Err") {
-      pair = [_0, $some(okOrElse._0)];
+      pair = [_0, okOrElse._0];
     } else {
       result = okOrElse;
       dropB?.(_0);
@@ -137,8 +131,7 @@ function parsePair(a, b, both, BNamed, dropB) {
     }
   } else {
     const option = BNamed.fromName(a);
-    const result =
-      option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
+    const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: `unknown ${a}` };
     if (result.TAG === "Err") {
       return result;
     }

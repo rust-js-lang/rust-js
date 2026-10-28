@@ -28,7 +28,7 @@ export function parseManifest(text) {
   // by its index; each part absent where it asks none of it.
   // ADR 0906: a fact set, each by its name, of the names this ABI knows.
   const facts = (value, known) => value === undefined || Array.isArray(value) && value.every(fact => known.includes(fact));
-  const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "copy", "clone", "no_drop"])
+  const typeParam = value => object(value) && Number.isInteger(value.index) && facts(value.marks, ["drop", "copy", "clone", "no_drop", "unboxed"])
     && (value.facts === undefined || strings(value.facts)) && (value.stepped === undefined || strings(value.stepped));
   const fingerprint = value => object(value) && path(value.file)
     && typeof value.hash === "string" && /^[0-9a-f]{16}$/.test(value.hash);
@@ -46,7 +46,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 9 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 10 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -60,8 +60,9 @@ export function parseManifest(text) {
           && typeof item.key === "string" && typeof item.rust_path === "string" && strings(item.module)
           && typeof item.export === "string" && (item.member === null || typeof item.member === "string")
           // What it asks of each type parameter it asks anything of, by its
-          // index: a drop (ADR 0098), a copy (ADR 0914), a clone (ADR 0914, amended), none (ADR 0190), type facts (ADR 0145),
-          // and the traits it steps it by, each by its key (ADR 0548).
+          // index: a drop (ADR 0098), a copy (ADR 0914), a clone (ADR 0914, amended), none (ADR 0190),
+          // a `Some` of it unboxed (ADR 0051, amended), type facts (ADR 0145), and the traits it
+          // steps it by, each by its key (ADR 0548).
           && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam))
           // What else its calls give it or read of it (ADR 0906).
           && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"]))
@@ -69,7 +70,7 @@ export function parseManifest(text) {
         // amended, 0906).
         || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
           && typeof field.key === "string" && facts(field.facts, ["quiet"])))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 9");
+      throw new Error("Invalid rust-js library contract; expected library ABI 10");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

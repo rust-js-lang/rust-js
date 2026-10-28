@@ -15,12 +15,10 @@ import {
   $heapPush,
   $heapSorted,
   $index,
-  $pop,
   $range,
   $removeOpt,
   $retain,
   $roomFor,
-  $someAt,
   $sortUnstable,
   $traitImpl,
   $unwrap,
@@ -34,10 +32,10 @@ export const Stack = {
     stack.items.push(x);
   },
   pop(stack, TDebug) {
-    return $pop(stack.items);
+    return stack.items.pop();
   },
   peek(stack, TDebug) {
-    return $someAt(stack.items, stack.items.length - 1);
+    return stack.items.at(-1);
   },
   len(stack, TDebug) {
     return stack.items.length;

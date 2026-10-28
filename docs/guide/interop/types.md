@@ -993,6 +993,15 @@ export function ratio(a, b) {
   as it is, `if (f != null) { return $some(f()); }`, where the `R` it
   gives may be an `Option` itself
   ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-type-parameter-bound-by-a-function-trait-is-a-function), amended).
+  And a type parameter no call of the crate's gives what may look like
+  `None`, `()` or an `Option`, nor passes on one that's given it, is never
+  boxed: a JS caller of `pub fn flush_sync<R>(f: Option<impl FnOnce() ->
+  R>) -> Option<R>` is given what its callback gives, `undefined` or
+  `null` too, `if (f != null) { return f(); }`, as TypeScript's `R |
+  undefined` says. Where the crate's own Rust gives it one, its `Some` is
+  boxed, for JS callers too; a library's consumer that gives one compiles
+  its own of the function
+  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-type-parameter-no-call-gives-what-may-look-like-none), amended).
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see

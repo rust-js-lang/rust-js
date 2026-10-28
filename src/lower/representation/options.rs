@@ -1,0 +1,105 @@
+//! An `Option`'s payload: what its `T` is in JS, and whether a `Some` of it
+//! is boxed, as one of a value that may look like `None` is (ADR 0051,
+//! amended).
+
+use super::super::FnCx;
+use super::super::bindings;
+use rustc_middle::ty;
+use rustc_middle::ty::Ty;
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
+    /// which are the value itself (ADR 0023), but for a counted `Rc`, an
+    /// object of its own (ADR 0320), and a `&mut` that's a cell, a handle
+    /// on its place (ADR 0099), even of a generic `T`.
+    fn payload(&self, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+        loop {
+            ty = match ty.kind() {
+                _ if self.is_cell(ty) => return ty,
+                ty::Ref(_, inner, _) => *inner,
+                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => args.type_at(0),
+                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => args.type_at(0),
+                _ => return ty,
+            };
+        }
+    }
+
+    /// An `Option<T>` whose `T` might look like `None`: a type parameter, or
+    /// a `()` or an `Option` itself. `Some` of it is boxed when it does
+    /// (ADR 0051).
+    pub(in crate::lower) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
+        let payload = self.payload(ty);
+        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
+    }
+
+    /// Is `ty` a type parameter never `undefined` or `null`, so `Some` of
+    /// one is the value itself? One a binding of its bound reads,
+    /// `node.sortIndex` of `T: Node`, as the binding takes on trust (ADR
+    /// 0307); one bound by `FnOnce`, `FnMut` or `Fn`, a JS function whatever
+    /// it is; or one no call gives what may look like `None`, whose JS
+    /// caller is given the value it gives (ADR 0051, amended).
+    pub(in crate::lower) fn defined_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
+        let ty::Param(param) = ty.kind() else {
+            return false;
+        };
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        self.read_by_its_bounds(ty) || self.is_callable(ty) || self.krate.given.unboxed.contains(&(owner, param.index))
+    }
+
+    fn read_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Param(_))
+            && self.typing_env.param_env.caller_bounds().iter().any(|clause| {
+                clause.as_trait_clause().is_some_and(|bound| {
+                    bound.self_ty().skip_binder() == ty
+                        && (self.tcx.associated_items(bound.def_id()).in_definition_order())
+                            .any(|item| item.is_method() && bindings::is_binding(self.tcx, item.def_id))
+                })
+            })
+    }
+
+    /// Can a `T` be `undefined` or `null` in JS? Then `Option<T>` can't be
+    /// `T` itself: `Some(())` and `None` would be the same value.
+    pub(in crate::lower) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.payload(ty);
+        (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
+            // An uncounted `Weak::new()`, `null` (ADR 0843).
+            || self.uncounted_weak(ty).is_some()
+            || nullish_by_its_shape(&self.recognition(), ty)
+    }
+}
+
+/// Whether a value of `ty`, a payload seen through its references, is
+/// `undefined` or `null` by its type alone: a `()`, an `Option`, a
+/// `MaybeUninit` before it's written (ADR 0332), a unit struct, or an
+/// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676).
+fn nullish_by_its_shape<'tcx>(recognition: &super::super::recognition::Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+    ty.is_unit()
+        || recognition.option_of(ty).is_some()
+        || recognition.uninit_of(ty).is_some()
+        || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
+        || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(recognition.tcx, *adt))
+}
+
+/// Whether a type a caller gives generic code may make a value of it there
+/// look like `None`, so that a `Some` of it is boxed (ADR 0051, amended):
+/// what `can_be_nullish` says of it, seen through every reference, `Box`,
+/// `Rc` and `Pin`, and of any `Weak`, which may be `Weak::new()`'s `null`,
+/// and a type parameter or an associated type of one, whatever its bounds.
+/// Never less than `can_be_nullish`, which knows which `Rc`s are counted.
+pub(in crate::lower) fn may_look_like_none<'tcx>(
+    recognition: &super::super::recognition::Recognition<'_, 'tcx>,
+    mut ty: Ty<'tcx>,
+) -> bool {
+    loop {
+        ty = match ty.kind() {
+            ty::Ref(_, inner, _) => *inner,
+            ty::Adt(_, args) if ty.is_box() || recognition.is_rc(ty) || recognition.pinned(ty).is_some() => {
+                args.type_at(0)
+            }
+            _ => break,
+        };
+    }
+    super::super::recognition::known_by_bounds(ty)
+        || super::super::recognition::weak_pointee(recognition.tcx, ty).is_some()
+        || nullish_by_its_shape(recognition, ty)
+}

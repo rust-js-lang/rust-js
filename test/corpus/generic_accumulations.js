@@ -7,7 +7,6 @@ import {
   $iter,
   $lazyChain,
   $nextSome,
-  $some,
   $someValue,
 } from "@rust-js/runtime";
 
@@ -17,15 +16,13 @@ export function entry() {
 
 function sum1(it, SSumIItem) {
   const first = $nextSome(it);
-  return first != null
-    ? $some(SSumIItem.sum($lazyChain($iter([$someValue(first)]), it)))
-    : undefined;
+  return first != null ? SSumIItem.sum($lazyChain($iter([$someValue(first)]), it)) : undefined;
 }
 
 function product1(it, PProductIItem) {
   const first = $nextSome(it);
   return first != null
-    ? $some(PProductIItem.product($lazyChain($iter([$someValue(first)]), it)))
+    ? PProductIItem.product($lazyChain($iter([$someValue(first)]), it))
     : undefined;
 }
 

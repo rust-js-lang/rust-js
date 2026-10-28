@@ -458,8 +458,6 @@ pub fn demo() -> String {
 ```
 
 ```js
-import { $someAt } from "@rust-js/runtime";
-
 export const Stack = {
   new() {
     return { items: [] };
@@ -470,7 +468,7 @@ export const Stack = {
   },
 
   peek(stack) {
-    return $someAt(stack.items, stack.items.length - 1);
+    return stack.items.at(-1);
   },
 };
 

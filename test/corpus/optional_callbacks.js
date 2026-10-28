@@ -27,6 +27,13 @@ function twice(f, n) {
   return f != null ? f(f(n)) : undefined;
 }
 
+const plainRunner = { run: plainRunner_run };
+function plainRunner_run(plain, f) {
+  if (f != null) {
+    return f();
+  }
+}
+
 function main() {
   const three = flushSync(() => 3);
   const none = flushSync(undefined);
@@ -49,6 +56,11 @@ function main() {
   const notAdded = twice(undefined, 1);
   console.log(
     `${added == null ? "None" : `Some(${added})`} ${notAdded == null ? "None" : `Some(${notAdded})`}`,
+  );
+  const run = plainRunner_run(undefined, () => 6);
+  const value = plainRunner_run(undefined);
+  console.log(
+    `${run == null ? "None" : `Some(${run})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

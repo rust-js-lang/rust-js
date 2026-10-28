@@ -180,4 +180,20 @@ export const mutations: Mutation[] = [
     replace: "        _ if let Some(_) = crate::lower::recognition::rc_pointee(tcx, ty) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
+  {
+    name: "unboxed-param-given",
+    breaks: "every type parameter is taken to be given what may look like `None`, so a JS caller of React's `flushSyncFromReconciler` gets `{ $someNone: 0 }` where its callback gave `undefined` (ADR 0051, amended)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        .filter(|param| !nullish.contains(param))\n",
+    replace: "        .filter(|_| false)\n",
+    tests: ["test/compiler.test.ts", "-t", "an Option of a generic T"],
+  },
+  {
+    name: "nullish-given-unseen",
+    breaks: "no type a caller gives is taken to look like `None`, so `relay(())`'s `Some(())` is `undefined`, `None` (ADR 0051, amended)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "        &|ty| !crate::lower::representation::may_look_like_none(recognition, ty),\n",
+    replace: "        &|_| true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
+  },
 ];

@@ -10,7 +10,6 @@ import {
   $parseChar,
   $parseF64,
   $parseInt,
-  $some,
   $trim,
 } from "@rust-js/runtime";
 
@@ -20,7 +19,7 @@ export function entry() {
 
 function read(s, TFromStr) {
   const result = TFromStr.fromStr(s);
-  return result.TAG === "Ok" ? $some(result._0) : undefined;
+  return result.TAG === "Ok" ? result._0 : undefined;
 }
 
 function readOr(s, fallback, TFromStr) {

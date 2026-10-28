@@ -14,7 +14,6 @@ import {
   $displayJsonError,
   $fromJson,
   $json,
-  $some,
   $someValue,
   $sortedEntries,
   $toJson,
@@ -486,7 +485,7 @@ export function decodeAll(texts, readT) {
 
 export function borrowed(text, readT) {
   const result = $fromJson(text, readT);
-  return result.TAG === "Ok" ? $some(result._0) : undefined;
+  return result.TAG === "Ok" ? result._0 : undefined;
 }
 
 function metaSerialize_serialize(meta, json) {

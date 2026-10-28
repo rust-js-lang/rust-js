@@ -17,11 +17,10 @@ function relay(TId) {
 function find(items, TId) {
   return items
     .map((item) => {
-      const value = item.impl.typeId() === TId ? $some(item.value) : undefined;
-      return value == null ? value : $some($someValue(value));
+      const value = item.impl.typeId() === TId ? item.value : undefined;
+      return value;
     })
-    .filter((item) => item != null)
-    .map($someValue);
+    .filter((item) => item != null);
 }
 
 function erased(value, TId) {
