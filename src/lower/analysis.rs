@@ -2,6 +2,7 @@
 
 mod back_stepped;
 mod cell_borrows;
+mod generic_eq;
 
 pub(super) use cell_borrows::{
     Borrow, Cell, CellBorrows, binding_call_runs_nothing, borrowed, may_be_cell, unsized_in_place,
@@ -958,6 +959,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
+        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
+    });
+    // What generic code compares by `eq` of two `TrustedLen` iterators
+    // given it, which it can't count: refused where comparing runs code
+    // (#386).
+    generic_eq::refuse_generic_trusted_eqs(tcx, recognition, all_bodies, |item| {
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
     });
     // A closure cloned apart, made by a function of what it holds, where a

@@ -139,6 +139,9 @@ for (const [name, source, message, crate] of [
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
   ["eq of two maps of unequal lengths", 'pub fn f(v: &[u32], w: &[u32]) -> bool { v.iter().map(|x| { println!("a"); *x }).eq(w.iter().map(|x| { println!("b"); *x })) }', "`eq` of two iterators std asks the lengths of first, whose lengths rust-js can't count before stepping them"],
+  // Generic code compares item by item what it's given; std of two `TrustedLen` iterators asks
+  // their lengths first, so a caller's maps are refused, as the map that runs code there (#386).
+  ["eq in generic code of two maps", 'fn same<I: Iterator<Item = u32>>(a: I, b: I) -> bool { a.eq(b) }\nfn passed<I: Iterator<Item = u32>>(a: I, b: I) -> bool { same(a, b) }\npub fn f(v: &[u32], w: &[u32]) -> bool { let g = |x: &u32| { println!("a"); *x }; passed(v.iter().map(g), w.iter().map(g)) }', "giving generic code two iterators it compares by `eq`, which std asks the lengths of first"],
   // A `scan` holds its state too, so a function it holds with a destructor isn't closed for (ADR 0991).
   ["a function with a destructor a lazy scan holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> Vec<u32> { v.iter().scan(0, move |a, x| { let r = &d; *a += x + r.0; Some(*a) }).collect() }', "a function that holds a value with a destructor, kept by what it's given to"],
   // A refused `len()` names its adapter's type, not its closures', which name where they're written.
