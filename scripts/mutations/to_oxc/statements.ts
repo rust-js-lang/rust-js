@@ -307,4 +307,12 @@ export const mutations: Mutation[] = [
     replace: "            if s.span.is_none()\n                && let Some(comments) = after_comments.filter(|_| false)\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "an arm of only comments keeps them before its break"],
   },
+  {
+    name: "last-clause-comments-unflushed",
+    breaks: "a match's last arm of only comments, the `default:` JS falls out of, loses them, or has them after the function, WorkLoop's handleThrow (ADR 0753, amended)",
+    file: "src/to_oxc/statements.rs",
+    find: "            Span::new(end.span.lo + 1, end.span.lo + 1)\n",
+    replace: "            at\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "last arm of only comments"],
+  },
 ];

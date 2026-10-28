@@ -176,3 +176,43 @@ test("an else of only comments after a branch that leaves stays", async () => {
   });
   expect(logs).toEqual([[true, [7]], [false, [3]]]);
 });
+
+// React's WorkLoop handleThrow: a match's last arm of only comments,
+// `_ => { // .. }`, the `default:` JS falls out of, no `break` after its
+// comments to be before, nor a next case: they were lost, or after the
+// function (ADR 0753, amended).
+test("a last arm of only comments keeps them in its clause", async () => {
+  const { js, lib } = await compiled("comments-in-the-last-clause", `pub fn mark(reason: i32, log: &mut Vec<i32>) {
+    if reason > 0 {
+        match reason {
+            1 => log.push(1),
+            2 => {
+                // Second: nothing to do.
+            }
+            _ => {
+                // Last: this comment belongs to the default case.
+            }
+        }
+    }
+}
+
+pub fn last(reason: i32, log: &mut Vec<i32>) {
+    match reason {
+        1 => log.push(1),
+        2 => log.push(2),
+        3 => {
+            // The last case: its comment stays in it.
+        }
+        _ => {}
+    }
+}
+`);
+  expect(js).toContain("      default:\n      // Last: this comment belongs to the default case.\n    }\n  }\n}");
+  expect(js).toContain("// The last case: its comment stays in it.\n  }\n}");
+  const log: number[] = [];
+  for (const reason of [1, 2, 3]) {
+    lib.mark(reason as never, log as never);
+    lib.last(reason as never, log as never);
+  }
+  expect(log).toEqual([1, 1, 2]);
+});

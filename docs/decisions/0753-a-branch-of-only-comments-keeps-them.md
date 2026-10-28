@@ -109,3 +109,18 @@ end**, so oxc prints them before it: `case 4: // TODO .. break;`, `if (..)
 - Held by `test/lowering-comments-ends.test.ts`, "an arm of only comments
   keeps them before its break", run; mutations `case-break-before-comments`
   and `made-after-comments-unplaced` (`to_oxc/statements.ts`).
+
+## Amendment: a last arm of only comments keeps them in its clause (2026-10-28)
+
+React's WorkLoop handleThrow ends a `switch` with a clause of only a
+comment; its port's `_ => { // .. }`, the `default:` JS falls out of,
+lost it, or printed it after the function (React port gap ag4b): a
+case's comments are printed before the `break` rust-js ends it with, or
+the next clause, and the last has neither, its place none. **The last
+clause, of one ending with comments of its own, ends past them** (an
+empty place, so nothing is mapped there, `commented_clause` in
+`to_oxc/statements.rs`): oxc prints what's left of a clause before its
+end, as a block's, `default:\n// ..`, as Prettier lays it out.
+`test/lowering-comments-ends.test.ts`, "a last arm of only comments keeps
+them in its clause"; mutation `last-clause-comments-unflushed`.
+

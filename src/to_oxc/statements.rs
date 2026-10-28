@@ -525,7 +525,7 @@ impl<'a> Cx<'a> {
                     // no `break` (ADR 0905).
                     let ends = default.is_none() && Some(k) == last_case;
                     clauses.push(SwitchCase::new(
-                        at,
+                        if ends { commented_clause(at, &case.body) } else { at },
                         Some(self.expr(last)),
                         self.case_body(&case.body, case.falls, ends),
                         b,
@@ -535,6 +535,7 @@ impl<'a> Cx<'a> {
                     // Where the last case falls through to it, where its
                     // comment says so is (ADR 0636, amended).
                     let at = super::default_fallen_to(cases, Some(default)).map_or(SPAN, |lo| Span::new(lo, lo));
+                    let at = commented_clause(at, default);
                     clauses.push(SwitchCase::new(at, None, self.case_body(default, false, true), b));
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
@@ -809,6 +810,20 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
 }
 
 /// `a op= b`'s operator of `op`, a compound assignment preparation makes.
+/// The last clause's place, `at`, of one ending with comments of its own,
+/// `default: // ..` (`StmtKind::Comments`): where nothing follows them, no
+/// `break` nor a next clause, it ends past them, so oxc prints them in it,
+/// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
+/// mapped there.
+fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
+    match body.last() {
+        Some(end) if at == SPAN && matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {
+            Span::new(end.span.lo + 1, end.span.lo + 1)
+        }
+        _ => at,
+    }
+}
+
 fn compound_operator(op: Op) -> AssignmentOperator {
     match op {
         Op::Add => AssignmentOperator::Addition,
