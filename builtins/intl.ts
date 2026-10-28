@@ -82,6 +82,7 @@ const formatter = (name: string, doc: string, methods: [string, string, string][
   const module = snake(name);
   line(`/// [\`${js}\`](${page(name)}): ${doc}`);
   line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(js)})]`);
   line(`pub struct ${name}(PhantomData<JsObject>);`);
   line();
   line(`impl ${name} {`);
@@ -313,6 +314,7 @@ options("LocaleOptions", "What [`locale::new`] is given: each a part of the loca
 ]);
 line(`/// [\`Intl.Locale\`](${page("Locale")}): a locale and its parts, \`en-Latn-US\`.`);
 line(`#[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]`);
+line(`#[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]`);
 line("pub struct Locale(PhantomData<JsObject>);");
 line();
 line("impl Locale {");
