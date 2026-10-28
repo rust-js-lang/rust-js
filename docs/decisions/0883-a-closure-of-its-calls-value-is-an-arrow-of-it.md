@@ -121,3 +121,12 @@ each is.
   `declared-aliases-kept` (`mir/tidy/stages.ts`); and
   `mir-tidy-concise-handlers-kept`, of a handler of a statement
   (`test/jsx-events.test.ts`).
+
+## Consequence: an accepted port difference, th2a (2026-10-28)
+
+React's createClassErrorUpdate writes `update.payload = () => { return
+getDerivedStateFromError(error); };`; its port's `move || {
+get_derived_state_from_error(error) }`, whose braces are rustfmt's, is
+`() => getDerivedStateFromError(error)`. The user accepted the difference
+by name (th2a): a closure of one expression has one form, whatever its
+braces, which would key the JS on indentation. ADR 0262 case: None.

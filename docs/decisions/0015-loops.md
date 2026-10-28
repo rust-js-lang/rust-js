@@ -60,3 +60,13 @@ A loop is also an expression: `loop { .. break v; }` produces `v`. And
 - Labeled *blocks* (`'a: { .. break 'a v; }`) aren't supported yet. JS has
   labeled blocks, so this is straightforward future work.
 - `for` loops need iterators, which need traits and methods. That's future work.
+
+## Consequence: an accepted port difference, fo1 (2026-10-28)
+
+React's commitMutationEffectsOnFiber walks `for (let ii = 0; ii <
+eventPayloads.length; ii++) { const {ref, nextImpl} = eventPayloads[ii];
+.. }`; its port's `for EventFunctionPayload { r#ref, next_impl } in
+event_payloads` is `for (const { ref, nextImpl } of eventPayloads)`. The
+user accepted the difference by name (fo1): an index loop is clippy's
+`needless_range_loop`, and AGENTS.md keeps iterators as written. ADR
+0262 case: None.

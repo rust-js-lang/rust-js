@@ -72,3 +72,11 @@ Held by `test/lowering-option-truth.test.ts`'s "a map of a literal's
 value and its fallback is one conditional", run, and the mutation
 `map-fallback-coalesced` (`std_types/option.ts`).
 
+
+## Consequence: an accepted port difference, th2b (2026-10-28)
+
+React's createCapturedValueAtFiber writes `componentStack: stack !== null
+? stack : ''`; its port's `stack.unwrap_or_default()`, clippy's
+`manual_unwrap_or_default` form of the `if let`, is `stack ?? ""`. The
+user accepted the difference by name (th2b): the same of a value that's
+text or nullish. ADR 0262 case: None.
