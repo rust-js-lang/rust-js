@@ -2263,8 +2263,12 @@ export function logMeasure(task, name, start, end) {
   object's whose method it is, `None` called alone. It's a closure, so
   rustc checks what it captures. Stored as a property it's named as it,
   a `let` of it is declared, and a function nested in it reads its
-  `this` through a `const`; an arrow in it reads it as it is
-  ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md)).
+  `this` through a `const`; an arrow in it reads it as it is. Its tuple's
+  last item of rest arguments as a value, `&'static dyn Rest<T>`, is JS's
+  rest parameter, `function (...args)`, as React's `wrapCallback` gives
+  `callback.apply(this, args)`
+  ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md),
+  amended).
   React's error boundary callback, called on the instance:
 
 ```rust

@@ -352,3 +352,42 @@ pub fn track(node: &'static Unknown, field: &'static str, set: &'static dyn Fn(O
   node.value = 42;
   expect(seen).toEqual([[node, 42]]);
 });
+
+// React's Scheduler's unstable_wrapCallback returns `function () { ..
+// return callback.apply(this, arguments); .. }`: the callback is called on
+// the wrapper's `this`, with what it's given. A function `with_this` makes
+// whose last parameter is rest arguments as a value is JS's rest
+// parameter, `function (...args)`, as a closure's is (ADR 0851), so a JS
+// caller's arguments, and a Rust call's spread ones, are each one of them,
+// not the first alone. One before its last is refused, as a closure's is.
+test("a function with_this makes takes rest arguments as JS's rest parameter", async () => {
+  const { js, lib } = await compiled("with-this-rest", `use js::{IntoUnknown, Rest, Unknown, function};
+
+pub fn wrap_callback(
+    callback: &'static dyn Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown>,
+) -> Box<dyn Fn(&'static dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown>> {
+    function::with_this(move |this, (args,): (&'static dyn Rest<dyn IntoUnknown>,)| {
+        function::apply(callback, this.map(|this| this as &dyn IntoUnknown), Some(&args))
+    })
+}
+
+pub fn first_and_rest() -> Box<dyn Fn(f64, &'static dyn Rest<f64>) -> f64> {
+    function::with_this(|_, (first, rest): (f64, &'static dyn Rest<f64>)| first * rest.iter().sum::<f64>())
+}
+
+pub fn called() -> f64 {
+    first_and_rest()(2.0, &(3.0, 4.0))
+}
+`);
+  expect(js).toContain("return function (...args) {\n    return callback.apply(this, args);\n  };");
+  expect(js).toContain("function (first, ...rest)");
+  const obj = { n: 5, f: lib.wrapCallback(function (this: { n: number }, a: number, b: number) { return [this.n, a, b]; }) };
+  expect(obj.f(1, 2)).toEqual([5, 1, 2]);
+  expect([lib.firstAndRest()(2, 3, 4), lib.called()]).toEqual([14, 14]);
+  expect(refused("with-this-rest-first", `use js::{Rest, function};
+
+pub fn early() -> Box<dyn Fn(&'static dyn Rest<f64>, f64) -> f64> {
+    function::with_this(|_, (rest, last): (&'static dyn Rest<f64>, f64)| rest.len() as f64 + last)
+}
+`)).toContain("does not support values of type `dyn std::ops::Fn(&dyn js::Rest<f64>, f64) -> f64`");
+});

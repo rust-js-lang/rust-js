@@ -3,7 +3,8 @@
 Status: Accepted (the user's decision, 2026-10-27, th1). Amends
 [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
 `self` as `this`, which a function made in a method now reads through a
-`const`.
+`const`. Amended: its last parameter of rest arguments as a value is JS's
+rest parameter (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for the function:
 its `this` is a parameter Rust sees, so what it reads is what JS gives it.
@@ -100,3 +101,40 @@ update.callback.set(Some(js::unknown_of(function::with_this(move |this, ()| {
 - Tested in `test/js-functions.test.ts`: `call`, `apply`, a method's and a
   bare call's `this`, nested functions, a class's method, a `this` set and
   a tuple read whole.
+
+## Amendment (2026-10-28): its last parameter of rest arguments is JS's rest parameter
+
+React's Scheduler wraps a callback so it's called on the wrapper's `this`
+with what the wrapper's given:
+
+```js
+export function unstable_wrapCallback(callback) {
+  return function () {
+    ..
+    return callback.apply(this, arguments);
+  };
+}
+```
+
+Its port, `function::with_this(move |this, (args,): (&'static dyn
+Rest<dyn IntoUnknown>,)| function::apply(callback, this, Some(&args)))`,
+printed `function (args) { return callback.apply(this, args); }`: one
+parameter, the first argument alone, which `apply` can't read as a list.
+A wrong answer, and not a JS caller's alone: the function's type, `dyn
+Fn(&dyn Rest<T>)`, spreads a Rust call's arguments (ADR 0851), so
+`wrapped(&(1, 2))` was `wrapped(1, 2)`, `args` `1` (gap rd8).
+
+**The tuple's last item of rest arguments as a value is JS's rest
+parameter**, `function (...args)`, `function (first, ...rest)`, as a
+closure's is (ADR 0851): what its type says every call gives spread.
+`function_with_this` asks `bindings::is_rest_value` of the tuple's last
+type. One before the last isn't JS's, and its function's type, `dyn
+Fn(&dyn Rest<T>, f64)`, is refused already. Case: a wrong answer fixed,
+Rust's behavior kept ([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/js-functions.test.ts`'s "a function with_this makes takes
+rest arguments as JS's rest parameter": wrapCallback called as an
+object's method, `this` and both arguments given on; a first parameter
+and the rest, from JS and from a Rust call spread; and the refusal of one
+before the last. Mutation `with-this-rest-one-value` (`binding_calls.ts`).
+

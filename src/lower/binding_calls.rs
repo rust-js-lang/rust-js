@@ -465,10 +465,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "takes a closure written in its call, `with_this(move |this, (a, b)| ..)`, not a variable that holds one",
             );
         };
-        let arity = match parameters.map(|ty| ty.kind()) {
-            Some(ty::Tuple(items)) => items.len(),
+        let items = match parameters.map(|ty| ty.kind()) {
+            Some(ty::Tuple(items)) => *items,
             _ => return refuse(self, "is given a closure of its `this` and a tuple of its parameters"),
         };
+        let arity = items.len();
+        // Rest arguments as a value, its last, are JS's rest parameter,
+        // `function (first, ...rest)`, as a closure's are (ADR 0851): what
+        // its type says each call gives spread. One before its last is
+        // refused of its function's type already.
+        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty));
         // A `this` of its maker's read already, which the function's own
         // would be: none is, as a class's `self` is its `this` only once
         // its method is lowered, through each function nested in it.
@@ -501,6 +507,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(_) => return refuse(self, "is given a closure whose parameters aren't a tuple"),
             None => {}
+        }
+        if gathers && let Some(js::Pattern::Name(last)) = own.last() {
+            let last = last.clone();
+            *own.last_mut().expect("its last") = js::Pattern::Rest(last);
         }
         match this {
             Some(js::Pattern::Name(this)) => {

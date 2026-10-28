@@ -483,4 +483,12 @@ export const mutations: Mutation[] = [
     replace: "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::undefined());\n",
     tests: ["test/js-functions.test.ts", "-t", "with_this of a variable is refused"],
   },
+  {
+    name: "with-this-rest-one-value",
+    breaks: "Scheduler's wrapCallback, `function::with_this` of rest arguments, is `function (args) { return callback.apply(this, args); }`, given a JS caller's first argument alone, and a Rust call's spread ones the same",
+    file: "src/lower/binding_calls.rs",
+    find: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty));\n",
+    replace: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty)) && false;\n",
+    tests: ["test/js-functions.test.ts", "-t", "takes rest arguments as JS"],
+  },
 ];

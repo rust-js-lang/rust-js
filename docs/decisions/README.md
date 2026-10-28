@@ -756,7 +756,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
 - [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
 - [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)
-- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md)
+- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter)*
 - [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)
 - [0974 A `while` that steps its variable last is a `for`](0974-a-while-that-steps-its-variable-last-is-a-for.md)
 - [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
