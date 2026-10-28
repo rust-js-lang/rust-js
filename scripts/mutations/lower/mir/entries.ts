@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/entries.rs",
     find: "                Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {\n",
     replace: "                Value::Expr(e) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^function_values_in_calls.rs$"],
   },
   {
     name: "io-residual-returned",

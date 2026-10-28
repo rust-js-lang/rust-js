@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-impl-always-there",
-    breaks: "a library's type is taken to implement every trait, its missing `Debug` too, so a `RefCell` of a set of it is checked, `$borrowMut`",
+    breaks: "a library's type is taken to implement every trait by an impl of its own, `Borrow` too, which only std's blanket impl gives it, so a borrow of a `RefCell` of a set of it held while `contains` runs is refused as running the library's code",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                    impls.non_blanket_impls().contains_key(&own)\n",
     replace: "                    true || impls.non_blanket_impls().contains_key(&own)\n",
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => true,\n",
     replace: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) => true,\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only cells that may be its own"],
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "field.s hooks held while they run meet no cell"],
   },
   {
     name: "cell-unsized-tail-unseen",

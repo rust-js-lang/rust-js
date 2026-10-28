@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reassigned-param-alike",
-    breaks: "a `mut` parameter assigned once is read as what never changes, its argument not counted as its first value, so what's moved out of it reads its new value",
+    breaks: "a `mut` parameter assigned once is read as what never changes, its argument not counted as its first value, so a read of it an operand takes before it's assigned, `n + { n += 1; n }`'s `n`, reads its new value, `n + n`",
     file: "src/lower/mir/queries.rs",
     find: "    written_again(state, local)\n        && !(state.locals.user[local]",
     replace: "    (state.locals.writes[local] > 1)\n        && !(state.locals.user[local]",

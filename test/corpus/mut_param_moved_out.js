@@ -35,6 +35,18 @@ function scaled(factor) {
   return (scale(2) + factor) | 0;
 }
 
+function counted(n) {
+  const value = n;
+  n++;
+  return value + n;
+}
+
+function paired(name) {
+  const value = name;
+  name = "new";
+  return [value, name];
+}
+
 function main() {
   console.log(`${renamed("old")}`);
   const list = {
@@ -46,6 +58,9 @@ function main() {
   }
   console.log("");
   console.log(`${scaled(3)}`);
+  console.log(
+    `${counted(1)} ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])})`)(paired("old"))}`,
+  );
   function shifted(by) {
     const captured = by;
     const at = () => captured;

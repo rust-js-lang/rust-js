@@ -4,10 +4,10 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "held-adapters-none",
-    breaks: "no kind of adapter the crate's types hold is seen, and a held `Enumerate`'s size hint, back and `Debug` are refused",
+    breaks: "no kind of adapter the crate's types hold is seen, and a held `Cycle`'s clone and `Debug` are refused",
     file: "src/lower/analysis/held_adapters.rs",
     find: "                    held.insert(adapter.did());\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
 ];

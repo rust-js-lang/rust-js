@@ -68,11 +68,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-impl-copies-by-callers",
-    breaks: "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so rustc's conditional dispatch is refused",
+    breaks: "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so a copy of an `Option<Point>` its method makes is the value it copies, and a change to it shows there",
     file: "src/lower/analysis/mutation.rs",
     find: "        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: ["test/corpus.test.ts", "-t", "^trait_impl_copy_bound.rs$"],
   },
   {
     name: "pointee-copies-shared",

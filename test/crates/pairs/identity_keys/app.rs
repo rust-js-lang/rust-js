@@ -10,12 +10,20 @@ fn schedule(transition: &Transition, fiber: &'static Fiber) {
     }
 }
 
+fn scheduled(transition: &Transition, fiber: &Fiber) -> bool {
+    transition
+        .updated_fibers
+        .as_ref()
+        .is_some_and(|fibers| fibers.borrow().contains(fiber))
+}
+
 pub fn main() {
     let a: &'static Fiber = Box::leak(Box::new(Fiber { tag: 1 }));
     let b: &'static Fiber = Box::leak(Box::new(Fiber { tag: 1 }));
     let transition = dep::start();
     schedule(&transition, a);
     schedule(&transition, a);
+    println!("{} {}", scheduled(&transition, a), scheduled(&transition, b));
     schedule(&transition, b);
     println!("{} {} {}", dep::updated(&transition), a == b, a == a);
     let mut own: HashSet<&Fiber> = HashSet::new();

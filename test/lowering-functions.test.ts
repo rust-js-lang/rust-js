@@ -101,12 +101,24 @@ pub fn rebound() -> bool {
     more.has = replace();
     more.has
 }
+
+pub fn replaced(again: bool) -> bool {
+    let mut more = More { has: true };
+    if again {
+        more = More { has: false };
+    }
+    more.has = !work();
+    more.has
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  more.has = work();\n");
+  // Of a variable given another value before, too: `more` is the object
+  // JS reaches first, which `work()` can't make another.
+  expect(js).toContain("  }\n  more.has = !work();\n");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.plain(), lib.rebound()]).toEqual([false, false]);
+  expect([lib.plain(), lib.rebound(), lib.replaced(true), lib.replaced(false)]).toEqual([false, false, true, true]);
 });
 
 // ADR 0279: a callback that only passes what it's given on, `(x) => double(x)`,

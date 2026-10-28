@@ -306,6 +306,74 @@ pub fn first(parent: &Node) -> String {
   expect(() => lib.onCommitRoot()).toThrow("already borrowed");
 });
 
+// ADR 0960: the same hooks as a struct's field, not a thread-local only its
+// key reaches (ADR 0960, amended), so the `dyn` in their `Vec` alone keeps
+// `children` apart: a borrow of it, while the hooks run, is no borrow of
+// them.
+test("a field's hooks held while they run meet no cell of a Vec's other items", async () => {
+  const dir = fixture("hooks-field-cells-apart");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Root {
+    hooks: RefCell<Vec<Rc<dyn Fn()>>>,
+}
+
+pub struct Node {
+    pub name: String,
+    pub children: RefCell<Vec<Rc<Node>>>,
+}
+
+pub fn root() -> Root {
+    Root {
+        hooks: RefCell::new(Vec::new()),
+    }
+}
+
+pub fn commit(root: &Root) {
+    root.hooks.borrow().iter().for_each(|hook| hook());
+}
+
+pub fn observe(root: &Root, callback: Box<dyn Fn()>) {
+    let hook: Rc<dyn Fn()> = Rc::new(move || callback());
+    root.hooks.borrow_mut().push(hook);
+}
+
+pub fn node(name: &str) -> Rc<Node> {
+    Rc::new(Node {
+        name: name.to_string(),
+        children: RefCell::new(Vec::new()),
+    })
+}
+
+fn push(siblings: &RefCell<Vec<Rc<Node>>>, child: Rc<Node>) {
+    siblings.borrow_mut().push(child);
+}
+
+pub fn adopt(parent: &Node, child: Rc<Node>) {
+    push(&parent.children, child);
+}
+
+pub fn first(parent: &Node) -> String {
+    parent.children.borrow()[0].name.clone()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
+  expect(js).toContain("export function first(parent) {\n  return $index(parent.children, 0).name;\n}");
+  expect(js).toContain("const borrow = $borrow(root.hooks, true);");
+  const lib = await import(join(dir, "lib.js"));
+  const r = lib.root();
+  const parent = lib.node("root");
+  lib.observe(r, () => lib.adopt(parent, lib.node("child")));
+  lib.commit(r);
+  expect(lib.first(parent)).toBe("child");
+  // A hook that observes again panics, as Rust's.
+  lib.observe(r, () => lib.observe(r, () => {}));
+  expect(() => lib.commit(r)).toThrow("already borrowed");
+});
+
 // ADR 0962: React's view transitions store the array they then fill,
 // `(current.memoizedState = [])`, given to the call that fills it. A
 // `RefCell` of an array is the array (ADR 0863), so it's `js::Defined` and

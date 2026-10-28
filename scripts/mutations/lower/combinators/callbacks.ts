@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/callbacks.rs",
     find: "            && !self.holds_given_drops(ty)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_closure_drops.rs$"],
   },
   {
     name: "unused-value-unhandled",
