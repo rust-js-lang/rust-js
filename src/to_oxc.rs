@@ -583,8 +583,21 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         let after_if = |c: &crate::program::Comment| if_keyword(c).is_some();
         // One after a call's last argument, before its `)`, `f(a, b, // c\n)`:
         // there, where oxc writes a comment at the `)` (ADR 0708, amended).
+        // A doc comment of an item with no JS, a `pub type`'s, is that
+        // item's, which its declaration has, nowhere in the JS (ADR 0444,
+        // amended).
+        let of_no_js = |c: &crate::program::Comment| {
+            let mut after = c.hi as usize;
+            loop {
+                let skipped = after + (sources.text[after..].len() - sources.text[after..].trim_start().len());
+                match file.comments.iter().find(|o| o.lo as usize == skipped) {
+                    Some(o) => after = o.hi as usize,
+                    None => break c.doc && openings::type_alias(&sources.text[skipped..]),
+                }
+            }
+        };
         let own_line: Vec<&crate::program::Comment> = (file.comments.iter())
-            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c))
+            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))
             .collect();
         let (ending, own_line): (Vec<&crate::program::Comment>, Vec<&crate::program::Comment>) = own_line
             .into_iter()

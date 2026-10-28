@@ -494,6 +494,15 @@ visibility first, is passed over as a `let` with no JS is**
 `test/lowering-comments-items.test.ts`, "a comment before an item with no
 JS is before the next item that has".
 
+Amended (2026-10-28, React port gap rd58): **a doc comment of a type
+alias is that item's, nowhere in the JS**, as an item's doc comment is
+its own; only a plain comment heads the next item. The rule above made
+each `/// What useMemo calls ..` before a `pub type` a stray `/** .. */`
+before the next item, 41 in the port. `of_no_js` in `comments_of` leaves
+out a doc comment whose code after it, past other comments, is a type
+alias. "a doc comment of an item with no JS is nowhere in the JS";
+mutation `doc-of-no-js-kept`.
+
 ## Amendment: a comment before a `catch_unwind` closure's value is in the `try` (2026-10-28)
 
 React's isSameOriginFrame, `try { // Reading href can throw. return typeof

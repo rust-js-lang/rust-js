@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "trailing-comment-leading",
     breaks: "a comment after code on its line is also written before the next statement",
     file: "src/to_oxc.rs",
-    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c))\n",
-    replace: "            .filter(|c| c.lo >= past && !before_value(c))\n",
+    find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))\n",
+    replace: "            .filter(|c| c.lo >= past && !before_value(c) && !of_no_js(c))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
@@ -652,5 +652,13 @@ export const mutations: Mutation[] = [
     find: "            made.attached_to = key;",
     replace: "            let _ = key;",
     tests: ["test/lowering-comments-items.test.ts", "-t", "re-export printed first"],
+  },
+  {
+    name: "doc-of-no-js-kept",
+    breaks: "a doc comment of a `pub type`, which has no JS, is a stray `/** .. */` before the next item",
+    file: "src/to_oxc.rs",
+    find: "                    None => break c.doc && openings::type_alias(&sources.text[skipped..]),",
+    replace: "                    None => break false,",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "doc comment of an item with no JS"],
   },
 ];

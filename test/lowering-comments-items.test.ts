@@ -111,3 +111,40 @@ pub use crate::priorities::IDLE_PRIORITY as UNSTABLE_IDLE_PRIORITY;
   expect(js).toContain('/** The idle priority, by upstream\'s name. */\nexport { IDLE_PRIORITY as UNSTABLE_IDLE_PRIORITY } from "./priorities.js";');
   expect([lib.UNSTABLE_IDLE_PRIORITY, (lib.afterContinuation as () => boolean)()]).toEqual([5, false]);
 });
+
+// React's ReactInternalTypes and ReactFiberHooks document their types,
+// `/// What useMemo calls for its value.\npub type MemoCreate = ..;`: a
+// doc comment is its item's, which has no JS, so it was a stray `/** .. */`
+// before the next item (41 in the port). A plain comment there still
+// heads the next item that has JS.
+test("a doc comment of an item with no JS is nowhere in the JS", async () => {
+  const { js, lib } = await compiled("doc-of-a-type", `pub fn first() -> f64 {
+    1.0
+}
+
+/// What \`useMemo\` calls for its value.
+pub type MemoCreate = dyn Fn() -> f64;
+
+fn mount_memo(next_create: &MemoCreate) -> f64 {
+    next_create()
+}
+
+pub fn run() -> f64 {
+    mount_memo(&|| 2.0)
+}
+
+/// What warns that a child in a list has no key.
+#[allow(dead_code)]
+type Warn = fn(f64);
+
+// Hydration (when unsupported)
+pub type Lanes = u32;
+
+pub fn last() -> Lanes {
+    3
+}
+`);
+  expect(js).not.toContain("/**");
+  expect(js).toContain("// Hydration (when unsupported)\n\nexport function last() {");
+  expect([(lib.run as () => number)(), (lib.last as () => number)()]).toEqual([2, 3]);
+});
