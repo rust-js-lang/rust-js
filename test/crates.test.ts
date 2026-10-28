@@ -393,9 +393,9 @@ test("a library's function its consumer compiles is refused where it reads its l
   const dir = fixture("instance-private-state");
   const lib = join(dir, "dep");
   mkdirSync(lib, { recursive: true });
-  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n\npub struct Counted;\n\nimpl Drop for Counted {\n    fn drop(&mut self) {\n        COUNT.set(COUNT.get() + 1);\n    }\n}\n";
+  const dep = "use std::cell::Cell;\n\nthread_local! {\n    static COUNT: Cell<u32> = const { Cell::new(0) };\n}\n\npub static NAME: &str = \"dep\";\n\npub fn discard<T>(value: T) -> u32 {\n    COUNT.set(COUNT.get() + 1);\n    drop(value);\n    COUNT.get()\n}\n\npub fn named<T>(value: T) -> &'static str {\n    drop(value);\n    NAME\n}\n\n#[cfg_attr(rust_js, rust_js::link_name = \"./stack.js#size\")]\npub fn size() -> u32 {\n    unreachable!()\n}\n\npub fn sized<T>(value: T) -> u32 {\n    let n = size();\n    drop(value);\n    n\n}\n\nunsafe extern \"Rust\" {\n    #[link_name = \"Infinity\"]\n    pub safe static INFINITE: f64;\n    #[link_name = \"./stack.js#limit\"]\n    pub safe static LIMIT: u32;\n}\n\npub fn unbounded<T>(value: T) -> bool {\n    drop(value);\n    INFINITE > 1.0\n}\n\npub fn limited<T>(value: T) -> u32 {\n    drop(value);\n    LIMIT\n}\n\npub struct Counted;\n\nimpl Drop for Counted {\n    fn drop(&mut self) {\n        COUNT.set(COUNT.get() + 1);\n    }\n}\n";
   writeFileSync(join(dir, "dep.rs"), dep);
-  writeFileSync(join(lib, "stack.js"), "export function size() {\n  return 1;\n}\n");
+  writeFileSync(join(lib, "stack.js"), "export function size() {\n  return 1;\n}\n\nexport const limit = 2;\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
   const app = (main: string) => {
@@ -408,6 +408,13 @@ test("a library's function its consumer compiles is refused where it reads its l
     "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `dep::COUNT`, private to its library",
   );
   expect(app("println!(\"{}\", dep::named(Loud(2)));")).toBe("dropped 2\ndep\n");
+  // A binding's static, a global's, which any crate's JS reads as it is,
+  // as React's reconciler's `runWithFiberInDEV` reads `shared`'s `__DEV__`.
+  expect(app("println!(\"{}\", dep::unbounded(Loud(5)));")).toBe("dropped 5\ntrue\n");
+  // But not one its library binds to a module by a path from its own file.
+  expect(() => app("println!(\"{}\", dep::limited(Loud(6)));")).toThrow(
+    "but it reads `dep::LIMIT`, which its library binds to `./stack.js`, a module by a path relative to that library's own file",
+  );
   // Nor one that calls a binding its library names by a path relative to
   // its own file, which isn't the consumer's.
   expect(() => app("println!(\"{}\", dep::sized(Loud(3)));")).toThrow(

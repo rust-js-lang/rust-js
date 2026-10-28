@@ -633,3 +633,24 @@ concat is imported, unless its items are what the crate changes", run:
 the `Vec<u32>`'s push leaves what the library was given as it was;
 mutations `concat-copies-its-array` and `concat-items-unasked`
 (`instances.ts`).
+
+## Amendment: a binding's static is JS's
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; the instance reads
+the global its library's code reads.
+
+React DOM's call of the reconciler's generic `runWithFiberInDEV`, which
+it compiles itself, was refused as reading `shared::environment::__DEV__`,
+"private to its library", though it's `pub` (gap rd75): the check took
+every `static` no library item is of as its library's own, and an
+`extern` block's static, a binding, is none, as it has no JS of its own.
+
+**A binding's static, an `extern` block's, is read by the instance as its
+library's code reads it**, `__DEV__`, a global's name; **one its library
+binds to a module by a path relative to that library's file,
+`#[link_name = "./stack.js#limit"]`, is refused**, as a binding called so
+is: "but it reads `dep::LIMIT`, which its library binds to `./stack.js`".
+Held by `test/crates.test.ts`' "a library's function its consumer compiles
+is refused where it reads its library's private state" (`dep::unbounded`,
+of `Infinity`, and `dep::limited`), and mutations
+`instance-binding-static-private` and `instance-relative-static-read`.

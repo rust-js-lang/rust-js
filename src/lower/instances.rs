@@ -614,12 +614,16 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
     }
     let mut read = Read { tcx, read: Vec::new() };
     mir::visit::Visitor::visit_body(&mut read, body);
-    for def in read.read {
+    for &def in &read.read {
         let state = matches!(tcx.def_kind(def), DefKind::Static { .. })
             || (matches!(tcx.def_kind(def), DefKind::Const { .. })
                 && matches!(tcx.type_of(def).instantiate_identity().skip_normalization().kind(),
                     ty::Adt(key, _) if super::recognition::is_std_def(tcx, key.did(), super::recognition::StdItem::LocalKey)));
-        if state && !def.is_local() && calls.foreign.item(def).is_none() {
+        // A binding's, an `extern` block's static, is JS's, which the
+        // crate's JS reads as its library's does, but of a module its
+        // library names by a path relative to its own file, which is below.
+        let binding = tcx.is_foreign_item(def);
+        if state && !binding && !def.is_local() && calls.foreign.item(def).is_none() {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
                 "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `{}`, private to its library, which only that library's code can reach (ADR 0914): make it `pub`",
@@ -630,7 +634,14 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
     }
     // A binding of its library's to a module by a path relative to that
     // library's file, `./stack.js`, which isn't this crate's.
-    for (binding, _) in called(body) {
+    let statics = (read.read.iter().copied())
+        .filter(|&def| tcx.is_foreign_item(def) && matches!(tcx.def_kind(def), DefKind::Static { .. }));
+    let bindings: Vec<DefId> = called(body)
+        .into_iter()
+        .map(|(binding, _)| binding)
+        .chain(statics)
+        .collect();
+    for binding in bindings {
         let path = super::bindings::js_path(tcx, binding);
         if !binding.is_local()
             && super::bindings::is_binding(tcx, binding)
@@ -639,8 +650,9 @@ fn refuse_private_state<'tcx>(calls: &Calls<'_, 'tcx>, id: DefId, body: &mir::Bo
         {
             let root = tcx.typeck_root_def_id(id);
             tcx.dcx().err(format!(
-                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it calls `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
+                "rust-js: this crate compiles `{}` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, an impl its library's code never asks for, or one that copies what this crate changes in place; but it {} `{}`, which its library binds to `{from}`, a module by a path relative to that library's own file, not this crate's (ADR 0914): have its library bind it by a package's path, which this crate can import too",
                 tcx.def_path_str(root),
+                if tcx.is_foreign_item(binding) && matches!(tcx.def_kind(binding), DefKind::Static { .. }) { "reads" } else { "calls" },
                 tcx.def_path_str(binding),
             ));
         }

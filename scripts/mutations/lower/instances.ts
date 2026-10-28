@@ -130,4 +130,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "unboxed function"],
   },
+  {
+    name: "instance-binding-static-private",
+    breaks: "a library's function its consumer compiles is refused where it reads a binding's static, a global JS has, as React DOM's call of the reconciler's runWithFiberInDEV reading shared's `__DEV__` was (ADR 0914, amended, gap rd75)",
+    file: "src/lower/instances.rs",
+    find: "if state && !binding && !def.is_local()",
+    replace: "if state && !def.is_local()",
+    tests: ["test/crates.test.ts", "-t", "private state"],
+  },
+  {
+    name: "instance-relative-static-read",
+    breaks: "a library's function its consumer compiles reads a binding's static its library binds to a module by a path from its own file, which the consumer's file doesn't name (ADR 0914, amended)",
+    file: "src/lower/instances.rs",
+    find: ".chain(statics)",
+    replace: ".chain(statics.take(0))",
+    tests: ["test/crates.test.ts", "-t", "private state"],
+  },
 ];
