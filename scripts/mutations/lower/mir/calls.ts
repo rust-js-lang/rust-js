@@ -470,4 +470,12 @@ export const mutations: Mutation[] = [
     replace: "            if k > 0 {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
   },
+  {
+    name: "js-given-call-unrouted",
+    breaks: "a call of a function JS calls calls its own JS whatever it gives, so `relay(())`, which needs the box, is `None`",
+    file: "src/lower/mir/calls.rs",
+    find: "        let copy = self.called_copy((def_id, generic_args), span)?;",
+    replace: "        let copy = self.called_copy((def_id, generic_args), span).map(|_| None)?;",
+    tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
+  },
 ];

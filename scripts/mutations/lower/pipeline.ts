@@ -607,4 +607,12 @@ export const mutations: Mutation[] = [
     replace: "        let in_place = |id: DefId| super::bindings::is_js_null(tcx, id) && false;\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::null\\(\\) is null where it's written"],
   },
+  {
+    name: "js-given-copy-unimported",
+    breaks: "a copy of another module's function a module calls isn't imported, so `relay`'s `wrappedUnboxed` has no import and the compiler fails",
+    file: "src/lower/pipeline.rs",
+    find: "        targets.entry(from).or_default().insert(target);",
+    replace: "        let _ = (from, target);",
+    tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
+  },
 ];

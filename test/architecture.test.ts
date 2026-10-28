@@ -453,6 +453,7 @@ const shared: Record<string, string> = {
   module: "the module it's in",
   module_names: "the module's names, read only",
   item: "the item lowered",
+  copy: "which copy of the item it lowers, one its callers need besides its own JS (ADR 0051), set entering it",
   jsx: "whether it writes JSX",
   names: "each name given, by `fresh`, kept per body by bodies.rs",
   locals: "a body's variables; its MIR facts, `locals.mir`, are mir.rs's",

@@ -65,6 +65,28 @@ pub fn flush_sync<R>(f: Option<impl FnOnce() -> R>) -> Option<R> {
     if let Some(f) = f { Some(f()) } else { None }
 }
 
+/// Given on to the module's own `wrapped`, which its Rust gives `()`:
+/// what JS gives reaches it as JS gave it, a copy of `wrapped`'s.
+pub fn relay<T>(x: T) -> Option<T> {
+    wrapped(x)
+}
+
+fn wrapped<T>(x: T) -> Option<T> {
+    Some(x)
+}
+
+/// Sorted by what JS gives, which may be `undefined`: its comparison is
+/// asked of each item, as Rust's is, not left last as JS's `sort` leaves
+/// `undefined`.
+pub fn sort_with<T>(mut xs: Vec<T>, compare: impl FnMut(&T, &T) -> std::cmp::Ordering) -> Vec<T> {
+    xs.sort_by(compare);
+    xs
+}
+
+pub fn relayed_unit() -> bool {
+    wrapped(()).is_some() && relay(()).is_some()
+}
+
 // A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these
 // ask about the generic ones without making one.
 pub fn tried_some<T>(x: T, keep: bool) -> bool {

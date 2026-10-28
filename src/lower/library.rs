@@ -91,7 +91,9 @@ fn type_params(tcx: TyCtxt<'_>, id: DefId, contracts: &Contracts<'_, '_>) -> Vec
     for &(_, index) in contracts.given.clones.iter().filter(|&&(of, _)| of == id) {
         param(&mut params, index).marks.insert(ParamFact::Clone);
     }
-    for &(_, index) in contracts.given.unboxed.iter().filter(|&&(of, _)| of == id) {
+    // As its JS takes them, a function JS calls each as JS gives it (ADR
+    // 0051, amended).
+    for index in contracts.given.js_given.main(tcx, id).unboxed {
         param(&mut params, index).marks.insert(ParamFact::Unboxed);
     }
     for &index in contracts.no_drops.get(&id).into_iter().flatten() {

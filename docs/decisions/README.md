@@ -39,7 +39,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own)*
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
-- [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed)*
+- [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it)*
 - [0052 The crate's own `Default`, `From` and `Clone`, and the trait ABI kept](0052-std-trait-impls.md) *(amended: `into()` of a type parameter's target is its bound's `from`)*
 - [0053 `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it](0053-partial-eq.md) *(amended: an item-by-item `==`'s arrow names are fresh)*
 - [0054 `Display`: a `fmt` returns the string it writes](0054-display.md)

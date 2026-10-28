@@ -145,6 +145,9 @@ pub(super) struct Given<'a> {
     pub stepped: &'a HashSet<(DefId, u32, DefId)>,
     /// The type parameters a `Some` of which is the value (ADR 0051, amended).
     pub unboxed: &'a HashSet<(DefId, u32)>,
+    /// What each function's JS takes its type parameters as, and the copies
+    /// its calls need besides (ADR 0051, amended).
+    pub js_given: &'a super::analysis::JsGiven,
 }
 
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a

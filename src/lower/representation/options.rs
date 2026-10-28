@@ -29,7 +29,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0051).
     pub(in crate::lower) fn boxed_payload(&self, ty: Ty<'tcx>) -> bool {
         let payload = self.payload(ty);
+        if self.js_given(payload) {
+            return false;
+        }
         (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
+    }
+
+    /// Is `ty` a type parameter JS gives, of a function JS calls, or of a
+    /// copy of one its values reach: any JS value, `undefined` too, whose
+    /// `Some` is the value, as TypeScript's `T | undefined` says (ADR 0051,
+    /// amended)? Not one a function trait bounds, a JS function whatever it
+    /// is, nor one a binding of its bound reads.
+    fn js_given(&self, ty: Ty<'tcx>) -> bool {
+        let ty::Param(param) = ty.kind() else {
+            return false;
+        };
+        (self.lowered_params()).is_some_and(|params| params.js.contains(&param.index))
+            && !self.read_by_its_bounds(ty)
+            && !self.is_callable(ty)
+    }
+
+    /// What the lowering of the body being lowered takes its type
+    /// parameters as, its own JS or a copy of it (`analysis::JsGiven`): of
+    /// a nested body of its own, a closure's, too, but not of a trait's
+    /// default copied into an impl, whose are its own.
+    pub(in crate::lower) fn lowered_params(&self) -> Option<super::super::analysis::Params> {
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        (owner == self.tcx.typeck_root_def_id(self.item))
+            .then(|| self.krate.given.js_given.params(self.tcx, owner, self.copy))
     }
 
     /// Is `ty` a type parameter never `undefined` or `null`, so `Some` of
@@ -42,8 +69,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Param(param) = ty.kind() else {
             return false;
         };
-        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-        self.read_by_its_bounds(ty) || self.is_callable(ty) || self.krate.given.unboxed.contains(&(owner, param.index))
+        let unboxed = match self.lowered_params() {
+            Some(params) => params.unboxed.contains(&param.index),
+            None => {
+                let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+                self.krate.given.unboxed.contains(&(owner, param.index))
+            }
+        };
+        self.read_by_its_bounds(ty) || self.is_callable(ty) || unboxed
     }
 
     fn read_by_its_bounds(&self, ty: Ty<'tcx>) -> bool {
@@ -61,7 +94,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `T` itself: `Some(())` and `None` would be the same value.
     pub(in crate::lower) fn can_be_nullish(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.payload(ty);
-        (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
+        // One JS gives may be `undefined` or `null` as it's given.
+        self.js_given(ty)
+            || (super::super::recognition::known_by_bounds(ty) && !self.defined_by_its_bounds(ty))
             // An uncounted `Weak::new()`, `null` (ADR 0843).
             || self.uncounted_weak(ty).is_some()
             || nullish_by_its_shape(&self.recognition(), ty)
@@ -88,18 +123,28 @@ fn nullish_by_its_shape<'tcx>(recognition: &super::super::recognition::Recogniti
 /// Never less than `can_be_nullish`, which knows which `Rc`s are counted.
 pub(in crate::lower) fn may_look_like_none<'tcx>(
     recognition: &super::super::recognition::Recognition<'_, 'tcx>,
-    mut ty: Ty<'tcx>,
+    ty: Ty<'tcx>,
 ) -> bool {
+    let ty = payload_through(recognition, ty);
+    super::super::recognition::known_by_bounds(ty)
+        || super::super::recognition::weak_pointee(recognition.tcx, ty).is_some()
+        || nullish_by_its_shape(recognition, ty)
+}
+
+/// What a value of `ty` is, seen through every reference, `Box`, `Rc` and
+/// `Pin`, which are the value itself as an `Option`'s payload, whatever a
+/// crate counts (`may_look_like_none`'s).
+pub(in crate::lower) fn payload_through<'tcx>(
+    recognition: &super::super::recognition::Recognition<'_, 'tcx>,
+    mut ty: Ty<'tcx>,
+) -> Ty<'tcx> {
     loop {
         ty = match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
             ty::Adt(_, args) if ty.is_box() || recognition.is_rc(ty) || recognition.pinned(ty).is_some() => {
                 args.type_at(0)
             }
-            _ => break,
+            _ => return ty,
         };
     }
-    super::super::recognition::known_by_bounds(ty)
-        || super::super::recognition::weak_pointee(recognition.tcx, ty).is_some()
-        || nullish_by_its_shape(recognition, ty)
 }

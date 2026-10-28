@@ -914,13 +914,18 @@ pub fn units() -> (bool, bool, bool) {
 }
 `);
   expect(dep).toContain("export function flushSync(f) {\n  if (f != null) {\n    return f();\n  }\n}");
-  expect(dep).toContain("export function wrap(x) {\n  return $some(x);\n}");
+  // A function JS calls takes what JS gives as it gives it, though its
+  // crate's Rust gives it an Option, which calls a copy that boxes (ADR
+  // 0051, amended); a consumer giving it `()` compiles its own.
+  expect(dep).toContain("export function wrap(x) {\n  return x;\n}");
+  expect(dep).toContain("function wrapBoxed(x) {\n  return $some(x);\n}");
   expect(app).toContain("function flushSync(f) {\n  if (f != null) {\n    return $some(f());\n  }\n}");
-  expect(app).not.toContain("function wrap(");
+  expect(app).toContain("function wrap(x) {\n  return $some(x);\n}");
   const { plain, units } = await import(join(dir, "app", "lib.js"));
   expect([plain(), units()]).toEqual([3, [true, true, true]]);
   const library = await import(join(dir, "dep", "lib.js"));
   expect([library.flushSync(() => undefined), library.flushSync(() => null), library.wrappedNone()]).toEqual([undefined, null, true]);
+  expect([library.wrap(undefined), library.wrap(null), library.wrap(2)]).toEqual([undefined, null, 2]);
 });
 
 // React's reconciler reads a context, `readContext(CacheContext)`, of

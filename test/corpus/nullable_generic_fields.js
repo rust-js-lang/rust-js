@@ -19,6 +19,13 @@ export function push(cursor, value, stack) {
 }
 
 export function pop(cursor, stack) {
+  const previous = stack.pop();
+  if (previous != null) {
+    cursor.current = previous;
+  }
+}
+
+function popBoxed(cursor, stack) {
   const pop = $pop(stack);
   if (pop != null) {
     const previous = $someValue(pop);
@@ -39,7 +46,7 @@ function main() {
   push(hidden, { lanes: 4 }, stack);
   const value$1 = hiddenLanes();
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${stack.length}`);
-  pop(hidden, stack);
+  popBoxed(hidden, stack);
   const value$2 = hiddenLanes();
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${hidden.current == null}`);
 

@@ -14,6 +14,8 @@ mod fmt_failures;
 mod fn_pointers;
 mod held_adapters;
 mod iterator_steps;
+mod js_given;
+pub(super) use js_given::{JsGiven, Params, js_facing};
 mod lazy_locals;
 mod mutation;
 mod naming;
@@ -535,6 +537,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The type parameters a `Some` of which is the value, no caller giving
     /// what may look like `None` (ADR 0051, amended).
     pub unboxed: HashSet<(DefId, u32)>,
+    /// What each function's JS takes its type parameters as, and the copies
+    /// its calls need besides (ADR 0051, amended).
+    pub js_given: JsGiven,
     /// The type parameters given as they are whose `Iterator` dictionary,
     /// or an extension's, is given, as they're stepped by it (ADRs 0411,
     /// 0487), with the trait's id.
@@ -1137,11 +1142,41 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
+    // The functions JS calls, whose JS takes their type parameters as JS
+    // gives them, and the copies their crate's calls need otherwise, each
+    // named apart beside its function (ADR 0051, amended).
+    let js_given = {
+        let copyable = |id: DefId| {
+            fns.get(&id).is_some_and(|info| {
+                (info.owner.is_none() || crate::lower::classes::member(tcx, id).is_none())
+                    && !local_functions.contains_key(&id)
+                    && !named_expressions.contains(&id)
+                    && !crate::lower::bindings::is_on_load(tcx, id)
+            })
+        };
+        let mut name = |id: DefId, suffix: &str| {
+            let info = &fns[&id];
+            let base = format!("{}{suffix}", info.name);
+            match &info.owner {
+                // A method's, apart from its type's others.
+                Some(owner) => {
+                    let mut names: HashSet<String> = (fns.values())
+                        .filter(|other| other.module == info.module && other.owner.as_ref() == Some(owner))
+                        .map(|other| other.name.clone())
+                        .collect();
+                    crate::names::fresh_apart(&mut names, &base)
+                }
+                None => crate::names::fresh_in(taken.entry(info.module).or_default(), &base),
+            }
+        };
+        JsGiven::of_crate(&recognition, all_bodies, (&item_set, &unboxed), &copyable, &mut name)
+    };
     let given = crate::lower::traits::Given {
         copied: &copied,
         clones: &clones,
         stepped: &stepped,
         unboxed: &unboxed,
+        js_given: &js_given,
     };
     let type_facts = type_fact_params(tcx, all_bodies, &fns, &foreign, given);
     let failing = fmt_failures::failing_fns(tcx, all_bodies, &foreign);
@@ -1187,6 +1222,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         copied,
         clones,
         unboxed,
+        js_given,
         stepped,
         type_facts,
         failing,

@@ -137,11 +137,11 @@ impl DropsObserved {
     /// The drops each function keeps, those it uses or passes on to one
     /// that keeps it, in `drop_params`; and the lowered functions with only
     /// those, as parameters and arguments.
-    pub(in crate::lower) fn keep(
+    pub(in crate::lower) fn keep<'l>(
         self,
         takes_used: &TakesUsed,
         drop_params: &mut HashMap<DefId, Vec<u32>>,
-        items: &mut [(DefId, crate::lower::LoweredFn)],
+        items: impl Iterator<Item = (DefId, &'l mut crate::lower::LoweredFn)>,
     ) {
         let mut kept = self.used;
         let mut changed = true;
@@ -159,10 +159,10 @@ impl DropsObserved {
             }
         }
         for (id, item) in items {
-            if let Some(names) = self.names.get(id) {
+            if let Some(names) = self.names.get(&id) {
                 let unused: HashSet<&str> = names
                     .iter()
-                    .filter(|&&(index, _)| !kept.contains(&(*id, index)))
+                    .filter(|&&(index, _)| !kept.contains(&(id, index)))
                     .map(|(_, name)| name.as_str())
                     .collect();
                 item.function

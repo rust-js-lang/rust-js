@@ -998,10 +998,14 @@ export function ratio(a, b) {
   boxed: a JS caller of `pub fn flush_sync<R>(f: Option<impl FnOnce() ->
   R>) -> Option<R>` is given what its callback gives, `undefined` or
   `null` too, `if (f != null) { return f(); }`, as TypeScript's `R |
-  undefined` says. Where the crate's own Rust gives it one, its `Some` is
-  boxed, for JS callers too; a library's consumer that gives one compiles
-  its own of the function
-  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-type-parameter-no-call-gives-what-may-look-like-none), amended).
+  undefined` says. A function JS calls, a `pub` one its module exports,
+  takes its type parameters so whatever the crate's own Rust gives them:
+  where that Rust gives one `()` or an `Option`, its call calls a copy
+  beside it that boxes, `pickBoxed`, never seen by JS; what either passes
+  a type parameter on to is copied so too, `wrappedUnboxed`; a copy made
+  alike the function is left out. A library's consumer that gives one
+  what may look like `None` compiles its own of the function
+  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-function-js-calls-takes-what-js-gives-as-it-gives-it), amended).
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see

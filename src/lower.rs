@@ -425,6 +425,9 @@ impl CrateFacts<'_, '_> {
 #[derive(Default)]
 struct Dependencies {
     references: HashSet<(LocalModId, DefId)>,
+    /// Each copy of a function another module's calls name, by its index
+    /// (ADR 0051, amended).
+    copy_references: HashSet<(LocalModId, DefId, usize)>,
     package_uses: HashSet<(LocalModId, Export)>,
     uses: Vec<(DefId, DefId)>,
     /// Each binding a module reads through another of the crate's that
@@ -470,6 +473,9 @@ struct FnCx<'a, 'tcx> {
     ordering: Vec<(Ty<'tcx>, bool, String)>,
     /// The item being lowered: what `fn_ref` records as using its target.
     item: DefId,
+    /// Which copy of it, where it's one its callers need besides its own JS
+    /// (`analysis::JsGiven`, ADR 0051, amended).
+    copy: Option<usize>,
     /// What walks of types found, each walked once, under each typing
     /// environment: what a type holds depends on the bounds in force, as a
     /// copied default's `T::Item` is a number and its sibling's a `Vec`.
@@ -847,7 +853,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(None);
             }
-            let callee = self.fn_ref(def_id);
+            // Of the lowering that takes what it's given as it's given it, as
+            // its call is (ADR 0051, amended).
+            let callee = match self.called_copy((def_id, args), span)? {
+                Some(copy) => self.own_fn_ref(def_id, Some(copy)),
+                None => self.fn_ref(def_id),
+            };
             // One given its caller's location is called where it's defined,
             // as rustc's shim of it calls it (ADR 0427).
             let location = self.location_at(self.tcx.def_span(def_id));

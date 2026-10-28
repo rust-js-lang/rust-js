@@ -433,4 +433,13 @@ export const mutations: Mutation[] = [
     replace: "                self.1 |= local == self.0 && context.is_use();\n",
     tests: ["test/crates.test.ts", "-t", "a library's generic function takes the drops its body uses"],
   },
+  {
+    name: "js-given-value-unrouted",
+    breaks: "a function given as a value is its own JS whatever the lowering takes, so `countSome`'s JS maps `wrapped`, which boxes",
+    file: "src/lower.rs",
+    find: "            let callee = match self.called_copy((def_id, args), span)? {",
+    replace: "            let callee = match self.called_copy((def_id, args), span).map(|_| None)? {",
+    tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
+    snapshots: true,
+  },
 ];

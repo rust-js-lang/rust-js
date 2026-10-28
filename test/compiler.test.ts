@@ -908,18 +908,42 @@ test("methods are their type's object of functions", async () => {
 // ADR 0051: `Option<T>` in generic code boxes only what could look like `None`.
 test("an Option of a generic T is its value, boxed only when that looks like None", async () => {
   const js = await Bun.file(join(target, "generic_options.js")).text();
-  expect(js).toContain("export function pick(x, keep) {\n  if (keep) {\n    return $some(x);");
-  expect(js).toContain("  return $someValue(pick(x, keep) ?? $some(fallback));");
+  // A function JS calls takes `T` as JS gives it; the crate's own Rust,
+  // which gives it `()` and `Option<i32>`, calls a copy that boxes (ADR
+  // 0051, amended).
+  expect(js).toContain("export function pick(x, keep) {\n  if (keep) {\n    return x;");
+  expect(js).toContain("\nfunction pickBoxed(x, keep) {\n  if (keep) {\n    return $some(x);");
+  expect(js).toContain("  return $someValue(pickBoxed(x, keep) ?? $some(fallback));");
+  expect(js).toContain("export function innerOr(x, keep, fallback) {\n  return pick(x, keep) ?? fallback;");
+  expect(js).toContain("countSomeBoxed([undefined, undefined, undefined]) + keptBoxed([undefined, undefined])");
   // `mapped`'s `U` is given a `bool` and an `i32`, neither like `None`.
   expect(js).toContain("  return option != null ? f($someValue(option)) : undefined;");
   expect(js).toContain("  return $pop(xs);");
   // Code that isn't generic keeps `Some(x)` as `x`.
   expect(await Bun.file(join(target, "options.js")).text()).not.toContain("$some");
-  // A JS caller gets plain values, and a box only for what's `None`-like.
+  // A JS caller gets the values it gives, `undefined` too, never a box,
+  // though the crate's Rust gives `pick` what may look like `None`.
   expect(genericOptions.pick(5, true)).toBe(5);
   expect(genericOptions.pick("a", true)).toBe("a");
-  expect(genericOptions.pick(undefined, true)).toEqual({ $someNone: 0 });
+  expect(genericOptions.pick(undefined, true)).toBeUndefined();
+  expect(genericOptions.pick(null, true)).toBeNull();
   expect(genericOptions.pick(undefined, false)).toBeUndefined();
+  // And the crate's Rust what native Rust gives: `Some(())` is `Some`.
+  expect(genericOptions.units()).toBe(5);
+  expect(genericOptions.nones()).toBe(5);
+  // What JS gives reaches what the function passes it on to as JS gave
+  // it, a copy of the module's own function, which its Rust gives `()`.
+  expect(js).toContain("export function relay(x) {\n  return wrappedUnboxed(x);");
+  expect(genericOptions.relay(undefined)).toBeUndefined();
+  expect(genericOptions.relay(null)).toBeNull();
+  expect(genericOptions.relay(4)).toBe(4);
+  expect(genericOptions.relayedUnit()).toBe(true);
+  // What JS gives may be `undefined`, which Rust's sort compares too.
+  expect(genericOptions.sortWith([2, undefined, 1], (a: any, b: any) => Math.sign((a ?? 0) - (b ?? 0)))).toEqual([
+    undefined,
+    1,
+    2,
+  ]);
   // A type parameter only JS gives, as React's flushSyncFromReconciler's
   // `R`, is given as it is: what the callback gives, `undefined` or `null`
   // too (ADR 0051, amended).

@@ -4,10 +4,20 @@
 // could itself look like `None`: with `T = ()` or `T = Option<i32>`, a
 // `Some(x)` is a box, so it's still `Some`.
 
-import { $pop, $some, $someAt, $someValue, $unwrap } from "@rust-js/runtime";
+import { $pop, $some, $someAt, $someValue, $sort, $unwrap } from "@rust-js/runtime";
 
 /** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function countSome(xs) {
+  let n = 0;
+  for (const o of xs) {
+    if (o != null) {
+      n = (n + 1) >>> 0;
+    }
+  }
+  return n;
+}
+
+function countSomeBoxed(xs) {
   let n = 0;
   for (const x of xs) {
     const o = $some(x);
@@ -19,6 +29,12 @@ export function countSome(xs) {
 }
 
 export function pick(x, keep) {
+  if (keep) {
+    return x;
+  }
+}
+
+function pickBoxed(x, keep) {
   if (keep) {
     return $some(x);
   }
@@ -35,23 +51,54 @@ export function kept(xs) {
   return n;
 }
 
+function keptBoxed(xs) {
+  let n = 0;
+  for (const x of xs) {
+    if (pickBoxed(x, true) != null) {
+      n = (n + 1) >>> 0;
+    }
+  }
+  return n;
+}
+
 /** The value inside, taken out again: `unwrap_or`, `unwrap` and `map`. */
 export function innerOr(x, keep, fallback) {
-  return $someValue(pick(x, keep) ?? $some(fallback));
+  return pick(x, keep) ?? fallback;
+}
+
+function innerOrBoxed(x, keep, fallback) {
+  return $someValue(pickBoxed(x, keep) ?? $some(fallback));
 }
 
 export function unwrapped(x) {
-  return $someValue($unwrap(pick(x, true)));
+  return $unwrap(pick(x, true));
+}
+
+function unwrappedBoxed(x) {
+  return $someValue($unwrap(pickBoxed(x, true)));
 }
 
 export function mapped(x, f) {
   const option = pick(x, true);
+  return option != null ? f(option) : undefined;
+}
+
+function mappedBoxed(x, f) {
+  const option = pickBoxed(x, true);
   return option != null ? f($someValue(option)) : undefined;
 }
 
 /** `?` on an `Option<T>`. */
 export function tried(x, keep) {
-  const value = pick(x, keep);
+  const v = pick(x, keep);
+  if (v == null) {
+    return;
+  }
+  return v;
+}
+
+function triedBoxed(x, keep) {
+  const value = pickBoxed(x, keep);
   if (value == null) {
     return;
   }
@@ -61,10 +108,18 @@ export function tried(x, keep) {
 
 /** What std makes an `Option` of: the last of a `Vec`, the first of a slice. */
 export function popped(xs) {
+  return xs.pop();
+}
+
+function poppedBoxed(xs) {
   return $pop(xs);
 }
 
 export function firstOf(xs) {
+  return xs[0];
+}
+
+function firstOfBoxed(xs) {
   return $someAt(xs, 0);
 }
 
@@ -79,48 +134,96 @@ export function flushSync(f) {
   }
 }
 
+/**
+ * Given on to the module's own `wrapped`, which its Rust gives `()`:
+ * what JS gives reaches it as JS gave it, a copy of `wrapped`'s.
+ */
+export function relay(x) {
+  return wrappedUnboxed(x);
+}
+
+function relayBoxed(x) {
+  return wrapped(x);
+}
+
+function wrapped(x) {
+  return $some(x);
+}
+
+function wrappedUnboxed(x) {
+  return x;
+}
+
+/**
+ * Sorted by what JS gives, which may be `undefined`: its comparison is
+ * asked of each item, as Rust's is, not left last as JS's `sort` leaves
+ * `undefined`.
+ */
+export function sortWith(xs, compare) {
+  $sort(xs, compare);
+  return xs;
+}
+
+export function relayedUnit() {
+  return wrapped(undefined) != null && relayBoxed(undefined) != null;
+}
+
 // A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these
 // ask about the generic ones without making one.
 export function triedSome(x, keep) {
   return tried(x, keep) != null;
 }
 
+function triedSomeBoxed(x, keep) {
+  return triedBoxed(x, keep) != null;
+}
+
 export function poppedSome(xs) {
   return popped(xs) != null;
+}
+
+function poppedSomeBoxed(xs) {
+  return poppedBoxed(xs) != null;
 }
 
 export function firstSome(xs) {
   return firstOf(xs) != null;
 }
 
+function firstSomeBoxed(xs) {
+  return firstOfBoxed(xs) != null;
+}
+
 // With the types a JS value of can't tell from `None`. Each result is
 // concrete, so native Rust and the JS can be compared.
 
 export function units() {
-  return (countSome([undefined, undefined, undefined]) + kept([undefined, undefined])) >>> 0;
+  return (
+    (countSomeBoxed([undefined, undefined, undefined]) + keptBoxed([undefined, undefined])) >>> 0
+  );
 }
 
 export function nones() {
-  return (countSome([undefined, 1]) + kept([undefined, undefined, 2])) >>> 0;
+  return (countSomeBoxed([undefined, 1]) + keptBoxed([undefined, undefined, 2])) >>> 0;
 }
 
 export function innerValues() {
-  const a = innerOr(undefined, true, 7);
-  const b = innerOr(3, false, 7);
-  const c = unwrapped(undefined);
+  const a = innerOrBoxed(undefined, true, 7);
+  const b = innerOrBoxed(3, false, 7);
+  const c = unwrappedBoxed(undefined);
   return [a, b, c, innerOr(5, true, 9)];
 }
 
 export function mappedValues() {
-  const noneInside = $unwrap(mapped(undefined, (o) => o == null));
+  const noneInside = $unwrap(mappedBoxed(undefined, (o) => o == null));
   const doubled = $unwrap(mapped(4, (n) => (n * 2) | 0));
-  return [noneInside, triedSome(undefined, true), doubled];
+  return [noneInside, triedSomeBoxed(undefined, true), doubled];
 }
 
 export function stdValues() {
-  const poppedNone = poppedSome([1, undefined]);
-  const empty = poppedSome([]);
-  const firstNone = firstSome([undefined, 1]);
+  const poppedNone = poppedSomeBoxed([1, undefined]);
+  const empty = poppedSomeBoxed([]);
+  const firstNone = firstSomeBoxed([undefined, 1]);
   return [poppedNone, empty, firstNone, $unwrap(popped([1, 2, 3]))];
 }
 //# sourceMappingURL=generic_options.js.map

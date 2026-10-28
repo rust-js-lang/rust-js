@@ -645,18 +645,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.note_drop_uses(def_id);
         Ok(LoweredFn {
             function: js::Function {
-                name: self.krate.fns[&def_id].name.clone(),
+                // A copy its callers need, by its own name (ADR 0051, amended).
+                name: match self.copy {
+                    Some(at) => self.krate.given.js_given.name(def_id, at).to_owned(),
+                    None => self.krate.fns[&def_id].name.clone(),
+                },
                 params,
                 body: out,
                 // A constant's initializer, its module's `const`'s value, isn't
                 // a function anyone calls; a library's function the crate
                 // compiles itself is its own, which no other crate or JS
                 // calls (ADR 0914).
-                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
-                    && self.tcx.visibility(def_id).is_public()
-                    && !self.krate.foreign.is_instance(def_id)
-                    && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
-                        || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
+                // A copy its callers need is its crate's alone, exported only
+                // where another module calls it.
+                export: self.copy.is_none() && super::analysis::js_facing(self.tcx, self.krate.foreign, def_id),
                 is_async,
                 noinline: super::recognition::is_noinline(self.tcx, def_id),
                 // A body of the crate's maps to where it's written; a std one,

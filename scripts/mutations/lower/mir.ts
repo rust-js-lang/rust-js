@@ -189,14 +189,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR takes its Formatter's options"],
   },
   {
-    name: "mir-initializer-asked-visibility",
-    breaks: "MIR asks a `const { .. }` block's visibility, which rustc has none of",
-    file: "src/lower/mir.rs",
-    find: "                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)\n",
-    replace: "                export: true\n",
-    tests: ["test/corpus.test.ts","-t","const_block_values"],
-  },
-  {
     name: "mir-fn-directives-dropped",
     breaks: "a function's `js::directive!` is written nowhere",
     file: "src/lower/mir.rs",
@@ -331,14 +323,6 @@ export const mutations: Mutation[] = [
     find: "                    .is_some_and(|b| b.params.len() == params.len()) =>\n",
     replace: "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
-  },
-  {
-    name: "instance-exported",
-    breaks: "a library's function the crate compiles itself is exported, `export function createContext`, as if JS or another crate could call it (ADR 0914)",
-    file: "src/lower/mir.rs",
-    find: "                    && !self.krate.foreign.is_instance(def_id)\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
   },
   {
     "name": "unnamed-last-params-kept",

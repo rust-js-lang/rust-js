@@ -97,11 +97,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span: js::Span::NONE,
             };
         }
+        self.own_fn_ref(def_id, None)
+    }
+
+    /// The crate's function `def_id`, its own JS or, by its index, a copy
+    /// its callers need besides (`called_copy`, ADR 0051, amended), named
+    /// in this module.
+    pub(super) fn own_fn_ref(&self, def_id: DefId, copy: Option<usize>) -> Expr {
         let target = &self.krate.fns[&def_id];
+        let copy = copy.map(|at| {
+            let name = self.krate.given.js_given.name(def_id, at).to_owned();
+            (at, name)
+        });
         if target.module != self.module {
-            self.dependencies.borrow_mut().references.insert((self.module, def_id));
+            match &copy {
+                // A copy of a function of its module's, imported by its name.
+                Some((at, _)) if target.owner.is_none() => {
+                    _ = {
+                        let mut dependencies = self.dependencies.borrow_mut();
+                        dependencies.copy_references.insert((self.module, def_id, *at))
+                    }
+                }
+                _ => _ = self.dependencies.borrow_mut().references.insert((self.module, def_id)),
+            }
         }
-        let export = target.owner.as_ref().unwrap_or(&target.name);
+        let name = copy.map_or_else(|| target.name.clone(), |(_, name)| name);
+        let export = target.owner.as_ref().unwrap_or(&name);
         let reference = if target.module != self.module {
             Expr {
                 facts: js::Facts::NONE,
@@ -115,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reference = if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
             Expr::member(Expr::member(reference, "prototype"), target.name.clone())
         } else if target.owner.is_some() {
-            Expr::member(reference, target.name.clone())
+            Expr::member(reference, name)
         } else {
             reference.item()
         };
@@ -125,6 +146,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => reference.never_throws(),
             false => reference,
         }
+    }
+
+    /// Which lowering of the crate's function `callee` a call of it given
+    /// `args` here calls, as this lowering takes its own type parameters
+    /// (ADR 0051, amended): its own JS, `None`, or a copy its callers need
+    /// besides, which the crate's analysis made of each call it found.
+    pub(super) fn called_copy(
+        &self,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+        span: Span,
+    ) -> R<Option<usize>> {
+        let params = self.lowered_params().unwrap_or_else(|| {
+            let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+            super::analysis::Params {
+                unboxed: (self.krate.given.unboxed.iter())
+                    .filter(|&&(of, _)| of == owner)
+                    .map(|&(_, index)| index)
+                    .collect(),
+                js: Default::default(),
+            }
+        });
+        (self.krate.given.js_given.called(&self.recognition(), &params, (callee, args))).map_err(|()| {
+            self.unsupported(
+                span,
+                "this call of a function that JS calls too, which the crate's analysis made no copy of for what it gives",
+            )
+        })
     }
 
     /// A JS global (`console.log`) or an explicit package import

@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -301,3 +301,107 @@ giving what may look like None compiles its own of an unboxed function".
 Mutations `unboxed-param-given`, `nullish-passed-on`,
 `unboxed-library-fact` and `instance-gives-nullish`.
 
+## Amendment: a function JS calls takes what JS gives as it gives it
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a JS caller's
+results changed with what the crate's own Rust gives a function.
+
+The amendment above left a box for JS callers where the crate's own Rust
+gives a type parameter what may look like `None`: `pick(undefined, true)`
+of examples/generic_options.rs gave JS `{ $someNone: 0 }`, as `kept`
+gives `pick` a `()`, where the declaration says `T | undefined`. What a
+JS caller got depended on code it never sees. The coordinator's decision:
+a function JS calls gives JS callers the value, never the box.
+
+**A function JS calls, one its module exports, `pub` and no trait's,
+takes each type parameter as JS gives it: a `Some` of it is the value,
+`undefined` too, and the value may be `undefined` or `null`. Where the
+crate's own Rust gives one what may look like `None`, its call calls a
+copy, compiled from the same MIR beside it, that boxes:**
+
+```js
+export function pick(x, keep) {
+  if (keep) {
+    return x;
+  }
+}
+
+function pickBoxed(x, keep) {
+  if (keep) {
+    return $some(x);
+  }
+}
+```
+
+- **Which lowering a call calls**, `src/lower/analysis/js_given.rs`
+  (`JsGiven`): each lowering takes its type parameters as a set of those
+  unboxed and, of those, those JS gives (`Params`). A function's own JS
+  takes them as its crate's calls give them (`unboxed_params`), or, of one
+  JS calls, each unboxed and JS-given. A call, in any lowering, of a
+  generic function only its callers call gives each type parameter what's
+  nullish (what may look like `None`, or one of its own the lowering
+  boxes), what JS gave (one of its own the lowering takes so, seen through
+  references, `Box`, `Rc` and `Pin`), or what's never nullish. The
+  callee's own JS takes it where it unboxes nothing nullish and takes as
+  JS gave what JS gave; else a copy that unboxes what its crate's calls
+  give unboxed and what JS gave, and takes the latter as JS gives it. The
+  analysis finds every copy from each function's own JS, of every call of
+  its bodies and its closures, `calls_of`, as `unboxed_params` does; the
+  lowering asks the same question of each call, `called_copy`, of a call
+  and of a function given as a value, and one it finds no copy for is
+  refused, never called otherwise.
+- **What a value JS gave is**: any JS value. `boxed_payload` of it is
+  `false` and `can_be_nullish` `true` (`representation/options.rs`): a
+  `Vec<T>` of them sorts with `$sort`, which puts `undefined` where its
+  comparison says. A type parameter a function trait bounds, or a
+  binding's bound reads, is a function or an object, as before.
+- **A copy is named for what it does apart**, `pickBoxed` of a function
+  JS calls, `wrappedUnboxed` of another its JS's values reach, in its
+  module, beside it, a method's in its type's object; exported only where
+  another module calls it, and imported by its name.
+- **A copy made alike another is left out**, its calls calling that one
+  (`pipeline/copies.rs`): after the crate is lowered, each copy whose JS,
+  each call of a copy named as what that copy is, reads as its function's
+  own or an earlier copy's is that one. A function whose `T` is never in
+  an `Option`, `doubled<T>`, is one function.
+- **A library's export says each type parameter of a function JS calls
+  is unboxed** (`unboxed`, library ABI 10), as its JS is: a consumer that
+  gives one what may look like `None` compiles its own (ADR 0914).
+
+What a JS caller is given is what a JS-only caller was given before:
+`count_some([undefined])` from JS counts `0` and `unwrapped(undefined)`
+panics, as `Some(undefined)` is `None` to it, which its `T | undefined`
+says; the crate's own Rust is given what native Rust gives, `Some(())`
+`Some`.
+
+Alternatives: the box kept for JS callers where Rust gives one, the
+amendment above, gives JS what its declaration doesn't name, by code it
+can't see; an export that unboxes what its Rust copy returns, `return
+$someValue(pickBoxed(x, keep))`, keeps Rust's meaning inside, so
+`unwrapped(undefined)` is `undefined`, but reaches only an `Option<T>`
+returned whole, not one in an array, a field, a callback's argument or
+what's written through a `&mut`, and would make two forms of one export;
+one lowering for both, boxing at run time by what a caller is, can't
+tell a Rust `()` from JS's `undefined`. Cost: a function JS calls whose
+crate gives it `()` or an `Option` is two functions where its `T` is in
+an `Option`; each generic function such a function's JS reaches is
+lowered once more, and kept only where it reads otherwise. A trait's
+method, a dictionary's, a class's member and std's compiled bodies still
+box what they're given; a function JS calls that passes what JS gave to
+one of them may give JS a box back, as it did. A copy says each `return;`
+its function does, examples/generic_options.rs's `triedBoxed` beside
+`tried`: one more of the readability ratchet's `return;`s (ADR 0565).
+
+`test/corpus/js_given_copies.rs` relays through another module's
+function, steps a `filter_map` of a function given as a value, a generic
+type's method, and a function whose `T` is never in an `Option`, `()`,
+`Option`s and numbers, against native Rust; `test/compiler.test.ts` calls
+examples/generic_options.rs's `pick` and `relay` from JS with `undefined`,
+`null` and values, and its Rust's `units` and `relayedUnit`;
+`test/cross-crate-items.test.ts` "a consumer giving what may look like
+None compiles its own of an unboxed function" calls a library's `wrap`,
+which its own Rust gives an `Option`, from JS; `sortWith` sorts what JS
+gives with `$sort`. Mutations `js-given-copy-unrouted`,
+`js-given-facing-boxed`, `js-given-passed-on-boxed`, `js-given-not-nullish`,
+`js-given-boxed`, `js-given-copy-kept`, `js-given-copy-unimported`,
+`js-given-call-unrouted` and `js-given-value-unrouted`.

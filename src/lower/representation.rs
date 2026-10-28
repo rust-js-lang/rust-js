@@ -23,7 +23,7 @@ use rustc_span::{Span, Symbol};
 mod cells;
 mod options;
 
-pub(in crate::lower) use options::may_look_like_none;
+pub(in crate::lower) use options::{may_look_like_none, payload_through};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// That `subject` is one of `variants` of its enum, an or-pattern's,

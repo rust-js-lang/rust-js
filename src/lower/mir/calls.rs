@@ -280,7 +280,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // comes after.
         self.rest_given(def_id, &mut exprs);
         exprs.extend(self.evidence_args(def_id, generic_args, span)?);
-        let called = self.crate_called(def_id, exprs);
+        // The copy of it, where JS calls it too, that takes what this call
+        // gives as it gives it (ADR 0051, amended).
+        let copy = self.called_copy((def_id, generic_args), span)?;
+        let called = self.crate_called_copy((def_id, copy), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
@@ -293,8 +296,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// prototype's, `component.setState(..)` (ADR 0761); of an object's
     /// method, its own property's, `scope.containsNode(..)` (ADR 0943); of
     /// any other, `f(..)`.
-    pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, mut args: Vec<Expr>) -> Expr {
-        let callee = self.fn_ref(def_id);
+    pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, args: Vec<Expr>) -> Expr {
+        self.crate_called_copy((def_id, None), args)
+    }
+
+    /// `crate_called`'s, of its own JS or of a copy its callers need (ADR
+    /// 0051, amended).
+    fn crate_called_copy(
+        &self,
+        (def_id, copy): (rustc_span::def_id::DefId, Option<usize>),
+        mut args: Vec<Expr>,
+    ) -> Expr {
+        let callee = match copy {
+            Some(_) => self.own_fn_ref(def_id, copy),
+            None => self.fn_ref(def_id),
+        };
         match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
             (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {
                 Expr::new_(*class, args)

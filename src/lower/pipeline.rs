@@ -1,5 +1,6 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
+mod copies;
 mod holes;
 mod load_cycles;
 mod reached;
@@ -44,6 +45,9 @@ struct Pass {
     /// The bindings each module reads through another that holds them
     /// (ADR 0633).
     held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    /// Each copy of a function another module calls, by its index (ADR
+    /// 0051, amended).
+    copy_references: HashSet<(LocalModId, DefId, usize)>,
 }
 
 /// How the crate is built, as its command asks.
@@ -128,6 +132,7 @@ pub fn lower_crate<'tcx>(
         copied,
         clones,
         unboxed,
+        js_given,
         stepped,
         type_facts,
         failing,
@@ -191,6 +196,7 @@ pub fn lower_crate<'tcx>(
         clones: &clones,
         stepped: &stepped,
         unboxed: &unboxed,
+        js_given: &js_given,
     };
     // The library functions the crate's calls give more than they take,
     // compiled here first, before anything is lowered (ADR 0914).
@@ -340,6 +346,7 @@ pub fn lower_crate<'tcx>(
     // Lower each body once. Cross-module references have symbolic names until
     // the link step knows exactly which imports and local names survive.
     let mut lowered_items: Vec<(DefId, super::LoweredFn)> = Vec::new();
+    let mut lowered_copies: Vec<((DefId, usize), super::LoweredFn)> = Vec::new();
     // Each module's JS, where a JS file of the program's own imports it
     // from, and what it imports for its effects (`module_imports`).
     let places: Vec<ModuleJs> = (modules.iter())
@@ -440,7 +447,7 @@ pub fn lower_crate<'tcx>(
         .collect();
     // A generic dictionary's cache's value, its module's `const` (ADR 0592).
     let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
-    let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
+    let mut work: Vec<(DefId, Option<&Body<'tcx>>, Option<usize>)> = bodies
         .iter()
         // A trait's default is copied into each impl (ADR 0049); a library's,
         // which a consumer's impl of its trait calls, a function over `Self`,
@@ -452,9 +459,15 @@ pub fn lower_crate<'tcx>(
                 || foreign.is_instance(id)
                 || (exports_reachable && super::library::reachable(tcx, id))
         })
-        .map(|b| (b.def_id, Some(*b)))
-        .chain(dictionaries.iter().map(|id| (*id, None)))
-        .chain(initialized.iter().map(|body| (body.def_id, Some(*body))))
+        // Each copy its callers need besides, after it (ADR 0051, amended).
+        .flat_map(|b| {
+            let copies = js_given.copies(b.def_id).map(|(at, _)| Some(at));
+            std::iter::once(None)
+                .chain(copies)
+                .map(|copy| (b.def_id, Some(*b), copy))
+        })
+        .chain(dictionaries.iter().map(|id| (*id, None, None)))
+        .chain(initialized.iter().map(|body| (body.def_id, Some(*body), None)))
         .collect();
     let (mut used, mut queued) = (HashSet::new(), HashSet::new());
     let no_facts = super::body_queries::BodyFacts::default();
@@ -471,7 +484,7 @@ pub fn lower_crate<'tcx>(
                 .filter(|&&id| {
                     (used.contains(&id) || (export_library && super::library::reachable(tcx, id))) && queued.insert(id)
                 })
-                .map(|&id| (id, None))
+                .map(|&id| (id, None, None))
                 .collect();
             if !round.is_empty() {
                 work.extend(round);
@@ -502,13 +515,13 @@ pub fn lower_crate<'tcx>(
                     break;
                 }
                 let bodies: Vec<_> = (again.iter())
-                    .filter_map(|&id| work.iter().find(|(at, _)| *at == id).copied())
+                    .filter_map(|&id| work.iter().find(|&&(at, _, copy)| at == id && copy.is_none()).copied())
                     .collect();
                 crate_facts.loads_in_cycles.borrow_mut().extend(again);
                 work.extend(bodies);
             }
         }
-        let (def_id, body) = work[next];
+        let (def_id, body, copy) = work[next];
         next += 1;
         let module = fns[&def_id].module;
         // Locals must never shadow a function or an import of this file; an
@@ -543,6 +556,7 @@ pub fn lower_crate<'tcx>(
             cloning: Vec::new(),
             ordering: Vec::new(),
             item: def_id,
+            copy,
             walks: Default::default(),
             drop_state: Default::default(),
         };
@@ -573,6 +587,11 @@ pub fn lower_crate<'tcx>(
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
+                // A copy its callers need, beside it (ADR 0051, amended).
+                if let Some(copy) = copy {
+                    lowered_copies.push(((def_id, copy), lowered));
+                    continue;
+                }
                 // One lowered again, its values read: in its place.
                 match lowered_items.iter_mut().find(|(id, _)| *id == def_id) {
                     Some(earlier) => earlier.1 = lowered,
@@ -596,8 +615,14 @@ pub fn lower_crate<'tcx>(
         return Lowered::Crate(None);
     }
     let no_drops = std::mem::take(&mut drops_observed.no_drops);
-    // Only the drops each function uses (ADR 0300).
-    drops_observed.keep(&takes_used_drops, &mut drop_params, &mut lowered_items);
+    // Only the drops each function uses (ADR 0300), of each copy of one its
+    // callers need too.
+    let lowered = (lowered_items.iter_mut().map(|(id, item)| (*id, item)))
+        .chain(lowered_copies.iter_mut().map(|((id, _), item)| (*id, item)));
+    drops_observed.keep(&takes_used_drops, &mut drop_params, lowered);
+    // The copies made alike another left out, each call of one calling that
+    // one (ADR 0051, amended).
+    let mut copies_of = copies::settle(&js_given, &fns, &mut lowered_items, lowered_copies);
 
     // What's written only where it's reached (`reached.rs`), and the types
     // equal only to themselves, its contract's (ADR 0864, amended).
@@ -641,9 +666,20 @@ pub fn lower_crate<'tcx>(
     {
         let module = fns[&def_id].module;
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
-        pass.references.extend(lowered.dependencies.references.drain());
-        pass.package_uses.extend(lowered.dependencies.package_uses.drain());
-        pass.held.extend(lowered.dependencies.held.drain());
+        // Each copy of it its callers need besides, beside it (ADR 0051,
+        // amended).
+        let mut copies = copies_of.remove(&def_id).unwrap_or_default();
+        for dependencies in
+            std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies))
+        {
+            pass.references.extend(dependencies.references.drain());
+            pass.package_uses.extend(dependencies.package_uses.drain());
+            pass.held.extend(dependencies.held.drain());
+            pass.copy_references.extend(dependencies.copy_references.drain());
+        }
+        if copies.iter().any(|copy| copy.jsx) {
+            pass.jsx.insert(module);
+        }
         // A dictionary given nothing is its module's `const`, what its entries
         // share beside it; one given something, its function, its cache a
         // `const` beside it (ADR 0592).
@@ -751,11 +787,14 @@ pub fn lower_crate<'tcx>(
                 // an object's method, its module's function (ADR 0943).
                 let member = super::classes::member(tcx, def_id);
                 let owner = fns[&def_id].owner.as_deref().unwrap_or_default();
-                if let Err(what) = super::classes::as_member(tcx, def_id, owner, &mut lowered.function) {
+                let mut copied =
+                    std::iter::once(&mut lowered.function).chain(copies.iter_mut().map(|c| &mut c.function));
+                if let Some(what) = copied.find_map(|f| super::classes::as_member(tcx, def_id, owner, f).err()) {
                     super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
                     failed = true;
                     continue;
                 }
+                let copies = copies.into_iter().map(|copy| copy.function);
                 lowered.function.export |= called_from_elsewhere.contains(&def_id);
                 match &fns[&def_id].owner {
                     // Its type's object is exported if any of its methods is.
@@ -786,6 +825,7 @@ pub fn lower_crate<'tcx>(
                             super::classes::place(member, class, &lowered.function.name);
                         }
                         namespace.methods.push(lowered.function);
+                        namespace.methods.extend(copies);
                     }
                     None if super::bindings::is_on_load(tcx, def_id) => {
                         pass.statements.entry(module).or_default().push(lowered.function.body)
@@ -808,7 +848,11 @@ pub fn lower_crate<'tcx>(
                         function.export = false;
                         pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
-                    None => pass.functions.entry(module).or_default().push(lowered.function),
+                    None => {
+                        let functions = pass.functions.entry(module).or_default();
+                        functions.push(lowered.function);
+                        functions.extend(copies);
+                    }
                 }
             }
         }
@@ -912,6 +956,9 @@ pub fn lower_crate<'tcx>(
             f.export = true;
         }
     }
+    // A copy of a function another module calls, exported by its name (ADR
+    // 0051, amended).
+    copies::export(&js_given, &fns, &pass.copy_references, &mut pass.functions);
     // What each module imports of another: what that module exports its
     // item as, its name, its default or the name a `pub use` gives it
     // (`default_exports::exported_as`), each by what the importer's `use`
@@ -939,6 +986,10 @@ pub fn lower_crate<'tcx>(
             .or_default()
             .insert((info.module, name, export, local));
     }
+    // And a copy of a function, by its name (ADR 0051, amended).
+    for (from, target) in copies::imported(&js_given, &fns, &pass.copy_references) {
+        targets.entry(from).or_default().insert(target);
+    }
     // And a binding it reads through another that holds it, by its export
     // there, named as the importer's `use` names it (ADR 0633).
     for (from, holder, name, default, binding) in &pass.held {
@@ -951,7 +1002,12 @@ pub fn lower_crate<'tcx>(
         .filter(|&&(from, id)| fns[&id].module != from)
         .map(|&(_, id)| id)
         .collect();
-    let edges = (pass.references.iter(), pass.held.iter(), pass.package_uses.iter());
+    let copy_edges: Vec<(LocalModId, DefId)> = (pass.copy_references.iter()).map(|&(from, id, _)| (from, id)).collect();
+    let edges = (
+        pass.references.iter().chain(copy_edges.iter()),
+        pass.held.iter(),
+        pass.package_uses.iter(),
+    );
     let imports = module_imports(&places, &fns, edges, &imported, js_modules);
     load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
     // The exported thread-locals and `static mut`s their modules made

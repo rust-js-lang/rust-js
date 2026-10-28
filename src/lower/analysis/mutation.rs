@@ -278,7 +278,7 @@ pub(in crate::lower) fn unboxed_params<'tcx>(
 }
 
 /// Each type parameter of `id`'s, its parents' too, by index.
-fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+pub(super) fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
     if !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) {
         return Vec::new();
     }
