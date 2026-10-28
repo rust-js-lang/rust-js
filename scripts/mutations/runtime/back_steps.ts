@@ -107,14 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
   },
   {
-    name: "enumerate-clone-count-ignored",
-    breaks: "an explicit `enumerate` given a count starts at 0",
-    file: "src/runtime/back_steps.js",
-    find: "  enumerated.count = count;\n",
-    replace: "  enumerated.count = 0;\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_counted_adapters.rs$"],
-  },
-  {
     name: "chain-back-a-first",
     breaks: "a chain's back steps `a`'s back before `b`'s, so `rev()` gives `a`'s last first",
     file: "src/runtime/back_steps.js",

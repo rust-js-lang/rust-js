@@ -346,9 +346,9 @@ function $filterEnds(it, p, drop) {
 // counted from the front; one from the back is where it is, the count so
 // far and how many were left before it, as Rust's `next_back` counts it
 // (ADR 0528). Its back and its length are its source's, asked as they're
-// asked: a use site may give a source its own, `$knowing`'s. A clone starts
-// at the `count` it's given; closing it closes what it steps.
-function $enumerate(iter, count = 0) {
+// asked: a use site may give a source its own, `$knowing`'s. Closing it
+// closes what it steps.
+function $enumerate(iter) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = new $Steps(
     () => {
@@ -358,7 +358,7 @@ function $enumerate(iter, count = 0) {
     () => $closed(enumerated.iter),
   );
   enumerated.iter = iter;
-  enumerated.count = count;
+  enumerated.count = 0;
   enumerated.hint = () => $sizeHint(enumerated.iter);
   enumerated.back = () => {
     const left = enumerated.iter.len();

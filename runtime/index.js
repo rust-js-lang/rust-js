@@ -1734,9 +1734,11 @@ export function $lastDropping(it, drop, boxed) {
 
 // `it.count()`: its own `count` where it's a `$Steps`, a `Take`'s std's,
 // which asks its source no `nth` (#213), each item given to `drop` where it
-// has one; else each item counted as it comes.
+// has one; else each item counted as it comes. Not a `count` that's a
+// field, an `$enumerate`'s, std's `Enumerate`'s, how many it's given (ADR
+// 0988).
 export function $count(it, drop) {
-  if (it.count !== undefined) return it.count(drop);
+  if (typeof it.count === "function") return it.count(drop);
   return it.reduce((n, x) => {
     drop?.(x);
     return n + 1;
@@ -2652,9 +2654,9 @@ export function $filterEnds(it, p, drop) {
 // counted from the front; one from the back is where it is, the count so
 // far and how many were left before it, as Rust's `next_back` counts it
 // (ADR 0528). Its back and its length are its source's, asked as they're
-// asked: a use site may give a source its own, `$knowing`'s. A clone starts
-// at the `count` it's given; closing it closes what it steps.
-export function $enumerate(iter, count = 0) {
+// asked: a use site may give a source its own, `$knowing`'s. Closing it
+// closes what it steps.
+export function $enumerate(iter) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = new $Steps(
     () => {
@@ -2664,7 +2666,7 @@ export function $enumerate(iter, count = 0) {
     () => $closed(enumerated.iter),
   );
   enumerated.iter = iter;
-  enumerated.count = count;
+  enumerated.count = 0;
   enumerated.hint = () => $sizeHint(enumerated.iter);
   enumerated.back = () => {
     const left = enumerated.iter.len();
