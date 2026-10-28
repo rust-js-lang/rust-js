@@ -234,3 +234,12 @@ Held by `test/lowering-early-exits.test.ts`, "a break of the loop a
 function ends with is a break", run, beside a written `return`; the
 mutations `last-loop-break-returned` and `last-loop-return-of-any-if-broken`
 (`mir/tidy/jumps/continues.ts`).
+
+## Amended (2026-10-28): no loop's last `continue` to take off
+
+`continued` took off MIR's `continue` that ends a loop's turn after an
+`if` of one the program wrote, where the loop also breaks. No corpus
+case, lowering, port or JSX test reaches it now, nor a probe of the
+shapes it was for (a `break` then an `if` of a `continue` ending the
+body): what's before reads such a turn's end as the body's end. It's
+gone with its mutation, `loop-tail-continue-kept` (ADR 0093).

@@ -278,14 +278,6 @@ export const mutations: Mutation[] = [
     tests: keysIn,
   },
   {
-    name: "loop-tail-continue-kept",
-    breaks: "MIR's `continue` a loop that breaks ends its turn with stays after the `if` of one the program wrote, so its guards are one `if (a && b) { ..; continue; }`",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            && tests_continue(guards, before.span)\n        {\n            body.pop();\n",
-    replace: "            && tests_continue(guards, before.span)\n        {\n",
-    tests: keysIn,
-  },
-  {
     name: "outer-continues-of-a-branch-unseen",
     breaks: "a loop that ends a branch of an `if` that ends another's body leaves by `continue bb7`, a label, not as the `while (child != null)` React's test selectors write (ADR 0961)",
     file: "src/lower/mir/tidy/jumps/continues.rs",

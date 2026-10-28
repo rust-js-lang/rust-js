@@ -57,16 +57,9 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
         return;
     };
     let label = label.clone();
-    // Its jumps threaded to where it ends, where that leaves none there.
-    let mut threaded = body.clone();
-    threaded_jumps(&mut threaded, &label, true);
-    returned_where_made(&mut threaded, &label, result);
-    if !js::names_jump(&threaded, &label) {
-        *body = threaded;
-    } else {
-        threaded_jumps(body, &label, false);
-        returned_where_made(body, &label, result);
-    }
+    // Its jumps threaded to where it ends.
+    threaded_jumps(body, &label);
+    returned_where_made(body, &label, result);
     let mut jumps = !body.last().is_some_and(ends);
     js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, &label));
     // Where nothing goes on to its end, and its statements fit in its place.
@@ -103,10 +96,11 @@ fn returned_where_made(body: &mut Vec<Stmt>, label: &str, result: &str) {
 }
 
 /// A `break label` after a block: its statements in its place, its own
-/// `break`s that one; and where `branches`, after an `if` of two branches,
-/// the end of each that goes on. A `while (true)`'s own `break`s, after
-/// it, are `made_at_ends`', which returns where each makes the result.
-fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
+/// `break`s that one. One after an `if` of two branches is
+/// `returned_where_made`'s, which returns at the end of each. A `while
+/// (true)`'s own `break`s, after it, are `made_at_ends`', which returns
+/// where each makes the result.
+fn threaded_jumps(body: &mut Vec<Stmt>, label: &str) {
     js::statement_lists(body, &mut |list| {
         for i in (0..list.len().saturating_sub(1)).rev() {
             if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l == label) {
@@ -118,24 +112,6 @@ fn threaded_jumps(body: &mut Vec<Stmt>, label: &str, branches: bool) {
                 };
                 relabeled(&mut block, &inner, label);
                 list.splice(i..i, block);
-                continue;
-            }
-            if !branches {
-                continue;
-            }
-            let jump = list[i + 1].clone();
-            match &mut list[i].kind {
-                StmtKind::If(_, then, Some(otherwise)) => {
-                    for branch in [then, otherwise] {
-                        if !branch.last().is_some_and(ends) {
-                            branch.push(jump.clone());
-                        }
-                    }
-                }
-                _ => continue,
-            }
-            if ends(&list[i]) {
-                list.remove(i + 1);
             }
         }
     });

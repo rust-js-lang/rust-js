@@ -456,8 +456,9 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
 }
 
 /// When `stmt` breaks out to `label`, of `if`s that do or test on:
-/// `if (k) { if (!m) { if (c) { break l; } } else { break l; } }`'s `k && (m
-/// || c)`.
+/// `if (!m) { if (c) { break l; } } else { break l; }`'s `m || c`. One that
+/// tests on with no `else`, `if (k) { if (m) { break l; } }`, is
+/// `skipped_tests`' (ADR 0946), whose one test is `k && m` too.
 pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
     let StmtKind::If(test, then, otherwise) = &stmt.kind else {
         return None;
@@ -469,7 +470,7 @@ pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
     };
     match otherwise.as_deref() {
         None if breaks(then) => Some(test.clone()),
-        None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),
+        None => None,
         Some(otherwise) if breaks(otherwise) => Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),
         Some(_) => None,
     }

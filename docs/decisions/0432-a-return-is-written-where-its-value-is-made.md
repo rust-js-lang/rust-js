@@ -176,3 +176,14 @@ an `Rc`'s `match` returning from its cases and its guard, a `Box`'s, and
 a `for` returning from inside one. Mutations `held-block-not-made`,
 `held-block-breaks-unreturned` (`jumps/tails.ts`) and
 `held-block-left-labeled` (`branches.ts`).
+
+## Amended (2026-10-28): a block's jumps are threaded once
+
+`returned_from_block` threaded a block's `break`s twice: first pushing
+each after an `if` of two branches into the branches that go on, then,
+where that left a jump naming the block, again without. The first is
+reached (`calculator.rs`, `interpreter.rs`, `returns_in_place.rs`) but
+leaves the same JS at every tidy stage: `returned_where_made` returns at
+the end of each branch that makes the result already. One threading is
+left, with no branches; its mutation, `returned-in-place-unthreaded`,
+survived every run and is gone with it (ADR 0093).

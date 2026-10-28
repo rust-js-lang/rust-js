@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
   },
   {
-    "name": "break-test-nested-unread",
-    "breaks": "a guard that tests on, `if (k) { if (!m) { .. } }`, isn't one of the `||`",
-    "file": "src/lower/mir/tidy/jumps.rs",
-    "find": "        None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),\n",
-    "replace": "        None => None,\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "an or of ands from MIR is one test"]
-  },
-  {
     "name": "break-test-else-unnegated",
     "breaks": "`if (!m) { .. } else { break l; }` is read as `!m || ..`, breaking where `m` doesn't hold",
     "file": "src/lower/mir/tidy/jumps.rs",

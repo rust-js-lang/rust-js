@@ -126,15 +126,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "returned-in-place-unthreaded",
-    breaks: "a `break l` after a loop or an `if` isn't pushed into it, so a `?` inside a loop inside a block is `result = r; break;` to a `return result;`",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "    threaded_jumps(&mut threaded, &label, true);\n",
-    replace: "    threaded_jumps(&mut threaded, &label, false);\n",
-    tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
-    snapshots: true,
-  },
-  {
     name: "made-at-ends-jump-goes-on",
     breaks: "a branch ending in a jump past the block is taken to go on to its end, so the block's `return result;` stays",
     file: "src/lower/mir/tidy/jumps/tails.rs",

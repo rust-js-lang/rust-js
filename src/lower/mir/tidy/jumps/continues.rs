@@ -15,19 +15,8 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
             | StmtKind::For { label, body, .. } => (label.clone(), body),
             _ => continue,
         };
-        // MIR's `continue` of the loop after an `if` of one the program
-        // wrote, the turn's end, which a `break` the loop has makes it
-        // write, and what can't follow it: the `if` the body's end, as
-        // without the `break`, its `continue`s each restored as below.
+        // What can't follow a jump, before the body's end is read.
         unreachable_after(body);
-        if let [.., before, last] = &body[..]
-            && matches!(&last.kind, StmtKind::Continue(l) if l.is_none() || *l == looped)
-            && last.span.is_none()
-            && matches!(&before.kind, StmtKind::If(..))
-            && tests_continue(guards, before.span)
-        {
-            body.pop();
-        }
         loop {
             match body.last().map(|s| &s.kind) {
                 Some(StmtKind::Labeled(..)) => {

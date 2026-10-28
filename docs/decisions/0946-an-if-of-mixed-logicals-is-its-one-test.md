@@ -149,3 +149,9 @@ its mutation `or-block-negated` surviving every run. It's gone, with it
 and `or-block-written-then-last`: `skipped_tests` is the one reader, and
 `or_guard_written_first.rs` and `or_before_a_returning_loop.rs` read as
 before.
+
+So too `guarded`'s guard that tests on with no `else`, `if (k) { if (m) {
+break l; } }`, which `break_test` read as `k && m`: the block it leaves
+is `skipped_tests`' then, whose one test is the same, and no JS changed
+without it. A guard with an `else` that breaks, `!m || ..`, is still
+`guarded`'s. Its mutation, `break-test-nested-unread`, goes with it.
