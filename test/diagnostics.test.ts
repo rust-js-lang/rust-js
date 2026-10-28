@@ -129,6 +129,9 @@ for (const [name, source, message, crate] of [
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
   ["collecting into a Result of an Rc slice", 'pub fn f(v: Vec<Result<(u8, u8), ()>>) -> Result<std::rc::Rc<[(u8, u8)]>, ()> { v.into_iter().collect() }', "does not support `collect` into a `std::rc::Rc<[(u8, u8)]>`"],
+  // A compiled struct's hint is what it holds' (ADR 0561): of a filter made here, a JS iterator's,
+  // which knows nothing of its length, refused, not `(0, None)` where Rust gives `(0, Some(3))` (#382).
+  ["the size hint of a peekable filter made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter(|x| **x > 1).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Filter"],
   // A map of a range stepped from its end, made in place, isn't read as its source's map, which
   // would step the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987).
   ["a map of a reversed range given where its length is asked", "fn first<I: ExactSizeIterator<Item = u32>>(mut it: I) -> Option<u32> { it.next() }\npub fn f() -> Option<u32> { first((1..9u32).map(|x| x + 1).rev()) }", "as an `ExactSizeIterator`, which rust-js can't count"],

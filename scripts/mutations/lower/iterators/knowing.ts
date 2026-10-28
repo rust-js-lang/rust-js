@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                .all(|held| self.held_hint_known(held))\n",
     replace: "                .all(|_| true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_hint_refused.rs$"],
+    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter made here"],
   },
   {
     name: "held-hint-of-range-unknown",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                || self.steps_an_array(source) && self.knows_its_back(ty);",
     replace: "                ;",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(returned_impl_ends|owned_maps_asked_their_length).rs$"],
   },
   {
     name: "compiled-last-unhooked",
