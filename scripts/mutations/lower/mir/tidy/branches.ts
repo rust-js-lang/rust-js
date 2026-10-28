@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Var(name) => booleans.contains(name),\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
   },
   {
     name: "mir-tidy-truth-uncoerced",

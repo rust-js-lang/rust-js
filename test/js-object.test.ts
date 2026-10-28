@@ -155,11 +155,11 @@ pub fn object_name(object: Option<&Unknown>) -> String {
     }
   }
   return true;`);
+  // A value's match at a function's end is one conditional (ADR 0237, amended).
   expect(js).toContain(`  const descriptor = Object.getOwnPropertyDescriptor(object, name);
-  if (descriptor == null) {
-    return isGetter(Object.getPrototypeOf(object), name);
-  }
-  return descriptor.get != null;`);
+  return descriptor == null
+    ? isGetter(Object.getPrototypeOf(object), name)
+    : descriptor.get != null;`);
   expect(js).toContain("const name = Object.prototype.toString.call(object);");
   expect([lib.isObjectPrototype(Object.prototype), lib.isObjectPrototype({}), lib.isObjectPrototype(undefined)]).toEqual([true, false, false]);
   // Another realm's `Object.prototype`, of no prototype and only its names.

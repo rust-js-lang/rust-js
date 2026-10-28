@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "        booleans.retain(|name| !others.contains(name));\n",
     replace: "        booleans.clear();\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
   },
   {
     name: "mir-captured-booleans-unknown",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "const SWITCH_CASES: usize = 3;\n",
     replace: "const SWITCH_CASES: usize = 2;\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function's match returns each arm"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
   },
   {
     name: "switch-of-a-guard",

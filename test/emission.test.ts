@@ -67,7 +67,9 @@ test("source map points from fib.js back into fib.rs", async () => {
     ["if (i === n)", "if i == n"],
     ["(((x * 3) | 0) - 7) | 0", "x * 3 - 7"],
     ["$div(a, b, -2147483648) | 0", "a / b"],
-    ['order === "Ascending"', "Order::Ascending"],
+    // A two-arm match's test, written as an if's (ADR 0237, amended), is
+    // where the match is.
+    ['order === "Ascending"', "match order"],
     ["fibIter((20 - n) >>> 0)", "fib_iter(20 - n)"],
     // A `return` where its value is written, not where the body ends.
     ["return a;", "a"],

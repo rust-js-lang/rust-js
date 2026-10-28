@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))\n",
     replace: "        && (true || elses.iter().any(|(cond, ..)| within(cond, if_stmt.span)))\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function's match returns each arm"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
   },
   {
     name: "lone-jumps-given-an-else",
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && !written(returns, last.span)\n        && !writes_return(std::slice::from_ref(last_if), returns)\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "match returns each arm, and its if of two values is one conditional"],
+    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
   },
   {
     name: "mir-tidy-let-else-return-nested",

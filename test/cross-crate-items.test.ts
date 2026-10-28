@@ -92,7 +92,7 @@ pub mod report {
   expect(dep).toContain("export const Uninitialized = -1;\nexport const Pending = 0;\nexport const Resolved = 1;\n");
   expect(dep).toContain("return status !== Uninitialized;");
   expect(app).toContain('import { Pending, Resolved, Uninitialized, started } from "../dep/lib.js";\n');
-  expect(app).toContain("  if (status === Uninitialized) {\n    return Pending;\n  }\n  return Resolved;\n");
+  expect(app).toContain("  return status === Uninitialized ? Pending : Resolved;\n");
   expect(app).toContain("return started(status) && status === Resolved;");
   // Of the variants a `match` tests, those whose test it writes: its last
   // arm's, the rest, is no import.
