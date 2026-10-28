@@ -2421,6 +2421,11 @@ export function isAdult(p) {
   `filter_map` keeps all test it so. A `let` of `is_some()` that only
   tests read is `const failed = error != null;`, a `bool` as its name
   says ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
+  One after a `typeof` test of the place that decides it is left out:
+  `js::is_function(&*task.callback.borrow()) && let Some(..) =
+  task.callback.take()` is `typeof task.callback === "function"`, a
+  function being there; of an `"object"`, `null`'s `typeof` too, it stays
+  ([ADR 0298](../../decisions/0298-truthy-options.md), amended).
 - A let chain after a test of its own, `if debug && let Some(value) =
   info.value.get()`, which clippy asks for over two `if`s, reads the place
   once, as a person writes it: `if (debug) { const value = info.value; if

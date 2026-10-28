@@ -414,3 +414,50 @@ pub fn counted(found: Option<u32>) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named("a"), lib.named(undefined), lib.counted(1), lib.counted(undefined)]).toEqual(["\n  a", "", 2, 7]);
 });
+
+// React's SchedulerMock tests its task's callback before it takes it, `if
+// (typeof currentTask.callback === 'function') { const callback =
+// currentTask.callback; currentTask.callback = null; ..`. The port's `if
+// js::is_function(&*task.callback.borrow()) && let Some(Callback(mut
+// callback)) = task.callback.take()` tested `task.callback != null` after
+// it too, which a function is (ADR 0298, amended).
+test("a place a typeof test says is a function needs no test that it's there", async () => {
+  const dir = fixture("typeof-then-present");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+#[repr(transparent)]
+pub struct Callback(Box<dyn FnMut(bool) -> Option<Callback>>);
+
+pub struct Task {
+    callback: RefCell<Option<Callback>>,
+}
+
+pub fn run(task: &Task) -> bool {
+    if js::is_function(&*task.callback.borrow())
+        && let Some(Callback(mut callback)) = task.callback.take()
+    {
+        callback(true);
+        return true;
+    }
+    false
+}
+
+// Of an \`"object"\`, \`null\`'s \`typeof\` too, the test that it's there stays.
+pub fn object_there(v: Option<&'static js::Unknown>) -> bool {
+    js::type_of(v) == "object" && v.is_some()
+}
+
+pub fn text_there(v: Option<&'static js::Unknown>) -> bool {
+    js::type_of(v) == "string" && v.is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  return typeof v === "object" && v != null;`);
+  expect(js).toContain(`  return typeof v === "string";`);
+  expect(js).toContain(`  if (typeof task.callback === "function") {\n    const callback = task.callback;\n    task.callback = undefined;\n`);
+  const lib = await import(join(dir, "lib.js"));
+  const seen: boolean[] = [];
+  const task = { callback: (timedOut: boolean) => void seen.push(timedOut) };
+  expect([lib.run(task), task.callback, lib.run({ callback: undefined }), lib.run({ callback: 3 }), seen, lib.objectThere(null), lib.objectThere({}), lib.textThere("")]).toEqual([true, undefined, false, false, [true], false, true, true]);
+});

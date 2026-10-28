@@ -424,3 +424,26 @@ drops the `!!` of is a `bool` JS gives as a number, `const both = a & b
 || !ready;`, kept `!!(a & b)` where it's read as a value too; held by
 `test/lowering-bits.test.ts`'s "a const of a bool's bits only tests
 read", and `bindings.test.ts`'s `cn("a", (a & b || ready) && "b")`.
+
+## Amendment: a test that it's there after a `typeof` test that decides it (2026-10-28)
+
+React's SchedulerMock tests its task's callback before it takes it, `if
+(typeof currentTask.callback === 'function') { const callback =
+currentTask.callback; currentTask.callback = null; .. }`. Its port, `if
+js::is_function(&*current_task.callback.borrow()) && let
+Some(Callback(mut callback)) = current_task.callback.take()`, printed
+`typeof currentTask.callback === 'function' && currentTask.callback !=
+null` (React port gap rd37): the `take()`'s `Some` test after the
+`typeof` one.
+
+**`typeof p === "<type>" && p != null` is the `typeof` test**, of a
+`<type>` no `null` or `undefined` has, `"function"`, `"string"` and the
+rest, of a place read as a path, nothing a getter answers
+(`stmt_walk::taken_place`): the two reads, nothing run between, are the
+same value, and one of that type is there (`Expr::bin`, `js/make.rs`).
+Of `"object"`, which `null`'s `typeof` is, and of `"undefined"`, the test
+stays. Case A: the same answer, one read fewer of a plain property.
+`test/lowering-option-truth.test.ts`, "a place a typeof test says is a
+function needs no test that it's there"; mutations
+`typeof-then-present-kept`, `typeof-object-implies-present`.
+

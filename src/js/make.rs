@@ -645,6 +645,17 @@ impl Expr {
     }
 
     pub fn bin(op: Op, lhs: Expr, rhs: Expr) -> Expr {
+        // `typeof p === "function" && p != null` is the `typeof` test: a
+        // value of any type but `"object"` and `"undefined"` is there, and a
+        // place read twice with nothing run between is the same value (ADR
+        // 0298, amended).
+        if op == Op::And
+            && let Some(tested) = super::stmt_walk::null_test(&rhs, true)
+            && super::stmt_walk::taken_place(tested)
+            && typed_present(&lhs, tested)
+        {
+            return lhs;
+        }
         // `0 < 0` is `false`: a comparison of two numbers written out is its
         // answer, as a person writes it.
         if let (ExprKind::Num(a), ExprKind::Num(b)) = (&lhs.kind, &rhs.kind) {
@@ -1045,5 +1056,19 @@ fn null_for_none(made: &Expr) -> Option<Expr> {
             span: made.span,
         }),
         _ => None,
+    }
+}
+
+/// Whether `test`, or the last of an `&&` chain of tests, is `typeof place
+/// === "<type>"` of a type no `null` or `undefined` is, `"function"`,
+/// `"string"` and the rest, not `"object"` or `"undefined"`.
+fn typed_present(test: &Expr, place: &Expr) -> bool {
+    match &test.kind {
+        ExprKind::Binary(Op::And, _, last) => typed_present(last, place),
+        ExprKind::Binary(Op::Eq, of, kind) => {
+            matches!(&of.kind, ExprKind::Unary(UnaryOp::Typeof, typed) if typed.kind == place.kind)
+                && matches!(&kind.kind, ExprKind::Str(s) if s != "object" && s != "undefined")
+        }
+        _ => false,
     }
 }

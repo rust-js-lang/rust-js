@@ -468,4 +468,21 @@ export const mutations: Mutation[] = [
     replace: "        let not = Expr::unary(UnaryOp::Not, option);\n        if set { Expr::unary(UnaryOp::Not, not) } else { not }\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "an Option of a value of any shape is tested against null, of an object too"],
   },
+  {
+    name: "typeof-then-present-kept",
+    breaks: "SchedulerMock's `typeof task.callback === \"function\"` is followed by `&& task.callback != null`, a test it decides (ADR 0298, amended)",
+    file: "src/js/make.rs",
+    find: "            && typed_present(&lhs, tested)\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "typeof test says"],
+    snapshots: true,
+  },
+  {
+    name: "typeof-object-implies-present",
+    breaks: "`typeof p === \"object\" && p != null` drops its null test, and `null`, whose `typeof` is `\"object\"`, passes (ADR 0298, amended)",
+    file: "src/js/make.rs",
+    find: "                && matches!(&kind.kind, ExprKind::Str(s) if s != \"object\" && s != \"undefined\")\n",
+    replace: "                && matches!(&kind.kind, ExprKind::Str(_))\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "typeof test says"],
+  },
 ];
