@@ -188,14 +188,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
-    name: "impl-bound-held-by-itself",
-    breaks: "whether an impl's `IntoIterator` bound is held is asked of the impl alone, which holds nothing, where its method's result holds it",
-    file: "src/lower/iterators.rs",
-    find: "    match impl_of {\n        Some(imp) =>",
-    replace: "    match impl_of.filter(|_| false) {\n        Some(imp) =>",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_a_bound.rs$"],
-  },
-  {
     name: "dyn-keeps-own-fold",
     breaks: "a `Box<dyn Iterator>` of the crate's iterator folds by its own `fold`, where std's `Box` folds by `next`",
     file: "src/lower/iterators.rs",
@@ -268,10 +260,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-trait-hides-held-into-iter",
-    breaks: "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` isn't given its dictionary and is refused (ADR 0920)",
+    breaks: "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",
     file: "src/lower/iterators.rs",
     find: "        .any(|ty| holds(ty) || hidden(ty));\n",
     replace: "        .any(|ty| holds(ty) || false && hidden(ty));\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
   },
 ];

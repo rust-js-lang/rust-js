@@ -186,23 +186,9 @@ fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
 /// adapter, `Zip<I::IntoIter, J>`, a JS iterator of it. Then `into`, a type
 /// parameter or an associated type, is given as it is, with its
 /// `IntoIterator` dictionary, which makes its `IntoIter` as it is (ADR 0552).
-/// An impl's bound is its dictionary's, which each of its methods is given:
-/// of an impl and of its methods alike, whether any of them holds it.
+/// Of `id` alone: what an impl's sibling method holds, `Pair<A::IntoIter>`
+/// of `pair()`, `first()` is given the same either way (#382).
 pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
-    let impl_of = match tcx.def_kind(id) {
-        rustc_hir::def::DefKind::Impl { .. } => Some(id),
-        rustc_hir::def::DefKind::AssocFn => tcx.impl_of_assoc(id),
-        _ => None,
-    };
-    match impl_of {
-        Some(imp) => (tcx.associated_item_def_ids(imp).iter())
-            .any(|&f| matches!(tcx.def_kind(f), rustc_hir::def::DefKind::AssocFn) && held_by(tcx, f, into)),
-        None => held_by(tcx, id, into),
-    }
-}
-
-/// `into_iter_held_as_it_is`'s, of one function or item `id` alone.
-fn held_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, into: Ty<'tcx>) -> bool {
     // An associated type's, `I::Item: IntoIterator`'s, whose values no call
     // makes a JS iterator, an iterator's items, an `Option`'s `T |
     // undefined` among them, given as they are (#278); not what an

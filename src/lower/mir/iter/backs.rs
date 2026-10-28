@@ -66,27 +66,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if let Some(reversed) = reversed_inward(&receiver) => {
                 return Ok(reversed);
             }
-            None => match from_iterator(receiver) {
-                // What's made knowing its back, a chain of the crate's own
-                // `next_back` say: stepped from it, as Rust's `Rev` does,
-                // never its items from the front reversed.
-                Ok(items) if self.knows_its_back(iter_ty) => {
-                    return Ok(Expr::call_helper(
-                        "$rev",
-                        vec![self.as_double_ended(items, iter_ty, span)?],
-                    ));
-                }
-                Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
-                // Of a lazy one, `rev()`, which rustc found steps from its
-                // back, a map's say: what steps it from there, as Rust's `Rev`
-                // does, its closures run as `next_back` runs them (ADR 0535).
-                Err(lazy) => {
-                    return Ok(Expr::call_helper(
-                        "$rev",
-                        vec![self.as_double_ended(lazy, iter_ty, span)?],
-                    ));
-                }
-            },
+            // Of another, lazy, a map's say, or the crate's own `next_back`'s
+            // chain: what steps it from its back, as Rust's `Rev` does, its
+            // closures run as `next_back` runs them (ADR 0535), never its
+            // items from the front reversed (#382).
+            None => {
+                return Ok(Expr::call_helper(
+                    "$rev",
+                    vec![self.as_double_ended(receiver, iter_ty, span)?],
+                ));
+            }
         };
         let items = crate::lower::iterators::reversed(items);
         Ok(self.stepped_items(items))

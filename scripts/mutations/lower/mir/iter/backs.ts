@@ -102,10 +102,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "by-ref-back-lost",
-    breaks: "`by_ref()` of an iterator that knows its back is lent without it, so a map of it can't be stepped from its back",
+    breaks: "`by_ref()` of an iterator that knows its back is lent as `$lent(Iterator.from(it))`, the same iterator, as `Iterator.from` gives it back, read less plainly than `it`",
     file: "src/lower/mir/iter/backs.rs",
     find: "            Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {\n",
     replace: "            Some(IterMethod::ByRef) if false => {\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
@@ -227,8 +228,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-of-a-lazy-map-refused",
     breaks: "`rev()` of a lazy map of a range is refused, not stepped from its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                Err(lazy) => {\n                    return Ok(Expr::call_helper(\n                        \"$rev\",\n                        vec![self.as_double_ended(lazy, iter_ty, span)?],\n                    ));\n                }",
-    replace: "                Err(_) => {\n                    return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n                }",
+    find: "            None => {\n                return Ok(Expr::call_helper(\n                    \"$rev\",\n                    vec![self.as_double_ended(receiver, iter_ty, span)?],\n                ));\n            }",
+    replace: "            None => {\n                return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n            }",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
 
@@ -279,14 +280,6 @@ export const mutations: Mutation[] = [
     find: "                    || self.recognition().nths_its_own(output)\n",
     replace: "                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "rev-of-own-back-reversed",
-    breaks: "`rev()` of a chain made knowing its back, of the crate's own `next_back`, is its items from the front reversed",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                Ok(items) if self.knows_its_back(iter_ty) => {\n",
-    replace: "                Ok(items) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_rev_own_back.rs$"],
   },
   {
     name: "rev-of-held-rev-taken-out",

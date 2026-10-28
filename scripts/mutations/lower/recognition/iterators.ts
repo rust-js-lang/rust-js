@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\" | \"std::iter::Rev\"\n",
     replace: "                \"std::iter::Copied\" | \"std::iter::Enumerate\" | \"std::iter::Rev\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(exact_size_len|map_stepped_from_its_back|owned_maps_asked_their_length)\\.rs$"],
   },
   {
     name: "list-iter-not-items",

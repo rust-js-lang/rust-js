@@ -20,7 +20,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
+use crate::lower::iterators::{collected, is_js_iterator, made_array, stepped_range};
 use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
