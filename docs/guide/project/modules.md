@@ -914,6 +914,32 @@ export function area(width, height) {
 }
 ```
 
+And one between an array's items, a `vec!`'s or a `HashMap::from`'s
+pairs, before the item after it
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
+
+```rust
+use std::collections::HashMap;
+
+pub fn aliases() -> HashMap<&'static str, &'static str> {
+    HashMap::from([
+        ("acceptCharset", "accept-charset"),
+        // The SVG attribute is case sensitive.
+        ("crossOrigin", "crossorigin"),
+    ])
+}
+```
+
+```js
+export function aliases() {
+  return new Map([
+    ["acceptCharset", "accept-charset"],
+    // The SVG attribute is case sensitive.
+    ["crossOrigin", "crossorigin"],
+  ]);
+}
+```
+
 One after a call's last argument is there too, before its `)`
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
 

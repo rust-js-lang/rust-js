@@ -480,3 +480,17 @@ before. Case N: what's printed, which nothing runs.
 Held by `test/lowering-comments.test.ts`, "a comment before a match an if
 is made of is the if's", and the mutation `comment-before-a-match-lost`
 (`to_oxc.ts`).
+
+## Amendment: a comment before an item with no JS is before the next that has (2026-10-28)
+
+React's ReactFiberConfigWithNoHydration heads a section, `// Hydration
+(when unsupported)`, whose first lines are types, `export type
+ActivityInstance = mixed;`, then its constants; Flow's JS keeps the heading
+before `export const supportsHydration = false;`. A `pub type` writes no
+JS, so what was between the comment and the next start was code, and the
+comment was lost (React port gap rd12). **A type alias, its attributes and
+visibility first, is passed over as a `let` with no JS is**
+(`openings::type_alias`): the comment is before the next item that has JS.
+`test/lowering-comments-items.test.ts`, "a comment before an item with no
+JS is before the next item that has".
+

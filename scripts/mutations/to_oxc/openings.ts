@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "            '(' | '[' => depth += 1,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a let read in place"],
   },
+  {
+    name: "type-alias-is-code",
+    breaks: "a comment before a `pub type`, which writes no JS, is lost, ReactFiberConfigWithNoHydration's `// Hydration (when unsupported)` (ADR 0444, amended)",
+    file: "src/to_oxc/openings.rs",
+    find: "    rest.starts_with(\"type \")\n",
+    replace: "    false\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "an item with no JS"],
+  },
 ];

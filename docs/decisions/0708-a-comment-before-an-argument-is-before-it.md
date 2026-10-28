@@ -4,7 +4,7 @@ Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md)
 and [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md),
 whose starts a comment is before were a statement's and a conditional's
 branch's. Amended below: a `const` argument is placed where it's written;
-and a field's value of an `if` or a method call is its field's.
+and a field's value of an `if` or a method call is its field's; an array's item is a start too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -232,3 +232,22 @@ Held by `test/lowering-comment-fields.test.ts`, "a comment before a field
 of an if's value or a method call's is the field's", and the mutations
 `branch-value-placed-nowhere` (`mir/tidy/branches.rs`) and
 `inner-part-start-kept` (`to_oxc.rs`).
+
+## Amendment: a comment between an array's items is before the next item
+
+React's getAttributeAlias writes its aliases as a `Map` of pairs, a comment
+among them, `['acceptCharset', 'accept-charset'], // HTML and SVG
+attributes, ..\n['crossOrigin', 'crossorigin'],`; its port's
+`HashMap::from([.., // ..\n("crossOrigin", "crossorigin"), ..])` lost the
+comment (React port gap rd17), and one between a `vec!`'s items went
+before the statement.
+
+**An array's item is a start, as a conditional's branch is** (ADR 0658):
+a comment before it, only space between, is before it on lines of its
+own, after the `[` or the `,` before it, as Prettier writes it. A tuple
+MIR made has no span of its own: its start is where its first part is,
+and of an array's first item that starts another array, the outer's item
+is the one (`arm_starts`). A split at its line's end, after the `,`, adds
+no line of nothing (`to_oxc.rs`). `test/lowering-comments-items.test.ts`,
+"a comment between an array's items is before the next item".
+

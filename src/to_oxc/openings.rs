@@ -26,6 +26,26 @@ pub(super) fn leading_statements(code: &str) -> (Vec<&str>, &str) {
     (statements, &code[from..])
 }
 
+/// Whether `statement`, one of `leading_statements`, is a type alias, `pub
+/// type ActivityInstance = Unknown`, its attributes first: an item with no
+/// JS, so what's before it is before the next item that has (ADR 0444,
+/// amended).
+pub(super) fn type_alias(statement: &str) -> bool {
+    let mut rest = statement.trim_start();
+    while let Some(attribute) = rest.strip_prefix("#[") {
+        let Some(end) = attribute.find(']') else { return false };
+        rest = attribute[end + 1..].trim_start();
+    }
+    if let Some(public) = rest.strip_prefix("pub") {
+        rest = public.trim_start();
+        if let Some(scoped) = rest.strip_prefix('(') {
+            let Some(end) = scoped.find(')') else { return false };
+            rest = scoped[end + 1..].trim_start();
+        }
+    }
+    rest.starts_with("type ")
+}
+
 /// Whether `head`, the code before a `{`, ends in `unsafe`, the keyword,
 /// whose block is its code alone in JS.
 pub(super) fn unsafe_opening(head: &str) -> bool {
