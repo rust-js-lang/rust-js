@@ -73,15 +73,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-tidy-cond-false-kept",
-    breaks: "`test ? b : false` of a boolean test stays, not `test && b`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^guard_statements.rs$"],
-    snapshots: true,
-  },
-  {
     name: "mir-tidy-temporary-ternary-kept",
     breaks: "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
     file: "src/lower/mir/tidy/branches.rs",
@@ -96,14 +87,6 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Var(name) => booleans.contains(name),\n",
     replace: "",
     tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
-  },
-  {
-    name: "mir-tidy-truth-uncoerced",
-    breaks: "`o ? true : r` of an object `o` is `o || r`, an object where a `bool` belongs",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),\n",
-    replace: "        false => test,\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"],
   },
   {
     name: "mir-tidy-implied-guard-kept",
@@ -195,30 +178,6 @@ export const mutations: Mutation[] = [
     "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
   },
   {
-    "name": "negated-and-untruthed",
-    "breaks": "`!o ? false : f()` is `o && f()`, `undefined` where `o` is, not `false`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),\n",
-    "replace": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),\n",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
-  },
-  {
-    "name": "negated-value-untruthed",
-    "breaks": "`!o ? false : true` is `o`, the object, not `true`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),\n",
-    "replace": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),\n",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
-  },
-  {
-    "name": "negated-or-untruthed",
-    "breaks": "`o ? f() : true` of `is_none()`'s is `o || f()`, the object, not `true`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),\n",
-    "replace": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),\n",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
-  },
-  {
     "name": "block-returns-kept",
     "breaks": "returns MIR jumps out of a block for stay `result = x; break l;` and one `return result;`",
     "file": "src/lower/mir/tidy/branches.rs",
@@ -233,14 +192,6 @@ export const mutations: Mutation[] = [
     "find": "                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),\n",
     "replace": "                    true => conditional(test, one.yes, one.no, booleans, written_if),\n",
     "tests": ["test/lowering-branches.test.ts", "-t", "an if of an or from MIR keeps its branches"]
-  },
-  {
-    "name": "mir-tidy-or-chain-negated",
-    "breaks": "an `||` chain from MIR is `!(!a && b !== c) || d`, its test negated whole",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n",
-    "replace": "",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a value's truth or else a bool is a bool part by part"]
   },
   {
     "name": "mir-tidy-bool-field-unknown",
@@ -455,36 +406,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is tells undefined and null"],
   },
   {
-    name: "mir-tidy-value-or-fallback-conditional",
-    breaks: "`if s.is_empty() { d } else { &s }` is `!s ? d : s`, not `s || d` (ADR 0744)",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "            return Expr::bin(Op::Or, no, yes);\n",
-    replace: "            return Expr::cond(test.clone(), yes, no);\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "a value or what it falls back to is"],
-  },
-  {
-    name: "present-value-coalesce-kept",
-    breaks: "an `Option`'s value or a default, `match o { Some(s) => s, None => d }`, is `s != null ? s : d`, not `s ?? d`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),\n",
-    replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
-  },
-  {
     "name": "mir-tidy-same-test-truth",
     "breaks": "`!!label` isn't the same test as `label`, so a prop under a child's truth test is `label ? \"x\" : undefined`, not `\"x\"`",
     "file": "src/lower/mir/tidy/branches.rs",
     "find": "    let (a, b) = (truth(a), truth(b));\n",
     "replace": "",
     "tests": ["test/jsx-children.test.ts", "-t", "a prop under a child's truth test is its value there"]
-  },
-  {
-    name: "truth-or-coalesced",
-    breaks: "an object's `Option` or another, tested by its truth, `!!state ? state : blank`, is `state ?? blank`, not `state || blank` as ADR 0744 reads it",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        _ if !test.has_effects() && js::same_path(&test.tested(), &yes) => return Expr::bin(Op::Or, yes, no),\n",
-    replace: "        _ if !test.has_effects() && js::same_path(&test, &yes) => return Expr::bin(Op::Or, yes, no),\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a match that only gives a value is one expression"],
   },
   {
     name: "labeled-chain-unplaced",
@@ -502,14 +429,6 @@ export const mutations: Mutation[] = [
     replace: "            if false =>\n",
     tests: ["test/corpus.test.ts", "test/lowering-bindings.test.ts", "-t", "^let_chain_values.rs$|a thread-local of a let chain"],
     snapshots: true,
-  },
-  {
-    name: "written-if-value-folded",
-    breaks: "`if a > 1 { s == \"x\" } else { false }` is `a > 1 && s === \"x\"`, not the conditional written (ADR 0879)",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "        _ if written_if => Expr::cond(test, yes, no),\n",
-    replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read as a person writes them"],
   },
   {
     name: "field-test-undecided-where-its-variable-changes",

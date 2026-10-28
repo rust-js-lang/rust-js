@@ -14,7 +14,7 @@ function write(o, v) {
 }
 
 function read(o, v, TPartialEq) {
-  return o.value != null ? TPartialEq.eq(o.value, v) : false;
+  return o.value != null && TPartialEq.eq(o.value, v);
 }
 
 function setIfConsistent(old, new$, TPartialEq) {

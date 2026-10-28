@@ -712,49 +712,6 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Str
     }
 }
 
-/// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
-/// where `yes` is `true`, the test `!!test` where it's not a `bool`; but of
-/// an `if` the program wrote with an `else`, `written_if`, `!c ? x : false`,
-/// as it wrote it, not the `&&` MIR makes the same branches of (ADR 0879).
-pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>, written_if: bool) -> Expr {
-    // Where the test itself is the value, of what's not a `bool`, `!!c`;
-    // its negation too, `!!o` of `!o`'s, `is_some()`'s.
-    let truth = |test: Expr| match is_boolean(&test, booleans) {
-        true => test,
-        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
-    };
-    // A chain's negation, `a || b` of `!a && !b`, each part a `bool` still,
-    // `!!a` of a value's `!a`.
-    let negate = |test: Expr| match test.kind {
-        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
-        _ => test.negated_test(),
-    };
-    // `!x ? y : x`, and `x ? x : y`, `!!x`'s too, of an `x` that does nothing:
-    // `x || y`, which reads it once (ADR 0744); `x != null ? x : y`, and `x ==
-    // null ? y : x`, an `Option`'s value or another's, `x ?? y` (ADR 0298).
-    let coalesced =
-        |set, x: &Expr| !test.has_effects() && js::null_test(&test, set).is_some_and(|t| js::same_path(t, x));
-    match &test.kind {
-        ExprKind::Unary(UnaryOp::Not, x) if !x.has_effects() && js::same_path(x, &no) => {
-            return Expr::bin(Op::Or, no, yes);
-        }
-        _ if !test.has_effects() && js::same_path(&test.tested(), &yes) => return Expr::bin(Op::Or, yes, no),
-        _ if coalesced(true, &yes) => return Expr::bin(Op::Coalesce, yes, no),
-        _ if coalesced(false, &no) => return Expr::bin(Op::Coalesce, no, yes),
-        _ => {}
-    }
-    match (&yes.kind, &no.kind) {
-        (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
-        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),
-        _ if written_if => Expr::cond(test, yes, no),
-        (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
-        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),
-        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),
-        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),
-        _ => Expr::cond(test, yes, no),
-    }
-}
-
 /// Whether `test` holds where `by` does: `x != null` where `x === "lit"`,
 /// `typeof x === "string"` there too, and where each side of `a || b` says
 /// it.

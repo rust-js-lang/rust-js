@@ -52,11 +52,11 @@ function recursivelyFlush(log) {
 }
 
 function batching(legacy) {
-  return !DISABLE_LEGACY_MODE ? legacy : false;
+  return !DISABLE_LEGACY_MODE && legacy;
 }
 
 function either(fast, slow) {
-  const chosen = fast ? true : slow();
+  const chosen = fast || slow();
   return chosen;
 }
 

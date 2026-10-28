@@ -2399,7 +2399,7 @@ export function initial(p) {
 }
 
 export function isAdult(p) {
-  return p.age != null ? p.age >= 18 : false;
+  return p.age != null && p.age >= 18;
 }
 ```
 
@@ -2410,9 +2410,12 @@ export function isAdult(p) {
   (parent == null) { return; }`, or `value` where no `let` names it
   ([ADR 0035](../../decisions/0035-results-and-throwing-js.md), amended).
 - `if let Some(age) = p.age` is "if it's there, call it `age`". Its value
-  is the conditional you wrote, `?:`, its `else { false }` too; what you
-  write with `&&`, or `p.age.is_some_and(|a| a >= 18)`, is `&&`
-  ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
+  is the conditional you wrote, `?:`, but a `bool`'s `else { false }` is
+  the `&&` it means, and `{ true } else { .. }` the `||`, an `if`'s or a
+  `match`'s alike; what you write with `&&`, or `p.age.is_some_and(|a| a
+  >= 18)`, is `&&` too. A branch that isn't a `bool`, an `Option<bool>`'s
+  `Some(false)`, keeps the `?:`
+  ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).
 - An `Option` is tested against `null`, whatever it holds: `x != null`
   and `x == null`, `if (owner == null)` and `while (owner != null)`, never
   by its truth, so `Some(0)`, `Some("")` and `Some(false)` are there

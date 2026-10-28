@@ -83,7 +83,8 @@ pub fn is_text_href(frame: Option<&'static Unknown>) -> bool {
 // // Force a re-render if the implementation changed due to hot reload:
 // (__DEV__ ? workInProgress.type !== current.type : false)`. Its port's
 // comment, before an `||`'s operand of an `if`'s value, was lost (ADR 0444,
-// amended).
+// amended). The `if`'s value is the `&&` it means, the user's decision (ADR
+// 0879, amended).
 test("a comment before an operand that's an if's value is before it", async () => {
   const { js, lib } = await compiled("comment-before-an-if-operand", `const DEV: bool = true;
 
@@ -102,7 +103,7 @@ pub fn changed(a: u8, b: u8, c: bool, t: u8, u: u8) -> bool {
 `);
   expect(js).toContain(`    c ||
     // Force a re-render if the implementation changed due to hot reload:
-    (DEV ? t !== u : false)
+    (DEV && t !== u)
   ) {
     // If props or context changed, mark the fiber as having performed work.
     did = true;`);

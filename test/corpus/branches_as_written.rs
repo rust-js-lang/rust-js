@@ -1,7 +1,8 @@
 // What React's `act` writes, as it writes it (ADR 0879): an `if !c` with an
 // `else`, its branches in their order, which MIR's `switchInt` turns; an
 // `if let .. else { break }` in a loop, its `else` kept; a value written
-// `if c { x } else { false }`, a conditional, not `c && x`; a call's value
+// `if c { x } else { false }` of `bool`s, the `c && x` it means (the
+// user's decision, ADR 0879, amended); a call's value
 // given to a variable a closure captured, `result = callback();`, with no
 // temporary, where a place JS reaches first, `a[at.get()]`, which the
 // call may change, keeps it; and a clone of what a `move` closure captured, read by

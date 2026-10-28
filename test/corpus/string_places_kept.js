@@ -33,7 +33,7 @@ function stepped(s) {
 
 function nearStart(s) {
   const at = $find(s, "b");
-  return at != null ? at < 3 : false;
+  return at != null && at < 3;
 }
 
 function between(s) {

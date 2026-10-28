@@ -79,12 +79,12 @@ pub fn matched(a: Option<u32>) -> bool {
   expect(js).toContain('n < 0 ? "-" : "+"');
   expect(js).not.toContain("2 === 0");
   expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
-  // A branch of `false` the program wrote with an `if`: the conditional
-  // it wrote, not the `&&` MIR makes the same branches of (ADR 0879).
-  expect(js).toContain('return a > 1 ? s === "x" : false;');
+  // A branch of `false` the program wrote with an `if` of `bool`s: the
+  // `&&` it means, the user's decision (ADR 0879, amended).
+  expect(js).toContain('return a > 1 && s === "x";');
   // A `match`'s arm of `false` is its `else`, as an `if`'s is, the user's
-  // decision (ADR 0237, amended).
-  expect(js).toContain("return a != null ? a > 2 : false;");
+  // decision (ADR 0237, amended): its `&&` too.
+  expect(js).toContain("return a != null && a > 2;");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
 });

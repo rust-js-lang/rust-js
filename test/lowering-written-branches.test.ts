@@ -1091,7 +1091,8 @@ pub fn claim(hydrating: bool, id: u32) -> bool {
 // ? tag === HostSingleton : false);`: a function's last value of `||`s,
 // its chain of `if`s and the `return` after them neither the program's, is
 // one `return`; and a `bool` binding's static reads as the `boolean` it is,
-// `supportsSingletons && ..`, no `!!`.
+// `supportsSingletons && ..`, no `!!`. The written `if` is that `&&` too,
+// the user's decision (ADR 0879, amended).
 test("a function's last || of an if's value is one return", async () => {
   const { js, lib } = await compiled(
     "or-of-if-value",
@@ -1120,10 +1121,10 @@ pub fn boundary_and(fiber: &Fiber) -> bool {
 `,
   );
   expect(js).toContain(
-    "    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports ? fiber.tag === HOST_SINGLETON : false)\n",
+    "  return (\n    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports && fiber.tag === HOST_SINGLETON)\n  );\n}\n\nexport function boundaryAnd",
   );
   expect(js).toContain(
-    "    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports && fiber.tag === HOST_SINGLETON)\n",
+    "    fiber.tag === HOST_COMPONENT ||\n    fiber.tag === HOST_ROOT ||\n    (rustJsSupports && fiber.tag === HOST_SINGLETON)\n  );\n}\n//",
   );
   const global = globalThis as Record<string, unknown>;
   for (const supports of [false, true]) {

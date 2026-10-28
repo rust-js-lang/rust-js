@@ -505,3 +505,53 @@ mutations `let-else-first-at-the-end-nested`,
 `written-exits-at-the-end-nested`, `written-exits-of-a-then-written`
 (`mir/tidy/jumps/tails.ts`) and `let-else-first-unit-end-unseen`
 (`mir/tidy/stages.ts`).
+
+## Amendment: a written conditional of `bool`s with a literal branch is `&&` or `||` (2026-10-28)
+
+The user's decision (2026-10-28), which supersedes this decision's "its
+value is a conditional" for these two forms, and the alternative it
+rejected. Case ([0262](0262-when-rust-and-js-disagree.md)): N, below.
+
+A value match at a function's end reads as a written `if`'s since the
+user's "a match's last arm is its else" (ADR 0237, amended), so
+`match s.find('b') { Some(at) => at < 3, None => false }` printed
+`return at != null ? at < 3 : false;` where it had printed the `&&`.
+React's isFragmentInstanceHostBoundary writes `supportsSingletons ? tag
+=== HostSingleton : false`, but most of the port's values of this shape
+are upstream's `&&` and `||`.
+
+**An `if` or `match` the program wrote with an `else`, of `bool`s, one
+branch a literal, is the operator it means:**
+
+- `c ? b : false` is `c && b`, and `c ? true : b` is `c || b`,
+  `logicals.rs`'s `conditional` of `written_if`, which moved there from
+  `branches.rs` (a file's cap): `return at != null &&
+  at < 3;`, `const chosen = fast || slow();`, `return
+  !DISABLE_LEGACY_MODE && legacy;`.
+- **Only where `c` and `b` are `bool`s**, as `is_boolean` says of each
+  (a Rust `bool`'s variable or temporary, a comparison, a `!`, a binding's
+  `bool`): `dev && globalThis.bigIt(n)`, `dev && $index(flags, 1)`. A
+  test of a value's truth, `if js::truthy(v) { n > 2 } else { false }`,
+  stays `v ? n > 2 : false`, as `v && ..` would give `0` of `v = 0`; and
+  so does a branch that isn't a `bool`, an `Option<bool>`'s `if dev { n }
+  else { Some(false) }`, `dev ? n : false`.
+- The other two forms, `c ? false : b` and `c ? b : true`, stay as
+  written: their `&&` and `||` would negate a test the program didn't.
+  What MIR made, of an `&&`, `||` or `matches!` the program wrote, folds
+  every form, as before.
+
+Case N: of a `bool` `c`, `c && b` is `b` where `c` is `true` and `false`
+where it isn't, as the conditional is, and `c || b` `true` or `b`; `b`
+is read only where the conditional reads it.
+
+`docs/readability.txt` doesn't move. The guide's `is_adult` reads `p.age
+!= null && p.age >= 18`; the playground's `ResultFrame` `fromFrame =
+frame$1 != null && Object.is(..)`.
+
+Held by `test/lowering-bool-ternaries.test.ts`, "a written if or match
+of a bool literal branch is && or ||", run in JS, of each kind kept;
+`branches_as_written.rs`, `option_some_mut.rs` and
+`string_places_kept.rs` against native Rust; and the mutations
+`written-bool-ternary-kept`, `written-bool-or-ternary-kept`,
+`written-bool-ternary-of-any-branch` and
+`written-bool-ternary-of-any-test` (`tidy/logicals.ts`).
