@@ -34,11 +34,17 @@ function after(log, x) {
   log.push(x);
 }
 
+function restorePendingUpdaters(root, lanes) {
+  root.lanes = lanes;
+}
+
+// Its body calls what it will once the tests hold, React's
+// restorePendingUpdaters: the chain's tests call nothing still.
 function restore(x, log) {
   if (x > 1) {
     if (enabled && x < 10) {
       if (inProgressLanes != null && inProgressRoot != null) {
-        inProgressRoot.lanes = (inProgressLanes + x) >>> 0;
+        restorePendingUpdaters(inProgressRoot, (inProgressLanes + x) >>> 0);
       } else {
         throw new Error("Expected finished root and lanes to be set. This is a bug in React.");
       }

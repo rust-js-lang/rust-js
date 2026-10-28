@@ -42,13 +42,19 @@ fn after(log: &mut Vec<u32>, x: u32) {
     log.push(x);
 }
 
+fn restore_pending_updaters(root: &Root, lanes: u32) {
+    root.lanes.set(lanes);
+}
+
+// Its body calls what it will once the tests hold, React's
+// restorePendingUpdaters: the chain's tests call nothing still.
 fn restore(x: u32, log: &mut Vec<u32>) {
     if x > 1 {
         if ENABLED.get() && x < 10 {
             if let Some(in_progress_lanes) = IN_PROGRESS_LANES.get()
                 && let Some(in_progress_root) = IN_PROGRESS_ROOT.with_borrow(Clone::clone)
             {
-                in_progress_root.lanes.set(in_progress_lanes + x);
+                restore_pending_updaters(&in_progress_root, in_progress_lanes + x);
             } else {
                 panic!("Expected finished root and lanes to be set. This is a bug in React.");
             }

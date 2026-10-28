@@ -1215,17 +1215,34 @@ fn chained(list: &[Stmt], label: &str) -> Option<(usize, Vec<Stmt>)> {
         .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
         .count();
     let mut chain = list[k..].to_vec();
-    if let Some(first) = chain.first_mut() {
-        let mut calls = false;
-        js::each_expr(std::slice::from_ref(first), &mut |e| {
-            calls |= matches!(
+    // Whether the chain's tests, or the bindings between them, call
+    // anything: not what its body does once they've held.
+    fn calls(stmt: &Stmt) -> bool {
+        let StmtKind::If(test, then, None) = &stmt.kind else {
+            return false;
+        };
+        let mut found = false;
+        let mut called = |e: &Expr| {
+            found |= matches!(
                 e.kind,
                 ExprKind::Call(..) | ExprKind::New(..) | ExprKind::Assigned(..) | ExprKind::Await(_)
             )
+        };
+        test.each(&mut called);
+        let k = (then.iter())
+            .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
+            .count();
+        then[..k].iter().for_each(|s| {
+            if let StmtKind::Const(_, value) = &s.kind {
+                value.each(&mut called);
+            }
         });
-        if !calls {
-            sunk(first, Vec::new());
-        }
+        found || matches!(&then[k..], [next] if calls(next))
+    }
+    if let Some(first) = chain.first_mut()
+        && !calls(first)
+    {
+        sunk(first, Vec::new());
     }
     or_chain(&chain, label).map(|_| (k, chain))
 }

@@ -124,3 +124,15 @@ the same order, and the same statements under them.
 Tested by the corpus case `let_chain_else_inside_if`; mutations
 `chain-in-blocks-unfolded`, `sunk-binding-untested`,
 `chain-bindings-sunk-past-calls` (`tidy/branches.ts`).
+
+## Amendment: only the chain's tests are asked whether they call
+
+The port's attachSuspenseRetryListeners kept `bb27`: its chain's body
+calls `restorePendingUpdaters(inProgressRoot, inProgressLanes)`, and
+`chained` asked the whole `if`, body and all, whether anything in it
+calls, so it kept the bindings before the chain's tests and left the
+label. **What the chain's tests and the bindings between them call is
+asked, not its body**, which runs once they've held, after each binding
+is read either way. Held by `let_chain_else_inside_if`'s `restore`, whose
+body calls now (native-compared), and the mutation
+`chain-body-calls-counted`.
