@@ -225,8 +225,14 @@ code, so the variable holds what the binding read. Tested by
 `test/lowering-shadows.test.ts`'s "an if let's binding of a thread-local
 only its test reads", run, and the module variables test's another
 module's `with_borrow`; its mutations are
-`thread-local-binding-not-taken-apart`, `field-binding-taken-apart`,
 `quiet-with-borrow-called-late` and `quiet-with-borrow-of-another-module`.
+
+Later (2026-10-28): the pattern's binding taken apart by a rule of its own
+is gone. ADR 0277's amendment of 7915789d0, a copy of a thread-local set
+after its last read is the variable, gives the same JS of each of these,
+the binding read only in the test, after it or past a call, so the rule's
+mutations, `thread-local-binding-not-taken-apart` and
+`field-binding-taken-apart`, survived; they went with it.
 
 ## Amendment: a binding of a field's own name is the field where the `then` gives it
 
