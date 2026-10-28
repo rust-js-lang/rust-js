@@ -666,3 +666,90 @@ pub(in crate::lower::mir::tidy) fn settle_jumps(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
 }
+
+/// `l: { if (m) { if (a) { A } else if (b) { B } else { break l; } continue;
+/// } }`, MIR's arms that each end in the one `continue` they share, the
+/// rest of `l` its fall: each arm its own `continue`, as written, and no
+/// `else`, `if (m) { if (a) { A; continue; } else if (b) { B; continue; }
+/// }`, as React's commitBeforeMutationEffects_begin writes it. Where the
+/// chain and its jump end a list whose end is `l`'s, which the `break`
+/// goes to: of `l`'s statements, or of the last branch of what ends them,
+/// however deep. Not a block the program labeled (`written`), whose
+/// `break`s it wrote.
+pub(in crate::lower::mir::tidy) fn breaks_as_ends(stmts: &mut [Stmt], written: &[LabeledBlock]) {
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && !written.iter().any(|block| block.label == *label)
+        {
+            ended_at(body, label);
+        }
+    }
+}
+
+/// Of `stmts`, whose end goes on to block `label`'s end, and of each list
+/// whose end is theirs: the chain ending `else { break label; }` before a
+/// jump, each arm that goes on given the jump, its `else` gone.
+fn ended_at(stmts: &mut Vec<Stmt>, label: &str) {
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(StmtKind::If(_, then, otherwise)) => {
+            ended_at(then, label);
+            if let Some(otherwise) = otherwise {
+                ended_at(otherwise, label);
+            }
+        }
+        Some(StmtKind::Labeled(_, inner)) => ended_at(inner, label),
+        _ => {}
+    }
+    let [.., chain, jump] = &mut stmts[..] else {
+        return;
+    };
+    // A loop's `continue`: a `break` or a `return` MIR shares is a
+    // `switch`'s, whose cases `switches` gives their own (ADR 0905).
+    if !matches!(jump.kind, StmtKind::Continue(_)) || !chain_broken_to(chain, label) {
+        return;
+    }
+    let jump = stmts.pop().expect("its jump");
+    let mut at = stmts.last_mut().expect("its chain");
+    while let StmtKind::If(_, then, otherwise) = &mut at.kind {
+        if !then.last().is_some_and(ends) {
+            then.push(jump.clone());
+        }
+        match otherwise.as_deref() {
+            Some(
+                [
+                    Stmt {
+                        kind: StmtKind::If(..), ..
+                    },
+                ],
+            ) => {
+                at = &mut otherwise.as_mut().expect("its else")[0];
+            }
+            _ => {
+                *otherwise = None;
+                break;
+            }
+        }
+    }
+}
+
+/// Whether `stmt` is an `if` chain whose last `else` is `break label;`
+/// alone, each `else` before it an `if` of the chain.
+fn chain_broken_to(stmt: &Stmt, label: &str) -> bool {
+    match &stmt.kind {
+        StmtKind::If(_, _, Some(otherwise)) => match otherwise.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::Break(Some(l)),
+                    ..
+                },
+            ] => l == label,
+            [
+                next @ Stmt {
+                    kind: StmtKind::If(..), ..
+                },
+            ] => chain_broken_to(next, label),
+            _ => false,
+        },
+        _ => false,
+    }
+}

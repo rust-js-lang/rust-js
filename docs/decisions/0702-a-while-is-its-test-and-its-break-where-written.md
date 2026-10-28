@@ -449,3 +449,31 @@ that stays `while (true)`; and the mutations
 `fallen-test-not-negated` (`tidy/jumps/tried.ts`) and
 `written-thens-not-after-while-heads` (`tidy/stages.ts`).
 
+
+## Amendment: arms that each end in a `continue` they share (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+React's commitBeforeMutationEffects_begin, inside its `while`, writes
+`if (isModernRoot) { if (isHidden) { ..; continue; } else if (wasHidden)
+{ ..; continue; } }` (cm3 of the CommitWork port's gaps). MIR shares the
+arms' `continue`, and tidy's tail jumps made it one after them, the rest
+of the `if` falling to a block's end: `bb16: { if (modern) { if (a) { ..
+} else if (b) { .. } else { break bb16; } continue; } }`, a label where
+upstream has none.
+
+**An `if` chain whose last `else` is `break l;` alone, followed by a
+jump, where that ends a list whose end is block `l`'s, is each arm with
+the jump at its end, and no `else`** (`jumps/labels.rs`,
+`breaks_as_ends`, before `unlabeled`, which then takes the block that
+nothing names away): the `break` went where the list's end goes, as the
+chain's fall now does. A list's end is `l`'s where it's `l`'s statements,
+or the last branch of what ends them, an `if`'s or a block's, however
+deep. The jump is a `continue`: a `break` or a `return` MIR shares that
+way is a `match`'s, which `switches` makes cases of, each with its own
+(ADR 0905). Not a block the program labeled, whose `break`s it wrote
+(ADR 0790).
+
+Held by `test/corpus/continues_in_arms.rs`, against native Rust;
+mutations `breaks-as-ends-never` and `breaks-as-ends-jump-dropped`
+(`mir/tidy/jumps/labels.ts`).

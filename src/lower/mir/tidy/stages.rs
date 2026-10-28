@@ -834,6 +834,11 @@ const JUMPS: &[Pass] = &[
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
     pass("branch values", branch_values_of),
+    // A chain's arms that share one jump after it, the rest of their
+    // block falling to its end: each arm's own, as written.
+    pass("breaks as ends", |b, h| {
+        js::statement_lists(b, &mut |s| breaks_as_ends(s, &h.written.blocks))
+    }),
     pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
     // A let chain's value, each branch one: its binding read first, `const
     // x = a ? e : undefined;`, as an `if let`'s, which the next run and

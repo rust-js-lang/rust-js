@@ -200,4 +200,21 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
 
+  {
+    name: "breaks-as-ends-never",
+    breaks: "arms of an `if` chain that each end in a `continue` stay MIR's, `bb16: { if (m) { if (a) { A } else if (b) { B } else { break bb16; } continue; } }`, not React's `if (a) { A; continue; }` (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            ended_at(body, label);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^continues_in_arms.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "breaks-as-ends-jump-dropped",
+    breaks: "a chain's shared `continue` is taken out and given to none of its arms, which go on past it (ADR 0702, amended)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            then.push(jump.clone());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^continues_in_arms.rs$"],
+  },
 ];
