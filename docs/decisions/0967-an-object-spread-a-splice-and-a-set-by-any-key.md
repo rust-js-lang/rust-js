@@ -1,6 +1,6 @@
 # 0967. An object spread, a splice and a set by any key
 
-Status: Accepted. Amended: `js::array::join` (below).
+Status: Accepted. Amended: `js::array::join` (below); `js::array::splice` takes numbers; a `Dict` spread, and a tuple of them in order (the user's decision, 2026-10-28).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, JS's own
 operation on a JS value, as TypeScript has it of an `any`'s.
@@ -132,3 +132,83 @@ TypeScript's `splice(start: number, deleteCount: number)` does:
 Held by `test/js-object.test.ts`'s "an object spread, a splice and a set
 by any key are JS's", run of a negative and a fractional start, and the
 guide's `copy_with_delete`.
+
+## Amendment: a `Dict` spread, and a tuple of them in order (2026-10-28)
+
+The user's decision (React port gap rd64c): a `Dict` literal with a
+leading spread of another `Dict` is this decision's `js::object::spread`,
+no new name. Case ([0262](0262-when-rust-and-js-disagree.md)): N for the
+form, JS's own spread; C for its order, Rust's kept where JS's would
+differ.
+
+React DOM's `SyntheticEvent.js` makes each event interface of another:
+
+```js
+const UIEventInterface = {...EventInterface, view: 0, detail: 0};
+```
+
+The port wrote it as entries, `dict::from_entries([dict::entries(
+EVENT_INTERFACE), vec![("view", ..), ..]].concat())`, which was
+`Object.fromEntries([...Object.entries(EventInterface), ["view", 0],
+..].map(..))`, and isn't a spread: `Object.entries` skips a symbol key the
+spread copies.
+
+**`js::object::spread` takes what it spreads by a trait, `js::object::
+Spread`:** any value, `Option<&Unknown>`, a `JsObject`, as before; a
+`&Dict<T>`, a `Dict<T>`; and a tuple of two or three of one kind, `{ ...a,
+...b }`, each spread in order, a later key's value the one kept where an
+earlier one's key is, as JS's spread keeps it:
+
+```rust
+static UI_EVENT_INTERFACE: &'static EventInterfaceType = js::object::spread((
+    EVENT_INTERFACE.with(|i| *i),
+    dict::from_entries(vec![("view", Normalize::Copied(0)), ("detail", Normalize::Copied(0))]),
+));
+```
+
+```js
+const UIEventInterface = { ...EventInterface, view: 0, detail: 0 };
+```
+
+- **A spread of an object written out is its fields**, `{ ...a, ...{
+  view: 0 } }`'s `{ ...a, view: 0 }` (`prepare::objects`): the object is
+  new, so spreading it defines each field where the outer object would, in
+  order, each made where it was; a `__proto__` field too, printed
+  `["__proto__"]`, its own in both. Not one of a getter or a setter,
+  whose value a spread copies.
+- **Rust makes a tuple's values before any is spread**, where JS spreads
+  each before it makes the next. So where a later one runs the program's
+  code, which may change what's spread before it, each is made first, in
+  order: `js::object::spread((a, changed(a)))` is `const spread =
+  changed(a); return { ...a, ...spread };`, `a` as `changed` left it, as
+  in Rust. A `Dict` written out runs none of it: `dict::from_entries` is
+  `#[rust_js::runs_nothing]`, as it reads the pairs it's given and calls
+  nothing in them. And tidy moves nothing a call makes past a spread of a
+  value a call may change (`moves::leads`, an object's spread read as an
+  array's `...items` is, `read_past_calls`): `{ ...a,
+  ...Object.fromEntries([["c", counted(a)]]) }` would read `a` before
+  `counted(a)` sets it.
+- **A tuple of one isn't one**: `spread(x)` is the value's, the one form
+  of a single spread.
+
+Alternatives:
+
+- **`dict::set` of the spread's copy, folded into the literal**: `{ ...a
+  }` then `copy.view = 0` *sets* where the literal defines, which differ
+  where `Object.prototype` has a setter or a read-only property of the
+  key: case B, not this decision's to take.
+- **The entries' concat printed as a spread**: a different operation, of
+  a symbol key, as above.
+- **A new `dict::spread` or `dict::extend`**: a second name for JS's one
+  spread; the user chose this one's.
+
+Held by `test/js-collections.test.ts`'s "a Dict spread before more of it
+is JS's object spread": React's interfaces printed as upstream's, a later
+key over an earlier, a symbol copied and nothing inherited or not
+enumerable, each against JS's own spread, and `a` read after a call that
+sets it, both where lowering makes it first and where tidy would move it;
+mutations `object-spread-tuple-whole`, `object-spread-parts-made-in-place`,
+`object-spread-written-out-held` (`lower/mir/calls.ts`),
+`object-spread-read-before-call` (`lower/mir/tidy/moves.ts`) and
+`spread-written-out-kept` (`prepare/objects.ts`); the guide's
+`ui_event_interface`.

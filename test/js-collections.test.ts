@@ -361,6 +361,94 @@ pub fn text(deps: &[Option<&'static Unknown>]) -> String {
   expect(ran(dir, `import { text } from "./lib.js"; console.log(text([1, null, "a", undefined, true]));`)).toBe("[1, , a, , true]\n");
 });
 
+// ADR 0967, amended (React port gap rd64c, the user's decision): React DOM's
+// SyntheticEvent.js writes `const UIEventInterface = {...EventInterface,
+// view: 0, detail: 0}`. `js::object::spread` of a tuple of `Dict`s is `{
+// ...a, ...b }`, and a `Dict` written out spread is its fields: the keys JS's
+// spread makes, in its order, a later key's value where an earlier one's key
+// is, a symbol copied, nothing inherited or not enumerable; each part made
+// before any is spread, as Rust makes a tuple's, where a later one runs code.
+test("a Dict spread before more of it is JS's object spread", () => {
+  const { dir, js } = compiled("js-dict-spread", `use js::{Dict, dict};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum Normalize {
+    Copied(u8),
+    Made(fn(&'static js::Unknown) -> Option<&'static js::Unknown>),
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "EventInterface")]
+    static EVENT_INTERFACE: &'static Dict<Normalize> = dict::from_entries(vec![
+        ("eventPhase", Normalize::Copied(0)),
+        ("timeStamp", Normalize::Made(|event| js::get(event, "timeStamp"))),
+        ("isTrusted", Normalize::Copied(0)),
+    ]);
+
+    #[cfg_attr(rust_js, rust_js::name = "UIEventInterface")]
+    static UI_EVENT_INTERFACE: &'static Dict<Normalize> = js::object::spread((
+        EVENT_INTERFACE.with(|i| *i),
+        dict::from_entries(vec![("view", Normalize::Copied(0)), ("detail", Normalize::Copied(0))]),
+    ));
+}
+
+pub fn ui_keys() -> Vec<String> {
+    UI_EVENT_INTERFACE.with(|i| dict::keys(i))
+}
+
+pub fn over(base: &'static Dict<u8>, n: u8) -> &'static Dict<u8> {
+    js::object::spread((base, dict::from_entries(vec![("b", n)])))
+}
+
+pub fn joined(a: &'static Dict<u8>, b: &'static Dict<u8>, c: &'static Dict<u8>) -> &'static Dict<u8> {
+    js::object::spread((a, b, c))
+}
+
+pub fn copied(base: &'static Dict<u8>) -> &'static Dict<u8> {
+    js::object::spread(base)
+}
+
+fn changed(base: &'static Dict<u8>) -> &'static Dict<u8> {
+    dict::set(base, "a", 7);
+    dict::from_entries(vec![("c", 8)])
+}
+
+pub fn spread_after_change(base: &'static Dict<u8>) -> &'static Dict<u8> {
+    js::object::spread((base, changed(base)))
+}
+
+fn counted(base: &'static Dict<u8>) -> u8 {
+    dict::set(base, "a", 7);
+    8
+}
+
+pub fn spread_after_count(base: &'static Dict<u8>) -> &'static Dict<u8> {
+    js::object::spread((base, dict::from_entries(vec![("c", counted(base))])))
+}
+`);
+  expect(js).toContain("const UIEventInterface = { ...EventInterface, view: 0, detail: 0 };\n");
+  expect(js).toContain("  return { ...base, b: n };\n");
+  expect(js).toContain("  return { ...a, ...b, ...c };\n");
+  expect(js).toContain("  return { ...base };\n");
+  expect(js).not.toContain("Object.entries");
+  const out = ran(dir, `import { uiKeys, over, joined, copied, spreadAfterChange, spreadAfterCount } from "./lib.js";
+const s = Symbol("s");
+const proto = { inherited: 1 };
+const base = Object.create(proto);
+base.a = 1; base.b = 2; base.c = 3; base[s] = 4;
+Object.defineProperty(base, "hidden", { value: 5, enumerable: false });
+const show = (o) => { const keys = []; for (const k in o) keys.push(k); return JSON.stringify([keys, Object.values(o), o[s] ?? null, Object.getPrototypeOf(o) === Object.prototype]); };
+console.log(JSON.stringify(uiKeys()) === JSON.stringify(Object.keys({ eventPhase: 0, timeStamp: 0, isTrusted: 0, view: 0, detail: 0 })));
+console.log(show(over(base, 9)) === show({ ...base, b: 9 }), show(over(base, 9)));
+console.log(show(joined({ x: 1, y: 2 }, { y: 3, z: 4 }, { x: 5 })) === show({ ...{ x: 1, y: 2 }, ...{ y: 3, z: 4 }, ...{ x: 5 } }));
+console.log(show(copied(base)) === show({ ...base }));
+const fresh = { a: 1, b: 2 };
+console.log(JSON.stringify(spreadAfterChange(fresh)), JSON.stringify(spreadAfterCount({ a: 1, b: 2 })));
+`);
+  expect(out).toBe(`true\ntrue [["a","b","c"],[1,9,3],4,true]\ntrue\ntrue\n{"a":7,"b":2,"c":8} {"a":7,"b":2,"c":8}\n`);
+});
+
 // React's SchedulerProfiling logs into an Int32Array and grows it by copying,
 // `newEventLog.set(eventLog)`, of numbers: `ms * 1000` and a task's id. A
 // typed array takes what TypeScript says, `ArrayLike<number>` to `set` and

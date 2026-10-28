@@ -1952,6 +1952,42 @@ export function copyWithDelete(obj, key) {
   return updated;
 }
 ```
+- `js::object::spread` of a `js::Dict` is a `Dict` of its values, and of
+  a tuple of them, `(a, b)`, `{ ...a, ...b }`, each spread in order, a
+  later key's value the one kept where an earlier one's key is. A `Dict`
+  written out among them is its fields, as React DOM writes an event
+  interface of another. Rust makes the tuple's values before any is
+  spread, so one made by a call of the program's code is made first,
+  `const spread = changed(a);`
+  ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md), amended):
+
+```rust
+use js::{Dict, dict};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "EventInterface")]
+    static EVENT_INTERFACE: &'static Dict<u8> =
+        dict::from_entries(vec![("eventPhase", 0), ("bubbles", 0)]);
+    #[cfg_attr(rust_js, rust_js::name = "UIEventInterface")]
+    static UI_EVENT_INTERFACE: &'static Dict<u8> = js::object::spread((
+        EVENT_INTERFACE.with(|i| *i),
+        dict::from_entries(vec![("view", 0), ("detail", 0)]),
+    ));
+}
+
+pub fn ui_event_interface() -> &'static Dict<u8> {
+    UI_EVENT_INTERFACE.with(|i| *i)
+}
+```
+
+```js
+const EventInterface = { eventPhase: 0, bubbles: 0 };
+const UIEventInterface = { ...EventInterface, view: 0, detail: 0 };
+
+export function uiEventInterface() {
+  return UIEventInterface;
+}
+```
 - `js::array::join(values, separator)` is `values.join(separator)` of a
   slice of any values, each one's text as JS's `String()` gives it,
   `undefined` and `null` none, as React writes its deps

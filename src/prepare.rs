@@ -11,6 +11,7 @@ mod catches;
 mod do_whiles;
 mod initializers;
 mod labels;
+mod objects;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
@@ -1111,51 +1112,6 @@ fn unread(body: &mut Vec<Stmt>) {
     });
 }
 
-/// `Object.fromEntries([["/index.html", code], ..])`, each key a string
-/// written out, is the object literal of them, `{ "/index.html": code }`:
-/// the same properties, made in the same order. Not of a key given twice,
-/// which a literal would have twice, nor of `__proto__`, which a literal
-/// makes the prototype, nor of an `undefined` value, which an object's
-/// field leaves out (ADR 0280) and an entry keeps.
-fn entries_written_out(e: &Expr) -> Option<Expr> {
-    let ExprKind::Call(f, args) = &e.kind else {
-        return None;
-    };
-    let (ExprKind::Member(object, name), [entries]) = (&f.kind, args.as_slice()) else {
-        return None;
-    };
-    let (ExprKind::Var(object), ExprKind::Array(entries)) = (&object.kind, &entries.kind) else {
-        return None;
-    };
-    if object != "Object" || name != "fromEntries" {
-        return None;
-    }
-    let mut fields = Vec::new();
-    for entry in entries {
-        let ExprKind::Array(pair) = &entry.kind else {
-            return None;
-        };
-        let [key, value] = pair.as_slice() else {
-            return None;
-        };
-        let ExprKind::Str(key) = &key.kind else {
-            return None;
-        };
-        let given = fields
-            .iter()
-            .any(|field| matches!(field, Prop::Field(k, _) if k == key));
-        if given || key == "__proto__" || matches!(value.kind, ExprKind::Undefined) {
-            return None;
-        }
-        fields.push(Prop::Field(key.clone(), value.clone()));
-    }
-    Some(Expr {
-        facts: js::Facts::NONE,
-        kind: ExprKind::Object(fields, js::ObjectLayout::default()),
-        span: e.span,
-    })
-}
-
 /// A field that's a closure of statements, `then: (resolve, reject) => {
 /// .. }`, as a method, `then(resolve, reject) { .. }`, as React's ReactAct
 /// writes its thenable (ADR 0882). An arrow and a method differ only in
@@ -1426,7 +1382,7 @@ fn expr(e: &mut Expr) {
             while args.len() > 1 && args.last().is_some_and(|a| matches!(a.kind, ExprKind::Undefined)) {
                 args.pop();
             }
-            if let Some(object) = entries_written_out(e) {
+            if let Some(object) = objects::entries_written_out(e) {
                 *e = object;
             }
         }
@@ -1442,6 +1398,7 @@ fn expr(e: &mut Expr) {
                 | Prop::Spread(value)) = prop;
                 expr(value);
             }
+            objects::spread_written_out(props, layout);
             // Where one field is a method, each is (ADR 0882, amended).
             let beside = props.iter().any(|prop| method(prop, false).is_some());
             for prop in props.iter_mut() {

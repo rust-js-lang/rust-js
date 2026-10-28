@@ -251,4 +251,12 @@ export const mutations: Mutation[] = [
     replace: "        1 if false && own_name\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if let of a field by its own name"],
   },
+  {
+    name: "object-spread-read-before-call",
+    breaks: "`js::object::spread((base, dict::from_entries(vec![(\"c\", counted(base))])))` reads `base` before `counted(base)` sets it, `{ ...base, ...Object.fromEntries([[\"c\", counted(base)]]) }`, where Rust reads it after (ADR 0967, amended)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "                    js::Prop::Spread(v) => std::borrow::Cow::Owned(Expr::spread(v.clone())),\n",
+    replace: "                    js::Prop::Spread(v) => std::borrow::Cow::Borrowed(v),\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
+  },
 ];

@@ -1400,8 +1400,11 @@ pub mod dict {
     /// a dictionary of these keys and values, each key text, a `&str` or a
     /// `String`, as `HashMap::from` takes one: `dict::from_entries(vec![("aria-current",
     /// 0), ..])`. Written out, each key a string, it's the object literal,
-    /// `{ "aria-current": 0, .. }` (ADR 0666).
+    /// `{ "aria-current": 0, .. }` (ADR 0666). It runs none of the
+    /// program's code: it reads the pairs it's given, never calls what's in
+    /// them (ADR 0967, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[allow(unused_variables)]
     pub fn from_entries<K, T>(entries: Vec<(K, T)>) -> &'static Dict<T>
     where
@@ -2241,10 +2244,38 @@ pub mod object {
     /// it as JS's spread defines it, a `__proto__` key too; `{}` of `None`,
     /// `undefined` or `null` (ADR 0967). Not `assign(object, value)`, which
     /// sets each, so a `__proto__` key sets the new object's prototype.
+    /// Of a [`Dict`], a `Dict` of its `T`s; of a tuple of them, `{ ...a,
+    /// ...b }`, each spread in order, a later key's value the one kept, as
+    /// a `Dict` written out after another is: `spread((EVENT_INTERFACE,
+    /// dict::from_entries(vec![("view", 0)])))`'s `{ ...EventInterface,
+    /// view: 0 }` (ADR 0967, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "{...}")]
     #[allow(unused_variables)]
-    pub fn spread(value: Option<&Unknown>) -> &'static JsObject {
+    pub fn spread<S: Spread>(values: S) -> &'static S::Object {
         unreachable!()
+    }
+
+    /// What [`spread`] spreads, and what it makes of it: any value, `None`
+    /// of `undefined` or `null`, a `JsObject`; a [`Dict`], a `Dict` of its
+    /// `T`s; or a tuple of two or three of one kind, spread in order.
+    pub trait Spread {
+        type Object: ?Sized + 'static;
+    }
+
+    impl Spread for Option<&Unknown> {
+        type Object = JsObject;
+    }
+
+    impl<T: 'static> Spread for &Dict<T> {
+        type Object = Dict<T>;
+    }
+
+    impl<A: Spread, B: Spread<Object = A::Object>> Spread for (A, B) {
+        type Object = A::Object;
+    }
+
+    impl<A: Spread, B: Spread<Object = A::Object>, C: Spread<Object = A::Object>> Spread for (A, B, C) {
+        type Object = A::Object;
     }
 
     /// [`Object.assign(target, ...sources)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign):

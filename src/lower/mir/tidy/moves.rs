@@ -366,14 +366,23 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
             in_order(&mut std::iter::once(&**receiver).chain(args))
         }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => in_order(&mut std::iter::once(&**f).chain(args)),
-        ExprKind::Object(props, ..) => in_order(&mut props.iter().map(|p| {
-            let (js::Prop::Field(_, v)
-            | js::Prop::Getter(_, v)
-            | js::Prop::Setter(_, v)
-            | js::Prop::Method(_, v)
-            | js::Prop::Spread(v)) = p;
-            v
-        })),
+        // A spread reads what its value holds where it's spread, as an
+        // array's `...items` does: past a call only where no call changes
+        // it, `js::object::spread((a, dict::from_entries(vec![("c",
+        // counted(a))])))`'s `a` read after `counted(a)` sets it, as Rust
+        // reads it (ADR 0967, amended).
+        ExprKind::Object(props, ..) => {
+            let values: Vec<std::borrow::Cow<'_, Expr>> = (props.iter())
+                .map(|p| match p {
+                    js::Prop::Spread(v) => std::borrow::Cow::Owned(Expr::spread(v.clone())),
+                    js::Prop::Field(_, v)
+                    | js::Prop::Getter(_, v)
+                    | js::Prop::Setter(_, v)
+                    | js::Prop::Method(_, v) => std::borrow::Cow::Borrowed(v),
+                })
+                .collect();
+            in_order(&mut values.iter().map(|v| &**v))
+        }
         ExprKind::Jsx(jsx) => {
             let tag = match &jsx.tag {
                 js::JsxTag::Component(tag) => Some(tag),

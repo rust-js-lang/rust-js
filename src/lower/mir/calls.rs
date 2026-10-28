@@ -214,14 +214,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "an object binding whose fields don't match its arguments"));
                 }
                 let mut fields = Vec::new();
-                for (key, value) in keys.into_iter().zip(values) {
-                    let value = self.value_expr(value, span)?;
+                for ((key, value), &ty) in keys.into_iter().zip(values).zip(arg_tys) {
                     // `{...}`: what's given spread into it, `js::object::spread`'s
                     // (ADR 0967).
-                    fields.push(match key.as_str() {
-                        "..." => Prop::Spread(value),
-                        _ => Prop::Field(key, value),
-                    });
+                    match key.as_str() {
+                        "..." => self.spread_into(value, ty, span, out, &mut fields)?,
+                        _ => fields.push(Prop::Field(key, self.value_expr(value, span)?)),
+                    }
                 }
                 return Ok(Value::Expr(Expr::object(fields)));
             }
@@ -249,6 +248,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             span,
             out,
         )?))
+    }
+
+    /// What `js::object::spread` spreads into the object it makes, `value`
+    /// of `ty`: the value, `{ ...value }`, or each of a tuple's, in order,
+    /// `{ ...a, ...b }` (ADR 0967, amended). Rust makes each of a tuple's
+    /// before any is spread, where JS spreads one before it makes the
+    /// next: where a later one runs the program's code, which may change
+    /// what's spread before it, `changed(a)` of `(a, changed(a))`, each is
+    /// made first, in order, and the object spreads what they made. Not
+    /// one that runs none of it, a `Dict` written out, `dict::from_entries`'s.
+    fn spread_into(
+        &mut self,
+        value: Value<'tcx>,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+        fields: &mut Vec<Prop>,
+    ) -> R<()> {
+        let ty::Tuple(tys) = *ty.kind() else {
+            fields.push(Prop::Spread(self.value_expr(value, span)?));
+            return Ok(());
+        };
+        let parts = match value {
+            Value::List(items) => items,
+            value => match self.value_expr(value, span)? {
+                Expr {
+                    kind: js::ExprKind::Array(items),
+                    ..
+                } => items.into_iter().map(Value::Expr).collect(),
+                tuple => {
+                    let tuple = match tuple.reads_same() {
+                        true => tuple,
+                        false => self.spill("spread", tuple, out),
+                    };
+                    (0..tys.len())
+                        .map(|i| Value::Expr(Expr::index(tuple.clone(), Expr::int(i as i128))))
+                        .collect()
+                }
+            },
+        };
+        let mut parts = (parts.into_iter())
+            .map(|part| self.value_expr(part, span))
+            .collect::<R<Vec<_>>>()?;
+        let runs_code = |part: &Expr| part.has_effects() && !part.facts.has(js::Known::RunsNothing);
+        if parts.iter().skip(1).any(runs_code) {
+            for part in &mut parts {
+                if !part.reads_same() {
+                    let made = std::mem::replace(part, Expr::undefined());
+                    *part = self.spill("spread", made, out);
+                }
+            }
+        }
+        for (part, ty) in parts.into_iter().zip(tys) {
+            self.spread_into(Value::Expr(part), ty, span, out, fields)?;
+        }
+        Ok(())
     }
 
     /// The crate's own function called, given its dictionaries (ADR 0049).
