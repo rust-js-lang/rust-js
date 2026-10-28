@@ -39,13 +39,11 @@ function describeNode(node, indent) {
   }
   let content = indentation(indent) + node.name + "\n";
   let diffIdx = 0;
-  for (
-    let more = 2;
-    more != null && diffIdx < node.children.length;
-    more = more > 0 ? more - 1 : undefined
-  ) {
+  let more = 2;
+  while (more != null && diffIdx < node.children.length) {
     content += describeNode(node.children[diffIdx], (indent + 1) | 0);
     diffIdx++;
+    more = more > 0 ? more - 1 : undefined;
   }
   return content;
 }

@@ -53,8 +53,10 @@ function main() {
     value: 1,
     next: { value: 2 },
   };
-  for (let node = reverse(list); node != null; node = node.next) {
+  let node = reverse(list);
+  while (node != null) {
     $print(`${node.value} `);
+    node = node.next;
   }
   console.log("");
   console.log(`${scaled(3)}`);

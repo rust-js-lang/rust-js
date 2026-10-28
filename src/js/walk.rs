@@ -95,7 +95,7 @@ macro_rules! walks {
                         start.$expr(f);
                         test.$expr(f);
                         $exprs(body, f);
-                        if let crate::js::Step::To(value) | crate::js::Step::By(_, value) = step {
+                        if let crate::js::Step::By(_, value) = step {
                             value.$expr(f);
                         }
                     }

@@ -6,10 +6,10 @@ const corpus = ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"];
 export const mutations: Mutation[] = [
   {
     name: "stepped-while-never",
-    breaks: "React's walk of a fiber's children stays `let child = ..; while (child != null) { ..; child = child.sibling; }`, not upstream's `for` (ADR 0974)",
+    breaks: "a count, `let at = n; while (at > 0) { ..; at -= 2; }`, stays a `while`, not upstream's `for (let at = n; at > 0; at -= 2)` (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
-    find: "    if !stepped\n",
-    replace: "    if true || !stepped\n",
+    find: "    if !matches!(&target.kind, ExprKind::Var(v) if v == name)\n",
+    replace: "    if true || !matches!(&target.kind, ExprKind::Var(v) if v == name)\n",
     tests: corpus,
     snapshots: true,
   },
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-while-read-after",
-    breaks: "a `while` whose variable is read after it is a `for`, which keeps it to itself: `return child != null` throws a ReferenceError (ADR 0974)",
+    breaks: "a `while` whose variable is read after it is a `for`, which keeps it to itself: `return i` throws a ReferenceError (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
     find: "        || js::mentions_in(after, name) > 0\n",
     replace: "",
@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-while-body-declared",
-    breaks: "a step that reads what the body declares, `child = current.sibling`, is a `for`'s update, which can't see it (ADR 0974)",
+    breaks: "a step that reads what the body declares, `i += stride`, is a `for`'s update, which can't see it (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
     find: "function_names(value, name) || reads_declared(value, rest))\n",
     replace: "function_names(value, name))\n",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-while-untested",
-    breaks: "a `while` whose test doesn't read the variable its body sets last, `let prev = 100; while (k > 0) { ..; prev = k; }`, is a `for` of it (ADR 0974)",
+    breaks: "a `while` whose test doesn't read the variable its body counts last, `let prev = 100; while (k > 0) { ..; prev -= 3.5; }`, is a `for` of it (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
     find: "        || !cond.mentions_var(name)\n",
     replace: "",
@@ -62,14 +62,6 @@ export const mutations: Mutation[] = [
     find: "    let one = |e: &Expr| matches!(e.kind, ExprKind::Num(n) if n == 1.0);\n",
     replace: "    let one = |_: &Expr| true;\n",
     tests: corpus,
-  },
-  {
-    name: "stepped-while-of-another",
-    breaks: "a `while` that steps its variable of another's, `parent = node.return`, is a `for`, where upstream React walks a fiber's parents with a `while` (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
-    find: "        && !matches!(&step, js::Step::To(value) if !value.mentions_var(name));\n",
-    replace: ";\n",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a while let binding read before its variable is set again"],
   },
   {
     name: "stepped-while-bits",

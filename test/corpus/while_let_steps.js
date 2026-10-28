@@ -16,17 +16,21 @@ function leaf(name, duration, sibling) {
 
 function selfTime(fiber) {
   let total = fiber.duration;
-  for (let child = fiber.child; child != null; child = child.sibling) {
+  let child = fiber.child;
+  while (child != null) {
     total -= child.duration;
+    child = child.sibling;
   }
   return total;
 }
 
 function firstLong(fiber) {
-  for (let child = fiber.child; child != null; child = child.sibling) {
+  let child = fiber.child;
+  while (child != null) {
     if (child.duration > 2) {
       return child.name;
     }
+    child = child.sibling;
   }
   return "none";
 }
@@ -58,9 +62,11 @@ function stoppedAt(fiber) {
 
 function kept(fiber) {
   const names = [];
-  for (let child = fiber.child; child != null; child = child.sibling) {
+  let child = fiber.child;
+  while (child != null) {
     const held = child;
     names.push(() => held.name);
+    child = child.sibling;
   }
   return names.map((f) => f());
 }
@@ -133,27 +139,49 @@ function jumps(n) {
       at = 4;
     }
     steps = (steps + 1) >>> 0;
-    at = (at / 2) >>> 0;
+    at--;
   }
   return steps;
+}
+
+function found(items, wanted) {
+  let i = 0;
+  while (i < items.length) {
+    if (items[i] === wanted) {
+      break;
+    }
+    i++;
+  }
+  return i;
+}
+
+function counted(n) {
+  const later = [];
+  for (let i = 0; i < n; i++) {
+    const captured = i;
+    later.push(() => (captured * 10) >>> 0);
+  }
+  return later.map((f) => f());
 }
 
 function countdown(k) {
   let sum = 0;
   let prev = 100;
   while (k > 0) {
-    sum = (sum + prev) >>> 0;
+    sum += prev;
     k--;
-    prev = (prev - 3) >>> 0;
+    prev -= 3.5;
   }
   return sum;
 }
 
 function halvings(n) {
   let steps = 0;
-  for (let at = n; at > 1; at = (at / 2) >>> 0) {
+  let at = n;
+  while (at > 1) {
     steps = (steps + 1) >>> 0;
     n = (n - 1) >>> 0;
+    at = (at / 2) >>> 0;
   }
   return (steps + n) >>> 0;
 }
@@ -176,8 +204,10 @@ function main() {
   );
   console.log(`${seen(fiber, ["c", "a"])}`);
   console.log(`${$displayF64(longOnes(fiber))}`);
-  console.log(`${jumps(3)} ${countdown(4)} ${ticks(5)}`);
+  console.log(`${jumps(3)} ${$displayF64(countdown(4))} ${ticks(5)}`);
   console.log(`${$displayF64(evens(8))} ${strides(10)}`);
   console.log(`${halvings(40)}`);
+  console.log(`${found([4, 7, 9], 9)} ${found([4, 7], 1)}`);
+  console.log(`[${counted(3).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

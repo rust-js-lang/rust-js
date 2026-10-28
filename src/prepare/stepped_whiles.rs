@@ -1,22 +1,20 @@
-//! A `while` that gives its variable its next value last, as a `for` that
-//! steps it (ADR 0974).
+//! A `while` that counts its variable last, as a `for` that steps it (ADR
+//! 0974).
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind};
 
-/// `let child = fiber.child; while (child != null) { ..; child =
-/// child.sibling; }`, Rust's `while let Some(c) = child { ..; child =
-/// c.sibling.clone(); }`: `for (let child = fiber.child; child != null;
-/// child = child.sibling) { .. }`, as React walks a fiber's children. Each
-/// runs the same: the start, then the test, the body and the step, in
-/// turn. Only where:
+/// `let i = 0; while (i < n) { ..; i++; }`: `for (let i = 0; i < n; i++)
+/// { .. }`, as React counts. Each runs the same: the start, then the test,
+/// the body and the step, in turn. A walk, `child = child.sibling`, stays
+/// the `while` React writes it as (ADR 0974, amended). Only where:
 ///
 /// - the `let` is right before the loop, and nothing after the loop in its
 ///   block names the variable, which the `for` keeps to itself;
-/// - the test reads it, and the body's last statement alone sets it, of
-///   its own value, `child.sibling` of `child`, `i + 1` of `i`, of no
-///   label's `continue` of the loop before it, which in a `for` would run
-///   the step it skips in the `while`; and of what the body doesn't
-///   declare, which the step, after the body's block, can't see;
+/// - the test reads it, and the body's last statement alone counts it,
+///   `i++`, `at -= 2`, of no label's `continue` of the loop before it,
+///   which in a `for` would run the step it skips in the `while`; and by
+///   what the body doesn't declare, which the step, after the body's
+///   block, can't see;
 /// - no function in the loop names it: a `for`'s `let` is one variable for
 ///   each turn, which a closure made in a turn keeps, where the `while`'s
 ///   is one for all.
@@ -41,23 +39,18 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
         return None;
     };
     let (last, rest) = body.split_last()?;
-    // Its step: `name = value` and `name -= value`, or `name++` and
+    // Its count: `name += value` and `name -= value`, or `name++` and
     // `name--`, as the printer writes a statement of a step of one; not a
-    // bit's, `rest &= rest - 1`, which React steps in a `while`.
+    // walk's, `child = child.sibling`, nor a bit's, `rest &= rest - 1`,
+    // which React writes as `while`s.
     let one = |e: &Expr| matches!(e.kind, ExprKind::Num(n) if n == 1.0);
     let (target, step) = match &last.kind {
-        StmtKind::Assign(target, value) => (target, js::Step::To(value.clone())),
         StmtKind::Compound(Op::Add, target, by) if one(by) => (target, js::Step::Up),
         StmtKind::Compound(Op::Sub, target, by) if one(by) => (target, js::Step::Down),
         StmtKind::Compound(op @ (Op::Add | Op::Sub), target, by) => (target, js::Step::By(*op, by.clone())),
         _ => return None,
     };
-    // Of the variable, its next value of itself, `child = child.sibling`,
-    // not of another, `parent = node.return`, which upstream React walks
-    // with a `while`.
-    let stepped = matches!(&target.kind, ExprKind::Var(v) if v == name)
-        && !matches!(&step, js::Step::To(value) if !value.mentions_var(name));
-    if !stepped
+    if !matches!(&target.kind, ExprKind::Var(v) if v == name)
         || !cond.mentions_var(name)
         || js::mentions_in(after, name) > 0
         || js::continues(rest, label.as_deref())
@@ -81,8 +74,8 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
 }
 
 /// Whether `value` reads a name `stmts` declare: the body's, which a
-/// `for`'s step, after the body's block, can't see, `child = current.sibling`
-/// of a `const current = child;` in it.
+/// `for`'s step, after the body's block, can't see, `i += stride` of a
+/// `const stride = ..;` in it.
 fn reads_declared(value: &Expr, stmts: &[Stmt]) -> bool {
     let mut declared = false;
     value.visit_vars(&mut |v| declared |= js::declares(stmts, v));

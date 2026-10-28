@@ -385,29 +385,28 @@ pub struct Case {
 }
 
 /// What a `for`'s update does to its variable: `name++`, `name--`, or
-/// `name = value` and `name -= value`, which only preparation makes (ADR
+/// `name += value` and `name -= value`, which only preparation makes (ADR
 /// 0974).
 #[derive(Clone, PartialEq)]
 pub enum Step {
     Up,
     Down,
-    To(Expr),
     By(Op, Expr),
 }
 
 impl Step {
-    /// The value it gives the variable, of `name = value`.
+    /// The value it counts the variable by, of `name += value`.
     pub fn value(&self) -> Option<&Expr> {
         match self {
-            Step::To(value) | Step::By(_, value) => Some(value),
+            Step::By(_, value) => Some(value),
             Step::Up | Step::Down => None,
         }
     }
 
-    /// The value it gives the variable, of `name = value`, to change.
+    /// The value it counts the variable by, of `name += value`, to change.
     pub fn value_mut(&mut self) -> Option<&mut Expr> {
         match self {
-            Step::To(value) | Step::By(_, value) => Some(value),
+            Step::By(_, value) => Some(value),
             Step::Up | Step::Down => None,
         }
     }
@@ -458,8 +457,8 @@ pub enum StmtKind {
     },
     /// `for (let name = start; test; name++) { .. }`: a `for` over a range;
     /// or, `Step::Down`, `name--`, over a range or an array's indices from
-    /// its end (ADR 0904); or, `Step::To`, `name = value`, a `while` that
-    /// gives its variable its next value last, preparation's (ADR 0974).
+    /// its end (ADR 0904); or, `Step::By`, `name += value`, a `while` that
+    /// counts its variable last, preparation's (ADR 0974).
     For {
         label: Option<String>,
         name: String,

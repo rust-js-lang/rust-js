@@ -604,16 +604,6 @@ impl<'a> Cx<'a> {
                     js::Step::Down => {
                         Expression::new_update_expression(SPAN, UpdateOperator::Decrement, false, counter, b)
                     }
-                    js::Step::To(value) => {
-                        let target = AssignmentTarget::from(counter);
-                        Expression::new_assignment_expression(
-                            SPAN,
-                            AssignmentOperator::Assign,
-                            target,
-                            self.expr(value),
-                            b,
-                        )
-                    }
                     js::Step::By(op, value) => {
                         let target = AssignmentTarget::from(counter);
                         Expression::new_assignment_expression(SPAN, compound_operator(*op), target, self.expr(value), b)

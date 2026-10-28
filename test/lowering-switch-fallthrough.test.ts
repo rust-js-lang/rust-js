@@ -280,7 +280,8 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
         info += "forwardRef";
       }
   }
-  for (let owner = 2;`);
+  let owner = 2;
+`);
   expect(js).not.toMatch(/\bbb\d+:/);
   const lib = await import(join(dir, "lib.js"));
   // Upstream's JS, as React writes it.

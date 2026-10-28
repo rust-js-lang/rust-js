@@ -2057,12 +2057,14 @@ export function untilTag(words) {
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
 
-A `while` that steps its own variable last, `child = child.sibling`, `i +=
-1`, a `let` right before it and read nowhere after it, is the `for` that
-steps it, as React walks a fiber's children
+A `while` that counts its own variable last, `i += 1`, `at -= 2`, a `let`
+right before it and read nowhere after it, is the `for` that counts it, as
+React counts
 ([ADR 0974](../../decisions/0974-a-while-that-steps-its-variable-last-is-a-for.md)).
 Not where a `continue` would skip the step, the body sets the variable
-before, or the step reads what the body declares:
+before, or the step reads what the body declares. A walk, `child =
+current.sibling.clone()`, stays the `while` React walks a fiber's children
+with (ADR 0974, amended):
 
 ```rust
 use std::rc::Rc;
@@ -2071,6 +2073,14 @@ pub struct Fiber {
     pub duration: f64,
     pub child: Option<Rc<Fiber>>,
     pub sibling: Option<Rc<Fiber>>,
+}
+
+pub fn call_all(callbacks: &[fn()]) {
+    let mut i = 0;
+    while i < callbacks.len() {
+        callbacks[i]();
+        i += 1;
+    }
 }
 
 pub fn self_time(fiber: &Fiber) -> f64 {
@@ -2085,10 +2095,18 @@ pub fn self_time(fiber: &Fiber) -> f64 {
 ```
 
 ```js
+export function callAll(callbacks) {
+  for (let i = 0; i < callbacks.length; i++) {
+    callbacks[i]();
+  }
+}
+
 export function selfTime(fiber) {
   let total = fiber.duration;
-  for (let child = fiber.child; child != null; child = child.sibling) {
+  let child = fiber.child;
+  while (child != null) {
     total -= child.duration;
+    child = child.sibling;
   }
   return total;
 }
