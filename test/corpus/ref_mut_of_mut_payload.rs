@@ -19,6 +19,18 @@ struct Foo {
     x: usize,
 }
 
+/// An iterator that's its type alone, which JS has no value of, so an
+/// `Option` of a `&mut` to it is boxed where generic code is given one.
+struct Ones;
+
+impl Iterator for Ones {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<u32> {
+        Some(1)
+    }
+}
+
 struct Unit;
 
 impl Unit {
@@ -52,6 +64,11 @@ fn unit_twice<'a>(o: &'a mut Option<&'a mut Unit>) -> String {
     }
 }
 
+fn ones_twice() -> u32 {
+    let mut ones = Ones;
+    next_twice(&mut Some(&mut ones))
+}
+
 fn main() {
     let mut foo = Foo { x: 1 };
     let mut o = Some(&mut foo);
@@ -74,5 +91,5 @@ fn main() {
     let mut items = 3..6;
     let mut some_items = Some(&mut items);
     let stepped = next_twice(&mut some_items);
-    println!("{stepped}");
+    println!("{stepped} {}", ones_twice());
 }

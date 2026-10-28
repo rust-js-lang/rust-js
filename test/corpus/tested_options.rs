@@ -32,6 +32,15 @@ fn maybe(value: Option<&Item>, wanted: bool) -> String {
     }
 }
 
+// And of a `let .. else`, whose test is an `if` of its own.
+fn maybe_else(value: Option<&Item>, wanted: bool) -> &str {
+    let chosen = if wanted { value } else { None };
+    let Some(item) = chosen else {
+        return "nothing";
+    };
+    &item.name
+}
+
 // `v` changes where the `Option` is read: it's what it was.
 fn changed(wanted: bool) -> String {
     let before = Item { name: "before".to_string() };
@@ -68,6 +77,12 @@ fn main() {
     println!("{} / {}", named(&item, true), named(&item, false));
     println!("{} / {}", first_name(&items, true), first_name(&items, false));
     println!("{} / {} / {}", maybe(Some(&item), true), maybe(None, true), maybe(Some(&item), false));
+    println!(
+        "{} / {} / {}",
+        maybe_else(Some(&item), true),
+        maybe_else(None, true),
+        maybe_else(Some(&item), false)
+    );
     println!("{} / {}", changed(true), changed(false));
     println!("{} / {}", counted(&items, true), counted(&items, false));
     println!("{} / {}", reread(&item, true), reread(&item, false));

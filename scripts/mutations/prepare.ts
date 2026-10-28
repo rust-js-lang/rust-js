@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
     "file": "src/prepare.rs",
     "find": "            && then.last().is_some_and(js::ends)\n            && !test",
     "replace": "            && true\n            && !test",
-    "tests": ["test/lowering-branches.test.ts", "-t", "branches from MIR read as a person writes them"]
+    "tests": ["test/lowering-labels.test.ts", "-t", "an else the program wrote in a case, or after a branch that goes on, stays"]
   },
   {
     "name": "same-test-and-value-conditional",

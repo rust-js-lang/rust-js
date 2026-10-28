@@ -24,6 +24,15 @@ function maybe(value, wanted) {
   return chosen != null ? chosen.name : "nothing";
 }
 
+// And of a `let .. else`, whose test is an `if` of its own.
+function maybeElse(value, wanted) {
+  const chosen = wanted ? value : undefined;
+  if (chosen == null) {
+    return "nothing";
+  }
+  return chosen.name;
+}
+
 // `v` changes where the `Option` is read: it's what it was.
 function changed(wanted) {
   const before = { name: "before" };
@@ -61,6 +70,9 @@ function main() {
   console.log(`${named(item, true)} / ${named(item, false)}`);
   console.log(`${firstName(items, true)} / ${firstName(items, false)}`);
   console.log(`${maybe(item, true)} / ${maybe(undefined, true)} / ${maybe(item, false)}`);
+  console.log(
+    `${maybeElse(item, true)} / ${maybeElse(undefined, true)} / ${maybeElse(item, false)}`,
+  );
   console.log(`${changed(true)} / ${changed(false)}`);
   console.log(`${counted(items, true)} / ${counted(items, false)}`);
   console.log(`${reread(item, true)} / ${reread(item, false)}`);
