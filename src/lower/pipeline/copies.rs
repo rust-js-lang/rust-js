@@ -182,3 +182,22 @@ pub(super) fn imported(
         })
         .collect()
 }
+
+/// What `lowered`, a function of `module`'s, and its `copies` use, into
+/// `pass`, and whether one writes JSX.
+pub(super) fn gather(
+    pass: &mut super::Pass,
+    (module, lowered): (LocalModId, &mut LoweredFn),
+    copies: &mut [LoweredFn],
+) {
+    let all = std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies));
+    for dependencies in all {
+        pass.references.extend(dependencies.references.drain());
+        pass.package_uses.extend(dependencies.package_uses.drain());
+        pass.held.extend(dependencies.held.drain());
+        pass.copy_references.extend(dependencies.copy_references.drain());
+    }
+    if copies.iter().any(|copy| copy.jsx) {
+        pass.jsx.insert(module);
+    }
+}

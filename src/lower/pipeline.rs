@@ -669,17 +669,7 @@ pub fn lower_crate<'tcx>(
         // Each copy of it its callers need besides, beside it (ADR 0051,
         // amended).
         let mut copies = copies_of.remove(&def_id).unwrap_or_default();
-        for dependencies in
-            std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies))
-        {
-            pass.references.extend(dependencies.references.drain());
-            pass.package_uses.extend(dependencies.package_uses.drain());
-            pass.held.extend(dependencies.held.drain());
-            pass.copy_references.extend(dependencies.copy_references.drain());
-        }
-        if copies.iter().any(|copy| copy.jsx) {
-            pass.jsx.insert(module);
-        }
+        copies::gather(&mut pass, (module, &mut lowered), &mut copies);
         // A dictionary given nothing is its module's `const`, what its entries
         // share beside it; one given something, its function, its cache a
         // `const` beside it (ADR 0592).
