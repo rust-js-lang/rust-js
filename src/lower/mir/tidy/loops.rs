@@ -21,26 +21,7 @@ pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>
                     *mentions.entry(name.clone()).or_default() += 1;
                 }
             }
-            let bound = made.iter().find_map(|s| match &s.kind {
-                StmtKind::ForOf {
-                    pattern: js::Pattern::Name(name),
-                    ..
-                } => Some(name.clone()),
-                _ => None,
-            });
             stmts.splice(i..i + 2, made);
-            // A `mut` binding's `let`, declared before the loop for MIR's
-            // assignment each turn: the loop's own now.
-            if let Some(bound) = bound
-                && let Some(at) = stmts[..i]
-                    .iter()
-                    .position(|s| matches!(&s.kind, StmtKind::Let(name, None) if *name == bound))
-                && js::mentions_in(&stmts[..i], &bound) == 0
-                && js::mentions_in(&stmts[i + 1..], &bound) == 0
-            {
-                stmts.remove(at);
-                i -= 1;
-            }
         }
         i += 1;
     }
@@ -49,8 +30,8 @@ pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>
 /// Of `body`, a function's, each `let` of no value its own statements
 /// declare that a loop binds now, `for (let propName in value)` of `for mut
 /// prop_name in js::keys_in(value)`, declared first for MIR's assignment
-/// each turn, where nothing but such loops names it: gone, as `loops` takes
-/// one beside its loop, wherever in the function the loop is.
+/// each turn, where nothing but such loops names it: gone, wherever in the
+/// function the loop is.
 pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
     let bound_by = |stmt: &Stmt| match &stmt.kind {
         StmtKind::ForOf {

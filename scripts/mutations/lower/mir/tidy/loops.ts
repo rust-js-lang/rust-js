@@ -131,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-iterators.test.ts", "-t", "char ranges step by code point"]
   },
   {
-    name: "mir-tidy-for-mut-binding-let-kept",
-    breaks: "a `mut` binding's `let`, declared before the loop, stays beside the `for` that binds it",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "                stmts.remove(at);\n                i -= 1;\n",
-    replace: "",
-    tests: ["test/lowering-loops.test.ts", "-t", "a for loop of a mut binding"]
-  },
-  {
     name: "dictionary-loop-kept",
     breaks: "a `for` over an adapter's `I` stays a `while (true)` stepping its dictionary, not `for (const b of $iterator(..))`",
     file: "src/lower/mir/tidy/loops.rs",
