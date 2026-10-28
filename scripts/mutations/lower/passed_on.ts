@@ -5,6 +5,7 @@ const once = ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that onl
 const kept = ["test/lowering-passed-on.test.ts", "-t", "only where the function would see"];
 const handler = ["test/jsx-events.test.ts", "-t", "calls a function with nothing"];
 const callback = ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"];
+const restCallee = ["test/lowering-passed-on.test.ts", "-t", "of rest arguments that passes them all on"];
 
 export const mutations: Mutation[] = [
   {
@@ -116,7 +117,7 @@ export const mutations: Mutation[] = [
     name: "rest-callee-passed-on",
     breaks: "`xs.map((x) => many(x))` of a function of rest arguments is `xs.map(many)`, which counts the index and the array too",
     file: "src/lower/passed_on.rs",
-    find: "\n                && !self.takes_rest(def_id))",
+    find: "\n                && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
     replace: ")",
     tests: ["test/corpus.test.ts", "-t", "^once_callback_passed_on.rs$"],
   },
@@ -158,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "library-rest-callee-passed-on",
     breaks: "a once-callback that gives one argument to a library's function of rest arguments is the function, which reads all JS gives it",
     file: "src/lower/passed_on.rs",
-    find: "\n                && !self.takes_rest(def_id))",
-    replace: "\n                && (def_id.is_local() && !self.takes_rest(def_id)))",
+    find: "\n                && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
+    replace: "\n                && (def_id.is_local() && !self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
     tests: ["test/cross-crate-items.test.ts", "-t", "once-callback that passes its call on"],
   },
   {
@@ -225,5 +226,21 @@ export const mutations: Mutation[] = [
     find: "    (forwarding.iter()).find(|fact| fact.binds && ",
     replace: "    (forwarding.iter()).find(|fact| false && fact.binds && ",
     tests: ["test/lowering-passed-on.test.ts", "-t", "is the function bound"],
+  },
+  {
+    name: "rest-callee-never-passed-on",
+    breaks: "ReactFiberConfigWithNoPersistence's `export const cloneInstance = shim;` is `(...args) => { shim(...args); }`: a closure of rest arguments that passes them all on to a rest function stays its arrow (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "(!self.takes_rest(def_id) || self.gathers_rest(body.def_id))",
+    replace: "!self.takes_rest(def_id)",
+    tests: restCallee,
+  },
+  {
+    name: "rest-gathered-of-any-last-parameter",
+    breaks: "a closure's last parameter of any type gathers JS's arguments: `xs.map((x) => total(x))` of a rest function is `xs.map(total)`",
+    file: "src/lower/passed_on.rs",
+    find: "ty::Tuple(items) => items.last().is_some_and(rest),",
+    replace: "ty::Tuple(items) => !items.is_empty(),",
+    tests: restCallee,
   },
 ];

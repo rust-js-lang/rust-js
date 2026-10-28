@@ -412,7 +412,10 @@ export function order(prices: number[]): number;
   `total(...prices)`, and an array written out is its items,
   `total(1.5, 2)`; `&[]` is none.
 - **As a value it's the arrow of its call**, `(x) => total(...x)`, which
-  a caller through a `fn` pointer or an `impl Fn` gives the slice.
+  a caller through a `fn` pointer or an `impl Fn` gives the slice. A `fn`
+  JS calls with its arguments is one of rest arguments as a value
+  ([below](#a-closure-js-calls-with-its-arguments)), whose closure that
+  passes them all on is the function itself.
 - **It's the last parameter's, and a shared slice's, `args: &[T]`**, of
   a function or an inherent method. Anywhere else it's an error that says
   so: not the last, a `Vec<T>` or a `&mut [T]`, a pattern, a closure's,
@@ -508,6 +511,39 @@ export function named(names: string[]): [
   binding's call is given them.
 - **Its `.d.ts` is a rest parameter** of what each reads as, `(...args:
   string[]) => string`.
+- **A closure that captures nothing as a `fn` of rest arguments, that
+  passes them all on to a function's rest, is that function**, as
+  React's renderer configs export one `shim` as each function a renderer
+  lacks: `(...args) => shim(...args)` gathers all JS gives and gives all
+  of it on
+  ([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
+  amended):
+
+```rust
+use js::{IntoUnknown, Rest, Unknown};
+
+fn shim(#[cfg_attr(rust_js, rust_js::rest)] _args: &[Option<&Unknown>]) -> ! {
+    panic!("The current renderer does not support persistence.");
+}
+
+type Shim = fn(&dyn Rest<dyn IntoUnknown>) -> !;
+
+#[cfg_attr(rust_js, rust_js::name = "cloneInstance")]
+pub const CLONE_INSTANCE: Shim = |args| shim(args);
+```
+
+```js
+function shim(...args) {
+  throw new Error("The current renderer does not support persistence.");
+}
+
+export const cloneInstance = shim;
+```
+
+```ts
+export const cloneInstance: (...args: (unknown | null | undefined)[]) => never;
+```
+
 - **Refused, each with what to write**: rest arguments as a value before
   a closure's last parameter; a Rust function's, whose rest is its last
   slice marked `#[rust_js::rest]`; and rest arguments given as a type

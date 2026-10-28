@@ -293,6 +293,62 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
   expect(() => lib.call(lib.CONTEXT_ONLY)).toThrow("Invalid hook call.");
 });
 
+// React's ReactFiberConfigWithNoPersistence exports `function shim(...args)`
+// as each function the renderer lacks, `export const cloneInstance = shim;`,
+// which the reconciler calls with that function's arguments. Ported, a `fn`
+// of rest arguments as a value, `fn(&dyn Rest<dyn IntoUnknown>) -> !`,
+// whose closure passes them on to the rest function, `|args| shim(args)`:
+// `(...args) => shim(...args)`, which gathers what JS gives and spreads all
+// of it, is `shim` (ADR 0605, amended). A closure of one array that spreads
+// it to a rest function, `(x) => shim(...x)`, takes one value, and a rest
+// function given less than all of them, `(...args) => shim(...$slice(args,
+// 1))`, reads another: each stays its arrow. And an array method's callback
+// that calls one with its value, `xs.map(|x| total(&[x]))`, stays
+// `(x) => total(x)`: `map` gives the index too, which a rest reads.
+test("a closure as a fn of rest arguments that passes them all on to a rest function is the function", async () => {
+  const dir = fixture("fn-pointer-rest-passed-on");
+  writeFileSync(join(dir, "lib.rs"), `use js::{IntoUnknown, Rest, Unknown};
+
+fn shim(#[cfg_attr(rust_js, rust_js::rest)] args: &[Option<&Unknown>]) -> ! {
+    panic!("not supported: {}", args.len())
+}
+
+fn total(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> f64 {
+    xs.iter().sum()
+}
+
+/// A function this renderer hasn't: it throws, whatever it's given.
+type Shim = fn(&dyn Rest<dyn IntoUnknown>) -> !;
+
+#[cfg_attr(rust_js, rust_js::name = "cloneInstance")]
+pub const CLONE_INSTANCE: Shim = |args| shim(args);
+#[cfg_attr(rust_js, rust_js::name = "afterFirst")]
+pub const AFTER_FIRST: Shim = |args| shim(&args[1..]);
+#[cfg_attr(rust_js, rust_js::name = "ofOne")]
+pub const OF_ONE: fn(&[Option<&Unknown>]) -> ! = |args| shim(args);
+
+pub fn call(x: &Unknown) {
+    CLONE_INSTANCE(&(Some(x), 1.0));
+}
+
+pub fn totals(xs: &[f64]) -> Vec<f64> {
+    xs.iter().map(|&x| total(&[x])).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const cloneInstance = shim;\n");
+  expect(js).toContain("export const afterFirst = (...args) => {\n  shim(...$slice(args, 1));\n};");
+  expect(js).toContain("export const ofOne = (args) => {\n  shim(...args);\n};");
+  expect(js).toContain("xs.map((x) => total(x))");
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.cloneInstance({}, "div", {})).toThrow("not supported: 3");
+  expect(() => lib.afterFirst({}, "div", {})).toThrow("not supported: 2");
+  expect(() => lib.ofOne([{}, "div"])).toThrow("not supported: 2");
+  expect(() => lib.call({})).toThrow("not supported: 2");
+  expect(lib.totals([1, 2])).toEqual([1, 2]);
+});
+
 // React renders TransitionAwareHostComponent as a component, a function of
 // no parameters where a component of two goes; ported, `render(&|_, _|
 // transition_aware_host_component())`. A closure that captures nothing,

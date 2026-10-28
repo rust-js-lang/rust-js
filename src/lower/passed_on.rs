@@ -350,10 +350,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             }
             // The crate's, or a library's, whose JS rust-js compiled from
-            // its Rust as it compiles the crate's (ADR 0605, amended).
+            // its Rust as it compiles the crate's (ADR 0605, amended). One
+            // of rest arguments reads all JS gives it, so only where the
+            // closure gathers them all too, and the arrow's shape then
+            // says it spreads them all (`js::passes_on`).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
                 && !super::bindings::is_binding(self.tcx, def_id)
-                && !self.takes_rest(def_id))
+                && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))
             .then(|| Forwarding {
                 span,
                 callee: Callee::Own,
@@ -361,6 +364,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item: true,
                 binds: false,
             }),
+        }
+    }
+
+    /// Whether closure `closure`'s last parameter is rest arguments as a
+    /// value, `&dyn js::Rest<T>`, JS's rest parameter (ADR 0851), which
+    /// gathers all JS gives it.
+    fn gathers_rest(&self, closure: DefId) -> bool {
+        let tcx = self.tcx;
+        let ty::Closure(_, closure_args) = *tcx.type_of(closure).instantiate_identity().skip_normalization().kind()
+        else {
+            return false;
+        };
+        let sig = tcx.instantiate_bound_regions_with_erased(closure_args.as_closure().sig());
+        let rest = |last: &ty::Ty<'tcx>| super::bindings::is_rest_value(tcx, *last);
+        match sig.inputs() {
+            [tupled] => match tupled.kind() {
+                ty::Tuple(items) => items.last().is_some_and(rest),
+                _ => false,
+            },
+            _ => false,
         }
     }
 

@@ -583,7 +583,8 @@ What's refused is in [the limitations](limitations.md).
   throw_invalid_hook_error()` is `useCallback: throwInvalidHookError`, as
   Rust compares no two `fn`s reliably and the function reads no more than
   it's given ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
-  amended).
+  amended). One of rest arguments as a value that passes them all on to a
+  function's rest is that function too, `|args| shim(args)` being `shim`.
 - **A closure that only passes what it took by value, then each of its
   own parameters, to a function of the crate's is that function bound,**
   `startTransition.bind(null, fiber, queue, true, false)`: `bind` reads

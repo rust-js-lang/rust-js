@@ -8,7 +8,8 @@ library's function is passed on as the crate's is; and a closure that
 captures nothing as a `fn`, or lent as a `&dyn Fn`, is the function of
 the crate's it only adapts; and a closure that passes on what it took by
 value, then its parameters, is the crate's function bound, `g.bind(null,
-a)`.
+a)`; and a closure of rest arguments that passes them all on to a
+function's rest is that function.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -303,3 +304,51 @@ take the function it passes its call on to. Held by
 callback that only passes its call on is the function", its `later`, run;
 mutation `capture-free-closure-held` (`mir/temporaries.ts`).
 
+## Amendment (2026-10-28): a closure of rest arguments that passes them all on to a rest
+
+React's renderer configs without a feature, ReactFiberConfigWithNoPersistence
+and the others, export one function as each the renderer lacks, which the
+reconciler calls with that function's own arguments:
+
+```js
+function shim(...args: any): empty {
+  throw new Error('The current renderer does not support persistence. ' + ..);
+}
+export const cloneInstance = shim;
+```
+
+A port's `pub const CLONE_INSTANCE: fn(&[Option<&Unknown>]) -> ! = shim;`
+was `(x) => shim(...x)`, right for Rust, whose call through that type
+gives one slice, and wrong for the reconciler's `cloneInstance(instance,
+type, props)`, which spreads `instance`. A `fn` JS calls with its
+arguments is one whose type says so, rest arguments as a value, `fn(&dyn
+Rest<dyn IntoUnknown>) -> !` (ADR 0851), and its closure passes them on,
+`|args| shim(args)`, `(...args) => { shim(...args); }`: right, and an
+arrow where upstream has the function. `forwarded_to` gave no fact of a
+call of a function of rest arguments, which reads all JS gives it.
+
+**A closure whose last parameter is rest arguments as a value, which
+passes them all on to a function's rest, is that function**, by the rule
+above (`Taker::FnPointer`, an adapting closure that captures nothing):
+`export const cloneInstance = shim;`. Its arrow gathers what JS gives,
+however much, and gives all of it on spread, so the function is given
+what the arrow would give it; `.name` and `.length` alone tell them
+apart, as of every function passed on. Case N
+([0262](0262-when-rust-and-js-disagree.md)).
+
+- **The closure gathers them** (`forwarded_to` asks `gathers_rest`, the
+  closure's last parameter `bindings::is_rest_value`): a closure of one
+  array, `fn(&[T])`'s `(x) => shim(...x)`, takes one value, and a
+  callback of its value, `xs.map(|&x| total(&[x]))`, `(x) => total(x)`,
+  would be given `map`'s index too, which a rest reads. Each stays its
+  arrow.
+- **It gives them all on, in order**: `js::passes_on` matches the arrow's
+  `...args` with the call's `...args`; one that gives less,
+  `shim(&args[1..])`, `(...args) => shim(...$slice(args, 1))`, stays.
+
+Held by `test/lowering-passed-on.test.ts`, "a closure as a fn of rest
+arguments that passes them all on to a rest function is the function",
+each run as a JS caller calls it, and the guide's `cloneInstance`
+(interop/export-to-javascript.md); mutations
+`rest-callee-never-passed-on`, `rest-callee-passed-on` and
+`rest-gathered-of-any-last-parameter` (`passed_on.ts`).
