@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/callbacks.rs",
     find: "            if when.is_none() && kept {\n",
     replace: "            if false && when.is_none() && kept {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy take_while holds"],
+    tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy scan holds"],
   },
   {
     name: "held-function-kept-refused",

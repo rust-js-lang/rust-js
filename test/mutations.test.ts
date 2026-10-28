@@ -20,6 +20,26 @@ test("every mutation applies to the compiler as it is, once", () => {
   }
 });
 
+// The tests a mutation names are there: a `-t` of the corpus names one of
+// its cases, of the diagnostics one of theirs. Two removed tests left a
+// shard of main's check each running nothing, 2026-10-28.
+test("every mutation's corpus and diagnostics tests are there", () => {
+  const cases = [...new Bun.Glob("*.rs").scanSync(join(root, "test/corpus"))];
+  const diagnostics = [
+    ...readFileSync(join(root, "test/diagnostics.test.ts"), "utf8").matchAll(/^ {2}\[\s*(["'])(.+?)\1,|test\(\s*(["'])(.+?)\3/gm),
+  ].map((m) => m[2] ?? m[4]);
+  const named = (file: string) =>
+    file === "test/corpus.test.ts" ? cases : file === "test/diagnostics.test.ts" ? diagnostics : undefined;
+  const missing = mutations.filter((m) => {
+    const at = m.tests.indexOf("-t");
+    const names = named(m.tests[0]);
+    if (at < 0 || names === undefined) return false;
+    const pattern = new RegExp(m.tests[at + 1]);
+    return !names.some((name) => pattern.test(name));
+  });
+  expect(missing.map((m) => `${m.name}: ${m.tests.join(" ")}`)).toEqual([]);
+});
+
 // A source file of any length has bugs its tests must catch: each of more
 // than 80 lines has mutations, or says here why it needs none (the second
 // architecture review: ten had none, and two of them held dead code and a

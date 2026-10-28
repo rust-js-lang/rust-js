@@ -129,6 +129,10 @@ for (const [name, source, message, crate] of [
   ["size_of_val of an unsized type parameter", 'pub fn f<T: ?Sized>(x: &T) -> usize { std::mem::size_of_val(x) }\npub fn g() -> usize { f("ab") }', "`size_of` of a type parameter"],
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
   ["collecting into a Result of an Rc slice", 'pub fn f(v: Vec<Result<(u8, u8), ()>>) -> Result<std::rc::Rc<[(u8, u8)]>, ()> { v.into_iter().collect() }', "does not support `collect` into a `std::rc::Rc<[(u8, u8)]>`"],
+  // A `scan` holds its state too, so a function it holds with a destructor isn't closed for (ADR 0991).
+  ["a function with a destructor a lazy scan holds", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: &[u32], d: D) -> Vec<u32> { v.iter().scan(0, move |a, x| { let r = &d; *a += x + r.0; Some(*a) }).collect() }', "a function that holds a value with a destructor, kept by what it's given to"],
+  // A refused `len()` names its adapter's type, not its closures', which name where they're written.
+  ["len of a step_by of a map", "pub fn f(v: &[u32]) -> usize { v.iter().map(|x| x + 1).step_by(2).len() }", "`len()` of a lazy or generic `std::iter::StepBy`, from its MIR"],
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter made here, a JS iterator's,
   // which knows nothing of its length, refused, not `(0, None)` where Rust gives `(0, Some(3))` (#382).
   ["the size hint of a peekable filter made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter(|x| **x > 1).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Filter"],
