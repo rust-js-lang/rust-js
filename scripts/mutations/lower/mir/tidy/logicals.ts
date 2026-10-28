@@ -369,4 +369,13 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n                return None;\n",
     tests: ["test/lowering-options.test.ts", "-t", "a typeof test after a null check"],
   },
+  {
+    name: "chain-binding-between-tests-kept",
+    breaks: "a let chain's binding between its tests keeps the chain a labeled block, `bb11: { if (lanes == null) { break bb11; } .. }`, not React's `if (lanes != null && root != null) { .. } else { .. }` (ADR 0946, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            StmtKind::Const(_, value) if read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {\n",
+    replace: "            StmtKind::Const(_, value) if false && read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_reads.rs$"],
+    snapshots: true,
+  },
 ];

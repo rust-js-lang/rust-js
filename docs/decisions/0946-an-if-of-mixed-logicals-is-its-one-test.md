@@ -66,3 +66,30 @@ nor where `t` breaks the block too.
 - `test/lowering-written-branches.test.ts`, "an if of && || and ! mixed
   is its one test", each value of each part, and the order of the calls.
 - Mutations: `skipped-tests-*`.
+
+## Amendment: a let chain's binding between its tests (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, each value read once
+where Rust reads it, as below.
+
+React's attachSuspenseRetryListeners writes `if (inProgressLanes !== null
+&& inProgressRoot !== null) { .. } else { throw .. }`; its port writes the
+let chain `if let Some(lanes) = IN_PROGRESS_LANES.get() && let Some(root)
+= IN_PROGRESS_ROOT.with_borrow(Clone::clone) { .. } else { panic!(..) }`
+(cm5 of the CommitWork port's gaps). MIR binds the second `let`'s value
+between the tests, `if (lanes == null) { break l; } const root$1 =
+inProgressRoot; if (root$1 == null) { break l; }`, so the tree of tests
+this decision folds ended at the binding, and the chain stayed a labeled
+block, its `else` after it.
+
+**A `const` between the tests of a variable's read or of a path of
+properties from one, `const x = a.b;`, before another test, is the first
+of the statements the tests guard, and each test of it a test of what it
+reads, `inProgressRoot == null`** (`logicals::skipped`), where the tests
+call nothing: the read, of what no test changes, reads the same where it
+was and after the tests. The chain is then `if (lanes != null &&
+inProgressRoot != null) { .. }`, whose `else` `written_elses` writes as
+the program did.
+
+Held by `test/corpus/let_chain_else_of_reads.rs`, against native Rust;
+mutation `chain-binding-between-tests-kept` (`mir/tidy/logicals.ts`).

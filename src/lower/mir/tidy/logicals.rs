@@ -718,19 +718,60 @@ pub(super) fn skipped_tests(stmts: &mut [Stmt], logicals: &[js::Span]) {
 
 /// Of a block `label`'s `body`, `if (p) { tree; t }` or `tree; t`, each
 /// `break label` in `tree`: the test under which `t` runs, `t`, and where
-/// the first `if` is.
+/// the first `if` is. A let chain's binding between its tests, `const x =
+/// y;` of a variable or a path of properties from one, is `t`'s first,
+/// each test of it a test of what it's read of: read once each test
+/// before it holds, as it was, of what no test sets, the tests calling
+/// nothing (ADR 0946, amended).
 fn skipped(body: &[Stmt], label: &str, within: &dyn Fn(js::Span) -> bool) -> Option<(Expr, Vec<Stmt>, js::Span)> {
-    let tree = (body.iter())
-        .take_while(|s| matches!(s.kind, StmtKind::If(..)) && js::names_jump(std::slice::from_ref(s), label))
-        .count();
-    let (tree, then) = body.split_at(tree);
+    let guard = |s: &Stmt| matches!(s.kind, StmtKind::If(..)) && js::names_jump(std::slice::from_ref(s), label);
+    let (mut tree, mut bound, mut k) = (Vec::new(), Vec::new(), 0);
+    while let Some(stmt) = body.get(k) {
+        match &stmt.kind {
+            _ if guard(stmt) => tree.push(stmt.clone()),
+            StmtKind::Const(_, value) if read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {
+                bound.push(stmt.clone())
+            }
+            _ => break,
+        }
+        k += 1;
+    }
+    // Read where it was, of what no test changes: a test of no call.
+    let mut calls = false;
+    js::each_expr(&tree, &mut |e| {
+        calls |= matches!(
+            e.kind,
+            ExprKind::Call(..)
+                | ExprKind::New(..)
+                | ExprKind::Assigned(..)
+                | ExprKind::Stepped(..)
+                | ExprKind::Await(_)
+        )
+    });
+    let read_by_tests = !bound.is_empty() && calls;
+    // A test of the binding, `if (root == null)`, tests what it's read of,
+    // which reads the same there: `if (inProgressRoot == null)`.
+    for b in &bound {
+        if let StmtKind::Const(name, value) = &b.kind {
+            js::each_expr_mut(&mut tree, &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if v == name) {
+                    *e = Expr {
+                        span: e.span,
+                        ..value.clone()
+                    };
+                }
+            });
+        }
+    }
+    let then: Vec<Stmt> = bound.into_iter().chain(body[k..].iter().cloned()).collect();
     if !tree.is_empty()
-        && !then.is_empty()
-        && !js::names_jump(then, label)
-        && tests_within(tree, within)
-        && let Some(Truth::Test(test)) = falls(tree, label)
+        && !read_by_tests
+        && body.len() > k
+        && !js::names_jump(&then, label)
+        && tests_within(&tree, within)
+        && let Some(Truth::Test(test)) = falls(&tree, label)
     {
-        return Some((test, then.to_vec(), tree[0].span));
+        return Some((test, then, tree[0].span));
     }
     let [
         Stmt {
@@ -743,6 +784,15 @@ fn skipped(body: &[Stmt], label: &str, within: &dyn Fn(js::Span) -> bool) -> Opt
     };
     let (rest, then, _) = skipped(then, label, within)?;
     Some((Expr::bin(Op::And, first.clone(), rest), then, *span))
+}
+
+/// Whether `e` reads a variable, or a path of properties from one, `a.b`.
+fn read_of_a_path(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Var(_) | ExprKind::Symbol(_) => true,
+        ExprKind::Member(object, _) => read_of_a_path(object),
+        _ => false,
+    }
 }
 
 /// Whether each `if` of `tree` is a test of a logical the program wrote.
