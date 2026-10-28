@@ -497,7 +497,9 @@ enum Called<'tcx> {
 /// renders it; a read of a property, `node.sortIndex`, `in` or
 /// `instanceof`, but by a JS getter that calls back into Rust; whether the
 /// host has a global, `typeof X !== "undefined"`; JS's `null`, `js::null()`;
-/// and one that says it runs nothing, `#[rust_js::runs_nothing]` (ADR 0867).
+/// a function made of a closure, `function::with_this`, which runs it only
+/// where it's called, a call of a `dyn Fn` (ADR 1009); and one that says it
+/// runs nothing, `#[rust_js::runs_nothing]` (ADR 0867).
 pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_binding(tcx, id)
         && (matches!(
@@ -515,6 +517,7 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
                 | JsForm::StrictEquals
                 | JsForm::Defined
                 | JsForm::Function
+                | JsForm::WithThis
                 | JsForm::TypeofObject
                 | JsForm::Null
         ) || runs_nothing(tcx, id))

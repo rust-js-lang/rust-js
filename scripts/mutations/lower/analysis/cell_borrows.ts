@@ -396,4 +396,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::FnDef(f, args) if false && recognition.is_std(f) => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "std's function given to std's"],
   },
+  {
+    name: "with-this-runs-its-closure",
+    breaks: "`function::with_this(closure)` is said to run its closure, so a `pub` thread-local made of a factory of constructors whose constructor calls a fn pointer, React's `export const SyntheticEvent = createSyntheticEvent(EventInterface)`, is refused",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                | JsForm::WithThis\n",
+    replace: "",
+    tests: ["test/js-constructors.test.ts", "-t", "a pub thread-local is made of a factory of constructors"],
+  },
 ];

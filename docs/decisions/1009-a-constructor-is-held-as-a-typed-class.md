@@ -143,6 +143,18 @@ fn create_synthetic_event(
   another; one MIR merges two bindings of keeps the first its debug info
   lists, as before.
 
+- **Making a constructor runs none of it**: `function::with_this(closure)`
+  makes a function of its closure, which runs only where it's called, a
+  call of a `dyn Fn` (`cell_borrows::binding_runs_nothing`). So React's
+  `export const SyntheticEvent = createSyntheticEvent(EventInterface);`, a
+  `pub` thread-local made as its module loads (ADR 1006), whose
+  constructor calls an interface's fn pointer, is made there, not refused
+  as one whose initializer may run what rust-js can't follow.
+- `js::new` is generic, so a cast given it names its type,
+  `js::new(unsafe { js::cast::<&Unknown>(ctor) }, ..)`, as React's
+  ReactFiberBeginWork's must: rustc can't infer which constructor a bare
+  `js::cast` is.
+
 ## What holds it
 
 - `test/js-constructors.test.ts`: createSyntheticEvent as the port writes
@@ -155,4 +167,5 @@ fn create_synthetic_event(
   `constructor-as-unknown-prototype`, `class-as-unknown-constructed`,
   `class-of-a-closure` (`classes.ts`), `alias-of-a-given-name-renamed`
   (`mir/tidy/bindings.ts`), `given-let-names-unsaid` (`mir/locals.ts`),
-  `typed-class-declared-a-function` (`declarations.ts`).
+  `typed-class-declared-a-function` (`declarations.ts`),
+  `with-this-runs-its-closure` (`analysis/cell_borrows.ts`).

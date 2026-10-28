@@ -160,6 +160,40 @@ test("a factory makes a constructor function closed over what it's given", async
   expect([held.type, held._reactName, held.constructor.name]).toEqual(["change", undefined, "SyntheticBaseEvent"]);
 });
 
+// React's `export const SyntheticEvent = createSyntheticEvent(EventInterface);`:
+// a `pub` thread-local made as its module loads (ADR 1006) of a factory
+// whose constructor calls a fn pointer; making the constructor runs none of
+// it, which only `new` does.
+test("a pub thread-local is made of a factory of constructors as its module loads", async () => {
+  const { js, lib } = await compiled(
+    "constructor-exported",
+    `use js::{Class, Unknown, function};
+
+pub type Made = Class<fn(&'static Unknown) -> Unknown>;
+
+fn twice(value: f64) -> f64 {
+    value * 2.0
+}
+
+fn create(normalize: fn(f64) -> f64) -> &'static Made {
+    #[cfg_attr(rust_js, rust_js::name = "SyntheticBaseEvent")]
+    let synthetic_base_event = Class::of(function::with_this(move |this, (native_event,): (&'static Unknown,)| {
+        let value: f64 = unsafe { js::cast(js::get(native_event, "value")) };
+        js::set(this, "value", normalize(value));
+    }));
+    synthetic_base_event
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "SyntheticEvent")]
+    pub static SYNTHETIC_EVENT: &'static Made = create(twice);
+}
+`,
+  );
+  expect(js).toContain("export const SyntheticEvent = create(twice);");
+  expect(new lib.SyntheticEvent({ value: 2 }).value).toBe(4);
+});
+
 // A typed class is declared as its constructor's type, which TypeScript's
 // `new` checks as rustc does.
 test("a typed class is declared as its constructor's type", () => {
