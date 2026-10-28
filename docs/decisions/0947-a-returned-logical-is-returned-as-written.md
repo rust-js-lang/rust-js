@@ -69,3 +69,16 @@ panicked where it decided and the fold went on, no corpus case, lowering,
 JSX, snapshot, port, guide, std or crate test reached it, and
 `last-or-chain-of-an-if-test` survived every run. The check and its
 mutation went; `last-or-chain-unfolded` holds the fold.
+
+## Amendment: a last value of `||`s is a written `if`'s now
+
+Since a written `if` or `match` of `bool`s with a literal branch is the
+`&&` or `||` it means (ADR 0879, amended, 22116187d), the
+`isFragmentInstanceHostBoundary` form, a function's last `||`s with no
+`return` written, is that `||` before this pass sees it. The fold of a
+chain no written `return` is around, `last-or-chain-unfolded`'s, then
+changed no JS of the corpus (with its snapshots) or of the lowering,
+snapshot, JSX, port, compiler and tidy-stage suites, and its test, "a
+function's last || of an if's value is one return", passes without it.
+That arm and its mutation went: the fold is of a chain whose tests a
+written `return` is around, as before 2026-10-27.

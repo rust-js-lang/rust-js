@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/catches.rs",
     find: "        (true, None) if leaves(rest) => (then, rest, rest.len()),\n",
     replace: "        (true, None) if false && leaves(rest) => (then, rest, rest.len()),\n",
-    tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
+    tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call's Result is try and catch"],
   },
   {
     name: "try-assign-past-unended-if",

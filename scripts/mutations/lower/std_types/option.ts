@@ -70,10 +70,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-truth-map-chained",
-    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`'s presence, which gives `\"\"` of an empty string",
+    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`'s presence, `a != null`, which gives `\"\"` of an empty string",
     file: "src/lower/std_types/option.rs",
     find: "                    Some((kept, value)) => (value, kept),\n",
-    replace: "                    Some((kept, value)) => (value, js::Expr { facts: js::Facts::of(js::Known::Presence), ..kept }),\n",
+    replace: "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true)),\n",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {

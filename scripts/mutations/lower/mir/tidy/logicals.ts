@@ -346,14 +346,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-written-branches.test.ts", "-t", "returned && chain"],
   },
   {
-    name: "last-or-chain-unfolded",
-    breaks: "React's isFragmentInstanceHostBoundary's last `||`s are nested `if`s and a `return true` (ADR 0947, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "                && let Some(value) = fold(&stmts[i], no, Some(stmts[i + 1].span))\n",
-    replace: "                && let Some(value) = fold(&stmts[i], no, None)\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
-  },
-  {
     name: "last-or-chain-of-conditionals",
     breaks: "a chain of `if`s whose folding gives `?:`s is nested `?:`s, `o != null ? (o > 3 ? o : n) : n`, not the `if`s or the `&&` (ADR 0947, amended)",
     file: "src/lower/mir/tidy/logicals.rs",

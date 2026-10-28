@@ -83,15 +83,16 @@ pub(super) fn returned_logicals(
             _ => None,
         }
     }
-    type Fold<'f> = dyn Fn(&Stmt, &Expr, Option<js::Span>) -> Option<Expr> + 'f;
+    type Fold<'f> = dyn Fn(&Stmt, &Expr) -> Option<Expr> + 'f;
     fn walk(stmts: &mut Vec<Stmt>, after: Option<&Expr>, fold: &Fold<'_>) {
         // A chain followed by the `return` its failing tests go on to, in
-        // its list, neither the program's: one `return`, as
-        // `logical_returns` makes of one `if` (ADR 0947, amended).
+        // its list, MIR's copy of the one the program wrote around them:
+        // one `return`, as `logical_returns` makes of one `if` (ADR 0947,
+        // amended).
         let mut i = 0;
         while i + 1 < stmts.len() {
             if let StmtKind::Return(Some(no)) = &stmts[i + 1].kind
-                && let Some(value) = fold(&stmts[i], no, Some(stmts[i + 1].span))
+                && let Some(value) = fold(&stmts[i], no)
             {
                 let span = stmts[i].span;
                 stmts.splice(i..i + 2, [StmtKind::Return(Some(value)).at(span)]);
@@ -107,7 +108,7 @@ pub(super) fn returned_logicals(
             };
             if i + 1 == n
                 && let Some(no) = after
-                && let Some(value) = fold(&stmts[i], no, None)
+                && let Some(value) = fold(&stmts[i], no)
             {
                 let span = stmts[i].span;
                 stmts[i] = StmtKind::Return(Some(value)).at(span);
@@ -135,29 +136,15 @@ pub(super) fn returned_logicals(
             }
         }
     }
-    let fold = |stmt: &Stmt, no: &Expr, next: Option<js::Span>| {
+    let fold = |stmt: &Stmt, no: &Expr| {
         let mut tests = Vec::new();
         let (yes, at) = chain(stmt, &mut tests)?;
         let around = |r: &js::Span, s: js::Span| !s.is_none() && r.lo <= s.lo && s.hi <= r.hi;
         // The `return` the program wrote, around each test: its value's.
-        match returns.iter().find(|r| around(r, at)) {
-            Some(written) => {
-                let inside = |s: js::Span| around(written, s);
-                if !tests.iter().all(|&(_, s)| within(s) && inside(s)) || inside(no.span) {
-                    return None;
-                }
-            }
-            // Of none, the one after it in its list, neither the program's
-            // `return`: a function's last value of `||`s.
-            None => {
-                let next = next?;
-                // An `if`'s test alone, `if (a || b) { return x; }`, folds
-                // to a `?:`, which is refused below, or is made a value
-                // before this pass, `a || b ? x : y`.
-                if !tests.iter().all(|&(_, s)| within(s)) || returns.iter().any(|r| around(r, next)) {
-                    return None;
-                }
-            }
+        let written = returns.iter().find(|r| around(r, at))?;
+        let inside = |s: js::Span| around(written, s);
+        if !tests.iter().all(|&(_, s)| within(s) && inside(s)) || inside(no.span) {
+            return None;
         }
         // Each test folded into an `&&` or an `||`, as the logical is
         // written: not a `?:` of what was an `if` (ADR 0947, amended).

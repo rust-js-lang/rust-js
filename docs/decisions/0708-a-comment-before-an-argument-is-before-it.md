@@ -251,3 +251,16 @@ is the one (`arm_starts`). A split at its line's end, after the `,`, adds
 no line of nothing (`to_oxc.rs`). `test/lowering-comments-items.test.ts`,
 "a comment between an array's items is before the next item".
 
+
+## Amendment: a conditional is placed where its `if` is, an `if let`'s too
+
+`branch_values` placed a conditional where its `if` is only where that was
+a condition the program wrote with an `else`, so an `if let`'s value was
+left where its pattern is. Since the written `if`s and `match`es were read
+as the program has them (ADRs 0237 and 0879, amended), the mutation that
+places every one where its `if` is, `branch-value-placed-at-pattern`,
+changed no JS of the corpus (with its snapshots) or of the lowering,
+snapshot, JSX, port, compiler and tidy-stage suites: `keyed`'s `// The
+key, when there's one.` is before `(key != null ? key + "/" : "")` either
+way. The test is gone with its mutation; `branch-value-placed-nowhere`
+holds the placing.
