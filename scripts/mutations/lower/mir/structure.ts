@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
     replace: "                    let arm: Option<Span> = None;\n",
-    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
+    tests: ["test/lowering-matches.test.ts", "-t", "a match's arms of more than one pattern are an if chain"],
   },
   {
     name: "mir-switch-subject-made-each-test",

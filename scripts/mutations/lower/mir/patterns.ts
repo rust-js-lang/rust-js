@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/patterns.rs",
     find: "                *none = true;\n",
     replace: "                *none = true;\n                *writes += 1;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable function's result is written to a nullable place as it is"],
   },
   {
     name: "null-nones-clones-written",
