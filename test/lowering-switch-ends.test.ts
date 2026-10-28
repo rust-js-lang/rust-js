@@ -260,3 +260,33 @@ pub fn labeled(rows: &[Vec<u8>]) -> u32 {
   expect([lib.framed(bytes("a -.--")), lib.framed(bytes(" x-"))]).toEqual([3, 3]);
   expect(lib.labeled([[1, 2], [0, 1]])).toEqual(1 + 100 + 10 + 100);
 });
+
+// #389b: guarded arms that fall through (ADR 0905), in a loop whose turn
+// goes on past the `match`, whose `switch` only a label leaves: the `if`
+// chain they are, each arm's test of its values and those that fall to
+// it, and its guard, as Rust tries them, no label.
+test("guarded arms that fall through and break their loop are an if chain", async () => {
+  const dir = fixture("switch-guarded-loop-breaks");
+  writeFileSync(join(dir, "lib.rs"), `pub fn guarded(tags: &[u32], limit: u32) -> u32 {
+    let mut total = 0;
+    for &tag in tags {
+        match tag {
+            1 => total += 1,
+            2 | 3 if total > limit => break,
+            2 | 3 | 4 => total += 300,
+            _ => {}
+        }
+        total += 1;
+    }
+    total
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("loop:");
+  expect(js).toContain(
+    "    if (tag === 1) {\n      total = (total + 1) >>> 0;\n    } else if ((tag === 2 || tag === 3) && total > limit) {\n      break;\n    } else if (tag === 2 || tag === 3 || tag === 4) {\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.guarded([1, 2, 4, 3], 0), lib.guarded([1, 2, 4, 3], 1000), lib.guarded([5, 2], 0)]).toEqual([2, 905, 1]);
+});

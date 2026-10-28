@@ -67,32 +67,19 @@ function name(tag, ty, flags, log) {
  */
 function counted(tags, log) {
   let total = 0;
-  loop: for (const tag of tags) {
-    switch (tag) {
-      case 1:
-        total = (total + 1) >>> 0;
-        break;
-      case 2:
-        if (on(log, "two", total % 2 === 0)) {
-          total = (total + 20) >>> 0;
-          break;
-        }
-      // Fallthrough
-      case 3:
-        if (on(log, "three", total > 40)) {
-          break loop;
-        }
-      // Fallthrough
-      case 4:
-        total = (total + 300) >>> 0;
-        break;
-      case 5:
-        if (on(log, "five", total > 100)) {
-          continue;
-        }
-      // Fallthrough
-      case 6:
-        total = (total + 4000) >>> 0;
+  for (const tag of tags) {
+    if (tag === 1) {
+      total = (total + 1) >>> 0;
+    } else if (tag === 2 && on(log, "two", total % 2 === 0)) {
+      total = (total + 20) >>> 0;
+    } else if ((tag === 2 || tag === 3) && on(log, "three", total > 40)) {
+      break;
+    } else if (tag === 2 || tag === 3 || tag === 4) {
+      total = (total + 300) >>> 0;
+    } else if (tag === 5 && on(log, "five", total > 100)) {
+      continue;
+    } else if (tag === 5 || tag === 6) {
+      total = (total + 4000) >>> 0;
     }
     total = (total + 1) >>> 0;
   }

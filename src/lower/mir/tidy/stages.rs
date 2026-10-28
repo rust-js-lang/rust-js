@@ -726,6 +726,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("loops left by cases", |b, h| {
                 js::statement_lists(b, &mut |s| case_rests::loops_left_by_cases(s, &h.written.loops))
             }),
+            // A loop tidy labeled, `loop`, that a `switch` of guarded arms
+            // that fall through leaves: the `switch`, the `if` chain its
+            // arms are, and no label (#389b, the user's decision).
+            pass("guarded loops", |b, _| loop_labels::guarded_loops(b)),
             // `(lanes & X) !== 0` of a test, and `lanes !== 0` of an integer's:
             // `lanes & X`, `lanes` (ADR 0896, amended). After `switches`, whose
             // cases are its chain's `day === 0`.

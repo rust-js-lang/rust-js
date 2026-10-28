@@ -1811,10 +1811,13 @@ A `break` in an arm leaves the loop, as in Rust. In a `switch` it would
 leave the `switch`, and JS gets no label the program didn't write: where
 the loop's turn ends at the `switch`, its cases `break;` it and one
 `break;` after it leaves the loop, each case that goes on `continue;`;
-where the turn goes on past it, the arms are an `if` chain; a loop the
-program labeled, `'rows: for ..`, keeps its `switch` and `break rows;`
+where the turn goes on past it, the arms are an `if` chain, guarded arms
+that fall through too, each arm's test its constants and those of each
+guarded arm before it that names them, then its guard, `(tag === 2 || tag
+=== 3) && on(tag)`, as Rust tries them; a loop the program labeled,
+`'rows: for ..`, keeps its `switch` and `break rows;`
 ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md),
-amended, #389):
+amended, #389, #389b):
 
 ```rust
 pub fn count(s: &str) -> u32 {
@@ -1848,6 +1851,10 @@ export function count(s) {
   return n;
 }
 ```
+
+Not yet: of a subject that does something, `match next() { .. }`, the
+`switch` of guarded arms that fall through keeps a `loop:` label, since
+its `if` chain would call it again for each test.
 
 A block the program labeled around a `match` is the `switch`'s label,
 camelCase as every name, where an arm's inner `switch` leaves it, which a

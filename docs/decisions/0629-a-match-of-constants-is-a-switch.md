@@ -410,7 +410,7 @@ same jumps; only the JS's shape differs.
   `counted`: MIR shares their guards' tests, and the `if` chain it gives is
   labeled blocks, `bb38: { bb15: { .. } }`, worse than the label, so that
   `switch` keeps `loop:` until tidy rebuilds such a chain; written up for
-  the user (S/decisions-pending.md, #389b).
+  the user (S/decisions-pending.md, #389b). Since: the amendment below.
 
 The guide's `count` is the `if` chain. Held by
 `test/lowering-switch-ends.test.ts`' "a match whose arm breaks its loop has
@@ -418,3 +418,41 @@ no label the program didn't write", `test/corpus/match_breaks_its_loop.rs`
 against native Rust, `lowering-matches`' and `lowering-switches`' loops,
 and mutations `loop-break-switch-labeled`, `loop-break-framed-past-the-turn`,
 `framed-case-not-continued` and `framed-default-missing`.
+
+## Amendment: guarded arms that fall through are the `if` chain they are (#389b)
+
+The user's rule (no JS label the program didn't write) covers the case
+left above: guarded arms that fall through (ADR 0905) in a loop whose turn
+goes on past the `match`. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the same tests and jumps in the same order.
+
+- **The `switch` is made as before, then taken apart** (`loop_labels.rs`'s
+  `guarded_loops`, a stage after the switches' own): of a loop tidy
+  labeled `loop`, which the program can't have written, each `switch` its
+  cases break, its subject read as it was, is the `if` chain its arms
+  are. MIR's shared guard tests and labeled blocks are settled by then,
+  so the chain is built of the cases, not of MIR's chain.
+- **Each arm's test is its values and those of each case that falls to
+  it, and its guard where it falls**: `tag === 2 && on(two)`, then `(tag
+  === 2 || tag === 3) && on(three)`, then `tag === 2 || tag === 3 || tag
+  === 4`, as Rust tries `2 if .. =>`, `2 | 3 if .. =>`, `2 | 3 | 4 =>`;
+  each guard runs where Rust runs it, and only there. The case's ending
+  `break;` goes, and each `break loop;` and `continue loop;` is one of no
+  label. The loop's label goes once nothing names it.
+- **Not taken apart**: a `switch` whose subject does something, `match
+  next() { .. }`, which the chain would call again for each test; it keeps
+  `loop:` until the subject can be held in a `const` the names owner
+  names (written up for the user). A case that leaves the `switch` from
+  inside, `break;` before its end, would leave the loop in the chain, so
+  that `switch` stays too; Rust gives no such case here, since only a
+  label leaves a `match` early and a labeled block inside a loop needs the
+  loop's label for an arm's `break`.
+
+`test/corpus/switch_fallthrough.rs`' `counted` is now `if (tag === 1)
+{ .. } else if (tag === 2 && on(log, "two", ..)) { .. } else if ((tag ===
+2 || tag === 3) && on(log, "three", ..)) { break; } ..`, no label. Held by
+`test/corpus/guarded_arms_leave_their_loop.rs` against native Rust,
+`test/lowering-switch-ends.test.ts`' "guarded arms that fall through and
+break their loop are an if chain", and mutations `guarded-loops-kept`,
+`guarded-chain-forgets-fallen`, `guarded-chain-guard-dropped` and
+`guarded-chain-of-a-read-that-runs`.
