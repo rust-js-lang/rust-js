@@ -20,7 +20,7 @@ fn sleep(ms: u32) -> Promise<()> {
 async fn count_down(output: &'static Element, from: u32) {
     let mut n = from;
     while n > 0 {
-        output.set_text_content(&n.to_string());
+        output.set_text_content(n.to_string().as_str());
         sleep(500).await;
         n -= 1;
     }

@@ -15,7 +15,7 @@ async fn load(url: &str, output: &'static Element) {
     let response = window.fetch(url, None).await;
     let text = response.text().await;
     let status = response.status().to_string();
-    output.set_text_content(&(status + " " + &text));
+    output.set_text_content((status + " " + &text).as_str());
 }
 
 pub fn main() {

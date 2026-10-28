@@ -26,7 +26,7 @@ fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HTMLOut
     let count = count.clone();
     b.add_event_listener(Click, move |_| {
         count.set(count.get() + by);
-        output.set_text_content(&count.get().to_string());
+        output.set_text_content(count.get().to_string().as_str());
     }, None);
     b
 }

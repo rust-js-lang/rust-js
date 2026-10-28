@@ -469,9 +469,10 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/nodeValue)
     #[cfg_attr(rust_js, rust_js::link_name = "set nodeValue")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_node_value(&self, value: &str) {
+    pub fn set_node_value<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -486,9 +487,10 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/textContent)
     #[cfg_attr(rust_js, rust_js::link_name = "set textContent")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_text_content(&self, value: &str) {
+    pub fn set_text_content<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1739,9 +1741,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/role)
     #[cfg_attr(rust_js, rust_js::link_name = "set role")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_role(&self, value: &str) {
+    pub fn set_role<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1756,9 +1759,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaActiveDescendantElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaActiveDescendantElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_active_descendant_element(&self, value: &Element) {
+    pub fn set_aria_active_descendant_element<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -1773,9 +1777,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaAtomic)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaAtomic")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_atomic(&self, value: &str) {
+    pub fn set_aria_atomic<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1790,9 +1795,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaAutoComplete)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaAutoComplete")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_auto_complete(&self, value: &str) {
+    pub fn set_aria_auto_complete<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1807,9 +1813,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBrailleLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBrailleLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_braille_label(&self, value: &str) {
+    pub fn set_aria_braille_label<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1824,9 +1831,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBrailleRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBrailleRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_braille_role_description(&self, value: &str) {
+    pub fn set_aria_braille_role_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1841,9 +1849,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaBusy)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBusy")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_busy(&self, value: &str) {
+    pub fn set_aria_busy<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1858,9 +1867,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaChecked)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaChecked")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_checked(&self, value: &str) {
+    pub fn set_aria_checked<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1875,9 +1885,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColCount)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColCount")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_count(&self, value: &str) {
+    pub fn set_aria_col_count<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1892,9 +1903,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_index(&self, value: &str) {
+    pub fn set_aria_col_index<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1909,9 +1921,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_index_text(&self, value: &str) {
+    pub fn set_aria_col_index_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1926,9 +1939,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaColSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_span(&self, value: &str) {
+    pub fn set_aria_col_span<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1960,9 +1974,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaCurrent)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaCurrent")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_current(&self, value: &str) {
+    pub fn set_aria_current<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -1994,9 +2009,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_description(&self, value: &str) {
+    pub fn set_aria_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2028,9 +2044,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaDisabled)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaDisabled")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_disabled(&self, value: &str) {
+    pub fn set_aria_disabled<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2062,9 +2079,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaExpanded)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaExpanded")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_expanded(&self, value: &str) {
+    pub fn set_aria_expanded<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2096,9 +2114,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaHasPopup)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaHasPopup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_has_popup(&self, value: &str) {
+    pub fn set_aria_has_popup<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2113,9 +2132,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaHidden)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaHidden")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_hidden(&self, value: &str) {
+    pub fn set_aria_hidden<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2130,9 +2150,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaInvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaInvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_invalid(&self, value: &str) {
+    pub fn set_aria_invalid<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2147,9 +2168,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaKeyShortcuts)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaKeyShortcuts")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_key_shortcuts(&self, value: &str) {
+    pub fn set_aria_key_shortcuts<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2164,9 +2186,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_label(&self, value: &str) {
+    pub fn set_aria_label<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2198,9 +2221,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLevel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLevel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_level(&self, value: &str) {
+    pub fn set_aria_level<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2215,9 +2239,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaLive)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLive")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_live(&self, value: &str) {
+    pub fn set_aria_live<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2232,9 +2257,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaModal)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaModal")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_modal(&self, value: &str) {
+    pub fn set_aria_modal<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2249,9 +2275,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiLine)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaMultiLine")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_multi_line(&self, value: &str) {
+    pub fn set_aria_multi_line<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2266,9 +2293,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaMultiSelectable)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaMultiSelectable")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_multi_selectable(&self, value: &str) {
+    pub fn set_aria_multi_selectable<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2283,9 +2311,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaOrientation")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_orientation(&self, value: &str) {
+    pub fn set_aria_orientation<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2317,9 +2346,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPlaceholder)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPlaceholder")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_placeholder(&self, value: &str) {
+    pub fn set_aria_placeholder<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2334,9 +2364,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPosInSet)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPosInSet")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_pos_in_set(&self, value: &str) {
+    pub fn set_aria_pos_in_set<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2351,9 +2382,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaPressed)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPressed")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_pressed(&self, value: &str) {
+    pub fn set_aria_pressed<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2368,9 +2400,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaReadOnly")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_read_only(&self, value: &str) {
+    pub fn set_aria_read_only<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2385,9 +2418,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRelevant)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRelevant")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_relevant(&self, value: &str) {
+    pub fn set_aria_relevant<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2402,9 +2436,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRequired)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRequired")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_required(&self, value: &str) {
+    pub fn set_aria_required<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2419,9 +2454,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_role_description(&self, value: &str) {
+    pub fn set_aria_role_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2436,9 +2472,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowCount)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowCount")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_count(&self, value: &str) {
+    pub fn set_aria_row_count<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2453,9 +2490,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_index(&self, value: &str) {
+    pub fn set_aria_row_index<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2470,9 +2508,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_index_text(&self, value: &str) {
+    pub fn set_aria_row_index_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2487,9 +2526,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaRowSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_span(&self, value: &str) {
+    pub fn set_aria_row_span<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2504,9 +2544,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSelected)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSelected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_selected(&self, value: &str) {
+    pub fn set_aria_selected<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2521,9 +2562,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSetSize)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSetSize")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_set_size(&self, value: &str) {
+    pub fn set_aria_set_size<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2538,9 +2580,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaSort)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSort")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_sort(&self, value: &str) {
+    pub fn set_aria_sort<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2555,9 +2598,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMax)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueMax")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_max(&self, value: &str) {
+    pub fn set_aria_value_max<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2572,9 +2616,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueMin)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueMin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_min(&self, value: &str) {
+    pub fn set_aria_value_min<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2589,9 +2634,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueNow)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueNow")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_now(&self, value: &str) {
+    pub fn set_aria_value_now<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -2606,9 +2652,10 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaValueText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_text(&self, value: &str) {
+    pub fn set_aria_value_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -3137,9 +3184,10 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/body)
     #[cfg_attr(rust_js, rust_js::link_name = "set body")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_body(&self, value: &HTMLElement) {
+    pub fn set_body<'a>(&self, value: impl Into<Option<&'a HTMLElement>>) {
         unreachable!()
     }
 
@@ -6597,9 +6645,10 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/popover)
     #[cfg_attr(rust_js, rust_js::link_name = "set popover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_popover(&self, value: &str) {
+    pub fn set_popover<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -9074,9 +9123,10 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/commandForElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set commandForElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_command_for_element(&self, value: &Element) {
+    pub fn set_command_for_element<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -9301,9 +9351,10 @@ impl HTMLButtonElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLButtonElement/popoverTargetElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set popoverTargetElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_popover_target_element(&self, value: &Element) {
+    pub fn set_popover_target_element<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -9793,9 +9844,10 @@ impl HTMLImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -10311,9 +10363,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/files)
     #[cfg_attr(rust_js, rust_js::link_name = "set files")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_files(&self, value: &FileList) {
+    pub fn set_files<'a>(&self, value: impl Into<Option<&'a FileList>>) {
         unreachable!()
     }
 
@@ -10705,9 +10758,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/valueAsDate)
     #[cfg_attr(rust_js, rust_js::link_name = "set valueAsDate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_as_date(&self, value: &dyn core::any::Any) {
+    pub fn set_value_as_date<'a>(&self, value: impl Into<Option<&'a dyn core::any::Any>>) {
         unreachable!()
     }
 
@@ -10839,9 +10893,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionStart)
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionStart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_start(&self, value: impl Into<f64>) {
+    pub fn set_selection_start(&self, value: impl Into<Option<f64>>) {
         unreachable!()
     }
 
@@ -10856,9 +10911,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionEnd")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_end(&self, value: impl Into<f64>) {
+    pub fn set_selection_end(&self, value: impl Into<Option<f64>>) {
         unreachable!()
     }
 
@@ -10873,9 +10929,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionDirection)
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionDirection")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_direction(&self, value: &str) {
+    pub fn set_selection_direction<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -10965,9 +11022,10 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/popoverTargetElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set popoverTargetElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_popover_target_element(&self, value: &Element) {
+    pub fn set_popover_target_element<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -12392,9 +12450,10 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/caption)
     #[cfg_attr(rust_js, rust_js::link_name = "set caption")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_caption(&self, value: &HTMLTableCaptionElement) {
+    pub fn set_caption<'a>(&self, value: impl Into<Option<&'a HTMLTableCaptionElement>>) {
         unreachable!()
     }
 
@@ -12426,9 +12485,10 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/tHead)
     #[cfg_attr(rust_js, rust_js::link_name = "set tHead")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_t_head(&self, value: &HTMLTableSectionElement) {
+    pub fn set_t_head<'a>(&self, value: impl Into<Option<&'a HTMLTableSectionElement>>) {
         unreachable!()
     }
 
@@ -12460,9 +12520,10 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/tFoot)
     #[cfg_attr(rust_js, rust_js::link_name = "set tFoot")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_t_foot(&self, value: &HTMLTableSectionElement) {
+    pub fn set_t_foot<'a>(&self, value: impl Into<Option<&'a HTMLTableSectionElement>>) {
         unreachable!()
     }
 
@@ -13880,9 +13941,10 @@ impl HTMLLinkElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -16510,9 +16572,10 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -18250,9 +18313,10 @@ impl HTMLScriptElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -38076,9 +38140,10 @@ impl SVGScriptElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGScriptElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -38879,9 +38944,10 @@ impl SVGImageElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGImageElement/crossOrigin)
     #[cfg_attr(rust_js, rust_js::link_name = "set crossOrigin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cross_origin(&self, value: &str) {
+    pub fn set_cross_origin<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -42854,9 +42920,10 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/effect)
     #[cfg_attr(rust_js, rust_js::link_name = "set effect")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_effect(&self, value: &AnimationEffect) {
+    pub fn set_effect<'a>(&self, value: impl Into<Option<&'a AnimationEffect>>) {
         unreachable!()
     }
 
@@ -42871,9 +42938,10 @@ impl Animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/timeline)
     #[cfg_attr(rust_js, rust_js::link_name = "set timeline")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_timeline(&self, value: &AnimationTimeline) {
+    pub fn set_timeline<'a>(&self, value: impl Into<Option<&'a AnimationTimeline>>) {
         unreachable!()
     }
 
@@ -43432,9 +43500,10 @@ impl AudioBufferSourceNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/buffer)
     #[cfg_attr(rust_js, rust_js::link_name = "set buffer")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_buffer(&self, value: &AudioBuffer) {
+    pub fn set_buffer<'a>(&self, value: impl Into<Option<&'a AudioBuffer>>) {
         unreachable!()
     }
 
@@ -50999,9 +51068,10 @@ impl ConvolverNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/buffer)
     #[cfg_attr(rust_js, rust_js::link_name = "set buffer")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_buffer(&self, value: &AudioBuffer) {
+    pub fn set_buffer<'a>(&self, value: impl Into<Option<&'a AudioBuffer>>) {
         unreachable!()
     }
 
@@ -53780,9 +53850,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/role)
     #[cfg_attr(rust_js, rust_js::link_name = "set role")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_role(&self, value: &str) {
+    pub fn set_role<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53797,9 +53868,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaActiveDescendantElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaActiveDescendantElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_active_descendant_element(&self, value: &Element) {
+    pub fn set_aria_active_descendant_element<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -53814,9 +53886,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaAtomic)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaAtomic")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_atomic(&self, value: &str) {
+    pub fn set_aria_atomic<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53831,9 +53904,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaAutoComplete)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaAutoComplete")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_auto_complete(&self, value: &str) {
+    pub fn set_aria_auto_complete<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53848,9 +53922,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBrailleLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBrailleLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_braille_label(&self, value: &str) {
+    pub fn set_aria_braille_label<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53865,9 +53940,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBrailleRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBrailleRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_braille_role_description(&self, value: &str) {
+    pub fn set_aria_braille_role_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53882,9 +53958,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaBusy)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaBusy")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_busy(&self, value: &str) {
+    pub fn set_aria_busy<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53899,9 +53976,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaChecked)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaChecked")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_checked(&self, value: &str) {
+    pub fn set_aria_checked<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53916,9 +53994,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColCount)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColCount")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_count(&self, value: &str) {
+    pub fn set_aria_col_count<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53933,9 +54012,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_index(&self, value: &str) {
+    pub fn set_aria_col_index<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53950,9 +54030,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_index_text(&self, value: &str) {
+    pub fn set_aria_col_index_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -53967,9 +54048,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaColSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaColSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_col_span(&self, value: &str) {
+    pub fn set_aria_col_span<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54001,9 +54083,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaCurrent)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaCurrent")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_current(&self, value: &str) {
+    pub fn set_aria_current<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54035,9 +54118,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_description(&self, value: &str) {
+    pub fn set_aria_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54069,9 +54153,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaDisabled)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaDisabled")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_disabled(&self, value: &str) {
+    pub fn set_aria_disabled<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54103,9 +54188,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaExpanded)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaExpanded")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_expanded(&self, value: &str) {
+    pub fn set_aria_expanded<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54137,9 +54223,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaHasPopup)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaHasPopup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_has_popup(&self, value: &str) {
+    pub fn set_aria_has_popup<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54154,9 +54241,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaHidden)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaHidden")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_hidden(&self, value: &str) {
+    pub fn set_aria_hidden<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54171,9 +54259,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaInvalid)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaInvalid")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_invalid(&self, value: &str) {
+    pub fn set_aria_invalid<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54188,9 +54277,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaKeyShortcuts)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaKeyShortcuts")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_key_shortcuts(&self, value: &str) {
+    pub fn set_aria_key_shortcuts<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54205,9 +54295,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLabel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLabel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_label(&self, value: &str) {
+    pub fn set_aria_label<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54239,9 +54330,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLevel)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLevel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_level(&self, value: &str) {
+    pub fn set_aria_level<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54256,9 +54348,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaLive)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaLive")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_live(&self, value: &str) {
+    pub fn set_aria_live<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54273,9 +54366,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaModal)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaModal")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_modal(&self, value: &str) {
+    pub fn set_aria_modal<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54290,9 +54384,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaMultiLine)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaMultiLine")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_multi_line(&self, value: &str) {
+    pub fn set_aria_multi_line<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54307,9 +54402,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaMultiSelectable)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaMultiSelectable")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_multi_selectable(&self, value: &str) {
+    pub fn set_aria_multi_selectable<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54324,9 +54420,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaOrientation)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaOrientation")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_orientation(&self, value: &str) {
+    pub fn set_aria_orientation<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54358,9 +54455,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPlaceholder)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPlaceholder")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_placeholder(&self, value: &str) {
+    pub fn set_aria_placeholder<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54375,9 +54473,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPosInSet)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPosInSet")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_pos_in_set(&self, value: &str) {
+    pub fn set_aria_pos_in_set<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54392,9 +54491,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaPressed)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaPressed")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_pressed(&self, value: &str) {
+    pub fn set_aria_pressed<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54409,9 +54509,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaReadOnly")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_read_only(&self, value: &str) {
+    pub fn set_aria_read_only<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54426,9 +54527,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRelevant)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRelevant")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_relevant(&self, value: &str) {
+    pub fn set_aria_relevant<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54443,9 +54545,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRequired)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRequired")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_required(&self, value: &str) {
+    pub fn set_aria_required<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54460,9 +54563,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRoleDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRoleDescription")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_role_description(&self, value: &str) {
+    pub fn set_aria_role_description<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54477,9 +54581,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowCount)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowCount")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_count(&self, value: &str) {
+    pub fn set_aria_row_count<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54494,9 +54599,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowIndex")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_index(&self, value: &str) {
+    pub fn set_aria_row_index<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54511,9 +54617,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowIndexText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowIndexText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_index_text(&self, value: &str) {
+    pub fn set_aria_row_index_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54528,9 +54635,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaRowSpan)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaRowSpan")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_row_span(&self, value: &str) {
+    pub fn set_aria_row_span<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54545,9 +54653,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSelected)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSelected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_selected(&self, value: &str) {
+    pub fn set_aria_selected<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54562,9 +54671,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSetSize)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSetSize")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_set_size(&self, value: &str) {
+    pub fn set_aria_set_size<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54579,9 +54689,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaSort)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaSort")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_sort(&self, value: &str) {
+    pub fn set_aria_sort<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54596,9 +54707,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueMax)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueMax")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_max(&self, value: &str) {
+    pub fn set_aria_value_max<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54613,9 +54725,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueMin)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueMin")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_min(&self, value: &str) {
+    pub fn set_aria_value_min<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54630,9 +54743,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueNow)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueNow")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_now(&self, value: &str) {
+    pub fn set_aria_value_now<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -54647,9 +54761,10 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/ariaValueText)
     #[cfg_attr(rust_js, rust_js::link_name = "set ariaValueText")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_aria_value_text(&self, value: &str) {
+    pub fn set_aria_value_text<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -61876,9 +61991,10 @@ impl KeyframeEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/target)
     #[cfg_attr(rust_js, rust_js::link_name = "set target")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_target(&self, value: &Element) {
+    pub fn set_target<'a>(&self, value: impl Into<Option<&'a Element>>) {
         unreachable!()
     }
 
@@ -61893,9 +62009,10 @@ impl KeyframeEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/pseudoElement)
     #[cfg_attr(rust_js, rust_js::link_name = "set pseudoElement")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_pseudo_element(&self, value: &str) {
+    pub fn set_pseudo_element<'a>(&self, value: impl Into<Option<&'a str>>) {
         unreachable!()
     }
 
@@ -65514,9 +65631,10 @@ impl MediaSession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/metadata)
     #[cfg_attr(rust_js, rust_js::link_name = "set metadata")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_metadata(&self, value: &MediaMetadata) {
+    pub fn set_metadata<'a>(&self, value: impl Into<Option<&'a MediaMetadata>>) {
         unreachable!()
     }
 
@@ -73339,9 +73457,10 @@ impl RTCRtpReceiver {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver/jitterBufferTarget)
     #[cfg_attr(rust_js, rust_js::link_name = "set jitterBufferTarget")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_jitter_buffer_target(&self, value: impl Into<f64>) {
+    pub fn set_jitter_buffer_target(&self, value: impl Into<Option<f64>>) {
         unreachable!()
     }
 
@@ -78235,9 +78354,10 @@ impl SpeechSynthesisUtterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/voice)
     #[cfg_attr(rust_js, rust_js::link_name = "set voice")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_voice(&self, value: &SpeechSynthesisVoice) {
+    pub fn set_voice<'a>(&self, value: impl Into<Option<&'a SpeechSynthesisVoice>>) {
         unreachable!()
     }
 
@@ -80403,9 +80523,10 @@ impl VTTCue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VTTCue/region)
     #[cfg_attr(rust_js, rust_js::link_name = "set region")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_region(&self, value: &VTTRegion) {
+    pub fn set_region<'a>(&self, value: impl Into<Option<&'a VTTRegion>>) {
         unreachable!()
     }
 
@@ -81801,9 +81922,10 @@ impl WaveShaperNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/curve)
     #[cfg_attr(rust_js, rust_js::link_name = "set curve")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_curve(&self, value: &Float32Array) {
+    pub fn set_curve<'a>(&self, value: impl Into<Option<&'a Float32Array>>) {
         unreachable!()
     }
 
@@ -88426,9 +88548,10 @@ impl WebTransportDatagramDuplexStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/incomingMaxAge)
     #[cfg_attr(rust_js, rust_js::link_name = "set incomingMaxAge")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_incoming_max_age(&self, value: impl Into<f64>) {
+    pub fn set_incoming_max_age(&self, value: impl Into<Option<f64>>) {
         unreachable!()
     }
 
@@ -88443,9 +88566,10 @@ impl WebTransportDatagramDuplexStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/outgoingMaxAge)
     #[cfg_attr(rust_js, rust_js::link_name = "set outgoingMaxAge")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_outgoing_max_age(&self, value: impl Into<f64>) {
+    pub fn set_outgoing_max_age(&self, value: impl Into<Option<f64>>) {
         unreachable!()
     }
 

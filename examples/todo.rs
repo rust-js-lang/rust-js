@@ -114,7 +114,7 @@ fn render(state: &Shared, view: View) {
         }
     }
     let noun = if left == 1 { " item left" } else { " items left" };
-    view.left.set_text_content(&(left.to_string() + noun));
+    view.left.set_text_content((left.to_string() + noun).as_str());
 }
 
 pub fn main() {

@@ -276,7 +276,13 @@ How WebIDL maps to Rust, one rule for each:
   None)` being `new Event("ping")`; a JS name that's a Rust keyword is its
   raw identifier, `r#type` ([ADR 0376](../../decisions/0376-keyword-names-are-raw.md)).
 - **An attribute is a getter, and a setter if it's writable:**
-  `input.value()`, `input.set_value("x")`.
+  `input.value()`, `input.set_value("x")`. One TypeScript types `T |
+  null` is an `Option` read, and set of a value or `None`, `impl
+  Into<Option<T>>`, `None` being `null`: `node.set_text_content("x")`,
+  `node.set_text_content(None)` is `node.textContent = null`, and
+  `input.set_selection_start(start)` of an `Option<f64>`; text made here
+  is given by its `as_str()`, `set_text_content(n.to_string().as_str())`
+  ([ADR 0275](../../decisions/0275-nullable-writes-null.md), amended).
 - **Inheritance is `Deref`:** an `&HTMLButtonElement` has `Element`'s and
   `Node`'s methods, and goes where an `&Element` does.
 - **A number is TypeScript's `number`, an `f64`,** given and taken, an

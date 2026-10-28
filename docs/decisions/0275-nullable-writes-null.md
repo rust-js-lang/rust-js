@@ -91,3 +91,37 @@ Held by `test/lowering-options.test.ts`, "a binding's nullable
 parameter's None is null", `test/js-object.test.ts`'s `Object.create`,
 and the mutations `nullable-param-some-coalesced` (which takes in
 `mir-nullable-made-coalesced`) and `nullable-param-nulled-unasked`.
+
+## Amendment: a nullable attribute's setter takes a value or `None` (2026-10-28, the user's decision)
+
+React's ReactInputSelection keeps an input's selection as it reads it,
+`{start: input.selectionStart, end: input.selectionEnd}`, `number | null`
+each, and writes it back, `input.selectionStart = start`. The webapi
+crate's getter was an `Option<f64>`, but its setter took `impl
+Into<f64>`, so a `null` start couldn't be written back, and
+`node.textContent = null`, which clears a node, couldn't be written at
+all (React port gap rd46).
+
+**The user decided: an attribute TypeScript types `T | null` is set of
+`impl Into<Option<T>>`, one API taking a value or `None`**, its parameter
+`#[rust_js::nullable(value)]`, so `None` is `null`:
+`node.set_text_content("x")` is `node.textContent = "x"`,
+`node.set_text_content(None)` `node.textContent = null`, and
+`input.set_selection_start(start)` of a nullable field's `start`
+`input.selectionStart = start`, as upstream writes it. A reference it
+takes is of a lifetime the setter names, `set_text_content<'a>(&self,
+value: impl Into<Option<&'a str>>)`, as `impl Trait` elides none. Not a
+union's, which its enum's `impl Into..` takes, nor a sequence's,
+`&[&Element]`, which an array literal reaches by a coercion `Into`
+wouldn't make. `Math.min` keeps TypeScript's `f64`s: the port writes
+`end.unwrap_or(0.0)`, `end ?? 0`, the value JS's `Math.min(null, n)`
+coerces `null` to.
+
+Its cost: `&String` is no `Into<Option<&str>>`, so text made here is
+given by its `as_str()`, `output.set_text_content(n.to_string().as_str())`,
+where `&n.to_string()` was; the examples write that. Case
+([0262](0262-when-rust-and-js-disagree.md)): None, of what the setter
+gives JS.
+
+Held by `test/webapi-bindings.test.ts`, "a nullable attribute's setter
+takes a value or None", run in Node.

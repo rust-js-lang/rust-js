@@ -1245,7 +1245,17 @@ function functionsOf(declared: Interface): Fn[] {
       const forwards = (m.extAttrs ?? []).some((a) => a.name === "PutForwards" || a.name === "Replaceable");
       const value = paramType(m.idlType!);
       if (!m.readonly && !forwards && value) {
-        fns.push({ name: `set_${snakeWords(m.name!)}`, jsName: `set ${m.name}`, params: [...self, `value: ${value}`], result: "()", doc });
+        // One that takes `null`, TypeScript's `T | null`, takes a value or
+        // `None`, `null`: `set_text_content("x")` and `set_text_content(None)`
+        // (ADR 0275, amended).
+        const takesNull = nullable(m.idlType!) && !isUnion(m.idlType!) && !value.startsWith("&[");
+        // A reference it takes is of a lifetime it names, as `impl Trait`
+        // can't elide one: `impl Into<Option<&'a str>>`.
+        const borrows = value.startsWith("&");
+        const taken = borrows ? `&'a ${value.slice(1)}` : value;
+        const param = takesNull ? `value: impl Into<Option<${taken}>>` : `value: ${value}`;
+        const named = takesNull ? { nullable: ["value"], ...(borrows ? { typeParams: ["'a"] } : {}) } : {};
+        fns.push({ name: `set_${snakeWords(m.name!)}`, jsName: `set ${m.name}`, params: [...self, param], result: "()", doc, ...named });
       }
     } else if (m.type === "operation") {
       // `stringifier;`: what JS's `toString()` makes of it.

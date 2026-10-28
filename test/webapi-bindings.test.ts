@@ -669,3 +669,46 @@ pub async fn continued(scheduler: &Scheduler, signal: &AbortSignal) {
   await lib.continued({ yield: async (options: unknown) => void given.push(options) }, signal);
   expect(given).toEqual([{ signal }]);
 });
+
+// ADR 0275, amended (the user's decision, React port gap rd46): an
+// attribute TypeScript types `T | null` is set of a value or `None`,
+// `impl Into<Option<T>>`, `None` `null`: ReactInputSelection's
+// `input.selectionStart = start` of a `number | null`, and
+// `node.textContent = null`.
+test("a nullable attribute's setter takes a value or None", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-nullable-setters");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{HTMLInputElement, Node};
+
+pub struct Offsets {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub start: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub end: Option<f64>,
+}
+
+pub fn restore(input: &HTMLInputElement, offsets: &Offsets) {
+    let start = offsets.start;
+    let end = offsets.end;
+    input.set_selection_start(start);
+    input.set_selection_end(js::math::min((end.unwrap_or(0.0), f64::from(js::string::length(&input.value())))));
+}
+
+pub fn texts(node: &Node, other: &Node, text: Option<&str>) {
+    node.set_text_content("x");
+    other.set_text_content(None);
+    node.set_text_content(text);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  input.selectionStart = start;\n  input.selectionEnd = Math.min(end ?? 0, input.value.length);\n");
+  expect(js).toContain('  node.textContent = "x";\n  other.textContent = null;\n  node.textContent = text ?? null;\n');
+  const lib = await import(join(dir, "lib.js"));
+  const input = { value: "abc", selectionStart: 1 as number | null, selectionEnd: 1 as number | null };
+  lib.restore(input, { start: null, end: 9 });
+  expect([input.selectionStart, input.selectionEnd]).toEqual([null, 3]);
+  const [node, other] = [{ textContent: "" as string | null }, { textContent: "" as string | null }];
+  lib.texts(node, other, undefined);
+  expect([node.textContent, other.textContent]).toEqual([null, null]);
+});
