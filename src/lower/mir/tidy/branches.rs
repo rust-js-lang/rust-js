@@ -1326,7 +1326,12 @@ fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
 /// one alike; one that reads what a branch declares stays in it; one in a
 /// `let … else`'s `else` stays the guard's (ADR 0879, amended); a
 /// `switch`'s arms each keep theirs, as written (ADR 0956).
-pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span], switches: &[Switch]) {
+pub(super) fn shared_tails(
+    stmts: &mut Vec<Stmt>,
+    let_elses: &[js::Span],
+    switches: &[Switch],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
     let guards = |tail: &[Stmt]| {
         (tail.iter()).any(|s| !s.span.is_none() && let_elses.iter().any(|e| e.lo <= s.span.lo && s.span.hi <= e.hi))
     };
@@ -1341,7 +1346,12 @@ pub(super) fn shared_tails(stmts: &mut Vec<Stmt>, let_elses: &[js::Span], switch
                 let shared = shared_tail(then, otherwise);
                 let (kept_then, kept_else) = (&then[..then.len() - shared], &otherwise[..otherwise.len() - shared]);
                 let tail = &then[then.len() - shared..];
+                // Each written in its branch of an `if` the program wrote with
+                // an `else`, two the program wrote: each where it is, as
+                // written (the user's decision, wl6).
+                let apart = super::written_branches(stmts[i].span, tail, &otherwise[otherwise.len() - shared..], elses);
                 if shared == 0
+                    || apart
                     || super::switches::switched(test, stmts[i].span, switches)
                     || tail.last().is_some_and(ends)
                     || kept_then.is_empty()

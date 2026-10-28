@@ -47,10 +47,11 @@ function append(fiber, hook) {
   const last = workInProgressHook;
   if (last == null) {
     fiber.current = hook;
+    workInProgressHook = hook;
   } else {
     last.next = hook;
+    workInProgressHook = hook;
   }
-  workInProgressHook = hook;
 }
 
 function currentOf(pinned, node) {

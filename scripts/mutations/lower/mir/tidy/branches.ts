@@ -602,8 +602,8 @@ export const mutations: Mutation[] = [
     name: "switch-arms-tail-shared",
     breaks: "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                if shared == 0\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
-    replace: "                if shared == 0\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
+    find: "                    || apart\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
+    replace: "                    || apart\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
     tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
   },
   {
@@ -638,5 +638,14 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,\n",
     replace: "",
     tests: ["test/lowering-throws.test.ts", "-t", "a with whose closure throws"],
+  },
+  {
+    name: "written-tails-shared",
+    breaks: "a tail the program wrote in each branch of an `if` it wrote with an `else` is written once after it, `if (..) { .. } else { .. } newLast = clone;`, and wl6's `panicOnRootError(..); return;` merges, keeping throwAndUnwindWorkLoop a `$catchUnwind` (the user's decision, wl6)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    || apart\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^assignments_chained.rs$|^written_tails_apart.rs$"],
+    snapshots: true,
   },
 ];

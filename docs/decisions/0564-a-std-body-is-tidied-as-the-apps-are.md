@@ -162,3 +162,25 @@ Held by `test/lowering-written-branches.test.ts`, "an if the program
 wrote stays where an earlier test decides it", run; the mutations
 `written-if-decided-away` (`mir/tidy/branches.ts`) and
 `written-ifs-unseen` (`mir/hints.ts`).
+
+## Amendment: a tail the program wrote in each branch stays (the user's decision, 2026-10-28, wl6)
+
+`shared_tails` wrote once after an `if` what both its branches end with,
+the program's own statements too: React's throwAndUnwindWorkLoop's
+`if (didFatal) { panicOnRootError(root, thrownValue); return; }` and its
+`catch`'s `else { panicOnRootError(root, thrownValue); return; }` merged,
+so the `Err` arm no longer left and the `match` stayed `$catchUnwind` and
+`.TAG`; mountWorkInProgressHook's `workInProgressHook = hook` in each
+branch printed once after the `if`.
+
+**A tail written in each branch of an `if` the program wrote with an
+`else`, each where its branch is (`written_branches`), stays in each**;
+what MIR copied into both, a binding of an or-pattern's parts or a `?`'s
+`undefined`, is still written once. Case N: the same statements run on
+each path. Held by `test/corpus/written_tails_apart.rs`, against native
+Rust, and `assignments_chained`, `binding_read_before_set`,
+`loop_exit_code_after`'s snapshots; mutation `written-tails-shared`.
+
+Left (wl6): the `Ok` arm's `if did_fatal { ..; return; }` then the code
+after the `match` print `if (!didFatal) { .. } else { .. }`, MIR's
+order; upstream's is `if (didFatal) { ..; return; }` inside the `try`.

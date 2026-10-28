@@ -35,23 +35,26 @@ function cloned(first, captured) {
       };
       if (newLast == null) {
         newFirst = clone;
+        newLast = clone;
       } else {
         newLast.next = clone;
+        newLast = clone;
       }
-      newLast = clone;
       update = update.next;
     } while (update != null);
 
     // Append the captured update.
     if (newLast == null) {
       newFirst = captured;
+      newLast = captured;
     } else {
       newLast.next = captured;
+      newLast = captured;
     }
   } else {
     newFirst = captured;
+    newLast = captured;
   }
-  newLast = captured;
   return [newFirst, newLast];
 }
 

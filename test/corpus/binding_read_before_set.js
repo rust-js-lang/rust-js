@@ -19,10 +19,11 @@ function linked(values) {
     const clone = node(value);
     if (newLast == null) {
       first = clone;
+      newLast = clone;
     } else {
       newLast.next = clone;
+      newLast = clone;
     }
-    newLast = clone;
   }
   return first;
 }
