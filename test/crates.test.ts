@@ -247,11 +247,15 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
 
 // ADR 0477, amended (ep1b): a `From` impl's method nothing of its crate
 // calls is written nowhere in its JS, React's reconciler's `EventPriority`
-// of a lane; a consumer that calls it compiles its own (ADR 0914).
+// of a lane; a consumer that calls it compiles its own (ADR 0914), and of a
+// `#[repr(transparent)]` struct's field, by the library's contract, it's
+// the value it's given (ADR 0584, amended, rd62).
 test("a library's From impl nothing of its own calls is a consumer's to compile", () => {
   const out = chain(pairs, "from_impl_unused", ["dep", "app"]);
   expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("_from");
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("  const priority = eventPriorityFromI32_from(8);\n");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  const priority = 8;\n  const into = 32;\n");
+  expect(app).not.toContain("_from");
 }, 300_000);
 
 // ADR 0852, amended (rd57): a library generic over another library's type,
