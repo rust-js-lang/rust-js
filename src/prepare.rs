@@ -930,12 +930,10 @@ fn fallen_held(body: &mut [Stmt]) {
 /// the value and whose `Err` reads no error, is `try { x = f(); } catch {
 /// .. }`, as JS writes it (ADR 0035): only the call is in the `try`, as only
 /// it is in `$try`.
-/// A `const` only tests read, `const hide = !!error || !ready`, is a test
-/// itself: what it's made of is read by its truth, `error || !ready`, as
-/// a person writes it (ADR 0298). One read as a value keeps its boolean.
-/// One that's one `Option`'s presence alone, `!!x`, is `x != null`, a test
-/// still and a `bool` as its name says, as React's completeWork writes
-/// `const isTimedOutSuspense = nextState !== null` (ADR 0298, amended).
+/// A `const` only tests read, `const hide = !!(a & b) || !ready`, is a
+/// test itself: what it's made of is read by its truth, `a & b || !ready`,
+/// as a person writes it (ADR 0298). One read as a value keeps its boolean.
+/// An `Option`'s presence is `x != null` already, a boolean either way.
 fn tested_constants(body: &mut Vec<Stmt>) {
     let mut candidates = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
@@ -973,12 +971,7 @@ fn tested_constants(body: &mut Vec<Stmt>) {
                     && *declared == name
                     && let Some(tested) = value.retested()
                 {
-                    *value = match js::null_test(value, true) {
-                        Some(option) if matches!(value.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {
-                            Expr::bin(js::Op::LooseNe, option.clone(), Expr::null()).or_at(value.span)
-                        }
-                        _ => tested,
-                    };
+                    *value = tested;
                 }
             }
         });

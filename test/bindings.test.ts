@@ -663,6 +663,10 @@ pub struct Failure(pub u32);
 pub fn flagged(error: Option<&Failure>, ready: bool) -> String {
     cn((Some("a"), (error.is_some() || ready).then_some("b")))
 }
+// A bool JS gives as a number, read by its truth alone.
+pub fn masked(a: bool, b: bool, ready: bool) -> String {
+    cn((Some("a"), ((a & b) || ready).then_some("b")))
+}
 #[derive(Clone, Copy)]
 pub enum Dir {
     #[rust_js::name = "start"]
@@ -711,6 +715,7 @@ pub fn linked(href: Option<&str>) -> String {
   expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
   expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
   expect(js).toContain('return cn("a", (error != null || ready) && "b");');
+  expect(js).toContain('return cn("a", (a & b || ready) && "b");');
   expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.className,\n  );\n');
   expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
   expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');
@@ -718,6 +723,7 @@ pub fn linked(href: Option<&str>) -> String {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true), lib.flagged([1], false), lib.flagged(undefined, false), lib.numbered(2), lib.kept(1)]).toEqual(["a wide", "a tall", "a", "a wide", "a b", "a", "two c", "one"]);
   expect([lib.linked("x"), lib.linked(""), lib.linked(undefined)]).toEqual(["a hover", "a", "a"]);
+  expect([lib.masked(true, true, false), lib.masked(true, false, false)]).toEqual(["a b", "a"]);
 });
 
 // ADR 0301: a binding that can't throw, `#[rust_js::cannot_throw]`, as reading

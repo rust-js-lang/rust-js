@@ -288,3 +288,34 @@ pub fn mixed(n: i32, v: &[f64]) -> u32 {
   // A closure's float of the name, as the walk of a conditional goes into it.
   expect(lib.mixed(2, [NaN, 0, 1])).toBe(3);
 });
+
+// ADR 0298: a `const` only tests read is a test itself, read by its truth:
+// a `bool` JS gives as a number, `a & b`, is `const both = a & b ||
+// !ready;` where only tests read it, `!both`, `if (both)` and `both ? ..`,
+// and keeps its boolean, `!!(a & b)`, where it's read as a value too.
+test("a const of a bool's bits only tests read is read by its truth", async () => {
+  const { js, lib } = await compiled(
+    "tested-bits",
+    `pub fn masked(a: bool, b: bool, ready: bool) -> u32 {
+    let both = (a & b) || !ready;
+    let mut n = 0;
+    if both {
+        n += 1;
+    }
+    if !both && ready {
+        n += 10;
+    }
+    n + if both { 100 } else { 0 }
+}
+
+pub fn masks(a: bool, b: bool, ready: bool) -> (bool, u32) {
+    let both = (a & b) || !ready;
+    (both, if both { 1 } else { 0 })
+}
+`,
+  );
+  expect(js).toContain("const both = a & b || !ready;\n  let n = 0;");
+  expect(js).toContain("const both = !!(a & b) || !ready;\n  return [both, both ? 1 : 0];");
+  expect([lib.masked(true, true, true), lib.masked(false, true, true), lib.masked(false, true, false), lib.masks(true, true, true)])
+    .toEqual([101, 10, 101, [true, 1]]);
+});

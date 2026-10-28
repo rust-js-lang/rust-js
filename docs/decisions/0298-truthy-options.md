@@ -413,3 +413,14 @@ still, the form for `null` and `undefined` alike.
 Node; `test/corpus/option_falsy_payloads.rs` against native Rust; and the
 mutations `option-presence-by-truth` (`js/make.ts`) and
 `tested-option-null-unread` (`lower/mir/tidy/options.ts`).
+
+## Amended (2026-10-28): what a test-only `const` drops the `!!` of now
+
+Since an `Option`'s test is `x != null` whatever it holds (the amendment
+of 4b30cd7cd), no `const` is one `Option`'s presence as `!!x`: the
+check that wrote one `x != null` is gone with its mutation,
+`tested-const-presence-truth`. What a `const` only tests read still
+drops the `!!` of is a `bool` JS gives as a number, `const both = a & b
+|| !ready;`, kept `!!(a & b)` where it's read as a value too; held by
+`test/lowering-bits.test.ts`'s "a const of a bool's bits only tests
+read", and `bindings.test.ts`'s `cn("a", (a & b || ready) && "b")`.

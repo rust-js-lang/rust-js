@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "        changed.then_some(tested)\n",
     replace: "        None\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a const only tests read is read by its truth"],
+    tests: ["test/lowering-bits.test.ts", "-t", "a const of a bool.s bits only tests read"],
   },
   {
     name: "test-parts-kept",
