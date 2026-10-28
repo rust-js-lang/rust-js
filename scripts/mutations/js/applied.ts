@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks: "a thread-local's `with` as an `if`'s test or a value stays a closure called, `if (((didWarn) => ..)(didWarn))`",
     file: "src/js/applied.rs",
     find: "            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true).or_else(|| value_of(stmt, &whole));\n",
-    replace: "            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false);\n",
+    replace: "            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true);\n",
     tests: ["test/lowering-cells.test.ts", "-t", "with is its closure's body"],
   },
   {
