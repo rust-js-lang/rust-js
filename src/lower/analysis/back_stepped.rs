@@ -24,8 +24,11 @@ pub(super) fn back_stepped<'tcx>(
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> HashSet<Ty<'tcx>> {
     let mut stepped = HashSet::new();
+    // Each body's own, by its function: what a caller's call of it makes too.
+    let mut of_body: HashMap<rustc_span::def_id::DefId, HashSet<Ty<'tcx>>> = HashMap::new();
     let rev = crate::lower::recognition::compiled_provided_method(tcx, "Iterator", "rev");
     for body in all_bodies {
+        let stepped = of_body.entry(body.def_id).or_default();
         // A `rev()` held, std's compiled `Rev`, which steps what it's given
         // by its dictionary, not one a std iterator's method steps where
         // it's made, which the recognizers reverse (ADR 0871).
@@ -96,6 +99,44 @@ pub(super) fn back_stepped<'tcx>(
                 })),
                 false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
             }
+        }
+    }
+    stepped.extend(of_body.values().flatten().copied());
+    // And of a generic function's type parameters, `Filter<I, P>` a function
+    // steps from its back that it's given: each of its callers' types,
+    // `Filter<Copied<Iter<u32>>, {closure}>`, which its caller makes, through
+    // what calls it in turn (#388). At most 32 calls deep, as a function
+    // that calls itself with a type of its own types would go on.
+    for _ in 0..32 {
+        let mut more = Vec::new();
+        for body in all_bodies {
+            for expr in body.thir.exprs.iter() {
+                let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
+                    continue;
+                };
+                let Some(own) = of_body.get(&callee) else { continue };
+                for &ty in own
+                    .iter()
+                    .filter(|ty| rustc_middle::ty::TypeVisitableExt::has_param(*ty))
+                {
+                    let made = ty::EarlyBinder::bind(tcx, ty)
+                        .instantiate(tcx, args)
+                        .skip_normalization();
+                    let made = tcx.erase_and_anonymize_regions(made);
+                    // Of the caller's own, which a type of its parameters may
+                    // look like the callee's, `Filter<I, P>` of both.
+                    if !of_body.get(&body.def_id).is_some_and(|known| known.contains(&made)) {
+                        more.push((body.def_id, made));
+                    }
+                }
+            }
+        }
+        if more.is_empty() {
+            break;
+        }
+        for (owner, made) in more {
+            stepped.insert(made);
+            of_body.entry(owner).or_default().insert(made);
         }
     }
     with_stepped_sources(tcx, stepped)

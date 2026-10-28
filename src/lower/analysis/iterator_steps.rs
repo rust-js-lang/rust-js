@@ -343,16 +343,15 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                             }
                             continue;
                         }
-                        // What its impl of it asks of what it holds, as rustc
-                        // proves it: `Enumerate<I>`'s back asks `I`'s length
-                        // too (ADR 0542); else the same of each.
-                        match impl_asks(tcx, typing_env, by, self_ty) {
-                            Some(asked) => stepped.extend(asked.into_iter().map(|(param, by)| (caller, param, by))),
-                            None => stepped.extend(adapted.types().filter_map(|ty| match ty.peel_refs().kind() {
-                                ty::Param(param) => Some((caller, param.index, by)),
-                                _ => None,
-                            })),
-                        }
+                        // One not compiled, an adapter of its meaning alone, a
+                        // `filter`'s: the same of each it holds, which is what
+                        // each such impl asks (#382). One whose impl asks more,
+                        // `Enumerate<I>`'s back `I`'s length, is compiled,
+                        // above (ADR 0871).
+                        stepped.extend(adapted.types().filter_map(|ty| match ty.peel_refs().kind() {
+                            ty::Param(param) => Some((caller, param.index, by)),
+                            _ => None,
+                        }));
                     }
                 }
                 // The crate's iterator holding it, stepped by its impl's `next`.
@@ -595,8 +594,7 @@ fn impl_asks<'tcx>(
         (clauses.into_iter())
             .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
             .filter(|p| is_iterator_extension(tcx, p.def_id()))
-            // Through what refers to it, `&mut R` of `Map<&mut R, F>`.
-            .filter_map(|p| match p.self_ty().skip_binder().peel_refs().kind() {
+            .filter_map(|p| match p.self_ty().skip_binder().kind() {
                 ty::Param(param) => Some((param.index, p.def_id())),
                 _ => None,
             })

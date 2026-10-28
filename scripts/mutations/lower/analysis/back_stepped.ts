@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-back-steps-uncarried",
+    breaks: "a filter given to generic code as `Filter<I, P>` and stepped from its back there isn't made knowing its back where its caller makes it: `TypeError: it.back is not a function` (#388)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    for _ in 0..32 {\n",
+    replace: "    for _ in 0..0 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_given_to_generic_backs.rs$"],
+  },
+  {
     name: "filter-of-items-native",
     breaks: "a filter of an array's items stepped from its back is taken to have a form of its own that does it, and is refused: `v.iter().filter(p).next_back()` (ADR 0990)",
     file: "src/lower/analysis/back_stepped.rs",

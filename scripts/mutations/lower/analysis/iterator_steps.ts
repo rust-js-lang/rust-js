@@ -161,22 +161,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
-    name: "adapter-impl-asks-unread",
-    breaks: "what a std adapter's impl asks of what it holds isn't read: `Enumerate<I>`'s back isn't given `I`'s length",
-    file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        match impl_asks(tcx, typing_env, by, self_ty) {\n",
-    replace: "                        match None::<Vec<(u32, DefId)>> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
-  },
-  {
-    name: "adapter-impl-asks-of-references",
-    breaks: "what a std adapter's impl asks of a `&mut R` it holds isn't asked of `R`",
-    file: "src/lower/analysis/iterator_steps.rs",
-    find: "            .filter_map(|p| match p.self_ty().skip_binder().peel_refs().kind() {\n",
-    replace: "            .filter_map(|p| match p.self_ty().skip_binder().kind() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
-  },
-  {
     name: "dictionary-call-passes-nothing",
     breaks: "what a trait's method called through a dictionary is given isn't passed on, so `&mut Self` goes as it is where a JS iterator goes",
     file: "src/lower/analysis/iterator_steps.rs",
