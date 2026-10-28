@@ -408,3 +408,45 @@ it's given the drop, so it drops what it passes. The old mutation
 `nth-dropping-default-stepped` is caught.
 Readability: the line adds `Iterator.from` (15.2 to 15.3 in 10,000 lines)
 and renamed temporaries (729.4 to 730.4), as each such case does.
+
+## Amendment: a zip holds its sides, and no adapter closes its source as it ends
+
+A `zip` whose other side ended at a `None` of its own dropped what that
+side had left there, then the item it had stepped of `a`, then what `a`
+had left: `a.into_iter().map(..).zip(b.into_iter().take_while(odd))`
+printed `drop 2`, `drop 5`, `drop 12`, `drop 13` where native Rust prints
+`drop 2`, `drop 12`, `drop 13`, `drop 5`. Results change (case C, not
+this ADR's case B): std's `Zip` owns its sides, and `TakeWhile`, `Scan`,
+`MapWhile` and `Take` drop nothing as they end; what they hold goes as
+the zip is dropped, `a`'s then `b`'s. A `scan`'s, a `map_while`'s, a
+`take`'s of a `filter` and a `skip` past them did the same.
+
+- **`$lazyZip` holds both sides**, `hold()`, as a variable's zip already
+  did: one that ends doesn't close itself there, and the zip's `close`
+  closes `a` then `b`, as std drops them.
+- **`$lazyScan`, `$lazyTakeWhile` and `$lazyMapWhile` no longer close
+  their source at their own end**, by `next` or by `try_fold`. Their
+  consumer closes them where Rust drops them, as JS's own stepping,
+  `fold`, a `chain`'s first side and every adapter's `return()` do; the
+  close at their end could only drop earlier than Rust. Of the corpus'
+  21 cases of these helpers and a probe of each by-value consumer of a
+  `scan` of values with a destructor (`max`, `min`, `last`, `count`,
+  `sum` of `Option`s, `eq`, `cmp`, `partition`, `unzip`, `reduce`,
+  `for_each`, `is_sorted`, a `Result`'s `collect`, `skip`, `filter`,
+  `chain`, `step_by`, `enumerate`), every one prints what native Rust
+  does without them. Their mutations go: `scan-past-none`, which main's
+  check found surviving, and `take-while-held-closes` and
+  `map-while-held-closes`, whose code is gone.
+- `test/corpus/zip_sides_dropped_with_it.rs` holds it against native
+  Rust, with the new mutation `zip-sides-unheld`, and catches
+  `zip-other-unclosed` and `zip-closed-at-end`, which survived too: with
+  its sides held, the zip's `close` is what drops `b`'s, and a zip a
+  variable holds, stepped to its end, drops both where the variable is
+  dropped.
+
+A `take`'s close at its limit, `$Steps.take`, stays: a `zip`'s holds it,
+and nothing else seen steps one past it before its consumer drops it.
+Readability: the case's lines add `$iter` (83 to 83.7 in 10,000 lines),
+renamed temporaries (677.8 to 681.4), each `let`'s drops of what a panic
+would leave, and its `while let`'s `while (true)` (10.4 to 10.5), as each
+such case does.

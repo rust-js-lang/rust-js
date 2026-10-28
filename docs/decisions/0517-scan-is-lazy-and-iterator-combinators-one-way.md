@@ -65,7 +65,9 @@ then `collect()` again, steps the source on (#161). Each is an iterator
 whose `next` steps its source each time, `$lazyScan` and
 `$lazyMapWhile`; a `None` closes the source, as the generator's end did,
 dropping what's left of one with a destructor (`$closing`), and an
-array's, which has nothing to close, steps on. A std adapter over a
+array's, which has nothing to close, steps on. (No longer: a `None`
+closes nothing, and the source is closed as the adapter is, ADR 0465's
+amendment "a zip holds its sides".) A std adapter over a
 source that isn't fused, the crate's iterator that gives `None` then
 `Some`, is fused, a JS iterator helper's: the guide lists it. Held by
 `test/corpus/scan_map_while_unfused.rs`.

@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_zip.js",
     find: "    right.return?.();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|zip_sides_dropped_with_it).rs$"],
   },
   {
     name: "zip-back-untrimmed",
@@ -40,6 +40,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_zip.js",
     find: "    const item = left.next();\n    if (item.done) return item;\n",
     replace: "    const item = left.next();\n    if (item.done) {\n      close();\n      return item;\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(restarting_iterators|zip_sides_dropped_with_it).rs$"],
+  },
+  {
+    name: "zip-sides-unheld",
+    breaks: "a `zip`'s sides aren't held, so one that ends at a `None` of its own, a `take_while`'s, a `scan`'s, drops what it has left there, before the other side's item and what the other has left, where std's `Zip` drops both as it's dropped",
+    file: "src/runtime/lazy_zip.js",
+    find: "  left.hold?.();\n  right.hold?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_sides_dropped_with_it.rs$"],
   },
 ];

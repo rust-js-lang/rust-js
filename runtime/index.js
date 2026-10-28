@@ -2933,9 +2933,9 @@ export function $nextBackSome(it) {
 
 // `it.scan(init, f)` of a JS iterator, lazy as Rust's: each `Some` `f`
 // gives, given its state and an item; a `None` ends what's stepped now,
-// closing what it steps, which drops what's left of one with a destructor
-// (`$closing`), as Rust's drop of it does, and a step after steps on, as
-// Rust's `Scan`, which isn't fused, does, of an array's (ADR 0517). The state's `&mut` is a box of it where it's a `handle`, a
+// and a step after steps on, as Rust's `Scan`, which isn't fused, does, of
+// an array's (ADR 0517). What it steps is closed as it's closed, where
+// Rust drops it, not at a `None`, so a zip's other side drops first. The state's `&mut` is a box of it where it's a `handle`, a
 // number's, else the state itself, an object `f` changes in place.
 export function $lazyScan(items, init, f, handle = true) {
   const state = handle ? { value: init } : init;
@@ -2945,7 +2945,6 @@ export function $lazyScan(items, init, f, handle = true) {
       const step = source.next();
       const next = step.done ? undefined : f(state, step.value);
       if (next !== undefined) return { done: false, value: next };
-      if (!scanning.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
@@ -2963,7 +2962,6 @@ export function $lazyScan(items, init, f, handle = true) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped && !scanning.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
@@ -11487,10 +11485,14 @@ export function $lazyChain(a, b) {
 // `a`'s stepped where `b`'s run out given to `dropA`, as Rust drops it;
 // both closed as it's closed, which drops what they hold (ADR 0465). A
 // step after its end steps each on, as Rust's `Zip`, which isn't fused,
-// does.
+// does. Each side is held, as std's `Zip` owns it: one that ends doesn't
+// close itself there, before `dropA` drops the other's item, but as the
+// zip is closed, `a` then `b`.
 export function $lazyZip(a, b, dropA) {
   const left = $stepsOf(a);
   const right = $stepsOf(b);
+  left.hold?.();
+  right.hold?.();
   const close = () => {
     left.return?.();
     right.return?.();
@@ -11640,8 +11642,9 @@ export function $rev(it) {
 }
 
 // `it.take_while(keep)`: each item `keep` holds of; the first it doesn't
-// ends it for good, closing what it steps, as Rust's flag does, and a
-// `None` of its source ends what's stepped now, as Rust's passes it on.
+// ends it for good, as Rust's flag does, and a `None` of its source ends
+// what's stepped now, as Rust's passes it on. What it steps is closed as
+// it's closed, where Rust drops it, not where it ends.
 // Its `try_fold`, its source's, stopped where `keep` doesn't hold.
 export function $lazyTakeWhile(items, keep) {
   const source = $stepsOf(items);
@@ -11652,7 +11655,6 @@ export function $lazyTakeWhile(items, keep) {
       const step = source.next();
       if (step.done || keep(step.value)) return step;
       ended = true;
-      if (!taking.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
@@ -11661,7 +11663,6 @@ export function $lazyTakeWhile(items, keep) {
   taking.tryFold = (init, f, broke) => {
     if (ended) return init;
     const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
-    if (ended && !taking.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
@@ -11675,9 +11676,9 @@ export function $lazyTakeWhile(items, keep) {
 }
 
 // `it.map_while(f)`: each of what `f` gives that `present` keeps; one it
-// doesn't ends what's stepped now, closing what it steps, as `$lazyScan`'s
-// `None` does, and a step after steps on, as Rust's `MapWhile`, which
-// isn't fused, does, where `take_while` stays ended. Its `try_fold`, its
+// doesn't ends what's stepped now, as `$lazyScan`'s `None` does, and a
+// step after steps on, as Rust's `MapWhile`, which isn't fused, does, where
+// `take_while` stays ended. What it steps is closed as it's closed. Its `try_fold`, its
 // source's, stopped at what `present` doesn't keep.
 export function $lazyMapWhile(items, f, present) {
   const source = $stepsOf(items);
@@ -11686,7 +11687,6 @@ export function $lazyMapWhile(items, f, present) {
       const step = source.next();
       const value = step.done ? undefined : f(step.value);
       if (!step.done && present(value)) return { done: false, value };
-      if (!mapping.held) source.return?.();
       return { done: true, value: undefined };
     },
     () => source.return?.(),
@@ -11704,7 +11704,6 @@ export function $lazyMapWhile(items, f, present) {
       },
       (a) => stopped || broke(a),
     );
-    if (stopped && !mapping.held) source.return?.();
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps

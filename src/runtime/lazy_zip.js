@@ -2,10 +2,14 @@
 // `a`'s stepped where `b`'s run out given to `dropA`, as Rust drops it;
 // both closed as it's closed, which drops what they hold (ADR 0465). A
 // step after its end steps each on, as Rust's `Zip`, which isn't fused,
-// does.
+// does. Each side is held, as std's `Zip` owns it: one that ends doesn't
+// close itself there, before `dropA` drops the other's item, but as the
+// zip is closed, `a` then `b`.
 function $lazyZip(a, b, dropA) {
   const left = $stepsOf(a);
   const right = $stepsOf(b);
+  left.hold?.();
+  right.hold?.();
   const close = () => {
     left.return?.();
     right.return?.();
