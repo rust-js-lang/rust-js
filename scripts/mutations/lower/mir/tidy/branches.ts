@@ -78,7 +78,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
+    tests: ["test/corpus.test.ts", "-t", "^guard_statements.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-temporary-ternary-kept",

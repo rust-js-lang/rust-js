@@ -256,7 +256,8 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "            Some((end, before)) if last && matches!(end.kind, StmtKind::Break(None)) => before,\n",
     replace: "            Some((end, before)) if false && last && matches!(end.kind, StmtKind::Break(None)) => before,\n",
-    tests: ["test/lowering-switch-ends.test.ts", "-t", "a default after a guarded case"],
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
+    snapshots: true,
   },
   {
     name: "param-mapped-nowhere",
