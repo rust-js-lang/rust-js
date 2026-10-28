@@ -724,4 +724,4 @@ which reads the import and `runWithFiberInDev(fiber, executeDispatch,
 Not yet: a copy that is needed, of one given a value with a destructor,
 is printed from optimized MIR, its drop flags of each `()` it's given
 kept, and its cleanup tests them nested, a branch for each, growing as
-two to the power of their number (filed as an issue).
+two to the power of their number (#394).
