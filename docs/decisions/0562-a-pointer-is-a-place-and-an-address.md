@@ -433,7 +433,11 @@ passed and now panicked:
   Of an empty array of a struct whose size isn't its alignment, the
   address is a multiple of the alignment, not the alignment itself: a
   program comparing one with `NonNull::dangling()` of that struct sees
-  them differ, which native Rust doesn't promise either (case B).
+  them differ, which native Rust doesn't promise either (case B). An
+  empty array compared with an address before anything asked its own, an
+  empty `Vec`'s `as_ptr()` with `NonNull::dangling().as_ptr()`, is given
+  that dangling address then, as `$addr` gives it (2026-10-28: it was
+  equal to no address, `false` where Rust is `true`; `zero_sized_pointers`).
 - **A union's field JS holds as an object is decoded only where it fills
   the union**, its scalars covering every byte (`plain::fills`): the union
   then holds it, so `u.a.0 = x` while it held `b` changes `b`'s bytes, as

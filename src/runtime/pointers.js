@@ -317,7 +317,10 @@ function $ptrEq(p, q, size) {
   }
   const [handle, addr] = p.addr === undefined ? [$placed(p), q.addr] : [$placed(q), p.addr];
   const range = $ranges.get($allocationOf(handle));
-  return range !== undefined && range.base + $offsetIn(handle, range) === addr;
+  // An empty array not yet addressed is at its items' dangling address, as
+  // `$addr` puts it: `Vec::new().as_ptr() == NonNull::dangling().as_ptr()`.
+  if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;
+  return range.base + $offsetIn(handle, range) === addr;
 }
 
 // `p < q`, `p.cmp(&q)`: by address.

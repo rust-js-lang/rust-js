@@ -37,5 +37,13 @@ function main() {
   console.log(
     `${made.length === 0} ${$ptrEq($ptr(made, 0), DANGLING, 1)} ${$ptrEq($ptr(made, 0), $ptr(EMPTY_REF, 0), 1)} ${$ptrEq($ptr(EMPTY_REF, 0), DANGLING, 1)}`,
   );
+
+  // An empty Vec allocates nothing: its pointer is its items' dangling
+  // address, as every empty Vec of them is.
+  const none = [];
+  const other = [];
+  console.log(
+    `${$ptrEq($ptr(none, 0), $ptrFrom(2, 2), 2)} ${$ptrEq($ptr(none, 0), $ptr(other, 0), 2)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

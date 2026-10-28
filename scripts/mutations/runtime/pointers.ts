@@ -227,6 +227,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
   },
   {
+    name: "empty-array-equal-to-no-address",
+    breaks: "an empty array not yet addressed is equal to no address, so `Vec::new().as_ptr() == NonNull::dangling().as_ptr()` is false",
+    file: "src/runtime/pointers.js",
+    find: "  if (range === undefined) return Array.isArray(handle.of) && handle.of.length === 0 && $addr(handle, size) === addr;\n",
+    replace: "  if (range === undefined) return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^zero_sized_pointers.rs$"],
+  },
+  {
     name: "empty-array-not-dangling",
     breaks: "an empty array gets a block of addresses of its own, not the dangling address Rust's `[]` is at",
     file: "src/runtime/pointers.js",

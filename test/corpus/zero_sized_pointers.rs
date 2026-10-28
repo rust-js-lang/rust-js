@@ -52,4 +52,14 @@ fn main() {
         made.as_ptr() == EMPTY_REF.as_ptr(),
         EMPTY_REF.as_ptr() == DANGLING
     );
+
+    // An empty Vec allocates nothing: its pointer is its items' dangling
+    // address, as every empty Vec of them is.
+    let none: Vec<u16> = Vec::new();
+    let other: Vec<u16> = Vec::with_capacity(0);
+    println!(
+        "{} {}",
+        none.as_ptr() == NonNull::<u16>::dangling().as_ptr(),
+        none.as_ptr() == other.as_ptr()
+    );
 }
