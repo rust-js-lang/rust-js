@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "                if (self.implements_iterator(output) || std_iterator)\n",
     replace: "                if self.implements_iterator(output)\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_option_unwraps.rs$"],
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_option_unwraps.rs$|^generic_accumulations with"],
   },
   {
     name: "crate-impl-iterator-route",

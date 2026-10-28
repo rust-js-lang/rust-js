@@ -53,6 +53,8 @@ const few = [
   "held_enumerate.rs",
   "copied_structs_apart.rs",
   "associated_double_ended.rs",
+  "back_steps.rs",
+  "generic_accumulations.rs",
   "heap_pop_of_a_param.rs",
   "escape_iterators.rs",
   "held_zips.rs",

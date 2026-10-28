@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|own_fold_through_adapters).rs$"],
   },
   {
-    name: "closing-not-dropped-when-done",
-    breaks: "an adapter's source of the crate's, stepped to its end by a consumer, is never dropped, as no JS consumer calls `return()` at its end",
-    file: "src/runtime/closing.js",
-    find: "    if (step.done && !closing.held) close();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
-  },
-  {
     name: "closing-back-hidden",
     breaks: "what `$closing` closes is stepped from its back by nothing, so `rev()` of an adapter of a source with a destructor fails",
     file: "src/runtime/closing.js",
@@ -121,14 +113,6 @@ export const mutations: Mutation[] = [
     find: "  for (const item of passed) each(item);\n",
     replace: "  for (const item of back ? passed.reverse() : passed) each(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
-  },
-  {
-    name: "closing-nth-done-kept",
-    breaks: "a source closed to drop it, stepped to its end by its own `nth`, as a `step_by`'s is, isn't done with: a `chain`'s first, let go, never drops it (#225)",
-    file: "src/runtime/closing.js",
-    find: "  if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));\n",
-    replace: "  if (it.nth !== undefined) closing.nth = (k) => it.nth(k);\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
   {
     name: "closing-front-nth-unowned",

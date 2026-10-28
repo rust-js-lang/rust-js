@@ -130,6 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "            !data.is_cleanup\n                && matches!(&data.terminator().kind, TerminatorKind::Drop {",
     replace: "            matches!(&data.terminator().kind, TerminatorKind::Drop {",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
   },
   {
@@ -198,6 +199,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$held\", vec![name])).at(js::Span::NONE));\n",
     replace: "                let _ = name;\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
   },
   {

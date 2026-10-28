@@ -584,10 +584,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extended-std-struct-undropped",
-    breaks: "a held `repeat(x).take(n)` given whole to `extend` isn't dropped after, so its `x` is never dropped (ADR 0913)",
+    breaks: "a held `repeat(x).take(n)` given whole to `extend` isn't closed after, `repeated.return()`, where `extend`'s own close drops its `x` as Rust does now: its JS (ADR 0913)",
     file: "src/lower/combinators.rs",
     find: "        if !iterable.is_ref()\n            && self.compiled_struct_at(iterable, span)\n",
     replace: "        if false\n            && self.compiled_struct_at(iterable, span)\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
   {

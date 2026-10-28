@@ -50,12 +50,4 @@ export const mutations: Mutation[] = [
     replace: "  const first = { done: false, value: undefined };\n  const kept = it.reduce(",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
-  {
-    name: "extreme-by-empty-left-open",
-    breaks: "`max()` of none never drops what its source has left, its `next()?` not closing it (#242)",
-    file: "src/runtime/max_by.js",
-    find: "  if (first.done) {\n    it.return?.();\n    return undefined;\n  }\n",
-    replace: "  if (first.done) {\n    return undefined;\n  }\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
-  },
 ];

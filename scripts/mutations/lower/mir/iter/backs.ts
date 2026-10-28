@@ -425,6 +425,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "        let knowing = match self.compiled_struct_at(revealed, span) {\n",
     replace: "        let knowing = match false && self.compiled_struct_at(revealed, span) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^returned_impl_ends.rs$|^back_steps with"],
   },
 ];

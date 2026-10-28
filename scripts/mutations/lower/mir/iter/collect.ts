@@ -159,7 +159,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "            return Ok(Some(self.collected_into(items, output, item, None, span)?));\n",
     replace: "            return Ok(Some(self.collected_into(items, output, item, Some(iter_ty), span)?));\n",
-    tests: ["test/corpus.test.ts", "-t", "^from_iter_called.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(from_iter_called|text_predicates)\\.rs$"],
   },
   {
     name: "from-iter-of-anything",

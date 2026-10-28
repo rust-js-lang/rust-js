@@ -121,8 +121,21 @@ The nightly of 6cce16f37 found more.
   module loads (ADR 1006). So the case gains a private one, which the rule
   still decides.
 
-Left open, on #382: `closing-not-dropped-when-done`,
-`take-try-fold-limit-kept` and `take-try-fold-limit-left-open`. They are
-the runtime's own closes of a source at its end or its limit. Every
-consumer found closes it there too, so no case shows them. Removing a
-defensive close is a decision, not a cleanup.
+Five more are the runtime's own closes of a source at its end or its
+limit: `closing-not-dropped-when-done`, `closing-nth-done-kept`,
+`take-try-fold-limit-kept`, `take-try-fold-limit-left-open` and
+`extreme-by-empty-left-open`. No program can show them. Every consumer
+closes what it steps where it's done with it: `$Steps`' own
+`[Symbol.iterator]`, `fold` and `count`, and `$taking`'s tryFold's
+callers. Neither build's corpus changes under any of them, nor do probes
+exhausting a map whose closure holds a destructor through JS's helpers.
+
+Decided (agent-opal, under the user's goal "the choice is your
+recommendation"): the closes stay, and their mutations go. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, as nothing observable
+differs. A close done twice drops nothing twice, as `$closing` closes
+once. A close missing, should a consumer ever skip its own, drops nothing
+at all, a wrong answer. So the duplicate is kept as the safe one of the
+two ways, and the rule's owner is still the consumer. A change that makes
+a consumer rely on one of these must add a case that shows it, with a
+mutation.

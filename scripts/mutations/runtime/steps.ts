@@ -268,14 +268,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
   {
-    name: "take-try-fold-limit-kept",
-    breaks: "a `take` asked again at its limit by `try_fold`, as a `filter` over it steps it, isn't done with its source (#225)",
-    file: "src/runtime/steps.js",
-    find: "      if (n === 0) {\n        if (!taken.held) this.return();\n        return init;\n      }\n",
-    replace: "      if (n === 0) {\n        return init;\n      }\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
-  },
-  {
     name: "steps-hold-unpassed",
     breaks: "holding an adapter doesn't hold what it steps, so its source drops what it has left as the adapter ends (#206)",
     file: "src/runtime/steps.js",
@@ -297,14 +289,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "        if (this.nth(k - 1).done) {\n          this.return();\n          return init;\n        }\n",
     replace: "        if (this.nth(k - 1).done) {\n          return init;\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
-  },
-  {
-    name: "take-try-fold-limit-left-open",
-    breaks: "a `take` its `try_fold` stopped at its limit, a filter that kept none, never drops what its source has left: `new Set(..)` closes nothing (#242)",
-    file: "src/runtime/steps.js",
-    find: "      if (full && !stopped && !taken.held) this.return();\n",
-    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
   {
