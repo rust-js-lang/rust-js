@@ -1209,6 +1209,12 @@ fn variable_name(type_name: &str) -> String {
         .collect()
 }
 
+/// A label the program wrote, `'get_tag`, as JS writes it: camelCase,
+/// `getTag`, as every name is (ADRs 0573, 0944).
+fn written_label(label: &rustc_ast::Label) -> String {
+    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\''))
+}
+
 #[cfg(test)]
 mod tests {
     use super::variable_name;
@@ -1223,10 +1229,4 @@ mod tests {
         assert_eq!(variable_name("IOError"), "ioError");
         assert_eq!(variable_name("trailingZeros"), "trailingZeros");
     }
-}
-
-/// A label the program wrote, `'get_tag`, as JS writes it: camelCase,
-/// `getTag`, as every name is (ADRs 0573, 0944).
-fn written_label(label: &rustc_ast::Label) -> String {
-    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\''))
 }

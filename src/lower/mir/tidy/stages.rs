@@ -918,17 +918,6 @@ fn mentions(body: &[Stmt]) -> HashMap<String, usize> {
     mentions
 }
 
-#[cfg(test)]
-mod tests {
-    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
-    #[test]
-    fn each_pass_is_named_apart() {
-        let names = super::super::pass_names();
-        let unique: std::collections::HashSet<_> = names.iter().collect();
-        assert_eq!(unique.len(), names.len());
-    }
-}
-
 /// Each `if` the program wrote with an `else` but a `match` of constants,
 /// which `switches` makes a `switch` of where it can before any is a value
 /// (ADR 0629): a function's `match tag { A | B => 2, _ => 3 }` its `switch
@@ -939,4 +928,15 @@ fn unswitched(h: &Hints) -> Vec<(js::Span, js::Span, js::Span)> {
         .filter(|(cond, ..)| !switch(cond))
         .copied()
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
+    #[test]
+    fn each_pass_is_named_apart() {
+        let names = super::super::pass_names();
+        let unique: std::collections::HashSet<_> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+    }
 }
