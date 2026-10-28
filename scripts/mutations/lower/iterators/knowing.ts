@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "exact-size-rev-unread",
+    breaks: "a reversed range made in place, given where its length is asked, is refused: `count((1..4).rev())` (ADR 0986)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            if let Some(reversed) = reversed {\n                let reversed = self.as_exact_size(reversed, source, true, span)?;\n",
+    replace: "            if let Some(reversed) = reversed.filter(|_| false) {\n                let reversed = self.as_exact_size(reversed, source, true, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
+  },
+  {
+    name: "exact-size-reversed-items-unread",
+    breaks: "an array's items reversed where they're made, `$iter(xs.toReversed())`, given where their length is asked, are refused: `count(v.iter().enumerate().rev())` (ADR 0986)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            if crate::lower::iterators::is_stepped_items(&value) {\n                return Ok(value);\n            }\n            if crate::lower::recognition::mapped_source(",
+    replace: "            if false && crate::lower::iterators::is_stepped_items(&value) {\n                return Ok(value);\n            }\n            if crate::lower::recognition::mapped_source(",
+    tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
+  },
+  {
+    name: "exact-size-reversed-map-unread",
+    breaks: "a map of reversed items made in place, given where its length is asked, is refused: `count(v.iter().map(f).rev())` (ADR 0986)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            if crate::lower::recognition::mapped_source(self.tcx, source.peel_refs()).is_some()\n",
+    replace: "            if false && crate::lower::recognition::mapped_source(self.tcx, source.peel_refs()).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
+  },
+  {
     name: "knowing-try-rfold-ungiven",
     breaks: "a held `skip()` over a `take()` stepped by `rfind` steps each from its back, not by std's `Take::try_rfold`, one `nth_back` of the crate's iterator (ADR 0930)",
     file: "src/lower/iterators/knowing.rs",

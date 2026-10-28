@@ -49,6 +49,89 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
     }
 
+    /// The length of `it`, an iterator of type `ty` made in place, counted
+    /// without stepping it or calling what it's given, as std's `len()` of
+    /// each adapter asks its source's (ADR 0986): a `map`'s, an
+    /// `enumerate()`'s, a `copied()`'s and a `rev()`'s, its source's; a
+    /// `take(n)`'s, at most `n`; a `skip(n)`'s, `n` fewer or none; an array's
+    /// items', their array's; a range of numbers', its count; a generic
+    /// one's, its own. `None` of
+    /// another form, which is refused.
+    pub(in crate::lower::mir) fn len_in_place(
+        &mut self,
+        it: &Expr,
+        ty: Ty<'tcx>,
+        made: &mut Vec<Stmt>,
+    ) -> Option<Expr> {
+        use crate::lower::recognition as r;
+        let ty = self.reveal(ty.peel_refs());
+        if crate::lower::iterators::is_stepped_items(it) {
+            return Some(self.items_left(it.clone(), made));
+        }
+        if let Some(kind) = self.range_kind(ty) {
+            let range = crate::lower::iterators::stepped_form(it).unwrap_or(it);
+            return self.range_len(range, ty, kind);
+        }
+        // A generic one's or a `dyn`'s, given knowing its length (ADR 0456):
+        // its own, not `Iterator.from`'s of it.
+        if (self.is_unknown(ty) || r::dyn_iter_trait(self.tcx, ty).is_some()) && self.knows_its_length(ty) {
+            let given = crate::lower::iterators::iterated(it.clone());
+            return Some(Expr::call(Expr::member(given, "len"), Vec::new()));
+        }
+        // Its source's, `$rev(source)`, a range's stepped from its back,
+        // `$iterator(range, $rangeNextBack)`, or an array's items reversed
+        // where they're made, `$iter(xs.toReversed())` (ADR 0530).
+        if let Some(source) = r::reversed_source(self.tcx, ty) {
+            let source_value = match &it.kind {
+                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => &args[0],
+                _ => crate::lower::iterators::stepped_form(it).unwrap_or(it),
+            };
+            return self.len_in_place(&source_value.clone(), source, made);
+        }
+        // A copy of its source's items, which is its source in JS (ADR 0547).
+        if let Some(source) = r::copied_source(self.tcx, ty) {
+            return self.len_in_place(it, source, made);
+        }
+        if let Some(source) = r::enumerated_source(self.tcx, ty) {
+            let source_value = crate::lower::iterators::enumeration_source(it)?.clone();
+            return self.len_in_place(&source_value, source, made);
+        }
+        // `source.map(f)`, `f` made and not called.
+        if let Some(source) = r::mapped_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "map"
+            && let [f] = args.as_slice()
+            && !f.has_effects()
+        {
+            return self.len_in_place(&source_value.clone(), source, made);
+        }
+        // `source.take(n)` or `$taking(source, n)`, `Math.min(len, n)`;
+        // `source.drop(n)` or `$skipping(source, n)`, `Math.max(len - n,
+        // 0)`: its source's count read before `n`, as Rust has them.
+        if let Some((source, skip)) = r::counted_source(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && let Some((source_value, n)) = match (&callee.kind, args.as_slice()) {
+                (js::ExprKind::Member(source_value, method), [n]) if method == if skip { "drop" } else { "take" } => {
+                    Some((&**source_value, n))
+                }
+                (_, [source_value, n]) if callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" }) => {
+                    Some((source_value, n))
+                }
+                _ => None,
+            }
+            && !n.has_effects()
+        {
+            let len = self.len_in_place(&source_value.clone(), source, made)?;
+            let math = |name: &str, args| Expr::call(Expr::member(Expr::var("Math"), name), args);
+            return Some(match skip {
+                true => math("max", vec![Expr::bin(Op::Sub, len, n.clone()), Expr::int(0)]),
+                false => math("min", vec![len, n.clone()]),
+            });
+        }
+        None
+    }
+
     /// Whether std's iterator `ty` is a `$iter` of an array, as
     /// `std_iterator` makes it: an array's own, a string's `chars()`,
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a

@@ -537,6 +537,12 @@ What's refused is in [the limitations](limitations.md).
   its `len()` is its `size_hint()`, checked ([0164](../decisions/0164-double-ended-iterators.md)).
   `size_hint()` is Rust's where it's known: std's `(0, None)` of one of the
   crate's, a std `ExactSizeIterator`'s length ([0170](../decisions/0170-size-hint.md)).
+- **`len()` of an iterator made where it's asked is counted, not
+  stepped:** each adapter's is its source's, as std's: `v.iter().map(f).len()`
+  is `v.length`, and `f` isn't called; `take(n)`'s is `Math.min(len, n)`,
+  `skip(n)`'s `Math.max(len - n, 0)`, a `rev()`'s or an `enumerate()`'s its
+  source's, a range's its count, a generic one's its own `it.len()`
+  ([0986](../decisions/0986-len-of-an-iterator-made-in-place.md)).
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,

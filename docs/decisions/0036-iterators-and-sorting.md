@@ -1,7 +1,10 @@
 # 0036. An iterator is a JS array; `Ordering` is -1, 0 or 1
 
 Status: Accepted; a chain whose stages do what can be seen is lazy ([0139](0139-lazy-chains.md)). Extends [0025](0025-vec-loops-refcell-mut.md), where a
-`Vec` is a JS array and `for` loops over one. Amended: a fallible `collect()` of any collection (below).
+`Vec` is a JS array and `for` loops over one. Amended: a fallible `collect()` of any collection (below). Amended by
+[0986](0986-len-of-an-iterator-made-in-place.md): `len()` of a chain whose
+closures do what can be seen is its source's, counted through its
+adapters, which runs none of them.
 
 Case: B, A, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

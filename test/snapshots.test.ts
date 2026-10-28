@@ -86,7 +86,9 @@ for (const [name, input, crates] of cases) {
     expectSnapshot(out, join(root, "test/snapshots", name));
     // A compile of a crate of serde's, `inbox`'s, takes past bun's 5 s on a
     // loaded machine, the wasm job's too: its compile's time, not a hang.
-  }, 60_000);
+    // Beside `check:fast`'s rebuilds of a change's ten mutations, its 15 s
+    // alone took past 60 s.
+  }, 120_000);
 }
 
 // The playground's own bindings declare JS types as a program does, and a

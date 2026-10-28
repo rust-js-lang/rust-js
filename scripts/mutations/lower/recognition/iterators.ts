@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\" | \"std::iter::Rev\"\n",
     replace: "                \"std::iter::Map\" | \"std::iter::Copied\" | \"std::iter::Enumerate\"\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(std_iterator_clones|len_made_in_place).rs$"],
   },
   {
     name: "try-rfold-not-from-back",

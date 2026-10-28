@@ -256,6 +256,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
+        // A `rev()` made here (ADR 0986): `$rev(source)`, or a range's
+        // stepped from its back, `$iterator(range, $rangeNextBack)`, `$rev`
+        // of its source made knowing its back and length; an array's items
+        // reversed where they're made, `$iter(xs.toReversed())`, which knows
+        // them; a map of them, `$iter(xs.toReversed()).map(f)`, made knowing
+        // them as its source's map is. Not one a dictionary steps from its
+        // back, `$iterator(it, nextBack)`, which knows neither.
+        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty) {
+            let reversed = match &value.kind {
+                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => {
+                    Some(args[0].clone())
+                }
+                _ if self.range_kind(source).is_some() => crate::lower::iterators::stepped_form(&value).cloned(),
+                _ => None,
+            };
+            if let Some(reversed) = reversed {
+                let reversed = self.as_exact_size(reversed, source, true, span)?;
+                return Ok(Expr::call_helper("$rev", vec![reversed]));
+            }
+            if crate::lower::iterators::is_stepped_items(&value) {
+                return Ok(value);
+            }
+            if crate::lower::recognition::mapped_source(self.tcx, source.peel_refs()).is_some()
+                && let js::ExprKind::Call(callee, _) = &value.kind
+                && let js::ExprKind::Member(_, method) = &callee.kind
+                && method == "map"
+            {
+                return self.as_exact_size(value, source, back, span);
+            }
+        }
         Err(self.unsupported(
             span,
             &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count"),

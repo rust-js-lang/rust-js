@@ -483,8 +483,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(IterMethod::Len), None) if counted_chain(&it) => {
                     Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
                 }
-                // A range of numbers' count (`range_len`).
-                (Some(IterMethod::Len), Some(kind)) if let Some(count) = self.range_len(&it, iter_ty, kind) => count,
+                // One made in place, by what each of its adapters counts of
+                // its source: a range of numbers' count (ADR 0986).
+                (Some(IterMethod::Len), _) if let Some(len) = self.len_in_place(&it, iter_ty, made) => len,
                 _ => {
                     // Its type's name, not its closures', which name where they're written.
                     let shown = match iter_ty.kind() {
