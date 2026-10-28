@@ -1364,6 +1364,10 @@ export function share(doc) {
   Fn()>` listeners are an array of functions beside `react`'s `dyn Fn`s
   ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md),
   [ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md), amended).
+  A library's own `dyn Fn`s drop by the same rule, as its contract says,
+  and a crate whose may hold what drops is refused where it uses a
+  library holding a `dyn Fn` whose don't, which would drop nothing of the
+  one it's given.
 - **An `Rc` is `js::Defined` as what it points at is**, as a `Box` is, so
   a `WeakMap` or a `Map` holds one, `WeakMap<JsObject, Rc<CacheNode>>`,
   the value itself, which its `get` gives back as a clone shares it. A

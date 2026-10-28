@@ -1124,8 +1124,9 @@ pub fn each(children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'stati
 // an optional nullable `Cell` of `RendererTask`s, each a `Box<dyn FnMut>`,
 // whose drop glue made its `Cell::new(None)` a temporary of its own, read
 // `{}.value` where the literal was made (ADR 0810, amended). It's left out,
-// as the other optional fields are. Its `set(None)` drops what it held: a
-// consumer's `RendererTask` may hold what has a destructor (ADR 0521).
+// as the other optional fields are. Its `set(None)` drops what it held,
+// nothing: the library makes no `dyn Fn` of what drops, and a consumer whose
+// `RendererTask` would is refused (ADR 0626, amended).
 test("an optional nullable field of what has drop glue is left out where it's made", async () => {
   const dir = fixture("nullable-optional-drops");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -1160,7 +1161,7 @@ pub fn make(dev: bool) -> SharedStateClient {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const internals = {\n    H: null,\n  };");
   expect(js).not.toContain("{}.value");
-  expect(js).toContain("$dispose(item);");
+  expect(js).not.toContain("$dispose");
   installRuntime(dir);
   const lib = await import(join(dir, "lib.js"));
   const prod = lib.make(false);

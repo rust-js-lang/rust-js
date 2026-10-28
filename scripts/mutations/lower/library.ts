@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "library-dyn-unreached",
     breaks: "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
     file: "src/lower/library.rs",
-    find: "                reached.fn_dyns |= super::recognition::is_fn_dyn(tcx, predicates);\n",
+    find: "                reached.fn_dyns_of.insert(tcx.crate_name(krate).to_string());\n",
     replace: "",
     tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
   },
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     breaks: "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
     file: "src/lower/library.rs",
     find: "        let mut reached = Reached::default();\n        if !self.any() {\n            return reached;\n        }\n",
-    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns: true, ..Reached::default() };\n        }\n",
+    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns_of: self.dependencies.libraries.keys().cloned().collect(), ..Reached::default() };\n        }\n",
     tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
   },
   {

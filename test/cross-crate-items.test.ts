@@ -744,17 +744,13 @@ pub fn loud(n: u32) -> Box<dyn Fn() -> u32> {
   expect(logged).toEqual(["called 5", "dropped 4"]);
 });
 
-// A library that makes no `dyn Fn` of what drops still drops one it's
-// given where Rust does: its callers' closures, unseen, may hold what has a
-// destructor (ADR 0521).
-test("a library drops a dyn Fn its consumer gives it, of what drops", async () => {
-  const dir = fixture("cross-crate-dyn-fn-given");
-  const { dep } = compiled(dir, `pub fn call_boxed(f: Box<dyn Fn() -> u32>) -> u32 {
-    let value = f();
-    println!("called {value}");
-    value
-}
-`, `pub struct Loud(pub u32);
+// A library's `dyn Fn`s drop where it makes one of what drops, as its
+// contract says: one whose do drops the consumer's it's given where Rust
+// drops it. One whose `dyn Fn`s drop nothing, given one by a consumer whose
+// may hold what drops, would drop nothing of it: the consumer is refused,
+// naming it (ADR 0626, amended).
+test("a library drops a consumer's dyn Fn where its own drop, and refuses one it would drop nothing of", async () => {
+  const loud = `pub struct Loud(pub u32);
 
 impl Drop for Loud {
     fn drop(&mut self) {
@@ -762,26 +758,53 @@ impl Drop for Loud {
     }
 }
 
-pub fn run(n: u32) -> u32 {
+`;
+  const run = `${loud}pub fn run(n: u32) -> u32 {
     let loud = Loud(n);
     dep::call_boxed(Box::new(move || {
         let loud = &loud;
         loud.0 + 1
     }))
 }
-`);
-  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(false);
-  expect(dep).toContain("$dispose(f)");
+`;
+  const callBoxed = `pub fn call_boxed(f: Box<dyn Fn() -> u32>) -> u32 {
+    let value = f();
+    println!("called {value}");
+    value
+}
+`;
+  const dir = fixture("cross-crate-dyn-fn-given");
+  compiled(dir, `${callBoxed}
+pub struct Tick(pub u32);
+
+impl Drop for Tick {
+    fn drop(&mut self) {
+        println!("tick {}", self.0);
+    }
+}
+
+pub fn ticker(n: u32) -> Box<dyn Fn() -> u32> {
+    let tick = Tick(n);
+    Box::new(move || {
+        let tick = &tick;
+        tick.0
+    })
+}
+`, run);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(true);
   const logged: unknown[] = [];
   const log = console.log;
   console.log = (...args: unknown[]) => logged.push(args.join(" "));
   try {
-    const { run } = await import(join(dir, "app", "lib.js"));
-    expect(run(7)).toBe(8);
+    const app = await import(join(dir, "app", "lib.js"));
+    expect(app.run(7)).toBe(8);
   } finally {
     console.log = log;
   }
   expect(logged).toEqual(["called 8", "dropped 7"]);
+  const refused = fixture("cross-crate-dyn-fn-refused");
+  expect(() => compiled(refused, callBoxed, run)).toThrow("this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `dep`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them");
+  expect(JSON.parse(readFileSync(join(refused, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(false);
 });
 
 // A library's generic function takes a copy function only where its own

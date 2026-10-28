@@ -4,7 +4,9 @@ Status: Accepted. Amends [0521](0521-a-dyn-fn-carries-its-drop.md) and
 [0523](0523-libraries-share-one-counted-rc.md), whose "a crate using a
 library" this narrows to what it uses of it. Amended: a closure of the
 crate's a library's function is given hands nothing, below; and a
-library's `dyn Fn` drops where a library makes one of what drops, below.
+library's `dyn Fn` drops where a library makes one of what drops, below;
+and a library's own `dyn Fn`s drop as a program's do, a consumer that would
+hand it one that drops refused, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R where it was wrong,
 a library's `dyn Fn` dropped as nothing; else none: a refusal lifted.
@@ -164,3 +166,97 @@ is made a `dyn Fn`, every `dyn Fn` does. Here none is.
   `library-fn-dyns-unwritten` (`lower/library.rs`),
   `library-fn-dyns-unread` (`library.rs`), `generic-closure-holds-a-param`
   and `dyn-made-dyn-holds-a-param` (`analysis/closures.rs`).
+
+## Amendment: a library's own `dyn Fn`s drop as a program's do, and a consumer that would hand it one that drops is refused
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none where it compiles,
+each `dyn Fn` dropped where Rust drops what it holds; D, refused, for a
+crate whose `dyn Fn`s may hold what drops that uses a library whose drop
+nothing. The user's decision is pending: this is the recommendation taken
+(`decisions-pending.md`, rd57).
+
+React DOM's bindings depend on the reconciler, which `rust-js build` then
+compiles as a library (ADR 0360). "The library's own `dyn Fn`s still drop,
+whatever it says": every `dyn Fn` of the reconciler dropped, so its
+`Rc<dyn Fn()>`s, and the `UpdateQueue`s, `Effect`s and the cache shim
+holding them, were counted, `{ value, strong, weak }`, and 27 places that
+give them to JS (`js::unknown_of(Rc::clone(queue))`,
+`Rc::from(function::bind(..))`) were refused (ADR 0844): built as the app
+it compiled, none of them counted. `react` and `shared`, libraries too,
+wrote a `$dispose` in a `catch` beside each call that may throw while a
+`dyn Fn` is held, `enqueueTask`'s and `startTransition`'s.
+
+**A library's `dyn Fn`s drop as a program's do: where it makes one of a
+function holding a value with a destructor, or a library hands it one whose
+contract says its own may** (`fn_dyns_drop`, which its contract writes as
+`makes_dropping_fn_dyns`, as before). **A crate whose `dyn Fn`s drop, that
+reaches a `dyn Fn` in the items of a library whose don't, is refused**:
+that library would drop nothing of one the crate gives it ("this crate's
+`dyn Fn`s may hold a value with a destructor, which their drop runs, but
+`dep`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them").
+What the libraries hand a crate is now said of each library
+(`Reached::fn_dyns_of`), so the crate's `dyn Fn`s drop by the libraries
+whose do, and are refused by those whose don't. A closure of the crate's
+given a library's generic function, an `impl Fn`, that holds what drops is
+the crate's own instance's, or refused, as before (ADR 0914).
+
+```rust
+// dep, whose `dyn Fn`s drop nothing
+pub fn call_boxed(f: Box<dyn Fn() -> u32>) -> u32 {
+    f()
+}
+
+// its consumer: refused
+pub fn run(n: u32) -> u32 {
+    let loud = Loud(n);
+    dep::call_boxed(Box::new(move || {
+        let loud = &loud;
+        loud.0 + 1
+    }))
+}
+```
+
+### Why
+
+- **One rule for what a library shares with its consumers**, as ADR 0852
+  has it for `Rc`s: the library's contract says what its values are, and
+  a consumer that would make one otherwise is refused, rather than the
+  library guessing for consumers it can't see, which here made every
+  library's `dyn Fn`s drop and React's reconciler unusable as a
+  dependency.
+- **One answer for a crate's JS**: the reconciler's is what it was as the
+  app, whichever package `rust-js build` is given.
+- **Still correct**: a `dyn Fn` the crate gives a library is one of the
+  crate's, whose drop the crate knows; where it may drop and the library
+  wouldn't, the crate is refused.
+
+### Alternatives
+
+- **A library's `dyn Fn`s drop, as before**: correct, but React's
+  reconciler can't be a dependency of React DOM.
+- **A fact per `dyn Fn` type**: more precise, but the reconciler's are in
+  its public signatures, every one a consumer may give.
+- **A consumer compiles its own copy of a library's function it gives a
+  `dyn Fn` that drops**, as it does of a generic function (ADR 0914): a
+  function that keeps it, in a thread-local the library reads, would still
+  be the library's.
+
+### Consequences
+
+- A program that compiled is refused: a crate boxing a closure of a
+  `Loud` into a library's `call_boxed`, whose `dyn Fn`s drop nothing. A
+  library that makes a `dyn Fn` of what drops, a `ticker` of a `Tick`,
+  drops one it's given, as before.
+- `react`'s and `shared`'s JS lose their `$dispose`s: `enqueueTask`'s
+  `$unwrap(enqueueTaskImpl)(task)`.
+
+### What holds it
+
+- `test/cross-crate-items.test.ts`, "a library drops a consumer's dyn Fn
+  where its own drop, and refuses one it would drop nothing of".
+- Mutations `dropping-dyn-fn-given-unrefused` and
+  `dropping-dyn-fn-library-refused` (`analysis.rs`), and
+  `library-fn-dyns-always-drop`, `library-fn-dyns-never-drop`,
+  `library-dyn-unreached` and `library-reached-any`, rewritten; the
+  amendment above's `library-fn-dyns-drop-unless-made` went with the rule
+  it held.

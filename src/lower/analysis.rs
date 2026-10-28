@@ -878,17 +878,26 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
     let mut counted = counted_with(&closure_facts);
     // Whether the crate makes a `dyn Fn` of a function holding a value with
-    // a destructor, or a library hands it one that may hold one, as its
-    // contract says (ADR 0626, amended): what a program's `dyn Fn`s drop
-    // by, and what a library's contract says of it. A library's drop
-    // anyway: its callers' closures are unseen.
-    closure_facts.makes_dropping_fn_dyns = reached.fn_dyns && foreign.makes_dropping_fn_dyns()
+    // a destructor, or a library hands it one whose contract says its own
+    // may (ADR 0626, amended): what its `dyn Fn`s drop by, a library's as a
+    // program's, and what its contract says of them. A consumer's closure
+    // given a library's generic function that holds what drops is its own
+    // instance's, or refused (ADR 0914).
+    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))
         || closures::fn_dyns_drop(tcx, all_bodies, (params_may_drop, reached.functions), |ty| {
             super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
         });
-    if closure_facts.makes_dropping_fn_dyns || library {
+    if drops {
         closure_facts.fn_dyns_drop = true;
         counted = counted_with(&closure_facts);
+    }
+    // A library whose `dyn Fn`s drop nothing that holds one the crate's
+    // may be: it would drop nothing of one it's given (ADR 0626, amended).
+    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {
+        tcx.dcx().err(format!(
+            "rust-js: this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `{name}`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them, and would drop nothing of it (ADR 0626)"
+        ));
+        return None;
     }
     // Whether a value with a destructor is made a `dyn Any`, which then
     // drops it (ADR 0691): what unwound, of a panic or of JS, drops nothing.

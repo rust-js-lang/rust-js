@@ -443,8 +443,9 @@ pub(super) struct Reached<'tcx> {
     /// reaches the crate, which may hold a value with a destructor where the
     /// crate makes it a `dyn Fn`.
     pub(super) functions: bool,
-    /// A `dyn Fn` in what it exports, which may already hold one.
-    pub(super) fn_dyns: bool,
+    /// The libraries with a `dyn Fn` in what they export, which may hold
+    /// one where theirs drop, and is given the crate's (ADR 0626, amended).
+    pub(super) fn_dyns_of: std::collections::BTreeSet<String>,
     /// What each `Rc` or `Weak` a library's items hold points at, of
     /// their signatures and fields, not of a type parameter a consumer
     /// gives, which their code reads by a dictionary, as the crate has it:
@@ -642,11 +643,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_anys)
     }
 
-    /// Does any of the libraries make a `dyn Fn` of what drops, or is handed
-    /// one so, which a `dyn Fn` it hands the crate may then be (ADR 0626,
-    /// amended)?
-    pub(super) fn makes_dropping_fn_dyns(&self) -> bool {
-        (self.dependencies.libraries.values()).any(|library| !library.builtin && library.makes_dropping_fn_dyns)
+    /// Do the `dyn Fn`s of `name`, a library, drop: does it make one of
+    /// what drops, or is handed one so, which a `dyn Fn` it hands the crate
+    /// may then be, and which drops one it's given (ADR 0626, amended)?
+    pub(super) fn drops_fn_dyns(&self, name: &str) -> bool {
+        (self.dependencies.libraries.get(name))
+            .is_some_and(|library| !library.builtin && library.makes_dropping_fn_dyns)
     }
 
     /// Does any of the libraries keep a `Vec`'s capacity (ADR 0419)?
@@ -836,8 +838,11 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                     ..
                 },
             ) => reached.functions |= library(def_id),
-            ty::Dynamic(predicates, ..) if exported.is_some() => {
-                reached.fn_dyns |= super::recognition::is_fn_dyn(tcx, predicates);
+            ty::Dynamic(predicates, ..)
+                if let Some(krate) = exported
+                    && super::recognition::is_fn_dyn(tcx, predicates) =>
+            {
+                reached.fn_dyns_of.insert(tcx.crate_name(krate).to_string());
             }
             ty::FnDef(..)
                 if let Some((id, args)) = super::fn_def(ty)

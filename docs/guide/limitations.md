@@ -154,5 +154,11 @@ serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
   library's private `static` or thread-local, or calls a binding its
   library names by a path relative to its own file
   ([ADR 0914](../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
+- A crate that would share what a library it uses represents otherwise
+  is refused: counting an `Rc` of a type the library counts none of
+  ([ADR 0852](../decisions/0852-each-types-rcs-are-counted-apart.md)), or
+  making a `dyn Fn` that may hold a value with a destructor where the
+  library holds a `dyn Fn` whose drop nothing
+  ([ADR 0626](../decisions/0626-what-a-library-hands-a-crate.md)).
 - What else isn't built yet is in [the architecture's "Not yet"](../architecture.md#not-yet)
   and [the roadmap](../../ROADMAP.md).

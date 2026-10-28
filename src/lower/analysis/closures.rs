@@ -16,12 +16,10 @@ use std::collections::HashSet;
 #[derive(Default)]
 pub struct ClosureFacts {
     /// Whether a function holding a value with a destructor is made a `dyn
-    /// Fn`, which then drops it: a library's may be.
+    /// Fn`, which then drops it: the crate makes one so, a library a type
+    /// parameter's, or a library hands it one whose own may, as a library's
+    /// contract says (ADR 0626, amended).
     pub fn_dyns_drop: bool,
-    /// Whether the crate makes one so itself, or a library hands it one
-    /// that may be, as a program's are: what a library's contract says,
-    /// whose own `dyn Fn`s drop anyway (ADR 0626, amended).
-    pub makes_dropping_fn_dyns: bool,
     /// Whether a value with a destructor is made a `dyn Any`, which then
     /// drops it: what unwound, a panic's message or what JS threw, drops
     /// nothing, nor a `dyn Any` of anything else (ADR 0691).
@@ -72,7 +70,6 @@ impl ClosureFacts {
             .collect();
         ClosureFacts {
             fn_dyns_drop: false,
-            makes_dropping_fn_dyns: false,
             any_dyns_drop: false,
             made_fn_dyns,
             handed_fn_dyns,
