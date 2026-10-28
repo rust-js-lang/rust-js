@@ -1405,6 +1405,8 @@ a last `_`, or a last name, `current => current`, which is the value, is a
 `default`, left out where it does nothing, and each case ends in `break;`
 where it'd go on, the case's own where it's left for what follows the
 `switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
+or for the function's end or the one `return` after the `match`, not a
+copy of that `return` ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended),
 in a block `{ .. }` where it declares a name. An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a

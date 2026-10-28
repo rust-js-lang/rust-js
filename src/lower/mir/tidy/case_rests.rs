@@ -248,6 +248,98 @@ pub(super) fn returns_of_cases(stmts: &mut Vec<Stmt>, switches: &[Switch], retur
     }
 }
 
+/// `stmts`, a function's body of no value, ending in a `switch`: each
+/// `return;` MIR made in its cases, the way to the function's end, the
+/// `switch`'s `break;`, as upstream writes `case HostText: if (..) { .. }
+/// break;`, and none where the case ends anyway, which the printer ends
+/// with its `break;` where it neither leaves nor falls through. Not in a
+/// loop or a `switch` of the case's own, whose `break` it would be (ADR
+/// 0905, amended).
+pub(super) fn breaks_of_ending_switch(stmts: &mut [Stmt], returns: &[js::Span]) {
+    fn broken(list: &mut [Stmt], returns: &[js::Span]) {
+        for stmt in list {
+            match &mut stmt.kind {
+                StmtKind::Return(None) if !super::written(returns, stmt.span) => stmt.kind = StmtKind::Break(None),
+                StmtKind::If(_, then, otherwise) => {
+                    broken(then, returns);
+                    if let Some(otherwise) = otherwise {
+                        broken(otherwise, returns);
+                    }
+                }
+                StmtKind::Labeled(_, body) => broken(body, returns),
+                _ => {}
+            }
+        }
+    }
+    // The `break;`s where the case ends anyway, `at_end`, or goes on to a
+    // `break;` after them: none, `if (flags) { b(); } break;`.
+    fn ended(list: &mut Vec<Stmt>, at_end: bool) {
+        while at_end && matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
+            list.pop();
+        }
+        let broken = matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(None)));
+        // The `if` before it, whose branches end where it does; or that
+        // ends the list, its branches' own `if`s.
+        let (before, ends) = match broken {
+            true => (list.len().checked_sub(2), true),
+            false => (list.len().checked_sub(1), at_end),
+        };
+        if let Some(StmtKind::If(_, then, otherwise)) = before.map(|i| &mut list[i].kind) {
+            ended(then, ends);
+            if let Some(otherwise) = otherwise {
+                ended(otherwise, ends);
+            }
+        }
+    }
+    let Some(Stmt {
+        kind: StmtKind::Switch { cases, default, .. },
+        ..
+    }) = stmts.last_mut()
+    else {
+        return;
+    };
+    for case in cases.iter_mut() {
+        broken(&mut case.body, returns);
+        ended(&mut case.body, !case.falls);
+    }
+    if let Some(default) = default {
+        broken(default, returns);
+        ended(default, true);
+    }
+}
+
+/// `stmts[i]`, a `switch` followed by a `return`, MIR's copies of which in
+/// its cases are of what follows the `match` past the block it ended, `bb3:
+/// { switch (..) { .. } } return bailout(..);`: each copy the case's
+/// `break`, as written, React's attemptEarlyBailoutIfNoScheduledUpdate's
+/// `switch` and its one `return` (ADR 0905, amended).
+pub(super) fn copied_returns_broken(stmts: &mut [Stmt], i: usize, switches: &[Switch]) {
+    let within = |at: js::Span, outer: js::Span| !at.is_none() && outer.lo <= at.lo && at.hi <= outer.hi;
+    let Some(Stmt {
+        kind: StmtKind::Return(value),
+        ..
+    }) = stmts.get(i + 1)
+    else {
+        return;
+    };
+    let value = value.clone();
+    let StmtKind::Switch { cases, default, .. } = &mut stmts[i].kind else {
+        return;
+    };
+    let Some(at) = cases.first().and_then(|case| case.values.first()).map(|v| v.span) else {
+        return;
+    };
+    let Some(written) = switches
+        .iter()
+        .find(|s| s.arms.iter().any(|arm| within(at, arm.pattern)))
+    else {
+        return;
+    };
+    for body in cases.iter_mut().map(|case| &mut case.body).chain(default.as_mut()) {
+        super::switches::returns_broken(body, value.as_ref(), written.span);
+    }
+}
+
 /// A loop the program labeled, `'find_parent: while let ..`, whose turn ends
 /// in a `switch` whose cases leave the loop, MIR's `switch (..) { case A:
 /// ..; break; .. default: rest; continue; } break;`: each case's way past

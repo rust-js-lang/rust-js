@@ -9,6 +9,14 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 const twoGuards = ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"];
 export const mutations: Mutation[] = [
   {
+    name: "copied-returns-unbroken",
+    breaks: "MIR's copies, in each case, of the `return` after a `match` that ended a block stay, React's attemptEarlyBailoutIfNoScheduledUpdate's `return bailoutOnAlreadyFinishedWork(..)` in every case (ADR 0905, amended)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        super::case_rests::copied_returns_broken(stmts, i, switches);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_ends_function.rs$"],
+    snapshots: true,
+  },  {
     name: "switch-default-doing-nothing-kept",
     breaks: "a `_ => {}` is `default: break;`, which does nothing (#268)",
     file: "src/lower/mir/tidy/switches.rs",

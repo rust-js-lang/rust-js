@@ -527,3 +527,35 @@ where Rust tests it, in order, short-circuit stopping where it does.
 Held by `guarded_arm_chains`' `finished`, against native Rust; mutations
 `and-guard-parts-unjoined` and `and-guard-first-part-dropped`
 (`mir/tidy/switches.ts`).
+
+## Amendment: a `switch` that ends a function has its cases' `break`s
+
+React's recursivelyInsertNewFiber (ReactFiberApplyGesture) ends with a
+`match` of no value, and BeginWork's attemptEarlyBailoutIfNoScheduledUpdate
+with a `match` followed by its one `return bailoutOnAlreadyFinishedWork(..)`.
+Upstream ends each case with `break;`. rust-js printed MIR's way to the
+function's end in each case: `return;` in every case and every `if` that
+ends one, `if (flags) { b(); return; } return;`; and, where the `match`'s
+last guarded arm fell to nothing and MIR ended a block with it, `bb3: {
+switch (..) { .. } } return bailout(..);`, the `return` copied into every
+case, which `returns_broken` didn't see past the block.
+
+- **Of a function of no value whose body ends in a `switch`, each
+  `return;` MIR made in its cases is the case's `break;`** (`breaks of an
+  ending switch`, `tidy/case_rests.rs`), none where the case ends or goes
+  on to a `break;` anyway: `case HostText: if (flags) { a(); } break;`.
+  A `return;` the program wrote stays, as does one in a loop of the case,
+  whose `break` it would be.
+- **MIR's copies in the cases of the `return` that follows a `switch` it
+  put in a block of its own are each the case's `break`** once the block is
+  gone (`copied_returns_broken`, from `breaks past switches`), as
+  `returns_broken` makes them where the `return` follows the chain: one
+  `return bailoutOnAlreadyFinishedWork(current, workInProgress,
+  renderLanes);` after the `switch`, as upstream writes it. A `return` the
+  program wrote in an arm stays.
+
+Each is the same jump: the `break` goes on to the function's end, or to
+the `return` after the `switch`. Held by `test/corpus/switch_ends_function.rs`,
+against native Rust; mutations `ending-switch-returns-kept`,
+`ending-switch-written-returns-broken`, `ending-switch-breaks-kept`
+(`mir/tidy/case_rests.ts`) and `copied-returns-unbroken`.

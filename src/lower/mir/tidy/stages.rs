@@ -678,6 +678,11 @@ pub(super) const STAGES: &[Stage] = &[
                 });
                 js::statement_lists(b, &mut |s| tail_continues(s, h.written))
             }),
+            // A `switch` that ends a function of no value: the `return;`s MIR
+            // made in its cases, its `break;`s (ADR 0905, amended).
+            pass("breaks of an ending switch", |b, h| {
+                case_rests::breaks_of_ending_switch(b, h.returns)
+            }),
             // A block a case ends with: its `break`s the case's (ADR 0790).
             pass("blocks ending cases", |b, h| {
                 js::statement_lists(b, &mut |s| switches::blocks_ending_cases(s, &h.written.elses))

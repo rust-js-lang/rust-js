@@ -1282,6 +1282,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
         // by: the clause's end, which goes on to it, `default: tag =
         // "throw";` before `return tag;` (ADR 0629, amended).
         let next = stmts.get(i + 1).filter(|next| ends_alike(next)).cloned();
+        super::case_rests::copied_returns_broken(stmts, i, switches);
         if let StmtKind::Switch { cases, default, .. } = &mut stmts[i].kind {
             let last = match default.as_mut() {
                 Some(default) => Some(default),
