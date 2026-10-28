@@ -80,7 +80,22 @@ corpus and the mutation's own tests.
     without it, so it goes. A new test checks that a prop of `!hidden`
     before a later child's statements stays in place.
 
+  - `settle-captured-elements`: `object_made_past_a_drop.rs`, an
+    object made where it's used, reading a reference, past a drop. Under
+    the mutation it's settled before the drop, `const result = ..`, so
+    the mutation checks snapshots.
+  - `chains-empty-if-kept`: none of the chains stage's passes empties an
+    `if` now, as the names and written stages clear those of `if let`s
+    whose bindings are only read. Its "never taken" pass goes; the
+    stage's `NO_EMPTY_IF` contract, checked in a debug build, stays.
+  - `written-order-goes-round-kept`: of a loop body's `if` whose branch
+    is one statement, no test's JS depends on whether the rest goes
+    round: a later stage writes the program's order either way. As a
+    lone exit is one statement too, the rule is "more than one
+    statement", and its three mutations are one,
+    `written-order-one-exit-turned`.
+
 ## Consequences
 
-Those fifteen mutations are caught or removed. The rest are listed on
+Those eighteen mutations are caught or removed. The rest are listed on
 #382 until they are too.

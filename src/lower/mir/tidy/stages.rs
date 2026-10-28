@@ -480,10 +480,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returned chains", |b, h| {
                 js::statement_lists(b, &mut |s| returned_else_ifs(s, &h.written.links, h.returns))
             }),
-            // An `if` those emptied, an `if let` whose binding is only read,
-            // gone, its test kept where it does anything, as it ensures
-            // (#247).
-            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
+            // None of these empties an `if`: `names`' and `written`'s
+            // stages clear those of `if let`s whose bindings are only read
+            // (#247, #382), as `NO_EMPTY_IF` checks.
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,

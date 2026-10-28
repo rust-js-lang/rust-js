@@ -185,11 +185,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "settle-captured-elements",
-    breaks: "an element made where it's used is written before a drop, reading what a branch after sets",
+    breaks: "an element or object made where it's used that reads a reference is settled before a drop, `const result = { label: s, n }; .. return result;`, where it's made in place",
     file: "src/lower/mir/temporaries.rs",
     find: "            if matches!(e.kind, js::ExprKind::Jsx(_) | js::ExprKind::Object(..)) {\n",
     replace: "            if false {\n",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "InlineToc"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^object_made_past_a_drop.rs$"],
   },
   {
     name: "call-part-cell-refused",

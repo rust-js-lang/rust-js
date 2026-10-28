@@ -387,13 +387,12 @@ fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
 }
 
 /// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
-/// `a` always leaving, and `rest` leaving, or going round again at the
-/// body's end where `a` is more than one exit, a guard's: `if (!t) { rest
-/// } a`, in the order the program wrote them,
-/// `rest` ending in a `continue` where it went round; `a`'s last
-/// `continue` goes on anyway. Not of a lone
-/// exit, `if (!value) { return; }` of a `?`, written where the block it
-/// shares is: a guard first, as a person writes it.
+/// `a` always leaving and more than one exit, a guard's, and `rest`
+/// leaving or going round again at the body's end: `if (!t) { rest } a`, in
+/// the order the program wrote them, `rest` ending in a `continue` where it
+/// went round; `a`'s last `continue` goes on anyway. Not of a lone exit,
+/// `if (!value) { return; }` of a `?`, written where the block it shares
+/// is: a guard first, as a person writes it.
 pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
     for stmt in stmts {
         let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
@@ -405,25 +404,10 @@ pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
                 return false;
             };
             let rest = &body[i + 1..];
-            let lone = match then.as_slice() {
-                [
-                    Stmt {
-                        kind: StmtKind::Return(value),
-                        ..
-                    },
-                ] => value.as_ref().is_none_or(Expr::is_constant),
-                [
-                    Stmt {
-                        kind: StmtKind::Break(_) | StmtKind::Continue(_),
-                        ..
-                    },
-                ] => true,
-                _ => false,
-            };
-            // Where `rest` goes round, `a` more than a guard's exit.
-            let goes_round = !rest.last().is_some_and(ends);
-            !lone
-                && !(goes_round && then.len() == 1)
+            // Not `a` of one exit alone, a guard's: of a lone `return;`, a
+            // `?`'s, as it's written; of another, `return f(x);`, a later
+            // stage puts it where the program wrote it (#382).
+            then.len() != 1
                 && then.last().is_some_and(ends)
                 && matches!((first_written(rest), first_written(then)), (Some(r), Some(a)) if r < a)
         });

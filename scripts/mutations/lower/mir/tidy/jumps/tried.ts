@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-order-one-exit-turned",
+    breaks: "a loop body's `if` of one exit alone is turned to the written order: a `?`'s `if (!value) { return; }` is put after the rest, and `if (r.TAG === \"Err\") { return r; } a` is `if (ok) { a; continue; } return r;`",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "            then.len() != 1\n                && then.last().is_some_and(ends)\n",
+    replace: "            then.last().is_some_and(ends)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(loop_exits|app_errors)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "let-else-first-at-the-end-nested",
     breaks: "a `let … else`'s `else`, first, of a unit function whose `return` MIR joined to where it ends, stays `if (c) { e } else { s }`, the rest nested (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tried.rs",
@@ -84,15 +93,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-loops.test.ts", "-t", "a for loop of a mut binding"]
   },
   {
-    name: "lone-exit-written-order",
-    breaks: "a `?`'s `if (!value) { return; }` in a loop is put after the rest, as where the block it shares was written",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            !lone\n",
-    replace: "            true\n",
-    tests: ["test/corpus.test.ts", "-t", "loop_exits"],
-    snapshots: true,
-  },
-  {
     name: "tried-first-not-after",
     breaks: "`if (r.TAG !== \"Err\") { s; break l; } return r;` keeps its `?` last",
     file: "src/lower/mir/tidy/jumps/tried.rs",
@@ -108,24 +108,6 @@ export const mutations: Mutation[] = [
     find: "            std::iter::once(StmtKind::If(test.negated_test(), exit, None).at(span)).chain(then),\n        );\n",
     replace: "            std::iter::once(StmtKind::If(test.negated_test(), exit, None).at(span)).chain(then.clone()),\n        );\n        i += then.len();\n",
     tests: ["test/snapshots.test.ts", "-t", "calc"],
-    snapshots: true,
-  },
-  {
-    name: "written-order-goes-round-kept",
-    breaks: "a loop body's `if (!t) { rest } a` stays where `a`, written first, goes round at the body's end",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            let goes_round = !rest.last().is_some_and(ends);\n",
-    replace: "            let goes_round = true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^(interpreter|loop_exits|calculator|returns_in_place|loop_exit_moves|app_errors|stock_orders|lexer|sales_report|subscriptions|loop_drops).rs$"],
-    snapshots: true,
-  },
-  {
-    name: "written-order-guard-turned",
-    breaks: "a `?`'s guard in a loop, `if (r.TAG === \"Err\") { return r; } a`, is turned to `if (ok) { a; continue; } return r;`",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "                && !(goes_round && then.len() == 1)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^app_errors.rs$"],
     snapshots: true,
   },
   {
