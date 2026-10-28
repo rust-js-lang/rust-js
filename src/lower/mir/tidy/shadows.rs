@@ -168,6 +168,20 @@ fn shadow_of(
                 kept += here;
             }
             for s in list {
+                // A branch of an `if` that's the binding's own value alone,
+                // beside one that does more: the test's other way, `if
+                // (handles == null) { handles = new Set(); .. }`, as
+                // upstream's addEventHandleToTarget (rd65).
+                // Only of a test that the binding is there, whose other way
+                // reads as one; a range's `if` chain stays apart.
+                if let StmtKind::If(test, then, Some(otherwise)) = &s.kind {
+                    let alone = |b: &[Stmt]| matches!(b, [one] if own(one));
+                    let of_binding = |set| {
+                        js::null_test(test, set).is_some_and(|x| matches!(&x.kind, ExprKind::Var(v) if *v == binding))
+                    };
+                    kept += usize::from(of_binding(true) && alone(then) && !otherwise.is_empty() && !alone(otherwise));
+                    kept += usize::from(of_binding(false) && alone(otherwise) && !then.is_empty() && !alone(then));
+                }
                 if let StmtKind::Switch { cases, default, .. } = &s.kind {
                     kept += (js::case_lists(cases, default))
                         .map(|case| case.iter().filter(|s| own(s)).count())
@@ -184,6 +198,19 @@ fn shadow_of(
         set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;
         let mut rest = stmts.split_off(i + 1);
         js::statement_lists(&mut rest, &mut |list| list.retain(|s| !own(s)));
+        // An `if` a branch of which is left empty: its other way alone.
+        js::statement_lists(&mut rest, &mut |list| {
+            for s in list.iter_mut() {
+                if let StmtKind::If(test, then, otherwise) = &mut s.kind {
+                    if then.is_empty() && otherwise.as_ref().is_some_and(|o| !o.is_empty()) {
+                        *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                        *then = otherwise.take().unwrap_or_default();
+                    } else if otherwise.as_ref().is_some_and(Vec::is_empty) {
+                        *otherwise = None;
+                    }
+                }
+            }
+        });
         js::renamed(&mut rest, &shadow, &binding);
         stmts.append(&mut rest);
         if captured.contains(&shadow) {

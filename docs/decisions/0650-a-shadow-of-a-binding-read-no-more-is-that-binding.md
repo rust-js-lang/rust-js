@@ -223,3 +223,21 @@ Held by `test/corpus/shadow_set_in_cases.rs`'s `work_in_progress`, both
 arms, against native Rust; the mutations
 `shadow-set-in-a-branch-that-does-more-apart` and
 `shadow-set-in-a-branch-of-it-alone` (`mir/tidy/shadows.ts`).
+
+## Amendment: a branch that's the binding's own value, of a test that it's there (2026-10-28, React port gap rd65)
+
+ReactDOMComponentTree's addEventHandleToTarget takes a value from where
+it's kept, or makes and keeps one where there's none: `let handles =
+match handles { Some(handles) => handles, None => { let handles =
+Set::new(); js::set(target, key, handles); handles } };`. The shadow
+stayed apart, `let handles$1; if (handles != null) { handles$1 =
+handles; } else { handles$1 = new Set(); .. }`, as a branch that's the
+binding's own value alone would be left empty. **Where that branch's
+test is that the binding is there, `handles != null`, and its other
+branch does more, the shadow is the binding, and the `if` its other
+way**: `let handles = target[key]; if (handles == null) { handles = new
+Set(); target[key] = handles; }`, as upstream writes it. Any other test,
+a range's `if` chain, keeps the shadow apart, as before. Held by
+`test/corpus/shadow_made_where_none.rs` against native Rust and the
+mutations `shadow-of-an-if-branch-kept` and
+`shadow-emptied-if-unflipped` (`lower/mir/tidy/shadows.ts`).

@@ -148,4 +148,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
     snapshots: true,
   },
+  {
+    name: "shadow-of-an-if-branch-kept",
+    breaks: "a shadow one `if` branch of which is the binding's own value alone, `Some(list) => list`, keeps its `$1`, `let list$1; if (list != null) { list$1 = list; } else { .. }`, where upstream's addEventHandleToTarget sets one variable (rd65)",
+    file: "src/lower/mir/tidy/shadows.rs",
+    find: "                    kept += usize::from(of_binding(true) && alone(then) && !otherwise.is_empty() && !alone(otherwise));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_made_where_none.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "shadow-emptied-if-unflipped",
+    breaks: "an `if` whose branch the shadow's own value left empty stays `if (list != null) {} else { .. }`, not its other way, `if (list == null) { .. }` (rd65)",
+    file: "src/lower/mir/tidy/shadows.rs",
+    find: "                        *test = std::mem::replace(test, Expr::undefined()).negated_test();\n                        *then = otherwise.take().unwrap_or_default();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_made_where_none.rs$"],
+    snapshots: true,
+  },
 ];
