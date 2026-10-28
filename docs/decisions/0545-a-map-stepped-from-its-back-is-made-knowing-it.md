@@ -161,3 +161,23 @@ Held by `test/corpus/generic_map_folded_and_rfolded.rs`, a wrapper's
 `fold` and `rfold`, and a filter's `count` and `next_back`, of a range and
 of a forward-only `repeat(..).take(..)`, against native Rust; and the
 mutation `type-parameter-source-unstepped` (`lower/mir/iter/backs.ts`).
+
+## Amendment: an `inspect(f)` too
+
+`Down { n: 3 }.inspect(|x| seen.push(*x)).rev()` and
+`(1..5).inspect(f).next_back()` were refused. An `inspect(f)` is made as
+a map, `src.map((item) => { f(item); return item; })` (ADR 0136), so
+it's stepped from its back as a map is: `$mapEnds` of its source made
+knowing its back, `f` called on each item as Rust's `Inspect` gives it.
+
+- `as_double_ended` and `as_exact_size` read an `Inspect` made in place
+  as a map. `as_double_ended`'s rule of a map made here comes before its
+  "already knows its back" answer: a `.map(f)` form returned as it is
+  has no back, whatever its type says.
+- The back-stepped analysis records an `Inspect`, as it does a map, and
+  it's made knowing its back where it's made, as a flatten is.
+- `test/corpus/inspect_from_back.rs` checks the crate's own iterator, a
+  `Vec`'s and a range's against native Rust, the order `f` sees items
+  in too.
+- The mutations are `inspect-made-here-backless` and
+  `inspect-back-stepped-unmade`.

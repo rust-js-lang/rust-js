@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inspect-back-stepped-unmade",
+    breaks: "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
+    file: "src/lower/mir/std_calls.rs",
+    find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Inspect)",
+    replace: "IterComb::Flatten | IterComb::FlatMap)",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
+  },
+  {
     name: "combinator-function-undropped",
     breaks: "what an `inspect()`'s, a `skip_while()`'s or a `flat_map()`'s function holds with a destructor is never dropped, where Rust drops it with the adapter (ADR 0991)",
     file: "src/lower/mir/std_calls.rs",

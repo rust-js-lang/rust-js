@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     name: "stepped-sources-any-adapter",
     breaks: "a held `filter_map` a back-stepped map steps is marked, and steps a JS iterator with no back, which throws, where it's refused (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(back_stepped_adapter_sources|held_filter_map_back_refused).rs$"],
   },

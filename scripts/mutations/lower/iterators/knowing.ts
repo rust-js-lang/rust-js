@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inspect-made-here-backless",
+    breaks: "an `inspect(f)` made in place and `rev()`'d isn't stepped from its back as the map it's made as: refused",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
+    replace: "            .or_else(|| None)\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
+  },
+  {
     name: "back-stepped-enumerate-unknown",
     breaks: "an enumeration the crate steps from its back, made knowing it, isn't read as knowing it: refused (#383)",
     file: "src/lower/iterators/knowing.rs",

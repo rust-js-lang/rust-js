@@ -1128,6 +1128,16 @@ pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<
     }
 }
 
+/// Of std's `Inspect<I, F>` of type `ty`, its source: made as a map whose
+/// function gives each item back once `f` has seen it, so stepped from
+/// either end as a map is, `f` called as each item is given.
+pub(crate) fn inspected_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Inspect" => Some(args.type_at(0)),
+        _ => None,
+    }
+}
+
 /// Of std's `Flatten<I>` or `FlatMap<I, U, F>` of type `ty`, its source,
 /// and, of a `FlatMap`, what its function makes, `U`: a `Flatten`'s is its
 /// source's item.
@@ -1222,7 +1232,11 @@ pub(crate) fn back_stepped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Opti
         ty::Adt(adt, args)
             if matches!(
                 std_path(tcx, adt.did()).as_str(),
-                "std::iter::Map" | "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Copied"
+                "std::iter::Map"
+                    | "std::iter::Filter"
+                    | "std::iter::FilterMap"
+                    | "std::iter::Copied"
+                    | "std::iter::Inspect"
             ) =>
         {
             Some(args.type_at(0))

@@ -274,8 +274,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call_helper("$enumerate", vec![items]));
         }
         // A map made here, `src.map(f)`: its source's, each `f`'s, as
-        // `as_double_ended` makes it (ADR 0455).
+        // `as_double_ended` makes it (ADR 0455). And an `inspect(f)`, made
+        // so.
         if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))
             && let js::ExprKind::Call(callee, args) = &value.kind
             && let js::ExprKind::Member(source_value, method) = &callee.kind
             && method == "map"
@@ -396,6 +398,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let b = self.as_double_ended(b, second, span)?;
             return Ok(Expr::call_helper("$chainEnds", vec![a, b]));
         }
+        // A map made here of one that knows its back, `src.map(f)`: its
+        // source's items, each `f`'s, from either end, as Rust's `Map` steps
+        // them (ADR 0455). And an `inspect(f)`, made as a map giving each
+        // item back, `f` called on each as Rust's `Inspect` gives it.
+        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
+            .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))
+            && let js::ExprKind::Call(callee, args) = &value.kind
+            && let js::ExprKind::Member(source_value, method) = &callee.kind
+            && method == "map"
+            && let [f] = args.as_slice()
+        {
+            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
+        }
         // The crate's, made knowing its back.
         if self.is_user_iterator(ty) {
             return self.user_iterator_knowing(value, ty, (true, false), span);
@@ -424,18 +440,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.steps_an_array(ty) {
             return Ok(self.std_iterator(value, ty));
-        }
-        // A map made here of one that knows its back, `src.map(f)`: its
-        // source's items, each `f`'s, from either end, as Rust's `Map` steps
-        // them (ADR 0455).
-        if let Some(source) = crate::lower::recognition::mapped_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && let js::ExprKind::Member(source_value, method) = &callee.kind
-            && method == "map"
-            && let [f] = args.as_slice()
-        {
-            let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
         // An enumeration made here, `src.map((x, i) => [i, x])`: `$enumerate`
         // of its source made knowing its back and its length, whose index

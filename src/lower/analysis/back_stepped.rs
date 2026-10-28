@@ -9,7 +9,7 @@
 
 use crate::lower::recognition::{
     Recognition, back_stepped_source, copied_source, enumerated_source, filtered_source, flattened_source,
-    is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
+    inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -184,7 +184,8 @@ fn back_stepped_adapter<'tcx>(
             .is_some_and(&drops)
             .then(|| tcx.erase_and_anonymize_regions(adapter));
     }
-    let mapped = mapped_source(tcx, adapter);
+    // An `inspect(f)` is made as a map, stepped from its back as one is.
+    let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
     let copied = copied_source(tcx, adapter);
     let source = (mapped.or_else(|| filtered_source(tcx, adapter)).or(copied))?.peel_refs();
     // A map of an array's items steps from its back by its own form, its
@@ -211,6 +212,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
             if mapped_source(tcx, held).is_some()
                 || filtered_source(tcx, held).is_some()
                 || copied_source(tcx, held).is_some()
+                || inspected_source(tcx, held).is_some()
             {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }
