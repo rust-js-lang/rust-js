@@ -305,6 +305,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         };
+        let value = match value.kind {
+            js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),
+            _ => value,
+        };
         Ok(self.catching(def_id, generic_args, value))
     }
 

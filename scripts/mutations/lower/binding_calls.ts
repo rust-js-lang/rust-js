@@ -499,4 +499,12 @@ export const mutations: Mutation[] = [
     replace: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
     tests: ["test/js-any-values.test.ts", "-t", "loose_equals"],
   },
+  {
+    name: "receiver-iteration-unmarked",
+    breaks: "a `Set`'s `values()` isn't marked its own iteration, so its collect is `Array.from(set.values())`, not upstream's `Array.from(set)` (bw8)",
+    file: "src/lower/binding_calls.rs",
+    find: "            js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),\n",
+    replace: "",
+    tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
 ];

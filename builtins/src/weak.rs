@@ -185,6 +185,7 @@ impl<K: ?Sized + 'static, V> Map<K, V> {
     /// each key and its value, `[k, v]`, in the order they were set, a JS
     /// iterator, what `for (const [k, v] of map)` steps.
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
+    #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static K, V)>> {
         unreachable!()
@@ -272,6 +273,7 @@ impl<T: ?Sized + 'static> Set<T> {
     /// the values it holds, in the order they were added, a JS iterator
     /// (ADR 0140), what `for (const v of set)` steps.
     #[cfg_attr(rust_js, rust_js::link_name = "values")]
+    #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn values(&self) -> Box<dyn Iterator<Item = &'static T>> {
         unreachable!()
@@ -280,6 +282,7 @@ impl<T: ?Sized + 'static> Set<T> {
     /// [`set.keys()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/keys):
     /// its values, as `values()` gives them: a set's keys are its values.
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn keys(&self) -> Box<dyn Iterator<Item = &'static T>> {
         unreachable!()

@@ -332,7 +332,11 @@ export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
   and `entries()` are JS iterators. A map's are alike, its `for_each(f)`'s
   `f` of each value and its key, `|value, key|`, a key it leaves `_` left
   out of JS's arrow, and its `entries()` of `(key, value)`
-  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md), amended):
+  ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md), amended).
+  What JS's own iteration of each steps, a set's `values()` or `keys()`
+  and a map's `entries()`, collected is `Array.from(set)`,
+  `Array.from(map)`, as JS writes it; a map's `values()` and `keys()`
+  collected are `Array.from(map.values())`:
 
 ```rust
 use js::{Dict, Map, Set};

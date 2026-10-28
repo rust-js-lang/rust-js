@@ -174,3 +174,31 @@ Array.from(serverPropNames.values()))`, a copy and another statement.
 Held by `test/js-collections.test.ts`, "a Map's forEach and iterators":
 the hydration diff's `forEach`, its `return`, a closure of both value and
 key, and each iterator stepped, run.
+
+## Amendment: what a set's or a map's own iteration steps, collected, is `Array.from` of it (bw8)
+
+React's updateOffscreenComponent writes `Array.from(instance._transitions)`
+of a `Set`. The port's natural Rust, `set.values().collect()`, printed
+`Array.from(set.values())` once every collect was `Array.from(it)` (ADR
+0055, amended). The user decided the set itself is what JS writes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. A `Set`'s
+`[Symbol.iterator]` is its `values`, and `keys` is the same function; a
+`Map`'s is its `entries`. `Array.from(set)` steps the same values in the
+same order, and neither is a getter or user code (a subclass that
+overrides `values` but not `[Symbol.iterator]` is no `js::Set` the
+builtins make).
+
+- **A binding fact says it**, `#[rust_js::iterates_receiver]`, on
+  `Set::values`, `Set::keys` and `Map::entries`: the call is
+  `Known::ReceiverIterated`, and `Expr::collected`, the one form a
+  collect is, gives `Array.from` of its receiver. Not a map's `values()`
+  or `keys()`, which aren't the map's own iteration.
+- Considered: recognizing `values` by its name in collect.rs. A JS shape
+  read downstream (AGENTS.md: one authority), and wrong for a map's.
+
+Held by `test/js-collections.test.ts`' "a Set's or a Map's own iteration
+collected is Array.from of it", which runs the JS, and mutations
+`receiver-iteration-unmarked` and `receiver-iteration-collected-as-call`.
+`js::set::new` of an iterable, the decision's other half, is written up
+separately (its `None` and its slice form).

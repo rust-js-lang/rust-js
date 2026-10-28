@@ -718,6 +718,12 @@ pub enum Known {
     /// `response.status`. Its `{}` is JS's text of it, `${response.status}`,
     /// which is Rust's (ADR 0994, amended).
     Whole,
+    /// A binding's call of no argument that gives what JS's own iteration
+    /// of its receiver steps, `set.values()` and `set.keys()` of a `Set`,
+    /// `map.entries()` of a `Map`, `#[rust_js::iterates_receiver]`'s:
+    /// collected, `Array.from(set)`, as JS writes it (`Expr::collected`,
+    /// the user's decision, bw8).
+    ReceiverIterated,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

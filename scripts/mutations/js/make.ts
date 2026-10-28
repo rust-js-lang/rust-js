@@ -510,4 +510,12 @@ export const mutations: Mutation[] = [
     replace: "        match self.facts == Facts::NONE {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable function's result is written to a nullable place as it is"],
   },
+  {
+    name: "receiver-iteration-collected-as-call",
+    breaks: "`Expr::collected` of a set's own iteration keeps the call, `Array.from(set.values())` (bw8)",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Call(callee, args) if it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
+    replace: "            ExprKind::Call(callee, args) if false && it.facts.has(Known::ReceiverIterated) && args.is_empty() => {\n",
+    tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
 ];

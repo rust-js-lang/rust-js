@@ -465,6 +465,20 @@ impl Expr {
     /// writes it, an iterable's or an iterator's alike (the user's decision,
     /// bw8/cm7, ADR 0055 amended), never ES2025's `it.toArray()`.
     pub fn collected(it: Expr) -> Expr {
+        // Of what JS's iteration of its receiver steps, `set.values()`'s,
+        // the receiver itself, `Array.from(set)` (`Known::ReceiverIterated`).
+        let it = match it.kind {
+            ExprKind::Call(callee, args) if it.facts.has(Known::ReceiverIterated) && args.is_empty() => {
+                match callee.kind {
+                    ExprKind::Member(receiver, _) => *receiver,
+                    kind => Expr {
+                        kind: ExprKind::Call(Box::new(Expr { kind, ..*callee }), args),
+                        ..it
+                    },
+                }
+            }
+            kind => Expr { kind, ..it },
+        };
         Expr::call(Expr::member(Expr::var("Array"), "from"), vec![it])
     }
 
@@ -948,6 +962,13 @@ impl Expr {
     /// (`Known::NeverThrows`), beside what else is known of it.
     pub fn never_throws(mut self) -> Expr {
         self.facts = self.facts.with(Known::NeverThrows);
+        self
+    }
+
+    /// This, a binding's call that gives what JS's iteration of its
+    /// receiver steps (`Known::ReceiverIterated`).
+    pub fn receiver_iterated(mut self) -> Expr {
+        self.facts = self.facts.with(Known::ReceiverIterated);
         self
     }
 

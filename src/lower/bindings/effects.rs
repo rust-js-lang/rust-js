@@ -31,3 +31,13 @@ pub(in crate::lower) fn runs_only_given(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
     let path = [Symbol::intern("rust_js"), Symbol::intern("runs_only_given")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
+
+/// `#[rust_js::iterates_receiver]`: a binding's method of no argument that
+/// gives what JS's own iteration of its receiver steps, as a `Set`'s
+/// `values()` and `keys()` and a `Map`'s `entries()` do, its
+/// `[Symbol.iterator]`: collected, `Array.from(set)` (the user's decision,
+/// bw8).
+pub(in crate::lower) fn iterates_receiver(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("iterates_receiver")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}

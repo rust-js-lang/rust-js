@@ -348,6 +348,43 @@ console.log(JSON.stringify([lib.removedProps({ children: 1, className: "x", ID: 
   expect(out).toBe('["- className\\n- ID\\n",["a:1","bc:2"],["A","BC","a=1","bc=2","1","2"]]\n');
 });
 
+// The user's decision (bw8): what JS's own iteration of a `Set` or a `Map`
+// steps, its `values()` and `keys()`, a map's `entries()`
+// (`#[rust_js::iterates_receiver]`), collected is `Array.from` of the set
+// or the map, as React's updateOffscreenComponent writes
+// `Array.from(instance._transitions)`; a map's `values()` and `keys()`
+// are their own.
+test("a Set's or a Map's own iteration collected is Array.from of it", () => {
+  const { dir, js } = compiled("js-own-iteration", `use js::{Map, Set, Unknown};
+
+pub fn transitions(set: &Set<Unknown>) -> Vec<&'static Unknown> {
+    set.values().collect()
+}
+
+pub fn keys(set: &Set<str>) -> Vec<&'static str> {
+    set.keys().collect()
+}
+
+pub fn pairs(map: &Map<str, u32>) -> Vec<(&'static str, u32)> {
+    map.entries().collect()
+}
+
+pub fn counts(map: &Map<str, u32>) -> Vec<u32> {
+    map.values().collect()
+}
+`);
+  expect(js).toContain("  return Array.from(set);\n");
+  expect(js).toContain("  return Array.from(map);\n");
+  expect(js).toContain("  return Array.from(map.values());\n");
+  expect(js).not.toContain("set.values()");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const a = {};
+const map = new Map([["a", 1], ["bc", 2]]);
+console.log(JSON.stringify([lib.transitions(new Set([a, 3]))[0] === a, lib.keys(new Set(["x", "y"])), lib.pairs(map), lib.counts(map)]));
+`);
+  expect(out).toBe('[true,["x","y"],[["a",1],["bc",2]],[1,2]]\n');
+});
+
 // React's `[${prevDeps.join(', ')}]`: `js::array::join` of any values, each
 // one's text as JS's `String()` gives it, `undefined` and `null` none.
 test("js::array::join is an array of any values' join", () => {
