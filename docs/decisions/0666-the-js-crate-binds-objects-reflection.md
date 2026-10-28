@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose `PropertyDescriptor` and `ProxyHandler` were made empty, `{}`, and
 given what's set, and whose measure counted no `Object`. Amended below: a
-dictionary's keys written out are any text.
+dictionary's keys written out are any text; a setter is given a `'static`
+value.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 function, given and giving what TypeScript types it as.
@@ -165,4 +166,35 @@ Held by `test/lowering-strings.test.ts`, "a dictionary of entries written
 out is an object literal": `&str` keys and a comment between entries, a
 `&String` key, run; and the guide's example. A binding's signature has no
 mutation: the test that calls it with `&str` doesn't compile without it.
+
+## Amendment (2026-10-28): a setter is given a `'static` value, so `with_this` makes one
+
+react-dom-bindings' inputValueTracking replaces a node's `value` with a
+setter that calls the original on the node:
+
+```js
+Object.defineProperty(node, valueField, {
+  configurable: true,
+  set: function (value) { currentValue = '' + value; set.call(this, value); },
+});
+```
+
+Its port's setter reads `this`, so it's `function::with_this(move |this,
+(value,): (Option<&'static Unknown>,)| ..)`, whose function takes what
+its tuple says, a `'static` value (ADR 0972). `PropertyDescriptor`'s
+`set` was `dyn for<'a> Fn(Option<&'a Unknown>)`, of any lifetime, which a
+function of one lifetime isn't: "one type is more general than the other"
+(gap rd30).
+
+**`set` is `&dyn Fn(Option<&'static Unknown>)`**, given what JS writes,
+any value of any lifetime, as `get` gives one and a rest parameter's
+items are (`js::RestItem`): a closure of any lifetime is still one, and
+so is a function `with_this` makes. A setter a program reads of a
+descriptor, `get_own_property_descriptor(..)`'s, is called through
+`function::call`, as upstream calls it. Case N
+([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/js-functions.test.ts`'s "a function with_this makes is a
+property's setter", run on a node, its `this` the node. A binding's
+signature has no mutation: the test doesn't compile without it.
 

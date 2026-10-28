@@ -115,10 +115,13 @@ What it has:
   the rest, and `object::prototype` is `Object.prototype`. A
   `PropertyDescriptor` is a dictionary, a struct of `Option`s:
   `PropertyDescriptor { value: Some(&prev), ..props }` is `{ ...props,
-  value: prev }`. What `define_properties` and `create` take is a
+  value: prev }`; its `set` is given any value JS gives, so a function
+  `function::with_this` makes, which reads its `this`, is one. What
+  `define_properties` and `create` take is a
   `PropertyDescriptorMap`, a `Dict` of descriptors or a struct of them,
   `unsafe impl PropertyDescriptorMap for Logs<'_> {}`
-  ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md)).
+  ([ADR 0666](../../decisions/0666-the-js-crate-binds-objects-reflection.md),
+  amended).
 - **Whether the host has a global is `is_defined(binding)`,** `typeof X
   !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't;
   whether it's a function, `is_function(binding)`, `typeof X ===

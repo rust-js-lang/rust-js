@@ -318,3 +318,37 @@ pub fn run() -> String {
     "7 2 -1 true n 36 Throttled 2.5 | 7 2 -1 true n 36 Throttled 2.5 | 7 0 -2 false none 36 Throttled 2.5 | 7 0 4 false none 36 Throttled 2.5",
   );
 });
+
+// react-dom-bindings' inputValueTracking replaces a node's `value` with a
+// setter that calls the original on the node, `set: function (value) {
+// currentValue = '' + value; set.call(this, value); }`. A descriptor's
+// setter is given any value JS gives, `'static`, so a function `with_this`
+// makes is one (ADR 0666, amended).
+test("a function with_this makes is a property's setter", async () => {
+  const { js, lib } = await compiled("with-this-setter", `use js::{IntoUnknown, PropertyDescriptor, Unknown, function, object};
+
+pub fn track(node: &'static Unknown, field: &'static str, set: &'static dyn Fn(Option<&Unknown>)) {
+    let setter = function::with_this(move |this, (value,): (Option<&'static Unknown>,)| {
+        function::call(set, this.map(|this| this as &dyn IntoUnknown), (value,));
+    });
+    object::define_property(
+        node,
+        field,
+        &PropertyDescriptor {
+            configurable: Some(true),
+            set: Some(&*setter),
+            ..Default::default()
+        },
+    );
+}
+`);
+  expect(js).toContain("  function setter(value) {\n    set.call(this, value);\n  }\n");
+  expect(js).toContain("    set: setter,\n");
+  const node: Record<string, unknown> = {};
+  const seen: unknown[] = [];
+  lib.track(node, "value", function (this: unknown, v: unknown) {
+    seen.push([this, v]);
+  });
+  node.value = 42;
+  expect(seen).toEqual([[node, 42]]);
+});

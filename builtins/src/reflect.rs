@@ -126,8 +126,11 @@ pub struct PropertyDescriptor<'a> {
     pub writable: Option<bool>,
     /// Its getter: what reading the property gives.
     pub get: Option<&'a dyn Fn() -> Option<&'static Unknown>>,
-    /// Its setter: given what's written.
-    pub set: Option<&'a dyn Fn(Option<&Unknown>)>,
+    /// Its setter: given what's written, any value JS gives, of any
+    /// lifetime, as its getter's is: a closure of any lifetime is one, and
+    /// so is a function `function::with_this` makes, which reads its `this`
+    /// (ADR 0666, amended).
+    pub set: Option<&'a dyn Fn(Option<&'static Unknown>)>,
 }
 
 /// TypeScript's `PropertyDescriptorMap`: a JS object of a
