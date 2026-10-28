@@ -602,11 +602,7 @@ fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: 
         return false;
     }
     let tcx = calls.tcx;
-    let holds = |ty: Ty<'tcx>| {
-        ty.walk()
-            .filter_map(|arg| arg.as_type())
-            .any(|ty| matches!(ty.kind(), ty::Param(p) if p.index == index))
-    };
+    let holds = |ty: Ty<'tcx>| holds_param(ty, index);
     let boxes = |ty: Ty<'tcx>| {
         ty.walk().filter_map(|arg| arg.as_type()).any(|ty| match ty.kind() {
             ty::Adt(adt, args) => {
@@ -659,6 +655,34 @@ fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: 
         };
         if asks {
             return true;
+        }
+    }
+    false
+}
+
+/// Whether a value of `ty` may hold one of type parameter `index`: `ty` is
+/// of it, but a closure only by what it captures and what it's given or
+/// gives back. A closure's type is of each of its maker's type parameters,
+/// whose values it holds none of unless it captures one, so React's
+/// `runWithFiberInDEV`'s `CURRENT.with_borrow(|current| current.clone())`
+/// gives std no `()` it's given (gap rd85).
+fn holds_param(ty: Ty<'_>, index: u32) -> bool {
+    let mut walk = ty.walk();
+    while let Some(arg) = walk.next() {
+        let Some(ty) = arg.as_type() else { continue };
+        match ty.kind() {
+            ty::Param(param) if param.index == index => return true,
+            ty::Closure(_, args) => {
+                walk.skip_current_subtree();
+                let closure = args.as_closure();
+                let sig = closure.sig().skip_binder();
+                if holds_param(closure.tupled_upvars_ty(), index)
+                    || sig.inputs_and_output.iter().any(|ty| holds_param(ty, index))
+                {
+                    return true;
+                }
+            }
+            _ => {}
         }
     }
     false

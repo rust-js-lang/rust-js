@@ -35,3 +35,34 @@ pub fn wrapped<T>(value: T) -> Option<T> {
 pub fn wrapped_own() -> Option<u32> {
     wrapped(3)
 }
+
+struct Restore(Option<Rc<Fiber>>);
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        CURRENT.set(self.0.take());
+    }
+}
+
+/// React's own five-argument form, which reads what it restores by a
+/// closure it gives std's `with_borrow`: a closure of a generic function
+/// is of its type parameters, but holds none of the `()`s it's given
+/// (gap rd85).
+pub fn run_with_fiber_in_dev<A0, A1, A2, A3, A4, T>(
+    fiber: Option<Rc<Fiber>>,
+    callback: impl FnOnce(A0, A1, A2, A3, A4) -> T,
+    arg0: A0,
+    arg1: A1,
+    arg2: A2,
+    arg3: A3,
+    arg4: A4,
+) -> T {
+    let previous = CURRENT.with_borrow(|current| current.clone());
+    CURRENT.set(fiber.clone());
+    let _restore = Restore(previous);
+    callback(arg0, arg1, arg2, arg3, arg4)
+}
+
+pub fn own_in_dev() -> u32 {
+    run_with_fiber_in_dev(None, |a, b, c, d, e| a + b + c + d + e, 1, 2, 3, 4, 5)
+}

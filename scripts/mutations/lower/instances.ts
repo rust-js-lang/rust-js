@@ -155,6 +155,14 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "given what may look like None"],
   },
   {
+    name: "instance-closure-holds-its-makers-params",
+    breaks: "a closure a library's generic function gives std holds each of its type parameters, though it captures none, so React DOM copies the reconciler's runWithFiberInDEV, whose `CURRENT.with_borrow(|current| current.clone())` gives std no `()`, with a JS label and drop flags (ADR 0914, amended, gap rd85)",
+    file: "src/lower/instances.rs",
+    find: "                walk.skip_current_subtree();\n",
+    replace: "                continue;\n",
+    tests: ["test/crates.test.ts", "-t", "given what may look like None"],
+  },
+  {
     name: "instance-box-unseen",
     breaks: "a library's generic function that makes a `Some` of what it's given, `wrapped(())`, is called as its export, which boxes none, so its `Some(())` is `None` (ADR 0051, amended)",
     file: "src/lower/instances.rs",

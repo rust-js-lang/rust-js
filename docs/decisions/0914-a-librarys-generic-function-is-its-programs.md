@@ -688,3 +688,40 @@ None is its export where it makes no Some of it", which reads the import;
 "… private state", `dep::remember(4, Loud(7))`; and mutations
 `instance-unit-given-copied`, `instance-box-unseen` and
 `instance-sets-library-variable`.
+
+## Amendment: a closure holds the values it captures, takes or gives
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; the export does
+what the copy would.
+
+React DOM's `runWithFiberInDEV(instance, executeDispatch, event,
+listener, currentTarget)` and validateDOMNesting's `runWithFiberInDEV(
+ancestor, () => { .. })` still compiled the reconciler's function
+themselves (gap rd85), a copy of its MIR with a `bb12:` label and six
+drop flags, where upstream imports it. The port's calls give its
+five-argument form `()`s, and `body_may_box` found it may make a `Some`
+of them: its `CURRENT.with_borrow(|current| current.clone())` gives std,
+which may, a closure, and a closure's type is of each of its maker's type
+parameters, `A0` to `A4` and `T`, so it took the closure for a holder of
+their values. It holds none: what it reads of them is what it captures,
+and what it's given or gives back.
+
+**A value of a closure's type holds one of its maker's type parameter
+only where its captures, its parameters or its result do**
+(`instances::holds_param`), so giving std that closure gives it no `()`,
+and the five-argument form is the reconciler's export. A closure that
+captures one, `move || callback(arg0, ..)`, still holds it; one it makes
+is asked of its own body as before, and `wrapped(())` is still the
+consumer's own.
+
+Held by `test/crates.test.ts`' two-crate case `generic_given_unit`, which
+now has React's five-argument form, its guard and its `with_borrow`,
+called both ways, against native Rust, and its "… makes no Some of it",
+which reads the import and `runWithFiberInDev(fiber, executeDispatch,
+"click", "onClick", "button")`; and mutation
+`instance-closure-holds-its-makers-params`.
+
+Not yet: a copy that is needed, of one given a value with a destructor,
+is printed from optimized MIR, its drop flags of each `()` it's given
+kept, and its cleanup tests them nested, a branch for each, growing as
+two to the power of their number (filed as an issue).

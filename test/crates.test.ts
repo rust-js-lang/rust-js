@@ -436,12 +436,19 @@ test("a library's function its consumer compiles is refused where it reads its l
 // like `None`, is its export where it makes no `Some` of them, as React
 // DOM's `runWithFiberInDEV(ancestor, () => { .. })` imports the reconciler's
 // (ADR 0914, amended, gap rd75b); one that does, `wrapped(())`, is the
-// consumer's own, boxing it.
+// consumer's own, boxing it. A closure it makes is of its type parameters
+// but holds none of their values, so giving it to std makes none either,
+// as React's five-argument form reads what it restores by `with_borrow`
+// (gap rd85).
 test("a library's generic function given what may look like None is its export where it makes no Some of it", () => {
   const out = chain(pairs, "generic_given_unit", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("import { own, runWithFiber, tagNow, wrappedOwn } from \"../dep/lib.js\";\n");
+  expect(app).toContain(
+    "import { own, ownInDev, runWithFiber, runWithFiberInDev, tagNow, wrappedOwn } from \"../dep/lib.js\";\n",
+  );
   expect(app).not.toContain("function runWithFiber(");
+  expect(app).not.toContain("function runWithFiberInDev(");
+  expect(app).toContain("runWithFiberInDev(fiber, executeDispatch, \"click\", \"onClick\", \"button\")");
   expect(app).toContain("function wrapped(");
 }, 300_000);
 

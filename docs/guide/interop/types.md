@@ -1040,8 +1040,14 @@ export function ratio(a, b) {
   beside it that boxes, `pickBoxed`, never seen by JS; what either passes
   a type parameter on to is copied so too, `wrappedUnboxed`; a copy made
   alike the function is left out. A library's consumer that gives one
-  what may look like `None` compiles its own of the function
-  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-function-js-calls-takes-what-js-gives-as-it-gives-it), amended).
+  what may look like `None` compiles its own of the function only where
+  that function may make a `Some` of it
+  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-function-js-calls-takes-what-js-gives-as-it-gives-it), amended);
+  else it calls the library's, `runWithFiberInDEV(instance,
+  executeDispatch, event, listener, currentTarget)` given two `()`s. A
+  closure the function makes and gives std holds none of the values its
+  type parameters are given unless it captures, takes or returns one
+  ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md#amendment-a--given-is-the-exports-where-nothing-boxes-it), amended).
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see
