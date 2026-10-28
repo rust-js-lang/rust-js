@@ -641,3 +641,31 @@ pub fn measure(name: &str, start_time: f64, end_time: f64) {
     host.timeStamp = timeStamp;
   }
 });
+
+// React's SchedulerPostTask goes on with a task by `scheduler.yield({signal})`,
+// as Chrome first shipped it; the spec's yield takes nothing now, and a
+// host ignores what it isn't given a parameter for. Its test's mock reads
+// the signal it's given. A host's extension is the method (ADR 0963,
+// amended): `scheduler.r#yield(Some(options))`.
+test("scheduler.yield takes the options Chrome first took, as React gives them", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-scheduler-yield");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{AbortSignal, Scheduler, SchedulerPostTaskOptions};
+
+pub async fn continued(scheduler: &Scheduler, signal: &AbortSignal) {
+    let continuation_options = SchedulerPostTaskOptions {
+        signal: Some(signal),
+        ..Default::default()
+    };
+    scheduler.r#yield(Some(continuation_options)).await;
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("await scheduler.yield(continuationOptions);");
+  const lib = await import(join(dir, "lib.js"));
+  const given: unknown[] = [];
+  const signal = new AbortController().signal;
+  await lib.continued({ yield: async (options: unknown) => void given.push(options) }, signal);
+  expect(given).toEqual([{ signal }]);
+});

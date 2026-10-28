@@ -165,6 +165,25 @@ const EXTRA: Record<string, Fn[]> = {
   ],
 };
 
+// `scheduler.yield(options)`, as Chrome first shipped it and React's
+// SchedulerPostTask calls it, `scheduler.yield({signal})`: the spec's
+// takes none now and inherits the task's, and a host ignores what it
+// isn't given a parameter for (ADR 0963, amended).
+EXTRA.Scheduler = [
+  {
+    name: "r#yield",
+    jsName: "yield",
+    params: ["this: &Scheduler", "options: Option<SchedulerPostTaskOptions<'_>>"],
+    result: "Promise<()>",
+    doc: [
+      "[MDN](https://developer.mozilla.org/docs/Web/API/Scheduler/yield): a promise that settles when",
+      "the task may go on, given its `options` as Chrome first took them and React's scheduler gives",
+      "them, `scheduler.yield({ signal })`; the spec's takes none and inherits the task's, and a host",
+      "ignores what it doesn't take (ADR 0963).",
+    ],
+  },
+];
+
 // Types written by hand, of what no WebIDL nor TypeScript lib declares,
 // beside the namespace or interface whose member gives one: what
 // `console.createTask` makes, as React's Flow declares it (ADR 0811).

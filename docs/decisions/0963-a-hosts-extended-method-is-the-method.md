@@ -3,6 +3,7 @@
 Status: Accepted. Extends [0811](0811-console-create-task-may-be-absent.md),
 what webapi declares that no WebIDL does, to a method a host extends, and
 [0215](0215-webapi-unions.md), a union's enum, to two unions of one name.
+Amended: `scheduler.yield(options)` is one (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. A binding is the JS it
 calls; the wider number takes every value the narrower did.
@@ -56,3 +57,33 @@ console.timeStamp(..))`; `js::function::bind` binds a `this` alone (ADR
 0907). And a dictionary is made where it's given; one object a module keeps
 and changes needs a dictionary parameter that takes an object of its
 fields. Both are left for a decision.
+
+## Amendment (2026-10-28): `scheduler.yield(options)`, as Chrome first shipped it
+
+React's SchedulerPostTask goes on with a task by
+
+```js
+const continuationOptions = {signal};
+if (scheduler.yield !== undefined) {
+  scheduler.yield(continuationOptions).then(nextTask).catch(handleAbortError);
+}
+```
+
+as Chrome first shipped `yield`, of the task's options. The spec's
+WebIDL takes none now, and inherits the task's priority and signal, so
+webapi's `Scheduler::r#yield(&self)` couldn't be given them (gap rd9),
+and the test's mock, `scheduler.yield = function ({signal}) {..}`,
+destructured `undefined`.
+
+**`scheduler.r#yield(options)` takes them, `Option<SchedulerPostTaskOptions>`**,
+written by hand in `webapi/generate.ts`'s `EXTRA` as `console.timeStamp`
+is: a host extends it, and one that doesn't ignores the argument, as JS
+does any it has no parameter for. `None` is no argument,
+`scheduler.yield()`, the spec's own call. Case N
+([0262](0262-when-rust-and-js-disagree.md)).
+
+Held by `test/webapi-bindings.test.ts`'s "scheduler.yield takes the
+options Chrome first took, as React gives them", run of a mock that reads
+them. A binding's signature has no mutation: the test that gives the
+options doesn't compile without it.
+

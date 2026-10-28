@@ -74838,11 +74838,14 @@ impl Scheduler {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Scheduler/yield)
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Scheduler/yield): a promise that settles when
+    /// the task may go on, given its `options` as Chrome first took them and React's scheduler gives
+    /// them, `scheduler.yield({ signal })`; the spec's takes none and inherits the task's, and a host
+    /// ignores what it doesn't take (ADR 0963).
     #[cfg_attr(rust_js, rust_js::link_name = "yield")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#yield(&self) -> Promise<()> {
+    pub fn r#yield(&self, options: Option<SchedulerPostTaskOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
 

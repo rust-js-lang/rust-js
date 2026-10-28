@@ -747,7 +747,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0960 A cell's `dyn` is any type only where a value is made one in place](0960-a-dyn-is-any-type-only-where-made-in-place.md) *(amended: a thread-local's own cell only its key reaches is no other cell of its type; amended: what unseen code borrows is no thread-local only its key reaches)*
 - [0961 A loop that ends a branch of the body it ends leaves with no label](0961-a-loop-ending-a-branch-leaves-without-a-label.md)
 - [0962 A `RefCell` of an object given to JS is the object, and a boxed one is refused](0962-a-refcell-of-an-object-given-to-js-is-the-object.md)
-- [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md)
+- [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md) *(amended: `scheduler.yield(options)`, as Chrome first shipped it)*
 - [0964 `js::SymbolFor` itself is `Symbol.for`, a function a host may lack](0964-symbol-for-is-a-function-of-its-own.md)
 - [0965 A shared function, an `Rc<dyn Fn>`, is of any shape, the function itself](0965-a-shared-function-is-of-any-shape.md)
 - [0966 A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`](0966-a-floats-order-is-its-comparison.md)

@@ -353,8 +353,11 @@ A method a host extends past what WebIDL declares is the method, of every
 parameter it takes there, called as one, its presence asked as
 `setTimeout`'s is: Chrome's `console.timeStamp(label, start, end,
 trackName, trackGroup, color)`, which React's performance track logs each
-phase with, is `webapi::console::time_stamp`
-([ADR 0963](../../decisions/0963-a-hosts-extended-method-is-the-method.md)):
+phase with, is `webapi::console::time_stamp`; and `scheduler.yield(options)`,
+as Chrome first shipped it and React's scheduler gives it `{signal}`, is
+`scheduler.r#yield(Some(options))`
+([ADR 0963](../../decisions/0963-a-hosts-extended-method-is-the-method.md),
+amended):
 
 ```rust
 use webapi::console;
