@@ -90,9 +90,10 @@ impl<'a> Cx<'a> {
     /// one exported as its module's default alone, `default`.
     /// A `pub use`'s `export { a, b as c } from "./m.js";`, or of a module
     /// by a name, `export * as ns from "./m.js";` (ADR 0240, amended).
-    pub(super) fn reexport(&self, reexport: &js::Reexport) -> Statement<'a> {
+    /// Printed at `start`, its comments' place (`comments_of`).
+    pub(super) fn reexport(&self, reexport: &js::Reexport, start: u32) -> Statement<'a> {
         let b = &self.b;
-        let sp = span(reexport.span);
+        let sp = Span::new(start, reexport.span.hi.max(start));
         let source = StringLiteral::new(SPAN, self.allocator.alloc_str(&reexport.from), None, b);
         let name = |name: &str| ModuleExportName::new_identifier_name(SPAN, self.allocator.alloc_str(name), b);
         if let [(namespace, alias)] = reexport.named.as_slice()

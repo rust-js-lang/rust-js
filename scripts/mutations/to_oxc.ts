@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "reexport-unprinted",
     breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
     file: "src/to_oxc.rs",
-    find: "    body.extend(module.reexports.iter().map(|reexport| cx.reexport(reexport)));\n",
-    replace: "    body.extend(module.reexports.iter().take(0).map(|reexport| cx.reexport(reexport)));\n",
+    find: "    body.extend(reexports.map(|(reexport, &start)| cx.reexport(reexport, start)));\n",
+    replace: "    body.extend(reexports.take(0).map(|(reexport, &start)| cx.reexport(reexport, start)));\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {
@@ -636,5 +636,21 @@ export const mutations: Mutation[] = [
     find: "                                    opened.is_empty() || opened == \"let\" || opened == \"if\"\n",
     replace: "                                    opened.is_empty() || opened == \"let\"\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "if's value is before it"],
+  },
+  {
+    name: "reexport-at-its-place",
+    breaks: "a re-export, printed first, is printed at where it's written, so the comments of a block of only comments before it, `function forceFrameRate() { // No-op }`'s, print above it",
+    file: "src/to_oxc.rs",
+    find: "            false => free.next().expect(\"a free place\"),",
+    replace: "            false => reexport.span.lo,",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "re-export printed first"],
+  },
+  {
+    name: "reexport-comments-left",
+    breaks: "a re-export's own comments stay at where it's written, so its doc comment, `/** The idle priority .. */`, isn't before its `export { .. } from`",
+    file: "src/to_oxc.rs",
+    find: "            made.attached_to = key;",
+    replace: "            let _ = key;",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "re-export printed first"],
   },
 ];

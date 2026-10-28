@@ -3,6 +3,7 @@
 Status: Accepted; amended by [0874](0874-a-modules-pub-uses-are-re-exported-as-written.md)
 (every `pub use` of what has JS, in the order written, a run of one
 module's one statement, or refused; a JS module's namespace too).
+Amended: a re-export printed first takes no comment of a block before it.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -95,3 +96,31 @@ export { Challenges } from "./Challenges";
 - **A JS module's namespace, `#*`, is refused**: `export * as ns from`,
   which TypeScript's re-export model doesn't hold yet; re-export each of
   its exports by name.
+
+## Amendment: a re-export printed first takes no comment of a block before it
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+A module's re-exports are printed first, after its imports, each with its
+comments before it, at where its `pub use` is written. React's
+SchedulerMock writes its `pub use .. as unstable_IdlePriority;`s last, as
+upstream's export list is; `function forceFrameRate() { // No-op }`'s
+comment, a block's of only comments, which oxc keeps until it prints the
+first node past it (ADR 0753), printed above the first `export { .. }
+from`, as that was the first node printed past it, and the function was
+`{}`.
+
+**Each re-export is printed at a place of its own before every other
+node and comment of its module, its own comments with it** (`comments_of`,
+`src/to_oxc.rs`): the least offsets no statement starts at, one for each,
+its comments' and its blank line's there. What's before it is still before
+it, and no comment of a block below it is before it. Its source map's line
+is that place's, not its `pub use`'s: the export of another module's item
+has no code of the module's own to step into.
+
+Alternatives: re-exports printed where they're written, among the items,
+moves every module's exports from the top it's read at (ADR 0240); a
+block's comments kept from oxc's orphans another way would be a second rule
+for one comment. `test/lowering-comments-items.test.ts` "a re-export
+printed first takes no comment of a block before it"; mutations
+`reexport-at-its-place` and `reexport-comments-left`.

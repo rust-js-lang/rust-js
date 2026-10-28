@@ -259,7 +259,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0237 An `if` whose branch leaves has no `else`](0237-no-else-after-leaving.md) *(amended by 0683: an `else if` of an arm that goes on stays one; amended: which `else` is a link is the walk's to say; amended by 0879: an `else` the program wrote that leaves a loop stays, and one after a branch that leaves where statements follow the `if`; amended: a written `else { break; }` of a loop's chain stays)*
 - [0238 A value kept for good is the value; children are kept as JS values](0238-kept-values-and-children.md)
 - [0239 A local of a component's function type is that component as a tag](0239-local-components.md)
-- [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused)*
+- [0240 A `pub use` of another module's function is re-exported from it](0240-reexports.md) *(amended by 0874: every `pub use` of what has JS, as written, or refused; amended: a re-export printed first takes no comment of a block before it)*
 - [0241 Text right before text is in braces](0241-adjacent-text.md)
 - [0242 A `dyn ReactNode` is the node itself](0242-dyn-react-node.md)
 - [0243 A RegExp of a pattern as it's written is a literal](0243-regex-literals.md) *(amended: no flags are left out)*

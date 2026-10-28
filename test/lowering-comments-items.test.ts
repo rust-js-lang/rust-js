@@ -71,3 +71,43 @@ pub fn pairs(x: u8) -> Vec<(u8, u8)> {
   expect(js).toContain("  return [\n    [x, 1],\n    // Before the second.\n    [x, 2],\n  ];");
   expect([(lib.alias as (n: string) => string)("crossOrigin"), (lib.pairs as (x: number) => number[][])(3)]).toEqual(["crossorigin", [[3, 1], [3, 2]]]);
 });
+
+// React's SchedulerMock re-exports its priorities last, `pub use
+// crate::scheduler_priorities::IDLE_PRIORITY as unstable_IdlePriority;`,
+// as upstream's export list is. Printed first (ADR 0240), at where it's
+// written, the comments of a block of only comments before it, an empty
+// `else`'s and `function forceFrameRate() { // No-op }`'s, printed above
+// it.
+test("a re-export printed first takes no comment of a block before it", async () => {
+  const { js, lib } = await compiled("reexport-takes-no-comment", `use std::cell::Cell;
+
+pub mod priorities {
+    pub const IDLE_PRIORITY: u8 = 5;
+}
+
+thread_local! {
+    static SHOULD_YIELD: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn after_continuation() -> bool {
+    if SHOULD_YIELD.get() {
+        return true;
+    } else {
+        // We keep flushing synchronously.
+    }
+    false
+}
+
+pub fn force_frame_rate() {
+    // No-op
+}
+
+/// The idle priority, by upstream's name.
+pub use crate::priorities::IDLE_PRIORITY as UNSTABLE_IDLE_PRIORITY;
+`);
+  expect(js).toContain("export function forceFrameRate() {\n  // No-op\n}");
+  // The `else`'s, in its function, as it is without the re-export.
+  expect(js.indexOf("// We keep flushing synchronously.")).toBeGreaterThan(js.indexOf("export function afterContinuation"));
+  expect(js).toContain('/** The idle priority, by upstream\'s name. */\nexport { IDLE_PRIORITY as UNSTABLE_IDLE_PRIORITY } from "./priorities.js";');
+  expect([lib.UNSTABLE_IDLE_PRIORITY, (lib.afterContinuation as () => boolean)()]).toEqual([5, false]);
+});

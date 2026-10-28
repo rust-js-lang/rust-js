@@ -104,6 +104,7 @@ pub fn emit(
         arms,
         tops,
         closing,
+        reexport_starts,
     } = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
@@ -123,7 +124,8 @@ pub fn emit(
     let mut body = ArenaVec::new_in(b);
     // What it re-exports, its `pub use`s, first, after what it imports, each
     // where it's written, its comments before it (ADR 0240, amended).
-    body.extend(module.reexports.iter().map(|reexport| cx.reexport(reexport)));
+    let reexports = module.reexports.iter().zip(&reexport_starts);
+    body.extend(reexports.map(|(reexport, &start)| cx.reexport(reexport, start)));
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
         match item {
@@ -395,6 +397,9 @@ struct Commented {
     tops: std::collections::HashMap<u32, u32>,
     /// Each object literal's `}` and the comments before it (`closing::end_of`).
     closing: closing::Closing,
+    /// Where each re-export is printed, before every other node and comment
+    /// of the module, its own comments there.
+    reexport_starts: Vec<u32>,
 }
 
 fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
@@ -969,6 +974,28 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         }
     }
     cases::fallthroughs(module, &said_fallen, &mut text, &mut found);
+    // Each re-export, printed first (ADR 0240), at a place of its own before
+    // every other's, its comments with it: at its own, where it's written,
+    // the comments oxc keeps of a block of only comments before it, which
+    // it prints before the first node past them, would print above it.
+    let mut free = (0..).filter(|at| !spans.iter().any(|&(lo, _)| lo == *at) && !starts.contains(at));
+    let reexport_starts: Vec<u32> = (module.reexports.iter())
+        .map(|reexport| match reexport.span.is_none() {
+            true => reexport.span.lo,
+            false => free.next().expect("a free place"),
+        })
+        .collect();
+    for (reexport, &key) in module.reexports.iter().zip(&reexport_starts) {
+        if reexport.span.is_none() {
+            continue;
+        }
+        for made in found.iter_mut().filter(|c| c.attached_to == reexport.span.lo) {
+            made.attached_to = key;
+        }
+        if let Some(top) = tops.remove(&reexport.span.lo) {
+            tops.insert(key, top);
+        }
+    }
     Commented {
         text,
         comments: found,
@@ -976,6 +1003,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         arms: arm_comments,
         tops,
         closing,
+        reexport_starts,
     }
 }
 
