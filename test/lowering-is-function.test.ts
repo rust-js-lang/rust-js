@@ -153,6 +153,10 @@ pub fn has_symbol_for() -> bool {
 pub fn defines_symbol_for() -> bool {
     js::is_defined(SymbolFor)
 }
+
+pub fn symbol_defines_for() -> bool {
+    js::is_function(js::symbol::new) && js::is_defined(SymbolFor)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -161,7 +165,10 @@ pub fn defines_symbol_for() -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.componentType()).toBe(Symbol.for("selector.component"));
   expect(js).toContain('export function definesSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for !== "undefined";\n}');
-  expect([lib.hasSymbolFor(), lib.definesSymbolFor()]).toEqual([true, true]);
+  // What `typeof Symbol === "function"` says, a later `typeof Symbol !==
+  // "undefined"` needn't (ADR 0964).
+  expect(js).toContain('export function symbolDefinesFor() {\n  return typeof Symbol === "function" && typeof Symbol.for !== "undefined";\n}');
+  expect([lib.hasSymbolFor(), lib.definesSymbolFor(), lib.symbolDefinesFor()]).toEqual([true, true, true]);
 });
 
 // React's ReactFiberPerformanceTrack: `const supportsUserTiming =
@@ -169,7 +176,8 @@ pub fn defines_symbol_for() -> bool {
 // typeof console.timeStamp === 'function'`. A thread-local `bool`'s value
 // a `with` lends is a `bool`, as a `bool` constant's read is, so the chain
 // is its `&&`s, no `!!(..)` that kept ADR 0964's later `typeof console`;
-// and a comment before `js::is_function(..)` is before its test.
+// and a comment before `js::is_function(..)` is before its test, one
+// before `js::is_defined(..)` before the first of its tests.
 test("a thread-local bool of another and is_function's chain read as written", async () => {
   const dir = fixture("is-function-chain");
   writeFileSync(join(dir, "lib.rs"), `thread_local! {
@@ -183,6 +191,7 @@ pub fn time_stamp(_label: &str) {
 
 thread_local! {
     static SUPPORTS_USER_TIMING: bool = ENABLE_PROFILER_TIMER.with(|&enabled| enabled)
+        // Some hosts have no console
         && js::is_defined(time_stamp)
         // In DEV we also rely on performance.measure
         && js::is_function(time_stamp);
@@ -196,6 +205,7 @@ pub fn supports() -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`const SUPPORTS_USER_TIMING =
   ENABLE_PROFILER_TIMER &&
+  // Some hosts have no console
   typeof console !== "undefined" &&
   typeof console.timeStamp !== "undefined" &&
   // In DEV we also rely on performance.measure

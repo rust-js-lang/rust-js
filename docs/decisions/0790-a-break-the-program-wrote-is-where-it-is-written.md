@@ -5,6 +5,8 @@ whose labeled block tidy could make something else, and extends
 [0636](0636-a-guarded-arm-is-a-case.md)'s guarded case and
 [0668](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)'s
 `switch (typeof value)` to a guard that holds. Amended by
+[0946](0946-an-if-of-mixed-logicals-is-its-one-test.md)'s amendment, whose
+`skipped_tests` reads what `or_blocks` did, and by
 [0805](0805-a-cases-if-is-as-written-whatever-ends-it.md): an `||` of
 such a `break` is as written whatever the rest ends with, a loop nothing
 leaves too, and a case's `if` the program wrote with no `else` has none

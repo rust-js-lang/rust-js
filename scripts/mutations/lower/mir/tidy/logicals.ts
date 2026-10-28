@@ -200,14 +200,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "or-block-negated",
-    breaks: "an `||` the program wrote whose branch is a `break` is negated, `if (!a && !b) { r } s`, its `break` after (ADR 0790)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "        if let Some((test, span, rest)) = made {",
-    replace: "        if let Some((test, span, rest)) = made.filter(|_| false) {",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
-  },
-  {
     name: "chain-place-read-twice",
     breaks: "a let chain after a test of its own reads its place twice, `if (debug && info.value != null) { const value = info.value; .. }` (ADR 0842)",
     file: "src/lower/mir/tidy/logicals.rs",
@@ -410,15 +402,6 @@ export const mutations: Mutation[] = [
     find: "        found || matches!(&then[k..], [next] if calls(next))\n",
     replace: "        found || !then.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "or-block-written-then-last",
-    breaks: "an `if` of `a && (b || c)` whose branch leaves, written before what follows, is printed inverted, the rest in `if (!a || ..)` first, React's throwException's error path before its hydration path (ADR 0790, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "                (Some(r), Some(s)) if r < s => {\n",
-    replace: "                (Some(r), Some(s)) if r < s && false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_guard_written_first.rs$"],
     snapshots: true,
   },
 ];

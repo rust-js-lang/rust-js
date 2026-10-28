@@ -136,3 +136,16 @@ asked, not its body**, which runs once they've held, after each binding
 is read either way. Held by `let_chain_else_inside_if`'s `restore`, whose
 body calls now (native-compared), and the mutation
 `chain-body-calls-counted`.
+
+## Amended (2026-10-28): `skipped_tests` is the one reader of an `||`'s block
+
+ADR 0790's `or_blocks`, which read `l: { if (a) { if (b) { break l; } r }
+} s` as `if (!a || b) { s } r`, ran just before `skipped tests`, which
+reads the same block as `if (a && !b) { r } s`, its branch where it's
+written, whose negations as written then print as the program did. Two
+passes read one shape; turned off, `or_blocks` changed no JS of the
+corpus, its snapshots included, nor of a lowering, port or JSX test,
+its mutation `or-block-negated` surviving every run. It's gone, with it
+and `or-block-written-then-last`: `skipped_tests` is the one reader, and
+`or_guard_written_first.rs` and `or_before_a_returning_loop.rs` read as
+before.

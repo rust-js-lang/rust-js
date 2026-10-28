@@ -349,11 +349,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tested reads", |b, h| {
                 js::statement_lists(b, &mut |s| tested_reads(s, &h.lets.taken_apart))
             }),
-            // An `||` the program wrote, its branch of a jump as written
-            // (ADR 0790).
-            pass("or blocks", |b, h| {
-                js::statement_lists(b, &mut |s| logicals::or_blocks(s, &h.written.logicals))
-            }),
             // An `if` whose condition mixes `&&`, `||` and `!`, of `if`s that
             // leave a block MIR made: its one test (ADR 0946).
             pass("skipped tests", |b, h| {

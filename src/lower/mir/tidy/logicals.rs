@@ -642,69 +642,6 @@ fn unimplied(test: Expr) -> Expr {
         .expect("the last part is kept")
 }
 
-/// `l: { if (a) { if (b) { break l; } r } } s`, MIR's of an `if` the
-/// program wrote with `||`, `if (!a || b) { s } r`, where `r` and `s` each
-/// end, a `break` the program wrote of a block it labeled or a `return`:
-/// its test as written, its branch where it's written (ADR 0790). The
-/// paths are the same: `!a`'s and `b`'s to `s`, the rest's to `r`.
-pub(super) fn or_blocks(stmts: &mut Vec<Stmt>, logicals: &[js::Span]) {
-    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
-    let mut i = 0;
-    while i + 1 < stmts.len() {
-        let made = match (&stmts[i].kind, stmts.last()) {
-            (StmtKind::Labeled(label, body), Some(last))
-                if crate::lower::mir::is_block_label(label) && ends(last) && i + 1 < stmts.len() =>
-            {
-                match body.as_slice() {
-                    [
-                        outer @ Stmt {
-                            kind: StmtKind::If(a, then, None),
-                            ..
-                        },
-                    ] if within(outer.span) => match then.as_slice() {
-                        [
-                            Stmt {
-                                kind: StmtKind::If(b, jump, None),
-                                ..
-                            },
-                            rest @ ..,
-                        ] if matches!(jump.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label)
-                            && rest.last().is_some_and(ends)
-                            && !js::names_jump(rest, label)
-                            // What `r` declares, now beside what's before it.
-                            && !declared(rest).any(|n| declared(&stmts[..i]).any(|m| m == n)) =>
-                        {
-                            let test = Expr::bin(Op::Or, a.clone().negated_test(), b.clone());
-                            Some((test, outer.span, rest.to_vec()))
-                        }
-                        _ => None,
-                    },
-                    _ => None,
-                }
-            }
-            _ => None,
-        };
-        if let Some((test, span, rest)) = made {
-            let after: Vec<Stmt> = stmts.drain(i + 1..).collect();
-            // Of `if a && !b { r } else { .. } s`, its `then` written first,
-            // `r`: that branch, as written, React's throwException's
-            // hydration path before the error path (ADR 0790, amended).
-            let first = |list: &[Stmt]| list.iter().map(|s| s.span).find(|s| !s.is_none()).map(|s| s.lo);
-            match (first(&rest), first(&after)) {
-                (Some(r), Some(s)) if r < s => {
-                    stmts[i] = StmtKind::If(test.negated_test(), rest, None).at(span);
-                    stmts.extend(after);
-                }
-                _ => {
-                    stmts[i] = StmtKind::If(test, after, None).at(span);
-                    stmts.extend(rest);
-                }
-            }
-        }
-        i += 1;
-    }
-}
-
 /// `l: { if (p) { if (c) { if (d) { break l; } } t } } r`, MIR's of an
 /// `if` whose condition the program wrote with `&&`, `||` and `!` mixed,
 /// `if (p && !(c && d)) { t } r`, each `break l` a way its condition is
