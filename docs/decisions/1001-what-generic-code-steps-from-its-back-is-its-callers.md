@@ -1,7 +1,7 @@
 # 1001. What generic code steps from its back is stepped of its callers' types
 
 Status: Accepted. Extends [0545](0545-a-map-stepped-from-its-back-is-made-knowing-it.md).
-Fixes #388. Amended: a copy too, `Copied<I>` (#385).
+Fixes #388. Amended: a copy too, `Copied<I>`, and a map whose closure has a destructor (#385).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. The
 program threw where Rust steps from the back.
@@ -61,3 +61,25 @@ array's items, which know their back already. So the caller gives
 - `backs_given_behind_impls.js`: a copy behind an `impl`, now made knowing
   its back, asks its length as `c.len()`, where it was `c.end - c.at`.
 - The mutation is `generic-copied-back-unstepped`.
+
+## Amendment: a map whose closure has a destructor (#385)
+
+`ends(v.iter().copied().map(move |x| x + m.0))`, `m` a value with a
+destructor, given where generic code asks `DoubleEndedIterator +
+ExactSizeIterator`, was refused as an `ExactSizeIterator`. Such a map is
+closed to drop its closure and held in a variable, so its form, which
+the length and back rules read in place, isn't seen where it's given.
+And a map of an array's items was "native", stepped from its back by
+that form, so the analysis didn't record it.
+
+A map whose closure has a destructor is never native. Where generic code
+asks its back, or its length alone (`lens(v.iter().map(f))`), it's
+recorded: made `$mapEnds` where it's made, closed, as `$closing` passes
+on its back and its length.
+
+- `test/corpus/closing_maps_given_counted.rs` checks both, and the
+  closure's drop, against native Rust.
+- The mutations are `closing-map-asked-unrecorded` and
+  `closing-map-length-unasked`.
+- Still refused: such a map of a `fuse()`, as a `Fuse` doesn't count its
+  length by its source.

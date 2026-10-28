@@ -8,7 +8,7 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, copied_source, filtered_source, flattened_source, is_double_ended,
+    Recognition, back_stepped_source, copied_source, filtered_source, flattened_source, is_double_ended, is_exact_size,
     is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
@@ -52,11 +52,18 @@ pub(super) fn back_stepped<'tcx>(
                 let Some(asked) = clause.skip_normalization().as_trait_clause() else {
                     continue;
                 };
-                if !is_double_ended(tcx, asked.def_id()) {
+                // Or its length, of a map whose closure has a destructor,
+                // held in a variable to drop it, whose form no use reads
+                // (#385): made knowing both where it's made.
+                let length = is_exact_size(tcx, asked.def_id());
+                if !is_double_ended(tcx, asked.def_id()) && !length {
                     continue;
                 }
                 let hidden = asked.self_ty().skip_binder().peel_refs();
                 let asked = recognition.reveal(hidden);
+                if length && !closure_drops(tcx, asked, &drops) {
+                    continue;
+                }
                 // One a function gives behind an `impl`, which its caller
                 // can't make knowing its back: made so where it's made.
                 let given = hidden != asked;
@@ -71,7 +78,14 @@ pub(super) fn back_stepped<'tcx>(
                         // from its back once it's held in a variable.
                         // A held `Rev`'s, of an array's items too, which no
                         // form of the caller's reverses once it's held.
-                        if held != asked || given || held_rev || dropping_items(recognition, held, &drops) {
+                        // And a map whose closure has a destructor, held in a
+                        // variable too.
+                        if held != asked
+                            || given
+                            || held_rev
+                            || dropping_items(recognition, held, &drops)
+                            || closure_drops(tcx, held, &drops)
+                        {
                             stepped.extend(back_stepped_adapter(tcx, recognition, held, given || held_rev, &drops));
                         }
                         // Given behind an `impl`, each it holds too, made
@@ -170,7 +184,8 @@ fn back_stepped_adapter<'tcx>(
     let native = (mapped.is_some() || copied.is_some())
         && !given
         && recognition.array_source(source).is_some()
-        && !dropping_items(recognition, adapter, &drops);
+        && !dropping_items(recognition, adapter, &drops)
+        && !closure_drops(tcx, adapter, &drops);
     (!native).then(|| tcx.erase_and_anonymize_regions(adapter))
 }
 
@@ -193,6 +208,13 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
         }
     }
     all
+}
+
+/// Whether `adapter` is a map whose closure has a destructor, `drops`'s:
+/// closed to drop it and held in a variable, so no form of its own steps
+/// it from its back or counts it (#385).
+fn closure_drops<'tcx>(tcx: TyCtxt<'tcx>, adapter: Ty<'tcx>, drops: impl Fn(Ty<'tcx>) -> bool) -> bool {
+    mapped_source(tcx, adapter).is_some() && matches!(adapter.kind(), ty::Adt(_, args) if drops(args.type_at(1)))
 }
 
 /// Whether `adapter`, a map or a filter, is of an array's items whose drop
