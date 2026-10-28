@@ -84,11 +84,11 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-imports-not-plain",
-    "breaks": "an import's member, `HighlightStyle.define`, blocks what's read after it, `const _3 = [..]` held",
+    "breaks": "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
     "file": "src/lower/mir.rs",
     "find": "                .flat_map(|imports| imports.values().cloned()),\n",
     "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
-    "tests": ["test/lowering-functions.test.ts", "-t", "a vec's specs from MIR stay in place past a branch's temporary"],
+    "tests": ["test/lowering-moves.test.ts", "-t", "an import's member is read past a branch that calls"],
   },
   {
     "name": "mir-array-items-not-plain",

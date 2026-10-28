@@ -1,7 +1,7 @@
 //! What's written only where something reads it: derived impls, a marker
-//! trait's dictionaries, a `Hash`'s, those only generic code reads, a
-//! `PartialEq` whose `==` is `===`, a library's the crate compiles itself,
-//! and a fieldless enum's own names of the crate alone, only called.
+//! trait's dictionaries, those only generic code reads, a `Hash`'s among
+//! them, a `PartialEq` whose `==` is `===`, a library's the crate compiles
+//! itself, and a fieldless enum's own names of the crate alone, only called.
 
 use super::super::Body;
 use super::super::library::Foreign;
@@ -13,11 +13,11 @@ use std::collections::{HashMap, HashSet};
 /// types equal only to themselves, which its contract lists for its
 /// consumers (ADR 0864, amended); and what's written only where it's
 /// reached. Derived Debug implementations, a marker trait's dictionaries,
-/// which only a `dyn` reads (ADR 0307), a `Hash`'s and a `Hasher`'s, which
-/// a map never calls (ADR 0463), and those only generic code reads, their
-/// methods called as they are anywhere else (`read_only_generically`); a
-/// `PartialEq` of a type equal only to itself, whose `==` is `===` and
-/// whose sets and maps are JS's (ADR 0864, amended); and a function each
+/// which only a `dyn` reads (ADR 0307), and those only generic code reads,
+/// their methods called as they are anywhere else (`read_only_generically`),
+/// a `Hash`'s and a `Hasher`'s among them, which a map never calls (ADR
+/// 0463); a `PartialEq` of a type equal only to itself, whose `==` is `===`
+/// and whose sets and maps are JS's (ADR 0864, amended); and a function each
 /// call of which is what it's given, a fieldless enum's `name(self)`
 /// matching each variant to its name, which no other crate reaches,
 /// written where something reads it as a value, as its calls don't (ADR
@@ -61,7 +61,6 @@ pub(super) fn written_where_reached<'tcx>(
             let trait_id = trait_of(id);
             super::super::recognition::known_derive(tcx, id)
                 || super::super::traits::is_marker(tcx, foreign, trait_id)
-                || super::super::recognition::is_hashing(tcx, trait_id)
                 || identity_eq(id, trait_id, false)
                 // A library's the crate compiles itself, only what it uses
                 // of it (ADR 0914, amended).

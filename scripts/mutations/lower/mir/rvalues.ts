@@ -502,11 +502,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-none-cell-unasked",
-    breaks: "an optional nullable field's `Cell::new(None)`, a temporary MIR makes where it has drop glue, isn't the literal's `None`, so it's `undefined ?? null` (ADR 0810, amended)",
+    breaks: "an optional nullable field's `Cell::new(None)`, a temporary MIR makes where it has drop glue, isn't the literal's `None`, so it's there, `queue: null`, not left out (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                }) && matches!(&args[..], [arg] if self.written_none(body, locals, &arg.node));\n",
     replace: "                }) && false;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "an optional nullable Cell of what drops is left out where it's made"],
   },
   {
     name: "inlined-closure-identity-captures",

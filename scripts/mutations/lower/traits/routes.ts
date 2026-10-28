@@ -120,4 +120,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^user_collections.rs$"],
     snapshots: true,
   },
+  {
+    name: "hash-impls-written-unreached",
+    breaks: "a `Hash` impl nothing calls is written, where a map never calls it (ADR 0463)",
+    file: "src/lower/traits/routes.rs",
+    find: "        || crate::lower::recognition::is_hashing(tcx, trait_id)\n        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
+    replace: "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
+    snapshots: true,
+  },
 ];

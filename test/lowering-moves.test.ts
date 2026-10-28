@@ -301,3 +301,77 @@ pub fn by_nothing(channel: &Unknown) {
   port.onmessage?.();
   expect(events).toEqual(["port1", "callback"]);
 });
+
+// An import's member is one JS's modules never change: `tags.link`, made
+// before a branch whose arm calls, is read where it's given, past the
+// branch, not held, `const link = tags.link` (`Body::plain_names`).
+test("an import's member is read past a branch that calls", async () => {
+  const dir = fixture("import-past-a-branch");
+  writeFileSync(join(dir, "tags.js"), "export const tags = { link: 'link', quote: 'quote' };\n");
+  writeFileSync(
+    join(dir, "names.js"),
+    "export const said = [];\nexport const log = (s) => said.push(s);\nexport const side = () => 'side';\nexport const both = (a, b) => `${a} ${b}`;\n",
+  );
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::JsObject;
+use std::marker::PhantomData;
+
+pub struct Tag(PhantomData<JsObject>);
+
+mod tags {
+    use super::Tag;
+
+    unsafe extern "Rust" {
+        #[link_name = "./tags.js#tags.link"]
+        pub safe static link: &'static Tag;
+        #[link_name = "./tags.js#tags.quote"]
+        pub safe static quote: &'static Tag;
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./names.js#side")]
+fn side() -> &'static Tag {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./names.js#log")]
+#[allow(unused_variables)]
+fn log(s: &str) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./names.js#both")]
+#[allow(unused_variables)]
+fn both(a: Tags, b: Tags) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Tags {
+    One(&'static Tag),
+    Many(Vec<&'static Tag>),
+}
+
+pub fn chosen(flag: bool) -> String {
+    both(
+        Tags::One(tags::link),
+        if flag {
+            log("side");
+            Tags::One(side())
+        } else {
+            Tags::One(tags::quote)
+        },
+    )
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return both(tags.link, tmp);\n");
+  expect(js).not.toContain("= tags.link");
+  const lib = await import(join(dir, "lib.js"));
+  const names = await import(join(dir, "names.js"));
+  expect([lib.chosen(true), lib.chosen(false)]).toEqual(["link side", "link quote"]);
+  expect(names.said).toEqual(["side"]);
+});

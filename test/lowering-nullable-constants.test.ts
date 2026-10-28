@@ -384,3 +384,51 @@ pub fn reset(fiber: &mut Fiber) -> Option<String> {
   expect(ts).toContain("    onClick?: (() => void) | undefined;\n");
   expect(ts).toContain("    label?: string | null | undefined;\n");
 });
+
+// An optional nullable `Cell` of what has a `Drop`: MIR makes its
+// `Cell::new(None)` a temporary of its own, to drop if what's made after
+// it panics, and that temporary is the literal's `None`, left out where
+// the struct is made, as the field of no drop glue beside it is (ADR 0810,
+// amended).
+test("an optional nullable Cell of what drops is left out where it's made", async () => {
+  const dir = fixture("nullable-optional-cell-drops");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+pub struct Task(pub u32);
+
+impl Drop for Task {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+pub struct Shared {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub queue: Cell<Option<Vec<Task>>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub transitions: Cell<Option<f64>>,
+}
+
+pub fn make(dev: bool) -> Shared {
+    let shared = Shared {
+        queue: Cell::new(None),
+        transitions: Cell::new(None),
+    };
+    if dev {
+        shared.queue.set(Some(vec![Task(1)]));
+        shared.transitions.set(Some(0.0));
+    }
+    shared
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const shared = {};\n");
+  const lib = await import(join(dir, "lib.js"));
+  const prod = lib.make(false);
+  const dev = lib.make(true);
+  expect(["queue" in prod, "transitions" in prod, dev.queue.length, dev.transitions]).toEqual([false, false, 1, 0]);
+});

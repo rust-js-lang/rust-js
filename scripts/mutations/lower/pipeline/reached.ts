@@ -36,15 +36,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
   },
   {
-    name: "hash-impls-written-unreached",
-    breaks: "a `Hash` impl nothing calls is written, where a map never calls it",
-    file: "src/lower/pipeline/reached.rs",
-    find: "                || super::super::recognition::is_hashing(tcx, trait_id)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
-    snapshots: true,
-  },
-  {
     name: "identity-eq-dictionary-always-written",
     breaks: "the dictionary of a `PartialEq` of `ptr::eq` without a `Hash` is written though nothing reads it",
     file: "src/lower/pipeline/reached.rs",
