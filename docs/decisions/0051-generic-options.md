@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -188,3 +188,34 @@ itself: of `Option`s whose last is `None`, `None`, where Rust's is
 (`last_option_drops`, `last-dropping-unboxed`). That case's iterators,
 stepped to drop each item they pass, grow the readability measure's
 `$iter` and `Iterator.from` shares, as any of items with a destructor do.
+
+## Amendment: a type parameter bound by a function trait is a function
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): each value is what
+it was; the JS reads it without asking.
+
+React's `flushSyncFromReconciler<R>(fn: (() => R) | void): R | void`
+calls `fn` where it's given one, `if (fn) { return fn(); }`. Its port,
+`fn flush_sync<R>(f: Option<impl FnOnce() -> R>) -> Option<R>`, read
+what the `Some` held through the box it might be, `const f$1 =
+$someValue(f); return $some(f$1());` (the port's gap wl8): a type
+parameter could be anything, `()` or an `Option` too.
+
+**A type parameter bound by `FnOnce`, `FnMut` or `Fn` is never
+`undefined` or `null`**, as one a binding of its bound reads isn't (ADR
+0307): what Rust lets be one is a closure, a function item, a `fn`
+pointer, a `dyn Fn`, or a reference or `Box` of one, and each is a JS
+function. So `Some` of one is the function itself, and `if let Some(f)
+= f` reads `f` as it is: `if (f != null) { return $some(f()); }`. Its
+`R` is any type still, an `Option` too, so `Some(f())` stays `$some`,
+which is `f()` itself where it isn't nullish: upstream's `R | void` can't
+tell `Some(None)` from `None`, and Rust can. `defined_by_its_bounds` in
+`src/lower/representation.rs` is the one answer, of `boxed_payload` and
+`can_be_nullish`. What's boxed is decided where each `Some` is made, as
+`$some` does at run time, so a caller's `Some(closure)` and the generic
+code that reads it agree whatever either knows.
+
+`test/corpus/optional_callbacks.rs` passes an `Option` of an `impl
+FnOnce`, of an `F: FnMut` through `as_mut()`, and of a `&F` where `F: Fn`,
+`R` an `Option` and a `()` among them, against native Rust; mutation
+`callable-param-some-boxed`.

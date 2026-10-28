@@ -1,8 +1,18 @@
 // `ref mut x` of an `Option<&mut T>`'s payload, `x: &mut &mut T`: that
 // payload where it's used, as a `let outer = &mut list` is `list`.
-/// Of a generic function's `&mut`, which an `Option` boxes: `$someValue(o)`.
+/// Of a generic function's `&mut`, the function itself, never `None`:
+/// `o.value`.
 fn call_twice<F: FnMut() -> u32>(o: &mut Option<&mut F>) -> u32 {
     if let Some(ref mut f) = *o { f() + f() } else { 0 }
+}
+
+/// Of a generic iterator's `&mut`, which an `Option` boxes: `$someValue(o)`.
+fn next_twice<I: Iterator<Item = u32>>(o: &mut Option<&mut I>) -> u32 {
+    if let Some(ref mut it) = *o {
+        it.next().unwrap_or(0) + it.next().unwrap_or(0)
+    } else {
+        0
+    }
 }
 
 struct Foo {
@@ -61,4 +71,8 @@ fn main() {
     };
     println!("{}", call_twice(&mut Some(&mut count)));
     println!("{}", call_twice::<fn() -> u32>(&mut None));
+    let mut items = 3..6;
+    let mut some_items = Some(&mut items);
+    let stepped = next_twice(&mut some_items);
+    println!("{stepped}");
 }

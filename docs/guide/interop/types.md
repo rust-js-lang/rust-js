@@ -980,7 +980,12 @@ export function ratio(a, b) {
   amended).
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
   or a generic `T` that's either, `{ $someNone: 0 }`, so it isn't
-  `undefined` ([ADR 0051](../../decisions/0051-generic-options.md)).
+  `undefined` ([ADR 0051](../../decisions/0051-generic-options.md)). A
+  `T` bound by `FnOnce`, `FnMut` or `Fn` is a function, never `undefined`:
+  an `Option<impl FnOnce() -> R>` is the function or `undefined`, called
+  as it is, `if (f != null) { return $some(f()); }`, where the `R` it
+  gives may be an `Option` itself
+  ([ADR 0051](../../decisions/0051-generic-options.md#amendment-a-type-parameter-bound-by-a-function-trait-is-a-function), amended).
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see
