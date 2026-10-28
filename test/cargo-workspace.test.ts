@@ -223,7 +223,7 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const reads = counts
     .replace(", Rc::strong_count(&a)", "")
     .replace("{} {} {}", "{} {}")
-    .replace("pub fn main() {\n", "#[derive(Clone, Copy)]\npub struct Point {\n    pub x: u32,\n}\n\npub fn main() {\n    let p = Point { x: 1 };\n    let q = p;\n    println!(\"{}\", p.x + q.x);\n");
+    .replace("pub fn main() {\n", "#[derive(Clone, Copy)]\npub struct Point {\n    pub x: u32,\n}\n\npub trait Shape {\n    fn area(&self) -> u32;\n}\n\npub struct Square(pub u32);\n\nimpl Shape for Square {\n    fn area(&self) -> u32 {\n        self.0 * self.0\n    }\n}\n\npub fn main() {\n    let p = Point { x: 1 };\n    let q = p;\n    println!(\"{}\", p.x + q.x);\n    let shape: Box<dyn Shape> = Box::new(Square(2));\n    println!(\"{}\", shape.area());\n");
   for (const [name, uses, source] of [
     ["app", "", counts],
     ["user", 'app = { path = "../app" }\n', reads.replace("println!", "app::main();\n    println!")],
@@ -240,7 +240,10 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   expect([printed(app.js), counted(app.js)]).toEqual(["5 5 2\n", true]);
   const user = await check(manifest, { packageName: "user" });
   const copied = (js: string) => readFileSync(js, "utf8").includes("{ ...p }");
-  expect([printed(user.js), counted(user.js), copied(user.js)]).toEqual(["5 5 2\n2\n5 5\n", false, false]);
+  // A program's own trait object, whose implementors drop nothing, needs
+  // no drop; a library's may hold a consumer's that does (ADRs 0163, 0360).
+  const disposed = (js: string) => readFileSync(js, "utf8").includes("shape.impl.$drop?.(shape.value);");
+  expect([printed(user.js), counted(user.js), copied(user.js), disposed(user.js)]).toEqual(["5 5 2\n2\n4\n5 5\n", false, false, false]);
   expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
   const again = await check(manifest, { packageName: "app" });
   expect(readFileSync(again.js, "utf8")).toBe(alone);
@@ -254,5 +257,5 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
   const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
   const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
-  expect([counted(root), copied(root)]).toEqual([false, false]);
+  expect([counted(root), copied(root), disposed(root)]).toEqual([false, false, true]);
 }, 600_000);
