@@ -206,7 +206,7 @@ pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static 
     observer
 }
 
-pub fn next_frame(then: &'static dyn Fn(f64)) -> u32 {
+pub fn next_frame(then: &'static dyn Fn(f64)) -> f64 {
     window.request_animation_frame(Box::new(move |time| then(time)))
 }
 `);
@@ -269,7 +269,7 @@ pub fn click(button: &HTMLElement, event: &PointerEvent) -> Option<&'static Unkn
     button.onclick().and_then(|onclick| onclick(event))
 }
 
-pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(i32)) {
+pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(f64)) {
     button.set_onclick(Some(Box::new(move |event| seen(event.client_x()))));
 }
 `);

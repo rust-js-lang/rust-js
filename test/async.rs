@@ -124,7 +124,7 @@ pub fn started() -> Rc<RefCell<Vec<u32>>> {
 }
 
 /// `fetch`, from the webapi crate: its promises, awaited one after the other.
-pub async fn load(url: &str) -> (u16, bool, String) {
+pub async fn load(url: &str) -> (f64, bool, String) {
     let response = window.fetch(url, None).await;
     let body = response.text().await;
     (response.status(), response.ok(), body)
@@ -152,7 +152,7 @@ pub fn listen_until_aborted() -> u32 {
 }
 
 /// Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer.
-pub async fn load_bytes(url: &str) -> (u32, u32, u32) {
+pub async fn load_bytes(url: &str) -> (f64, f64, f64) {
     let response = window.fetch(url, None).await;
     let copy = response.clone();
     let bytes = response.bytes().await;

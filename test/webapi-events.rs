@@ -5,7 +5,7 @@ use webapi::events::{Click, Keydown};
 use webapi::{AddEventListenerOptions, Event, EventListenerOptions, EventTargetExt, HTMLButtonElement, PointerEvent, abort_controller, listener};
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
-fn record(value: i32) {
+fn record(value: impl Into<f64>) {
     unreachable!()
 }
 

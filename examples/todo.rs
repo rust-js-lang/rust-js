@@ -184,11 +184,7 @@ mod tests {
 
     fn titles(app: &Element) -> Vec<String> {
         let spans = app.query_selector_all("li span");
-        let mut titles = Vec::new();
-        for i in 0..spans.length() {
-            titles.push(spans.item(f64::from(i)).unwrap().text_content().unwrap());
-        }
-        titles
+        webapi::node_list::iter(spans).map(|span| span.text_content().unwrap()).collect()
     }
 
     fn left(app: &Element) -> String {
@@ -197,7 +193,7 @@ mod tests {
 
     /// The `n`th element matching `selector`, to click.
     fn nth(app: &Element, selector: &str, n: u32) -> &'static webapi::HTMLElement {
-        html_element::unchecked_from(app.query_selector_all(selector).item(f64::from(n)).unwrap())
+        html_element::unchecked_from(app.query_selector_all(selector).item(n).unwrap())
     }
 
     #[test]

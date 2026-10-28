@@ -6,7 +6,9 @@ parameters were Rust integers, an `unsigned long` a `u32`; and
 arrays took their element's type and `u32`/`i32` lengths, indices and
 offsets, and to `set` and `from` only a slice of their element. Follows
 [0967](0967-an-object-spread-a-splice-and-a-set-by-any-key.md)'s
-amendment, `js::array::splice` of numbers, as one rule.
+amendment, `js::array::splice` of numbers, as one rule. Amended (the user's
+decision): a number it gives is an `f64` too, and one it must be given is
+any that's an `f64`, `impl Into<f64>` (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's (the program's) behavior is kept: a number the program gives is
@@ -54,7 +56,7 @@ eventLog.set([1, ms * 1000, id], index);
 newEventLog.set(eventLog);
 ```
 
-- **What it gives is its own type**, which the host's conversion made
+- **What it gives is its own type** (superseded below: an `f64`), which the host's conversion made
   it: `length()` a `u32`, `node_type()` a `u16`, an element an `i32`.
   Rust's integer code, `0..view.length()`, a `match` of a constant,
   stays; giving one back is `f64::from(view.byte_offset())`, which is
@@ -117,3 +119,59 @@ newEventLog.set(eventLog);
 - The guide's libraries page (libraries/README.md).
 - A binding's signature has no mutation: the tests that call it with an
   `f64`, a typed array or a `ms * 1000.0` don't compile without it.
+
+## Amendment (2026-10-28, the user's decision): what it gives is an `f64`, and a number it must be given is `impl Into<f64>`
+
+With numbers taken as `f64`s and given as integers, a binding's result
+couldn't be given back to another: react-in-rust's
+binaryToComparableString, `uint8_array::new_with_buffer(view.buffer(),
+Some(view.byte_offset()), Some(view.byte_length()))`, as upstream's `new
+Uint8Array(view.buffer, view.byteOffset, view.byteLength)`, stopped
+compiling, and a DOM loop read `list.item(f64::from(i))`.
+
+The user's decision:
+
+- **A number a binding gives is TypeScript's `number`, an `f64`**: every
+  WebIDL number a getter, an operation, an iterable, a dictionary or a
+  callback's argument gives (`size`, `onerror`'s line and column), and
+  each WebIDL constant, `node::ELEMENT_NODE: f64 = 1.0`; a typed array's
+  length, offsets, indices, elements, its callbacks' values and indices,
+  and `BYTES_PER_ELEMENT`; `Atomics`' results. A `BigInt64Array`'s element
+  is its `i64` still. Each pair agrees: what one gives, another takes.
+- **A number it must be given is any number that's an `f64`, `impl
+  Into<f64>`**: `list.item(i)` of a `u32`, `canvas.set_width(320)`,
+  `int32_array::new(4)`, `range.set_start(node, offset)` of an `f64`. One
+  API, std's own conversion, exact of every number it takes. An optional
+  one is `Option<f64>`, whose `None` needs no type; a dictionary's field
+  and a callback's argument, which no `impl` can be, are `f64`s.
+  `webapi/generate.ts`'s `generic` and `builtins/typed_arrays.ts`'s
+  `numbers` write it of a required `f64` parameter.
+- **`Atomics`' value is `A::Element`**, an `f64` of a number array and
+  an `i64` of a BigInt one: an `impl Into<i64>` would take an `i32`, which
+  JS would be given as a number where a BigInt array takes a BigInt.
+
+Consequences:
+
+- A Rust loop over a list's indices reads it as an iterator,
+  `node_list::iter(list)`, or counts its own, `for i in 0..n { list.item(i) }`
+  of a `u32` `n`; `0..list.length()` is a range of `f64`s, which Rust
+  doesn't step.
+- `{}` of a number a binding gives is `$displayF64(x)`, Rust's text of an
+  `f64`, as of any `f64`: `format!("HTTP {}", response.status())` is
+  `` `HTTP ${$displayF64(response.status)}` ``, where a WebIDL integer's
+  text is JS's own. A fact that a binding's number is an integer, which
+  `{}` could show as JS does, is a gap still.
+- A binding named as a value, `js::is_function(Range::set_start)`, of a
+  function taking `impl Into<f64>`, names no type for it, so rustc can't
+  infer it: a path to one asks of its optional parameters, or of the
+  member a value holds (ADR 0942's value form).
+- react-in-rust's binaryToComparableString compiles as it was written,
+  and SchedulerProfiling's sizes and items are numbers as upstream's are.
+
+Held by `test/js-collections.test.ts`'s "a typed array takes numbers and
+another typed array as TypeScript types them" (`set_index(0, 2.5)`,
+`at(-1)`, `length()` given back), `test/js-builtins.test.ts`'s typed
+array, view and atomics tests (`new_with_buffer(.., Some(view.byte_offset()),
+Some(view.byte_length()))`), `test/web_forms.rs` (`set_width(320)`,
+`item(0)`), the playground's compiler, and the examples' `item(n)`.
+

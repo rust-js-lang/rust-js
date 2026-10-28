@@ -69,16 +69,16 @@ pub mod event {
     use super::*;
 
     /// `Event.NONE`
-    pub const NONE: u16 = 0;
+    pub const NONE: f64 = 0.0;
 
     /// `Event.CAPTURING_PHASE`
-    pub const CAPTURING_PHASE: u16 = 1;
+    pub const CAPTURING_PHASE: f64 = 1.0;
 
     /// `Event.AT_TARGET`
-    pub const AT_TARGET: u16 = 2;
+    pub const AT_TARGET: f64 = 2.0;
 
     /// `Event.BUBBLING_PHASE`
-    pub const BUBBLING_PHASE: u16 = 3;
+    pub const BUBBLING_PHASE: f64 = 3.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
@@ -134,7 +134,7 @@ impl Event {
     #[cfg_attr(rust_js, rust_js::link_name = "get eventPhase")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn event_phase(&self) -> u16 {
+    pub fn event_phase(&self) -> f64 {
         unreachable!()
     }
 
@@ -273,58 +273,58 @@ pub mod node {
     use super::*;
 
     /// `Node.ELEMENT_NODE`
-    pub const ELEMENT_NODE: u16 = 1;
+    pub const ELEMENT_NODE: f64 = 1.0;
 
     /// `Node.ATTRIBUTE_NODE`
-    pub const ATTRIBUTE_NODE: u16 = 2;
+    pub const ATTRIBUTE_NODE: f64 = 2.0;
 
     /// `Node.TEXT_NODE`
-    pub const TEXT_NODE: u16 = 3;
+    pub const TEXT_NODE: f64 = 3.0;
 
     /// `Node.CDATA_SECTION_NODE`
-    pub const CDATA_SECTION_NODE: u16 = 4;
+    pub const CDATA_SECTION_NODE: f64 = 4.0;
 
     /// `Node.ENTITY_REFERENCE_NODE`
-    pub const ENTITY_REFERENCE_NODE: u16 = 5;
+    pub const ENTITY_REFERENCE_NODE: f64 = 5.0;
 
     /// `Node.ENTITY_NODE`
-    pub const ENTITY_NODE: u16 = 6;
+    pub const ENTITY_NODE: f64 = 6.0;
 
     /// `Node.PROCESSING_INSTRUCTION_NODE`
-    pub const PROCESSING_INSTRUCTION_NODE: u16 = 7;
+    pub const PROCESSING_INSTRUCTION_NODE: f64 = 7.0;
 
     /// `Node.COMMENT_NODE`
-    pub const COMMENT_NODE: u16 = 8;
+    pub const COMMENT_NODE: f64 = 8.0;
 
     /// `Node.DOCUMENT_NODE`
-    pub const DOCUMENT_NODE: u16 = 9;
+    pub const DOCUMENT_NODE: f64 = 9.0;
 
     /// `Node.DOCUMENT_TYPE_NODE`
-    pub const DOCUMENT_TYPE_NODE: u16 = 10;
+    pub const DOCUMENT_TYPE_NODE: f64 = 10.0;
 
     /// `Node.DOCUMENT_FRAGMENT_NODE`
-    pub const DOCUMENT_FRAGMENT_NODE: u16 = 11;
+    pub const DOCUMENT_FRAGMENT_NODE: f64 = 11.0;
 
     /// `Node.NOTATION_NODE`
-    pub const NOTATION_NODE: u16 = 12;
+    pub const NOTATION_NODE: f64 = 12.0;
 
     /// `Node.DOCUMENT_POSITION_DISCONNECTED`
-    pub const DOCUMENT_POSITION_DISCONNECTED: u16 = 0x01;
+    pub const DOCUMENT_POSITION_DISCONNECTED: f64 = 1.0;
 
     /// `Node.DOCUMENT_POSITION_PRECEDING`
-    pub const DOCUMENT_POSITION_PRECEDING: u16 = 0x02;
+    pub const DOCUMENT_POSITION_PRECEDING: f64 = 2.0;
 
     /// `Node.DOCUMENT_POSITION_FOLLOWING`
-    pub const DOCUMENT_POSITION_FOLLOWING: u16 = 0x04;
+    pub const DOCUMENT_POSITION_FOLLOWING: f64 = 4.0;
 
     /// `Node.DOCUMENT_POSITION_CONTAINS`
-    pub const DOCUMENT_POSITION_CONTAINS: u16 = 0x08;
+    pub const DOCUMENT_POSITION_CONTAINS: f64 = 8.0;
 
     /// `Node.DOCUMENT_POSITION_CONTAINED_BY`
-    pub const DOCUMENT_POSITION_CONTAINED_BY: u16 = 0x10;
+    pub const DOCUMENT_POSITION_CONTAINED_BY: f64 = 16.0;
 
     /// `Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
-    pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: u16 = 0x20;
+    pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: f64 = 32.0;
 
     /// Treats `this` as `Node` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -340,7 +340,7 @@ impl Node {
     #[cfg_attr(rust_js, rust_js::link_name = "get nodeType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn node_type(&self) -> u16 {
+    pub fn node_type(&self) -> f64 {
         unreachable!()
     }
 
@@ -517,7 +517,7 @@ impl Node {
     #[cfg_attr(rust_js, rust_js::link_name = "compareDocumentPosition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compare_document_position(&self, other: &Node) -> u16 {
+    pub fn compare_document_position(&self, other: &Node) -> f64 {
         unreachable!()
     }
 
@@ -633,7 +633,7 @@ impl CharacterData {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -641,7 +641,7 @@ impl CharacterData {
     #[cfg_attr(rust_js, rust_js::link_name = "substringData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn substring_data(&self, offset: f64, count: f64) -> String {
+    pub fn substring_data(&self, offset: impl Into<f64>, count: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -659,7 +659,7 @@ impl CharacterData {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_data(&self, offset: f64, data: &str) {
+    pub fn insert_data(&self, offset: impl Into<f64>, data: &str) {
         unreachable!()
     }
 
@@ -668,7 +668,7 @@ impl CharacterData {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_data(&self, offset: f64, count: f64) {
+    pub fn delete_data(&self, offset: impl Into<f64>, count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -677,7 +677,7 @@ impl CharacterData {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_data(&self, offset: f64, count: f64, data: &str) {
+    pub fn replace_data(&self, offset: impl Into<f64>, count: impl Into<f64>, data: &str) {
         unreachable!()
     }
 
@@ -776,7 +776,7 @@ impl Text {
     #[cfg_attr(rust_js, rust_js::link_name = "splitText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn split_text(&self, offset: f64) -> &'static Text {
+    pub fn split_text(&self, offset: impl Into<f64>) -> &'static Text {
         unreachable!()
     }
 
@@ -941,7 +941,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -957,7 +957,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_to_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -973,7 +973,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_by_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -989,7 +989,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "set scrollTop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_top(&self, value: f64) {
+    pub fn set_scroll_top(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -1005,7 +1005,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "set scrollLeft")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_left(&self, value: f64) {
+    pub fn set_scroll_left(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -1013,7 +1013,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_width(&self) -> i32 {
+    pub fn scroll_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -1021,7 +1021,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_height(&self) -> i32 {
+    pub fn scroll_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -1029,7 +1029,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientTop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_top(&self) -> i32 {
+    pub fn client_top(&self) -> f64 {
         unreachable!()
     }
 
@@ -1037,7 +1037,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientLeft")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_left(&self) -> i32 {
+    pub fn client_left(&self) -> f64 {
         unreachable!()
     }
 
@@ -1045,7 +1045,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_width(&self) -> i32 {
+    pub fn client_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -1053,7 +1053,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_height(&self) -> i32 {
+    pub fn client_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -1480,7 +1480,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_pointer_capture(&self, pointer_id: f64) {
+    pub fn set_pointer_capture(&self, pointer_id: impl Into<f64>) {
         unreachable!()
     }
 
@@ -1489,7 +1489,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn release_pointer_capture(&self, pointer_id: f64) {
+    pub fn release_pointer_capture(&self, pointer_id: impl Into<f64>) {
         unreachable!()
     }
 
@@ -1497,7 +1497,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "hasPointerCapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn has_pointer_capture(&self, pointer_id: f64) -> bool {
+    pub fn has_pointer_capture(&self, pointer_id: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -1569,7 +1569,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn child_element_count(&self) -> u32 {
+    pub fn child_element_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -2619,7 +2619,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "elementFromPoint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn element_from_point(&self, x: f64, y: f64) -> Option<&'static Element> {
+    pub fn element_from_point(&self, x: impl Into<f64>, y: impl Into<f64>) -> Option<&'static Element> {
         unreachable!()
     }
 
@@ -2627,7 +2627,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "elementsFromPoint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn elements_from_point(&self, x: f64, y: f64) -> Vec<&'static Element> {
+    pub fn elements_from_point(&self, x: impl Into<f64>, y: impl Into<f64>) -> Vec<&'static Element> {
         unreachable!()
     }
 
@@ -2635,7 +2635,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn caret_position_from_point(&self, x: f64, y: f64, options: Option<CaretPositionFromPointOptions<'_>>) -> Option<&'static CaretPosition> {
+    pub fn caret_position_from_point(&self, x: impl Into<f64>, y: impl Into<f64>, options: Option<CaretPositionFromPointOptions<'_>>) -> Option<&'static CaretPosition> {
         unreachable!()
     }
 
@@ -3668,7 +3668,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn child_element_count(&self) -> u32 {
+    pub fn child_element_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -4401,7 +4401,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -4410,7 +4410,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -5560,7 +5560,7 @@ impl DocumentFragment {
     #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn child_element_count(&self) -> u32 {
+    pub fn child_element_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -5642,7 +5642,7 @@ impl DOMTokenList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -5650,7 +5650,7 @@ impl DOMTokenList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<String> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<String> {
         unreachable!()
     }
 
@@ -5735,7 +5735,7 @@ impl DOMTokenList {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(&str, u32, &DOMTokenList)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(&str, f64, &DOMTokenList)>) {
         unreachable!()
     }
 
@@ -5743,7 +5743,7 @@ impl DOMTokenList {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = f64>> {
         unreachable!()
     }
 
@@ -5759,7 +5759,7 @@ impl DOMTokenList {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, String)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (f64, String)>> {
         unreachable!()
     }
 
@@ -5786,7 +5786,7 @@ impl<T> NodeList<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static T> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static T> {
         unreachable!()
     }
 
@@ -5794,7 +5794,7 @@ impl<T> NodeList<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -5803,7 +5803,7 @@ impl<T> NodeList<T> {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(&T, u32, &NodeList<T>)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(&T, f64, &NodeList<T>)>) {
         unreachable!()
     }
 
@@ -5811,7 +5811,7 @@ impl<T> NodeList<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = f64>> {
         unreachable!()
     }
 
@@ -5827,7 +5827,7 @@ impl<T> NodeList<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static T)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (f64, &'static T)>> {
         unreachable!()
     }
 
@@ -5854,7 +5854,7 @@ impl HTMLCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -5862,7 +5862,7 @@ impl HTMLCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static Element> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static Element> {
         unreachable!()
     }
 
@@ -5940,7 +5940,7 @@ pub mod abort_signal {
     #[cfg_attr(rust_js, rust_js::link_name = "AbortSignal.timeout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn timeout(milliseconds: f64) -> &'static AbortSignal {
+    pub fn timeout(milliseconds: impl Into<f64>) -> &'static AbortSignal {
         unreachable!()
     }
 
@@ -6052,7 +6052,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetTop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn offset_top(&self) -> i32 {
+    pub fn offset_top(&self) -> f64 {
         unreachable!()
     }
 
@@ -6060,7 +6060,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetLeft")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn offset_left(&self) -> i32 {
+    pub fn offset_left(&self) -> f64 {
         unreachable!()
     }
 
@@ -6068,7 +6068,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn offset_width(&self) -> i32 {
+    pub fn offset_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -6076,7 +6076,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn offset_height(&self) -> i32 {
+    pub fn offset_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -6375,7 +6375,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get headingOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn heading_offset(&self) -> u32 {
+    pub fn heading_offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -6383,7 +6383,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set headingOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_heading_offset(&self, value: f64) {
+    pub fn set_heading_offset(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -7069,7 +7069,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -7078,7 +7078,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -8236,7 +8236,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tab_index(&self) -> i32 {
+    pub fn tab_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -8244,7 +8244,7 @@ impl HTMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_tab_index(&self, value: f64) {
+    pub fn set_tab_index(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -9247,7 +9247,7 @@ impl HTMLFormElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -9370,7 +9370,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn x(&self) -> i32 {
+    pub fn x(&self) -> f64 {
         unreachable!()
     }
 
@@ -9378,7 +9378,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get y")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn y(&self) -> i32 {
+    pub fn y(&self) -> f64 {
         unreachable!()
     }
 
@@ -9514,7 +9514,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -9522,7 +9522,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -9530,7 +9530,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -9538,7 +9538,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -9546,7 +9546,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get naturalWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn natural_width(&self) -> u32 {
+    pub fn natural_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -9554,7 +9554,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get naturalHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn natural_height(&self) -> u32 {
+    pub fn natural_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -9698,7 +9698,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn hspace(&self) -> u32 {
+    pub fn hspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -9706,7 +9706,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_hspace(&self, value: f64) {
+    pub fn set_hspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -9714,7 +9714,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vspace(&self) -> u32 {
+    pub fn vspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -9722,7 +9722,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_vspace(&self, value: f64) {
+    pub fn set_vspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10062,7 +10062,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -10070,7 +10070,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10118,7 +10118,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_length(&self) -> i32 {
+    pub fn max_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -10126,7 +10126,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set maxLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max_length(&self, value: f64) {
+    pub fn set_max_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10150,7 +10150,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get minLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min_length(&self) -> i32 {
+    pub fn min_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -10158,7 +10158,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set minLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_min_length(&self, value: f64) {
+    pub fn set_min_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10262,7 +10262,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -10270,7 +10270,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_size(&self, value: f64) {
+    pub fn set_size(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10382,7 +10382,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set valueAsNumber")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_as_number(&self, value: f64) {
+    pub fn set_value_as_number(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10390,7 +10390,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -10398,7 +10398,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10490,7 +10490,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selection_start(&self) -> Option<u32> {
+    pub fn selection_start(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -10498,7 +10498,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_start(&self, value: f64) {
+    pub fn set_selection_start(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10506,7 +10506,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selection_end(&self) -> Option<u32> {
+    pub fn selection_end(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -10514,7 +10514,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_end(&self, value: f64) {
+    pub fn set_selection_end(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10548,7 +10548,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_range(&self, start: f64, end: f64, direction: Option<&str>) {
+    pub fn set_selection_range(&self, start: impl Into<f64>, end: impl Into<f64>, direction: Option<&str>) {
         unreachable!()
     }
 
@@ -10733,7 +10733,7 @@ impl HTMLLIElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value(&self) -> i32 {
+    pub fn value(&self) -> f64 {
         unreachable!()
     }
 
@@ -10741,7 +10741,7 @@ impl HTMLLIElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10809,7 +10809,7 @@ impl HTMLOListElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get start")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start(&self) -> i32 {
+    pub fn start(&self) -> f64 {
         unreachable!()
     }
 
@@ -10817,7 +10817,7 @@ impl HTMLOListElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set start")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_start(&self, value: f64) {
+    pub fn set_start(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -10989,7 +10989,7 @@ impl HTMLOptionElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn index(&self) -> i32 {
+    pub fn index(&self) -> f64 {
         unreachable!()
     }
 
@@ -11322,7 +11322,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -11330,7 +11330,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_size(&self, value: f64) {
+    pub fn set_size(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11354,7 +11354,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -11362,7 +11362,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_length(&self, value: f64) {
+    pub fn set_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11370,7 +11370,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static HTMLOptionElement> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static HTMLOptionElement> {
         unreachable!()
     }
 
@@ -11412,7 +11412,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selected_index(&self) -> i32 {
+    pub fn selected_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -11420,7 +11420,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectedIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selected_index(&self, value: f64) {
+    pub fn set_selected_index(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11579,7 +11579,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get cols")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cols(&self) -> u32 {
+    pub fn cols(&self) -> f64 {
         unreachable!()
     }
 
@@ -11587,7 +11587,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set cols")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cols(&self, value: f64) {
+    pub fn set_cols(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11635,7 +11635,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_length(&self) -> i32 {
+    pub fn max_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -11643,7 +11643,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set maxLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max_length(&self, value: f64) {
+    pub fn set_max_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11651,7 +11651,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get minLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min_length(&self) -> i32 {
+    pub fn min_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -11659,7 +11659,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set minLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_min_length(&self, value: f64) {
+    pub fn set_min_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11731,7 +11731,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get rows")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rows(&self) -> u32 {
+    pub fn rows(&self) -> f64 {
         unreachable!()
     }
 
@@ -11739,7 +11739,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set rows")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_rows(&self, value: f64) {
+    pub fn set_rows(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11803,7 +11803,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get textLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn text_length(&self) -> u32 {
+    pub fn text_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -11877,7 +11877,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selection_start(&self) -> u32 {
+    pub fn selection_start(&self) -> f64 {
         unreachable!()
     }
 
@@ -11885,7 +11885,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_start(&self, value: f64) {
+    pub fn set_selection_start(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11893,7 +11893,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selection_end(&self) -> u32 {
+    pub fn selection_end(&self) -> f64 {
         unreachable!()
     }
 
@@ -11901,7 +11901,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectionEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_end(&self, value: f64) {
+    pub fn set_selection_end(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -11935,7 +11935,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selection_range(&self, start: f64, end: f64, direction: Option<&str>) {
+    pub fn set_selection_range(&self, start: impl Into<f64>, end: impl Into<f64>, direction: Option<&str>) {
         unreachable!()
     }
 
@@ -12163,7 +12163,7 @@ impl HTMLTableElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_row(&self, index: f64) {
+    pub fn delete_row(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -12360,7 +12360,7 @@ impl HTMLTableSectionElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_row(&self, index: f64) {
+    pub fn delete_row(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -12460,7 +12460,7 @@ impl HTMLTableRowElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get rowIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn row_index(&self) -> i32 {
+    pub fn row_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -12468,7 +12468,7 @@ impl HTMLTableRowElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get sectionRowIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn section_row_index(&self) -> i32 {
+    pub fn section_row_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -12493,7 +12493,7 @@ impl HTMLTableRowElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_cell(&self, index: f64) {
+    pub fn delete_cell(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -12609,7 +12609,7 @@ impl HTMLTableCellElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get colSpan")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn col_span(&self) -> u32 {
+    pub fn col_span(&self) -> f64 {
         unreachable!()
     }
 
@@ -12617,7 +12617,7 @@ impl HTMLTableCellElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set colSpan")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_col_span(&self, value: f64) {
+    pub fn set_col_span(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -12625,7 +12625,7 @@ impl HTMLTableCellElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get rowSpan")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn row_span(&self) -> u32 {
+    pub fn row_span(&self) -> f64 {
         unreachable!()
     }
 
@@ -12633,7 +12633,7 @@ impl HTMLTableCellElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set rowSpan")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_row_span(&self, value: f64) {
+    pub fn set_row_span(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -12657,7 +12657,7 @@ impl HTMLTableCellElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get cellIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cell_index(&self) -> i32 {
+    pub fn cell_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -13161,7 +13161,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -13169,7 +13169,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -13177,7 +13177,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -13185,7 +13185,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -14584,7 +14584,7 @@ impl HTMLPreElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> i32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -14592,7 +14592,7 @@ impl HTMLPreElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15057,7 +15057,7 @@ impl HTMLSourceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -15065,7 +15065,7 @@ impl HTMLSourceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15073,7 +15073,7 @@ impl HTMLSourceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -15081,7 +15081,7 @@ impl HTMLSourceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15474,7 +15474,7 @@ impl HTMLObjectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn hspace(&self) -> u32 {
+    pub fn hspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -15482,7 +15482,7 @@ impl HTMLObjectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_hspace(&self, value: f64) {
+    pub fn set_hspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15506,7 +15506,7 @@ impl HTMLObjectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vspace(&self) -> u32 {
+    pub fn vspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -15514,7 +15514,7 @@ impl HTMLObjectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_vspace(&self, value: f64) {
+    pub fn set_vspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15614,7 +15614,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -15622,7 +15622,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15630,7 +15630,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -15638,7 +15638,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15646,7 +15646,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get videoWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn video_width(&self) -> u32 {
+    pub fn video_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -15654,7 +15654,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get videoHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn video_height(&self) -> u32 {
+    pub fn video_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -15760,7 +15760,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::link_name = "requestVideoFrameCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_video_frame_callback(&self, callback: Box<dyn FnOnce(f64, VideoFrameCallbackMetadata)>) -> u32 {
+    pub fn request_video_frame_callback(&self, callback: Box<dyn FnOnce(f64, VideoFrameCallbackMetadata)>) -> f64 {
         unreachable!()
     }
 
@@ -15769,7 +15769,7 @@ impl HTMLVideoElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_video_frame_callback(&self, handle: f64) {
+    pub fn cancel_video_frame_callback(&self, handle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -15817,16 +15817,16 @@ pub mod html_track_element {
     use super::*;
 
     /// `HTMLTrackElement.NONE`
-    pub const NONE: u16 = 0;
+    pub const NONE: f64 = 0.0;
 
     /// `HTMLTrackElement.LOADING`
-    pub const LOADING: u16 = 1;
+    pub const LOADING: f64 = 1.0;
 
     /// `HTMLTrackElement.LOADED`
-    pub const LOADED: u16 = 2;
+    pub const LOADED: f64 = 2.0;
 
     /// `HTMLTrackElement.ERROR`
-    pub const ERROR: u16 = 3;
+    pub const ERROR: f64 = 3.0;
 
     /// Treats `this` as `HTMLTrackElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -15922,7 +15922,7 @@ impl HTMLTrackElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -15953,31 +15953,31 @@ pub mod html_media_element {
     use super::*;
 
     /// `HTMLMediaElement.NETWORK_EMPTY`
-    pub const NETWORK_EMPTY: u16 = 0;
+    pub const NETWORK_EMPTY: f64 = 0.0;
 
     /// `HTMLMediaElement.NETWORK_IDLE`
-    pub const NETWORK_IDLE: u16 = 1;
+    pub const NETWORK_IDLE: f64 = 1.0;
 
     /// `HTMLMediaElement.NETWORK_LOADING`
-    pub const NETWORK_LOADING: u16 = 2;
+    pub const NETWORK_LOADING: f64 = 2.0;
 
     /// `HTMLMediaElement.NETWORK_NO_SOURCE`
-    pub const NETWORK_NO_SOURCE: u16 = 3;
+    pub const NETWORK_NO_SOURCE: f64 = 3.0;
 
     /// `HTMLMediaElement.HAVE_NOTHING`
-    pub const HAVE_NOTHING: u16 = 0;
+    pub const HAVE_NOTHING: f64 = 0.0;
 
     /// `HTMLMediaElement.HAVE_METADATA`
-    pub const HAVE_METADATA: u16 = 1;
+    pub const HAVE_METADATA: f64 = 1.0;
 
     /// `HTMLMediaElement.HAVE_CURRENT_DATA`
-    pub const HAVE_CURRENT_DATA: u16 = 2;
+    pub const HAVE_CURRENT_DATA: f64 = 2.0;
 
     /// `HTMLMediaElement.HAVE_FUTURE_DATA`
-    pub const HAVE_FUTURE_DATA: u16 = 3;
+    pub const HAVE_FUTURE_DATA: f64 = 3.0;
 
     /// `HTMLMediaElement.HAVE_ENOUGH_DATA`
-    pub const HAVE_ENOUGH_DATA: u16 = 4;
+    pub const HAVE_ENOUGH_DATA: f64 = 4.0;
 
     /// Treats `this` as `HTMLMediaElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -16123,7 +16123,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get networkState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn network_state(&self) -> u16 {
+    pub fn network_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -16172,7 +16172,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -16196,7 +16196,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set currentTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_current_time(&self, value: f64) {
+    pub fn set_current_time(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -16205,7 +16205,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fast_seek(&self, time: f64) {
+    pub fn fast_seek(&self, time: impl Into<f64>) {
         unreachable!()
     }
 
@@ -16245,7 +16245,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set defaultPlaybackRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_default_playback_rate(&self, value: f64) {
+    pub fn set_default_playback_rate(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -16261,7 +16261,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set playbackRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_playback_rate(&self, value: f64) {
+    pub fn set_playback_rate(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -16382,7 +16382,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set volume")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_volume(&self, value: f64) {
+    pub fn set_volume(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -16998,7 +16998,7 @@ impl HTMLTableColElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get span")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn span(&self) -> u32 {
+    pub fn span(&self) -> f64 {
         unreachable!()
     }
 
@@ -17006,7 +17006,7 @@ impl HTMLTableColElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set span")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_span(&self, value: f64) {
+    pub fn set_span(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17226,7 +17226,7 @@ impl HTMLProgressElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17242,7 +17242,7 @@ impl HTMLProgressElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set max")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max(&self, value: f64) {
+    pub fn set_max(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17302,7 +17302,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17318,7 +17318,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set min")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_min(&self, value: f64) {
+    pub fn set_min(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17334,7 +17334,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set max")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max(&self, value: f64) {
+    pub fn set_max(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17350,7 +17350,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set low")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_low(&self, value: f64) {
+    pub fn set_low(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17366,7 +17366,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set high")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_high(&self, value: f64) {
+    pub fn set_high(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -17382,7 +17382,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set optimum")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_optimum(&self, value: f64) {
+    pub fn set_optimum(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -18218,7 +18218,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn orientation(&self) -> i16 {
+    pub fn orientation(&self) -> f64 {
         unreachable!()
     }
 
@@ -18284,7 +18284,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_to(&self, x: f64, y: f64) {
+    pub fn move_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -18293,7 +18293,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_by(&self, x: f64, y: f64) {
+    pub fn move_by(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -18302,7 +18302,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn resize_to(&self, width: f64, height: f64) {
+    pub fn resize_to(&self, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -18311,7 +18311,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn resize_by(&self, x: f64, y: f64) {
+    pub fn resize_by(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -18319,7 +18319,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get innerWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn inner_width(&self) -> i32 {
+    pub fn inner_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -18327,7 +18327,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get innerHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn inner_height(&self) -> i32 {
+    pub fn inner_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -18375,7 +18375,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -18391,7 +18391,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_to_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -18407,7 +18407,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_by_with_x_and_y(&self, x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -18415,7 +18415,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_x(&self) -> i32 {
+    pub fn screen_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -18423,7 +18423,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenLeft")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_left(&self) -> i32 {
+    pub fn screen_left(&self) -> f64 {
         unreachable!()
     }
 
@@ -18431,7 +18431,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_y(&self) -> i32 {
+    pub fn screen_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -18439,7 +18439,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenTop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_top(&self) -> i32 {
+    pub fn screen_top(&self) -> f64 {
         unreachable!()
     }
 
@@ -18447,7 +18447,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get outerWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn outer_width(&self) -> i32 {
+    pub fn outer_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -18455,7 +18455,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get outerHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn outer_height(&self) -> i32 {
+    pub fn outer_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -18675,7 +18675,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -18875,7 +18875,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
+    pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
 
@@ -18884,7 +18884,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_idle_callback(&self, handle: f64) {
+    pub fn cancel_idle_callback(&self, handle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -19554,7 +19554,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -19563,7 +19563,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -21039,7 +21039,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_timeout(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> i32 {
+    pub fn set_timeout(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
         unreachable!()
     }
 
@@ -21057,7 +21057,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::variadic)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_interval(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> i32 {
+    pub fn set_interval(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
         unreachable!()
     }
 
@@ -21091,7 +21091,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(&self, image: impl IntoImageBitmapSource, sx: f64, sy: f64, sw: f64, sh: f64, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
+    pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(&self, image: impl IntoImageBitmapSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
@@ -21131,7 +21131,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_animation_frame(&self, callback: Box<dyn FnOnce(f64)>) -> u32 {
+    pub fn request_animation_frame(&self, callback: Box<dyn FnOnce(f64)>) -> f64 {
         unreachable!()
     }
 
@@ -21140,7 +21140,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_animation_frame(&self, handle: f64) {
+    pub fn cancel_animation_frame(&self, handle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -21367,7 +21367,7 @@ impl History {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -21451,7 +21451,7 @@ impl Storage {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -21459,7 +21459,7 @@ impl Storage {
     #[cfg_attr(rust_js, rust_js::link_name = "key")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn key(&self, index: f64) -> Option<String> {
+    pub fn key(&self, index: impl Into<f64>) -> Option<String> {
         unreachable!()
     }
 
@@ -21562,7 +21562,7 @@ impl DataTransfer {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_drag_image(&self, image: &Element, x: f64, y: f64) {
+    pub fn set_drag_image(&self, image: &Element, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -21964,7 +21964,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_resource_timing_buffer_size(&self, max_size: f64) {
+    pub fn set_resource_timing_buffer_size(&self, max_size: impl Into<f64>) {
         unreachable!()
     }
 
@@ -22067,7 +22067,7 @@ impl UIEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get detail")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn detail(&self) -> i32 {
+    pub fn detail(&self) -> f64 {
         unreachable!()
     }
 
@@ -22084,7 +22084,7 @@ impl UIEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get which")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn which(&self) -> u32 {
+    pub fn which(&self) -> f64 {
         unreachable!()
     }
 
@@ -22220,7 +22220,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_x(&self) -> i32 {
+    pub fn screen_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -22228,7 +22228,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen_y(&self) -> i32 {
+    pub fn screen_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -22236,7 +22236,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_x(&self) -> i32 {
+    pub fn client_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -22244,7 +22244,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get clientY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_y(&self) -> i32 {
+    pub fn client_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -22252,7 +22252,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get layerX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn layer_x(&self) -> i32 {
+    pub fn layer_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -22260,7 +22260,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get layerY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn layer_y(&self) -> i32 {
+    pub fn layer_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -22300,7 +22300,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get button")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn button(&self) -> i16 {
+    pub fn button(&self) -> f64 {
         unreachable!()
     }
 
@@ -22308,7 +22308,7 @@ impl MouseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get buttons")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buttons(&self) -> u16 {
+    pub fn buttons(&self) -> f64 {
         unreachable!()
     }
 
@@ -22372,16 +22372,16 @@ pub mod keyboard_event {
     use super::*;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_STANDARD`
-    pub const DOM_KEY_LOCATION_STANDARD: u32 = 0x00;
+    pub const DOM_KEY_LOCATION_STANDARD: f64 = 0.0;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_LEFT`
-    pub const DOM_KEY_LOCATION_LEFT: u32 = 0x01;
+    pub const DOM_KEY_LOCATION_LEFT: f64 = 1.0;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_RIGHT`
-    pub const DOM_KEY_LOCATION_RIGHT: u32 = 0x02;
+    pub const DOM_KEY_LOCATION_RIGHT: f64 = 2.0;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_NUMPAD`
-    pub const DOM_KEY_LOCATION_NUMPAD: u32 = 0x03;
+    pub const DOM_KEY_LOCATION_NUMPAD: f64 = 3.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
@@ -22421,7 +22421,7 @@ impl KeyboardEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get location")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn location(&self) -> u32 {
+    pub fn location(&self) -> f64 {
         unreachable!()
     }
 
@@ -22494,7 +22494,7 @@ impl KeyboardEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get charCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn char_code(&self) -> u32 {
+    pub fn char_code(&self) -> f64 {
         unreachable!()
     }
 
@@ -22502,7 +22502,7 @@ impl KeyboardEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get keyCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn key_code(&self) -> u32 {
+    pub fn key_code(&self) -> f64 {
         unreachable!()
     }
 
@@ -22601,13 +22601,13 @@ pub mod wheel_event {
     use super::*;
 
     /// `WheelEvent.DOM_DELTA_PIXEL`
-    pub const DOM_DELTA_PIXEL: u32 = 0x00;
+    pub const DOM_DELTA_PIXEL: f64 = 0.0;
 
     /// `WheelEvent.DOM_DELTA_LINE`
-    pub const DOM_DELTA_LINE: u32 = 0x01;
+    pub const DOM_DELTA_LINE: f64 = 1.0;
 
     /// `WheelEvent.DOM_DELTA_PAGE`
-    pub const DOM_DELTA_PAGE: u32 = 0x02;
+    pub const DOM_DELTA_PAGE: f64 = 2.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
@@ -22655,7 +22655,7 @@ impl WheelEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get deltaMode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delta_mode(&self) -> u32 {
+    pub fn delta_mode(&self) -> f64 {
         unreachable!()
     }
 
@@ -23024,7 +23024,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get pointerId")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pointer_id(&self) -> i32 {
+    pub fn pointer_id(&self) -> f64 {
         unreachable!()
     }
 
@@ -23048,7 +23048,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get pressure")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pressure(&self) -> f32 {
+    pub fn pressure(&self) -> f64 {
         unreachable!()
     }
 
@@ -23056,7 +23056,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get tangentialPressure")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tangential_pressure(&self) -> f32 {
+    pub fn tangential_pressure(&self) -> f64 {
         unreachable!()
     }
 
@@ -23064,7 +23064,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get tiltX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tilt_x(&self) -> i32 {
+    pub fn tilt_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -23072,7 +23072,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get tiltY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tilt_y(&self) -> i32 {
+    pub fn tilt_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -23080,7 +23080,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get twist")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn twist(&self) -> i32 {
+    pub fn twist(&self) -> f64 {
         unreachable!()
     }
 
@@ -23120,7 +23120,7 @@ impl PointerEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get persistentDeviceId")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn persistent_device_id(&self) -> i32 {
+    pub fn persistent_device_id(&self) -> f64 {
         unreachable!()
     }
 
@@ -23179,7 +23179,7 @@ impl CSSStyleDeclaration {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -23187,7 +23187,7 @@ impl CSSStyleDeclaration {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> String {
+    pub fn item(&self, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -31991,7 +31991,7 @@ impl DOMRect {
     #[cfg_attr(rust_js, rust_js::link_name = "set x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_x(&self, value: f64) {
+    pub fn set_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -32007,7 +32007,7 @@ impl DOMRect {
     #[cfg_attr(rust_js, rust_js::link_name = "set y")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_y(&self, value: f64) {
+    pub fn set_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -32023,7 +32023,7 @@ impl DOMRect {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -32039,7 +32039,7 @@ impl DOMRect {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -32229,7 +32229,7 @@ impl IntersectionObserver {
     #[cfg_attr(rust_js, rust_js::link_name = "get delay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delay(&self) -> i32 {
+    pub fn delay(&self) -> f64 {
         unreachable!()
     }
 
@@ -32768,7 +32768,7 @@ impl Response {
     #[cfg_attr(rust_js, rust_js::link_name = "get status")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn status(&self) -> u16 {
+    pub fn status(&self) -> f64 {
         unreachable!()
     }
 
@@ -33095,7 +33095,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get identifier")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn identifier(&self) -> i32 {
+    pub fn identifier(&self) -> f64 {
         unreachable!()
     }
 
@@ -33159,7 +33159,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get radiusX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn radius_x(&self) -> f32 {
+    pub fn radius_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -33167,7 +33167,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get radiusY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn radius_y(&self) -> f32 {
+    pub fn radius_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -33175,7 +33175,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get rotationAngle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rotation_angle(&self) -> f32 {
+    pub fn rotation_angle(&self) -> f64 {
         unreachable!()
     }
 
@@ -33183,7 +33183,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get force")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn force(&self) -> f32 {
+    pub fn force(&self) -> f64 {
         unreachable!()
     }
 
@@ -33191,7 +33191,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get altitudeAngle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn altitude_angle(&self) -> f32 {
+    pub fn altitude_angle(&self) -> f64 {
         unreachable!()
     }
 
@@ -33199,7 +33199,7 @@ impl Touch {
     #[cfg_attr(rust_js, rust_js::link_name = "get azimuthAngle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn azimuth_angle(&self) -> f32 {
+    pub fn azimuth_angle(&self) -> f64 {
         unreachable!()
     }
 
@@ -33234,7 +33234,7 @@ impl TouchList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -33242,7 +33242,7 @@ impl TouchList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static Touch> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static Touch> {
         unreachable!()
     }
 
@@ -33955,7 +33955,7 @@ impl Navigator {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTouchPoints")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_touch_points(&self) -> i32 {
+    pub fn max_touch_points(&self) -> f64 {
         unreachable!()
     }
 
@@ -35045,7 +35045,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -35054,7 +35054,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -36156,7 +36156,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tab_index(&self) -> i32 {
+    pub fn tab_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -36164,7 +36164,7 @@ impl SVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_tab_index(&self, value: f64) {
+    pub fn set_tab_index(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -36334,7 +36334,7 @@ impl SVGGeometryElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getTotalLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_total_length(&self) -> f32 {
+    pub fn get_total_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -36342,7 +36342,7 @@ impl SVGGeometryElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getPointAtLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_point_at_length(&self, distance: f64) -> &'static DOMPoint {
+    pub fn get_point_at_length(&self, distance: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -36410,7 +36410,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get currentScale")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn current_scale(&self) -> f32 {
+    pub fn current_scale(&self) -> f64 {
         unreachable!()
     }
 
@@ -36418,7 +36418,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set currentScale")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_current_scale(&self, value: f64) {
+    pub fn set_current_scale(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -36547,7 +36547,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "suspendRedraw")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn suspend_redraw(&self, max_wait_milliseconds: f64) -> u32 {
+    pub fn suspend_redraw(&self, max_wait_milliseconds: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -36556,7 +36556,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn unsuspend_redraw(&self, suspend_handle_id: f64) {
+    pub fn unsuspend_redraw(&self, suspend_handle_id: impl Into<f64>) {
         unreachable!()
     }
 
@@ -36608,7 +36608,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_current_time(&self) -> f32 {
+    pub fn get_current_time(&self) -> f64 {
         unreachable!()
     }
 
@@ -36617,7 +36617,7 @@ impl SVGSVGElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_current_time(&self, seconds: f64) {
+    pub fn set_current_time(&self, seconds: impl Into<f64>) {
         unreachable!()
     }
 
@@ -37447,7 +37447,7 @@ impl SVGPathElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getTotalLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_total_length(&self) -> f32 {
+    pub fn get_total_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -37455,7 +37455,7 @@ impl SVGPathElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getPointAtLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_point_at_length(&self, distance: f64) -> &'static DOMPoint {
+    pub fn get_point_at_length(&self, distance: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -37814,13 +37814,13 @@ pub mod svg_text_content_element {
     use super::*;
 
     /// `SVGTextContentElement.LENGTHADJUST_UNKNOWN`
-    pub const LENGTHADJUST_UNKNOWN: u16 = 0;
+    pub const LENGTHADJUST_UNKNOWN: f64 = 0.0;
 
     /// `SVGTextContentElement.LENGTHADJUST_SPACING`
-    pub const LENGTHADJUST_SPACING: u16 = 1;
+    pub const LENGTHADJUST_SPACING: f64 = 1.0;
 
     /// `SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS`
-    pub const LENGTHADJUST_SPACINGANDGLYPHS: u16 = 2;
+    pub const LENGTHADJUST_SPACINGANDGLYPHS: f64 = 2.0;
 
     /// Treats `this` as `SVGTextContentElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -37852,7 +37852,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getNumberOfChars")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_number_of_chars(&self) -> i32 {
+    pub fn get_number_of_chars(&self) -> f64 {
         unreachable!()
     }
 
@@ -37860,7 +37860,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getComputedTextLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_computed_text_length(&self) -> f32 {
+    pub fn get_computed_text_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -37868,7 +37868,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getSubStringLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_sub_string_length(&self, charnum: f64, nchars: f64) -> f32 {
+    pub fn get_sub_string_length(&self, charnum: impl Into<f64>, nchars: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -37876,7 +37876,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getStartPositionOfChar")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_start_position_of_char(&self, charnum: f64) -> &'static DOMPoint {
+    pub fn get_start_position_of_char(&self, charnum: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -37884,7 +37884,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getEndPositionOfChar")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_end_position_of_char(&self, charnum: f64) -> &'static DOMPoint {
+    pub fn get_end_position_of_char(&self, charnum: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -37892,7 +37892,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getExtentOfChar")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_extent_of_char(&self, charnum: f64) -> &'static DOMRect {
+    pub fn get_extent_of_char(&self, charnum: impl Into<f64>) -> &'static DOMRect {
         unreachable!()
     }
 
@@ -37900,7 +37900,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getRotationOfChar")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_rotation_of_char(&self, charnum: f64) -> f32 {
+    pub fn get_rotation_of_char(&self, charnum: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -37908,7 +37908,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getCharNumAtPosition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_char_num_at_position(&self, point: Option<DOMPointInit>) -> i32 {
+    pub fn get_char_num_at_position(&self, point: Option<DOMPointInit>) -> f64 {
         unreachable!()
     }
 
@@ -37917,7 +37917,7 @@ impl SVGTextContentElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn select_sub_string(&self, charnum: f64, nchars: f64) {
+    pub fn select_sub_string(&self, charnum: impl Into<f64>, nchars: impl Into<f64>) {
         unreachable!()
     }
 
@@ -38058,22 +38058,22 @@ pub mod svg_text_path_element {
     use super::*;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_UNKNOWN`
-    pub const TEXTPATH_METHODTYPE_UNKNOWN: u16 = 0;
+    pub const TEXTPATH_METHODTYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_ALIGN`
-    pub const TEXTPATH_METHODTYPE_ALIGN: u16 = 1;
+    pub const TEXTPATH_METHODTYPE_ALIGN: f64 = 1.0;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_STRETCH`
-    pub const TEXTPATH_METHODTYPE_STRETCH: u16 = 2;
+    pub const TEXTPATH_METHODTYPE_STRETCH: f64 = 2.0;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_UNKNOWN`
-    pub const TEXTPATH_SPACINGTYPE_UNKNOWN: u16 = 0;
+    pub const TEXTPATH_SPACINGTYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_AUTO`
-    pub const TEXTPATH_SPACINGTYPE_AUTO: u16 = 1;
+    pub const TEXTPATH_SPACINGTYPE_AUTO: f64 = 1.0;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_EXACT`
-    pub const TEXTPATH_SPACINGTYPE_EXACT: u16 = 2;
+    pub const TEXTPATH_SPACINGTYPE_EXACT: f64 = 2.0;
 
     /// Treats `this` as `SVGTextPathElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -38288,25 +38288,25 @@ pub mod svg_marker_element {
     use super::*;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_UNKNOWN`
-    pub const SVG_MARKERUNITS_UNKNOWN: u16 = 0;
+    pub const SVG_MARKERUNITS_UNKNOWN: f64 = 0.0;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_USERSPACEONUSE`
-    pub const SVG_MARKERUNITS_USERSPACEONUSE: u16 = 1;
+    pub const SVG_MARKERUNITS_USERSPACEONUSE: f64 = 1.0;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_STROKEWIDTH`
-    pub const SVG_MARKERUNITS_STROKEWIDTH: u16 = 2;
+    pub const SVG_MARKERUNITS_STROKEWIDTH: f64 = 2.0;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_UNKNOWN`
-    pub const SVG_MARKER_ORIENT_UNKNOWN: u16 = 0;
+    pub const SVG_MARKER_ORIENT_UNKNOWN: f64 = 0.0;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO`
-    pub const SVG_MARKER_ORIENT_AUTO: u16 = 1;
+    pub const SVG_MARKER_ORIENT_AUTO: f64 = 1.0;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE`
-    pub const SVG_MARKER_ORIENT_ANGLE: u16 = 2;
+    pub const SVG_MARKER_ORIENT_ANGLE: f64 = 2.0;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE`
-    pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: u16 = 3;
+    pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: f64 = 3.0;
 
     /// Treats `this` as `SVGMarkerElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -38443,16 +38443,16 @@ pub mod svg_gradient_element {
     use super::*;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_UNKNOWN`
-    pub const SVG_SPREADMETHOD_UNKNOWN: u16 = 0;
+    pub const SVG_SPREADMETHOD_UNKNOWN: f64 = 0.0;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_PAD`
-    pub const SVG_SPREADMETHOD_PAD: u16 = 1;
+    pub const SVG_SPREADMETHOD_PAD: f64 = 1.0;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_REFLECT`
-    pub const SVG_SPREADMETHOD_REFLECT: u16 = 2;
+    pub const SVG_SPREADMETHOD_REFLECT: f64 = 2.0;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_REPEAT`
-    pub const SVG_SPREADMETHOD_REPEAT: u16 = 3;
+    pub const SVG_SPREADMETHOD_REPEAT: f64 = 3.0;
 
     /// Treats `this` as `SVGGradientElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -39211,7 +39211,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getStartTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_start_time(&self) -> f32 {
+    pub fn get_start_time(&self) -> f64 {
         unreachable!()
     }
 
@@ -39219,7 +39219,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_current_time(&self) -> f32 {
+    pub fn get_current_time(&self) -> f64 {
         unreachable!()
     }
 
@@ -39227,7 +39227,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::link_name = "getSimpleDuration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_simple_duration(&self) -> f32 {
+    pub fn get_simple_duration(&self) -> f64 {
         unreachable!()
     }
 
@@ -39245,7 +39245,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn begin_element_at(&self, offset: f64) {
+    pub fn begin_element_at(&self, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -39263,7 +39263,7 @@ impl SVGAnimationElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn end_element_at(&self, offset: f64) {
+    pub fn end_element_at(&self, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -39514,55 +39514,55 @@ pub mod svgfe_blend_element {
     use super::*;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_UNKNOWN`
-    pub const SVG_FEBLEND_MODE_UNKNOWN: u16 = 0;
+    pub const SVG_FEBLEND_MODE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_NORMAL`
-    pub const SVG_FEBLEND_MODE_NORMAL: u16 = 1;
+    pub const SVG_FEBLEND_MODE_NORMAL: f64 = 1.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_MULTIPLY`
-    pub const SVG_FEBLEND_MODE_MULTIPLY: u16 = 2;
+    pub const SVG_FEBLEND_MODE_MULTIPLY: f64 = 2.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SCREEN`
-    pub const SVG_FEBLEND_MODE_SCREEN: u16 = 3;
+    pub const SVG_FEBLEND_MODE_SCREEN: f64 = 3.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DARKEN`
-    pub const SVG_FEBLEND_MODE_DARKEN: u16 = 4;
+    pub const SVG_FEBLEND_MODE_DARKEN: f64 = 4.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LIGHTEN`
-    pub const SVG_FEBLEND_MODE_LIGHTEN: u16 = 5;
+    pub const SVG_FEBLEND_MODE_LIGHTEN: f64 = 5.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_OVERLAY`
-    pub const SVG_FEBLEND_MODE_OVERLAY: u16 = 6;
+    pub const SVG_FEBLEND_MODE_OVERLAY: f64 = 6.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_DODGE`
-    pub const SVG_FEBLEND_MODE_COLOR_DODGE: u16 = 7;
+    pub const SVG_FEBLEND_MODE_COLOR_DODGE: f64 = 7.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_BURN`
-    pub const SVG_FEBLEND_MODE_COLOR_BURN: u16 = 8;
+    pub const SVG_FEBLEND_MODE_COLOR_BURN: f64 = 8.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HARD_LIGHT`
-    pub const SVG_FEBLEND_MODE_HARD_LIGHT: u16 = 9;
+    pub const SVG_FEBLEND_MODE_HARD_LIGHT: f64 = 9.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SOFT_LIGHT`
-    pub const SVG_FEBLEND_MODE_SOFT_LIGHT: u16 = 10;
+    pub const SVG_FEBLEND_MODE_SOFT_LIGHT: f64 = 10.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DIFFERENCE`
-    pub const SVG_FEBLEND_MODE_DIFFERENCE: u16 = 11;
+    pub const SVG_FEBLEND_MODE_DIFFERENCE: f64 = 11.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_EXCLUSION`
-    pub const SVG_FEBLEND_MODE_EXCLUSION: u16 = 12;
+    pub const SVG_FEBLEND_MODE_EXCLUSION: f64 = 12.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HUE`
-    pub const SVG_FEBLEND_MODE_HUE: u16 = 13;
+    pub const SVG_FEBLEND_MODE_HUE: f64 = 13.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SATURATION`
-    pub const SVG_FEBLEND_MODE_SATURATION: u16 = 14;
+    pub const SVG_FEBLEND_MODE_SATURATION: f64 = 14.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR`
-    pub const SVG_FEBLEND_MODE_COLOR: u16 = 15;
+    pub const SVG_FEBLEND_MODE_COLOR: f64 = 15.0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LUMINOSITY`
-    pub const SVG_FEBLEND_MODE_LUMINOSITY: u16 = 16;
+    pub const SVG_FEBLEND_MODE_LUMINOSITY: f64 = 16.0;
 
     /// Treats `this` as `SVGFEBlendElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -39657,19 +39657,19 @@ pub mod svgfe_color_matrix_element {
     use super::*;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_UNKNOWN`
-    pub const SVG_FECOLORMATRIX_TYPE_UNKNOWN: u16 = 0;
+    pub const SVG_FECOLORMATRIX_TYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_MATRIX`
-    pub const SVG_FECOLORMATRIX_TYPE_MATRIX: u16 = 1;
+    pub const SVG_FECOLORMATRIX_TYPE_MATRIX: f64 = 1.0;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_SATURATE`
-    pub const SVG_FECOLORMATRIX_TYPE_SATURATE: u16 = 2;
+    pub const SVG_FECOLORMATRIX_TYPE_SATURATE: f64 = 2.0;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_HUEROTATE`
-    pub const SVG_FECOLORMATRIX_TYPE_HUEROTATE: u16 = 3;
+    pub const SVG_FECOLORMATRIX_TYPE_HUEROTATE: f64 = 3.0;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA`
-    pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: u16 = 4;
+    pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: f64 = 4.0;
 
     /// Treats `this` as `SVGFEColorMatrixElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -39840,22 +39840,22 @@ pub mod svg_component_transfer_function_element {
     use super::*;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN: u16 = 0;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY: u16 = 1;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY: f64 = 1.0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_TABLE`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_TABLE: u16 = 2;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_TABLE: f64 = 2.0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE: u16 = 3;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE: f64 = 3.0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_LINEAR`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_LINEAR: u16 = 4;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_LINEAR: f64 = 4.0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_GAMMA`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: u16 = 5;
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: f64 = 5.0;
 
     /// Treats `this` as `SVGComponentTransferFunctionElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -40042,25 +40042,25 @@ pub mod svgfe_composite_element {
     use super::*;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_UNKNOWN`
-    pub const SVG_FECOMPOSITE_OPERATOR_UNKNOWN: u16 = 0;
+    pub const SVG_FECOMPOSITE_OPERATOR_UNKNOWN: f64 = 0.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OVER`
-    pub const SVG_FECOMPOSITE_OPERATOR_OVER: u16 = 1;
+    pub const SVG_FECOMPOSITE_OPERATOR_OVER: f64 = 1.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_IN`
-    pub const SVG_FECOMPOSITE_OPERATOR_IN: u16 = 2;
+    pub const SVG_FECOMPOSITE_OPERATOR_IN: f64 = 2.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OUT`
-    pub const SVG_FECOMPOSITE_OPERATOR_OUT: u16 = 3;
+    pub const SVG_FECOMPOSITE_OPERATOR_OUT: f64 = 3.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ATOP`
-    pub const SVG_FECOMPOSITE_OPERATOR_ATOP: u16 = 4;
+    pub const SVG_FECOMPOSITE_OPERATOR_ATOP: f64 = 4.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR`
-    pub const SVG_FECOMPOSITE_OPERATOR_XOR: u16 = 5;
+    pub const SVG_FECOMPOSITE_OPERATOR_XOR: f64 = 5.0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC`
-    pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: u16 = 6;
+    pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: f64 = 6.0;
 
     /// Treats `this` as `SVGFECompositeElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -40187,16 +40187,16 @@ pub mod svgfe_convolve_matrix_element {
     use super::*;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_UNKNOWN`
-    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
+    pub const SVG_EDGEMODE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_DUPLICATE`
-    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
+    pub const SVG_EDGEMODE_DUPLICATE: f64 = 1.0;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP`
-    pub const SVG_EDGEMODE_WRAP: u16 = 2;
+    pub const SVG_EDGEMODE_WRAP: f64 = 2.0;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_NONE`
-    pub const SVG_EDGEMODE_NONE: u16 = 3;
+    pub const SVG_EDGEMODE_NONE: f64 = 3.0;
 
     /// Treats `this` as `SVGFEConvolveMatrixElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -40471,19 +40471,19 @@ pub mod svgfe_displacement_map_element {
     use super::*;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_UNKNOWN`
-    pub const SVG_CHANNEL_UNKNOWN: u16 = 0;
+    pub const SVG_CHANNEL_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_R`
-    pub const SVG_CHANNEL_R: u16 = 1;
+    pub const SVG_CHANNEL_R: f64 = 1.0;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_G`
-    pub const SVG_CHANNEL_G: u16 = 2;
+    pub const SVG_CHANNEL_G: f64 = 2.0;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_B`
-    pub const SVG_CHANNEL_B: u16 = 3;
+    pub const SVG_CHANNEL_B: f64 = 3.0;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_A`
-    pub const SVG_CHANNEL_A: u16 = 4;
+    pub const SVG_CHANNEL_A: f64 = 4.0;
 
     /// Treats `this` as `SVGFEDisplacementMapElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -40648,7 +40648,7 @@ impl SVGFEDropShadowElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_std_deviation(&self, std_deviation_x: f64, std_deviation_y: f64) {
+    pub fn set_std_deviation(&self, std_deviation_x: impl Into<f64>, std_deviation_y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -40779,16 +40779,16 @@ pub mod svgfe_gaussian_blur_element {
     use super::*;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_UNKNOWN`
-    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
+    pub const SVG_EDGEMODE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_DUPLICATE`
-    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
+    pub const SVG_EDGEMODE_DUPLICATE: f64 = 1.0;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_WRAP`
-    pub const SVG_EDGEMODE_WRAP: u16 = 2;
+    pub const SVG_EDGEMODE_WRAP: f64 = 2.0;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_NONE`
-    pub const SVG_EDGEMODE_NONE: u16 = 3;
+    pub const SVG_EDGEMODE_NONE: f64 = 3.0;
 
     /// Treats `this` as `SVGFEGaussianBlurElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -40837,7 +40837,7 @@ impl SVGFEGaussianBlurElement {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_std_deviation(&self, std_deviation_x: f64, std_deviation_y: f64) {
+    pub fn set_std_deviation(&self, std_deviation_x: impl Into<f64>, std_deviation_y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -41096,13 +41096,13 @@ pub mod svgfe_morphology_element {
     use super::*;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN`
-    pub const SVG_MORPHOLOGY_OPERATOR_UNKNOWN: u16 = 0;
+    pub const SVG_MORPHOLOGY_OPERATOR_UNKNOWN: f64 = 0.0;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_ERODE`
-    pub const SVG_MORPHOLOGY_OPERATOR_ERODE: u16 = 1;
+    pub const SVG_MORPHOLOGY_OPERATOR_ERODE: f64 = 1.0;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE`
-    pub const SVG_MORPHOLOGY_OPERATOR_DILATE: u16 = 2;
+    pub const SVG_MORPHOLOGY_OPERATOR_DILATE: f64 = 2.0;
 
     /// Treats `this` as `SVGFEMorphologyElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -41489,22 +41489,22 @@ pub mod svgfe_turbulence_element {
     use super::*;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_UNKNOWN`
-    pub const SVG_TURBULENCE_TYPE_UNKNOWN: u16 = 0;
+    pub const SVG_TURBULENCE_TYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_FRACTALNOISE`
-    pub const SVG_TURBULENCE_TYPE_FRACTALNOISE: u16 = 1;
+    pub const SVG_TURBULENCE_TYPE_FRACTALNOISE: f64 = 1.0;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_TURBULENCE`
-    pub const SVG_TURBULENCE_TYPE_TURBULENCE: u16 = 2;
+    pub const SVG_TURBULENCE_TYPE_TURBULENCE: f64 = 2.0;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_UNKNOWN`
-    pub const SVG_STITCHTYPE_UNKNOWN: u16 = 0;
+    pub const SVG_STITCHTYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_STITCH`
-    pub const SVG_STITCHTYPE_STITCH: u16 = 1;
+    pub const SVG_STITCHTYPE_STITCH: f64 = 1.0;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH`
-    pub const SVG_STITCHTYPE_NOSTITCH: u16 = 2;
+    pub const SVG_STITCHTYPE_NOSTITCH: f64 = 2.0;
 
     /// Treats `this` as `SVGFETurbulenceElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -41931,7 +41931,7 @@ impl AbstractRange {
     #[cfg_attr(rust_js, rust_js::link_name = "get startOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start_offset(&self) -> u32 {
+    pub fn start_offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -41947,7 +41947,7 @@ impl AbstractRange {
     #[cfg_attr(rust_js, rust_js::link_name = "get endOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn end_offset(&self) -> u32 {
+    pub fn end_offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -42035,7 +42035,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get fftSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fft_size(&self) -> u32 {
+    pub fn fft_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -42043,7 +42043,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set fftSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_fft_size(&self, value: f64) {
+    pub fn set_fft_size(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42051,7 +42051,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get frequencyBinCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn frequency_bin_count(&self) -> u32 {
+    pub fn frequency_bin_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -42067,7 +42067,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set minDecibels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_min_decibels(&self, value: f64) {
+    pub fn set_min_decibels(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42083,7 +42083,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set maxDecibels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max_decibels(&self, value: f64) {
+    pub fn set_max_decibels(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42099,7 +42099,7 @@ impl AnalyserNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set smoothingTimeConstant")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_smoothing_time_constant(&self, value: f64) {
+    pub fn set_smoothing_time_constant(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42199,7 +42199,7 @@ impl Animation {
     #[cfg_attr(rust_js, rust_js::link_name = "set playbackRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_playback_rate(&self, value: f64) {
+    pub fn set_playback_rate(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42335,7 +42335,7 @@ impl Animation {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn update_playback_rate(&self, playback_rate: f64) {
+    pub fn update_playback_rate(&self, playback_rate: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42628,7 +42628,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get sampleRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_rate(&self) -> f32 {
+    pub fn sample_rate(&self) -> f64 {
         unreachable!()
     }
 
@@ -42636,7 +42636,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -42652,7 +42652,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfChannels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_channels(&self) -> u32 {
+    pub fn number_of_channels(&self) -> f64 {
         unreachable!()
     }
 
@@ -42660,7 +42660,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "getChannelData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_channel_data(&self, channel: f64) -> &'static Float32Array {
+    pub fn get_channel_data(&self, channel: impl Into<f64>) -> &'static Float32Array {
         unreachable!()
     }
 
@@ -42669,7 +42669,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_from_channel(&self, destination: &Float32Array, channel_number: f64, buffer_offset: Option<f64>) {
+    pub fn copy_from_channel(&self, destination: &Float32Array, channel_number: impl Into<f64>, buffer_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -42678,7 +42678,7 @@ impl AudioBuffer {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_to_channel(&self, source: &Float32Array, channel_number: f64, buffer_offset: Option<f64>) {
+    pub fn copy_to_channel(&self, source: &Float32Array, channel_number: impl Into<f64>, buffer_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -42778,7 +42778,7 @@ impl AudioBufferSourceNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set loopStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_loop_start(&self, value: f64) {
+    pub fn set_loop_start(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42794,7 +42794,7 @@ impl AudioBufferSourceNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set loopEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_loop_end(&self, value: f64) {
+    pub fn set_loop_end(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -42937,7 +42937,7 @@ impl AudioData {
     #[cfg_attr(rust_js, rust_js::link_name = "get sampleRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_rate(&self) -> f32 {
+    pub fn sample_rate(&self) -> f64 {
         unreachable!()
     }
 
@@ -42945,7 +42945,7 @@ impl AudioData {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfFrames")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_frames(&self) -> u32 {
+    pub fn number_of_frames(&self) -> f64 {
         unreachable!()
     }
 
@@ -42953,7 +42953,7 @@ impl AudioData {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfChannels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_channels(&self) -> u32 {
+    pub fn number_of_channels(&self) -> f64 {
         unreachable!()
     }
 
@@ -42977,7 +42977,7 @@ impl AudioData {
     #[cfg_attr(rust_js, rust_js::link_name = "allocationSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn allocation_size(&self, options: AudioDataCopyToOptions<'_>) -> u32 {
+    pub fn allocation_size(&self, options: AudioDataCopyToOptions<'_>) -> f64 {
         unreachable!()
     }
 
@@ -43063,7 +43063,7 @@ impl AudioDecoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get decodeQueueSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn decode_queue_size(&self) -> u32 {
+    pub fn decode_queue_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -43160,7 +43160,7 @@ impl AudioDestinationNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxChannelCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_channel_count(&self) -> u32 {
+    pub fn max_channel_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -43220,7 +43220,7 @@ impl AudioEncoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get encodeQueueSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn encode_queue_size(&self) -> u32 {
+    pub fn encode_queue_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -43369,7 +43369,7 @@ impl AudioListener {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_position(&self, x: f64, y: f64, z: f64) {
+    pub fn set_position(&self, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -43378,7 +43378,7 @@ impl AudioListener {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_orientation(&self, x: f64, y: f64, z: f64, x_up: f64, y_up: f64, z_up: f64) {
+    pub fn set_orientation(&self, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, x_up: impl Into<f64>, y_up: impl Into<f64>, z_up: impl Into<f64>) {
         unreachable!()
     }
 
@@ -43466,7 +43466,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfInputs")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_inputs(&self) -> u32 {
+    pub fn number_of_inputs(&self) -> f64 {
         unreachable!()
     }
 
@@ -43474,7 +43474,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfOutputs")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_outputs(&self) -> u32 {
+    pub fn number_of_outputs(&self) -> f64 {
         unreachable!()
     }
 
@@ -43482,7 +43482,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get channelCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn channel_count(&self) -> u32 {
+    pub fn channel_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -43490,7 +43490,7 @@ impl AudioNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set channelCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_channel_count(&self, value: f64) {
+    pub fn set_channel_count(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -43537,7 +43537,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f64 {
         unreachable!()
     }
 
@@ -43545,7 +43545,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -43569,7 +43569,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "get defaultValue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn default_value(&self) -> f32 {
+    pub fn default_value(&self) -> f64 {
         unreachable!()
     }
 
@@ -43577,7 +43577,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "get minValue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min_value(&self) -> f32 {
+    pub fn min_value(&self) -> f64 {
         unreachable!()
     }
 
@@ -43585,7 +43585,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxValue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_value(&self) -> f32 {
+    pub fn max_value(&self) -> f64 {
         unreachable!()
     }
 
@@ -43593,7 +43593,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "setValueAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_at_time(&self, value: f64, start_time: f64) -> &'static AudioParam {
+    pub fn set_value_at_time(&self, value: impl Into<f64>, start_time: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43601,7 +43601,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "linearRampToValueAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn linear_ramp_to_value_at_time(&self, value: f64, end_time: f64) -> &'static AudioParam {
+    pub fn linear_ramp_to_value_at_time(&self, value: impl Into<f64>, end_time: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43609,7 +43609,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "exponentialRampToValueAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn exponential_ramp_to_value_at_time(&self, value: f64, end_time: f64) -> &'static AudioParam {
+    pub fn exponential_ramp_to_value_at_time(&self, value: impl Into<f64>, end_time: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43617,7 +43617,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "setTargetAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_target_at_time(&self, target: f64, start_time: f64, time_constant: f64) -> &'static AudioParam {
+    pub fn set_target_at_time(&self, target: impl Into<f64>, start_time: impl Into<f64>, time_constant: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43625,7 +43625,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "setValueCurveAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_curve_at_time(&self, values: &[f64], start_time: f64, duration: f64) -> &'static AudioParam {
+    pub fn set_value_curve_at_time(&self, values: &[f64], start_time: impl Into<f64>, duration: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43633,7 +43633,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "cancelScheduledValues")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_scheduled_values(&self, cancel_time: f64) -> &'static AudioParam {
+    pub fn cancel_scheduled_values(&self, cancel_time: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43641,7 +43641,7 @@ impl AudioParam {
     #[cfg_attr(rust_js, rust_js::link_name = "cancelAndHoldAtTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_and_hold_at_time(&self, cancel_time: f64) -> &'static AudioParam {
+    pub fn cancel_and_hold_at_time(&self, cancel_time: impl Into<f64>) -> &'static AudioParam {
         unreachable!()
     }
 
@@ -43705,7 +43705,7 @@ impl AudioParamMap {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -44042,7 +44042,7 @@ impl AuthenticatorAttestationResponse {
     #[cfg_attr(rust_js, rust_js::link_name = "getPublicKeyAlgorithm")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_public_key_algorithm(&self) -> i32 {
+    pub fn get_public_key_algorithm(&self) -> f64 {
         unreachable!()
     }
 
@@ -44116,7 +44116,7 @@ impl BaseAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get sampleRate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_rate(&self) -> f32 {
+    pub fn sample_rate(&self) -> f64 {
         unreachable!()
     }
 
@@ -44189,7 +44189,7 @@ impl BaseAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "createBuffer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_buffer(&self, number_of_channels: f64, length: f64, sample_rate: f64) -> &'static AudioBuffer {
+    pub fn create_buffer(&self, number_of_channels: impl Into<f64>, length: impl Into<f64>, sample_rate: impl Into<f64>) -> &'static AudioBuffer {
         unreachable!()
     }
 
@@ -45335,7 +45335,7 @@ impl CSSGroupingRule {
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> u32 {
+    pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> f64 {
         unreachable!()
     }
 
@@ -45344,7 +45344,7 @@ impl CSSGroupingRule {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_rule(&self, index: f64) {
+    pub fn delete_rule(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -45557,7 +45557,7 @@ impl CSSKeyframesRule {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -46245,7 +46245,7 @@ impl CSSNumericArray {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(&CSSNumericValue, u32, &CSSNumericArray)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(&CSSNumericValue, f64, &CSSNumericArray)>) {
         unreachable!()
     }
 
@@ -46253,7 +46253,7 @@ impl CSSNumericArray {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = f64>> {
         unreachable!()
     }
 
@@ -46269,7 +46269,7 @@ impl CSSNumericArray {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static CSSNumericValue)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (f64, &'static CSSNumericValue)>> {
         unreachable!()
     }
 
@@ -46277,7 +46277,7 @@ impl CSSNumericArray {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -47538,43 +47538,43 @@ pub struct CSSRule(PhantomData<JsObject>);
 pub mod css_rule {
 
     /// `CSSRule.KEYFRAMES_RULE`
-    pub const KEYFRAMES_RULE: u16 = 7;
+    pub const KEYFRAMES_RULE: f64 = 7.0;
 
     /// `CSSRule.KEYFRAME_RULE`
-    pub const KEYFRAME_RULE: u16 = 8;
+    pub const KEYFRAME_RULE: f64 = 8.0;
 
     /// `CSSRule.SUPPORTS_RULE`
-    pub const SUPPORTS_RULE: u16 = 12;
+    pub const SUPPORTS_RULE: f64 = 12.0;
 
     /// `CSSRule.COUNTER_STYLE_RULE`
-    pub const COUNTER_STYLE_RULE: u16 = 11;
+    pub const COUNTER_STYLE_RULE: f64 = 11.0;
 
     /// `CSSRule.FONT_FEATURE_VALUES_RULE`
-    pub const FONT_FEATURE_VALUES_RULE: u16 = 14;
+    pub const FONT_FEATURE_VALUES_RULE: f64 = 14.0;
 
     /// `CSSRule.STYLE_RULE`
-    pub const STYLE_RULE: u16 = 1;
+    pub const STYLE_RULE: f64 = 1.0;
 
     /// `CSSRule.CHARSET_RULE`
-    pub const CHARSET_RULE: u16 = 2;
+    pub const CHARSET_RULE: f64 = 2.0;
 
     /// `CSSRule.IMPORT_RULE`
-    pub const IMPORT_RULE: u16 = 3;
+    pub const IMPORT_RULE: f64 = 3.0;
 
     /// `CSSRule.MEDIA_RULE`
-    pub const MEDIA_RULE: u16 = 4;
+    pub const MEDIA_RULE: f64 = 4.0;
 
     /// `CSSRule.FONT_FACE_RULE`
-    pub const FONT_FACE_RULE: u16 = 5;
+    pub const FONT_FACE_RULE: f64 = 5.0;
 
     /// `CSSRule.PAGE_RULE`
-    pub const PAGE_RULE: u16 = 6;
+    pub const PAGE_RULE: f64 = 6.0;
 
     /// `CSSRule.MARGIN_RULE`
-    pub const MARGIN_RULE: u16 = 9;
+    pub const MARGIN_RULE: f64 = 9.0;
 
     /// `CSSRule.NAMESPACE_RULE`
-    pub const NAMESPACE_RULE: u16 = 10;
+    pub const NAMESPACE_RULE: f64 = 10.0;
 }
 
 impl CSSRule {
@@ -47614,7 +47614,7 @@ impl CSSRule {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#type(&self) -> u16 {
+    pub fn r#type(&self) -> f64 {
         unreachable!()
     }
 
@@ -47641,7 +47641,7 @@ impl CSSRuleList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static CSSRule> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static CSSRule> {
         unreachable!()
     }
 
@@ -47649,7 +47649,7 @@ impl CSSRuleList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -48096,7 +48096,7 @@ impl CSSStyleSheet {
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> Result<u32, &'static JsError> {
+    pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> Result<f64, &'static JsError> {
         unreachable!()
     }
 
@@ -48105,7 +48105,7 @@ impl CSSStyleSheet {
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn delete_rule(&self, index: f64) -> Result<(), &'static JsError> {
+    pub fn delete_rule(&self, index: impl Into<f64>) -> Result<(), &'static JsError> {
         unreachable!()
     }
 
@@ -48140,7 +48140,7 @@ impl CSSStyleSheet {
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_rule(&self, selector: Option<&str>, style: Option<&str>, index: Option<f64>) -> Result<i32, &'static JsError> {
+    pub fn add_rule(&self, selector: Option<&str>, style: Option<&str>, index: Option<f64>) -> Result<f64, &'static JsError> {
         unreachable!()
     }
 
@@ -48301,7 +48301,7 @@ impl CSSTransformValue {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(&CSSTransformComponent, u32, &CSSTransformValue)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(&CSSTransformComponent, f64, &CSSTransformValue)>) {
         unreachable!()
     }
 
@@ -48309,7 +48309,7 @@ impl CSSTransformValue {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = f64>> {
         unreachable!()
     }
 
@@ -48325,7 +48325,7 @@ impl CSSTransformValue {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static CSSTransformComponent)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (f64, &'static CSSTransformComponent)>> {
         unreachable!()
     }
 
@@ -48333,7 +48333,7 @@ impl CSSTransformValue {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -48495,7 +48495,7 @@ pub mod css_unit_value {
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnitValue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(value: f64, unit: &str) -> &'static CSSUnitValue {
+    pub fn new(value: impl Into<f64>, unit: &str) -> &'static CSSUnitValue {
         unreachable!()
     }
 
@@ -48521,7 +48521,7 @@ impl CSSUnitValue {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -48582,7 +48582,7 @@ impl CSSUnparsedValue {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(CSSUnparsedSegment<'_>, u32, &CSSUnparsedValue)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(CSSUnparsedSegment<'_>, f64, &CSSUnparsedValue)>) {
         unreachable!()
     }
 
@@ -48590,7 +48590,7 @@ impl CSSUnparsedValue {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn keys(&self) -> Box<dyn Iterator<Item = u32>> {
+    pub fn keys(&self) -> Box<dyn Iterator<Item = f64>> {
         unreachable!()
     }
 
@@ -48606,7 +48606,7 @@ impl CSSUnparsedValue {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, CSSUnparsedSegment<'static>)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (f64, CSSUnparsedSegment<'static>)>> {
         unreachable!()
     }
 
@@ -48614,7 +48614,7 @@ impl CSSUnparsedValue {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -48872,7 +48872,7 @@ impl CanvasGradient {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_color_stop(&self, offset: f64, color: &str) {
+    pub fn add_color_stop(&self, offset: impl Into<f64>, color: &str) {
         unreachable!()
     }
 
@@ -48955,7 +48955,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scale(&self, x: f64, y: f64) {
+    pub fn scale(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -48964,7 +48964,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rotate(&self, angle: f64) {
+    pub fn rotate(&self, angle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -48973,7 +48973,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn translate(&self, x: f64, y: f64) {
+    pub fn translate(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -48982,7 +48982,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
+    pub fn transform(&self, a: impl Into<f64>, b: impl Into<f64>, c: impl Into<f64>, d: impl Into<f64>, e: impl Into<f64>, f: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49024,7 +49024,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set globalAlpha")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_global_alpha(&self, value: f64) {
+    pub fn set_global_alpha(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49112,7 +49112,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createLinearGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_linear_gradient(&self, x0: f64, y0: f64, x1: f64, y1: f64) -> &'static CanvasGradient {
+    pub fn create_linear_gradient(&self, x0: impl Into<f64>, y0: impl Into<f64>, x1: impl Into<f64>, y1: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -49120,7 +49120,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createRadialGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_radial_gradient(&self, x0: f64, y0: f64, r0: f64, x1: f64, y1: f64, r1: f64) -> &'static CanvasGradient {
+    pub fn create_radial_gradient(&self, x0: impl Into<f64>, y0: impl Into<f64>, r0: impl Into<f64>, x1: impl Into<f64>, y1: impl Into<f64>, r1: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -49128,7 +49128,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createConicGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_conic_gradient(&self, start_angle: f64, x: f64, y: f64) -> &'static CanvasGradient {
+    pub fn create_conic_gradient(&self, start_angle: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -49152,7 +49152,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowOffsetX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_offset_x(&self, value: f64) {
+    pub fn set_shadow_offset_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49168,7 +49168,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowOffsetY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_offset_y(&self, value: f64) {
+    pub fn set_shadow_offset_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49184,7 +49184,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowBlur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_blur(&self, value: f64) {
+    pub fn set_shadow_blur(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49225,7 +49225,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn clear_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49234,7 +49234,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fill_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn fill_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49243,7 +49243,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn stroke_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49305,7 +49305,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_path(&self, x: f64, y: f64, fill_rule: Option<&str>) -> bool {
+    pub fn is_point_in_path(&self, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
@@ -49313,7 +49313,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: f64, y: f64, fill_rule: Option<&str>) -> bool {
+    pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
@@ -49321,7 +49321,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInStroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_stroke(&self, x: f64, y: f64) -> bool {
+    pub fn is_point_in_stroke(&self, x: impl Into<f64>, y: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -49329,7 +49329,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInStroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_stroke_with_path2_d_and_y(&self, path: &Path2D, x: f64, y: f64) -> bool {
+    pub fn is_point_in_stroke_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -49356,7 +49356,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fill_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
+    pub fn fill_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
     }
 
@@ -49365,7 +49365,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
+    pub fn stroke_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
     }
 
@@ -49382,7 +49382,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
+    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: impl Into<f64>, dy: impl Into<f64>, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
     }
 
@@ -49391,7 +49391,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: f64, sy: f64, sw: f64, sh: f64, dx: f64, dy: f64, dw: f64, dh: f64) {
+    pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, dx: impl Into<f64>, dy: impl Into<f64>, dw: impl Into<f64>, dh: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49399,7 +49399,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_image_data(&self, sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
+    pub fn create_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
 
@@ -49416,7 +49416,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data(&self, sx: f64, sy: f64, sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
+    pub fn get_image_data(&self, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
@@ -49425,7 +49425,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn put_image_data(&self, image_data: &ImageData, dx: f64, dy: f64, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
+    pub fn put_image_data(&self, image_data: &ImageData, dx: impl Into<f64>, dy: impl Into<f64>, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
         unreachable!()
     }
 
@@ -49441,7 +49441,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set lineWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_line_width(&self, value: f64) {
+    pub fn set_line_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49489,7 +49489,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set miterLimit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_miter_limit(&self, value: f64) {
+    pub fn set_miter_limit(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49522,7 +49522,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set lineDashOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_line_dash_offset(&self, value: f64) {
+    pub fn set_line_dash_offset(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49716,7 +49716,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_to(&self, x: f64, y: f64) {
+    pub fn move_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49725,7 +49725,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_to(&self, x: f64, y: f64) {
+    pub fn line_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49734,7 +49734,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
+    pub fn quadratic_curve_to(&self, cpx: impl Into<f64>, cpy: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49743,7 +49743,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+    pub fn bezier_curve_to(&self, cp1x: impl Into<f64>, cp1y: impl Into<f64>, cp2x: impl Into<f64>, cp2y: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49752,7 +49752,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
+    pub fn arc_to(&self, x1: impl Into<f64>, y1: impl Into<f64>, x2: impl Into<f64>, y2: impl Into<f64>, radius: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49761,7 +49761,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -49770,7 +49770,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
+    pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
     }
 
@@ -49779,7 +49779,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -49788,7 +49788,7 @@ impl CanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -49811,7 +49811,7 @@ impl CaretPosition {
     #[cfg_attr(rust_js, rust_js::link_name = "get offset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn offset(&self) -> u32 {
+    pub fn offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -49937,7 +49937,7 @@ impl CloseEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn code(&self) -> u16 {
+    pub fn code(&self) -> f64 {
         unreachable!()
     }
 
@@ -50811,7 +50811,7 @@ impl CustomStateSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -50851,79 +50851,79 @@ pub mod dom_exception {
     use super::*;
 
     /// `DOMException.INDEX_SIZE_ERR`
-    pub const INDEX_SIZE_ERR: u16 = 1;
+    pub const INDEX_SIZE_ERR: f64 = 1.0;
 
     /// `DOMException.DOMSTRING_SIZE_ERR`
-    pub const DOMSTRING_SIZE_ERR: u16 = 2;
+    pub const DOMSTRING_SIZE_ERR: f64 = 2.0;
 
     /// `DOMException.HIERARCHY_REQUEST_ERR`
-    pub const HIERARCHY_REQUEST_ERR: u16 = 3;
+    pub const HIERARCHY_REQUEST_ERR: f64 = 3.0;
 
     /// `DOMException.WRONG_DOCUMENT_ERR`
-    pub const WRONG_DOCUMENT_ERR: u16 = 4;
+    pub const WRONG_DOCUMENT_ERR: f64 = 4.0;
 
     /// `DOMException.INVALID_CHARACTER_ERR`
-    pub const INVALID_CHARACTER_ERR: u16 = 5;
+    pub const INVALID_CHARACTER_ERR: f64 = 5.0;
 
     /// `DOMException.NO_DATA_ALLOWED_ERR`
-    pub const NO_DATA_ALLOWED_ERR: u16 = 6;
+    pub const NO_DATA_ALLOWED_ERR: f64 = 6.0;
 
     /// `DOMException.NO_MODIFICATION_ALLOWED_ERR`
-    pub const NO_MODIFICATION_ALLOWED_ERR: u16 = 7;
+    pub const NO_MODIFICATION_ALLOWED_ERR: f64 = 7.0;
 
     /// `DOMException.NOT_FOUND_ERR`
-    pub const NOT_FOUND_ERR: u16 = 8;
+    pub const NOT_FOUND_ERR: f64 = 8.0;
 
     /// `DOMException.NOT_SUPPORTED_ERR`
-    pub const NOT_SUPPORTED_ERR: u16 = 9;
+    pub const NOT_SUPPORTED_ERR: f64 = 9.0;
 
     /// `DOMException.INUSE_ATTRIBUTE_ERR`
-    pub const INUSE_ATTRIBUTE_ERR: u16 = 10;
+    pub const INUSE_ATTRIBUTE_ERR: f64 = 10.0;
 
     /// `DOMException.INVALID_STATE_ERR`
-    pub const INVALID_STATE_ERR: u16 = 11;
+    pub const INVALID_STATE_ERR: f64 = 11.0;
 
     /// `DOMException.SYNTAX_ERR`
-    pub const SYNTAX_ERR: u16 = 12;
+    pub const SYNTAX_ERR: f64 = 12.0;
 
     /// `DOMException.INVALID_MODIFICATION_ERR`
-    pub const INVALID_MODIFICATION_ERR: u16 = 13;
+    pub const INVALID_MODIFICATION_ERR: f64 = 13.0;
 
     /// `DOMException.NAMESPACE_ERR`
-    pub const NAMESPACE_ERR: u16 = 14;
+    pub const NAMESPACE_ERR: f64 = 14.0;
 
     /// `DOMException.INVALID_ACCESS_ERR`
-    pub const INVALID_ACCESS_ERR: u16 = 15;
+    pub const INVALID_ACCESS_ERR: f64 = 15.0;
 
     /// `DOMException.VALIDATION_ERR`
-    pub const VALIDATION_ERR: u16 = 16;
+    pub const VALIDATION_ERR: f64 = 16.0;
 
     /// `DOMException.TYPE_MISMATCH_ERR`
-    pub const TYPE_MISMATCH_ERR: u16 = 17;
+    pub const TYPE_MISMATCH_ERR: f64 = 17.0;
 
     /// `DOMException.SECURITY_ERR`
-    pub const SECURITY_ERR: u16 = 18;
+    pub const SECURITY_ERR: f64 = 18.0;
 
     /// `DOMException.NETWORK_ERR`
-    pub const NETWORK_ERR: u16 = 19;
+    pub const NETWORK_ERR: f64 = 19.0;
 
     /// `DOMException.ABORT_ERR`
-    pub const ABORT_ERR: u16 = 20;
+    pub const ABORT_ERR: f64 = 20.0;
 
     /// `DOMException.URL_MISMATCH_ERR`
-    pub const URL_MISMATCH_ERR: u16 = 21;
+    pub const URL_MISMATCH_ERR: f64 = 21.0;
 
     /// `DOMException.QUOTA_EXCEEDED_ERR`
-    pub const QUOTA_EXCEEDED_ERR: u16 = 22;
+    pub const QUOTA_EXCEEDED_ERR: f64 = 22.0;
 
     /// `DOMException.TIMEOUT_ERR`
-    pub const TIMEOUT_ERR: u16 = 23;
+    pub const TIMEOUT_ERR: f64 = 23.0;
 
     /// `DOMException.INVALID_NODE_TYPE_ERR`
-    pub const INVALID_NODE_TYPE_ERR: u16 = 24;
+    pub const INVALID_NODE_TYPE_ERR: f64 = 24.0;
 
     /// `DOMException.DATA_CLONE_ERR`
-    pub const DATA_CLONE_ERR: u16 = 25;
+    pub const DATA_CLONE_ERR: f64 = 25.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
@@ -50955,7 +50955,7 @@ impl DOMException {
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn code(&self) -> u16 {
+    pub fn code(&self) -> f64 {
         unreachable!()
     }
 
@@ -51070,7 +51070,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set a")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_a(&self, value: f64) {
+    pub fn set_a(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51086,7 +51086,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set b")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_b(&self, value: f64) {
+    pub fn set_b(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51102,7 +51102,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set c")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_c(&self, value: f64) {
+    pub fn set_c(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51118,7 +51118,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set d")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_d(&self, value: f64) {
+    pub fn set_d(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51134,7 +51134,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set e")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_e(&self, value: f64) {
+    pub fn set_e(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51150,7 +51150,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set f")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_f(&self, value: f64) {
+    pub fn set_f(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51166,7 +51166,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m11")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m11(&self, value: f64) {
+    pub fn set_m11(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51182,7 +51182,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m12")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m12(&self, value: f64) {
+    pub fn set_m12(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51198,7 +51198,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m13")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m13(&self, value: f64) {
+    pub fn set_m13(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51214,7 +51214,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m14")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m14(&self, value: f64) {
+    pub fn set_m14(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51230,7 +51230,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m21")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m21(&self, value: f64) {
+    pub fn set_m21(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51246,7 +51246,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m22")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m22(&self, value: f64) {
+    pub fn set_m22(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51262,7 +51262,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m23")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m23(&self, value: f64) {
+    pub fn set_m23(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51278,7 +51278,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m24")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m24(&self, value: f64) {
+    pub fn set_m24(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51294,7 +51294,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m31")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m31(&self, value: f64) {
+    pub fn set_m31(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51310,7 +51310,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m32")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m32(&self, value: f64) {
+    pub fn set_m32(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51326,7 +51326,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m33")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m33(&self, value: f64) {
+    pub fn set_m33(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51342,7 +51342,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m34")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m34(&self, value: f64) {
+    pub fn set_m34(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51358,7 +51358,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m41")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m41(&self, value: f64) {
+    pub fn set_m41(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51374,7 +51374,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m42")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m42(&self, value: f64) {
+    pub fn set_m42(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51390,7 +51390,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m43")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m43(&self, value: f64) {
+    pub fn set_m43(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51406,7 +51406,7 @@ impl DOMMatrix {
     #[cfg_attr(rust_js, rust_js::link_name = "set m44")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_m44(&self, value: f64) {
+    pub fn set_m44(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51968,7 +51968,7 @@ impl DOMPoint {
     #[cfg_attr(rust_js, rust_js::link_name = "set x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_x(&self, value: f64) {
+    pub fn set_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -51984,7 +51984,7 @@ impl DOMPoint {
     #[cfg_attr(rust_js, rust_js::link_name = "set y")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_y(&self, value: f64) {
+    pub fn set_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -52000,7 +52000,7 @@ impl DOMPoint {
     #[cfg_attr(rust_js, rust_js::link_name = "set z")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_z(&self, value: f64) {
+    pub fn set_z(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -52016,7 +52016,7 @@ impl DOMPoint {
     #[cfg_attr(rust_js, rust_js::link_name = "set w")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_w(&self, value: f64) {
+    pub fn set_w(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -52201,7 +52201,7 @@ impl DOMRectList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -52209,7 +52209,7 @@ impl DOMRectList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static DOMRect> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static DOMRect> {
         unreachable!()
     }
 
@@ -52236,7 +52236,7 @@ impl DOMStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -52244,7 +52244,7 @@ impl DOMStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<String> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<String> {
         unreachable!()
     }
 
@@ -52331,7 +52331,7 @@ impl DataTransferItemList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -52356,7 +52356,7 @@ impl DataTransferItemList {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove(&self, index: f64) {
+    pub fn remove(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -52905,7 +52905,7 @@ impl DynamicsCompressorNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get reduction")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn reduction(&self) -> f32 {
+    pub fn reduction(&self) -> f64 {
         unreachable!()
     }
 
@@ -53901,7 +53901,7 @@ impl EncodedAudioChunk {
     #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn byte_length(&self) -> u32 {
+    pub fn byte_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -53961,7 +53961,7 @@ impl EncodedVideoChunk {
     #[cfg_attr(rust_js, rust_js::link_name = "get byteLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn byte_length(&self) -> u32 {
+    pub fn byte_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -54030,7 +54030,7 @@ impl ErrorEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get lineno")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn lineno(&self) -> u32 {
+    pub fn lineno(&self) -> f64 {
         unreachable!()
     }
 
@@ -54038,7 +54038,7 @@ impl ErrorEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get colno")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn colno(&self) -> u32 {
+    pub fn colno(&self) -> f64 {
         unreachable!()
     }
 
@@ -54110,7 +54110,7 @@ impl EventCounts {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -54133,13 +54133,13 @@ pub mod event_source {
     use super::*;
 
     /// `EventSource.CONNECTING`
-    pub const CONNECTING: u16 = 0;
+    pub const CONNECTING: f64 = 0.0;
 
     /// `EventSource.OPEN`
-    pub const OPEN: u16 = 1;
+    pub const OPEN: f64 = 1.0;
 
     /// `EventSource.CLOSED`
-    pub const CLOSED: u16 = 2;
+    pub const CLOSED: f64 = 2.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
     #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
@@ -54179,7 +54179,7 @@ impl EventSource {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -54291,7 +54291,7 @@ impl FileList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static File> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static File> {
         unreachable!()
     }
 
@@ -54299,7 +54299,7 @@ impl FileList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -54322,13 +54322,13 @@ pub mod file_reader {
     use super::*;
 
     /// `FileReader.EMPTY`
-    pub const EMPTY: u16 = 0;
+    pub const EMPTY: f64 = 0.0;
 
     /// `FileReader.LOADING`
-    pub const LOADING: u16 = 1;
+    pub const LOADING: f64 = 1.0;
 
     /// `FileReader.DONE`
-    pub const DONE: u16 = 2;
+    pub const DONE: f64 = 2.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
     #[cfg_attr(rust_js, rust_js::link_name = "new FileReader")]
@@ -54397,7 +54397,7 @@ impl FileReader {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -54880,7 +54880,7 @@ impl FileSystemWritableFileStream {
     #[cfg_attr(rust_js, rust_js::link_name = "seek")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn seek(&self, position: f64) -> Promise<()> {
+    pub fn seek(&self, position: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -54888,7 +54888,7 @@ impl FileSystemWritableFileStream {
     #[cfg_attr(rust_js, rust_js::link_name = "truncate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn truncate(&self, size: f64) -> Promise<()> {
+    pub fn truncate(&self, size: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -55184,7 +55184,7 @@ impl FontFaceSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -55502,7 +55502,7 @@ impl GPUAdapterInfo {
     #[cfg_attr(rust_js, rust_js::link_name = "get subgroupMinSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn subgroup_min_size(&self) -> u32 {
+    pub fn subgroup_min_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -55510,7 +55510,7 @@ impl GPUAdapterInfo {
     #[cfg_attr(rust_js, rust_js::link_name = "get subgroupMaxSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn subgroup_max_size(&self) -> u32 {
+    pub fn subgroup_max_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -55587,7 +55587,7 @@ impl GPUBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "get usage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn usage(&self) -> u32 {
+    pub fn usage(&self) -> f64 {
         unreachable!()
     }
 
@@ -55603,7 +55603,7 @@ impl GPUBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "mapAsync")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn map_async(&self, mode: f64, offset: Option<f64>, size: Option<f64>) -> Promise<()> {
+    pub fn map_async(&self, mode: impl Into<f64>, offset: Option<f64>, size: Option<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -55758,7 +55758,7 @@ impl GPUCommandEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset(&self, source: &GPUBuffer, source_offset: f64, destination: &GPUBuffer, destination_offset: f64, size: Option<f64>) {
+    pub fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset(&self, source: &GPUBuffer, source_offset: impl Into<f64>, destination: &GPUBuffer, destination_offset: impl Into<f64>, size: Option<f64>) {
         unreachable!()
     }
 
@@ -55803,7 +55803,7 @@ impl GPUCommandEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn resolve_query_set(&self, query_set: &GPUQuerySet, first_query: f64, query_count: f64, destination: &GPUBuffer, destination_offset: f64) {
+    pub fn resolve_query_set(&self, query_set: &GPUQuerySet, first_query: impl Into<f64>, query_count: impl Into<f64>, destination: &GPUBuffer, destination_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -55949,7 +55949,7 @@ impl GPUComputePassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn dispatch_workgroups(&self, workgroup_count_x: f64, workgroup_count_y: Option<f64>, workgroup_count_z: Option<f64>) {
+    pub fn dispatch_workgroups(&self, workgroup_count_x: impl Into<f64>, workgroup_count_y: Option<f64>, workgroup_count_z: Option<f64>) {
         unreachable!()
     }
 
@@ -55958,7 +55958,7 @@ impl GPUComputePassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn dispatch_workgroups_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
+    pub fn dispatch_workgroups_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56019,7 +56019,7 @@ impl GPUComputePassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
+    pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
     }
 
@@ -56028,7 +56028,7 @@ impl GPUComputePassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: f64) {
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56059,7 +56059,7 @@ impl GPUComputePipeline {
     #[cfg_attr(rust_js, rust_js::link_name = "getBindGroupLayout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_bind_group_layout(&self, index: f64) -> &'static GPUBindGroupLayout {
+    pub fn get_bind_group_layout(&self, index: impl Into<f64>) -> &'static GPUBindGroupLayout {
         unreachable!()
     }
 
@@ -56532,7 +56532,7 @@ impl GPUQuerySet {
     #[cfg_attr(rust_js, rust_js::link_name = "get count")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn count(&self) -> u32 {
+    pub fn count(&self) -> f64 {
         unreachable!()
     }
 
@@ -56581,7 +56581,7 @@ impl GPUQueue {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn write_buffer(&self, buffer: &GPUBuffer, buffer_offset: f64, data: impl IntoAllowSharedBufferSource, data_offset: Option<f64>, size: Option<f64>) {
+    pub fn write_buffer(&self, buffer: &GPUBuffer, buffer_offset: impl Into<f64>, data: impl IntoAllowSharedBufferSource, data_offset: Option<f64>, size: Option<f64>) {
         unreachable!()
     }
 
@@ -56705,7 +56705,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
+    pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
     }
 
@@ -56714,7 +56714,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: f64) {
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56741,7 +56741,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_vertex_buffer(&self, slot: f64, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
+    pub fn set_vertex_buffer(&self, slot: impl Into<f64>, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
     }
 
@@ -56750,7 +56750,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw(&self, vertex_count: f64, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
+    pub fn draw(&self, vertex_count: impl Into<f64>, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
     }
 
@@ -56759,7 +56759,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indexed(&self, index_count: f64, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
+    pub fn draw_indexed(&self, index_count: impl Into<f64>, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
     }
 
@@ -56768,7 +56768,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
+    pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56777,7 +56777,7 @@ impl GPURenderBundleEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
+    pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56793,7 +56793,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_viewport(&self, x: f64, y: f64, width: f64, height: f64, min_depth: f64, max_depth: f64) {
+    pub fn set_viewport(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, min_depth: impl Into<f64>, max_depth: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56802,7 +56802,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scissor_rect(&self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn set_scissor_rect(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56820,7 +56820,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_stencil_reference(&self, reference: f64) {
+    pub fn set_stencil_reference(&self, reference: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56829,7 +56829,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn begin_occlusion_query(&self, query_index: f64) {
+    pub fn begin_occlusion_query(&self, query_index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56908,7 +56908,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
+    pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
     }
 
@@ -56917,7 +56917,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: f64, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: f64, dynamic_offsets_data_length: f64) {
+    pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: &GPUBindGroup, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56944,7 +56944,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_vertex_buffer(&self, slot: f64, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
+    pub fn set_vertex_buffer(&self, slot: impl Into<f64>, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
     }
 
@@ -56953,7 +56953,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw(&self, vertex_count: f64, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
+    pub fn draw(&self, vertex_count: impl Into<f64>, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
     }
 
@@ -56962,7 +56962,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indexed(&self, index_count: f64, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
+    pub fn draw_indexed(&self, index_count: impl Into<f64>, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
     }
 
@@ -56971,7 +56971,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
+    pub fn draw_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -56980,7 +56980,7 @@ impl GPURenderPassEncoder {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: f64) {
+    pub fn draw_indexed_indirect(&self, indirect_buffer: &GPUBuffer, indirect_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -57011,7 +57011,7 @@ impl GPURenderPipeline {
     #[cfg_attr(rust_js, rust_js::link_name = "getBindGroupLayout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_bind_group_layout(&self, index: f64) -> &'static GPUBindGroupLayout {
+    pub fn get_bind_group_layout(&self, index: impl Into<f64>) -> &'static GPUBindGroupLayout {
         unreachable!()
     }
 
@@ -57121,7 +57121,7 @@ impl GPUSupportedFeatures {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -57136,7 +57136,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension1D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_texture_dimension1_d(&self) -> u32 {
+    pub fn max_texture_dimension1_d(&self) -> f64 {
         unreachable!()
     }
 
@@ -57144,7 +57144,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_texture_dimension2_d(&self) -> u32 {
+    pub fn max_texture_dimension2_d(&self) -> f64 {
         unreachable!()
     }
 
@@ -57152,7 +57152,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureDimension3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_texture_dimension3_d(&self) -> u32 {
+    pub fn max_texture_dimension3_d(&self) -> f64 {
         unreachable!()
     }
 
@@ -57160,7 +57160,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTextureArrayLayers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_texture_array_layers(&self) -> u32 {
+    pub fn max_texture_array_layers(&self) -> f64 {
         unreachable!()
     }
 
@@ -57168,7 +57168,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindGroups")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_bind_groups(&self) -> u32 {
+    pub fn max_bind_groups(&self) -> f64 {
         unreachable!()
     }
 
@@ -57176,7 +57176,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindGroupsPlusVertexBuffers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_bind_groups_plus_vertex_buffers(&self) -> u32 {
+    pub fn max_bind_groups_plus_vertex_buffers(&self) -> f64 {
         unreachable!()
     }
 
@@ -57184,7 +57184,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxBindingsPerBindGroup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_bindings_per_bind_group(&self) -> u32 {
+    pub fn max_bindings_per_bind_group(&self) -> f64 {
         unreachable!()
     }
 
@@ -57192,7 +57192,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDynamicUniformBuffersPerPipelineLayout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_dynamic_uniform_buffers_per_pipeline_layout(&self) -> u32 {
+    pub fn max_dynamic_uniform_buffers_per_pipeline_layout(&self) -> f64 {
         unreachable!()
     }
 
@@ -57200,7 +57200,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDynamicStorageBuffersPerPipelineLayout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_dynamic_storage_buffers_per_pipeline_layout(&self) -> u32 {
+    pub fn max_dynamic_storage_buffers_per_pipeline_layout(&self) -> f64 {
         unreachable!()
     }
 
@@ -57208,7 +57208,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxSampledTexturesPerShaderStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_sampled_textures_per_shader_stage(&self) -> u32 {
+    pub fn max_sampled_textures_per_shader_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57216,7 +57216,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxSamplersPerShaderStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_samplers_per_shader_stage(&self) -> u32 {
+    pub fn max_samplers_per_shader_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57224,7 +57224,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersPerShaderStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_buffers_per_shader_stage(&self) -> u32 {
+    pub fn max_storage_buffers_per_shader_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57232,7 +57232,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersInVertexStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_buffers_in_vertex_stage(&self) -> u32 {
+    pub fn max_storage_buffers_in_vertex_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57240,7 +57240,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageBuffersInFragmentStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_buffers_in_fragment_stage(&self) -> u32 {
+    pub fn max_storage_buffers_in_fragment_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57248,7 +57248,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesPerShaderStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_textures_per_shader_stage(&self) -> u32 {
+    pub fn max_storage_textures_per_shader_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57256,7 +57256,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesInVertexStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_textures_in_vertex_stage(&self) -> u32 {
+    pub fn max_storage_textures_in_vertex_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57264,7 +57264,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxStorageTexturesInFragmentStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_storage_textures_in_fragment_stage(&self) -> u32 {
+    pub fn max_storage_textures_in_fragment_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57272,7 +57272,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxUniformBuffersPerShaderStage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_uniform_buffers_per_shader_stage(&self) -> u32 {
+    pub fn max_uniform_buffers_per_shader_stage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57296,7 +57296,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get minUniformBufferOffsetAlignment")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min_uniform_buffer_offset_alignment(&self) -> u32 {
+    pub fn min_uniform_buffer_offset_alignment(&self) -> f64 {
         unreachable!()
     }
 
@@ -57304,7 +57304,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get minStorageBufferOffsetAlignment")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn min_storage_buffer_offset_alignment(&self) -> u32 {
+    pub fn min_storage_buffer_offset_alignment(&self) -> f64 {
         unreachable!()
     }
 
@@ -57312,7 +57312,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexBuffers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_vertex_buffers(&self) -> u32 {
+    pub fn max_vertex_buffers(&self) -> f64 {
         unreachable!()
     }
 
@@ -57328,7 +57328,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexAttributes")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_vertex_attributes(&self) -> u32 {
+    pub fn max_vertex_attributes(&self) -> f64 {
         unreachable!()
     }
 
@@ -57336,7 +57336,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxVertexBufferArrayStride")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_vertex_buffer_array_stride(&self) -> u32 {
+    pub fn max_vertex_buffer_array_stride(&self) -> f64 {
         unreachable!()
     }
 
@@ -57344,7 +57344,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxInterStageShaderVariables")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_inter_stage_shader_variables(&self) -> u32 {
+    pub fn max_inter_stage_shader_variables(&self) -> f64 {
         unreachable!()
     }
 
@@ -57352,7 +57352,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxColorAttachments")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_color_attachments(&self) -> u32 {
+    pub fn max_color_attachments(&self) -> f64 {
         unreachable!()
     }
 
@@ -57360,7 +57360,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxColorAttachmentBytesPerSample")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_color_attachment_bytes_per_sample(&self) -> u32 {
+    pub fn max_color_attachment_bytes_per_sample(&self) -> f64 {
         unreachable!()
     }
 
@@ -57368,7 +57368,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupStorageSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_workgroup_storage_size(&self) -> u32 {
+    pub fn max_compute_workgroup_storage_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -57376,7 +57376,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeInvocationsPerWorkgroup")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_invocations_per_workgroup(&self) -> u32 {
+    pub fn max_compute_invocations_per_workgroup(&self) -> f64 {
         unreachable!()
     }
 
@@ -57384,7 +57384,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_workgroup_size_x(&self) -> u32 {
+    pub fn max_compute_workgroup_size_x(&self) -> f64 {
         unreachable!()
     }
 
@@ -57392,7 +57392,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_workgroup_size_y(&self) -> u32 {
+    pub fn max_compute_workgroup_size_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -57400,7 +57400,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupSizeZ")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_workgroup_size_z(&self) -> u32 {
+    pub fn max_compute_workgroup_size_z(&self) -> f64 {
         unreachable!()
     }
 
@@ -57408,7 +57408,7 @@ impl GPUSupportedLimits {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxComputeWorkgroupsPerDimension")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_compute_workgroups_per_dimension(&self) -> u32 {
+    pub fn max_compute_workgroups_per_dimension(&self) -> f64 {
         unreachable!()
     }
 
@@ -57440,7 +57440,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -57448,7 +57448,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -57456,7 +57456,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get depthOrArrayLayers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn depth_or_array_layers(&self) -> u32 {
+    pub fn depth_or_array_layers(&self) -> f64 {
         unreachable!()
     }
 
@@ -57464,7 +57464,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get mipLevelCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn mip_level_count(&self) -> u32 {
+    pub fn mip_level_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -57472,7 +57472,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get sampleCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_count(&self) -> u32 {
+    pub fn sample_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -57496,7 +57496,7 @@ impl GPUTexture {
     #[cfg_attr(rust_js, rust_js::link_name = "get usage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn usage(&self) -> u32 {
+    pub fn usage(&self) -> f64 {
         unreachable!()
     }
 
@@ -57679,7 +57679,7 @@ impl Gamepad {
     #[cfg_attr(rust_js, rust_js::link_name = "get index")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn index(&self) -> i32 {
+    pub fn index(&self) -> f64 {
         unreachable!()
     }
 
@@ -57849,7 +57849,7 @@ impl Geolocation {
     #[cfg_attr(rust_js, rust_js::link_name = "watchPosition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn watch_position(&self, success_callback: Box<dyn FnMut(&GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&GeolocationPositionError)>>, options: Option<PositionOptions>) -> i32 {
+    pub fn watch_position(&self, success_callback: Box<dyn FnMut(&GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&GeolocationPositionError)>>, options: Option<PositionOptions>) -> f64 {
         unreachable!()
     }
 
@@ -57858,7 +57858,7 @@ impl Geolocation {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_watch(&self, watch_id: f64) {
+    pub fn clear_watch(&self, watch_id: impl Into<f64>) {
         unreachable!()
     }
 
@@ -57973,13 +57973,13 @@ pub struct GeolocationPositionError(PhantomData<JsObject>);
 pub mod geolocation_position_error {
 
     /// `GeolocationPositionError.PERMISSION_DENIED`
-    pub const PERMISSION_DENIED: u16 = 1;
+    pub const PERMISSION_DENIED: f64 = 1.0;
 
     /// `GeolocationPositionError.POSITION_UNAVAILABLE`
-    pub const POSITION_UNAVAILABLE: u16 = 2;
+    pub const POSITION_UNAVAILABLE: f64 = 2.0;
 
     /// `GeolocationPositionError.TIMEOUT`
-    pub const TIMEOUT: u16 = 3;
+    pub const TIMEOUT: f64 = 3.0;
 }
 
 impl GeolocationPositionError {
@@ -57987,7 +57987,7 @@ impl GeolocationPositionError {
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn code(&self) -> u16 {
+    pub fn code(&self) -> f64 {
         unreachable!()
     }
 
@@ -58022,7 +58022,7 @@ impl HTMLAllCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -58874,7 +58874,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn hspace(&self) -> u32 {
+    pub fn hspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -58882,7 +58882,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set hspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_hspace(&self, value: f64) {
+    pub fn set_hspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -58890,7 +58890,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get loop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#loop(&self) -> i32 {
+    pub fn r#loop(&self) -> f64 {
         unreachable!()
     }
 
@@ -58898,7 +58898,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set loop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_loop(&self, value: f64) {
+    pub fn set_loop(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -58906,7 +58906,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollAmount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_amount(&self) -> u32 {
+    pub fn scroll_amount(&self) -> f64 {
         unreachable!()
     }
 
@@ -58914,7 +58914,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set scrollAmount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_amount(&self, value: f64) {
+    pub fn set_scroll_amount(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -58922,7 +58922,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get scrollDelay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_delay(&self) -> u32 {
+    pub fn scroll_delay(&self) -> f64 {
         unreachable!()
     }
 
@@ -58930,7 +58930,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set scrollDelay")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_delay(&self, value: f64) {
+    pub fn set_scroll_delay(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -58954,7 +58954,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vspace(&self) -> u32 {
+    pub fn vspace(&self) -> f64 {
         unreachable!()
     }
 
@@ -58962,7 +58962,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set vspace")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_vspace(&self, value: f64) {
+    pub fn set_vspace(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59040,7 +59040,7 @@ impl HTMLOptionsCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -59048,7 +59048,7 @@ impl HTMLOptionsCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "set length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_length(&self, value: f64) {
+    pub fn set_length(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59066,7 +59066,7 @@ impl HTMLOptionsCollection {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove(&self, index: f64) {
+    pub fn remove(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59074,7 +59074,7 @@ impl HTMLOptionsCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selected_index(&self) -> i32 {
+    pub fn selected_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -59082,7 +59082,7 @@ impl HTMLOptionsCollection {
     #[cfg_attr(rust_js, rust_js::link_name = "set selectedIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_selected_index(&self, value: f64) {
+    pub fn set_selected_index(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59320,7 +59320,7 @@ impl Highlight {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -59354,7 +59354,7 @@ impl Highlight {
     #[cfg_attr(rust_js, rust_js::link_name = "get priority")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn priority(&self) -> i32 {
+    pub fn priority(&self) -> f64 {
         unreachable!()
     }
 
@@ -59362,7 +59362,7 @@ impl Highlight {
     #[cfg_attr(rust_js, rust_js::link_name = "set priority")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_priority(&self, value: f64) {
+    pub fn set_priority(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59442,7 +59442,7 @@ impl HighlightRegistry {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -59476,7 +59476,7 @@ impl HighlightRegistry {
     #[cfg_attr(rust_js, rust_js::link_name = "highlightsFromPoint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn highlights_from_point(&self, x: f64, y: f64, options: Option<HighlightsFromPointOptions<'_>>) -> Vec<HighlightHitResult> {
+    pub fn highlights_from_point(&self, x: impl Into<f64>, y: impl Into<f64>, options: Option<HighlightsFromPointOptions<'_>>) -> Vec<HighlightHitResult> {
         unreachable!()
     }
 
@@ -59532,7 +59532,7 @@ impl IDBCursor {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn advance(&self, count: f64) {
+    pub fn advance(&self, count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -59797,7 +59797,7 @@ impl IDBFactory {
     #[cfg_attr(rust_js, rust_js::link_name = "cmp")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cmp<F, S>(&self, first: F, second: S) -> i16 {
+    pub fn cmp<F, S>(&self, first: F, second: S) -> f64 {
         unreachable!()
     }
 
@@ -60603,7 +60603,7 @@ impl ImageBitmap {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -60611,7 +60611,7 @@ impl ImageBitmap {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -60720,7 +60720,7 @@ pub mod image_data {
     #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
+    pub fn new(sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
 }
@@ -60730,7 +60730,7 @@ impl ImageData {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> u32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -60738,7 +60738,7 @@ impl ImageData {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> u32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -60862,7 +60862,7 @@ impl ImageTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get frameCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn frame_count(&self) -> u32 {
+    pub fn frame_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -60870,7 +60870,7 @@ impl ImageTrack {
     #[cfg_attr(rust_js, rust_js::link_name = "get repetitionCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn repetition_count(&self) -> f32 {
+    pub fn repetition_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -60909,7 +60909,7 @@ impl ImageTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -60917,7 +60917,7 @@ impl ImageTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get selectedIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn selected_index(&self) -> i32 {
+    pub fn selected_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -61130,7 +61130,7 @@ impl LargestContentfulPaint {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -61446,7 +61446,7 @@ impl MIDIInputMap {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -61591,7 +61591,7 @@ impl MIDIOutputMap {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -62406,7 +62406,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get onerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>> {
+    pub fn onerror(&self) -> Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -62415,7 +62415,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool>>) {
+    pub fn set_onerror(&self, value: Option<Box<dyn FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool>>) {
         unreachable!()
     }
 
@@ -63517,7 +63517,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tab_index(&self) -> i32 {
+    pub fn tab_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -63525,7 +63525,7 @@ impl MathMLElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set tabIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_tab_index(&self, value: f64) {
+    pub fn set_tab_index(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -63799,16 +63799,16 @@ pub struct MediaError(PhantomData<JsObject>);
 pub mod media_error {
 
     /// `MediaError.MEDIA_ERR_ABORTED`
-    pub const MEDIA_ERR_ABORTED: u16 = 1;
+    pub const MEDIA_ERR_ABORTED: f64 = 1.0;
 
     /// `MediaError.MEDIA_ERR_NETWORK`
-    pub const MEDIA_ERR_NETWORK: u16 = 2;
+    pub const MEDIA_ERR_NETWORK: f64 = 2.0;
 
     /// `MediaError.MEDIA_ERR_DECODE`
-    pub const MEDIA_ERR_DECODE: u16 = 3;
+    pub const MEDIA_ERR_DECODE: f64 = 3.0;
 
     /// `MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED`
-    pub const MEDIA_ERR_SRC_NOT_SUPPORTED: u16 = 4;
+    pub const MEDIA_ERR_SRC_NOT_SUPPORTED: f64 = 4.0;
 }
 
 impl MediaError {
@@ -63816,7 +63816,7 @@ impl MediaError {
     #[cfg_attr(rust_js, rust_js::link_name = "get code")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn code(&self) -> u16 {
+    pub fn code(&self) -> f64 {
         unreachable!()
     }
 
@@ -64034,7 +64034,7 @@ impl MediaKeyStatusMap {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -64163,7 +64163,7 @@ impl MediaList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -64171,7 +64171,7 @@ impl MediaList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<String> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<String> {
         unreachable!()
     }
 
@@ -64450,7 +64450,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get videoBitsPerSecond")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn video_bits_per_second(&self) -> u32 {
+    pub fn video_bits_per_second(&self) -> f64 {
         unreachable!()
     }
 
@@ -64458,7 +64458,7 @@ impl MediaRecorder {
     #[cfg_attr(rust_js, rust_js::link_name = "get audioBitsPerSecond")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn audio_bits_per_second(&self) -> u32 {
+    pub fn audio_bits_per_second(&self) -> f64 {
         unreachable!()
     }
 
@@ -64668,7 +64668,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::link_name = "set duration")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_duration(&self, value: f64) {
+    pub fn set_duration(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -64754,7 +64754,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_live_seekable_range(&self, start: f64, end: f64) {
+    pub fn set_live_seekable_range(&self, start: impl Into<f64>, end: impl Into<f64>) {
         unreachable!()
     }
 
@@ -65450,7 +65450,7 @@ impl MimeTypeArray {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -65458,7 +65458,7 @@ impl MimeTypeArray {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static MimeType> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static MimeType> {
         unreachable!()
     }
 
@@ -65617,7 +65617,7 @@ impl NamedNodeMap {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -65625,7 +65625,7 @@ impl NamedNodeMap {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static Attr> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static Attr> {
         unreachable!()
     }
 
@@ -66404,7 +66404,7 @@ impl NodeIterator {
     #[cfg_attr(rust_js, rust_js::link_name = "get whatToShow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn what_to_show(&self) -> u32 {
+    pub fn what_to_show(&self) -> f64 {
         unreachable!()
     }
 
@@ -66487,7 +66487,7 @@ pub mod notification {
     #[cfg_attr(rust_js, rust_js::link_name = "get Notification.maxActions")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_actions() -> u32 {
+    pub fn max_actions() -> f64 {
         unreachable!()
     }
 
@@ -66758,7 +66758,7 @@ impl OfflineAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "suspend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn suspend(&self, suspend_time: f64) -> Promise<()> {
+    pub fn suspend(&self, suspend_time: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -66766,7 +66766,7 @@ impl OfflineAudioContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> Option<u32> {
+    pub fn length(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -66809,7 +66809,7 @@ pub mod offscreen_canvas {
     #[cfg_attr(rust_js, rust_js::link_name = "new OffscreenCanvas")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(width: f64, height: f64) -> &'static OffscreenCanvas {
+    pub fn new(width: impl Into<f64>, height: impl Into<f64>) -> &'static OffscreenCanvas {
         unreachable!()
     }
 
@@ -66835,7 +66835,7 @@ impl OffscreenCanvas {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -66851,7 +66851,7 @@ impl OffscreenCanvas {
     #[cfg_attr(rust_js, rust_js::link_name = "set height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_height(&self, value: f64) {
+    pub fn set_height(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -66976,7 +66976,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scale(&self, x: f64, y: f64) {
+    pub fn scale(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -66985,7 +66985,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rotate(&self, angle: f64) {
+    pub fn rotate(&self, angle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -66994,7 +66994,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn translate(&self, x: f64, y: f64) {
+    pub fn translate(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67003,7 +67003,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
+    pub fn transform(&self, a: impl Into<f64>, b: impl Into<f64>, c: impl Into<f64>, d: impl Into<f64>, e: impl Into<f64>, f: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67045,7 +67045,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set globalAlpha")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_global_alpha(&self, value: f64) {
+    pub fn set_global_alpha(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67133,7 +67133,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createLinearGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_linear_gradient(&self, x0: f64, y0: f64, x1: f64, y1: f64) -> &'static CanvasGradient {
+    pub fn create_linear_gradient(&self, x0: impl Into<f64>, y0: impl Into<f64>, x1: impl Into<f64>, y1: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -67141,7 +67141,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createRadialGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_radial_gradient(&self, x0: f64, y0: f64, r0: f64, x1: f64, y1: f64, r1: f64) -> &'static CanvasGradient {
+    pub fn create_radial_gradient(&self, x0: impl Into<f64>, y0: impl Into<f64>, r0: impl Into<f64>, x1: impl Into<f64>, y1: impl Into<f64>, r1: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -67149,7 +67149,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createConicGradient")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_conic_gradient(&self, start_angle: f64, x: f64, y: f64) -> &'static CanvasGradient {
+    pub fn create_conic_gradient(&self, start_angle: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) -> &'static CanvasGradient {
         unreachable!()
     }
 
@@ -67173,7 +67173,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowOffsetX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_offset_x(&self, value: f64) {
+    pub fn set_shadow_offset_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67189,7 +67189,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowOffsetY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_offset_y(&self, value: f64) {
+    pub fn set_shadow_offset_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67205,7 +67205,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set shadowBlur")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_shadow_blur(&self, value: f64) {
+    pub fn set_shadow_blur(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67246,7 +67246,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn clear_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67255,7 +67255,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fill_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn fill_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67264,7 +67264,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke_rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn stroke_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67326,7 +67326,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_path(&self, x: f64, y: f64, fill_rule: Option<&str>) -> bool {
+    pub fn is_point_in_path(&self, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
@@ -67334,7 +67334,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: f64, y: f64, fill_rule: Option<&str>) -> bool {
+    pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
@@ -67342,7 +67342,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInStroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_stroke(&self, x: f64, y: f64) -> bool {
+    pub fn is_point_in_stroke(&self, x: impl Into<f64>, y: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -67350,7 +67350,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInStroke")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_stroke_with_path2_d_and_y(&self, path: &Path2D, x: f64, y: f64) -> bool {
+    pub fn is_point_in_stroke_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -67359,7 +67359,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fill_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
+    pub fn fill_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
     }
 
@@ -67368,7 +67368,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stroke_text(&self, text: &str, x: f64, y: f64, max_width: Option<f64>) {
+    pub fn stroke_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
     }
 
@@ -67385,7 +67385,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: f64, dy: f64, dw: Option<f64>, dh: Option<f64>) {
+    pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: impl Into<f64>, dy: impl Into<f64>, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
     }
 
@@ -67394,7 +67394,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: f64, sy: f64, sw: f64, sh: f64, dx: f64, dy: f64, dw: f64, dh: f64) {
+    pub fn draw_image_with_sw_and_sh_and_dx_and_dy_and_dw_and_dh(&self, image: impl IntoCanvasImageSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, dx: impl Into<f64>, dy: impl Into<f64>, dw: impl Into<f64>, dh: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67402,7 +67402,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "createImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_image_data(&self, sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
+    pub fn create_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
 
@@ -67419,7 +67419,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_image_data(&self, sx: f64, sy: f64, sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
+    pub fn get_image_data(&self, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
@@ -67428,7 +67428,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn put_image_data(&self, image_data: &ImageData, dx: f64, dy: f64, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
+    pub fn put_image_data(&self, image_data: &ImageData, dx: impl Into<f64>, dy: impl Into<f64>, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
         unreachable!()
     }
 
@@ -67444,7 +67444,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set lineWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_line_width(&self, value: f64) {
+    pub fn set_line_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67492,7 +67492,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set miterLimit")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_miter_limit(&self, value: f64) {
+    pub fn set_miter_limit(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67525,7 +67525,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::link_name = "set lineDashOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_line_dash_offset(&self, value: f64) {
+    pub fn set_line_dash_offset(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67719,7 +67719,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_to(&self, x: f64, y: f64) {
+    pub fn move_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67728,7 +67728,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_to(&self, x: f64, y: f64) {
+    pub fn line_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67737,7 +67737,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
+    pub fn quadratic_curve_to(&self, cpx: impl Into<f64>, cpy: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67746,7 +67746,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+    pub fn bezier_curve_to(&self, cp1x: impl Into<f64>, cp1y: impl Into<f64>, cp2x: impl Into<f64>, cp2y: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67755,7 +67755,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
+    pub fn arc_to(&self, x1: impl Into<f64>, y1: impl Into<f64>, x2: impl Into<f64>, y2: impl Into<f64>, radius: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67764,7 +67764,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -67773,7 +67773,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
+    pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
     }
 
@@ -67782,7 +67782,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -67791,7 +67791,7 @@ impl OffscreenCanvasRenderingContext2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -68235,7 +68235,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set refDistance")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_ref_distance(&self, value: f64) {
+    pub fn set_ref_distance(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68251,7 +68251,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set maxDistance")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_max_distance(&self, value: f64) {
+    pub fn set_max_distance(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68267,7 +68267,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set rolloffFactor")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_rolloff_factor(&self, value: f64) {
+    pub fn set_rolloff_factor(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68283,7 +68283,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set coneInnerAngle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cone_inner_angle(&self, value: f64) {
+    pub fn set_cone_inner_angle(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68299,7 +68299,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set coneOuterAngle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cone_outer_angle(&self, value: f64) {
+    pub fn set_cone_outer_angle(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68315,7 +68315,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::link_name = "set coneOuterGain")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_cone_outer_gain(&self, value: f64) {
+    pub fn set_cone_outer_gain(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68324,7 +68324,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_position(&self, x: f64, y: f64, z: f64) {
+    pub fn set_position(&self, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68333,7 +68333,7 @@ impl PannerNode {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_orientation(&self, x: f64, y: f64, z: f64) {
+    pub fn set_orientation(&self, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68379,7 +68379,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_to(&self, x: f64, y: f64) {
+    pub fn move_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68388,7 +68388,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_to(&self, x: f64, y: f64) {
+    pub fn line_to(&self, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68397,7 +68397,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn quadratic_curve_to(&self, cpx: f64, cpy: f64, x: f64, y: f64) {
+    pub fn quadratic_curve_to(&self, cpx: impl Into<f64>, cpy: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68406,7 +68406,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+    pub fn bezier_curve_to(&self, cp1x: impl Into<f64>, cp1y: impl Into<f64>, cp2x: impl Into<f64>, cp2y: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68415,7 +68415,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
+    pub fn arc_to(&self, x1: impl Into<f64>, y1: impl Into<f64>, x2: impl Into<f64>, y2: impl Into<f64>, radius: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68424,7 +68424,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rect(&self, x: f64, y: f64, w: f64, h: f64) {
+    pub fn rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>) {
         unreachable!()
     }
 
@@ -68433,7 +68433,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn round_rect(&self, x: f64, y: f64, w: f64, h: f64, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
+    pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
     }
 
@@ -68442,7 +68442,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn arc(&self, x: f64, y: f64, radius: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -68451,7 +68451,7 @@ impl Path2D {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ellipse(&self, x: f64, y: f64, radius_x: f64, radius_y: f64, rotation: f64, start_angle: f64, end_angle: f64, counterclockwise: Option<bool>) {
+    pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
     }
 
@@ -69016,16 +69016,16 @@ pub struct PerformanceNavigation(PhantomData<JsObject>);
 pub mod performance_navigation {
 
     /// `PerformanceNavigation.TYPE_NAVIGATE`
-    pub const TYPE_NAVIGATE: u16 = 0;
+    pub const TYPE_NAVIGATE: f64 = 0.0;
 
     /// `PerformanceNavigation.TYPE_RELOAD`
-    pub const TYPE_RELOAD: u16 = 1;
+    pub const TYPE_RELOAD: f64 = 1.0;
 
     /// `PerformanceNavigation.TYPE_BACK_FORWARD`
-    pub const TYPE_BACK_FORWARD: u16 = 2;
+    pub const TYPE_BACK_FORWARD: f64 = 2.0;
 
     /// `PerformanceNavigation.TYPE_RESERVED`
-    pub const TYPE_RESERVED: u16 = 255;
+    pub const TYPE_RESERVED: f64 = 255.0;
 }
 
 impl PerformanceNavigation {
@@ -69033,7 +69033,7 @@ impl PerformanceNavigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#type(&self) -> u16 {
+    pub fn r#type(&self) -> f64 {
         unreachable!()
     }
 
@@ -69041,7 +69041,7 @@ impl PerformanceNavigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn redirect_count(&self) -> u16 {
+    pub fn redirect_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -69157,7 +69157,7 @@ impl PerformanceNavigationTiming {
     #[cfg_attr(rust_js, rust_js::link_name = "get redirectCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn redirect_count(&self) -> u16 {
+    pub fn redirect_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -69481,7 +69481,7 @@ impl PerformanceResourceTiming {
     #[cfg_attr(rust_js, rust_js::link_name = "get responseStatus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn response_status(&self) -> u16 {
+    pub fn response_status(&self) -> f64 {
         unreachable!()
     }
 
@@ -69891,7 +69891,7 @@ impl PictureInPictureWindow {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> i32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -69899,7 +69899,7 @@ impl PictureInPictureWindow {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> i32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -69967,7 +69967,7 @@ impl Plugin {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -69975,7 +69975,7 @@ impl Plugin {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static MimeType> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static MimeType> {
         unreachable!()
     }
 
@@ -70019,7 +70019,7 @@ impl PluginArray {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -70027,7 +70027,7 @@ impl PluginArray {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static Plugin> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static Plugin> {
         unreachable!()
     }
 
@@ -70742,7 +70742,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxPacketLifeTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_packet_life_time(&self) -> Option<u16> {
+    pub fn max_packet_life_time(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -70750,7 +70750,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxRetransmits")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_retransmits(&self) -> Option<u16> {
+    pub fn max_retransmits(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -70774,7 +70774,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get id")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn id(&self) -> Option<u16> {
+    pub fn id(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -70790,7 +70790,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferedAmount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffered_amount(&self) -> u32 {
+    pub fn buffered_amount(&self) -> f64 {
         unreachable!()
     }
 
@@ -70798,7 +70798,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferedAmountLowThreshold")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffered_amount_low_threshold(&self) -> u32 {
+    pub fn buffered_amount_low_threshold(&self) -> f64 {
         unreachable!()
     }
 
@@ -70806,7 +70806,7 @@ impl RTCDataChannel {
     #[cfg_attr(rust_js, rust_js::link_name = "set bufferedAmountLowThreshold")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_buffered_amount_low_threshold(&self, value: f64) {
+    pub fn set_buffered_amount_low_threshold(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -71245,7 +71245,7 @@ impl RTCError {
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpLineNumber")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sdp_line_number(&self) -> Option<i32> {
+    pub fn sdp_line_number(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71253,7 +71253,7 @@ impl RTCError {
     #[cfg_attr(rust_js, rust_js::link_name = "get sctpCauseCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sctp_cause_code(&self) -> Option<i32> {
+    pub fn sctp_cause_code(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71261,7 +71261,7 @@ impl RTCError {
     #[cfg_attr(rust_js, rust_js::link_name = "get receivedAlert")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn received_alert(&self) -> Option<u32> {
+    pub fn received_alert(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71269,7 +71269,7 @@ impl RTCError {
     #[cfg_attr(rust_js, rust_js::link_name = "get sentAlert")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sent_alert(&self) -> Option<u32> {
+    pub fn sent_alert(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71356,7 +71356,7 @@ impl RTCIceCandidate {
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpMLineIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sdp_m_line_index(&self) -> Option<u16> {
+    pub fn sdp_m_line_index(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71380,7 +71380,7 @@ impl RTCIceCandidate {
     #[cfg_attr(rust_js, rust_js::link_name = "get priority")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn priority(&self) -> Option<u32> {
+    pub fn priority(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71404,7 +71404,7 @@ impl RTCIceCandidate {
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn port(&self) -> Option<u16> {
+    pub fn port(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -71436,7 +71436,7 @@ impl RTCIceCandidate {
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedPort")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn related_port(&self) -> Option<u16> {
+    pub fn related_port(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -72065,7 +72065,7 @@ impl RTCPeerConnectionIceErrorEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn port(&self) -> Option<u16> {
+    pub fn port(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -72081,7 +72081,7 @@ impl RTCPeerConnectionIceErrorEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get errorCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn error_code(&self) -> u16 {
+    pub fn error_code(&self) -> f64 {
         unreachable!()
     }
 
@@ -72216,7 +72216,7 @@ impl RTCRtpReceiver {
     #[cfg_attr(rust_js, rust_js::link_name = "set jitterBufferTarget")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_jitter_buffer_target(&self, value: f64) {
+    pub fn set_jitter_buffer_target(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -72466,7 +72466,7 @@ impl RTCSctpTransport {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxChannels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_channels(&self) -> Option<u16> {
+    pub fn max_channels(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -72590,7 +72590,7 @@ impl RTCStatsReport {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -72733,16 +72733,16 @@ pub mod range {
     use super::*;
 
     /// `Range.START_TO_START`
-    pub const START_TO_START: u16 = 0;
+    pub const START_TO_START: f64 = 0.0;
 
     /// `Range.START_TO_END`
-    pub const START_TO_END: u16 = 1;
+    pub const START_TO_END: f64 = 1.0;
 
     /// `Range.END_TO_END`
-    pub const END_TO_END: u16 = 2;
+    pub const END_TO_END: f64 = 2.0;
 
     /// `Range.END_TO_START`
-    pub const END_TO_START: u16 = 3;
+    pub const END_TO_START: f64 = 3.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
     #[cfg_attr(rust_js, rust_js::link_name = "new Range")]
@@ -72791,7 +72791,7 @@ impl Range {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_start(&self, node: &Node, offset: f64) {
+    pub fn set_start(&self, node: &Node, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -72800,7 +72800,7 @@ impl Range {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_end(&self, node: &Node, offset: f64) {
+    pub fn set_end(&self, node: &Node, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -72871,7 +72871,7 @@ impl Range {
     #[cfg_attr(rust_js, rust_js::link_name = "compareBoundaryPoints")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compare_boundary_points(&self, how: f64, source_range: &Range) -> i16 {
+    pub fn compare_boundary_points(&self, how: impl Into<f64>, source_range: &Range) -> f64 {
         unreachable!()
     }
 
@@ -72939,7 +72939,7 @@ impl Range {
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInRange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_point_in_range(&self, node: &Node, offset: f64) -> bool {
+    pub fn is_point_in_range(&self, node: &Node, offset: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -72947,7 +72947,7 @@ impl Range {
     #[cfg_attr(rust_js, rust_js::link_name = "comparePoint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compare_point(&self, node: &Node, offset: f64) -> i16 {
+    pub fn compare_point(&self, node: &Node, offset: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -73097,7 +73097,7 @@ impl ReadableStreamBYOBRequest {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn respond(&self, bytes_written: f64) {
+    pub fn respond(&self, bytes_written: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73236,7 +73236,7 @@ impl RemotePlayback {
     #[cfg_attr(rust_js, rust_js::link_name = "watchAvailability")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn watch_availability(&self, callback: Box<dyn FnMut(bool)>) -> Promise<i32> {
+    pub fn watch_availability(&self, callback: Box<dyn FnMut(bool)>) -> Promise<f64> {
         unreachable!()
     }
 
@@ -73485,19 +73485,19 @@ pub struct SVGAngle(PhantomData<JsObject>);
 pub mod svg_angle {
 
     /// `SVGAngle.SVG_ANGLETYPE_UNKNOWN`
-    pub const SVG_ANGLETYPE_UNKNOWN: u16 = 0;
+    pub const SVG_ANGLETYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGAngle.SVG_ANGLETYPE_UNSPECIFIED`
-    pub const SVG_ANGLETYPE_UNSPECIFIED: u16 = 1;
+    pub const SVG_ANGLETYPE_UNSPECIFIED: f64 = 1.0;
 
     /// `SVGAngle.SVG_ANGLETYPE_DEG`
-    pub const SVG_ANGLETYPE_DEG: u16 = 2;
+    pub const SVG_ANGLETYPE_DEG: f64 = 2.0;
 
     /// `SVGAngle.SVG_ANGLETYPE_RAD`
-    pub const SVG_ANGLETYPE_RAD: u16 = 3;
+    pub const SVG_ANGLETYPE_RAD: f64 = 3.0;
 
     /// `SVGAngle.SVG_ANGLETYPE_GRAD`
-    pub const SVG_ANGLETYPE_GRAD: u16 = 4;
+    pub const SVG_ANGLETYPE_GRAD: f64 = 4.0;
 }
 
 impl SVGAngle {
@@ -73505,7 +73505,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::link_name = "get unitType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn unit_type(&self) -> u16 {
+    pub fn unit_type(&self) -> f64 {
         unreachable!()
     }
 
@@ -73513,7 +73513,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f64 {
         unreachable!()
     }
 
@@ -73521,7 +73521,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73529,7 +73529,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::link_name = "get valueInSpecifiedUnits")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value_in_specified_units(&self) -> f32 {
+    pub fn value_in_specified_units(&self) -> f64 {
         unreachable!()
     }
 
@@ -73537,7 +73537,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::link_name = "set valueInSpecifiedUnits")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_in_specified_units(&self, value: f64) {
+    pub fn set_value_in_specified_units(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73562,7 +73562,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_value_specified_units(&self, unit_type: f64, value_in_specified_units: f64) {
+    pub fn new_value_specified_units(&self, unit_type: impl Into<f64>, value_in_specified_units: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73571,7 +73571,7 @@ impl SVGAngle {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_to_specified_units(&self, unit_type: f64) {
+    pub fn convert_to_specified_units(&self, unit_type: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73640,7 +73640,7 @@ impl SVGAnimatedEnumeration {
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn base_val(&self) -> u16 {
+    pub fn base_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73648,7 +73648,7 @@ impl SVGAnimatedEnumeration {
     #[cfg_attr(rust_js, rust_js::link_name = "set baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_base_val(&self, value: f64) {
+    pub fn set_base_val(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73656,7 +73656,7 @@ impl SVGAnimatedEnumeration {
     #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn anim_val(&self) -> u16 {
+    pub fn anim_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73671,7 +73671,7 @@ impl SVGAnimatedInteger {
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn base_val(&self) -> i32 {
+    pub fn base_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73679,7 +73679,7 @@ impl SVGAnimatedInteger {
     #[cfg_attr(rust_js, rust_js::link_name = "set baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_base_val(&self, value: f64) {
+    pub fn set_base_val(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73687,7 +73687,7 @@ impl SVGAnimatedInteger {
     #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn anim_val(&self) -> i32 {
+    pub fn anim_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73748,7 +73748,7 @@ impl SVGAnimatedNumber {
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn base_val(&self) -> f32 {
+    pub fn base_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73756,7 +73756,7 @@ impl SVGAnimatedNumber {
     #[cfg_attr(rust_js, rust_js::link_name = "set baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_base_val(&self, value: f64) {
+    pub fn set_base_val(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73764,7 +73764,7 @@ impl SVGAnimatedNumber {
     #[cfg_attr(rust_js, rust_js::link_name = "get animVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn anim_val(&self) -> f32 {
+    pub fn anim_val(&self) -> f64 {
         unreachable!()
     }
 
@@ -73892,37 +73892,37 @@ pub struct SVGLength(PhantomData<JsObject>);
 pub mod svg_length {
 
     /// `SVGLength.SVG_LENGTHTYPE_UNKNOWN`
-    pub const SVG_LENGTHTYPE_UNKNOWN: u16 = 0;
+    pub const SVG_LENGTHTYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_NUMBER`
-    pub const SVG_LENGTHTYPE_NUMBER: u16 = 1;
+    pub const SVG_LENGTHTYPE_NUMBER: f64 = 1.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_PERCENTAGE`
-    pub const SVG_LENGTHTYPE_PERCENTAGE: u16 = 2;
+    pub const SVG_LENGTHTYPE_PERCENTAGE: f64 = 2.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_EMS`
-    pub const SVG_LENGTHTYPE_EMS: u16 = 3;
+    pub const SVG_LENGTHTYPE_EMS: f64 = 3.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_EXS`
-    pub const SVG_LENGTHTYPE_EXS: u16 = 4;
+    pub const SVG_LENGTHTYPE_EXS: f64 = 4.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_PX`
-    pub const SVG_LENGTHTYPE_PX: u16 = 5;
+    pub const SVG_LENGTHTYPE_PX: f64 = 5.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_CM`
-    pub const SVG_LENGTHTYPE_CM: u16 = 6;
+    pub const SVG_LENGTHTYPE_CM: f64 = 6.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_MM`
-    pub const SVG_LENGTHTYPE_MM: u16 = 7;
+    pub const SVG_LENGTHTYPE_MM: f64 = 7.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_IN`
-    pub const SVG_LENGTHTYPE_IN: u16 = 8;
+    pub const SVG_LENGTHTYPE_IN: f64 = 8.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_PT`
-    pub const SVG_LENGTHTYPE_PT: u16 = 9;
+    pub const SVG_LENGTHTYPE_PT: f64 = 9.0;
 
     /// `SVGLength.SVG_LENGTHTYPE_PC`
-    pub const SVG_LENGTHTYPE_PC: u16 = 10;
+    pub const SVG_LENGTHTYPE_PC: f64 = 10.0;
 }
 
 impl SVGLength {
@@ -73930,7 +73930,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::link_name = "get unitType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn unit_type(&self) -> u16 {
+    pub fn unit_type(&self) -> f64 {
         unreachable!()
     }
 
@@ -73938,7 +73938,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f64 {
         unreachable!()
     }
 
@@ -73946,7 +73946,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73954,7 +73954,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::link_name = "get valueInSpecifiedUnits")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value_in_specified_units(&self) -> f32 {
+    pub fn value_in_specified_units(&self) -> f64 {
         unreachable!()
     }
 
@@ -73962,7 +73962,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::link_name = "set valueInSpecifiedUnits")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value_in_specified_units(&self, value: f64) {
+    pub fn set_value_in_specified_units(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73987,7 +73987,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_value_specified_units(&self, unit_type: f64, value_in_specified_units: f64) {
+    pub fn new_value_specified_units(&self, unit_type: impl Into<f64>, value_in_specified_units: impl Into<f64>) {
         unreachable!()
     }
 
@@ -73996,7 +73996,7 @@ impl SVGLength {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_to_specified_units(&self, unit_type: f64) {
+    pub fn convert_to_specified_units(&self, unit_type: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74023,7 +74023,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -74031,7 +74031,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_items(&self) -> u32 {
+    pub fn number_of_items(&self) -> f64 {
         unreachable!()
     }
 
@@ -74056,7 +74056,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_item(&self, index: f64) -> &'static SVGLength {
+    pub fn get_item(&self, index: impl Into<f64>) -> &'static SVGLength {
         unreachable!()
     }
 
@@ -74064,7 +74064,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_item_before(&self, new_item: &SVGLength, index: f64) -> &'static SVGLength {
+    pub fn insert_item_before(&self, new_item: &SVGLength, index: impl Into<f64>) -> &'static SVGLength {
         unreachable!()
     }
 
@@ -74072,7 +74072,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_item(&self, new_item: &SVGLength, index: f64) -> &'static SVGLength {
+    pub fn replace_item(&self, new_item: &SVGLength, index: impl Into<f64>) -> &'static SVGLength {
         unreachable!()
     }
 
@@ -74080,7 +74080,7 @@ impl SVGLengthList {
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_item(&self, index: f64) -> &'static SVGLength {
+    pub fn remove_item(&self, index: impl Into<f64>) -> &'static SVGLength {
         unreachable!()
     }
 
@@ -74103,7 +74103,7 @@ impl SVGNumber {
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f64 {
         unreachable!()
     }
 
@@ -74111,7 +74111,7 @@ impl SVGNumber {
     #[cfg_attr(rust_js, rust_js::link_name = "set value")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_value(&self, value: f64) {
+    pub fn set_value(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74138,7 +74138,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -74146,7 +74146,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_items(&self) -> u32 {
+    pub fn number_of_items(&self) -> f64 {
         unreachable!()
     }
 
@@ -74171,7 +74171,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_item(&self, index: f64) -> &'static SVGNumber {
+    pub fn get_item(&self, index: impl Into<f64>) -> &'static SVGNumber {
         unreachable!()
     }
 
@@ -74179,7 +74179,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_item_before(&self, new_item: &SVGNumber, index: f64) -> &'static SVGNumber {
+    pub fn insert_item_before(&self, new_item: &SVGNumber, index: impl Into<f64>) -> &'static SVGNumber {
         unreachable!()
     }
 
@@ -74187,7 +74187,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_item(&self, new_item: &SVGNumber, index: f64) -> &'static SVGNumber {
+    pub fn replace_item(&self, new_item: &SVGNumber, index: impl Into<f64>) -> &'static SVGNumber {
         unreachable!()
     }
 
@@ -74195,7 +74195,7 @@ impl SVGNumberList {
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_item(&self, index: f64) -> &'static SVGNumber {
+    pub fn remove_item(&self, index: impl Into<f64>) -> &'static SVGNumber {
         unreachable!()
     }
 
@@ -74230,7 +74230,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -74238,7 +74238,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_items(&self) -> u32 {
+    pub fn number_of_items(&self) -> f64 {
         unreachable!()
     }
 
@@ -74263,7 +74263,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_item(&self, index: f64) -> &'static DOMPoint {
+    pub fn get_item(&self, index: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -74271,7 +74271,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_item_before(&self, new_item: &DOMPoint, index: f64) -> &'static DOMPoint {
+    pub fn insert_item_before(&self, new_item: &DOMPoint, index: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -74279,7 +74279,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_item(&self, new_item: &DOMPoint, index: f64) -> &'static DOMPoint {
+    pub fn replace_item(&self, new_item: &DOMPoint, index: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -74287,7 +74287,7 @@ impl SVGPointList {
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_item(&self, index: f64) -> &'static DOMPoint {
+    pub fn remove_item(&self, index: impl Into<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
@@ -74308,46 +74308,46 @@ pub struct SVGPreserveAspectRatio(PhantomData<JsObject>);
 pub mod svg_preserve_aspect_ratio {
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_UNKNOWN`
-    pub const SVG_PRESERVEASPECTRATIO_UNKNOWN: u16 = 0;
+    pub const SVG_PRESERVEASPECTRATIO_UNKNOWN: f64 = 0.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_NONE`
-    pub const SVG_PRESERVEASPECTRATIO_NONE: u16 = 1;
+    pub const SVG_PRESERVEASPECTRATIO_NONE: f64 = 1.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMIN: u16 = 2;
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMIN: f64 = 2.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMIN: u16 = 3;
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMIN: f64 = 3.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMIN: u16 = 4;
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMIN: f64 = 4.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMID: u16 = 5;
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMID: f64 = 5.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMID: u16 = 6;
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMID: f64 = 6.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMID: u16 = 7;
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMID: f64 = 7.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMAX: u16 = 8;
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMAX: f64 = 8.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMAX: u16 = 9;
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMAX: f64 = 9.0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMAX: u16 = 10;
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMAX: f64 = 10.0;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_UNKNOWN`
-    pub const SVG_MEETORSLICE_UNKNOWN: u16 = 0;
+    pub const SVG_MEETORSLICE_UNKNOWN: f64 = 0.0;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_MEET`
-    pub const SVG_MEETORSLICE_MEET: u16 = 1;
+    pub const SVG_MEETORSLICE_MEET: f64 = 1.0;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_SLICE`
-    pub const SVG_MEETORSLICE_SLICE: u16 = 2;
+    pub const SVG_MEETORSLICE_SLICE: f64 = 2.0;
 }
 
 impl SVGPreserveAspectRatio {
@@ -74355,7 +74355,7 @@ impl SVGPreserveAspectRatio {
     #[cfg_attr(rust_js, rust_js::link_name = "get align")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn align(&self) -> u16 {
+    pub fn align(&self) -> f64 {
         unreachable!()
     }
 
@@ -74363,7 +74363,7 @@ impl SVGPreserveAspectRatio {
     #[cfg_attr(rust_js, rust_js::link_name = "set align")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_align(&self, value: f64) {
+    pub fn set_align(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74371,7 +74371,7 @@ impl SVGPreserveAspectRatio {
     #[cfg_attr(rust_js, rust_js::link_name = "get meetOrSlice")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn meet_or_slice(&self) -> u16 {
+    pub fn meet_or_slice(&self) -> f64 {
         unreachable!()
     }
 
@@ -74379,7 +74379,7 @@ impl SVGPreserveAspectRatio {
     #[cfg_attr(rust_js, rust_js::link_name = "set meetOrSlice")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_meet_or_slice(&self, value: f64) {
+    pub fn set_meet_or_slice(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74406,7 +74406,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -74414,7 +74414,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_items(&self) -> u32 {
+    pub fn number_of_items(&self) -> f64 {
         unreachable!()
     }
 
@@ -74439,7 +74439,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_item(&self, index: f64) -> String {
+    pub fn get_item(&self, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -74447,7 +74447,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_item_before(&self, new_item: &str, index: f64) -> String {
+    pub fn insert_item_before(&self, new_item: &str, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -74455,7 +74455,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_item(&self, new_item: &str, index: f64) -> String {
+    pub fn replace_item(&self, new_item: &str, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -74463,7 +74463,7 @@ impl SVGStringList {
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_item(&self, index: f64) -> String {
+    pub fn remove_item(&self, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -74484,25 +74484,25 @@ pub struct SVGTransform(PhantomData<JsObject>);
 pub mod svg_transform {
 
     /// `SVGTransform.SVG_TRANSFORM_UNKNOWN`
-    pub const SVG_TRANSFORM_UNKNOWN: u16 = 0;
+    pub const SVG_TRANSFORM_UNKNOWN: f64 = 0.0;
 
     /// `SVGTransform.SVG_TRANSFORM_MATRIX`
-    pub const SVG_TRANSFORM_MATRIX: u16 = 1;
+    pub const SVG_TRANSFORM_MATRIX: f64 = 1.0;
 
     /// `SVGTransform.SVG_TRANSFORM_TRANSLATE`
-    pub const SVG_TRANSFORM_TRANSLATE: u16 = 2;
+    pub const SVG_TRANSFORM_TRANSLATE: f64 = 2.0;
 
     /// `SVGTransform.SVG_TRANSFORM_SCALE`
-    pub const SVG_TRANSFORM_SCALE: u16 = 3;
+    pub const SVG_TRANSFORM_SCALE: f64 = 3.0;
 
     /// `SVGTransform.SVG_TRANSFORM_ROTATE`
-    pub const SVG_TRANSFORM_ROTATE: u16 = 4;
+    pub const SVG_TRANSFORM_ROTATE: f64 = 4.0;
 
     /// `SVGTransform.SVG_TRANSFORM_SKEWX`
-    pub const SVG_TRANSFORM_SKEWX: u16 = 5;
+    pub const SVG_TRANSFORM_SKEWX: f64 = 5.0;
 
     /// `SVGTransform.SVG_TRANSFORM_SKEWY`
-    pub const SVG_TRANSFORM_SKEWY: u16 = 6;
+    pub const SVG_TRANSFORM_SKEWY: f64 = 6.0;
 }
 
 impl SVGTransform {
@@ -74510,7 +74510,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#type(&self) -> u16 {
+    pub fn r#type(&self) -> f64 {
         unreachable!()
     }
 
@@ -74526,7 +74526,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::link_name = "get angle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn angle(&self) -> f32 {
+    pub fn angle(&self) -> f64 {
         unreachable!()
     }
 
@@ -74544,7 +74544,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_translate(&self, tx: f64, ty: f64) {
+    pub fn set_translate(&self, tx: impl Into<f64>, ty: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74553,7 +74553,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scale(&self, sx: f64, sy: f64) {
+    pub fn set_scale(&self, sx: impl Into<f64>, sy: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74562,7 +74562,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_rotate(&self, angle: f64, cx: f64, cy: f64) {
+    pub fn set_rotate(&self, angle: impl Into<f64>, cx: impl Into<f64>, cy: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74571,7 +74571,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_skew_x(&self, angle: f64) {
+    pub fn set_skew_x(&self, angle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74580,7 +74580,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_skew_y(&self, angle: f64) {
+    pub fn set_skew_y(&self, angle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -74607,7 +74607,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -74615,7 +74615,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "get numberOfItems")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn number_of_items(&self) -> u32 {
+    pub fn number_of_items(&self) -> f64 {
         unreachable!()
     }
 
@@ -74640,7 +74640,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "getItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_item(&self, index: f64) -> &'static SVGTransform {
+    pub fn get_item(&self, index: impl Into<f64>) -> &'static SVGTransform {
         unreachable!()
     }
 
@@ -74648,7 +74648,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "insertItemBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_item_before(&self, new_item: &SVGTransform, index: f64) -> &'static SVGTransform {
+    pub fn insert_item_before(&self, new_item: &SVGTransform, index: impl Into<f64>) -> &'static SVGTransform {
         unreachable!()
     }
 
@@ -74656,7 +74656,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "replaceItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn replace_item(&self, new_item: &SVGTransform, index: f64) -> &'static SVGTransform {
+    pub fn replace_item(&self, new_item: &SVGTransform, index: impl Into<f64>) -> &'static SVGTransform {
         unreachable!()
     }
 
@@ -74664,7 +74664,7 @@ impl SVGTransformList {
     #[cfg_attr(rust_js, rust_js::link_name = "removeItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove_item(&self, index: f64) -> &'static SVGTransform {
+    pub fn remove_item(&self, index: impl Into<f64>) -> &'static SVGTransform {
         unreachable!()
     }
 
@@ -74701,13 +74701,13 @@ pub struct SVGUnitTypes(PhantomData<JsObject>);
 pub mod svg_unit_types {
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_UNKNOWN`
-    pub const SVG_UNIT_TYPE_UNKNOWN: u16 = 0;
+    pub const SVG_UNIT_TYPE_UNKNOWN: f64 = 0.0;
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_USERSPACEONUSE`
-    pub const SVG_UNIT_TYPE_USERSPACEONUSE: u16 = 1;
+    pub const SVG_UNIT_TYPE_USERSPACEONUSE: f64 = 1.0;
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX`
-    pub const SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: u16 = 2;
+    pub const SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: f64 = 2.0;
 }
 
 /// [`Sanitizer`](https://developer.mozilla.org/docs/Web/API/Sanitizer)
@@ -74860,7 +74860,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get availWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn avail_width(&self) -> i32 {
+    pub fn avail_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -74868,7 +74868,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get availHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn avail_height(&self) -> i32 {
+    pub fn avail_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -74876,7 +74876,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn width(&self) -> i32 {
+    pub fn width(&self) -> f64 {
         unreachable!()
     }
 
@@ -74884,7 +74884,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get height")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn height(&self) -> i32 {
+    pub fn height(&self) -> f64 {
         unreachable!()
     }
 
@@ -74892,7 +74892,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get colorDepth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn color_depth(&self) -> u32 {
+    pub fn color_depth(&self) -> f64 {
         unreachable!()
     }
 
@@ -74900,7 +74900,7 @@ impl Screen {
     #[cfg_attr(rust_js, rust_js::link_name = "get pixelDepth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pixel_depth(&self) -> u32 {
+    pub fn pixel_depth(&self) -> f64 {
         unreachable!()
     }
 
@@ -74969,7 +74969,7 @@ impl ScreenOrientation {
     #[cfg_attr(rust_js, rust_js::link_name = "get angle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn angle(&self) -> u16 {
+    pub fn angle(&self) -> f64 {
         unreachable!()
     }
 
@@ -75039,7 +75039,7 @@ impl ScriptProcessorNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get bufferSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_size(&self) -> i32 {
+    pub fn buffer_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -75207,7 +75207,7 @@ impl SecurityPolicyViolationEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get statusCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn status_code(&self) -> u16 {
+    pub fn status_code(&self) -> f64 {
         unreachable!()
     }
 
@@ -75215,7 +75215,7 @@ impl SecurityPolicyViolationEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get lineNumber")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_number(&self) -> u32 {
+    pub fn line_number(&self) -> f64 {
         unreachable!()
     }
 
@@ -75223,7 +75223,7 @@ impl SecurityPolicyViolationEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get columnNumber")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn column_number(&self) -> u32 {
+    pub fn column_number(&self) -> f64 {
         unreachable!()
     }
 
@@ -75246,7 +75246,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::link_name = "get anchorOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn anchor_offset(&self) -> u32 {
+    pub fn anchor_offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -75262,7 +75262,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::link_name = "get focusOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn focus_offset(&self) -> u32 {
+    pub fn focus_offset(&self) -> f64 {
         unreachable!()
     }
 
@@ -75278,7 +75278,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn range_count(&self) -> u32 {
+    pub fn range_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -75302,7 +75302,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::link_name = "getRangeAt")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_range_at(&self, index: f64) -> &'static Range {
+    pub fn get_range_at(&self, index: impl Into<f64>) -> &'static Range {
         unreachable!()
     }
 
@@ -75400,7 +75400,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_base_and_extent(&self, anchor_node: &Node, anchor_offset: f64, focus_node: &Node, focus_offset: f64) {
+    pub fn set_base_and_extent(&self, anchor_node: &Node, anchor_offset: impl Into<f64>, focus_node: &Node, focus_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -76313,7 +76313,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "set timestampOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_timestamp_offset(&self, value: f64) {
+    pub fn set_timestamp_offset(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -76329,7 +76329,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "set appendWindowStart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_append_window_start(&self, value: f64) {
+    pub fn set_append_window_start(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -76345,7 +76345,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "set appendWindowEnd")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_append_window_end(&self, value: f64) {
+    pub fn set_append_window_end(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -76466,7 +76466,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn remove(&self, start: f64, end: f64) {
+    pub fn remove(&self, start: impl Into<f64>, end: impl Into<f64>) {
         unreachable!()
     }
 
@@ -76502,7 +76502,7 @@ impl SourceBufferList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -76559,7 +76559,7 @@ impl SpeechRecognitionAlternative {
     #[cfg_attr(rust_js, rust_js::link_name = "get confidence")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn confidence(&self) -> f32 {
+    pub fn confidence(&self) -> f64 {
         unreachable!()
     }
 
@@ -76655,7 +76655,7 @@ impl SpeechRecognitionEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get resultIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn result_index(&self) -> u32 {
+    pub fn result_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -76690,7 +76690,7 @@ impl SpeechRecognitionResult {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -76698,7 +76698,7 @@ impl SpeechRecognitionResult {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static SpeechRecognitionAlternative> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static SpeechRecognitionAlternative> {
         unreachable!()
     }
 
@@ -76733,7 +76733,7 @@ impl SpeechRecognitionResultList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -76741,7 +76741,7 @@ impl SpeechRecognitionResultList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static SpeechRecognitionResult> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static SpeechRecognitionResult> {
         unreachable!()
     }
 
@@ -76950,7 +76950,7 @@ impl SpeechSynthesisEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get charIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn char_index(&self) -> u32 {
+    pub fn char_index(&self) -> f64 {
         unreachable!()
     }
 
@@ -76958,7 +76958,7 @@ impl SpeechSynthesisEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get charLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn char_length(&self) -> u32 {
+    pub fn char_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -76966,7 +76966,7 @@ impl SpeechSynthesisEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "get elapsedTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn elapsed_time(&self) -> f32 {
+    pub fn elapsed_time(&self) -> f64 {
         unreachable!()
     }
 
@@ -77066,7 +77066,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get volume")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn volume(&self) -> f32 {
+    pub fn volume(&self) -> f64 {
         unreachable!()
     }
 
@@ -77074,7 +77074,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "set volume")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_volume(&self, value: f64) {
+    pub fn set_volume(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -77082,7 +77082,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get rate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn rate(&self) -> f32 {
+    pub fn rate(&self) -> f64 {
         unreachable!()
     }
 
@@ -77090,7 +77090,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "set rate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_rate(&self, value: f64) {
+    pub fn set_rate(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -77098,7 +77098,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "get pitch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pitch(&self) -> f32 {
+    pub fn pitch(&self) -> f64 {
         unreachable!()
     }
 
@@ -77106,7 +77106,7 @@ impl SpeechSynthesisUtterance {
     #[cfg_attr(rust_js, rust_js::link_name = "set pitch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_pitch(&self, value: f64) {
+    pub fn set_pitch(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -77623,7 +77623,7 @@ impl StylePropertyMapReadOnly {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -77721,7 +77721,7 @@ impl StyleSheetList {
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: f64) -> Option<&'static CSSStyleSheet> {
+    pub fn item(&self, index: impl Into<f64>) -> Option<&'static CSSStyleSheet> {
         unreachable!()
     }
 
@@ -77729,7 +77729,7 @@ impl StyleSheetList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -78419,7 +78419,7 @@ impl TextTrackCue {
     #[cfg_attr(rust_js, rust_js::link_name = "set startTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_start_time(&self, value: f64) {
+    pub fn set_start_time(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -78435,7 +78435,7 @@ impl TextTrackCue {
     #[cfg_attr(rust_js, rust_js::link_name = "set endTime")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_end_time(&self, value: f64) {
+    pub fn set_end_time(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -78512,7 +78512,7 @@ impl TextTrackCueList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -78564,7 +78564,7 @@ impl TextTrackList {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -78638,7 +78638,7 @@ impl TimeRanges {
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn length(&self) -> u32 {
+    pub fn length(&self) -> f64 {
         unreachable!()
     }
 
@@ -78646,7 +78646,7 @@ impl TimeRanges {
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start(&self, index: f64) -> f64 {
+    pub fn start(&self, index: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -78654,7 +78654,7 @@ impl TimeRanges {
     #[cfg_attr(rust_js, rust_js::link_name = "end")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn end(&self, index: f64) -> f64 {
+    pub fn end(&self, index: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -78787,7 +78787,7 @@ impl TreeWalker {
     #[cfg_attr(rust_js, rust_js::link_name = "get whatToShow")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn what_to_show(&self) -> u32 {
+    pub fn what_to_show(&self) -> f64 {
         unreachable!()
     }
 
@@ -79009,7 +79009,7 @@ impl URLSearchParams {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -79159,7 +79159,7 @@ pub mod vtt_cue {
     #[cfg_attr(rust_js, rust_js::link_name = "new VTTCue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(start_time: f64, end_time: f64, text: &str) -> &'static VTTCue {
+    pub fn new(start_time: impl Into<f64>, end_time: impl Into<f64>, text: &str) -> &'static VTTCue {
         unreachable!()
     }
 
@@ -79297,7 +79297,7 @@ impl VTTCue {
     #[cfg_attr(rust_js, rust_js::link_name = "set size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_size(&self, value: f64) {
+    pub fn set_size(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79388,7 +79388,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_width(&self, value: f64) {
+    pub fn set_width(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79396,7 +79396,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "get lines")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn lines(&self) -> u32 {
+    pub fn lines(&self) -> f64 {
         unreachable!()
     }
 
@@ -79404,7 +79404,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set lines")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_lines(&self, value: f64) {
+    pub fn set_lines(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79420,7 +79420,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set regionAnchorX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_region_anchor_x(&self, value: f64) {
+    pub fn set_region_anchor_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79436,7 +79436,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set regionAnchorY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_region_anchor_y(&self, value: f64) {
+    pub fn set_region_anchor_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79452,7 +79452,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set viewportAnchorX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_viewport_anchor_x(&self, value: f64) {
+    pub fn set_viewport_anchor_x(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79468,7 +79468,7 @@ impl VTTRegion {
     #[cfg_attr(rust_js, rust_js::link_name = "set viewportAnchorY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_viewport_anchor_y(&self, value: f64) {
+    pub fn set_viewport_anchor_y(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -79698,7 +79698,7 @@ impl VideoDecoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get decodeQueueSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn decode_queue_size(&self) -> u32 {
+    pub fn decode_queue_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -79819,7 +79819,7 @@ impl VideoEncoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get encodeQueueSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn encode_queue_size(&self) -> u32 {
+    pub fn encode_queue_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -79915,7 +79915,7 @@ impl VideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "get codedWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn coded_width(&self) -> u32 {
+    pub fn coded_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -79923,7 +79923,7 @@ impl VideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "get codedHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn coded_height(&self) -> u32 {
+    pub fn coded_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -79947,7 +79947,7 @@ impl VideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "get displayWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn display_width(&self) -> u32 {
+    pub fn display_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -79955,7 +79955,7 @@ impl VideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "get displayHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn display_height(&self) -> u32 {
+    pub fn display_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -79987,7 +79987,7 @@ impl VideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "allocationSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn allocation_size(&self, options: Option<VideoFrameCopyToOptions<'_>>) -> u32 {
+    pub fn allocation_size(&self, options: Option<VideoFrameCopyToOptions<'_>>) -> f64 {
         unreachable!()
     }
 
@@ -80035,7 +80035,7 @@ impl VideoPlaybackQuality {
     #[cfg_attr(rust_js, rust_js::link_name = "get droppedVideoFrames")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn dropped_video_frames(&self) -> u32 {
+    pub fn dropped_video_frames(&self) -> f64 {
         unreachable!()
     }
 
@@ -80043,7 +80043,7 @@ impl VideoPlaybackQuality {
     #[cfg_attr(rust_js, rust_js::link_name = "get totalVideoFrames")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn total_video_frames(&self) -> u32 {
+    pub fn total_video_frames(&self) -> f64 {
         unreachable!()
     }
 
@@ -80051,7 +80051,7 @@ impl VideoPlaybackQuality {
     #[cfg_attr(rust_js, rust_js::link_name = "get corruptedVideoFrames")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn corrupted_video_frames(&self) -> u32 {
+    pub fn corrupted_video_frames(&self) -> f64 {
         unreachable!()
     }
 
@@ -80215,7 +80215,7 @@ impl ViewTransitionTypeSet {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -80432,7 +80432,7 @@ impl WGSLLanguageFeatures {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -80597,1687 +80597,1687 @@ pub struct WebGL2RenderingContext(PhantomData<JsObject>);
 pub mod web_gl_2_rendering_context {
 
     /// `WebGL2RenderingContext.DEPTH_BUFFER_BIT`
-    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
+    pub const DEPTH_BUFFER_BIT: f64 = 256.0;
 
     /// `WebGL2RenderingContext.STENCIL_BUFFER_BIT`
-    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
+    pub const STENCIL_BUFFER_BIT: f64 = 1024.0;
 
     /// `WebGL2RenderingContext.COLOR_BUFFER_BIT`
-    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
+    pub const COLOR_BUFFER_BIT: f64 = 16384.0;
 
     /// `WebGL2RenderingContext.POINTS`
-    pub const POINTS: u32 = 0x0000;
+    pub const POINTS: f64 = 0.0;
 
     /// `WebGL2RenderingContext.LINES`
-    pub const LINES: u32 = 0x0001;
+    pub const LINES: f64 = 1.0;
 
     /// `WebGL2RenderingContext.LINE_LOOP`
-    pub const LINE_LOOP: u32 = 0x0002;
+    pub const LINE_LOOP: f64 = 2.0;
 
     /// `WebGL2RenderingContext.LINE_STRIP`
-    pub const LINE_STRIP: u32 = 0x0003;
+    pub const LINE_STRIP: f64 = 3.0;
 
     /// `WebGL2RenderingContext.TRIANGLES`
-    pub const TRIANGLES: u32 = 0x0004;
+    pub const TRIANGLES: f64 = 4.0;
 
     /// `WebGL2RenderingContext.TRIANGLE_STRIP`
-    pub const TRIANGLE_STRIP: u32 = 0x0005;
+    pub const TRIANGLE_STRIP: f64 = 5.0;
 
     /// `WebGL2RenderingContext.TRIANGLE_FAN`
-    pub const TRIANGLE_FAN: u32 = 0x0006;
+    pub const TRIANGLE_FAN: f64 = 6.0;
 
     /// `WebGL2RenderingContext.ZERO`
-    pub const ZERO: u32 = 0;
+    pub const ZERO: f64 = 0.0;
 
     /// `WebGL2RenderingContext.ONE`
-    pub const ONE: u32 = 1;
+    pub const ONE: f64 = 1.0;
 
     /// `WebGL2RenderingContext.SRC_COLOR`
-    pub const SRC_COLOR: u32 = 0x0300;
+    pub const SRC_COLOR: f64 = 768.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_SRC_COLOR`
-    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
+    pub const ONE_MINUS_SRC_COLOR: f64 = 769.0;
 
     /// `WebGL2RenderingContext.SRC_ALPHA`
-    pub const SRC_ALPHA: u32 = 0x0302;
+    pub const SRC_ALPHA: f64 = 770.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA`
-    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
+    pub const ONE_MINUS_SRC_ALPHA: f64 = 771.0;
 
     /// `WebGL2RenderingContext.DST_ALPHA`
-    pub const DST_ALPHA: u32 = 0x0304;
+    pub const DST_ALPHA: f64 = 772.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_DST_ALPHA`
-    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
+    pub const ONE_MINUS_DST_ALPHA: f64 = 773.0;
 
     /// `WebGL2RenderingContext.DST_COLOR`
-    pub const DST_COLOR: u32 = 0x0306;
+    pub const DST_COLOR: f64 = 774.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_DST_COLOR`
-    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
+    pub const ONE_MINUS_DST_COLOR: f64 = 775.0;
 
     /// `WebGL2RenderingContext.SRC_ALPHA_SATURATE`
-    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
+    pub const SRC_ALPHA_SATURATE: f64 = 776.0;
 
     /// `WebGL2RenderingContext.FUNC_ADD`
-    pub const FUNC_ADD: u32 = 0x8006;
+    pub const FUNC_ADD: f64 = 32774.0;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION`
-    pub const BLEND_EQUATION: u32 = 0x8009;
+    pub const BLEND_EQUATION: f64 = 32777.0;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION_RGB`
-    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
+    pub const BLEND_EQUATION_RGB: f64 = 32777.0;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION_ALPHA`
-    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
+    pub const BLEND_EQUATION_ALPHA: f64 = 34877.0;
 
     /// `WebGL2RenderingContext.FUNC_SUBTRACT`
-    pub const FUNC_SUBTRACT: u32 = 0x800A;
+    pub const FUNC_SUBTRACT: f64 = 32778.0;
 
     /// `WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT`
-    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
+    pub const FUNC_REVERSE_SUBTRACT: f64 = 32779.0;
 
     /// `WebGL2RenderingContext.BLEND_DST_RGB`
-    pub const BLEND_DST_RGB: u32 = 0x80C8;
+    pub const BLEND_DST_RGB: f64 = 32968.0;
 
     /// `WebGL2RenderingContext.BLEND_SRC_RGB`
-    pub const BLEND_SRC_RGB: u32 = 0x80C9;
+    pub const BLEND_SRC_RGB: f64 = 32969.0;
 
     /// `WebGL2RenderingContext.BLEND_DST_ALPHA`
-    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
+    pub const BLEND_DST_ALPHA: f64 = 32970.0;
 
     /// `WebGL2RenderingContext.BLEND_SRC_ALPHA`
-    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
+    pub const BLEND_SRC_ALPHA: f64 = 32971.0;
 
     /// `WebGL2RenderingContext.CONSTANT_COLOR`
-    pub const CONSTANT_COLOR: u32 = 0x8001;
+    pub const CONSTANT_COLOR: f64 = 32769.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_COLOR`
-    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
+    pub const ONE_MINUS_CONSTANT_COLOR: f64 = 32770.0;
 
     /// `WebGL2RenderingContext.CONSTANT_ALPHA`
-    pub const CONSTANT_ALPHA: u32 = 0x8003;
+    pub const CONSTANT_ALPHA: f64 = 32771.0;
 
     /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_ALPHA`
-    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
+    pub const ONE_MINUS_CONSTANT_ALPHA: f64 = 32772.0;
 
     /// `WebGL2RenderingContext.BLEND_COLOR`
-    pub const BLEND_COLOR: u32 = 0x8005;
+    pub const BLEND_COLOR: f64 = 32773.0;
 
     /// `WebGL2RenderingContext.ARRAY_BUFFER`
-    pub const ARRAY_BUFFER: u32 = 0x8892;
+    pub const ARRAY_BUFFER: f64 = 34962.0;
 
     /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER`
-    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
+    pub const ELEMENT_ARRAY_BUFFER: f64 = 34963.0;
 
     /// `WebGL2RenderingContext.ARRAY_BUFFER_BINDING`
-    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
+    pub const ARRAY_BUFFER_BINDING: f64 = 34964.0;
 
     /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
-    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: f64 = 34965.0;
 
     /// `WebGL2RenderingContext.STREAM_DRAW`
-    pub const STREAM_DRAW: u32 = 0x88E0;
+    pub const STREAM_DRAW: f64 = 35040.0;
 
     /// `WebGL2RenderingContext.STATIC_DRAW`
-    pub const STATIC_DRAW: u32 = 0x88E4;
+    pub const STATIC_DRAW: f64 = 35044.0;
 
     /// `WebGL2RenderingContext.DYNAMIC_DRAW`
-    pub const DYNAMIC_DRAW: u32 = 0x88E8;
+    pub const DYNAMIC_DRAW: f64 = 35048.0;
 
     /// `WebGL2RenderingContext.BUFFER_SIZE`
-    pub const BUFFER_SIZE: u32 = 0x8764;
+    pub const BUFFER_SIZE: f64 = 34660.0;
 
     /// `WebGL2RenderingContext.BUFFER_USAGE`
-    pub const BUFFER_USAGE: u32 = 0x8765;
+    pub const BUFFER_USAGE: f64 = 34661.0;
 
     /// `WebGL2RenderingContext.CURRENT_VERTEX_ATTRIB`
-    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
+    pub const CURRENT_VERTEX_ATTRIB: f64 = 34342.0;
 
     /// `WebGL2RenderingContext.FRONT`
-    pub const FRONT: u32 = 0x0404;
+    pub const FRONT: f64 = 1028.0;
 
     /// `WebGL2RenderingContext.BACK`
-    pub const BACK: u32 = 0x0405;
+    pub const BACK: f64 = 1029.0;
 
     /// `WebGL2RenderingContext.FRONT_AND_BACK`
-    pub const FRONT_AND_BACK: u32 = 0x0408;
+    pub const FRONT_AND_BACK: f64 = 1032.0;
 
     /// `WebGL2RenderingContext.CULL_FACE`
-    pub const CULL_FACE: u32 = 0x0B44;
+    pub const CULL_FACE: f64 = 2884.0;
 
     /// `WebGL2RenderingContext.BLEND`
-    pub const BLEND: u32 = 0x0BE2;
+    pub const BLEND: f64 = 3042.0;
 
     /// `WebGL2RenderingContext.DITHER`
-    pub const DITHER: u32 = 0x0BD0;
+    pub const DITHER: f64 = 3024.0;
 
     /// `WebGL2RenderingContext.STENCIL_TEST`
-    pub const STENCIL_TEST: u32 = 0x0B90;
+    pub const STENCIL_TEST: f64 = 2960.0;
 
     /// `WebGL2RenderingContext.DEPTH_TEST`
-    pub const DEPTH_TEST: u32 = 0x0B71;
+    pub const DEPTH_TEST: f64 = 2929.0;
 
     /// `WebGL2RenderingContext.SCISSOR_TEST`
-    pub const SCISSOR_TEST: u32 = 0x0C11;
+    pub const SCISSOR_TEST: f64 = 3089.0;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_FILL`
-    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
+    pub const POLYGON_OFFSET_FILL: f64 = 32823.0;
 
     /// `WebGL2RenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
-    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
+    pub const SAMPLE_ALPHA_TO_COVERAGE: f64 = 32926.0;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE`
-    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
+    pub const SAMPLE_COVERAGE: f64 = 32928.0;
 
     /// `WebGL2RenderingContext.NO_ERROR`
-    pub const NO_ERROR: u32 = 0;
+    pub const NO_ERROR: f64 = 0.0;
 
     /// `WebGL2RenderingContext.INVALID_ENUM`
-    pub const INVALID_ENUM: u32 = 0x0500;
+    pub const INVALID_ENUM: f64 = 1280.0;
 
     /// `WebGL2RenderingContext.INVALID_VALUE`
-    pub const INVALID_VALUE: u32 = 0x0501;
+    pub const INVALID_VALUE: f64 = 1281.0;
 
     /// `WebGL2RenderingContext.INVALID_OPERATION`
-    pub const INVALID_OPERATION: u32 = 0x0502;
+    pub const INVALID_OPERATION: f64 = 1282.0;
 
     /// `WebGL2RenderingContext.OUT_OF_MEMORY`
-    pub const OUT_OF_MEMORY: u32 = 0x0505;
+    pub const OUT_OF_MEMORY: f64 = 1285.0;
 
     /// `WebGL2RenderingContext.CW`
-    pub const CW: u32 = 0x0900;
+    pub const CW: f64 = 2304.0;
 
     /// `WebGL2RenderingContext.CCW`
-    pub const CCW: u32 = 0x0901;
+    pub const CCW: f64 = 2305.0;
 
     /// `WebGL2RenderingContext.LINE_WIDTH`
-    pub const LINE_WIDTH: u32 = 0x0B21;
+    pub const LINE_WIDTH: f64 = 2849.0;
 
     /// `WebGL2RenderingContext.ALIASED_POINT_SIZE_RANGE`
-    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
+    pub const ALIASED_POINT_SIZE_RANGE: f64 = 33901.0;
 
     /// `WebGL2RenderingContext.ALIASED_LINE_WIDTH_RANGE`
-    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
+    pub const ALIASED_LINE_WIDTH_RANGE: f64 = 33902.0;
 
     /// `WebGL2RenderingContext.CULL_FACE_MODE`
-    pub const CULL_FACE_MODE: u32 = 0x0B45;
+    pub const CULL_FACE_MODE: f64 = 2885.0;
 
     /// `WebGL2RenderingContext.FRONT_FACE`
-    pub const FRONT_FACE: u32 = 0x0B46;
+    pub const FRONT_FACE: f64 = 2886.0;
 
     /// `WebGL2RenderingContext.DEPTH_RANGE`
-    pub const DEPTH_RANGE: u32 = 0x0B70;
+    pub const DEPTH_RANGE: f64 = 2928.0;
 
     /// `WebGL2RenderingContext.DEPTH_WRITEMASK`
-    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
+    pub const DEPTH_WRITEMASK: f64 = 2930.0;
 
     /// `WebGL2RenderingContext.DEPTH_CLEAR_VALUE`
-    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
+    pub const DEPTH_CLEAR_VALUE: f64 = 2931.0;
 
     /// `WebGL2RenderingContext.DEPTH_FUNC`
-    pub const DEPTH_FUNC: u32 = 0x0B74;
+    pub const DEPTH_FUNC: f64 = 2932.0;
 
     /// `WebGL2RenderingContext.STENCIL_CLEAR_VALUE`
-    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
+    pub const STENCIL_CLEAR_VALUE: f64 = 2961.0;
 
     /// `WebGL2RenderingContext.STENCIL_FUNC`
-    pub const STENCIL_FUNC: u32 = 0x0B92;
+    pub const STENCIL_FUNC: f64 = 2962.0;
 
     /// `WebGL2RenderingContext.STENCIL_FAIL`
-    pub const STENCIL_FAIL: u32 = 0x0B94;
+    pub const STENCIL_FAIL: f64 = 2964.0;
 
     /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_FAIL`
-    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
+    pub const STENCIL_PASS_DEPTH_FAIL: f64 = 2965.0;
 
     /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_PASS`
-    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
+    pub const STENCIL_PASS_DEPTH_PASS: f64 = 2966.0;
 
     /// `WebGL2RenderingContext.STENCIL_REF`
-    pub const STENCIL_REF: u32 = 0x0B97;
+    pub const STENCIL_REF: f64 = 2967.0;
 
     /// `WebGL2RenderingContext.STENCIL_VALUE_MASK`
-    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
+    pub const STENCIL_VALUE_MASK: f64 = 2963.0;
 
     /// `WebGL2RenderingContext.STENCIL_WRITEMASK`
-    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
+    pub const STENCIL_WRITEMASK: f64 = 2968.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_FUNC`
-    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
+    pub const STENCIL_BACK_FUNC: f64 = 34816.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_FAIL`
-    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
+    pub const STENCIL_BACK_FAIL: f64 = 34817.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
-    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: f64 = 34818.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
-    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: f64 = 34819.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_REF`
-    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
+    pub const STENCIL_BACK_REF: f64 = 36003.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_VALUE_MASK`
-    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
+    pub const STENCIL_BACK_VALUE_MASK: f64 = 36004.0;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_WRITEMASK`
-    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
+    pub const STENCIL_BACK_WRITEMASK: f64 = 36005.0;
 
     /// `WebGL2RenderingContext.VIEWPORT`
-    pub const VIEWPORT: u32 = 0x0BA2;
+    pub const VIEWPORT: f64 = 2978.0;
 
     /// `WebGL2RenderingContext.SCISSOR_BOX`
-    pub const SCISSOR_BOX: u32 = 0x0C10;
+    pub const SCISSOR_BOX: f64 = 3088.0;
 
     /// `WebGL2RenderingContext.COLOR_CLEAR_VALUE`
-    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
+    pub const COLOR_CLEAR_VALUE: f64 = 3106.0;
 
     /// `WebGL2RenderingContext.COLOR_WRITEMASK`
-    pub const COLOR_WRITEMASK: u32 = 0x0C23;
+    pub const COLOR_WRITEMASK: f64 = 3107.0;
 
     /// `WebGL2RenderingContext.UNPACK_ALIGNMENT`
-    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
+    pub const UNPACK_ALIGNMENT: f64 = 3317.0;
 
     /// `WebGL2RenderingContext.PACK_ALIGNMENT`
-    pub const PACK_ALIGNMENT: u32 = 0x0D05;
+    pub const PACK_ALIGNMENT: f64 = 3333.0;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_SIZE`
-    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
+    pub const MAX_TEXTURE_SIZE: f64 = 3379.0;
 
     /// `WebGL2RenderingContext.MAX_VIEWPORT_DIMS`
-    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
+    pub const MAX_VIEWPORT_DIMS: f64 = 3386.0;
 
     /// `WebGL2RenderingContext.SUBPIXEL_BITS`
-    pub const SUBPIXEL_BITS: u32 = 0x0D50;
+    pub const SUBPIXEL_BITS: f64 = 3408.0;
 
     /// `WebGL2RenderingContext.RED_BITS`
-    pub const RED_BITS: u32 = 0x0D52;
+    pub const RED_BITS: f64 = 3410.0;
 
     /// `WebGL2RenderingContext.GREEN_BITS`
-    pub const GREEN_BITS: u32 = 0x0D53;
+    pub const GREEN_BITS: f64 = 3411.0;
 
     /// `WebGL2RenderingContext.BLUE_BITS`
-    pub const BLUE_BITS: u32 = 0x0D54;
+    pub const BLUE_BITS: f64 = 3412.0;
 
     /// `WebGL2RenderingContext.ALPHA_BITS`
-    pub const ALPHA_BITS: u32 = 0x0D55;
+    pub const ALPHA_BITS: f64 = 3413.0;
 
     /// `WebGL2RenderingContext.DEPTH_BITS`
-    pub const DEPTH_BITS: u32 = 0x0D56;
+    pub const DEPTH_BITS: f64 = 3414.0;
 
     /// `WebGL2RenderingContext.STENCIL_BITS`
-    pub const STENCIL_BITS: u32 = 0x0D57;
+    pub const STENCIL_BITS: f64 = 3415.0;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_UNITS`
-    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
+    pub const POLYGON_OFFSET_UNITS: f64 = 10752.0;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_FACTOR`
-    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
+    pub const POLYGON_OFFSET_FACTOR: f64 = 32824.0;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_2D`
-    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
+    pub const TEXTURE_BINDING_2D: f64 = 32873.0;
 
     /// `WebGL2RenderingContext.SAMPLE_BUFFERS`
-    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
+    pub const SAMPLE_BUFFERS: f64 = 32936.0;
 
     /// `WebGL2RenderingContext.SAMPLES`
-    pub const SAMPLES: u32 = 0x80A9;
+    pub const SAMPLES: f64 = 32937.0;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE_VALUE`
-    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
+    pub const SAMPLE_COVERAGE_VALUE: f64 = 32938.0;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE_INVERT`
-    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
+    pub const SAMPLE_COVERAGE_INVERT: f64 = 32939.0;
 
     /// `WebGL2RenderingContext.COMPRESSED_TEXTURE_FORMATS`
-    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
+    pub const COMPRESSED_TEXTURE_FORMATS: f64 = 34467.0;
 
     /// `WebGL2RenderingContext.DONT_CARE`
-    pub const DONT_CARE: u32 = 0x1100;
+    pub const DONT_CARE: f64 = 4352.0;
 
     /// `WebGL2RenderingContext.FASTEST`
-    pub const FASTEST: u32 = 0x1101;
+    pub const FASTEST: f64 = 4353.0;
 
     /// `WebGL2RenderingContext.NICEST`
-    pub const NICEST: u32 = 0x1102;
+    pub const NICEST: f64 = 4354.0;
 
     /// `WebGL2RenderingContext.GENERATE_MIPMAP_HINT`
-    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
+    pub const GENERATE_MIPMAP_HINT: f64 = 33170.0;
 
     /// `WebGL2RenderingContext.BYTE`
-    pub const BYTE: u32 = 0x1400;
+    pub const BYTE: f64 = 5120.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_BYTE`
-    pub const UNSIGNED_BYTE: u32 = 0x1401;
+    pub const UNSIGNED_BYTE: f64 = 5121.0;
 
     /// `WebGL2RenderingContext.SHORT`
-    pub const SHORT: u32 = 0x1402;
+    pub const SHORT: f64 = 5122.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT`
-    pub const UNSIGNED_SHORT: u32 = 0x1403;
+    pub const UNSIGNED_SHORT: f64 = 5123.0;
 
     /// `WebGL2RenderingContext.INT`
-    pub const INT: u32 = 0x1404;
+    pub const INT: f64 = 5124.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT`
-    pub const UNSIGNED_INT: u32 = 0x1405;
+    pub const UNSIGNED_INT: f64 = 5125.0;
 
     /// `WebGL2RenderingContext.FLOAT`
-    pub const FLOAT: u32 = 0x1406;
+    pub const FLOAT: f64 = 5126.0;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT`
-    pub const DEPTH_COMPONENT: u32 = 0x1902;
+    pub const DEPTH_COMPONENT: f64 = 6402.0;
 
     /// `WebGL2RenderingContext.ALPHA`
-    pub const ALPHA: u32 = 0x1906;
+    pub const ALPHA: f64 = 6406.0;
 
     /// `WebGL2RenderingContext.RGB`
-    pub const RGB: u32 = 0x1907;
+    pub const RGB: f64 = 6407.0;
 
     /// `WebGL2RenderingContext.RGBA`
-    pub const RGBA: u32 = 0x1908;
+    pub const RGBA: f64 = 6408.0;
 
     /// `WebGL2RenderingContext.LUMINANCE`
-    pub const LUMINANCE: u32 = 0x1909;
+    pub const LUMINANCE: f64 = 6409.0;
 
     /// `WebGL2RenderingContext.LUMINANCE_ALPHA`
-    pub const LUMINANCE_ALPHA: u32 = 0x190A;
+    pub const LUMINANCE_ALPHA: f64 = 6410.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_4_4_4_4`
-    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
+    pub const UNSIGNED_SHORT_4_4_4_4: f64 = 32819.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_5_5_1`
-    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
+    pub const UNSIGNED_SHORT_5_5_5_1: f64 = 32820.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_6_5`
-    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
+    pub const UNSIGNED_SHORT_5_6_5: f64 = 33635.0;
 
     /// `WebGL2RenderingContext.FRAGMENT_SHADER`
-    pub const FRAGMENT_SHADER: u32 = 0x8B30;
+    pub const FRAGMENT_SHADER: f64 = 35632.0;
 
     /// `WebGL2RenderingContext.VERTEX_SHADER`
-    pub const VERTEX_SHADER: u32 = 0x8B31;
+    pub const VERTEX_SHADER: f64 = 35633.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_ATTRIBS`
-    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
+    pub const MAX_VERTEX_ATTRIBS: f64 = 34921.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
-    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
+    pub const MAX_VERTEX_UNIFORM_VECTORS: f64 = 36347.0;
 
     /// `WebGL2RenderingContext.MAX_VARYING_VECTORS`
-    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
+    pub const MAX_VARYING_VECTORS: f64 = 36348.0;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
-    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: f64 = 35661.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: f64 = 35660.0;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
+    pub const MAX_TEXTURE_IMAGE_UNITS: f64 = 34930.0;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
-    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: f64 = 36349.0;
 
     /// `WebGL2RenderingContext.SHADER_TYPE`
-    pub const SHADER_TYPE: u32 = 0x8B4F;
+    pub const SHADER_TYPE: f64 = 35663.0;
 
     /// `WebGL2RenderingContext.DELETE_STATUS`
-    pub const DELETE_STATUS: u32 = 0x8B80;
+    pub const DELETE_STATUS: f64 = 35712.0;
 
     /// `WebGL2RenderingContext.LINK_STATUS`
-    pub const LINK_STATUS: u32 = 0x8B82;
+    pub const LINK_STATUS: f64 = 35714.0;
 
     /// `WebGL2RenderingContext.VALIDATE_STATUS`
-    pub const VALIDATE_STATUS: u32 = 0x8B83;
+    pub const VALIDATE_STATUS: f64 = 35715.0;
 
     /// `WebGL2RenderingContext.ATTACHED_SHADERS`
-    pub const ATTACHED_SHADERS: u32 = 0x8B85;
+    pub const ATTACHED_SHADERS: f64 = 35717.0;
 
     /// `WebGL2RenderingContext.ACTIVE_UNIFORMS`
-    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
+    pub const ACTIVE_UNIFORMS: f64 = 35718.0;
 
     /// `WebGL2RenderingContext.ACTIVE_ATTRIBUTES`
-    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
+    pub const ACTIVE_ATTRIBUTES: f64 = 35721.0;
 
     /// `WebGL2RenderingContext.SHADING_LANGUAGE_VERSION`
-    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
+    pub const SHADING_LANGUAGE_VERSION: f64 = 35724.0;
 
     /// `WebGL2RenderingContext.CURRENT_PROGRAM`
-    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
+    pub const CURRENT_PROGRAM: f64 = 35725.0;
 
     /// `WebGL2RenderingContext.NEVER`
-    pub const NEVER: u32 = 0x0200;
+    pub const NEVER: f64 = 512.0;
 
     /// `WebGL2RenderingContext.LESS`
-    pub const LESS: u32 = 0x0201;
+    pub const LESS: f64 = 513.0;
 
     /// `WebGL2RenderingContext.EQUAL`
-    pub const EQUAL: u32 = 0x0202;
+    pub const EQUAL: f64 = 514.0;
 
     /// `WebGL2RenderingContext.LEQUAL`
-    pub const LEQUAL: u32 = 0x0203;
+    pub const LEQUAL: f64 = 515.0;
 
     /// `WebGL2RenderingContext.GREATER`
-    pub const GREATER: u32 = 0x0204;
+    pub const GREATER: f64 = 516.0;
 
     /// `WebGL2RenderingContext.NOTEQUAL`
-    pub const NOTEQUAL: u32 = 0x0205;
+    pub const NOTEQUAL: f64 = 517.0;
 
     /// `WebGL2RenderingContext.GEQUAL`
-    pub const GEQUAL: u32 = 0x0206;
+    pub const GEQUAL: f64 = 518.0;
 
     /// `WebGL2RenderingContext.ALWAYS`
-    pub const ALWAYS: u32 = 0x0207;
+    pub const ALWAYS: f64 = 519.0;
 
     /// `WebGL2RenderingContext.KEEP`
-    pub const KEEP: u32 = 0x1E00;
+    pub const KEEP: f64 = 7680.0;
 
     /// `WebGL2RenderingContext.REPLACE`
-    pub const REPLACE: u32 = 0x1E01;
+    pub const REPLACE: f64 = 7681.0;
 
     /// `WebGL2RenderingContext.INCR`
-    pub const INCR: u32 = 0x1E02;
+    pub const INCR: f64 = 7682.0;
 
     /// `WebGL2RenderingContext.DECR`
-    pub const DECR: u32 = 0x1E03;
+    pub const DECR: f64 = 7683.0;
 
     /// `WebGL2RenderingContext.INVERT`
-    pub const INVERT: u32 = 0x150A;
+    pub const INVERT: f64 = 5386.0;
 
     /// `WebGL2RenderingContext.INCR_WRAP`
-    pub const INCR_WRAP: u32 = 0x8507;
+    pub const INCR_WRAP: f64 = 34055.0;
 
     /// `WebGL2RenderingContext.DECR_WRAP`
-    pub const DECR_WRAP: u32 = 0x8508;
+    pub const DECR_WRAP: f64 = 34056.0;
 
     /// `WebGL2RenderingContext.VENDOR`
-    pub const VENDOR: u32 = 0x1F00;
+    pub const VENDOR: f64 = 7936.0;
 
     /// `WebGL2RenderingContext.RENDERER`
-    pub const RENDERER: u32 = 0x1F01;
+    pub const RENDERER: f64 = 7937.0;
 
     /// `WebGL2RenderingContext.VERSION`
-    pub const VERSION: u32 = 0x1F02;
+    pub const VERSION: f64 = 7938.0;
 
     /// `WebGL2RenderingContext.NEAREST`
-    pub const NEAREST: u32 = 0x2600;
+    pub const NEAREST: f64 = 9728.0;
 
     /// `WebGL2RenderingContext.LINEAR`
-    pub const LINEAR: u32 = 0x2601;
+    pub const LINEAR: f64 = 9729.0;
 
     /// `WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST`
-    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
+    pub const NEAREST_MIPMAP_NEAREST: f64 = 9984.0;
 
     /// `WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST`
-    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
+    pub const LINEAR_MIPMAP_NEAREST: f64 = 9985.0;
 
     /// `WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR`
-    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
+    pub const NEAREST_MIPMAP_LINEAR: f64 = 9986.0;
 
     /// `WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR`
-    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
+    pub const LINEAR_MIPMAP_LINEAR: f64 = 9987.0;
 
     /// `WebGL2RenderingContext.TEXTURE_MAG_FILTER`
-    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
+    pub const TEXTURE_MAG_FILTER: f64 = 10240.0;
 
     /// `WebGL2RenderingContext.TEXTURE_MIN_FILTER`
-    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
+    pub const TEXTURE_MIN_FILTER: f64 = 10241.0;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_S`
-    pub const TEXTURE_WRAP_S: u32 = 0x2802;
+    pub const TEXTURE_WRAP_S: f64 = 10242.0;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_T`
-    pub const TEXTURE_WRAP_T: u32 = 0x2803;
+    pub const TEXTURE_WRAP_T: f64 = 10243.0;
 
     /// `WebGL2RenderingContext.TEXTURE_2D`
-    pub const TEXTURE_2D: u32 = 0x0DE1;
+    pub const TEXTURE_2D: f64 = 3553.0;
 
     /// `WebGL2RenderingContext.TEXTURE`
-    pub const TEXTURE: u32 = 0x1702;
+    pub const TEXTURE: f64 = 5890.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP`
-    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
+    pub const TEXTURE_CUBE_MAP: f64 = 34067.0;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_CUBE_MAP`
-    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
+    pub const TEXTURE_BINDING_CUBE_MAP: f64 = 34068.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: f64 = 34069.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: f64 = 34070.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: f64 = 34071.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: f64 = 34072.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: f64 = 34073.0;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: f64 = 34074.0;
 
     /// `WebGL2RenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
-    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: f64 = 34076.0;
 
     /// `WebGL2RenderingContext.TEXTURE0`
-    pub const TEXTURE0: u32 = 0x84C0;
+    pub const TEXTURE0: f64 = 33984.0;
 
     /// `WebGL2RenderingContext.TEXTURE1`
-    pub const TEXTURE1: u32 = 0x84C1;
+    pub const TEXTURE1: f64 = 33985.0;
 
     /// `WebGL2RenderingContext.TEXTURE2`
-    pub const TEXTURE2: u32 = 0x84C2;
+    pub const TEXTURE2: f64 = 33986.0;
 
     /// `WebGL2RenderingContext.TEXTURE3`
-    pub const TEXTURE3: u32 = 0x84C3;
+    pub const TEXTURE3: f64 = 33987.0;
 
     /// `WebGL2RenderingContext.TEXTURE4`
-    pub const TEXTURE4: u32 = 0x84C4;
+    pub const TEXTURE4: f64 = 33988.0;
 
     /// `WebGL2RenderingContext.TEXTURE5`
-    pub const TEXTURE5: u32 = 0x84C5;
+    pub const TEXTURE5: f64 = 33989.0;
 
     /// `WebGL2RenderingContext.TEXTURE6`
-    pub const TEXTURE6: u32 = 0x84C6;
+    pub const TEXTURE6: f64 = 33990.0;
 
     /// `WebGL2RenderingContext.TEXTURE7`
-    pub const TEXTURE7: u32 = 0x84C7;
+    pub const TEXTURE7: f64 = 33991.0;
 
     /// `WebGL2RenderingContext.TEXTURE8`
-    pub const TEXTURE8: u32 = 0x84C8;
+    pub const TEXTURE8: f64 = 33992.0;
 
     /// `WebGL2RenderingContext.TEXTURE9`
-    pub const TEXTURE9: u32 = 0x84C9;
+    pub const TEXTURE9: f64 = 33993.0;
 
     /// `WebGL2RenderingContext.TEXTURE10`
-    pub const TEXTURE10: u32 = 0x84CA;
+    pub const TEXTURE10: f64 = 33994.0;
 
     /// `WebGL2RenderingContext.TEXTURE11`
-    pub const TEXTURE11: u32 = 0x84CB;
+    pub const TEXTURE11: f64 = 33995.0;
 
     /// `WebGL2RenderingContext.TEXTURE12`
-    pub const TEXTURE12: u32 = 0x84CC;
+    pub const TEXTURE12: f64 = 33996.0;
 
     /// `WebGL2RenderingContext.TEXTURE13`
-    pub const TEXTURE13: u32 = 0x84CD;
+    pub const TEXTURE13: f64 = 33997.0;
 
     /// `WebGL2RenderingContext.TEXTURE14`
-    pub const TEXTURE14: u32 = 0x84CE;
+    pub const TEXTURE14: f64 = 33998.0;
 
     /// `WebGL2RenderingContext.TEXTURE15`
-    pub const TEXTURE15: u32 = 0x84CF;
+    pub const TEXTURE15: f64 = 33999.0;
 
     /// `WebGL2RenderingContext.TEXTURE16`
-    pub const TEXTURE16: u32 = 0x84D0;
+    pub const TEXTURE16: f64 = 34000.0;
 
     /// `WebGL2RenderingContext.TEXTURE17`
-    pub const TEXTURE17: u32 = 0x84D1;
+    pub const TEXTURE17: f64 = 34001.0;
 
     /// `WebGL2RenderingContext.TEXTURE18`
-    pub const TEXTURE18: u32 = 0x84D2;
+    pub const TEXTURE18: f64 = 34002.0;
 
     /// `WebGL2RenderingContext.TEXTURE19`
-    pub const TEXTURE19: u32 = 0x84D3;
+    pub const TEXTURE19: f64 = 34003.0;
 
     /// `WebGL2RenderingContext.TEXTURE20`
-    pub const TEXTURE20: u32 = 0x84D4;
+    pub const TEXTURE20: f64 = 34004.0;
 
     /// `WebGL2RenderingContext.TEXTURE21`
-    pub const TEXTURE21: u32 = 0x84D5;
+    pub const TEXTURE21: f64 = 34005.0;
 
     /// `WebGL2RenderingContext.TEXTURE22`
-    pub const TEXTURE22: u32 = 0x84D6;
+    pub const TEXTURE22: f64 = 34006.0;
 
     /// `WebGL2RenderingContext.TEXTURE23`
-    pub const TEXTURE23: u32 = 0x84D7;
+    pub const TEXTURE23: f64 = 34007.0;
 
     /// `WebGL2RenderingContext.TEXTURE24`
-    pub const TEXTURE24: u32 = 0x84D8;
+    pub const TEXTURE24: f64 = 34008.0;
 
     /// `WebGL2RenderingContext.TEXTURE25`
-    pub const TEXTURE25: u32 = 0x84D9;
+    pub const TEXTURE25: f64 = 34009.0;
 
     /// `WebGL2RenderingContext.TEXTURE26`
-    pub const TEXTURE26: u32 = 0x84DA;
+    pub const TEXTURE26: f64 = 34010.0;
 
     /// `WebGL2RenderingContext.TEXTURE27`
-    pub const TEXTURE27: u32 = 0x84DB;
+    pub const TEXTURE27: f64 = 34011.0;
 
     /// `WebGL2RenderingContext.TEXTURE28`
-    pub const TEXTURE28: u32 = 0x84DC;
+    pub const TEXTURE28: f64 = 34012.0;
 
     /// `WebGL2RenderingContext.TEXTURE29`
-    pub const TEXTURE29: u32 = 0x84DD;
+    pub const TEXTURE29: f64 = 34013.0;
 
     /// `WebGL2RenderingContext.TEXTURE30`
-    pub const TEXTURE30: u32 = 0x84DE;
+    pub const TEXTURE30: f64 = 34014.0;
 
     /// `WebGL2RenderingContext.TEXTURE31`
-    pub const TEXTURE31: u32 = 0x84DF;
+    pub const TEXTURE31: f64 = 34015.0;
 
     /// `WebGL2RenderingContext.ACTIVE_TEXTURE`
-    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
+    pub const ACTIVE_TEXTURE: f64 = 34016.0;
 
     /// `WebGL2RenderingContext.REPEAT`
-    pub const REPEAT: u32 = 0x2901;
+    pub const REPEAT: f64 = 10497.0;
 
     /// `WebGL2RenderingContext.CLAMP_TO_EDGE`
-    pub const CLAMP_TO_EDGE: u32 = 0x812F;
+    pub const CLAMP_TO_EDGE: f64 = 33071.0;
 
     /// `WebGL2RenderingContext.MIRRORED_REPEAT`
-    pub const MIRRORED_REPEAT: u32 = 0x8370;
+    pub const MIRRORED_REPEAT: f64 = 33648.0;
 
     /// `WebGL2RenderingContext.FLOAT_VEC2`
-    pub const FLOAT_VEC2: u32 = 0x8B50;
+    pub const FLOAT_VEC2: f64 = 35664.0;
 
     /// `WebGL2RenderingContext.FLOAT_VEC3`
-    pub const FLOAT_VEC3: u32 = 0x8B51;
+    pub const FLOAT_VEC3: f64 = 35665.0;
 
     /// `WebGL2RenderingContext.FLOAT_VEC4`
-    pub const FLOAT_VEC4: u32 = 0x8B52;
+    pub const FLOAT_VEC4: f64 = 35666.0;
 
     /// `WebGL2RenderingContext.INT_VEC2`
-    pub const INT_VEC2: u32 = 0x8B53;
+    pub const INT_VEC2: f64 = 35667.0;
 
     /// `WebGL2RenderingContext.INT_VEC3`
-    pub const INT_VEC3: u32 = 0x8B54;
+    pub const INT_VEC3: f64 = 35668.0;
 
     /// `WebGL2RenderingContext.INT_VEC4`
-    pub const INT_VEC4: u32 = 0x8B55;
+    pub const INT_VEC4: f64 = 35669.0;
 
     /// `WebGL2RenderingContext.BOOL`
-    pub const BOOL: u32 = 0x8B56;
+    pub const BOOL: f64 = 35670.0;
 
     /// `WebGL2RenderingContext.BOOL_VEC2`
-    pub const BOOL_VEC2: u32 = 0x8B57;
+    pub const BOOL_VEC2: f64 = 35671.0;
 
     /// `WebGL2RenderingContext.BOOL_VEC3`
-    pub const BOOL_VEC3: u32 = 0x8B58;
+    pub const BOOL_VEC3: f64 = 35672.0;
 
     /// `WebGL2RenderingContext.BOOL_VEC4`
-    pub const BOOL_VEC4: u32 = 0x8B59;
+    pub const BOOL_VEC4: f64 = 35673.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2`
-    pub const FLOAT_MAT2: u32 = 0x8B5A;
+    pub const FLOAT_MAT2: f64 = 35674.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3`
-    pub const FLOAT_MAT3: u32 = 0x8B5B;
+    pub const FLOAT_MAT3: f64 = 35675.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4`
-    pub const FLOAT_MAT4: u32 = 0x8B5C;
+    pub const FLOAT_MAT4: f64 = 35676.0;
 
     /// `WebGL2RenderingContext.SAMPLER_2D`
-    pub const SAMPLER_2D: u32 = 0x8B5E;
+    pub const SAMPLER_2D: f64 = 35678.0;
 
     /// `WebGL2RenderingContext.SAMPLER_CUBE`
-    pub const SAMPLER_CUBE: u32 = 0x8B60;
+    pub const SAMPLER_CUBE: f64 = 35680.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
-    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: f64 = 34338.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
-    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: f64 = 34339.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
-    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: f64 = 34340.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
-    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: f64 = 34341.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
-    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: f64 = 34922.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
-    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: f64 = 34373.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
-    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: f64 = 34975.0;
 
     /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
-    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: f64 = 35738.0;
 
     /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
-    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: f64 = 35739.0;
 
     /// `WebGL2RenderingContext.COMPILE_STATUS`
-    pub const COMPILE_STATUS: u32 = 0x8B81;
+    pub const COMPILE_STATUS: f64 = 35713.0;
 
     /// `WebGL2RenderingContext.LOW_FLOAT`
-    pub const LOW_FLOAT: u32 = 0x8DF0;
+    pub const LOW_FLOAT: f64 = 36336.0;
 
     /// `WebGL2RenderingContext.MEDIUM_FLOAT`
-    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
+    pub const MEDIUM_FLOAT: f64 = 36337.0;
 
     /// `WebGL2RenderingContext.HIGH_FLOAT`
-    pub const HIGH_FLOAT: u32 = 0x8DF2;
+    pub const HIGH_FLOAT: f64 = 36338.0;
 
     /// `WebGL2RenderingContext.LOW_INT`
-    pub const LOW_INT: u32 = 0x8DF3;
+    pub const LOW_INT: f64 = 36339.0;
 
     /// `WebGL2RenderingContext.MEDIUM_INT`
-    pub const MEDIUM_INT: u32 = 0x8DF4;
+    pub const MEDIUM_INT: f64 = 36340.0;
 
     /// `WebGL2RenderingContext.HIGH_INT`
-    pub const HIGH_INT: u32 = 0x8DF5;
+    pub const HIGH_INT: f64 = 36341.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER`
-    pub const FRAMEBUFFER: u32 = 0x8D40;
+    pub const FRAMEBUFFER: f64 = 36160.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER`
-    pub const RENDERBUFFER: u32 = 0x8D41;
+    pub const RENDERBUFFER: f64 = 36161.0;
 
     /// `WebGL2RenderingContext.RGBA4`
-    pub const RGBA4: u32 = 0x8056;
+    pub const RGBA4: f64 = 32854.0;
 
     /// `WebGL2RenderingContext.RGB5_A1`
-    pub const RGB5_A1: u32 = 0x8057;
+    pub const RGB5_A1: f64 = 32855.0;
 
     /// `WebGL2RenderingContext.RGBA8`
-    pub const RGBA8: u32 = 0x8058;
+    pub const RGBA8: f64 = 32856.0;
 
     /// `WebGL2RenderingContext.RGB565`
-    pub const RGB565: u32 = 0x8D62;
+    pub const RGB565: f64 = 36194.0;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT16`
-    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
+    pub const DEPTH_COMPONENT16: f64 = 33189.0;
 
     /// `WebGL2RenderingContext.STENCIL_INDEX8`
-    pub const STENCIL_INDEX8: u32 = 0x8D48;
+    pub const STENCIL_INDEX8: f64 = 36168.0;
 
     /// `WebGL2RenderingContext.DEPTH_STENCIL`
-    pub const DEPTH_STENCIL: u32 = 0x84F9;
+    pub const DEPTH_STENCIL: f64 = 34041.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_WIDTH`
-    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
+    pub const RENDERBUFFER_WIDTH: f64 = 36162.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_HEIGHT`
-    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
+    pub const RENDERBUFFER_HEIGHT: f64 = 36163.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
-    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
+    pub const RENDERBUFFER_INTERNAL_FORMAT: f64 = 36164.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_RED_SIZE`
-    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
+    pub const RENDERBUFFER_RED_SIZE: f64 = 36176.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_GREEN_SIZE`
-    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
+    pub const RENDERBUFFER_GREEN_SIZE: f64 = 36177.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_BLUE_SIZE`
-    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
+    pub const RENDERBUFFER_BLUE_SIZE: f64 = 36178.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_ALPHA_SIZE`
-    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
+    pub const RENDERBUFFER_ALPHA_SIZE: f64 = 36179.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_DEPTH_SIZE`
-    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
+    pub const RENDERBUFFER_DEPTH_SIZE: f64 = 36180.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_STENCIL_SIZE`
-    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
+    pub const RENDERBUFFER_STENCIL_SIZE: f64 = 36181.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: f64 = 36048.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: f64 = 36049.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: f64 = 36050.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: f64 = 36051.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT0`
-    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
+    pub const COLOR_ATTACHMENT0: f64 = 36064.0;
 
     /// `WebGL2RenderingContext.DEPTH_ATTACHMENT`
-    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
+    pub const DEPTH_ATTACHMENT: f64 = 36096.0;
 
     /// `WebGL2RenderingContext.STENCIL_ATTACHMENT`
-    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
+    pub const STENCIL_ATTACHMENT: f64 = 36128.0;
 
     /// `WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT`
-    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
+    pub const DEPTH_STENCIL_ATTACHMENT: f64 = 33306.0;
 
     /// `WebGL2RenderingContext.NONE`
-    pub const NONE: u32 = 0;
+    pub const NONE: f64 = 0.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_COMPLETE`
-    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
+    pub const FRAMEBUFFER_COMPLETE: f64 = 36053.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: f64 = 36054.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: f64 = 36055.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
-    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: f64 = 36057.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_UNSUPPORTED`
-    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
+    pub const FRAMEBUFFER_UNSUPPORTED: f64 = 36061.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_BINDING`
-    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+    pub const FRAMEBUFFER_BINDING: f64 = 36006.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_BINDING`
-    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
+    pub const RENDERBUFFER_BINDING: f64 = 36007.0;
 
     /// `WebGL2RenderingContext.MAX_RENDERBUFFER_SIZE`
-    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
+    pub const MAX_RENDERBUFFER_SIZE: f64 = 34024.0;
 
     /// `WebGL2RenderingContext.INVALID_FRAMEBUFFER_OPERATION`
-    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
+    pub const INVALID_FRAMEBUFFER_OPERATION: f64 = 1286.0;
 
     /// `WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL`
-    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
+    pub const UNPACK_FLIP_Y_WEBGL: f64 = 37440.0;
 
     /// `WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
-    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: f64 = 37441.0;
 
     /// `WebGL2RenderingContext.CONTEXT_LOST_WEBGL`
-    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
+    pub const CONTEXT_LOST_WEBGL: f64 = 37442.0;
 
     /// `WebGL2RenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
-    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: f64 = 37443.0;
 
     /// `WebGL2RenderingContext.BROWSER_DEFAULT_WEBGL`
-    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
+    pub const BROWSER_DEFAULT_WEBGL: f64 = 37444.0;
 
     /// `WebGL2RenderingContext.READ_BUFFER`
-    pub const READ_BUFFER: u32 = 0x0C02;
+    pub const READ_BUFFER: f64 = 3074.0;
 
     /// `WebGL2RenderingContext.UNPACK_ROW_LENGTH`
-    pub const UNPACK_ROW_LENGTH: u32 = 0x0CF2;
+    pub const UNPACK_ROW_LENGTH: f64 = 3314.0;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_ROWS`
-    pub const UNPACK_SKIP_ROWS: u32 = 0x0CF3;
+    pub const UNPACK_SKIP_ROWS: f64 = 3315.0;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_PIXELS`
-    pub const UNPACK_SKIP_PIXELS: u32 = 0x0CF4;
+    pub const UNPACK_SKIP_PIXELS: f64 = 3316.0;
 
     /// `WebGL2RenderingContext.PACK_ROW_LENGTH`
-    pub const PACK_ROW_LENGTH: u32 = 0x0D02;
+    pub const PACK_ROW_LENGTH: f64 = 3330.0;
 
     /// `WebGL2RenderingContext.PACK_SKIP_ROWS`
-    pub const PACK_SKIP_ROWS: u32 = 0x0D03;
+    pub const PACK_SKIP_ROWS: f64 = 3331.0;
 
     /// `WebGL2RenderingContext.PACK_SKIP_PIXELS`
-    pub const PACK_SKIP_PIXELS: u32 = 0x0D04;
+    pub const PACK_SKIP_PIXELS: f64 = 3332.0;
 
     /// `WebGL2RenderingContext.COLOR`
-    pub const COLOR: u32 = 0x1800;
+    pub const COLOR: f64 = 6144.0;
 
     /// `WebGL2RenderingContext.DEPTH`
-    pub const DEPTH: u32 = 0x1801;
+    pub const DEPTH: f64 = 6145.0;
 
     /// `WebGL2RenderingContext.STENCIL`
-    pub const STENCIL: u32 = 0x1802;
+    pub const STENCIL: f64 = 6146.0;
 
     /// `WebGL2RenderingContext.RED`
-    pub const RED: u32 = 0x1903;
+    pub const RED: f64 = 6403.0;
 
     /// `WebGL2RenderingContext.RGB8`
-    pub const RGB8: u32 = 0x8051;
+    pub const RGB8: f64 = 32849.0;
 
     /// `WebGL2RenderingContext.RGB10_A2`
-    pub const RGB10_A2: u32 = 0x8059;
+    pub const RGB10_A2: f64 = 32857.0;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_3D`
-    pub const TEXTURE_BINDING_3D: u32 = 0x806A;
+    pub const TEXTURE_BINDING_3D: f64 = 32874.0;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_IMAGES`
-    pub const UNPACK_SKIP_IMAGES: u32 = 0x806D;
+    pub const UNPACK_SKIP_IMAGES: f64 = 32877.0;
 
     /// `WebGL2RenderingContext.UNPACK_IMAGE_HEIGHT`
-    pub const UNPACK_IMAGE_HEIGHT: u32 = 0x806E;
+    pub const UNPACK_IMAGE_HEIGHT: f64 = 32878.0;
 
     /// `WebGL2RenderingContext.TEXTURE_3D`
-    pub const TEXTURE_3D: u32 = 0x806F;
+    pub const TEXTURE_3D: f64 = 32879.0;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_R`
-    pub const TEXTURE_WRAP_R: u32 = 0x8072;
+    pub const TEXTURE_WRAP_R: f64 = 32882.0;
 
     /// `WebGL2RenderingContext.MAX_3D_TEXTURE_SIZE`
-    pub const MAX_3D_TEXTURE_SIZE: u32 = 0x8073;
+    pub const MAX_3D_TEXTURE_SIZE: f64 = 32883.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_2_10_10_10_REV`
-    pub const UNSIGNED_INT_2_10_10_10_REV: u32 = 0x8368;
+    pub const UNSIGNED_INT_2_10_10_10_REV: f64 = 33640.0;
 
     /// `WebGL2RenderingContext.MAX_ELEMENTS_VERTICES`
-    pub const MAX_ELEMENTS_VERTICES: u32 = 0x80E8;
+    pub const MAX_ELEMENTS_VERTICES: f64 = 33000.0;
 
     /// `WebGL2RenderingContext.MAX_ELEMENTS_INDICES`
-    pub const MAX_ELEMENTS_INDICES: u32 = 0x80E9;
+    pub const MAX_ELEMENTS_INDICES: f64 = 33001.0;
 
     /// `WebGL2RenderingContext.TEXTURE_MIN_LOD`
-    pub const TEXTURE_MIN_LOD: u32 = 0x813A;
+    pub const TEXTURE_MIN_LOD: f64 = 33082.0;
 
     /// `WebGL2RenderingContext.TEXTURE_MAX_LOD`
-    pub const TEXTURE_MAX_LOD: u32 = 0x813B;
+    pub const TEXTURE_MAX_LOD: f64 = 33083.0;
 
     /// `WebGL2RenderingContext.TEXTURE_BASE_LEVEL`
-    pub const TEXTURE_BASE_LEVEL: u32 = 0x813C;
+    pub const TEXTURE_BASE_LEVEL: f64 = 33084.0;
 
     /// `WebGL2RenderingContext.TEXTURE_MAX_LEVEL`
-    pub const TEXTURE_MAX_LEVEL: u32 = 0x813D;
+    pub const TEXTURE_MAX_LEVEL: f64 = 33085.0;
 
     /// `WebGL2RenderingContext.MIN`
-    pub const MIN: u32 = 0x8007;
+    pub const MIN: f64 = 32775.0;
 
     /// `WebGL2RenderingContext.MAX`
-    pub const MAX: u32 = 0x8008;
+    pub const MAX: f64 = 32776.0;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT24`
-    pub const DEPTH_COMPONENT24: u32 = 0x81A6;
+    pub const DEPTH_COMPONENT24: f64 = 33190.0;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_LOD_BIAS`
-    pub const MAX_TEXTURE_LOD_BIAS: u32 = 0x84FD;
+    pub const MAX_TEXTURE_LOD_BIAS: f64 = 34045.0;
 
     /// `WebGL2RenderingContext.TEXTURE_COMPARE_MODE`
-    pub const TEXTURE_COMPARE_MODE: u32 = 0x884C;
+    pub const TEXTURE_COMPARE_MODE: f64 = 34892.0;
 
     /// `WebGL2RenderingContext.TEXTURE_COMPARE_FUNC`
-    pub const TEXTURE_COMPARE_FUNC: u32 = 0x884D;
+    pub const TEXTURE_COMPARE_FUNC: f64 = 34893.0;
 
     /// `WebGL2RenderingContext.CURRENT_QUERY`
-    pub const CURRENT_QUERY: u32 = 0x8865;
+    pub const CURRENT_QUERY: f64 = 34917.0;
 
     /// `WebGL2RenderingContext.QUERY_RESULT`
-    pub const QUERY_RESULT: u32 = 0x8866;
+    pub const QUERY_RESULT: f64 = 34918.0;
 
     /// `WebGL2RenderingContext.QUERY_RESULT_AVAILABLE`
-    pub const QUERY_RESULT_AVAILABLE: u32 = 0x8867;
+    pub const QUERY_RESULT_AVAILABLE: f64 = 34919.0;
 
     /// `WebGL2RenderingContext.STREAM_READ`
-    pub const STREAM_READ: u32 = 0x88E1;
+    pub const STREAM_READ: f64 = 35041.0;
 
     /// `WebGL2RenderingContext.STREAM_COPY`
-    pub const STREAM_COPY: u32 = 0x88E2;
+    pub const STREAM_COPY: f64 = 35042.0;
 
     /// `WebGL2RenderingContext.STATIC_READ`
-    pub const STATIC_READ: u32 = 0x88E5;
+    pub const STATIC_READ: f64 = 35045.0;
 
     /// `WebGL2RenderingContext.STATIC_COPY`
-    pub const STATIC_COPY: u32 = 0x88E6;
+    pub const STATIC_COPY: f64 = 35046.0;
 
     /// `WebGL2RenderingContext.DYNAMIC_READ`
-    pub const DYNAMIC_READ: u32 = 0x88E9;
+    pub const DYNAMIC_READ: f64 = 35049.0;
 
     /// `WebGL2RenderingContext.DYNAMIC_COPY`
-    pub const DYNAMIC_COPY: u32 = 0x88EA;
+    pub const DYNAMIC_COPY: f64 = 35050.0;
 
     /// `WebGL2RenderingContext.MAX_DRAW_BUFFERS`
-    pub const MAX_DRAW_BUFFERS: u32 = 0x8824;
+    pub const MAX_DRAW_BUFFERS: f64 = 34852.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER0`
-    pub const DRAW_BUFFER0: u32 = 0x8825;
+    pub const DRAW_BUFFER0: f64 = 34853.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER1`
-    pub const DRAW_BUFFER1: u32 = 0x8826;
+    pub const DRAW_BUFFER1: f64 = 34854.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER2`
-    pub const DRAW_BUFFER2: u32 = 0x8827;
+    pub const DRAW_BUFFER2: f64 = 34855.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER3`
-    pub const DRAW_BUFFER3: u32 = 0x8828;
+    pub const DRAW_BUFFER3: f64 = 34856.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER4`
-    pub const DRAW_BUFFER4: u32 = 0x8829;
+    pub const DRAW_BUFFER4: f64 = 34857.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER5`
-    pub const DRAW_BUFFER5: u32 = 0x882A;
+    pub const DRAW_BUFFER5: f64 = 34858.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER6`
-    pub const DRAW_BUFFER6: u32 = 0x882B;
+    pub const DRAW_BUFFER6: f64 = 34859.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER7`
-    pub const DRAW_BUFFER7: u32 = 0x882C;
+    pub const DRAW_BUFFER7: f64 = 34860.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER8`
-    pub const DRAW_BUFFER8: u32 = 0x882D;
+    pub const DRAW_BUFFER8: f64 = 34861.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER9`
-    pub const DRAW_BUFFER9: u32 = 0x882E;
+    pub const DRAW_BUFFER9: f64 = 34862.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER10`
-    pub const DRAW_BUFFER10: u32 = 0x882F;
+    pub const DRAW_BUFFER10: f64 = 34863.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER11`
-    pub const DRAW_BUFFER11: u32 = 0x8830;
+    pub const DRAW_BUFFER11: f64 = 34864.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER12`
-    pub const DRAW_BUFFER12: u32 = 0x8831;
+    pub const DRAW_BUFFER12: f64 = 34865.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER13`
-    pub const DRAW_BUFFER13: u32 = 0x8832;
+    pub const DRAW_BUFFER13: f64 = 34866.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER14`
-    pub const DRAW_BUFFER14: u32 = 0x8833;
+    pub const DRAW_BUFFER14: f64 = 34867.0;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER15`
-    pub const DRAW_BUFFER15: u32 = 0x8834;
+    pub const DRAW_BUFFER15: f64 = 34868.0;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_COMPONENTS`
-    pub const MAX_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8B49;
+    pub const MAX_FRAGMENT_UNIFORM_COMPONENTS: f64 = 35657.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_COMPONENTS`
-    pub const MAX_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8B4A;
+    pub const MAX_VERTEX_UNIFORM_COMPONENTS: f64 = 35658.0;
 
     /// `WebGL2RenderingContext.SAMPLER_3D`
-    pub const SAMPLER_3D: u32 = 0x8B5F;
+    pub const SAMPLER_3D: f64 = 35679.0;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_SHADOW`
-    pub const SAMPLER_2D_SHADOW: u32 = 0x8B62;
+    pub const SAMPLER_2D_SHADOW: f64 = 35682.0;
 
     /// `WebGL2RenderingContext.FRAGMENT_SHADER_DERIVATIVE_HINT`
-    pub const FRAGMENT_SHADER_DERIVATIVE_HINT: u32 = 0x8B8B;
+    pub const FRAGMENT_SHADER_DERIVATIVE_HINT: f64 = 35723.0;
 
     /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER`
-    pub const PIXEL_PACK_BUFFER: u32 = 0x88EB;
+    pub const PIXEL_PACK_BUFFER: f64 = 35051.0;
 
     /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER`
-    pub const PIXEL_UNPACK_BUFFER: u32 = 0x88EC;
+    pub const PIXEL_UNPACK_BUFFER: f64 = 35052.0;
 
     /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER_BINDING`
-    pub const PIXEL_PACK_BUFFER_BINDING: u32 = 0x88ED;
+    pub const PIXEL_PACK_BUFFER_BINDING: f64 = 35053.0;
 
     /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER_BINDING`
-    pub const PIXEL_UNPACK_BUFFER_BINDING: u32 = 0x88EF;
+    pub const PIXEL_UNPACK_BUFFER_BINDING: f64 = 35055.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2x3`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT2x3: u32 = 0x8B65;
+    pub const FLOAT_MAT2x3: f64 = 35685.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2x4`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT2x4: u32 = 0x8B66;
+    pub const FLOAT_MAT2x4: f64 = 35686.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3x2`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT3x2: u32 = 0x8B67;
+    pub const FLOAT_MAT3x2: f64 = 35687.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3x4`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT3x4: u32 = 0x8B68;
+    pub const FLOAT_MAT3x4: f64 = 35688.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4x2`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT4x2: u32 = 0x8B69;
+    pub const FLOAT_MAT4x2: f64 = 35689.0;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4x3`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT4x3: u32 = 0x8B6A;
+    pub const FLOAT_MAT4x3: f64 = 35690.0;
 
     /// `WebGL2RenderingContext.SRGB`
-    pub const SRGB: u32 = 0x8C40;
+    pub const SRGB: f64 = 35904.0;
 
     /// `WebGL2RenderingContext.SRGB8`
-    pub const SRGB8: u32 = 0x8C41;
+    pub const SRGB8: f64 = 35905.0;
 
     /// `WebGL2RenderingContext.SRGB8_ALPHA8`
-    pub const SRGB8_ALPHA8: u32 = 0x8C43;
+    pub const SRGB8_ALPHA8: f64 = 35907.0;
 
     /// `WebGL2RenderingContext.COMPARE_REF_TO_TEXTURE`
-    pub const COMPARE_REF_TO_TEXTURE: u32 = 0x884E;
+    pub const COMPARE_REF_TO_TEXTURE: f64 = 34894.0;
 
     /// `WebGL2RenderingContext.RGBA32F`
-    pub const RGBA32F: u32 = 0x8814;
+    pub const RGBA32F: f64 = 34836.0;
 
     /// `WebGL2RenderingContext.RGB32F`
-    pub const RGB32F: u32 = 0x8815;
+    pub const RGB32F: f64 = 34837.0;
 
     /// `WebGL2RenderingContext.RGBA16F`
-    pub const RGBA16F: u32 = 0x881A;
+    pub const RGBA16F: f64 = 34842.0;
 
     /// `WebGL2RenderingContext.RGB16F`
-    pub const RGB16F: u32 = 0x881B;
+    pub const RGB16F: f64 = 34843.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_INTEGER`
-    pub const VERTEX_ATTRIB_ARRAY_INTEGER: u32 = 0x88FD;
+    pub const VERTEX_ATTRIB_ARRAY_INTEGER: f64 = 35069.0;
 
     /// `WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS`
-    pub const MAX_ARRAY_TEXTURE_LAYERS: u32 = 0x88FF;
+    pub const MAX_ARRAY_TEXTURE_LAYERS: f64 = 35071.0;
 
     /// `WebGL2RenderingContext.MIN_PROGRAM_TEXEL_OFFSET`
-    pub const MIN_PROGRAM_TEXEL_OFFSET: u32 = 0x8904;
+    pub const MIN_PROGRAM_TEXEL_OFFSET: f64 = 35076.0;
 
     /// `WebGL2RenderingContext.MAX_PROGRAM_TEXEL_OFFSET`
-    pub const MAX_PROGRAM_TEXEL_OFFSET: u32 = 0x8905;
+    pub const MAX_PROGRAM_TEXEL_OFFSET: f64 = 35077.0;
 
     /// `WebGL2RenderingContext.MAX_VARYING_COMPONENTS`
-    pub const MAX_VARYING_COMPONENTS: u32 = 0x8B4B;
+    pub const MAX_VARYING_COMPONENTS: f64 = 35659.0;
 
     /// `WebGL2RenderingContext.TEXTURE_2D_ARRAY`
-    pub const TEXTURE_2D_ARRAY: u32 = 0x8C1A;
+    pub const TEXTURE_2D_ARRAY: f64 = 35866.0;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_2D_ARRAY`
-    pub const TEXTURE_BINDING_2D_ARRAY: u32 = 0x8C1D;
+    pub const TEXTURE_BINDING_2D_ARRAY: f64 = 35869.0;
 
     /// `WebGL2RenderingContext.R11F_G11F_B10F`
-    pub const R11F_G11F_B10F: u32 = 0x8C3A;
+    pub const R11F_G11F_B10F: f64 = 35898.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_10F_11F_11F_REV`
-    pub const UNSIGNED_INT_10F_11F_11F_REV: u32 = 0x8C3B;
+    pub const UNSIGNED_INT_10F_11F_11F_REV: f64 = 35899.0;
 
     /// `WebGL2RenderingContext.RGB9_E5`
-    pub const RGB9_E5: u32 = 0x8C3D;
+    pub const RGB9_E5: f64 = 35901.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_5_9_9_9_REV`
-    pub const UNSIGNED_INT_5_9_9_9_REV: u32 = 0x8C3E;
+    pub const UNSIGNED_INT_5_9_9_9_REV: f64 = 35902.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_MODE`
-    pub const TRANSFORM_FEEDBACK_BUFFER_MODE: u32 = 0x8C7F;
+    pub const TRANSFORM_FEEDBACK_BUFFER_MODE: f64 = 35967.0;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS`
-    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: u32 = 0x8C80;
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: f64 = 35968.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_VARYINGS`
-    pub const TRANSFORM_FEEDBACK_VARYINGS: u32 = 0x8C83;
+    pub const TRANSFORM_FEEDBACK_VARYINGS: f64 = 35971.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_START`
-    pub const TRANSFORM_FEEDBACK_BUFFER_START: u32 = 0x8C84;
+    pub const TRANSFORM_FEEDBACK_BUFFER_START: f64 = 35972.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_SIZE`
-    pub const TRANSFORM_FEEDBACK_BUFFER_SIZE: u32 = 0x8C85;
+    pub const TRANSFORM_FEEDBACK_BUFFER_SIZE: f64 = 35973.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN`
-    pub const TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: u32 = 0x8C88;
+    pub const TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: f64 = 35976.0;
 
     /// `WebGL2RenderingContext.RASTERIZER_DISCARD`
-    pub const RASTERIZER_DISCARD: u32 = 0x8C89;
+    pub const RASTERIZER_DISCARD: f64 = 35977.0;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS`
-    pub const MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: u32 = 0x8C8A;
+    pub const MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: f64 = 35978.0;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS`
-    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: u32 = 0x8C8B;
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: f64 = 35979.0;
 
     /// `WebGL2RenderingContext.INTERLEAVED_ATTRIBS`
-    pub const INTERLEAVED_ATTRIBS: u32 = 0x8C8C;
+    pub const INTERLEAVED_ATTRIBS: f64 = 35980.0;
 
     /// `WebGL2RenderingContext.SEPARATE_ATTRIBS`
-    pub const SEPARATE_ATTRIBS: u32 = 0x8C8D;
+    pub const SEPARATE_ATTRIBS: f64 = 35981.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER`
-    pub const TRANSFORM_FEEDBACK_BUFFER: u32 = 0x8C8E;
+    pub const TRANSFORM_FEEDBACK_BUFFER: f64 = 35982.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_BINDING`
-    pub const TRANSFORM_FEEDBACK_BUFFER_BINDING: u32 = 0x8C8F;
+    pub const TRANSFORM_FEEDBACK_BUFFER_BINDING: f64 = 35983.0;
 
     /// `WebGL2RenderingContext.RGBA32UI`
-    pub const RGBA32UI: u32 = 0x8D70;
+    pub const RGBA32UI: f64 = 36208.0;
 
     /// `WebGL2RenderingContext.RGB32UI`
-    pub const RGB32UI: u32 = 0x8D71;
+    pub const RGB32UI: f64 = 36209.0;
 
     /// `WebGL2RenderingContext.RGBA16UI`
-    pub const RGBA16UI: u32 = 0x8D76;
+    pub const RGBA16UI: f64 = 36214.0;
 
     /// `WebGL2RenderingContext.RGB16UI`
-    pub const RGB16UI: u32 = 0x8D77;
+    pub const RGB16UI: f64 = 36215.0;
 
     /// `WebGL2RenderingContext.RGBA8UI`
-    pub const RGBA8UI: u32 = 0x8D7C;
+    pub const RGBA8UI: f64 = 36220.0;
 
     /// `WebGL2RenderingContext.RGB8UI`
-    pub const RGB8UI: u32 = 0x8D7D;
+    pub const RGB8UI: f64 = 36221.0;
 
     /// `WebGL2RenderingContext.RGBA32I`
-    pub const RGBA32I: u32 = 0x8D82;
+    pub const RGBA32I: f64 = 36226.0;
 
     /// `WebGL2RenderingContext.RGB32I`
-    pub const RGB32I: u32 = 0x8D83;
+    pub const RGB32I: f64 = 36227.0;
 
     /// `WebGL2RenderingContext.RGBA16I`
-    pub const RGBA16I: u32 = 0x8D88;
+    pub const RGBA16I: f64 = 36232.0;
 
     /// `WebGL2RenderingContext.RGB16I`
-    pub const RGB16I: u32 = 0x8D89;
+    pub const RGB16I: f64 = 36233.0;
 
     /// `WebGL2RenderingContext.RGBA8I`
-    pub const RGBA8I: u32 = 0x8D8E;
+    pub const RGBA8I: f64 = 36238.0;
 
     /// `WebGL2RenderingContext.RGB8I`
-    pub const RGB8I: u32 = 0x8D8F;
+    pub const RGB8I: f64 = 36239.0;
 
     /// `WebGL2RenderingContext.RED_INTEGER`
-    pub const RED_INTEGER: u32 = 0x8D94;
+    pub const RED_INTEGER: f64 = 36244.0;
 
     /// `WebGL2RenderingContext.RGB_INTEGER`
-    pub const RGB_INTEGER: u32 = 0x8D98;
+    pub const RGB_INTEGER: f64 = 36248.0;
 
     /// `WebGL2RenderingContext.RGBA_INTEGER`
-    pub const RGBA_INTEGER: u32 = 0x8D99;
+    pub const RGBA_INTEGER: f64 = 36249.0;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY`
-    pub const SAMPLER_2D_ARRAY: u32 = 0x8DC1;
+    pub const SAMPLER_2D_ARRAY: f64 = 36289.0;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY_SHADOW`
-    pub const SAMPLER_2D_ARRAY_SHADOW: u32 = 0x8DC4;
+    pub const SAMPLER_2D_ARRAY_SHADOW: f64 = 36292.0;
 
     /// `WebGL2RenderingContext.SAMPLER_CUBE_SHADOW`
-    pub const SAMPLER_CUBE_SHADOW: u32 = 0x8DC5;
+    pub const SAMPLER_CUBE_SHADOW: f64 = 36293.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC2`
-    pub const UNSIGNED_INT_VEC2: u32 = 0x8DC6;
+    pub const UNSIGNED_INT_VEC2: f64 = 36294.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC3`
-    pub const UNSIGNED_INT_VEC3: u32 = 0x8DC7;
+    pub const UNSIGNED_INT_VEC3: f64 = 36295.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC4`
-    pub const UNSIGNED_INT_VEC4: u32 = 0x8DC8;
+    pub const UNSIGNED_INT_VEC4: f64 = 36296.0;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_2D`
-    pub const INT_SAMPLER_2D: u32 = 0x8DCA;
+    pub const INT_SAMPLER_2D: f64 = 36298.0;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_3D`
-    pub const INT_SAMPLER_3D: u32 = 0x8DCB;
+    pub const INT_SAMPLER_3D: f64 = 36299.0;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_CUBE`
-    pub const INT_SAMPLER_CUBE: u32 = 0x8DCC;
+    pub const INT_SAMPLER_CUBE: f64 = 36300.0;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_2D_ARRAY`
-    pub const INT_SAMPLER_2D_ARRAY: u32 = 0x8DCF;
+    pub const INT_SAMPLER_2D_ARRAY: f64 = 36303.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D`
-    pub const UNSIGNED_INT_SAMPLER_2D: u32 = 0x8DD2;
+    pub const UNSIGNED_INT_SAMPLER_2D: f64 = 36306.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_3D`
-    pub const UNSIGNED_INT_SAMPLER_3D: u32 = 0x8DD3;
+    pub const UNSIGNED_INT_SAMPLER_3D: f64 = 36307.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_CUBE`
-    pub const UNSIGNED_INT_SAMPLER_CUBE: u32 = 0x8DD4;
+    pub const UNSIGNED_INT_SAMPLER_CUBE: f64 = 36308.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D_ARRAY`
-    pub const UNSIGNED_INT_SAMPLER_2D_ARRAY: u32 = 0x8DD7;
+    pub const UNSIGNED_INT_SAMPLER_2D_ARRAY: f64 = 36311.0;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT32F`
-    pub const DEPTH_COMPONENT32F: u32 = 0x8CAC;
+    pub const DEPTH_COMPONENT32F: f64 = 36012.0;
 
     /// `WebGL2RenderingContext.DEPTH32F_STENCIL8`
-    pub const DEPTH32F_STENCIL8: u32 = 0x8CAD;
+    pub const DEPTH32F_STENCIL8: f64 = 36013.0;
 
     /// `WebGL2RenderingContext.FLOAT_32_UNSIGNED_INT_24_8_REV`
-    pub const FLOAT_32_UNSIGNED_INT_24_8_REV: u32 = 0x8DAD;
+    pub const FLOAT_32_UNSIGNED_INT_24_8_REV: f64 = 36269.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING`
-    pub const FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: u32 = 0x8210;
+    pub const FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: f64 = 33296.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: u32 = 0x8211;
+    pub const FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: f64 = 33297.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_RED_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_RED_SIZE: u32 = 0x8212;
+    pub const FRAMEBUFFER_ATTACHMENT_RED_SIZE: f64 = 33298.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: u32 = 0x8213;
+    pub const FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: f64 = 33299.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: u32 = 0x8214;
+    pub const FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: f64 = 33300.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: u32 = 0x8215;
+    pub const FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: f64 = 33301.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: u32 = 0x8216;
+    pub const FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: f64 = 33302.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: u32 = 0x8217;
+    pub const FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: f64 = 33303.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_DEFAULT`
-    pub const FRAMEBUFFER_DEFAULT: u32 = 0x8218;
+    pub const FRAMEBUFFER_DEFAULT: f64 = 33304.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_24_8`
-    pub const UNSIGNED_INT_24_8: u32 = 0x84FA;
+    pub const UNSIGNED_INT_24_8: f64 = 34042.0;
 
     /// `WebGL2RenderingContext.DEPTH24_STENCIL8`
-    pub const DEPTH24_STENCIL8: u32 = 0x88F0;
+    pub const DEPTH24_STENCIL8: f64 = 35056.0;
 
     /// `WebGL2RenderingContext.UNSIGNED_NORMALIZED`
-    pub const UNSIGNED_NORMALIZED: u32 = 0x8C17;
+    pub const UNSIGNED_NORMALIZED: f64 = 35863.0;
 
     /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER_BINDING`
-    pub const DRAW_FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+    pub const DRAW_FRAMEBUFFER_BINDING: f64 = 36006.0;
 
     /// `WebGL2RenderingContext.READ_FRAMEBUFFER`
-    pub const READ_FRAMEBUFFER: u32 = 0x8CA8;
+    pub const READ_FRAMEBUFFER: f64 = 36008.0;
 
     /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER`
-    pub const DRAW_FRAMEBUFFER: u32 = 0x8CA9;
+    pub const DRAW_FRAMEBUFFER: f64 = 36009.0;
 
     /// `WebGL2RenderingContext.READ_FRAMEBUFFER_BINDING`
-    pub const READ_FRAMEBUFFER_BINDING: u32 = 0x8CAA;
+    pub const READ_FRAMEBUFFER_BINDING: f64 = 36010.0;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_SAMPLES`
-    pub const RENDERBUFFER_SAMPLES: u32 = 0x8CAB;
+    pub const RENDERBUFFER_SAMPLES: f64 = 36011.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: u32 = 0x8CD4;
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: f64 = 36052.0;
 
     /// `WebGL2RenderingContext.MAX_COLOR_ATTACHMENTS`
-    pub const MAX_COLOR_ATTACHMENTS: u32 = 0x8CDF;
+    pub const MAX_COLOR_ATTACHMENTS: f64 = 36063.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT1`
-    pub const COLOR_ATTACHMENT1: u32 = 0x8CE1;
+    pub const COLOR_ATTACHMENT1: f64 = 36065.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT2`
-    pub const COLOR_ATTACHMENT2: u32 = 0x8CE2;
+    pub const COLOR_ATTACHMENT2: f64 = 36066.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT3`
-    pub const COLOR_ATTACHMENT3: u32 = 0x8CE3;
+    pub const COLOR_ATTACHMENT3: f64 = 36067.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT4`
-    pub const COLOR_ATTACHMENT4: u32 = 0x8CE4;
+    pub const COLOR_ATTACHMENT4: f64 = 36068.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT5`
-    pub const COLOR_ATTACHMENT5: u32 = 0x8CE5;
+    pub const COLOR_ATTACHMENT5: f64 = 36069.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT6`
-    pub const COLOR_ATTACHMENT6: u32 = 0x8CE6;
+    pub const COLOR_ATTACHMENT6: f64 = 36070.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT7`
-    pub const COLOR_ATTACHMENT7: u32 = 0x8CE7;
+    pub const COLOR_ATTACHMENT7: f64 = 36071.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT8`
-    pub const COLOR_ATTACHMENT8: u32 = 0x8CE8;
+    pub const COLOR_ATTACHMENT8: f64 = 36072.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT9`
-    pub const COLOR_ATTACHMENT9: u32 = 0x8CE9;
+    pub const COLOR_ATTACHMENT9: f64 = 36073.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT10`
-    pub const COLOR_ATTACHMENT10: u32 = 0x8CEA;
+    pub const COLOR_ATTACHMENT10: f64 = 36074.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT11`
-    pub const COLOR_ATTACHMENT11: u32 = 0x8CEB;
+    pub const COLOR_ATTACHMENT11: f64 = 36075.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT12`
-    pub const COLOR_ATTACHMENT12: u32 = 0x8CEC;
+    pub const COLOR_ATTACHMENT12: f64 = 36076.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT13`
-    pub const COLOR_ATTACHMENT13: u32 = 0x8CED;
+    pub const COLOR_ATTACHMENT13: f64 = 36077.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT14`
-    pub const COLOR_ATTACHMENT14: u32 = 0x8CEE;
+    pub const COLOR_ATTACHMENT14: f64 = 36078.0;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT15`
-    pub const COLOR_ATTACHMENT15: u32 = 0x8CEF;
+    pub const COLOR_ATTACHMENT15: f64 = 36079.0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE`
-    pub const FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: u32 = 0x8D56;
+    pub const FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: f64 = 36182.0;
 
     /// `WebGL2RenderingContext.MAX_SAMPLES`
-    pub const MAX_SAMPLES: u32 = 0x8D57;
+    pub const MAX_SAMPLES: f64 = 36183.0;
 
     /// `WebGL2RenderingContext.HALF_FLOAT`
-    pub const HALF_FLOAT: u32 = 0x140B;
+    pub const HALF_FLOAT: f64 = 5131.0;
 
     /// `WebGL2RenderingContext.RG`
-    pub const RG: u32 = 0x8227;
+    pub const RG: f64 = 33319.0;
 
     /// `WebGL2RenderingContext.RG_INTEGER`
-    pub const RG_INTEGER: u32 = 0x8228;
+    pub const RG_INTEGER: f64 = 33320.0;
 
     /// `WebGL2RenderingContext.R8`
-    pub const R8: u32 = 0x8229;
+    pub const R8: f64 = 33321.0;
 
     /// `WebGL2RenderingContext.RG8`
-    pub const RG8: u32 = 0x822B;
+    pub const RG8: f64 = 33323.0;
 
     /// `WebGL2RenderingContext.R16F`
-    pub const R16F: u32 = 0x822D;
+    pub const R16F: f64 = 33325.0;
 
     /// `WebGL2RenderingContext.R32F`
-    pub const R32F: u32 = 0x822E;
+    pub const R32F: f64 = 33326.0;
 
     /// `WebGL2RenderingContext.RG16F`
-    pub const RG16F: u32 = 0x822F;
+    pub const RG16F: f64 = 33327.0;
 
     /// `WebGL2RenderingContext.RG32F`
-    pub const RG32F: u32 = 0x8230;
+    pub const RG32F: f64 = 33328.0;
 
     /// `WebGL2RenderingContext.R8I`
-    pub const R8I: u32 = 0x8231;
+    pub const R8I: f64 = 33329.0;
 
     /// `WebGL2RenderingContext.R8UI`
-    pub const R8UI: u32 = 0x8232;
+    pub const R8UI: f64 = 33330.0;
 
     /// `WebGL2RenderingContext.R16I`
-    pub const R16I: u32 = 0x8233;
+    pub const R16I: f64 = 33331.0;
 
     /// `WebGL2RenderingContext.R16UI`
-    pub const R16UI: u32 = 0x8234;
+    pub const R16UI: f64 = 33332.0;
 
     /// `WebGL2RenderingContext.R32I`
-    pub const R32I: u32 = 0x8235;
+    pub const R32I: f64 = 33333.0;
 
     /// `WebGL2RenderingContext.R32UI`
-    pub const R32UI: u32 = 0x8236;
+    pub const R32UI: f64 = 33334.0;
 
     /// `WebGL2RenderingContext.RG8I`
-    pub const RG8I: u32 = 0x8237;
+    pub const RG8I: f64 = 33335.0;
 
     /// `WebGL2RenderingContext.RG8UI`
-    pub const RG8UI: u32 = 0x8238;
+    pub const RG8UI: f64 = 33336.0;
 
     /// `WebGL2RenderingContext.RG16I`
-    pub const RG16I: u32 = 0x8239;
+    pub const RG16I: f64 = 33337.0;
 
     /// `WebGL2RenderingContext.RG16UI`
-    pub const RG16UI: u32 = 0x823A;
+    pub const RG16UI: f64 = 33338.0;
 
     /// `WebGL2RenderingContext.RG32I`
-    pub const RG32I: u32 = 0x823B;
+    pub const RG32I: f64 = 33339.0;
 
     /// `WebGL2RenderingContext.RG32UI`
-    pub const RG32UI: u32 = 0x823C;
+    pub const RG32UI: f64 = 33340.0;
 
     /// `WebGL2RenderingContext.VERTEX_ARRAY_BINDING`
-    pub const VERTEX_ARRAY_BINDING: u32 = 0x85B5;
+    pub const VERTEX_ARRAY_BINDING: f64 = 34229.0;
 
     /// `WebGL2RenderingContext.R8_SNORM`
-    pub const R8_SNORM: u32 = 0x8F94;
+    pub const R8_SNORM: f64 = 36756.0;
 
     /// `WebGL2RenderingContext.RG8_SNORM`
-    pub const RG8_SNORM: u32 = 0x8F95;
+    pub const RG8_SNORM: f64 = 36757.0;
 
     /// `WebGL2RenderingContext.RGB8_SNORM`
-    pub const RGB8_SNORM: u32 = 0x8F96;
+    pub const RGB8_SNORM: f64 = 36758.0;
 
     /// `WebGL2RenderingContext.RGBA8_SNORM`
-    pub const RGBA8_SNORM: u32 = 0x8F97;
+    pub const RGBA8_SNORM: f64 = 36759.0;
 
     /// `WebGL2RenderingContext.SIGNED_NORMALIZED`
-    pub const SIGNED_NORMALIZED: u32 = 0x8F9C;
+    pub const SIGNED_NORMALIZED: f64 = 36764.0;
 
     /// `WebGL2RenderingContext.COPY_READ_BUFFER`
-    pub const COPY_READ_BUFFER: u32 = 0x8F36;
+    pub const COPY_READ_BUFFER: f64 = 36662.0;
 
     /// `WebGL2RenderingContext.COPY_WRITE_BUFFER`
-    pub const COPY_WRITE_BUFFER: u32 = 0x8F37;
+    pub const COPY_WRITE_BUFFER: f64 = 36663.0;
 
     /// `WebGL2RenderingContext.COPY_READ_BUFFER_BINDING`
-    pub const COPY_READ_BUFFER_BINDING: u32 = 0x8F36;
+    pub const COPY_READ_BUFFER_BINDING: f64 = 36662.0;
 
     /// `WebGL2RenderingContext.COPY_WRITE_BUFFER_BINDING`
-    pub const COPY_WRITE_BUFFER_BINDING: u32 = 0x8F37;
+    pub const COPY_WRITE_BUFFER_BINDING: f64 = 36663.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER`
-    pub const UNIFORM_BUFFER: u32 = 0x8A11;
+    pub const UNIFORM_BUFFER: f64 = 35345.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_BINDING`
-    pub const UNIFORM_BUFFER_BINDING: u32 = 0x8A28;
+    pub const UNIFORM_BUFFER_BINDING: f64 = 35368.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_START`
-    pub const UNIFORM_BUFFER_START: u32 = 0x8A29;
+    pub const UNIFORM_BUFFER_START: f64 = 35369.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_SIZE`
-    pub const UNIFORM_BUFFER_SIZE: u32 = 0x8A2A;
+    pub const UNIFORM_BUFFER_SIZE: f64 = 35370.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_BLOCKS`
-    pub const MAX_VERTEX_UNIFORM_BLOCKS: u32 = 0x8A2B;
+    pub const MAX_VERTEX_UNIFORM_BLOCKS: f64 = 35371.0;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_BLOCKS`
-    pub const MAX_FRAGMENT_UNIFORM_BLOCKS: u32 = 0x8A2D;
+    pub const MAX_FRAGMENT_UNIFORM_BLOCKS: f64 = 35373.0;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_UNIFORM_BLOCKS`
-    pub const MAX_COMBINED_UNIFORM_BLOCKS: u32 = 0x8A2E;
+    pub const MAX_COMBINED_UNIFORM_BLOCKS: f64 = 35374.0;
 
     /// `WebGL2RenderingContext.MAX_UNIFORM_BUFFER_BINDINGS`
-    pub const MAX_UNIFORM_BUFFER_BINDINGS: u32 = 0x8A2F;
+    pub const MAX_UNIFORM_BUFFER_BINDINGS: f64 = 35375.0;
 
     /// `WebGL2RenderingContext.MAX_UNIFORM_BLOCK_SIZE`
-    pub const MAX_UNIFORM_BLOCK_SIZE: u32 = 0x8A30;
+    pub const MAX_UNIFORM_BLOCK_SIZE: f64 = 35376.0;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS`
-    pub const MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8A31;
+    pub const MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: f64 = 35377.0;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS`
-    pub const MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8A33;
+    pub const MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: f64 = 35379.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT`
-    pub const UNIFORM_BUFFER_OFFSET_ALIGNMENT: u32 = 0x8A34;
+    pub const UNIFORM_BUFFER_OFFSET_ALIGNMENT: f64 = 35380.0;
 
     /// `WebGL2RenderingContext.ACTIVE_UNIFORM_BLOCKS`
-    pub const ACTIVE_UNIFORM_BLOCKS: u32 = 0x8A36;
+    pub const ACTIVE_UNIFORM_BLOCKS: f64 = 35382.0;
 
     /// `WebGL2RenderingContext.UNIFORM_TYPE`
-    pub const UNIFORM_TYPE: u32 = 0x8A37;
+    pub const UNIFORM_TYPE: f64 = 35383.0;
 
     /// `WebGL2RenderingContext.UNIFORM_SIZE`
-    pub const UNIFORM_SIZE: u32 = 0x8A38;
+    pub const UNIFORM_SIZE: f64 = 35384.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_INDEX`
-    pub const UNIFORM_BLOCK_INDEX: u32 = 0x8A3A;
+    pub const UNIFORM_BLOCK_INDEX: f64 = 35386.0;
 
     /// `WebGL2RenderingContext.UNIFORM_OFFSET`
-    pub const UNIFORM_OFFSET: u32 = 0x8A3B;
+    pub const UNIFORM_OFFSET: f64 = 35387.0;
 
     /// `WebGL2RenderingContext.UNIFORM_ARRAY_STRIDE`
-    pub const UNIFORM_ARRAY_STRIDE: u32 = 0x8A3C;
+    pub const UNIFORM_ARRAY_STRIDE: f64 = 35388.0;
 
     /// `WebGL2RenderingContext.UNIFORM_MATRIX_STRIDE`
-    pub const UNIFORM_MATRIX_STRIDE: u32 = 0x8A3D;
+    pub const UNIFORM_MATRIX_STRIDE: f64 = 35389.0;
 
     /// `WebGL2RenderingContext.UNIFORM_IS_ROW_MAJOR`
-    pub const UNIFORM_IS_ROW_MAJOR: u32 = 0x8A3E;
+    pub const UNIFORM_IS_ROW_MAJOR: f64 = 35390.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_BINDING`
-    pub const UNIFORM_BLOCK_BINDING: u32 = 0x8A3F;
+    pub const UNIFORM_BLOCK_BINDING: f64 = 35391.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_DATA_SIZE`
-    pub const UNIFORM_BLOCK_DATA_SIZE: u32 = 0x8A40;
+    pub const UNIFORM_BLOCK_DATA_SIZE: f64 = 35392.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORMS`
-    pub const UNIFORM_BLOCK_ACTIVE_UNIFORMS: u32 = 0x8A42;
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORMS: f64 = 35394.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES`
-    pub const UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: u32 = 0x8A43;
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: f64 = 35395.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER`
-    pub const UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: u32 = 0x8A44;
+    pub const UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: f64 = 35396.0;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER`
-    pub const UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: u32 = 0x8A46;
+    pub const UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: f64 = 35398.0;
 
     /// `WebGL2RenderingContext.INVALID_INDEX`
-    pub const INVALID_INDEX: u32 = 0xFFFFFFFF;
+    pub const INVALID_INDEX: f64 = 4294967295.0;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_OUTPUT_COMPONENTS`
-    pub const MAX_VERTEX_OUTPUT_COMPONENTS: u32 = 0x9122;
+    pub const MAX_VERTEX_OUTPUT_COMPONENTS: f64 = 37154.0;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_INPUT_COMPONENTS`
-    pub const MAX_FRAGMENT_INPUT_COMPONENTS: u32 = 0x9125;
+    pub const MAX_FRAGMENT_INPUT_COMPONENTS: f64 = 37157.0;
 
     /// `WebGL2RenderingContext.MAX_SERVER_WAIT_TIMEOUT`
-    pub const MAX_SERVER_WAIT_TIMEOUT: u32 = 0x9111;
+    pub const MAX_SERVER_WAIT_TIMEOUT: f64 = 37137.0;
 
     /// `WebGL2RenderingContext.OBJECT_TYPE`
-    pub const OBJECT_TYPE: u32 = 0x9112;
+    pub const OBJECT_TYPE: f64 = 37138.0;
 
     /// `WebGL2RenderingContext.SYNC_CONDITION`
-    pub const SYNC_CONDITION: u32 = 0x9113;
+    pub const SYNC_CONDITION: f64 = 37139.0;
 
     /// `WebGL2RenderingContext.SYNC_STATUS`
-    pub const SYNC_STATUS: u32 = 0x9114;
+    pub const SYNC_STATUS: f64 = 37140.0;
 
     /// `WebGL2RenderingContext.SYNC_FLAGS`
-    pub const SYNC_FLAGS: u32 = 0x9115;
+    pub const SYNC_FLAGS: f64 = 37141.0;
 
     /// `WebGL2RenderingContext.SYNC_FENCE`
-    pub const SYNC_FENCE: u32 = 0x9116;
+    pub const SYNC_FENCE: f64 = 37142.0;
 
     /// `WebGL2RenderingContext.SYNC_GPU_COMMANDS_COMPLETE`
-    pub const SYNC_GPU_COMMANDS_COMPLETE: u32 = 0x9117;
+    pub const SYNC_GPU_COMMANDS_COMPLETE: f64 = 37143.0;
 
     /// `WebGL2RenderingContext.UNSIGNALED`
-    pub const UNSIGNALED: u32 = 0x9118;
+    pub const UNSIGNALED: f64 = 37144.0;
 
     /// `WebGL2RenderingContext.SIGNALED`
-    pub const SIGNALED: u32 = 0x9119;
+    pub const SIGNALED: f64 = 37145.0;
 
     /// `WebGL2RenderingContext.ALREADY_SIGNALED`
-    pub const ALREADY_SIGNALED: u32 = 0x911A;
+    pub const ALREADY_SIGNALED: f64 = 37146.0;
 
     /// `WebGL2RenderingContext.TIMEOUT_EXPIRED`
-    pub const TIMEOUT_EXPIRED: u32 = 0x911B;
+    pub const TIMEOUT_EXPIRED: f64 = 37147.0;
 
     /// `WebGL2RenderingContext.CONDITION_SATISFIED`
-    pub const CONDITION_SATISFIED: u32 = 0x911C;
+    pub const CONDITION_SATISFIED: f64 = 37148.0;
 
     /// `WebGL2RenderingContext.WAIT_FAILED`
-    pub const WAIT_FAILED: u32 = 0x911D;
+    pub const WAIT_FAILED: f64 = 37149.0;
 
     /// `WebGL2RenderingContext.SYNC_FLUSH_COMMANDS_BIT`
-    pub const SYNC_FLUSH_COMMANDS_BIT: u32 = 0x00000001;
+    pub const SYNC_FLUSH_COMMANDS_BIT: f64 = 1.0;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_DIVISOR`
-    pub const VERTEX_ATTRIB_ARRAY_DIVISOR: u32 = 0x88FE;
+    pub const VERTEX_ATTRIB_ARRAY_DIVISOR: f64 = 35070.0;
 
     /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED`
-    pub const ANY_SAMPLES_PASSED: u32 = 0x8C2F;
+    pub const ANY_SAMPLES_PASSED: f64 = 35887.0;
 
     /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED_CONSERVATIVE`
-    pub const ANY_SAMPLES_PASSED_CONSERVATIVE: u32 = 0x8D6A;
+    pub const ANY_SAMPLES_PASSED_CONSERVATIVE: f64 = 36202.0;
 
     /// `WebGL2RenderingContext.SAMPLER_BINDING`
-    pub const SAMPLER_BINDING: u32 = 0x8919;
+    pub const SAMPLER_BINDING: f64 = 35097.0;
 
     /// `WebGL2RenderingContext.RGB10_A2UI`
-    pub const RGB10_A2UI: u32 = 0x906F;
+    pub const RGB10_A2UI: f64 = 36975.0;
 
     /// `WebGL2RenderingContext.INT_2_10_10_10_REV`
-    pub const INT_2_10_10_10_REV: u32 = 0x8D9F;
+    pub const INT_2_10_10_10_REV: f64 = 36255.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK`
-    pub const TRANSFORM_FEEDBACK: u32 = 0x8E22;
+    pub const TRANSFORM_FEEDBACK: f64 = 36386.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PAUSED`
-    pub const TRANSFORM_FEEDBACK_PAUSED: u32 = 0x8E23;
+    pub const TRANSFORM_FEEDBACK_PAUSED: f64 = 36387.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_ACTIVE`
-    pub const TRANSFORM_FEEDBACK_ACTIVE: u32 = 0x8E24;
+    pub const TRANSFORM_FEEDBACK_ACTIVE: f64 = 36388.0;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BINDING`
-    pub const TRANSFORM_FEEDBACK_BINDING: u32 = 0x8E25;
+    pub const TRANSFORM_FEEDBACK_BINDING: f64 = 36389.0;
 
     /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_FORMAT`
-    pub const TEXTURE_IMMUTABLE_FORMAT: u32 = 0x912F;
+    pub const TEXTURE_IMMUTABLE_FORMAT: f64 = 37167.0;
 
     /// `WebGL2RenderingContext.MAX_ELEMENT_INDEX`
-    pub const MAX_ELEMENT_INDEX: u32 = 0x8D6B;
+    pub const MAX_ELEMENT_INDEX: f64 = 36203.0;
 
     /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_LEVELS`
-    pub const TEXTURE_IMMUTABLE_LEVELS: u32 = 0x82DF;
+    pub const TEXTURE_IMMUTABLE_LEVELS: f64 = 33503.0;
 
     /// `WebGL2RenderingContext.TIMEOUT_IGNORED`
     pub const TIMEOUT_IGNORED: f64 = -1.0;
 
     /// `WebGL2RenderingContext.MAX_CLIENT_WAIT_TIMEOUT_WEBGL`
-    pub const MAX_CLIENT_WAIT_TIMEOUT_WEBGL: u32 = 0x9247;
+    pub const MAX_CLIENT_WAIT_TIMEOUT_WEBGL: f64 = 37447.0;
 }
 
 impl WebGL2RenderingContext {
@@ -82293,7 +82293,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn drawing_buffer_width(&self) -> i32 {
+    pub fn drawing_buffer_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -82301,7 +82301,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn drawing_buffer_height(&self) -> i32 {
+    pub fn drawing_buffer_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -82374,7 +82374,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn active_texture(&self, texture: f64) {
+    pub fn active_texture(&self, texture: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82392,7 +82392,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_attrib_location(&self, program: &WebGLProgram, index: f64, name: &str) {
+    pub fn bind_attrib_location(&self, program: &WebGLProgram, index: impl Into<f64>, name: &str) {
         unreachable!()
     }
 
@@ -82401,7 +82401,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_buffer(&self, target: f64, buffer: &WebGLBuffer) {
+    pub fn bind_buffer(&self, target: impl Into<f64>, buffer: &WebGLBuffer) {
         unreachable!()
     }
 
@@ -82410,7 +82410,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_framebuffer(&self, target: f64, framebuffer: &WebGLFramebuffer) {
+    pub fn bind_framebuffer(&self, target: impl Into<f64>, framebuffer: &WebGLFramebuffer) {
         unreachable!()
     }
 
@@ -82419,7 +82419,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_renderbuffer(&self, target: f64, renderbuffer: &WebGLRenderbuffer) {
+    pub fn bind_renderbuffer(&self, target: impl Into<f64>, renderbuffer: &WebGLRenderbuffer) {
         unreachable!()
     }
 
@@ -82428,7 +82428,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_texture(&self, target: f64, texture: &WebGLTexture) {
+    pub fn bind_texture(&self, target: impl Into<f64>, texture: &WebGLTexture) {
         unreachable!()
     }
 
@@ -82437,7 +82437,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_color(&self, red: f64, green: f64, blue: f64, alpha: f64) {
+    pub fn blend_color(&self, red: impl Into<f64>, green: impl Into<f64>, blue: impl Into<f64>, alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82446,7 +82446,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_equation(&self, mode: f64) {
+    pub fn blend_equation(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82455,7 +82455,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_equation_separate(&self, mode_rgb: f64, mode_alpha: f64) {
+    pub fn blend_equation_separate(&self, mode_rgb: impl Into<f64>, mode_alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82464,7 +82464,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_func(&self, sfactor: f64, dfactor: f64) {
+    pub fn blend_func(&self, sfactor: impl Into<f64>, dfactor: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82473,7 +82473,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_func_separate(&self, src_rgb: f64, dst_rgb: f64, src_alpha: f64, dst_alpha: f64) {
+    pub fn blend_func_separate(&self, src_rgb: impl Into<f64>, dst_rgb: impl Into<f64>, src_alpha: impl Into<f64>, dst_alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82481,7 +82481,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "checkFramebufferStatus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn check_framebuffer_status(&self, target: f64) -> u32 {
+    pub fn check_framebuffer_status(&self, target: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -82490,7 +82490,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear(&self, mask: f64) {
+    pub fn clear(&self, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82499,7 +82499,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_color(&self, red: f64, green: f64, blue: f64, alpha: f64) {
+    pub fn clear_color(&self, red: impl Into<f64>, green: impl Into<f64>, blue: impl Into<f64>, alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82508,7 +82508,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_depth(&self, depth: f64) {
+    pub fn clear_depth(&self, depth: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82517,7 +82517,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_stencil(&self, s: f64) {
+    pub fn clear_stencil(&self, s: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82544,7 +82544,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_tex_image2_d(&self, target: f64, level: f64, internalformat: f64, x: f64, y: f64, width: f64, height: f64, border: f64) {
+    pub fn copy_tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82553,7 +82553,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, x: f64, y: f64, width: f64, height: f64) {
+    pub fn copy_tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82593,7 +82593,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_shader(&self, r#type: f64) -> Option<&'static WebGLShader> {
+    pub fn create_shader(&self, r#type: impl Into<f64>) -> Option<&'static WebGLShader> {
         unreachable!()
     }
 
@@ -82610,7 +82610,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cull_face(&self, mode: f64) {
+    pub fn cull_face(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82673,7 +82673,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn depth_func(&self, func: f64) {
+    pub fn depth_func(&self, func: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82691,7 +82691,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn depth_range(&self, z_near: f64, z_far: f64) {
+    pub fn depth_range(&self, z_near: impl Into<f64>, z_far: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82709,7 +82709,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disable(&self, cap: f64) {
+    pub fn disable(&self, cap: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82718,7 +82718,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disable_vertex_attrib_array(&self, index: f64) {
+    pub fn disable_vertex_attrib_array(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82727,7 +82727,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_arrays(&self, mode: f64, first: f64, count: f64) {
+    pub fn draw_arrays(&self, mode: impl Into<f64>, first: impl Into<f64>, count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82736,7 +82736,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements(&self, mode: f64, count: f64, r#type: f64, offset: f64) {
+    pub fn draw_elements(&self, mode: impl Into<f64>, count: impl Into<f64>, r#type: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82745,7 +82745,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn enable(&self, cap: f64) {
+    pub fn enable(&self, cap: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82754,7 +82754,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn enable_vertex_attrib_array(&self, index: f64) {
+    pub fn enable_vertex_attrib_array(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82781,7 +82781,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn framebuffer_renderbuffer(&self, target: f64, attachment: f64, renderbuffertarget: f64, renderbuffer: &WebGLRenderbuffer) {
+    pub fn framebuffer_renderbuffer(&self, target: impl Into<f64>, attachment: impl Into<f64>, renderbuffertarget: impl Into<f64>, renderbuffer: &WebGLRenderbuffer) {
         unreachable!()
     }
 
@@ -82790,7 +82790,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn framebuffer_texture2_d(&self, target: f64, attachment: f64, textarget: f64, texture: &WebGLTexture, level: f64) {
+    pub fn framebuffer_texture2_d(&self, target: impl Into<f64>, attachment: impl Into<f64>, textarget: impl Into<f64>, texture: &WebGLTexture, level: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82799,7 +82799,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn front_face(&self, mode: f64) {
+    pub fn front_face(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82808,7 +82808,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn generate_mipmap(&self, target: f64) {
+    pub fn generate_mipmap(&self, target: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82816,7 +82816,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveAttrib")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_attrib(&self, program: &WebGLProgram, index: f64) -> Option<&'static WebGLActiveInfo> {
+    pub fn get_active_attrib(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
         unreachable!()
     }
 
@@ -82824,7 +82824,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniform")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_uniform(&self, program: &WebGLProgram, index: f64) -> Option<&'static WebGLActiveInfo> {
+    pub fn get_active_uniform(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
         unreachable!()
     }
 
@@ -82840,7 +82840,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribLocation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> i32 {
+    pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> f64 {
         unreachable!()
     }
 
@@ -82848,7 +82848,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_buffer_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82856,7 +82856,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_parameter(&self, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_parameter(&self, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82864,7 +82864,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getError")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_error(&self) -> u32 {
+    pub fn get_error(&self) -> f64 {
         unreachable!()
     }
 
@@ -82872,7 +82872,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getFramebufferAttachmentParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_framebuffer_attachment_parameter(&self, target: f64, attachment: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_framebuffer_attachment_parameter(&self, target: impl Into<f64>, attachment: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82880,7 +82880,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getProgramParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_program_parameter(&self, program: &WebGLProgram, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_program_parameter(&self, program: &WebGLProgram, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82896,7 +82896,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getRenderbufferParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_renderbuffer_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_renderbuffer_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82904,7 +82904,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_shader_parameter(&self, shader: &WebGLShader, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_shader_parameter(&self, shader: &WebGLShader, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82912,7 +82912,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderPrecisionFormat")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_shader_precision_format(&self, shadertype: f64, precisiontype: f64) -> Option<&'static WebGLShaderPrecisionFormat> {
+    pub fn get_shader_precision_format(&self, shadertype: impl Into<f64>, precisiontype: impl Into<f64>) -> Option<&'static WebGLShaderPrecisionFormat> {
         unreachable!()
     }
 
@@ -82936,7 +82936,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getTexParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_tex_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_tex_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82960,7 +82960,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttrib")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_vertex_attrib(&self, index: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_vertex_attrib(&self, index: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -82968,7 +82968,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttribOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_vertex_attrib_offset(&self, index: f64, pname: f64) -> f64 {
+    pub fn get_vertex_attrib_offset(&self, index: impl Into<f64>, pname: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -82977,7 +82977,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn hint(&self, target: f64, mode: f64) {
+    pub fn hint(&self, target: impl Into<f64>, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -82993,7 +82993,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "isEnabled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_enabled(&self, cap: f64) -> bool {
+    pub fn is_enabled(&self, cap: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -83042,7 +83042,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_width(&self, width: f64) {
+    pub fn line_width(&self, width: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83060,7 +83060,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pixel_storei(&self, pname: f64, param: f64) {
+    pub fn pixel_storei(&self, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83069,7 +83069,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn polygon_offset(&self, factor: f64, units: f64) {
+    pub fn polygon_offset(&self, factor: impl Into<f64>, units: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83078,7 +83078,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn renderbuffer_storage(&self, target: f64, internalformat: f64, width: f64, height: f64) {
+    pub fn renderbuffer_storage(&self, target: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83087,7 +83087,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_coverage(&self, value: f64, invert: bool) {
+    pub fn sample_coverage(&self, value: impl Into<f64>, invert: bool) {
         unreachable!()
     }
 
@@ -83096,7 +83096,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scissor(&self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn scissor(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83114,7 +83114,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func(&self, func: f64, r#ref: f64, mask: f64) {
+    pub fn stencil_func(&self, func: impl Into<f64>, r#ref: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83123,7 +83123,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func_separate(&self, face: f64, func: f64, r#ref: f64, mask: f64) {
+    pub fn stencil_func_separate(&self, face: impl Into<f64>, func: impl Into<f64>, r#ref: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83132,7 +83132,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_mask(&self, mask: f64) {
+    pub fn stencil_mask(&self, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83141,7 +83141,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_mask_separate(&self, face: f64, mask: f64) {
+    pub fn stencil_mask_separate(&self, face: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83150,7 +83150,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_op(&self, fail: f64, zfail: f64, zpass: f64) {
+    pub fn stencil_op(&self, fail: impl Into<f64>, zfail: impl Into<f64>, zpass: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83159,7 +83159,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_op_separate(&self, face: f64, fail: f64, zfail: f64, zpass: f64) {
+    pub fn stencil_op_separate(&self, face: impl Into<f64>, fail: impl Into<f64>, zfail: impl Into<f64>, zpass: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83168,7 +83168,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_parameterf(&self, target: f64, pname: f64, param: f64) {
+    pub fn tex_parameterf(&self, target: impl Into<f64>, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83177,7 +83177,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_parameteri(&self, target: f64, pname: f64, param: f64) {
+    pub fn tex_parameteri(&self, target: impl Into<f64>, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83186,7 +83186,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1f(&self, location: &WebGLUniformLocation, x: f64) {
+    pub fn uniform1f(&self, location: &WebGLUniformLocation, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83195,7 +83195,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2f(&self, location: &WebGLUniformLocation, x: f64, y: f64) {
+    pub fn uniform2f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83204,7 +83204,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3f(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64) {
+    pub fn uniform3f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83213,7 +83213,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4f(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64, w: f64) {
+    pub fn uniform4f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83222,7 +83222,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1i(&self, location: &WebGLUniformLocation, x: f64) {
+    pub fn uniform1i(&self, location: &WebGLUniformLocation, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83231,7 +83231,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2i(&self, location: &WebGLUniformLocation, x: f64, y: f64) {
+    pub fn uniform2i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83240,7 +83240,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3i(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64) {
+    pub fn uniform3i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83249,7 +83249,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4i(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64, w: f64) {
+    pub fn uniform4i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83276,7 +83276,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1f(&self, index: f64, x: f64) {
+    pub fn vertex_attrib1f(&self, index: impl Into<f64>, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83285,7 +83285,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2f(&self, index: f64, x: f64, y: f64) {
+    pub fn vertex_attrib2f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83294,7 +83294,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3f(&self, index: f64, x: f64, y: f64, z: f64) {
+    pub fn vertex_attrib3f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83303,7 +83303,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4f(&self, index: f64, x: f64, y: f64, z: f64, w: f64) {
+    pub fn vertex_attrib4f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83312,7 +83312,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib1fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -83321,7 +83321,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib2fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -83330,7 +83330,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib3fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -83339,7 +83339,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib4fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -83348,7 +83348,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_pointer(&self, index: f64, size: f64, r#type: f64, normalized: bool, stride: f64, offset: f64) {
+    pub fn vertex_attrib_pointer(&self, index: impl Into<f64>, size: impl Into<f64>, r#type: impl Into<f64>, normalized: bool, stride: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83357,7 +83357,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn viewport(&self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn viewport(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83366,7 +83366,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_buffer_sub_data(&self, read_target: f64, write_target: f64, read_offset: f64, write_offset: f64, size: f64) {
+    pub fn copy_buffer_sub_data(&self, read_target: impl Into<f64>, write_target: impl Into<f64>, read_offset: impl Into<f64>, write_offset: impl Into<f64>, size: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83375,7 +83375,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_sub_data(&self, target: f64, src_byte_offset: f64, dst_buffer: impl IntoArrayBufferView, dst_offset: Option<f64>, length: Option<f64>) {
+    pub fn get_buffer_sub_data(&self, target: impl Into<f64>, src_byte_offset: impl Into<f64>, dst_buffer: impl IntoArrayBufferView, dst_offset: Option<f64>, length: Option<f64>) {
         unreachable!()
     }
 
@@ -83384,7 +83384,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blit_framebuffer(&self, src_x_0: f64, src_y_0: f64, src_x_1: f64, src_y_1: f64, dst_x_0: f64, dst_y_0: f64, dst_x_1: f64, dst_y_1: f64, mask: f64, filter: f64) {
+    pub fn blit_framebuffer(&self, src_x_0: impl Into<f64>, src_y_0: impl Into<f64>, src_x_1: impl Into<f64>, src_y_1: impl Into<f64>, dst_x_0: impl Into<f64>, dst_y_0: impl Into<f64>, dst_x_1: impl Into<f64>, dst_y_1: impl Into<f64>, mask: impl Into<f64>, filter: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83393,7 +83393,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn framebuffer_texture_layer(&self, target: f64, attachment: f64, texture: &WebGLTexture, level: f64, layer: f64) {
+    pub fn framebuffer_texture_layer(&self, target: impl Into<f64>, attachment: impl Into<f64>, texture: &WebGLTexture, level: impl Into<f64>, layer: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83402,7 +83402,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn invalidate_framebuffer(&self, target: f64, attachments: &[f64]) {
+    pub fn invalidate_framebuffer(&self, target: impl Into<f64>, attachments: &[f64]) {
         unreachable!()
     }
 
@@ -83411,7 +83411,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn invalidate_sub_framebuffer(&self, target: f64, attachments: &[f64], x: f64, y: f64, width: f64, height: f64) {
+    pub fn invalidate_sub_framebuffer(&self, target: impl Into<f64>, attachments: &[f64], x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83420,7 +83420,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_buffer(&self, src: f64) {
+    pub fn read_buffer(&self, src: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83428,7 +83428,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getInternalformatParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_internalformat_parameter(&self, target: f64, internalformat: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_internalformat_parameter(&self, target: impl Into<f64>, internalformat: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -83437,7 +83437,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn renderbuffer_storage_multisample(&self, target: f64, samples: f64, internalformat: f64, width: f64, height: f64) {
+    pub fn renderbuffer_storage_multisample(&self, target: impl Into<f64>, samples: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83446,7 +83446,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_storage2_d(&self, target: f64, levels: f64, internalformat: f64, width: f64, height: f64) {
+    pub fn tex_storage2_d(&self, target: impl Into<f64>, levels: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83455,7 +83455,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_storage3_d(&self, target: f64, levels: f64, internalformat: f64, width: f64, height: f64, depth: f64) {
+    pub fn tex_storage3_d(&self, target: impl Into<f64>, levels: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83464,7 +83464,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, depth: f64, border: f64, format: f64, r#type: f64, pbo_offset: f64) {
+    pub fn tex_image3_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pbo_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83473,7 +83473,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_tex_image_source(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, depth: f64, border: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_image3_d_with_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -83482,7 +83482,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_array_buffer_view(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, depth: f64, border: f64, format: f64, r#type: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
+    pub fn tex_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83491,7 +83491,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, width: f64, height: f64, depth: f64, format: f64, r#type: f64, pbo_offset: f64) {
+    pub fn tex_sub_image3_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pbo_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83500,7 +83500,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_tex_image_source(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, width: f64, height: f64, depth: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image3_d_with_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -83509,7 +83509,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, width: f64, height: f64, depth: f64, format: f64, r#type: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
+    pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83518,7 +83518,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_tex_sub_image3_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, x: f64, y: f64, width: f64, height: f64) {
+    pub fn copy_tex_sub_image3_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83527,7 +83527,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image3_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, depth: f64, border: f64, image_size: f64, offset: f64) {
+    pub fn compressed_tex_image3_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, image_size: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83536,7 +83536,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image3_d_with_array_buffer_view(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, depth: f64, border: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
+    pub fn compressed_tex_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
     }
 
@@ -83545,7 +83545,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image3_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, width: f64, height: f64, depth: f64, format: f64, image_size: f64, offset: f64) {
+    pub fn compressed_tex_sub_image3_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, image_size: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83554,7 +83554,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image3_d_with_array_buffer_view(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, zoffset: f64, width: f64, height: f64, depth: f64, format: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
+    pub fn compressed_tex_sub_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
     }
 
@@ -83562,7 +83562,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getFragDataLocation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_frag_data_location(&self, program: &WebGLProgram, name: &str) -> i32 {
+    pub fn get_frag_data_location(&self, program: &WebGLProgram, name: &str) -> f64 {
         unreachable!()
     }
 
@@ -83571,7 +83571,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1ui(&self, location: &WebGLUniformLocation, v0: f64) {
+    pub fn uniform1ui(&self, location: &WebGLUniformLocation, v0: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83580,7 +83580,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2ui(&self, location: &WebGLUniformLocation, v0: f64, v1: f64) {
+    pub fn uniform2ui(&self, location: &WebGLUniformLocation, v0: impl Into<f64>, v1: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83589,7 +83589,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3ui(&self, location: &WebGLUniformLocation, v0: f64, v1: f64, v2: f64) {
+    pub fn uniform3ui(&self, location: &WebGLUniformLocation, v0: impl Into<f64>, v1: impl Into<f64>, v2: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83598,7 +83598,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4ui(&self, location: &WebGLUniformLocation, v0: f64, v1: f64, v2: f64, v3: f64) {
+    pub fn uniform4ui(&self, location: &WebGLUniformLocation, v0: impl Into<f64>, v1: impl Into<f64>, v2: impl Into<f64>, v3: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83697,7 +83697,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4i(&self, index: f64, x: f64, y: f64, z: f64, w: f64) {
+    pub fn vertex_attrib_i_4i(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83706,7 +83706,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4iv(&self, index: f64, values: impl IntoInt32List) {
+    pub fn vertex_attrib_i_4iv(&self, index: impl Into<f64>, values: impl IntoInt32List) {
         unreachable!()
     }
 
@@ -83715,7 +83715,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4ui(&self, index: f64, x: f64, y: f64, z: f64, w: f64) {
+    pub fn vertex_attrib_i_4ui(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83724,7 +83724,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_4uiv(&self, index: f64, values: impl IntoUint32List) {
+    pub fn vertex_attrib_i_4uiv(&self, index: impl Into<f64>, values: impl IntoUint32List) {
         unreachable!()
     }
 
@@ -83733,7 +83733,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_pointer(&self, index: f64, size: f64, r#type: f64, stride: f64, offset: f64) {
+    pub fn vertex_attrib_i_pointer(&self, index: impl Into<f64>, size: impl Into<f64>, r#type: impl Into<f64>, stride: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83742,7 +83742,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_divisor(&self, index: f64, divisor: f64) {
+    pub fn vertex_attrib_divisor(&self, index: impl Into<f64>, divisor: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83751,7 +83751,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_arrays_instanced(&self, mode: f64, first: f64, count: f64, instance_count: f64) {
+    pub fn draw_arrays_instanced(&self, mode: impl Into<f64>, first: impl Into<f64>, count: impl Into<f64>, instance_count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83760,7 +83760,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements_instanced(&self, mode: f64, count: f64, r#type: f64, offset: f64, instance_count: f64) {
+    pub fn draw_elements_instanced(&self, mode: impl Into<f64>, count: impl Into<f64>, r#type: impl Into<f64>, offset: impl Into<f64>, instance_count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83769,7 +83769,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_range_elements(&self, mode: f64, start: f64, end: f64, count: f64, r#type: f64, offset: f64) {
+    pub fn draw_range_elements(&self, mode: impl Into<f64>, start: impl Into<f64>, end: impl Into<f64>, count: impl Into<f64>, r#type: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83787,7 +83787,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferfv(&self, buffer: f64, drawbuffer: f64, values: impl IntoFloat32List, src_offset: Option<f64>) {
+    pub fn clear_bufferfv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoFloat32List, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83796,7 +83796,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferiv(&self, buffer: f64, drawbuffer: f64, values: impl IntoInt32List, src_offset: Option<f64>) {
+    pub fn clear_bufferiv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoInt32List, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83805,7 +83805,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferuiv(&self, buffer: f64, drawbuffer: f64, values: impl IntoUint32List, src_offset: Option<f64>) {
+    pub fn clear_bufferuiv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoUint32List, src_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -83814,7 +83814,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_bufferfi(&self, buffer: f64, drawbuffer: f64, depth: f64, stencil: f64) {
+    pub fn clear_bufferfi(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, depth: impl Into<f64>, stencil: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83848,7 +83848,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn begin_query(&self, target: f64, query: &WebGLQuery) {
+    pub fn begin_query(&self, target: impl Into<f64>, query: &WebGLQuery) {
         unreachable!()
     }
 
@@ -83857,7 +83857,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn end_query(&self, target: f64) {
+    pub fn end_query(&self, target: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83865,7 +83865,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getQuery")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_query(&self, target: f64, pname: f64) -> Option<&'static WebGLQuery> {
+    pub fn get_query(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static WebGLQuery> {
         unreachable!()
     }
 
@@ -83873,7 +83873,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getQueryParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_query_parameter(&self, query: &WebGLQuery, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_query_parameter(&self, query: &WebGLQuery, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -83907,7 +83907,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_sampler(&self, unit: f64, sampler: &WebGLSampler) {
+    pub fn bind_sampler(&self, unit: impl Into<f64>, sampler: &WebGLSampler) {
         unreachable!()
     }
 
@@ -83916,7 +83916,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sampler_parameteri(&self, sampler: &WebGLSampler, pname: f64, param: f64) {
+    pub fn sampler_parameteri(&self, sampler: &WebGLSampler, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83925,7 +83925,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sampler_parameterf(&self, sampler: &WebGLSampler, pname: f64, param: f64) {
+    pub fn sampler_parameterf(&self, sampler: &WebGLSampler, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83933,7 +83933,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getSamplerParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_sampler_parameter(&self, sampler: &WebGLSampler, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_sampler_parameter(&self, sampler: &WebGLSampler, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -83941,7 +83941,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "fenceSync")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn fence_sync(&self, condition: f64, flags: f64) -> Option<&'static WebGLSync> {
+    pub fn fence_sync(&self, condition: impl Into<f64>, flags: impl Into<f64>) -> Option<&'static WebGLSync> {
         unreachable!()
     }
 
@@ -83966,7 +83966,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "clientWaitSync")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_wait_sync(&self, sync: &WebGLSync, flags: f64, timeout: f64) -> u32 {
+    pub fn client_wait_sync(&self, sync: &WebGLSync, flags: impl Into<f64>, timeout: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -83975,7 +83975,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn wait_sync(&self, sync: &WebGLSync, flags: f64, timeout: f64) {
+    pub fn wait_sync(&self, sync: &WebGLSync, flags: impl Into<f64>, timeout: impl Into<f64>) {
         unreachable!()
     }
 
@@ -83983,7 +83983,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getSyncParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_sync_parameter(&self, sync: &WebGLSync, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_sync_parameter(&self, sync: &WebGLSync, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -84017,7 +84017,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_transform_feedback(&self, target: f64, tf: &WebGLTransformFeedback) {
+    pub fn bind_transform_feedback(&self, target: impl Into<f64>, tf: &WebGLTransformFeedback) {
         unreachable!()
     }
 
@@ -84026,7 +84026,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn begin_transform_feedback(&self, primitive_mode: f64) {
+    pub fn begin_transform_feedback(&self, primitive_mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84044,7 +84044,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn transform_feedback_varyings(&self, program: &WebGLProgram, varyings: &[&str], buffer_mode: f64) {
+    pub fn transform_feedback_varyings(&self, program: &WebGLProgram, varyings: &[&str], buffer_mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84052,7 +84052,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getTransformFeedbackVarying")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_transform_feedback_varying(&self, program: &WebGLProgram, index: f64) -> Option<&'static WebGLActiveInfo> {
+    pub fn get_transform_feedback_varying(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
         unreachable!()
     }
 
@@ -84079,7 +84079,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_buffer_base(&self, target: f64, index: f64, buffer: &WebGLBuffer) {
+    pub fn bind_buffer_base(&self, target: impl Into<f64>, index: impl Into<f64>, buffer: &WebGLBuffer) {
         unreachable!()
     }
 
@@ -84088,7 +84088,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_buffer_range(&self, target: f64, index: f64, buffer: &WebGLBuffer, offset: f64, size: f64) {
+    pub fn bind_buffer_range(&self, target: impl Into<f64>, index: impl Into<f64>, buffer: &WebGLBuffer, offset: impl Into<f64>, size: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84096,7 +84096,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getIndexedParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_indexed_parameter(&self, target: f64, index: f64) -> Option<&'static Unknown> {
+    pub fn get_indexed_parameter(&self, target: impl Into<f64>, index: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -84104,7 +84104,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformIndices")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_uniform_indices(&self, program: &WebGLProgram, uniform_names: &[&str]) -> Option<Vec<u32>> {
+    pub fn get_uniform_indices(&self, program: &WebGLProgram, uniform_names: &[&str]) -> Option<Vec<f64>> {
         unreachable!()
     }
 
@@ -84112,7 +84112,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniforms")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_uniforms(&self, program: &WebGLProgram, uniform_indices: &[f64], pname: f64) -> Option<&'static Unknown> {
+    pub fn get_active_uniforms(&self, program: &WebGLProgram, uniform_indices: &[f64], pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -84120,7 +84120,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getUniformBlockIndex")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_uniform_block_index(&self, program: &WebGLProgram, uniform_block_name: &str) -> u32 {
+    pub fn get_uniform_block_index(&self, program: &WebGLProgram, uniform_block_name: &str) -> f64 {
         unreachable!()
     }
 
@@ -84128,7 +84128,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniformBlockParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_uniform_block_parameter(&self, program: &WebGLProgram, uniform_block_index: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_active_uniform_block_parameter(&self, program: &WebGLProgram, uniform_block_index: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -84136,7 +84136,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniformBlockName")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_uniform_block_name(&self, program: &WebGLProgram, uniform_block_index: f64) -> Option<String> {
+    pub fn get_active_uniform_block_name(&self, program: &WebGLProgram, uniform_block_index: impl Into<f64>) -> Option<String> {
         unreachable!()
     }
 
@@ -84145,7 +84145,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform_block_binding(&self, program: &WebGLProgram, uniform_block_index: f64, uniform_block_binding: f64) {
+    pub fn uniform_block_binding(&self, program: &WebGLProgram, uniform_block_index: impl Into<f64>, uniform_block_binding: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84188,7 +84188,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data(&self, target: f64, size: f64, usage: f64) {
+    pub fn buffer_data(&self, target: impl Into<f64>, size: impl Into<f64>, usage: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84197,7 +84197,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data_with_allow_shared_buffer_source(&self, target: f64, src_data: impl IntoAllowSharedBufferSource, usage: f64) {
+    pub fn buffer_data_with_allow_shared_buffer_source(&self, target: impl Into<f64>, src_data: impl IntoAllowSharedBufferSource, usage: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84206,7 +84206,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_sub_data(&self, target: f64, dst_byte_offset: f64, src_data: impl IntoAllowSharedBufferSource) {
+    pub fn buffer_sub_data(&self, target: impl Into<f64>, dst_byte_offset: impl Into<f64>, src_data: impl IntoAllowSharedBufferSource) {
         unreachable!()
     }
 
@@ -84215,7 +84215,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data_with_array_buffer_view_and_src_offset(&self, target: f64, src_data: impl IntoArrayBufferView, usage: f64, src_offset: f64, length: Option<f64>) {
+    pub fn buffer_data_with_array_buffer_view_and_src_offset(&self, target: impl Into<f64>, src_data: impl IntoArrayBufferView, usage: impl Into<f64>, src_offset: impl Into<f64>, length: Option<f64>) {
         unreachable!()
     }
 
@@ -84224,7 +84224,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_sub_data_with_array_buffer_view_and_src_offset(&self, target: f64, dst_byte_offset: f64, src_data: impl IntoArrayBufferView, src_offset: f64, length: Option<f64>) {
+    pub fn buffer_sub_data_with_array_buffer_view_and_src_offset(&self, target: impl Into<f64>, dst_byte_offset: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: impl Into<f64>, length: Option<f64>) {
         unreachable!()
     }
 
@@ -84233,7 +84233,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, format: f64, r#type: f64, pixels: impl IntoArrayBufferView) {
+    pub fn tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84242,7 +84242,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: f64, level: f64, internalformat: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -84251,7 +84251,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, r#type: f64, pixels: impl IntoArrayBufferView) {
+    pub fn tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -84260,7 +84260,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -84269,7 +84269,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_f64(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, format: f64, r#type: f64, pbo_offset: f64) {
+    pub fn tex_image2_d_with_f64(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pbo_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84278,7 +84278,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_tex_image_source(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -84287,7 +84287,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_src_offset(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, format: f64, r#type: f64, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_image2_d_with_src_offset(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84296,7 +84296,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_f64(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, r#type: f64, pbo_offset: f64) {
+    pub fn tex_sub_image2_d_with_f64(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pbo_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84305,7 +84305,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_tex_image_source(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -84314,7 +84314,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_src_offset(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, r#type: f64, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_sub_image2_d_with_src_offset(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84323,7 +84323,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, image_size: f64, offset: f64) {
+    pub fn compressed_tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, image_size: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84332,7 +84332,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d_with_array_buffer_view(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
+    pub fn compressed_tex_image2_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
     }
 
@@ -84341,7 +84341,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, image_size: f64, offset: f64) {
+    pub fn compressed_tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, image_size: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84350,7 +84350,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d_with_array_buffer_view(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
+    pub fn compressed_tex_sub_image2_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
     }
 
@@ -84458,7 +84458,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: f64, y: f64, width: f64, height: f64, format: f64, r#type: f64, dst_data: impl IntoArrayBufferView, dst_offset: Option<f64>) {
+    pub fn read_pixels(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, dst_data: impl IntoArrayBufferView, dst_offset: Option<f64>) {
         unreachable!()
     }
 
@@ -84467,7 +84467,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels_with_f64(&self, x: f64, y: f64, width: f64, height: f64, format: f64, r#type: f64, offset: f64) {
+    pub fn read_pixels_with_f64(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -84482,7 +84482,7 @@ impl WebGLActiveInfo {
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn size(&self) -> i32 {
+    pub fn size(&self) -> f64 {
         unreachable!()
     }
 
@@ -84490,7 +84490,7 @@ impl WebGLActiveInfo {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn r#type(&self) -> u32 {
+    pub fn r#type(&self) -> f64 {
         unreachable!()
     }
 
@@ -84575,895 +84575,895 @@ pub struct WebGLRenderingContext(PhantomData<JsObject>);
 pub mod web_gl_rendering_context {
 
     /// `WebGLRenderingContext.DEPTH_BUFFER_BIT`
-    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
+    pub const DEPTH_BUFFER_BIT: f64 = 256.0;
 
     /// `WebGLRenderingContext.STENCIL_BUFFER_BIT`
-    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
+    pub const STENCIL_BUFFER_BIT: f64 = 1024.0;
 
     /// `WebGLRenderingContext.COLOR_BUFFER_BIT`
-    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
+    pub const COLOR_BUFFER_BIT: f64 = 16384.0;
 
     /// `WebGLRenderingContext.POINTS`
-    pub const POINTS: u32 = 0x0000;
+    pub const POINTS: f64 = 0.0;
 
     /// `WebGLRenderingContext.LINES`
-    pub const LINES: u32 = 0x0001;
+    pub const LINES: f64 = 1.0;
 
     /// `WebGLRenderingContext.LINE_LOOP`
-    pub const LINE_LOOP: u32 = 0x0002;
+    pub const LINE_LOOP: f64 = 2.0;
 
     /// `WebGLRenderingContext.LINE_STRIP`
-    pub const LINE_STRIP: u32 = 0x0003;
+    pub const LINE_STRIP: f64 = 3.0;
 
     /// `WebGLRenderingContext.TRIANGLES`
-    pub const TRIANGLES: u32 = 0x0004;
+    pub const TRIANGLES: f64 = 4.0;
 
     /// `WebGLRenderingContext.TRIANGLE_STRIP`
-    pub const TRIANGLE_STRIP: u32 = 0x0005;
+    pub const TRIANGLE_STRIP: f64 = 5.0;
 
     /// `WebGLRenderingContext.TRIANGLE_FAN`
-    pub const TRIANGLE_FAN: u32 = 0x0006;
+    pub const TRIANGLE_FAN: f64 = 6.0;
 
     /// `WebGLRenderingContext.ZERO`
-    pub const ZERO: u32 = 0;
+    pub const ZERO: f64 = 0.0;
 
     /// `WebGLRenderingContext.ONE`
-    pub const ONE: u32 = 1;
+    pub const ONE: f64 = 1.0;
 
     /// `WebGLRenderingContext.SRC_COLOR`
-    pub const SRC_COLOR: u32 = 0x0300;
+    pub const SRC_COLOR: f64 = 768.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_SRC_COLOR`
-    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
+    pub const ONE_MINUS_SRC_COLOR: f64 = 769.0;
 
     /// `WebGLRenderingContext.SRC_ALPHA`
-    pub const SRC_ALPHA: u32 = 0x0302;
+    pub const SRC_ALPHA: f64 = 770.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_SRC_ALPHA`
-    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
+    pub const ONE_MINUS_SRC_ALPHA: f64 = 771.0;
 
     /// `WebGLRenderingContext.DST_ALPHA`
-    pub const DST_ALPHA: u32 = 0x0304;
+    pub const DST_ALPHA: f64 = 772.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_DST_ALPHA`
-    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
+    pub const ONE_MINUS_DST_ALPHA: f64 = 773.0;
 
     /// `WebGLRenderingContext.DST_COLOR`
-    pub const DST_COLOR: u32 = 0x0306;
+    pub const DST_COLOR: f64 = 774.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_DST_COLOR`
-    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
+    pub const ONE_MINUS_DST_COLOR: f64 = 775.0;
 
     /// `WebGLRenderingContext.SRC_ALPHA_SATURATE`
-    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
+    pub const SRC_ALPHA_SATURATE: f64 = 776.0;
 
     /// `WebGLRenderingContext.FUNC_ADD`
-    pub const FUNC_ADD: u32 = 0x8006;
+    pub const FUNC_ADD: f64 = 32774.0;
 
     /// `WebGLRenderingContext.BLEND_EQUATION`
-    pub const BLEND_EQUATION: u32 = 0x8009;
+    pub const BLEND_EQUATION: f64 = 32777.0;
 
     /// `WebGLRenderingContext.BLEND_EQUATION_RGB`
-    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
+    pub const BLEND_EQUATION_RGB: f64 = 32777.0;
 
     /// `WebGLRenderingContext.BLEND_EQUATION_ALPHA`
-    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
+    pub const BLEND_EQUATION_ALPHA: f64 = 34877.0;
 
     /// `WebGLRenderingContext.FUNC_SUBTRACT`
-    pub const FUNC_SUBTRACT: u32 = 0x800A;
+    pub const FUNC_SUBTRACT: f64 = 32778.0;
 
     /// `WebGLRenderingContext.FUNC_REVERSE_SUBTRACT`
-    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
+    pub const FUNC_REVERSE_SUBTRACT: f64 = 32779.0;
 
     /// `WebGLRenderingContext.BLEND_DST_RGB`
-    pub const BLEND_DST_RGB: u32 = 0x80C8;
+    pub const BLEND_DST_RGB: f64 = 32968.0;
 
     /// `WebGLRenderingContext.BLEND_SRC_RGB`
-    pub const BLEND_SRC_RGB: u32 = 0x80C9;
+    pub const BLEND_SRC_RGB: f64 = 32969.0;
 
     /// `WebGLRenderingContext.BLEND_DST_ALPHA`
-    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
+    pub const BLEND_DST_ALPHA: f64 = 32970.0;
 
     /// `WebGLRenderingContext.BLEND_SRC_ALPHA`
-    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
+    pub const BLEND_SRC_ALPHA: f64 = 32971.0;
 
     /// `WebGLRenderingContext.CONSTANT_COLOR`
-    pub const CONSTANT_COLOR: u32 = 0x8001;
+    pub const CONSTANT_COLOR: f64 = 32769.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_COLOR`
-    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
+    pub const ONE_MINUS_CONSTANT_COLOR: f64 = 32770.0;
 
     /// `WebGLRenderingContext.CONSTANT_ALPHA`
-    pub const CONSTANT_ALPHA: u32 = 0x8003;
+    pub const CONSTANT_ALPHA: f64 = 32771.0;
 
     /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_ALPHA`
-    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
+    pub const ONE_MINUS_CONSTANT_ALPHA: f64 = 32772.0;
 
     /// `WebGLRenderingContext.BLEND_COLOR`
-    pub const BLEND_COLOR: u32 = 0x8005;
+    pub const BLEND_COLOR: f64 = 32773.0;
 
     /// `WebGLRenderingContext.ARRAY_BUFFER`
-    pub const ARRAY_BUFFER: u32 = 0x8892;
+    pub const ARRAY_BUFFER: f64 = 34962.0;
 
     /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER`
-    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
+    pub const ELEMENT_ARRAY_BUFFER: f64 = 34963.0;
 
     /// `WebGLRenderingContext.ARRAY_BUFFER_BINDING`
-    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
+    pub const ARRAY_BUFFER_BINDING: f64 = 34964.0;
 
     /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
-    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: f64 = 34965.0;
 
     /// `WebGLRenderingContext.STREAM_DRAW`
-    pub const STREAM_DRAW: u32 = 0x88E0;
+    pub const STREAM_DRAW: f64 = 35040.0;
 
     /// `WebGLRenderingContext.STATIC_DRAW`
-    pub const STATIC_DRAW: u32 = 0x88E4;
+    pub const STATIC_DRAW: f64 = 35044.0;
 
     /// `WebGLRenderingContext.DYNAMIC_DRAW`
-    pub const DYNAMIC_DRAW: u32 = 0x88E8;
+    pub const DYNAMIC_DRAW: f64 = 35048.0;
 
     /// `WebGLRenderingContext.BUFFER_SIZE`
-    pub const BUFFER_SIZE: u32 = 0x8764;
+    pub const BUFFER_SIZE: f64 = 34660.0;
 
     /// `WebGLRenderingContext.BUFFER_USAGE`
-    pub const BUFFER_USAGE: u32 = 0x8765;
+    pub const BUFFER_USAGE: f64 = 34661.0;
 
     /// `WebGLRenderingContext.CURRENT_VERTEX_ATTRIB`
-    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
+    pub const CURRENT_VERTEX_ATTRIB: f64 = 34342.0;
 
     /// `WebGLRenderingContext.FRONT`
-    pub const FRONT: u32 = 0x0404;
+    pub const FRONT: f64 = 1028.0;
 
     /// `WebGLRenderingContext.BACK`
-    pub const BACK: u32 = 0x0405;
+    pub const BACK: f64 = 1029.0;
 
     /// `WebGLRenderingContext.FRONT_AND_BACK`
-    pub const FRONT_AND_BACK: u32 = 0x0408;
+    pub const FRONT_AND_BACK: f64 = 1032.0;
 
     /// `WebGLRenderingContext.CULL_FACE`
-    pub const CULL_FACE: u32 = 0x0B44;
+    pub const CULL_FACE: f64 = 2884.0;
 
     /// `WebGLRenderingContext.BLEND`
-    pub const BLEND: u32 = 0x0BE2;
+    pub const BLEND: f64 = 3042.0;
 
     /// `WebGLRenderingContext.DITHER`
-    pub const DITHER: u32 = 0x0BD0;
+    pub const DITHER: f64 = 3024.0;
 
     /// `WebGLRenderingContext.STENCIL_TEST`
-    pub const STENCIL_TEST: u32 = 0x0B90;
+    pub const STENCIL_TEST: f64 = 2960.0;
 
     /// `WebGLRenderingContext.DEPTH_TEST`
-    pub const DEPTH_TEST: u32 = 0x0B71;
+    pub const DEPTH_TEST: f64 = 2929.0;
 
     /// `WebGLRenderingContext.SCISSOR_TEST`
-    pub const SCISSOR_TEST: u32 = 0x0C11;
+    pub const SCISSOR_TEST: f64 = 3089.0;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_FILL`
-    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
+    pub const POLYGON_OFFSET_FILL: f64 = 32823.0;
 
     /// `WebGLRenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
-    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
+    pub const SAMPLE_ALPHA_TO_COVERAGE: f64 = 32926.0;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE`
-    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
+    pub const SAMPLE_COVERAGE: f64 = 32928.0;
 
     /// `WebGLRenderingContext.NO_ERROR`
-    pub const NO_ERROR: u32 = 0;
+    pub const NO_ERROR: f64 = 0.0;
 
     /// `WebGLRenderingContext.INVALID_ENUM`
-    pub const INVALID_ENUM: u32 = 0x0500;
+    pub const INVALID_ENUM: f64 = 1280.0;
 
     /// `WebGLRenderingContext.INVALID_VALUE`
-    pub const INVALID_VALUE: u32 = 0x0501;
+    pub const INVALID_VALUE: f64 = 1281.0;
 
     /// `WebGLRenderingContext.INVALID_OPERATION`
-    pub const INVALID_OPERATION: u32 = 0x0502;
+    pub const INVALID_OPERATION: f64 = 1282.0;
 
     /// `WebGLRenderingContext.OUT_OF_MEMORY`
-    pub const OUT_OF_MEMORY: u32 = 0x0505;
+    pub const OUT_OF_MEMORY: f64 = 1285.0;
 
     /// `WebGLRenderingContext.CW`
-    pub const CW: u32 = 0x0900;
+    pub const CW: f64 = 2304.0;
 
     /// `WebGLRenderingContext.CCW`
-    pub const CCW: u32 = 0x0901;
+    pub const CCW: f64 = 2305.0;
 
     /// `WebGLRenderingContext.LINE_WIDTH`
-    pub const LINE_WIDTH: u32 = 0x0B21;
+    pub const LINE_WIDTH: f64 = 2849.0;
 
     /// `WebGLRenderingContext.ALIASED_POINT_SIZE_RANGE`
-    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
+    pub const ALIASED_POINT_SIZE_RANGE: f64 = 33901.0;
 
     /// `WebGLRenderingContext.ALIASED_LINE_WIDTH_RANGE`
-    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
+    pub const ALIASED_LINE_WIDTH_RANGE: f64 = 33902.0;
 
     /// `WebGLRenderingContext.CULL_FACE_MODE`
-    pub const CULL_FACE_MODE: u32 = 0x0B45;
+    pub const CULL_FACE_MODE: f64 = 2885.0;
 
     /// `WebGLRenderingContext.FRONT_FACE`
-    pub const FRONT_FACE: u32 = 0x0B46;
+    pub const FRONT_FACE: f64 = 2886.0;
 
     /// `WebGLRenderingContext.DEPTH_RANGE`
-    pub const DEPTH_RANGE: u32 = 0x0B70;
+    pub const DEPTH_RANGE: f64 = 2928.0;
 
     /// `WebGLRenderingContext.DEPTH_WRITEMASK`
-    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
+    pub const DEPTH_WRITEMASK: f64 = 2930.0;
 
     /// `WebGLRenderingContext.DEPTH_CLEAR_VALUE`
-    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
+    pub const DEPTH_CLEAR_VALUE: f64 = 2931.0;
 
     /// `WebGLRenderingContext.DEPTH_FUNC`
-    pub const DEPTH_FUNC: u32 = 0x0B74;
+    pub const DEPTH_FUNC: f64 = 2932.0;
 
     /// `WebGLRenderingContext.STENCIL_CLEAR_VALUE`
-    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
+    pub const STENCIL_CLEAR_VALUE: f64 = 2961.0;
 
     /// `WebGLRenderingContext.STENCIL_FUNC`
-    pub const STENCIL_FUNC: u32 = 0x0B92;
+    pub const STENCIL_FUNC: f64 = 2962.0;
 
     /// `WebGLRenderingContext.STENCIL_FAIL`
-    pub const STENCIL_FAIL: u32 = 0x0B94;
+    pub const STENCIL_FAIL: f64 = 2964.0;
 
     /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_FAIL`
-    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
+    pub const STENCIL_PASS_DEPTH_FAIL: f64 = 2965.0;
 
     /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_PASS`
-    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
+    pub const STENCIL_PASS_DEPTH_PASS: f64 = 2966.0;
 
     /// `WebGLRenderingContext.STENCIL_REF`
-    pub const STENCIL_REF: u32 = 0x0B97;
+    pub const STENCIL_REF: f64 = 2967.0;
 
     /// `WebGLRenderingContext.STENCIL_VALUE_MASK`
-    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
+    pub const STENCIL_VALUE_MASK: f64 = 2963.0;
 
     /// `WebGLRenderingContext.STENCIL_WRITEMASK`
-    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
+    pub const STENCIL_WRITEMASK: f64 = 2968.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_FUNC`
-    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
+    pub const STENCIL_BACK_FUNC: f64 = 34816.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_FAIL`
-    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
+    pub const STENCIL_BACK_FAIL: f64 = 34817.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
-    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: f64 = 34818.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
-    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: f64 = 34819.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_REF`
-    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
+    pub const STENCIL_BACK_REF: f64 = 36003.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_VALUE_MASK`
-    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
+    pub const STENCIL_BACK_VALUE_MASK: f64 = 36004.0;
 
     /// `WebGLRenderingContext.STENCIL_BACK_WRITEMASK`
-    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
+    pub const STENCIL_BACK_WRITEMASK: f64 = 36005.0;
 
     /// `WebGLRenderingContext.VIEWPORT`
-    pub const VIEWPORT: u32 = 0x0BA2;
+    pub const VIEWPORT: f64 = 2978.0;
 
     /// `WebGLRenderingContext.SCISSOR_BOX`
-    pub const SCISSOR_BOX: u32 = 0x0C10;
+    pub const SCISSOR_BOX: f64 = 3088.0;
 
     /// `WebGLRenderingContext.COLOR_CLEAR_VALUE`
-    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
+    pub const COLOR_CLEAR_VALUE: f64 = 3106.0;
 
     /// `WebGLRenderingContext.COLOR_WRITEMASK`
-    pub const COLOR_WRITEMASK: u32 = 0x0C23;
+    pub const COLOR_WRITEMASK: f64 = 3107.0;
 
     /// `WebGLRenderingContext.UNPACK_ALIGNMENT`
-    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
+    pub const UNPACK_ALIGNMENT: f64 = 3317.0;
 
     /// `WebGLRenderingContext.PACK_ALIGNMENT`
-    pub const PACK_ALIGNMENT: u32 = 0x0D05;
+    pub const PACK_ALIGNMENT: f64 = 3333.0;
 
     /// `WebGLRenderingContext.MAX_TEXTURE_SIZE`
-    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
+    pub const MAX_TEXTURE_SIZE: f64 = 3379.0;
 
     /// `WebGLRenderingContext.MAX_VIEWPORT_DIMS`
-    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
+    pub const MAX_VIEWPORT_DIMS: f64 = 3386.0;
 
     /// `WebGLRenderingContext.SUBPIXEL_BITS`
-    pub const SUBPIXEL_BITS: u32 = 0x0D50;
+    pub const SUBPIXEL_BITS: f64 = 3408.0;
 
     /// `WebGLRenderingContext.RED_BITS`
-    pub const RED_BITS: u32 = 0x0D52;
+    pub const RED_BITS: f64 = 3410.0;
 
     /// `WebGLRenderingContext.GREEN_BITS`
-    pub const GREEN_BITS: u32 = 0x0D53;
+    pub const GREEN_BITS: f64 = 3411.0;
 
     /// `WebGLRenderingContext.BLUE_BITS`
-    pub const BLUE_BITS: u32 = 0x0D54;
+    pub const BLUE_BITS: f64 = 3412.0;
 
     /// `WebGLRenderingContext.ALPHA_BITS`
-    pub const ALPHA_BITS: u32 = 0x0D55;
+    pub const ALPHA_BITS: f64 = 3413.0;
 
     /// `WebGLRenderingContext.DEPTH_BITS`
-    pub const DEPTH_BITS: u32 = 0x0D56;
+    pub const DEPTH_BITS: f64 = 3414.0;
 
     /// `WebGLRenderingContext.STENCIL_BITS`
-    pub const STENCIL_BITS: u32 = 0x0D57;
+    pub const STENCIL_BITS: f64 = 3415.0;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_UNITS`
-    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
+    pub const POLYGON_OFFSET_UNITS: f64 = 10752.0;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_FACTOR`
-    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
+    pub const POLYGON_OFFSET_FACTOR: f64 = 32824.0;
 
     /// `WebGLRenderingContext.TEXTURE_BINDING_2D`
-    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
+    pub const TEXTURE_BINDING_2D: f64 = 32873.0;
 
     /// `WebGLRenderingContext.SAMPLE_BUFFERS`
-    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
+    pub const SAMPLE_BUFFERS: f64 = 32936.0;
 
     /// `WebGLRenderingContext.SAMPLES`
-    pub const SAMPLES: u32 = 0x80A9;
+    pub const SAMPLES: f64 = 32937.0;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE_VALUE`
-    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
+    pub const SAMPLE_COVERAGE_VALUE: f64 = 32938.0;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE_INVERT`
-    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
+    pub const SAMPLE_COVERAGE_INVERT: f64 = 32939.0;
 
     /// `WebGLRenderingContext.COMPRESSED_TEXTURE_FORMATS`
-    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
+    pub const COMPRESSED_TEXTURE_FORMATS: f64 = 34467.0;
 
     /// `WebGLRenderingContext.DONT_CARE`
-    pub const DONT_CARE: u32 = 0x1100;
+    pub const DONT_CARE: f64 = 4352.0;
 
     /// `WebGLRenderingContext.FASTEST`
-    pub const FASTEST: u32 = 0x1101;
+    pub const FASTEST: f64 = 4353.0;
 
     /// `WebGLRenderingContext.NICEST`
-    pub const NICEST: u32 = 0x1102;
+    pub const NICEST: f64 = 4354.0;
 
     /// `WebGLRenderingContext.GENERATE_MIPMAP_HINT`
-    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
+    pub const GENERATE_MIPMAP_HINT: f64 = 33170.0;
 
     /// `WebGLRenderingContext.BYTE`
-    pub const BYTE: u32 = 0x1400;
+    pub const BYTE: f64 = 5120.0;
 
     /// `WebGLRenderingContext.UNSIGNED_BYTE`
-    pub const UNSIGNED_BYTE: u32 = 0x1401;
+    pub const UNSIGNED_BYTE: f64 = 5121.0;
 
     /// `WebGLRenderingContext.SHORT`
-    pub const SHORT: u32 = 0x1402;
+    pub const SHORT: f64 = 5122.0;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT`
-    pub const UNSIGNED_SHORT: u32 = 0x1403;
+    pub const UNSIGNED_SHORT: f64 = 5123.0;
 
     /// `WebGLRenderingContext.INT`
-    pub const INT: u32 = 0x1404;
+    pub const INT: f64 = 5124.0;
 
     /// `WebGLRenderingContext.UNSIGNED_INT`
-    pub const UNSIGNED_INT: u32 = 0x1405;
+    pub const UNSIGNED_INT: f64 = 5125.0;
 
     /// `WebGLRenderingContext.FLOAT`
-    pub const FLOAT: u32 = 0x1406;
+    pub const FLOAT: f64 = 5126.0;
 
     /// `WebGLRenderingContext.DEPTH_COMPONENT`
-    pub const DEPTH_COMPONENT: u32 = 0x1902;
+    pub const DEPTH_COMPONENT: f64 = 6402.0;
 
     /// `WebGLRenderingContext.ALPHA`
-    pub const ALPHA: u32 = 0x1906;
+    pub const ALPHA: f64 = 6406.0;
 
     /// `WebGLRenderingContext.RGB`
-    pub const RGB: u32 = 0x1907;
+    pub const RGB: f64 = 6407.0;
 
     /// `WebGLRenderingContext.RGBA`
-    pub const RGBA: u32 = 0x1908;
+    pub const RGBA: f64 = 6408.0;
 
     /// `WebGLRenderingContext.LUMINANCE`
-    pub const LUMINANCE: u32 = 0x1909;
+    pub const LUMINANCE: f64 = 6409.0;
 
     /// `WebGLRenderingContext.LUMINANCE_ALPHA`
-    pub const LUMINANCE_ALPHA: u32 = 0x190A;
+    pub const LUMINANCE_ALPHA: f64 = 6410.0;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_4_4_4_4`
-    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
+    pub const UNSIGNED_SHORT_4_4_4_4: f64 = 32819.0;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_5_5_5_1`
-    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
+    pub const UNSIGNED_SHORT_5_5_5_1: f64 = 32820.0;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_5_6_5`
-    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
+    pub const UNSIGNED_SHORT_5_6_5: f64 = 33635.0;
 
     /// `WebGLRenderingContext.FRAGMENT_SHADER`
-    pub const FRAGMENT_SHADER: u32 = 0x8B30;
+    pub const FRAGMENT_SHADER: f64 = 35632.0;
 
     /// `WebGLRenderingContext.VERTEX_SHADER`
-    pub const VERTEX_SHADER: u32 = 0x8B31;
+    pub const VERTEX_SHADER: f64 = 35633.0;
 
     /// `WebGLRenderingContext.MAX_VERTEX_ATTRIBS`
-    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
+    pub const MAX_VERTEX_ATTRIBS: f64 = 34921.0;
 
     /// `WebGLRenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
-    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
+    pub const MAX_VERTEX_UNIFORM_VECTORS: f64 = 36347.0;
 
     /// `WebGLRenderingContext.MAX_VARYING_VECTORS`
-    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
+    pub const MAX_VARYING_VECTORS: f64 = 36348.0;
 
     /// `WebGLRenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
-    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: f64 = 35661.0;
 
     /// `WebGLRenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: f64 = 35660.0;
 
     /// `WebGLRenderingContext.MAX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
+    pub const MAX_TEXTURE_IMAGE_UNITS: f64 = 34930.0;
 
     /// `WebGLRenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
-    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: f64 = 36349.0;
 
     /// `WebGLRenderingContext.SHADER_TYPE`
-    pub const SHADER_TYPE: u32 = 0x8B4F;
+    pub const SHADER_TYPE: f64 = 35663.0;
 
     /// `WebGLRenderingContext.DELETE_STATUS`
-    pub const DELETE_STATUS: u32 = 0x8B80;
+    pub const DELETE_STATUS: f64 = 35712.0;
 
     /// `WebGLRenderingContext.LINK_STATUS`
-    pub const LINK_STATUS: u32 = 0x8B82;
+    pub const LINK_STATUS: f64 = 35714.0;
 
     /// `WebGLRenderingContext.VALIDATE_STATUS`
-    pub const VALIDATE_STATUS: u32 = 0x8B83;
+    pub const VALIDATE_STATUS: f64 = 35715.0;
 
     /// `WebGLRenderingContext.ATTACHED_SHADERS`
-    pub const ATTACHED_SHADERS: u32 = 0x8B85;
+    pub const ATTACHED_SHADERS: f64 = 35717.0;
 
     /// `WebGLRenderingContext.ACTIVE_UNIFORMS`
-    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
+    pub const ACTIVE_UNIFORMS: f64 = 35718.0;
 
     /// `WebGLRenderingContext.ACTIVE_ATTRIBUTES`
-    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
+    pub const ACTIVE_ATTRIBUTES: f64 = 35721.0;
 
     /// `WebGLRenderingContext.SHADING_LANGUAGE_VERSION`
-    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
+    pub const SHADING_LANGUAGE_VERSION: f64 = 35724.0;
 
     /// `WebGLRenderingContext.CURRENT_PROGRAM`
-    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
+    pub const CURRENT_PROGRAM: f64 = 35725.0;
 
     /// `WebGLRenderingContext.NEVER`
-    pub const NEVER: u32 = 0x0200;
+    pub const NEVER: f64 = 512.0;
 
     /// `WebGLRenderingContext.LESS`
-    pub const LESS: u32 = 0x0201;
+    pub const LESS: f64 = 513.0;
 
     /// `WebGLRenderingContext.EQUAL`
-    pub const EQUAL: u32 = 0x0202;
+    pub const EQUAL: f64 = 514.0;
 
     /// `WebGLRenderingContext.LEQUAL`
-    pub const LEQUAL: u32 = 0x0203;
+    pub const LEQUAL: f64 = 515.0;
 
     /// `WebGLRenderingContext.GREATER`
-    pub const GREATER: u32 = 0x0204;
+    pub const GREATER: f64 = 516.0;
 
     /// `WebGLRenderingContext.NOTEQUAL`
-    pub const NOTEQUAL: u32 = 0x0205;
+    pub const NOTEQUAL: f64 = 517.0;
 
     /// `WebGLRenderingContext.GEQUAL`
-    pub const GEQUAL: u32 = 0x0206;
+    pub const GEQUAL: f64 = 518.0;
 
     /// `WebGLRenderingContext.ALWAYS`
-    pub const ALWAYS: u32 = 0x0207;
+    pub const ALWAYS: f64 = 519.0;
 
     /// `WebGLRenderingContext.KEEP`
-    pub const KEEP: u32 = 0x1E00;
+    pub const KEEP: f64 = 7680.0;
 
     /// `WebGLRenderingContext.REPLACE`
-    pub const REPLACE: u32 = 0x1E01;
+    pub const REPLACE: f64 = 7681.0;
 
     /// `WebGLRenderingContext.INCR`
-    pub const INCR: u32 = 0x1E02;
+    pub const INCR: f64 = 7682.0;
 
     /// `WebGLRenderingContext.DECR`
-    pub const DECR: u32 = 0x1E03;
+    pub const DECR: f64 = 7683.0;
 
     /// `WebGLRenderingContext.INVERT`
-    pub const INVERT: u32 = 0x150A;
+    pub const INVERT: f64 = 5386.0;
 
     /// `WebGLRenderingContext.INCR_WRAP`
-    pub const INCR_WRAP: u32 = 0x8507;
+    pub const INCR_WRAP: f64 = 34055.0;
 
     /// `WebGLRenderingContext.DECR_WRAP`
-    pub const DECR_WRAP: u32 = 0x8508;
+    pub const DECR_WRAP: f64 = 34056.0;
 
     /// `WebGLRenderingContext.VENDOR`
-    pub const VENDOR: u32 = 0x1F00;
+    pub const VENDOR: f64 = 7936.0;
 
     /// `WebGLRenderingContext.RENDERER`
-    pub const RENDERER: u32 = 0x1F01;
+    pub const RENDERER: f64 = 7937.0;
 
     /// `WebGLRenderingContext.VERSION`
-    pub const VERSION: u32 = 0x1F02;
+    pub const VERSION: f64 = 7938.0;
 
     /// `WebGLRenderingContext.NEAREST`
-    pub const NEAREST: u32 = 0x2600;
+    pub const NEAREST: f64 = 9728.0;
 
     /// `WebGLRenderingContext.LINEAR`
-    pub const LINEAR: u32 = 0x2601;
+    pub const LINEAR: f64 = 9729.0;
 
     /// `WebGLRenderingContext.NEAREST_MIPMAP_NEAREST`
-    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
+    pub const NEAREST_MIPMAP_NEAREST: f64 = 9984.0;
 
     /// `WebGLRenderingContext.LINEAR_MIPMAP_NEAREST`
-    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
+    pub const LINEAR_MIPMAP_NEAREST: f64 = 9985.0;
 
     /// `WebGLRenderingContext.NEAREST_MIPMAP_LINEAR`
-    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
+    pub const NEAREST_MIPMAP_LINEAR: f64 = 9986.0;
 
     /// `WebGLRenderingContext.LINEAR_MIPMAP_LINEAR`
-    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
+    pub const LINEAR_MIPMAP_LINEAR: f64 = 9987.0;
 
     /// `WebGLRenderingContext.TEXTURE_MAG_FILTER`
-    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
+    pub const TEXTURE_MAG_FILTER: f64 = 10240.0;
 
     /// `WebGLRenderingContext.TEXTURE_MIN_FILTER`
-    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
+    pub const TEXTURE_MIN_FILTER: f64 = 10241.0;
 
     /// `WebGLRenderingContext.TEXTURE_WRAP_S`
-    pub const TEXTURE_WRAP_S: u32 = 0x2802;
+    pub const TEXTURE_WRAP_S: f64 = 10242.0;
 
     /// `WebGLRenderingContext.TEXTURE_WRAP_T`
-    pub const TEXTURE_WRAP_T: u32 = 0x2803;
+    pub const TEXTURE_WRAP_T: f64 = 10243.0;
 
     /// `WebGLRenderingContext.TEXTURE_2D`
-    pub const TEXTURE_2D: u32 = 0x0DE1;
+    pub const TEXTURE_2D: f64 = 3553.0;
 
     /// `WebGLRenderingContext.TEXTURE`
-    pub const TEXTURE: u32 = 0x1702;
+    pub const TEXTURE: f64 = 5890.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP`
-    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
+    pub const TEXTURE_CUBE_MAP: f64 = 34067.0;
 
     /// `WebGLRenderingContext.TEXTURE_BINDING_CUBE_MAP`
-    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
+    pub const TEXTURE_BINDING_CUBE_MAP: f64 = 34068.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: f64 = 34069.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: f64 = 34070.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: f64 = 34071.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: f64 = 34072.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: f64 = 34073.0;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: f64 = 34074.0;
 
     /// `WebGLRenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
-    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: f64 = 34076.0;
 
     /// `WebGLRenderingContext.TEXTURE0`
-    pub const TEXTURE0: u32 = 0x84C0;
+    pub const TEXTURE0: f64 = 33984.0;
 
     /// `WebGLRenderingContext.TEXTURE1`
-    pub const TEXTURE1: u32 = 0x84C1;
+    pub const TEXTURE1: f64 = 33985.0;
 
     /// `WebGLRenderingContext.TEXTURE2`
-    pub const TEXTURE2: u32 = 0x84C2;
+    pub const TEXTURE2: f64 = 33986.0;
 
     /// `WebGLRenderingContext.TEXTURE3`
-    pub const TEXTURE3: u32 = 0x84C3;
+    pub const TEXTURE3: f64 = 33987.0;
 
     /// `WebGLRenderingContext.TEXTURE4`
-    pub const TEXTURE4: u32 = 0x84C4;
+    pub const TEXTURE4: f64 = 33988.0;
 
     /// `WebGLRenderingContext.TEXTURE5`
-    pub const TEXTURE5: u32 = 0x84C5;
+    pub const TEXTURE5: f64 = 33989.0;
 
     /// `WebGLRenderingContext.TEXTURE6`
-    pub const TEXTURE6: u32 = 0x84C6;
+    pub const TEXTURE6: f64 = 33990.0;
 
     /// `WebGLRenderingContext.TEXTURE7`
-    pub const TEXTURE7: u32 = 0x84C7;
+    pub const TEXTURE7: f64 = 33991.0;
 
     /// `WebGLRenderingContext.TEXTURE8`
-    pub const TEXTURE8: u32 = 0x84C8;
+    pub const TEXTURE8: f64 = 33992.0;
 
     /// `WebGLRenderingContext.TEXTURE9`
-    pub const TEXTURE9: u32 = 0x84C9;
+    pub const TEXTURE9: f64 = 33993.0;
 
     /// `WebGLRenderingContext.TEXTURE10`
-    pub const TEXTURE10: u32 = 0x84CA;
+    pub const TEXTURE10: f64 = 33994.0;
 
     /// `WebGLRenderingContext.TEXTURE11`
-    pub const TEXTURE11: u32 = 0x84CB;
+    pub const TEXTURE11: f64 = 33995.0;
 
     /// `WebGLRenderingContext.TEXTURE12`
-    pub const TEXTURE12: u32 = 0x84CC;
+    pub const TEXTURE12: f64 = 33996.0;
 
     /// `WebGLRenderingContext.TEXTURE13`
-    pub const TEXTURE13: u32 = 0x84CD;
+    pub const TEXTURE13: f64 = 33997.0;
 
     /// `WebGLRenderingContext.TEXTURE14`
-    pub const TEXTURE14: u32 = 0x84CE;
+    pub const TEXTURE14: f64 = 33998.0;
 
     /// `WebGLRenderingContext.TEXTURE15`
-    pub const TEXTURE15: u32 = 0x84CF;
+    pub const TEXTURE15: f64 = 33999.0;
 
     /// `WebGLRenderingContext.TEXTURE16`
-    pub const TEXTURE16: u32 = 0x84D0;
+    pub const TEXTURE16: f64 = 34000.0;
 
     /// `WebGLRenderingContext.TEXTURE17`
-    pub const TEXTURE17: u32 = 0x84D1;
+    pub const TEXTURE17: f64 = 34001.0;
 
     /// `WebGLRenderingContext.TEXTURE18`
-    pub const TEXTURE18: u32 = 0x84D2;
+    pub const TEXTURE18: f64 = 34002.0;
 
     /// `WebGLRenderingContext.TEXTURE19`
-    pub const TEXTURE19: u32 = 0x84D3;
+    pub const TEXTURE19: f64 = 34003.0;
 
     /// `WebGLRenderingContext.TEXTURE20`
-    pub const TEXTURE20: u32 = 0x84D4;
+    pub const TEXTURE20: f64 = 34004.0;
 
     /// `WebGLRenderingContext.TEXTURE21`
-    pub const TEXTURE21: u32 = 0x84D5;
+    pub const TEXTURE21: f64 = 34005.0;
 
     /// `WebGLRenderingContext.TEXTURE22`
-    pub const TEXTURE22: u32 = 0x84D6;
+    pub const TEXTURE22: f64 = 34006.0;
 
     /// `WebGLRenderingContext.TEXTURE23`
-    pub const TEXTURE23: u32 = 0x84D7;
+    pub const TEXTURE23: f64 = 34007.0;
 
     /// `WebGLRenderingContext.TEXTURE24`
-    pub const TEXTURE24: u32 = 0x84D8;
+    pub const TEXTURE24: f64 = 34008.0;
 
     /// `WebGLRenderingContext.TEXTURE25`
-    pub const TEXTURE25: u32 = 0x84D9;
+    pub const TEXTURE25: f64 = 34009.0;
 
     /// `WebGLRenderingContext.TEXTURE26`
-    pub const TEXTURE26: u32 = 0x84DA;
+    pub const TEXTURE26: f64 = 34010.0;
 
     /// `WebGLRenderingContext.TEXTURE27`
-    pub const TEXTURE27: u32 = 0x84DB;
+    pub const TEXTURE27: f64 = 34011.0;
 
     /// `WebGLRenderingContext.TEXTURE28`
-    pub const TEXTURE28: u32 = 0x84DC;
+    pub const TEXTURE28: f64 = 34012.0;
 
     /// `WebGLRenderingContext.TEXTURE29`
-    pub const TEXTURE29: u32 = 0x84DD;
+    pub const TEXTURE29: f64 = 34013.0;
 
     /// `WebGLRenderingContext.TEXTURE30`
-    pub const TEXTURE30: u32 = 0x84DE;
+    pub const TEXTURE30: f64 = 34014.0;
 
     /// `WebGLRenderingContext.TEXTURE31`
-    pub const TEXTURE31: u32 = 0x84DF;
+    pub const TEXTURE31: f64 = 34015.0;
 
     /// `WebGLRenderingContext.ACTIVE_TEXTURE`
-    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
+    pub const ACTIVE_TEXTURE: f64 = 34016.0;
 
     /// `WebGLRenderingContext.REPEAT`
-    pub const REPEAT: u32 = 0x2901;
+    pub const REPEAT: f64 = 10497.0;
 
     /// `WebGLRenderingContext.CLAMP_TO_EDGE`
-    pub const CLAMP_TO_EDGE: u32 = 0x812F;
+    pub const CLAMP_TO_EDGE: f64 = 33071.0;
 
     /// `WebGLRenderingContext.MIRRORED_REPEAT`
-    pub const MIRRORED_REPEAT: u32 = 0x8370;
+    pub const MIRRORED_REPEAT: f64 = 33648.0;
 
     /// `WebGLRenderingContext.FLOAT_VEC2`
-    pub const FLOAT_VEC2: u32 = 0x8B50;
+    pub const FLOAT_VEC2: f64 = 35664.0;
 
     /// `WebGLRenderingContext.FLOAT_VEC3`
-    pub const FLOAT_VEC3: u32 = 0x8B51;
+    pub const FLOAT_VEC3: f64 = 35665.0;
 
     /// `WebGLRenderingContext.FLOAT_VEC4`
-    pub const FLOAT_VEC4: u32 = 0x8B52;
+    pub const FLOAT_VEC4: f64 = 35666.0;
 
     /// `WebGLRenderingContext.INT_VEC2`
-    pub const INT_VEC2: u32 = 0x8B53;
+    pub const INT_VEC2: f64 = 35667.0;
 
     /// `WebGLRenderingContext.INT_VEC3`
-    pub const INT_VEC3: u32 = 0x8B54;
+    pub const INT_VEC3: f64 = 35668.0;
 
     /// `WebGLRenderingContext.INT_VEC4`
-    pub const INT_VEC4: u32 = 0x8B55;
+    pub const INT_VEC4: f64 = 35669.0;
 
     /// `WebGLRenderingContext.BOOL`
-    pub const BOOL: u32 = 0x8B56;
+    pub const BOOL: f64 = 35670.0;
 
     /// `WebGLRenderingContext.BOOL_VEC2`
-    pub const BOOL_VEC2: u32 = 0x8B57;
+    pub const BOOL_VEC2: f64 = 35671.0;
 
     /// `WebGLRenderingContext.BOOL_VEC3`
-    pub const BOOL_VEC3: u32 = 0x8B58;
+    pub const BOOL_VEC3: f64 = 35672.0;
 
     /// `WebGLRenderingContext.BOOL_VEC4`
-    pub const BOOL_VEC4: u32 = 0x8B59;
+    pub const BOOL_VEC4: f64 = 35673.0;
 
     /// `WebGLRenderingContext.FLOAT_MAT2`
-    pub const FLOAT_MAT2: u32 = 0x8B5A;
+    pub const FLOAT_MAT2: f64 = 35674.0;
 
     /// `WebGLRenderingContext.FLOAT_MAT3`
-    pub const FLOAT_MAT3: u32 = 0x8B5B;
+    pub const FLOAT_MAT3: f64 = 35675.0;
 
     /// `WebGLRenderingContext.FLOAT_MAT4`
-    pub const FLOAT_MAT4: u32 = 0x8B5C;
+    pub const FLOAT_MAT4: f64 = 35676.0;
 
     /// `WebGLRenderingContext.SAMPLER_2D`
-    pub const SAMPLER_2D: u32 = 0x8B5E;
+    pub const SAMPLER_2D: f64 = 35678.0;
 
     /// `WebGLRenderingContext.SAMPLER_CUBE`
-    pub const SAMPLER_CUBE: u32 = 0x8B60;
+    pub const SAMPLER_CUBE: f64 = 35680.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
-    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: f64 = 34338.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
-    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: f64 = 34339.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
-    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: f64 = 34340.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
-    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: f64 = 34341.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
-    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: f64 = 34922.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
-    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: f64 = 34373.0;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
-    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: f64 = 34975.0;
 
     /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
-    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: f64 = 35738.0;
 
     /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
-    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: f64 = 35739.0;
 
     /// `WebGLRenderingContext.COMPILE_STATUS`
-    pub const COMPILE_STATUS: u32 = 0x8B81;
+    pub const COMPILE_STATUS: f64 = 35713.0;
 
     /// `WebGLRenderingContext.LOW_FLOAT`
-    pub const LOW_FLOAT: u32 = 0x8DF0;
+    pub const LOW_FLOAT: f64 = 36336.0;
 
     /// `WebGLRenderingContext.MEDIUM_FLOAT`
-    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
+    pub const MEDIUM_FLOAT: f64 = 36337.0;
 
     /// `WebGLRenderingContext.HIGH_FLOAT`
-    pub const HIGH_FLOAT: u32 = 0x8DF2;
+    pub const HIGH_FLOAT: f64 = 36338.0;
 
     /// `WebGLRenderingContext.LOW_INT`
-    pub const LOW_INT: u32 = 0x8DF3;
+    pub const LOW_INT: f64 = 36339.0;
 
     /// `WebGLRenderingContext.MEDIUM_INT`
-    pub const MEDIUM_INT: u32 = 0x8DF4;
+    pub const MEDIUM_INT: f64 = 36340.0;
 
     /// `WebGLRenderingContext.HIGH_INT`
-    pub const HIGH_INT: u32 = 0x8DF5;
+    pub const HIGH_INT: f64 = 36341.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER`
-    pub const FRAMEBUFFER: u32 = 0x8D40;
+    pub const FRAMEBUFFER: f64 = 36160.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER`
-    pub const RENDERBUFFER: u32 = 0x8D41;
+    pub const RENDERBUFFER: f64 = 36161.0;
 
     /// `WebGLRenderingContext.RGBA4`
-    pub const RGBA4: u32 = 0x8056;
+    pub const RGBA4: f64 = 32854.0;
 
     /// `WebGLRenderingContext.RGB5_A1`
-    pub const RGB5_A1: u32 = 0x8057;
+    pub const RGB5_A1: f64 = 32855.0;
 
     /// `WebGLRenderingContext.RGBA8`
-    pub const RGBA8: u32 = 0x8058;
+    pub const RGBA8: f64 = 32856.0;
 
     /// `WebGLRenderingContext.RGB565`
-    pub const RGB565: u32 = 0x8D62;
+    pub const RGB565: f64 = 36194.0;
 
     /// `WebGLRenderingContext.DEPTH_COMPONENT16`
-    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
+    pub const DEPTH_COMPONENT16: f64 = 33189.0;
 
     /// `WebGLRenderingContext.STENCIL_INDEX8`
-    pub const STENCIL_INDEX8: u32 = 0x8D48;
+    pub const STENCIL_INDEX8: f64 = 36168.0;
 
     /// `WebGLRenderingContext.DEPTH_STENCIL`
-    pub const DEPTH_STENCIL: u32 = 0x84F9;
+    pub const DEPTH_STENCIL: f64 = 34041.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_WIDTH`
-    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
+    pub const RENDERBUFFER_WIDTH: f64 = 36162.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_HEIGHT`
-    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
+    pub const RENDERBUFFER_HEIGHT: f64 = 36163.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
-    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
+    pub const RENDERBUFFER_INTERNAL_FORMAT: f64 = 36164.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_RED_SIZE`
-    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
+    pub const RENDERBUFFER_RED_SIZE: f64 = 36176.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_GREEN_SIZE`
-    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
+    pub const RENDERBUFFER_GREEN_SIZE: f64 = 36177.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_BLUE_SIZE`
-    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
+    pub const RENDERBUFFER_BLUE_SIZE: f64 = 36178.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_ALPHA_SIZE`
-    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
+    pub const RENDERBUFFER_ALPHA_SIZE: f64 = 36179.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_DEPTH_SIZE`
-    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
+    pub const RENDERBUFFER_DEPTH_SIZE: f64 = 36180.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_STENCIL_SIZE`
-    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
+    pub const RENDERBUFFER_STENCIL_SIZE: f64 = 36181.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: f64 = 36048.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: f64 = 36049.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: f64 = 36050.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: f64 = 36051.0;
 
     /// `WebGLRenderingContext.COLOR_ATTACHMENT0`
-    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
+    pub const COLOR_ATTACHMENT0: f64 = 36064.0;
 
     /// `WebGLRenderingContext.DEPTH_ATTACHMENT`
-    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
+    pub const DEPTH_ATTACHMENT: f64 = 36096.0;
 
     /// `WebGLRenderingContext.STENCIL_ATTACHMENT`
-    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
+    pub const STENCIL_ATTACHMENT: f64 = 36128.0;
 
     /// `WebGLRenderingContext.DEPTH_STENCIL_ATTACHMENT`
-    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
+    pub const DEPTH_STENCIL_ATTACHMENT: f64 = 33306.0;
 
     /// `WebGLRenderingContext.NONE`
-    pub const NONE: u32 = 0;
+    pub const NONE: f64 = 0.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_COMPLETE`
-    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
+    pub const FRAMEBUFFER_COMPLETE: f64 = 36053.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: f64 = 36054.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: f64 = 36055.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
-    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: f64 = 36057.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_UNSUPPORTED`
-    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
+    pub const FRAMEBUFFER_UNSUPPORTED: f64 = 36061.0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_BINDING`
-    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
+    pub const FRAMEBUFFER_BINDING: f64 = 36006.0;
 
     /// `WebGLRenderingContext.RENDERBUFFER_BINDING`
-    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
+    pub const RENDERBUFFER_BINDING: f64 = 36007.0;
 
     /// `WebGLRenderingContext.MAX_RENDERBUFFER_SIZE`
-    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
+    pub const MAX_RENDERBUFFER_SIZE: f64 = 34024.0;
 
     /// `WebGLRenderingContext.INVALID_FRAMEBUFFER_OPERATION`
-    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
+    pub const INVALID_FRAMEBUFFER_OPERATION: f64 = 1286.0;
 
     /// `WebGLRenderingContext.UNPACK_FLIP_Y_WEBGL`
-    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
+    pub const UNPACK_FLIP_Y_WEBGL: f64 = 37440.0;
 
     /// `WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
-    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: f64 = 37441.0;
 
     /// `WebGLRenderingContext.CONTEXT_LOST_WEBGL`
-    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
+    pub const CONTEXT_LOST_WEBGL: f64 = 37442.0;
 
     /// `WebGLRenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
-    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: f64 = 37443.0;
 
     /// `WebGLRenderingContext.BROWSER_DEFAULT_WEBGL`
-    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
+    pub const BROWSER_DEFAULT_WEBGL: f64 = 37444.0;
 }
 
 impl WebGLRenderingContext {
@@ -85479,7 +85479,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn drawing_buffer_width(&self) -> i32 {
+    pub fn drawing_buffer_width(&self) -> f64 {
         unreachable!()
     }
 
@@ -85487,7 +85487,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "get drawingBufferHeight")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn drawing_buffer_height(&self) -> i32 {
+    pub fn drawing_buffer_height(&self) -> f64 {
         unreachable!()
     }
 
@@ -85560,7 +85560,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn active_texture(&self, texture: f64) {
+    pub fn active_texture(&self, texture: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85578,7 +85578,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_attrib_location(&self, program: &WebGLProgram, index: f64, name: &str) {
+    pub fn bind_attrib_location(&self, program: &WebGLProgram, index: impl Into<f64>, name: &str) {
         unreachable!()
     }
 
@@ -85587,7 +85587,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_buffer(&self, target: f64, buffer: &WebGLBuffer) {
+    pub fn bind_buffer(&self, target: impl Into<f64>, buffer: &WebGLBuffer) {
         unreachable!()
     }
 
@@ -85596,7 +85596,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_framebuffer(&self, target: f64, framebuffer: &WebGLFramebuffer) {
+    pub fn bind_framebuffer(&self, target: impl Into<f64>, framebuffer: &WebGLFramebuffer) {
         unreachable!()
     }
 
@@ -85605,7 +85605,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_renderbuffer(&self, target: f64, renderbuffer: &WebGLRenderbuffer) {
+    pub fn bind_renderbuffer(&self, target: impl Into<f64>, renderbuffer: &WebGLRenderbuffer) {
         unreachable!()
     }
 
@@ -85614,7 +85614,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn bind_texture(&self, target: f64, texture: &WebGLTexture) {
+    pub fn bind_texture(&self, target: impl Into<f64>, texture: &WebGLTexture) {
         unreachable!()
     }
 
@@ -85623,7 +85623,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_color(&self, red: f64, green: f64, blue: f64, alpha: f64) {
+    pub fn blend_color(&self, red: impl Into<f64>, green: impl Into<f64>, blue: impl Into<f64>, alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85632,7 +85632,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_equation(&self, mode: f64) {
+    pub fn blend_equation(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85641,7 +85641,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_equation_separate(&self, mode_rgb: f64, mode_alpha: f64) {
+    pub fn blend_equation_separate(&self, mode_rgb: impl Into<f64>, mode_alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85650,7 +85650,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_func(&self, sfactor: f64, dfactor: f64) {
+    pub fn blend_func(&self, sfactor: impl Into<f64>, dfactor: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85659,7 +85659,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn blend_func_separate(&self, src_rgb: f64, dst_rgb: f64, src_alpha: f64, dst_alpha: f64) {
+    pub fn blend_func_separate(&self, src_rgb: impl Into<f64>, dst_rgb: impl Into<f64>, src_alpha: impl Into<f64>, dst_alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85667,7 +85667,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "checkFramebufferStatus")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn check_framebuffer_status(&self, target: f64) -> u32 {
+    pub fn check_framebuffer_status(&self, target: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -85676,7 +85676,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear(&self, mask: f64) {
+    pub fn clear(&self, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85685,7 +85685,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_color(&self, red: f64, green: f64, blue: f64, alpha: f64) {
+    pub fn clear_color(&self, red: impl Into<f64>, green: impl Into<f64>, blue: impl Into<f64>, alpha: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85694,7 +85694,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_depth(&self, depth: f64) {
+    pub fn clear_depth(&self, depth: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85703,7 +85703,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_stencil(&self, s: f64) {
+    pub fn clear_stencil(&self, s: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85730,7 +85730,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_tex_image2_d(&self, target: f64, level: f64, internalformat: f64, x: f64, y: f64, width: f64, height: f64, border: f64) {
+    pub fn copy_tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85739,7 +85739,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn copy_tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, x: f64, y: f64, width: f64, height: f64) {
+    pub fn copy_tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85779,7 +85779,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_shader(&self, r#type: f64) -> Option<&'static WebGLShader> {
+    pub fn create_shader(&self, r#type: impl Into<f64>) -> Option<&'static WebGLShader> {
         unreachable!()
     }
 
@@ -85796,7 +85796,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cull_face(&self, mode: f64) {
+    pub fn cull_face(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85859,7 +85859,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn depth_func(&self, func: f64) {
+    pub fn depth_func(&self, func: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85877,7 +85877,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn depth_range(&self, z_near: f64, z_far: f64) {
+    pub fn depth_range(&self, z_near: impl Into<f64>, z_far: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85895,7 +85895,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disable(&self, cap: f64) {
+    pub fn disable(&self, cap: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85904,7 +85904,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn disable_vertex_attrib_array(&self, index: f64) {
+    pub fn disable_vertex_attrib_array(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85913,7 +85913,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_arrays(&self, mode: f64, first: f64, count: f64) {
+    pub fn draw_arrays(&self, mode: impl Into<f64>, first: impl Into<f64>, count: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85922,7 +85922,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements(&self, mode: f64, count: f64, r#type: f64, offset: f64) {
+    pub fn draw_elements(&self, mode: impl Into<f64>, count: impl Into<f64>, r#type: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85931,7 +85931,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn enable(&self, cap: f64) {
+    pub fn enable(&self, cap: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85940,7 +85940,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn enable_vertex_attrib_array(&self, index: f64) {
+    pub fn enable_vertex_attrib_array(&self, index: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85967,7 +85967,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn framebuffer_renderbuffer(&self, target: f64, attachment: f64, renderbuffertarget: f64, renderbuffer: &WebGLRenderbuffer) {
+    pub fn framebuffer_renderbuffer(&self, target: impl Into<f64>, attachment: impl Into<f64>, renderbuffertarget: impl Into<f64>, renderbuffer: &WebGLRenderbuffer) {
         unreachable!()
     }
 
@@ -85976,7 +85976,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn framebuffer_texture2_d(&self, target: f64, attachment: f64, textarget: f64, texture: &WebGLTexture, level: f64) {
+    pub fn framebuffer_texture2_d(&self, target: impl Into<f64>, attachment: impl Into<f64>, textarget: impl Into<f64>, texture: &WebGLTexture, level: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85985,7 +85985,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn front_face(&self, mode: f64) {
+    pub fn front_face(&self, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -85994,7 +85994,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn generate_mipmap(&self, target: f64) {
+    pub fn generate_mipmap(&self, target: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86002,7 +86002,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveAttrib")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_attrib(&self, program: &WebGLProgram, index: f64) -> Option<&'static WebGLActiveInfo> {
+    pub fn get_active_attrib(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
         unreachable!()
     }
 
@@ -86010,7 +86010,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getActiveUniform")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_active_uniform(&self, program: &WebGLProgram, index: f64) -> Option<&'static WebGLActiveInfo> {
+    pub fn get_active_uniform(&self, program: &WebGLProgram, index: impl Into<f64>) -> Option<&'static WebGLActiveInfo> {
         unreachable!()
     }
 
@@ -86026,7 +86026,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getAttribLocation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> i32 {
+    pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> f64 {
         unreachable!()
     }
 
@@ -86034,7 +86034,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_buffer_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_buffer_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86042,7 +86042,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_parameter(&self, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_parameter(&self, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86050,7 +86050,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getError")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_error(&self) -> u32 {
+    pub fn get_error(&self) -> f64 {
         unreachable!()
     }
 
@@ -86058,7 +86058,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getFramebufferAttachmentParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_framebuffer_attachment_parameter(&self, target: f64, attachment: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_framebuffer_attachment_parameter(&self, target: impl Into<f64>, attachment: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86066,7 +86066,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getProgramParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_program_parameter(&self, program: &WebGLProgram, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_program_parameter(&self, program: &WebGLProgram, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86082,7 +86082,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getRenderbufferParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_renderbuffer_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_renderbuffer_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86090,7 +86090,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_shader_parameter(&self, shader: &WebGLShader, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_shader_parameter(&self, shader: &WebGLShader, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86098,7 +86098,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getShaderPrecisionFormat")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_shader_precision_format(&self, shadertype: f64, precisiontype: f64) -> Option<&'static WebGLShaderPrecisionFormat> {
+    pub fn get_shader_precision_format(&self, shadertype: impl Into<f64>, precisiontype: impl Into<f64>) -> Option<&'static WebGLShaderPrecisionFormat> {
         unreachable!()
     }
 
@@ -86122,7 +86122,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getTexParameter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_tex_parameter(&self, target: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_tex_parameter(&self, target: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86146,7 +86146,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttrib")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_vertex_attrib(&self, index: f64, pname: f64) -> Option<&'static Unknown> {
+    pub fn get_vertex_attrib(&self, index: impl Into<f64>, pname: impl Into<f64>) -> Option<&'static Unknown> {
         unreachable!()
     }
 
@@ -86154,7 +86154,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "getVertexAttribOffset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_vertex_attrib_offset(&self, index: f64, pname: f64) -> f64 {
+    pub fn get_vertex_attrib_offset(&self, index: impl Into<f64>, pname: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -86163,7 +86163,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn hint(&self, target: f64, mode: f64) {
+    pub fn hint(&self, target: impl Into<f64>, mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86179,7 +86179,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "isEnabled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_enabled(&self, cap: f64) -> bool {
+    pub fn is_enabled(&self, cap: impl Into<f64>) -> bool {
         unreachable!()
     }
 
@@ -86228,7 +86228,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn line_width(&self, width: f64) {
+    pub fn line_width(&self, width: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86246,7 +86246,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn pixel_storei(&self, pname: f64, param: f64) {
+    pub fn pixel_storei(&self, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86255,7 +86255,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn polygon_offset(&self, factor: f64, units: f64) {
+    pub fn polygon_offset(&self, factor: impl Into<f64>, units: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86264,7 +86264,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn renderbuffer_storage(&self, target: f64, internalformat: f64, width: f64, height: f64) {
+    pub fn renderbuffer_storage(&self, target: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86273,7 +86273,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn sample_coverage(&self, value: f64, invert: bool) {
+    pub fn sample_coverage(&self, value: impl Into<f64>, invert: bool) {
         unreachable!()
     }
 
@@ -86282,7 +86282,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scissor(&self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn scissor(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86300,7 +86300,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func(&self, func: f64, r#ref: f64, mask: f64) {
+    pub fn stencil_func(&self, func: impl Into<f64>, r#ref: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86309,7 +86309,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func_separate(&self, face: f64, func: f64, r#ref: f64, mask: f64) {
+    pub fn stencil_func_separate(&self, face: impl Into<f64>, func: impl Into<f64>, r#ref: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86318,7 +86318,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_mask(&self, mask: f64) {
+    pub fn stencil_mask(&self, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86327,7 +86327,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_mask_separate(&self, face: f64, mask: f64) {
+    pub fn stencil_mask_separate(&self, face: impl Into<f64>, mask: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86336,7 +86336,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_op(&self, fail: f64, zfail: f64, zpass: f64) {
+    pub fn stencil_op(&self, fail: impl Into<f64>, zfail: impl Into<f64>, zpass: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86345,7 +86345,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_op_separate(&self, face: f64, fail: f64, zfail: f64, zpass: f64) {
+    pub fn stencil_op_separate(&self, face: impl Into<f64>, fail: impl Into<f64>, zfail: impl Into<f64>, zpass: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86354,7 +86354,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_parameterf(&self, target: f64, pname: f64, param: f64) {
+    pub fn tex_parameterf(&self, target: impl Into<f64>, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86363,7 +86363,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_parameteri(&self, target: f64, pname: f64, param: f64) {
+    pub fn tex_parameteri(&self, target: impl Into<f64>, pname: impl Into<f64>, param: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86372,7 +86372,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1f(&self, location: &WebGLUniformLocation, x: f64) {
+    pub fn uniform1f(&self, location: &WebGLUniformLocation, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86381,7 +86381,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2f(&self, location: &WebGLUniformLocation, x: f64, y: f64) {
+    pub fn uniform2f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86390,7 +86390,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3f(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64) {
+    pub fn uniform3f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86399,7 +86399,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4f(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64, w: f64) {
+    pub fn uniform4f(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86408,7 +86408,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform1i(&self, location: &WebGLUniformLocation, x: f64) {
+    pub fn uniform1i(&self, location: &WebGLUniformLocation, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86417,7 +86417,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform2i(&self, location: &WebGLUniformLocation, x: f64, y: f64) {
+    pub fn uniform2i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86426,7 +86426,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform3i(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64) {
+    pub fn uniform3i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86435,7 +86435,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn uniform4i(&self, location: &WebGLUniformLocation, x: f64, y: f64, z: f64, w: f64) {
+    pub fn uniform4i(&self, location: &WebGLUniformLocation, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86462,7 +86462,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1f(&self, index: f64, x: f64) {
+    pub fn vertex_attrib1f(&self, index: impl Into<f64>, x: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86471,7 +86471,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2f(&self, index: f64, x: f64, y: f64) {
+    pub fn vertex_attrib2f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86480,7 +86480,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3f(&self, index: f64, x: f64, y: f64, z: f64) {
+    pub fn vertex_attrib3f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86489,7 +86489,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4f(&self, index: f64, x: f64, y: f64, z: f64, w: f64) {
+    pub fn vertex_attrib4f(&self, index: impl Into<f64>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86498,7 +86498,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib1fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib1fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -86507,7 +86507,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib2fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib2fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -86516,7 +86516,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib3fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib3fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -86525,7 +86525,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib4fv(&self, index: f64, values: impl IntoFloat32List) {
+    pub fn vertex_attrib4fv(&self, index: impl Into<f64>, values: impl IntoFloat32List) {
         unreachable!()
     }
 
@@ -86534,7 +86534,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_pointer(&self, index: f64, size: f64, r#type: f64, normalized: bool, stride: f64, offset: f64) {
+    pub fn vertex_attrib_pointer(&self, index: impl Into<f64>, size: impl Into<f64>, r#type: impl Into<f64>, normalized: bool, stride: impl Into<f64>, offset: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86543,7 +86543,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn viewport(&self, x: f64, y: f64, width: f64, height: f64) {
+    pub fn viewport(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86552,7 +86552,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data(&self, target: f64, size: f64, usage: f64) {
+    pub fn buffer_data(&self, target: impl Into<f64>, size: impl Into<f64>, usage: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86561,7 +86561,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_data_with_allow_shared_buffer_source(&self, target: f64, data: impl IntoAllowSharedBufferSource, usage: f64) {
+    pub fn buffer_data_with_allow_shared_buffer_source(&self, target: impl Into<f64>, data: impl IntoAllowSharedBufferSource, usage: impl Into<f64>) {
         unreachable!()
     }
 
@@ -86570,7 +86570,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn buffer_sub_data(&self, target: f64, offset: f64, data: impl IntoAllowSharedBufferSource) {
+    pub fn buffer_sub_data(&self, target: impl Into<f64>, offset: impl Into<f64>, data: impl IntoAllowSharedBufferSource) {
         unreachable!()
     }
 
@@ -86579,7 +86579,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_image2_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, data: impl IntoArrayBufferView) {
+    pub fn compressed_tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -86588,7 +86588,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn compressed_tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, data: impl IntoArrayBufferView) {
+    pub fn compressed_tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -86597,7 +86597,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: f64, y: f64, width: f64, height: f64, format: f64, r#type: f64, pixels: impl IntoArrayBufferView) {
+    pub fn read_pixels(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -86606,7 +86606,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: f64, level: f64, internalformat: f64, width: f64, height: f64, border: f64, format: f64, r#type: f64, pixels: impl IntoArrayBufferView) {
+    pub fn tex_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -86615,7 +86615,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: f64, level: f64, internalformat: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -86624,7 +86624,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, width: f64, height: f64, format: f64, r#type: f64, pixels: impl IntoArrayBufferView) {
+    pub fn tex_sub_image2_d(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -86633,7 +86633,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: f64, level: f64, xoffset: f64, yoffset: f64, format: f64, r#type: f64, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_f64_and_f64_and_tex_image_source(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -86755,7 +86755,7 @@ impl WebGLShaderPrecisionFormat {
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeMin")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn range_min(&self) -> i32 {
+    pub fn range_min(&self) -> f64 {
         unreachable!()
     }
 
@@ -86763,7 +86763,7 @@ impl WebGLShaderPrecisionFormat {
     #[cfg_attr(rust_js, rust_js::link_name = "get rangeMax")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn range_max(&self) -> i32 {
+    pub fn range_max(&self) -> f64 {
         unreachable!()
     }
 
@@ -86771,7 +86771,7 @@ impl WebGLShaderPrecisionFormat {
     #[cfg_attr(rust_js, rust_js::link_name = "get precision")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn precision(&self) -> i32 {
+    pub fn precision(&self) -> f64 {
         unreachable!()
     }
 
@@ -86814,16 +86814,16 @@ pub mod web_socket {
     use super::*;
 
     /// `WebSocket.CONNECTING`
-    pub const CONNECTING: u16 = 0;
+    pub const CONNECTING: f64 = 0.0;
 
     /// `WebSocket.OPEN`
-    pub const OPEN: u16 = 1;
+    pub const OPEN: f64 = 1.0;
 
     /// `WebSocket.CLOSING`
-    pub const CLOSING: u16 = 2;
+    pub const CLOSING: f64 = 2.0;
 
     /// `WebSocket.CLOSED`
-    pub const CLOSED: u16 = 3;
+    pub const CLOSED: f64 = 3.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
@@ -86855,7 +86855,7 @@ impl WebSocket {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -87143,7 +87143,7 @@ impl WebTransportDatagramDuplexStream {
     #[cfg_attr(rust_js, rust_js::link_name = "get maxDatagramSize")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn max_datagram_size(&self) -> u32 {
+    pub fn max_datagram_size(&self) -> f64 {
         unreachable!()
     }
 
@@ -87159,7 +87159,7 @@ impl WebTransportDatagramDuplexStream {
     #[cfg_attr(rust_js, rust_js::link_name = "set incomingMaxAge")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_incoming_max_age(&self, value: f64) {
+    pub fn set_incoming_max_age(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -87175,7 +87175,7 @@ impl WebTransportDatagramDuplexStream {
     #[cfg_attr(rust_js, rust_js::link_name = "set outgoingMaxAge")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_outgoing_max_age(&self, value: f64) {
+    pub fn set_outgoing_max_age(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -87227,7 +87227,7 @@ impl WebTransportError {
     #[cfg_attr(rust_js, rust_js::link_name = "get streamErrorCode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stream_error_code(&self) -> Option<u32> {
+    pub fn stream_error_code(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -87307,7 +87307,7 @@ impl WebTransportSendStream {
     #[cfg_attr(rust_js, rust_js::link_name = "set sendOrder")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_send_order(&self, value: f64) {
+    pub fn set_send_order(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -87634,19 +87634,19 @@ pub mod xml_http_request {
     use super::*;
 
     /// `XMLHttpRequest.UNSENT`
-    pub const UNSENT: u16 = 0;
+    pub const UNSENT: f64 = 0.0;
 
     /// `XMLHttpRequest.OPENED`
-    pub const OPENED: u16 = 1;
+    pub const OPENED: f64 = 1.0;
 
     /// `XMLHttpRequest.HEADERS_RECEIVED`
-    pub const HEADERS_RECEIVED: u16 = 2;
+    pub const HEADERS_RECEIVED: f64 = 2.0;
 
     /// `XMLHttpRequest.LOADING`
-    pub const LOADING: u16 = 3;
+    pub const LOADING: f64 = 3.0;
 
     /// `XMLHttpRequest.DONE`
-    pub const DONE: u16 = 4;
+    pub const DONE: f64 = 4.0;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "new XMLHttpRequest")]
@@ -87687,7 +87687,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get readyState")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ready_state(&self) -> u16 {
+    pub fn ready_state(&self) -> f64 {
         unreachable!()
     }
 
@@ -87713,7 +87713,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get timeout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn timeout(&self) -> u32 {
+    pub fn timeout(&self) -> f64 {
         unreachable!()
     }
 
@@ -87721,7 +87721,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "set timeout")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_timeout(&self, value: f64) {
+    pub fn set_timeout(&self, value: impl Into<f64>) {
         unreachable!()
     }
 
@@ -87779,7 +87779,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "get status")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn status(&self) -> u16 {
+    pub fn status(&self) -> f64 {
         unreachable!()
     }
 
@@ -88122,34 +88122,34 @@ pub struct XPathResult(PhantomData<JsObject>);
 pub mod x_path_result {
 
     /// `XPathResult.ANY_TYPE`
-    pub const ANY_TYPE: u16 = 0;
+    pub const ANY_TYPE: f64 = 0.0;
 
     /// `XPathResult.NUMBER_TYPE`
-    pub const NUMBER_TYPE: u16 = 1;
+    pub const NUMBER_TYPE: f64 = 1.0;
 
     /// `XPathResult.STRING_TYPE`
-    pub const STRING_TYPE: u16 = 2;
+    pub const STRING_TYPE: f64 = 2.0;
 
     /// `XPathResult.BOOLEAN_TYPE`
-    pub const BOOLEAN_TYPE: u16 = 3;
+    pub const BOOLEAN_TYPE: f64 = 3.0;
 
     /// `XPathResult.UNORDERED_NODE_ITERATOR_TYPE`
-    pub const UNORDERED_NODE_ITERATOR_TYPE: u16 = 4;
+    pub const UNORDERED_NODE_ITERATOR_TYPE: f64 = 4.0;
 
     /// `XPathResult.ORDERED_NODE_ITERATOR_TYPE`
-    pub const ORDERED_NODE_ITERATOR_TYPE: u16 = 5;
+    pub const ORDERED_NODE_ITERATOR_TYPE: f64 = 5.0;
 
     /// `XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE`
-    pub const UNORDERED_NODE_SNAPSHOT_TYPE: u16 = 6;
+    pub const UNORDERED_NODE_SNAPSHOT_TYPE: f64 = 6.0;
 
     /// `XPathResult.ORDERED_NODE_SNAPSHOT_TYPE`
-    pub const ORDERED_NODE_SNAPSHOT_TYPE: u16 = 7;
+    pub const ORDERED_NODE_SNAPSHOT_TYPE: f64 = 7.0;
 
     /// `XPathResult.ANY_UNORDERED_NODE_TYPE`
-    pub const ANY_UNORDERED_NODE_TYPE: u16 = 8;
+    pub const ANY_UNORDERED_NODE_TYPE: f64 = 8.0;
 
     /// `XPathResult.FIRST_ORDERED_NODE_TYPE`
-    pub const FIRST_ORDERED_NODE_TYPE: u16 = 9;
+    pub const FIRST_ORDERED_NODE_TYPE: f64 = 9.0;
 }
 
 impl XPathResult {
@@ -88157,7 +88157,7 @@ impl XPathResult {
     #[cfg_attr(rust_js, rust_js::link_name = "get resultType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn result_type(&self) -> u16 {
+    pub fn result_type(&self) -> f64 {
         unreachable!()
     }
 
@@ -88205,7 +88205,7 @@ impl XPathResult {
     #[cfg_attr(rust_js, rust_js::link_name = "get snapshotLength")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn snapshot_length(&self) -> u32 {
+    pub fn snapshot_length(&self) -> f64 {
         unreachable!()
     }
 
@@ -88221,7 +88221,7 @@ impl XPathResult {
     #[cfg_attr(rust_js, rust_js::link_name = "snapshotItem")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn snapshot_item(&self, index: f64) -> Option<&'static Node> {
+    pub fn snapshot_item(&self, index: impl Into<f64>) -> Option<&'static Node> {
         unreachable!()
     }
 
@@ -89012,7 +89012,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSUnitValue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_css_unit_value(&self, value: f64, unit: &str) -> &'static CSSUnitValue {
+    pub fn new_css_unit_value(&self, value: impl Into<f64>, unit: &str) -> &'static CSSUnitValue {
         unreachable!()
     }
 
@@ -89463,7 +89463,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_image_data(&self, sw: f64, sh: f64, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
+    pub fn new_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
 
@@ -89661,7 +89661,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "new OffscreenCanvas")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_offscreen_canvas(&self, width: f64, height: f64) -> &'static OffscreenCanvas {
+    pub fn new_offscreen_canvas(&self, width: impl Into<f64>, height: impl Into<f64>) -> &'static OffscreenCanvas {
         unreachable!()
     }
 
@@ -90192,7 +90192,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "new VTTCue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_vtt_cue(&self, start_time: f64, end_time: f64, text: &str) -> &'static VTTCue {
+    pub fn new_vtt_cue(&self, start_time: impl Into<f64>, end_time: impl Into<f64>, text: &str) -> &'static VTTCue {
         unreachable!()
     }
 
@@ -90717,7 +90717,7 @@ pub mod global {
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(image: impl IntoImageBitmapSource, sx: f64, sy: f64, sw: f64, sh: f64, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
+    pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(image: impl IntoImageBitmapSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
@@ -90756,7 +90756,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_to(x: f64, y: f64) {
+    pub fn move_to(x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -90765,7 +90765,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn move_by(x: f64, y: f64) {
+    pub fn move_by(x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -90774,7 +90774,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn resize_to(width: f64, height: f64) {
+    pub fn resize_to(width: impl Into<f64>, height: impl Into<f64>) {
         unreachable!()
     }
 
@@ -90783,7 +90783,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn resize_by(x: f64, y: f64) {
+    pub fn resize_by(x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
     }
 
@@ -90799,7 +90799,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_with_x_and_y(x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -90815,7 +90815,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_to_with_x_and_y(x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -90831,7 +90831,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+    pub fn scroll_by_with_x_and_y(x: impl Into<f64>, y: impl Into<f64>) -> Promise<()> {
         unreachable!()
     }
 
@@ -90944,7 +90944,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_idle_callback(callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> u32 {
+    pub fn request_idle_callback(callback: Box<dyn FnOnce(&IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
 
@@ -90953,7 +90953,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_idle_callback(handle: f64) {
+    pub fn cancel_idle_callback(handle: impl Into<f64>) {
         unreachable!()
     }
 
@@ -90969,7 +90969,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_animation_frame(callback: Box<dyn FnOnce(f64)>) -> u32 {
+    pub fn request_animation_frame(callback: Box<dyn FnOnce(f64)>) -> f64 {
         unreachable!()
     }
 
@@ -90978,7 +90978,7 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn cancel_animation_frame(handle: f64) {
+    pub fn cancel_animation_frame(handle: impl Into<f64>) {
         unreachable!()
     }
 }
@@ -91134,8 +91134,8 @@ pub struct AudioTimestamp {
 /// The `AudioDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
 pub struct AudioDecoderConfig {
     pub codec: String,
-    pub sample_rate: u32,
-    pub number_of_channels: u32,
+    pub sample_rate: f64,
+    pub number_of_channels: f64,
 }
 
 /// The `AudioDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
@@ -91148,8 +91148,8 @@ pub struct AudioDecoderSupport {
 /// The `AudioEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
 pub struct AudioEncoderConfig {
     pub codec: String,
-    pub sample_rate: u32,
-    pub number_of_channels: u32,
+    pub sample_rate: f64,
+    pub number_of_channels: f64,
     pub bitrate: Option<f64>,
     pub bitrate_mode: Option<String>,
 }
@@ -91170,13 +91170,13 @@ pub struct CSSContainerCondition {
 /// The `CSSNumericType` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct CSSNumericType {
-    pub length: Option<i32>,
-    pub angle: Option<i32>,
-    pub time: Option<i32>,
-    pub frequency: Option<i32>,
-    pub resolution: Option<i32>,
-    pub flex: Option<i32>,
-    pub percent: Option<i32>,
+    pub length: Option<f64>,
+    pub angle: Option<f64>,
+    pub time: Option<f64>,
+    pub frequency: Option<f64>,
+    pub resolution: Option<f64>,
+    pub flex: Option<f64>,
+    pub percent: Option<f64>,
     pub percent_hint: Option<String>,
 }
 
@@ -91208,7 +91208,7 @@ pub struct CookieStoreGetOptions {
 pub struct GPUCanvasConfiguration {
     pub device: &'static GPUDevice,
     pub format: String,
-    pub usage: Option<u32>,
+    pub usage: Option<f64>,
     pub view_formats: Option<Vec<String>>,
     pub color_space: Option<String>,
     pub tone_mapping: Option<GPUCanvasToneMapping>,
@@ -91291,8 +91291,8 @@ pub struct MediaTrackCapabilities {
 /// The `ULongRange` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct ULongRange {
-    pub max: Option<u32>,
-    pub min: Option<u32>,
+    pub max: Option<f64>,
+    pub min: Option<f64>,
 }
 
 /// The `DoubleRange` dictionary: a JS object with these fields, a `None` one not there.
@@ -91337,8 +91337,8 @@ pub struct MediaDecodingConfiguration {
 /// The `VideoConfiguration` dictionary: a JS object with these fields, a `None` one not there.
 pub struct VideoConfiguration {
     pub content_type: String,
-    pub width: u32,
-    pub height: u32,
+    pub width: f64,
+    pub height: f64,
     pub bitrate: f64,
     pub framerate: f64,
     pub has_alpha_channel: Option<bool>,
@@ -91354,7 +91354,7 @@ pub struct AudioConfiguration {
     pub content_type: String,
     pub channels: Option<String>,
     pub bitrate: Option<f64>,
-    pub samplerate: Option<u32>,
+    pub samplerate: Option<f64>,
     pub spatial_rendering: Option<bool>,
 }
 
@@ -91421,10 +91421,10 @@ pub struct MediaTrackConstraints {
 /// The `ConstrainULongRange` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct ConstrainULongRange {
-    pub max: Option<u32>,
-    pub min: Option<u32>,
-    pub exact: Option<u32>,
-    pub ideal: Option<u32>,
+    pub max: Option<f64>,
+    pub min: Option<f64>,
+    pub exact: Option<f64>,
+    pub ideal: Option<f64>,
 }
 
 /// The `ConstrainDoubleRange` dictionary: a JS object with these fields, a `None` one not there.
@@ -91465,19 +91465,19 @@ pub struct MediaTrackConstraintSet {
 /// The `MediaTrackSettings` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct MediaTrackSettings {
-    pub width: Option<u32>,
-    pub height: Option<u32>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
     pub aspect_ratio: Option<f64>,
     pub frame_rate: Option<f64>,
     pub facing_mode: Option<String>,
     pub resize_mode: Option<String>,
-    pub sample_rate: Option<u32>,
-    pub sample_size: Option<u32>,
+    pub sample_rate: Option<f64>,
+    pub sample_size: Option<f64>,
     pub echo_cancellation: Option<BoolOrStr<'static>>,
     pub auto_gain_control: Option<bool>,
     pub noise_suppression: Option<bool>,
     pub latency: Option<f64>,
-    pub channel_count: Option<u32>,
+    pub channel_count: Option<f64>,
     pub device_id: Option<String>,
     pub group_id: Option<String>,
     pub background_blur: Option<bool>,
@@ -91547,7 +91547,7 @@ pub struct PublicKeyCredentialCreationOptions {
     pub rp: PublicKeyCredentialRpEntity,
     pub user: PublicKeyCredentialUserEntity,
     pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
-    pub timeout: Option<u32>,
+    pub timeout: Option<f64>,
     pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
     pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
     pub hints: Option<Vec<String>>,
@@ -91571,7 +91571,7 @@ pub struct PublicKeyCredentialUserEntity {
 /// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialParameters {
     pub r#type: String,
-    pub alg: i32,
+    pub alg: f64,
 }
 
 /// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
@@ -91597,7 +91597,7 @@ pub struct AuthenticationExtensionsClientInputs {
 /// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct PublicKeyCredentialRequestOptions {
-    pub timeout: Option<u32>,
+    pub timeout: Option<f64>,
     pub rp_id: Option<String>,
     pub allow_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
     pub user_verification: Option<String>,
@@ -91622,35 +91622,35 @@ pub struct RTCDtlsFingerprint {
 /// The `RTCEncodedAudioFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct RTCEncodedAudioFrameMetadata {
-    pub synchronization_source: Option<u32>,
-    pub payload_type: Option<u8>,
-    pub contributing_sources: Option<Vec<u32>>,
-    pub rtp_timestamp: Option<u32>,
+    pub synchronization_source: Option<f64>,
+    pub payload_type: Option<f64>,
+    pub contributing_sources: Option<Vec<f64>>,
+    pub rtp_timestamp: Option<f64>,
     pub receive_time: Option<f64>,
     pub capture_time: Option<f64>,
     pub sender_capture_time_offset: Option<f64>,
     pub mime_type: Option<String>,
-    pub sequence_number: Option<i16>,
+    pub sequence_number: Option<f64>,
     pub audio_level: Option<f64>,
 }
 
 /// The `RTCEncodedVideoFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct RTCEncodedVideoFrameMetadata {
-    pub synchronization_source: Option<u32>,
-    pub payload_type: Option<u8>,
-    pub contributing_sources: Option<Vec<u32>>,
-    pub rtp_timestamp: Option<u32>,
+    pub synchronization_source: Option<f64>,
+    pub payload_type: Option<f64>,
+    pub contributing_sources: Option<Vec<f64>>,
+    pub rtp_timestamp: Option<f64>,
     pub receive_time: Option<f64>,
     pub capture_time: Option<f64>,
     pub sender_capture_time_offset: Option<f64>,
     pub mime_type: Option<String>,
     pub frame_id: Option<f64>,
     pub dependencies: Option<Vec<f64>>,
-    pub width: Option<u16>,
-    pub height: Option<u16>,
-    pub spatial_index: Option<u32>,
-    pub temporal_index: Option<u32>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    pub spatial_index: Option<f64>,
+    pub temporal_index: Option<f64>,
     pub timestamp: Option<f64>,
 }
 
@@ -91659,7 +91659,7 @@ pub struct RTCEncodedVideoFrameMetadata {
 pub struct RTCIceCandidateInit {
     pub candidate: Option<String>,
     pub sdp_mid: Option<Option<String>>,
-    pub sdp_m_line_index: Option<Option<u16>>,
+    pub sdp_m_line_index: Option<Option<f64>>,
     pub username_fragment: Option<Option<String>>,
 }
 
@@ -91677,7 +91677,7 @@ pub struct RTCConfiguration {
     pub bundle_policy: Option<String>,
     pub rtcp_mux_policy: Option<String>,
     pub certificates: Option<Vec<&'static RTCCertificate>>,
-    pub ice_candidate_pool_size: Option<u8>,
+    pub ice_candidate_pool_size: Option<f64>,
 }
 
 /// The `RTCIceServer` dictionary: a JS object with these fields, a `None` one not there.
@@ -91693,7 +91693,7 @@ pub struct RTCRtpEncodingParameters {
     pub rid: Option<String>,
     pub active: Option<bool>,
     pub codec: Option<RTCRtpCodec>,
-    pub max_bitrate: Option<u32>,
+    pub max_bitrate: Option<f64>,
     pub max_framerate: Option<f64>,
     pub scale_resolution_down_by: Option<f64>,
 }
@@ -91701,8 +91701,8 @@ pub struct RTCRtpEncodingParameters {
 /// The `RTCRtpCodec` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpCodec {
     pub mime_type: String,
-    pub clock_rate: u32,
-    pub channels: Option<u16>,
+    pub clock_rate: f64,
+    pub channels: Option<f64>,
     pub sdp_fmtp_line: Option<String>,
 }
 
@@ -91727,7 +91727,7 @@ pub struct RTCRtpReceiveParameters {
 /// The `RTCRtpHeaderExtensionParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpHeaderExtensionParameters {
     pub uri: String,
-    pub id: u16,
+    pub id: f64,
     pub encrypted: Option<bool>,
 }
 
@@ -91741,26 +91741,26 @@ pub struct RTCRtcpParameters {
 /// The `RTCRtpCodecParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpCodecParameters {
     pub mime_type: String,
-    pub clock_rate: u32,
-    pub channels: Option<u16>,
+    pub clock_rate: f64,
+    pub channels: Option<f64>,
     pub sdp_fmtp_line: Option<String>,
-    pub payload_type: u8,
+    pub payload_type: f64,
 }
 
 /// The `RTCRtpContributingSource` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpContributingSource {
     pub timestamp: f64,
-    pub source: u32,
+    pub source: f64,
     pub audio_level: Option<f64>,
-    pub rtp_timestamp: u32,
+    pub rtp_timestamp: f64,
 }
 
 /// The `RTCRtpSynchronizationSource` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCRtpSynchronizationSource {
     pub timestamp: f64,
-    pub source: u32,
+    pub source: f64,
     pub audio_level: Option<f64>,
-    pub rtp_timestamp: u32,
+    pub rtp_timestamp: f64,
 }
 
 /// The `RTCRtpSendParameters` dictionary: a JS object with these fields, a `None` one not there.
@@ -91795,8 +91795,8 @@ pub struct ReportBody {
 /// The `SerialPortInfo` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct SerialPortInfo {
-    pub usb_vendor_id: Option<u16>,
-    pub usb_product_id: Option<u16>,
+    pub usb_vendor_id: Option<f64>,
+    pub usb_product_id: Option<f64>,
     pub bluetooth_service_class_id: Option<BluetoothServiceUUID<'static>>,
 }
 
@@ -91900,10 +91900,10 @@ pub struct VideoColorSpaceInit {
 /// The `VideoDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
 pub struct VideoDecoderConfig {
     pub codec: String,
-    pub coded_width: Option<u32>,
-    pub coded_height: Option<u32>,
-    pub display_aspect_width: Option<u32>,
-    pub display_aspect_height: Option<u32>,
+    pub coded_width: Option<f64>,
+    pub coded_height: Option<f64>,
+    pub display_aspect_width: Option<f64>,
+    pub display_aspect_height: Option<f64>,
     pub color_space: Option<VideoColorSpaceInit>,
     pub hardware_acceleration: Option<String>,
     pub optimize_for_latency: Option<bool>,
@@ -91921,10 +91921,10 @@ pub struct VideoDecoderSupport {
 /// The `VideoEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
 pub struct VideoEncoderConfig {
     pub codec: String,
-    pub width: u32,
-    pub height: u32,
-    pub display_width: Option<u32>,
-    pub display_height: Option<u32>,
+    pub width: f64,
+    pub height: f64,
+    pub display_width: Option<f64>,
+    pub display_height: Option<f64>,
     pub bitrate: Option<f64>,
     pub framerate: Option<f64>,
     pub hardware_acceleration: Option<String>,
@@ -91944,8 +91944,8 @@ pub struct VideoEncoderSupport {
 
 /// The `PlaneLayout` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PlaneLayout {
-    pub offset: u32,
-    pub stride: u32,
+    pub offset: f64,
+    pub stride: f64,
 }
 
 /// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
@@ -91992,7 +91992,7 @@ pub struct WebTransportDatagramStats {
 /// The `WebTransportCloseInfo` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct WebTransportCloseInfo {
-    pub close_code: Option<u32>,
+    pub close_code: Option<f64>,
     pub reason: Option<String>,
 }
 

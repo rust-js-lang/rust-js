@@ -4,7 +4,7 @@
 // web crate, `.await`ed in turn. The URL is a `data:` URL, so the example
 // needs no server; any URL the page may fetch works the same way.
 
-import { $unwrap } from "@rust-js/runtime";
+import { $displayF64, $unwrap } from "@rust-js/runtime";
 
 const URL = "data:text/plain,Hello from a fetch!";
 
@@ -12,7 +12,7 @@ async function load(url, output) {
   output.textContent = "Loading…";
   const response = await window.fetch(url);
   const text = await response.text();
-  const status = String(response.status);
+  const status = $displayF64(response.status);
   output.textContent = status + " " + text;
 }
 

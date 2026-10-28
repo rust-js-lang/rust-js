@@ -367,7 +367,9 @@ pub fn text(deps: &[Option<&'static Unknown>]) -> String {
 // `from`, another typed array too, and a `number` for each length, index,
 // offset and element, an `f64` JS converts as it stores it: past 2^31 an
 // Int32Array's element wraps, as upstream's does, where `as i32` saturated
-// (ADR 0283, amended). A `BigInt64Array`'s element is its `i64` still.
+// (ADR 0994, amended). It gives numbers as `f64`s too, and a number it must
+// be given is any that's an `f64`, `a.set_index(0, 2.5)`, `b.at(-1)`. A
+// `BigInt64Array`'s element is its `i64` still.
 test("a typed array takes numbers and another typed array as TypeScript types them", () => {
   const { dir, js } = compiled("typed-array-numbers", `use std::cell::Cell;
 
@@ -388,12 +390,12 @@ pub fn log(event_log: &Int32Array, ms: f64, id: f64, index: f64) {
     event_log.set(&[1.0, ms * 1000.0, id], Some(index));
 }
 
-pub fn made(items: &[f64]) -> (f64, Option<i32>, i64) {
+pub fn made(items: &[f64]) -> (f64, Option<f64>, i64) {
     let a = int32_array::from(items);
-    a.set_index(0.0, 2.5);
+    a.set_index(0, 2.5);
     let b = int32_array::from(&*a);
     let wide = big_int64_array::from(&[1, -2]);
-    (f64::from(b.length()), b.at(-1.0), wide.get(1.0).unwrap_or(0))
+    (b.length(), b.at(-1), wide.get(1).unwrap_or(0))
 }
 `);
   expect(js).toContain("const newEventLog = new Int32Array(eventLogSize * 4);\n  newEventLog.set(eventLog);\n");

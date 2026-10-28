@@ -207,7 +207,7 @@ pub fn App() -> JSX::Element {
                 "instantiate {}, run {}, memory {}, {result}",
                 ms(r.instantiate),
                 ms(r.run),
-                mb(r.memory as f64)
+                mb(r.memory)
             );
             let label = format!("compile #{n}");
             set_stats.update(move |rows| appended(rows, &label, &times));

@@ -10,8 +10,9 @@
 use super::{BigInt64Array, BigUint64Array, Int8Array, Int16Array, Int32Array, Promise, Uint8Array, Uint16Array, Uint32Array};
 
 /// A typed array of integers, as TypeScript's `Atomics` takes, its
-/// `Element` the Rust number each is: not a `Uint8ClampedArray`, nor one of
-/// floats, which JS throws a `TypeError` of.
+/// `Element` what each is to TypeScript, a `number`, an `f64`, or a
+/// `BigInt64Array`'s `bigint`, its `i64` (ADR 0994, amended): not a
+/// `Uint8ClampedArray`, nor one of floats, which JS throws a `TypeError` of.
 ///
 /// # Safety
 ///
@@ -21,22 +22,22 @@ pub unsafe trait AtomicArray {
 }
 
 unsafe impl<B> AtomicArray for Int8Array<B> {
-    type Element = i8;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for Uint8Array<B> {
-    type Element = u8;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for Int16Array<B> {
-    type Element = i16;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for Uint16Array<B> {
-    type Element = u16;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for Int32Array<B> {
-    type Element = i32;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for Uint32Array<B> {
-    type Element = u32;
+    type Element = f64;
 }
 unsafe impl<B> AtomicArray for BigInt64Array<B> {
     type Element = i64;
@@ -87,42 +88,42 @@ pub enum WaitAsyncValue {
 /// [`Atomics.add(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/add):
 /// `a[i] += x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.add")]
-pub fn add<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn add<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.and(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/and):
 /// `a[i] &= x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.and")]
-pub fn and<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn and<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.compareExchange(a, i, expected, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/compareExchange):
 /// `a[i] = x` where it's `expected`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.compareExchange")]
-pub fn compare_exchange<A: AtomicArray + ?Sized>(array: &A, index: u32, expected: A::Element, replacement: A::Element) -> A::Element {
+pub fn compare_exchange<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, expected: A::Element, replacement: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.exchange(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/exchange):
 /// `a[i] = x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.exchange")]
-pub fn exchange<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn exchange<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.isLockFree(size)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/isLockFree):
 /// whether elements of `size` bytes are worked on without a lock.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.isLockFree")]
-pub fn is_lock_free(size: u32) -> bool {
+pub fn is_lock_free(size: impl Into<f64>) -> bool {
     unreachable!()
 }
 
 /// [`Atomics.load(a, i)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/load):
 /// `a[i]`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.load")]
-pub fn load<A: AtomicArray + ?Sized>(array: &A, index: u32) -> A::Element {
+pub fn load<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>) -> A::Element {
     unreachable!()
 }
 
@@ -130,28 +131,28 @@ pub fn load<A: AtomicArray + ?Sized>(array: &A, index: u32) -> A::Element {
 /// wakes up to `count` of the threads waiting on `a[i]`, each where there's
 /// no `count`; how many it woke.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.notify")]
-pub fn notify<A: WaitableArray + ?Sized>(array: &A, index: u32, count: Option<u32>) -> u32 {
+pub fn notify<A: WaitableArray + ?Sized>(array: &A, index: impl Into<f64>, count: Option<f64>) -> f64 {
     unreachable!()
 }
 
 /// [`Atomics.or(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/or):
 /// `a[i] |= x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.or")]
-pub fn or<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn or<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.store(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/store):
 /// `a[i] = x`; `x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.store")]
-pub fn store<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn store<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
 /// [`Atomics.sub(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/sub):
 /// `a[i] -= x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.sub")]
-pub fn sub<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn sub<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }
 
@@ -160,7 +161,7 @@ pub fn sub<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) ->
 /// may not, which JS throws a `TypeError` of. At most `timeout`
 /// milliseconds, where it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.wait")]
-pub fn wait<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element, timeout: Option<f64>) -> WaitResult {
+pub fn wait<A: WaitableArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element, timeout: Option<f64>) -> WaitResult {
     unreachable!()
 }
 
@@ -170,7 +171,7 @@ pub fn wait<A: WaitableArray + ?Sized>(array: &A, index: u32, value: A::Element,
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.waitAsync")]
 pub fn wait_async<A: WaitableArray + ?Sized>(
     array: &A,
-    index: u32,
+    index: impl Into<f64>,
     value: A::Element,
     timeout: Option<f64>,
 ) -> WaitAsyncResult {
@@ -180,6 +181,6 @@ pub fn wait_async<A: WaitableArray + ?Sized>(
 /// [`Atomics.xor(a, i, x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Atomics/xor):
 /// `a[i] ^= x`.
 #[cfg_attr(rust_js, rust_js::link_name = "Atomics.xor")]
-pub fn xor<A: AtomicArray + ?Sized>(array: &A, index: u32, value: A::Element) -> A::Element {
+pub fn xor<A: AtomicArray + ?Sized>(array: &A, index: impl Into<f64>, value: A::Element) -> A::Element {
     unreachable!()
 }

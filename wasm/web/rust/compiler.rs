@@ -294,7 +294,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
         downloads.push(load_sysroot_file(name));
     }
     let mut entries = Vec::new();
-    let mut size = 0;
+    let mut size = 0.0;
     for download in downloads {
         let entry = download.await;
         size += file_data(entry.1).length();
@@ -306,7 +306,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
             "{} ({} files, {})",
             ms(performance.now() - start),
             entries.len(),
-            mb(size as f64)
+            mb(size)
         ),
     );
     entries.into_iter().collect()
@@ -387,7 +387,7 @@ pub struct Compiled {
     pub stderr: String,
     pub instantiate: f64,
     pub run: f64,
-    pub memory: u32,
+    pub memory: f64,
 }
 
 /// The WASI shim's options, and the module's imports. Only JS reads them.

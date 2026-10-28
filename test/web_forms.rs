@@ -18,7 +18,7 @@ pub fn forms() -> String {
 /// An optional argument is an `Option`, a trailing `None` no argument (ADR
 /// 0443): `encode(Some(text))` is `e.encode(text)`, and a union takes its
 /// member as it is (ADR 0229): `decode(Some(&bytes), None)` is `d.decode(bytes)`.
-pub fn round_trip(text: &str) -> (u32, String) {
+pub fn round_trip(text: &str) -> (f64, String) {
     let bytes = text_encoder::new().encode(Some(text));
     let back = text_decoder::new(Some("utf-8"), None).decode(Some(&bytes), None);
     (bytes.length(), back)
@@ -50,10 +50,10 @@ pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
 
 /// A canvas, which a library like canvas-confetti draws on: its size, set
 /// and read, `canvas.width = 320`.
-pub fn canvas_size() -> (u32, u32) {
+pub fn canvas_size() -> (f64, f64) {
     let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas", None));
-    canvas.set_width(320.0);
-    canvas.set_height(200.0);
+    canvas.set_width(320);
+    canvas.set_height(200);
     (canvas.width(), canvas.height())
 }
 
@@ -74,7 +74,7 @@ pub fn kinds(
     blob: &webapi::Blob,
     param: &webapi::AudioParam,
     bytes: &js::Uint8Array,
-) -> (Vec<String>, usize, f64, f32, u16, Option<f64>) {
+) -> (Vec<String>, usize, f64, f64, f64, Option<f64>) {
     let names = el.get_attribute_names();
     let languages = webapi::navigator.languages();
     let into = text_encoder::new().encode_into("hi", bytes);
@@ -107,9 +107,9 @@ pub fn styled(el: &webapi::HTMLElement) -> String {
 
 /// What an iterable, a maplike or a setlike declares: `forEach` of each
 /// item, and a map's `get`, `has` and `size`.
-pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, Option<String>, bool, u32) {
+pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, Option<String>, bool, f64) {
     let mut count = 0;
-    nodes.for_each(Box::new(move |_node: &webapi::Node, _i: u32, _list: &webapi::NodeList| {
+    nodes.for_each(Box::new(move |_node: &webapi::Node, _i: f64, _list: &webapi::NodeList| {
         count += 1;
     }));
     let mut seen = 0;
@@ -135,12 +135,12 @@ pub fn iterated(headers: &webapi::Headers, list: &webapi::DOMTokenList) -> (Vec<
 /// A typed array is the js crate's, `getChannelData`'s `Float32Array`; an
 /// SVG name is the class it's an alias of, `SVGPoint` a `DOMPoint`; and a
 /// union of a typedef is named as it's written, `string | BufferSource`.
-pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f32, f64, &'static webapi::FontFace) {
-    let data = buffer.get_channel_data(0.0);
+pub fn samples(buffer: &webapi::AudioBuffer, svg: &webapi::SVGSVGElement) -> (f64, f64, &'static webapi::FontFace) {
+    let data = buffer.get_channel_data(0);
     let point = svg.create_svg_point();
     point.set_x(2.0);
-    let face = webapi::font_face::new("Mono", js::uint8_array::new(4.0), None);
-    (data.get(0.0).unwrap_or(0.0), point.x(), face)
+    let face = webapi::font_face::new("Mono", js::uint8_array::new(4), None);
+    (data.get(0).unwrap_or(0.0), point.x(), face)
 }
 
 /// A stringifier is `to_string()`, JS's `toString()`: of `stringifier;`,
@@ -177,7 +177,7 @@ pub fn listed(list: &webapi::NodeList, headers: &webapi::Headers) -> (usize, Vec
 /// an input's `labels`, `HTMLLabelElement`s.
 pub fn selected(el: &webapi::Element, input: &webapi::HTMLInputElement) -> (Vec<f64>, Option<String>) {
     let widths = el.query_selector_all("p").values().map(|p| p.get_bounding_client_rect().width()).collect();
-    let label = input.labels().and_then(|labels| labels.item(0.0)).map(|label| label.html_for());
+    let label = input.labels().and_then(|labels| labels.item(0)).map(|label| label.html_for());
     (widths, label)
 }
 

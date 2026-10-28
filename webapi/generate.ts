@@ -532,12 +532,11 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (name === "WindowProxy") return rustType({ ...t, idlType: "Window" }, at);
   const alias = windowAliases.get(name);
   if (alias) return rustType({ ...t, idlType: alias }, at);
-  // A number a function takes, or a setter, is TypeScript's `number`, an
-  // `f64`, which the host converts as WebIDL says, `ToUint32` of an
-  // `unsigned long`'s, wrapping: `range.setStart(node, offset)` of any
-  // number, as JS's caller gives it. One it gives is its own type, which
-  // WebIDL's conversion made it (ADR 0994).
-  if (NUMBERS[name]) return at === "param" && name !== "boolean" ? "f64" : NUMBERS[name];
+  // A number is TypeScript's `number`, an `f64`, given and read: one a
+  // function takes the host converts as WebIDL says, `ToUint32` of an
+  // `unsigned long`'s, wrapping, and a required one is any number that's
+  // an `f64`, `impl Into<f64>` (\`generic\`) (ADR 0994, amended).
+  if (NUMBERS[name]) return name === "boolean" ? "bool" : "f64";
   if (STRINGS.has(name) || enums.has(name)) return at === "param" ? "&str" : "String";
   if (name === "EventListener" && at === "param") return "Box<dyn FnMut(&Event)>";
   // A callback a function takes is a closure, given what JS calls it with
@@ -924,8 +923,8 @@ const HANDLERS: Record<string, { set: (event: string) => string; get: (event: st
     get: (event) => `Fn(&${event}) -> Option<String>`,
   },
   OnErrorEventHandler: {
-    set: () => "FnMut(EventOrStr<'_>, Option<String>, Option<u32>, Option<u32>, Option<&Unknown>) -> bool",
-    get: () => "Fn(EventOrStr<'_>, Option<&str>, Option<u32>, Option<u32>, Option<&Unknown>) -> Option<&'static Unknown>",
+    set: () => "FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool",
+    get: () => "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>",
   },
 };
 /** `onerror`'s first argument, TypeScript's `Event | string`. */
@@ -1098,7 +1097,9 @@ function functionsOf(declared: Interface): Fn[] {
       const own = constantsOf.get(i.name) ?? new Map<string, string>();
       if (typeof rust !== "string" || value?.type !== "number") skip("constant");
       else if (!own.has(m.name!)) {
-        const literal = rust.startsWith("f") && !/[.xe]/i.test(value.value) ? `${value.value}.0` : value.value;
+        // A number's, as an `f64` writes it: `0x02`'s `2.0`.
+        const n = Number(value.value);
+        const literal = rust.startsWith("f") ? (Number.isInteger(n) ? `${n}.0` : `${n}`) : value.value;
         // As WebIDL names it, `FLOAT_MAT2x3` too.
         const allow = /[a-z]/.test(m.name!) ? "    #[allow(non_upper_case_globals)]\n" : "";
         own.set(m.name!, `    /// \`${jsName(i)}.${m.name}\`\n${allow}    pub const ${m.name}: ${rust} = ${literal};`);
@@ -1121,7 +1122,7 @@ function functionsOf(declared: Interface): Fn[] {
       const [key, value] = declared.idlType.length === 2 ? declared.idlType : [undefined, declared.idlType[0]];
       const own = `&${typeName(i.name)}`;
       const v = paramType(value);
-      const k = m.type === "setlike" ? v : key ? paramType(key) : "u32";
+      const k = m.type === "setlike" ? v : key ? paramType(key) : "f64";
       const result = rustType(value, "result");
       if (!v || !k || typeof result !== "string") {
         skip(m.type);
@@ -1131,7 +1132,7 @@ function functionsOf(declared: Interface): Fn[] {
       const add = (name: string, jsName: string, params: string[], result: string) =>
         fns.push({ name, jsName, params: [...self, ...params], result, doc: doc(jsName.replace(/^get /, "")) });
       add("for_each", "forEach", [`callback: Box<dyn FnMut(${v}, ${k}, ${own})>`], "()");
-      const keyResult = m.type === "setlike" ? result : key ? rustType(key, "result") : "u32";
+      const keyResult = m.type === "setlike" ? result : key ? rustType(key, "result") : "f64";
       if (typeof keyResult === "string") {
         const iterator = (item: string) => `Box<dyn Iterator<Item = ${item}>>`;
         add("keys", "keys", [], iterator(keyResult));
@@ -1144,7 +1145,7 @@ function functionsOf(declared: Interface): Fn[] {
       }
       if (m.type === "setlike") add("has", "has", [`value: ${v}`], "bool");
       if (m.type !== "iterable") {
-        add("size", "get size", [], "u32");
+        add("size", "get size", [], "f64");
         if (!declared.readonly) {
           if (m.type === "maplike") add("set", "set", [`key: ${k}`, `value: ${v}`], "()");
           if (m.type === "setlike") add("add", "add", [`value: ${v}`], "()");
@@ -1453,6 +1454,10 @@ function generic(f: Fn): string {
     if (optionalUnion) return `${named}: Option<&dyn Into${optionalUnion.name}>`;
     const union = unionParam(p);
     if (union) return `${p.slice(0, p.indexOf(": "))}: impl Into${union.name}`;
+    // A number it must be given is any that's an `f64`, `list.item(i)` of
+    // a `u32` too; one it may be given, an `Option<f64>`, whose `None`
+    // needs no type (ADR 0994, amended).
+    if (p.endsWith(": f64")) return `${named}: impl Into<f64>`;
     if (!p.endsWith(`: ${ANY}`)) return p;
     const param = p.slice(0, -`: ${ANY}`.length);
     let type = param[0].toUpperCase();

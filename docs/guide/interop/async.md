@@ -206,7 +206,7 @@ pub async fn load_text(url: &str) -> Result<String, &'static JsError> {
 ```
 
 ```js
-import { $settle } from "@rust-js/runtime";
+import { $displayF64, $settle } from "@rust-js/runtime";
 
 export async function loadText(url) {
   const result = await $settle(window.fetch(url));
@@ -215,7 +215,7 @@ export async function loadText(url) {
   }
   const response = result._0;
   if (!response.ok) {
-    return { TAG: "Ok", _0: `HTTP ${response.status}` };
+    return { TAG: "Ok", _0: `HTTP ${$displayF64(response.status)}` };
   }
   return { TAG: "Ok", _0: await response.text() };
 }

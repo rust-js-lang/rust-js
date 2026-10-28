@@ -65,7 +65,7 @@ mod tests {
     }
 
     fn nth_button(app: &Element, n: u32) -> &'static HTMLElement {
-        html_element::unchecked_from(app.query_selector_all("button").item(f64::from(n)).unwrap())
+        html_element::unchecked_from(app.query_selector_all("button").item(n).unwrap())
     }
 
     fn shown(app: &Element) -> String {

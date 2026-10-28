@@ -165,11 +165,13 @@ What it has:
   ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md));
   of an object or an array as one, `kind.object()`'s `&JsObject`
   ([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)).
-  A typed array takes what TypeScript types it to: a number, an `f64`,
-  for each length, index, offset and element, which JS converts as it
-  stores it, an `Int32Array`'s wrapping, a `BigInt64Array`'s element its
-  `i64`; and to `set` and `from` any `ArrayLike` of numbers, another typed
-  array too, `grown.set(event_log, None)`
+  A typed array is typed as TypeScript types it: each length, index,
+  offset and element a number, an `f64`, given and taken, one it must be
+  given any number that's an `f64`, `a.get(i)`, `int32_array::new(4)`,
+  which JS converts as it stores it, an `Int32Array`'s wrapping; a
+  `BigInt64Array`'s element its `i64`; and `set` and `from` take any
+  `ArrayLike` of numbers, another typed array too, `grown.set(event_log,
+  None)`
   ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
   Each typed array and a `DataView` derefs to an `ArrayBufferView`,
   TypeScript's, of its `buffer()`, `byte_offset()` and `byte_length()`:
@@ -235,7 +237,7 @@ pub async fn load(url: &str) -> String {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/runtime";
+import { $displayF64, $unwrap } from "@rust-js/runtime";
 
 export function mount() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
@@ -250,7 +252,7 @@ export function mount() {
       return;
     }
     try {
-      storage.setItem("clicked-at", String(x));
+      storage.setItem("clicked-at", $displayF64(x));
     } catch {}
   });
   app.append(button);
@@ -274,10 +276,13 @@ How WebIDL maps to Rust, one rule for each:
   `input.value()`, `input.set_value("x")`.
 - **Inheritance is `Deref`:** an `&HTMLButtonElement` has `Element`'s and
   `Node`'s methods, and goes where an `&Element` does.
-- **A number it takes is TypeScript's `number`, an `f64`,** an `unsigned
-  long`'s too, which the browser converts as WebIDL says, wrapping:
-  `range.set_start(node, offset)` of any number, `labels.item(0.0)`. One
-  it gives is its own type, a `u32` of an `unsigned long`
+- **A number is TypeScript's `number`, an `f64`,** given and taken, an
+  `unsigned long`'s too, which the browser converts as WebIDL says,
+  wrapping. One it must be given is any number that's an `f64`, `impl
+  Into<f64>`: `range.set_start(node, offset)`, `labels.item(0)`,
+  `list.item(i)` of a `u32`; an optional one an `Option<f64>`. What it
+  gives is an `f64`, `node.node_type()`, `view.byte_length()`, so one
+  given back is as it was
   ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)).
 - **An argument a caller may leave out is an `Option`,** and a trailing
   `None` is no argument: `window.fetch(url, None)` is `window.fetch(url)`

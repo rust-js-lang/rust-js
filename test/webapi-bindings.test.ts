@@ -130,7 +130,7 @@ pub fn twice_later(callback: Box<dyn Fn()>) {
     global::queue_microtask(Box::new(move || global::queue_microtask(callback)));
 }
 
-pub fn framed(log: Box<dyn FnOnce(f64)>) -> u32 {
+pub fn framed(log: Box<dyn FnOnce(f64)>) -> f64 {
     webapi::window.request_animation_frame(Box::new(move |time| log(time)))
 }
 `);

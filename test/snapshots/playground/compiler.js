@@ -81,7 +81,7 @@ async function loadSysroot(start, stat) {
   let size = 0;
   for (const download of downloads) {
     const entry = await download;
-    size = (size + entry[1].data.length) >>> 0;
+    size += entry[1].data.length;
     entries.push(entry);
   }
   stat(
