@@ -1219,3 +1219,44 @@ pub(in crate::lower::mir::tidy) fn returned_chain(stmts: &[Stmt]) -> Option<(Vec
         _ => None,
     }
 }
+
+/// `if (a) { if (b) { s } else { j } } else { j }`, `j` one jump, MIR's
+/// `a && b` whose failing tests each jump the same way, `lanes !== 1 &&
+/// lanes !== 2`'s past a guarded arm: `if (a && b) { s } else { j }`, as an
+/// `&&` of calls reaches tidy (lb2).
+pub(in crate::lower::mir::tidy) fn joined_ands(stmts: &mut [Stmt]) {
+    let jump = |s: &[Stmt]| matches!(s, [j] if matches!(j.kind, StmtKind::Break(_) | StmtKind::Continue(_)));
+    // A comparison of what's matched with a constant, `lanes !== 1`, as
+    // MIR's `switchInt` makes the parts of one such guard: not a presence
+    // test, `x != null`, nor parts of two subjects, which other passes
+    // read as they are.
+    fn compared(e: &Expr) -> Option<&Expr> {
+        match &e.kind {
+            ExprKind::Binary(Op::Eq | Op::Ne, x, c) => {
+                matches!(c.kind, ExprKind::Num(..) | ExprKind::Str(..) | ExprKind::Var(..)).then_some(&**x)
+            }
+            _ => None,
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        let StmtKind::If(test, then, Some(otherwise)) = &mut stmt.kind else {
+            continue;
+        };
+        if let [
+            Stmt {
+                kind: StmtKind::If(b, inside, Some(inner)),
+                ..
+            },
+        ] = &then[..]
+            && jump(otherwise)
+            && jump(inner)
+            && crate::lower::mir::tidy::decisions::same_stmt(&inner[0], &otherwise[0])
+            && let (Some(x), Some(y)) = (compared(test), compared(b))
+            && js::same_path(x, y)
+        {
+            let (b, inside) = (b.clone(), inside.clone());
+            *test = Expr::bin(Op::And, test.clone(), b);
+            *then = inside;
+        }
+    }
+}

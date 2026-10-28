@@ -528,6 +528,20 @@ Held by `guarded_arm_chains`' `finished`, against native Rust; mutations
 `and-guard-parts-unjoined` and `and-guard-first-part-dropped`
 (`mir/tidy/switches.ts`).
 
+Of comparisons, `4 if lanes != 1 && lanes != 2 => { // .. }`, MIR tests
+the parts as `if (a) { if (b) { .. } else { break bb4; } } else { break
+bb4; }`, each failing part jumping the same way past the arm, which the
+calls' form, `if (!a) { if (!b) { .. } }`, doesn't: it printed `bb4: {
+switch .. case 4: if (lanes !== 1) { if (lanes !== 2) { } else { break
+bb4; } break; } ..`, a label and an empty `then` (lb2). **`if (a) { if (b)
+{ s } else { j } } else { j }`, `j` one jump alike, is `if (a && b) { s }
+else { j }`**, each part a comparison of one subject with a constant, as
+a `switchInt` makes them, not a presence test (`tidy/jumps/tails.rs`'s
+`joined_ands`, before `branch ends`), which the rule above then takes: `if (lanes !== 1 && lanes !== 2)
+{ // Commit the placeholder. break; } // Fallthrough`. `b` is tested only
+where `a` holds, as before. Held by `guarded_arm_chains`' `compared`,
+against native Rust; mutation `joined-ands-off` (`tidy/jumps/tails.ts`).
+
 ## Amendment: a `switch` that ends a function has its cases' `break`s
 
 React's recursivelyInsertNewFiber (ReactFiberApplyGesture) ends with a

@@ -124,6 +124,24 @@ fn finished(exit_status: u32, lanes: u32, log: &mut Vec<u32>) {
     log.push(3);
 }
 
+// The same of a guard of comparisons, which MIR tests in parts each
+// failing the same way, `if (lanes !== 1 && lanes !== 2) { break; }`, no
+// label (ADR 0905, amended, lb2).
+fn compared(exit_status: u32, lanes: u32, log: &mut Vec<u32>) {
+    match exit_status {
+        4 if lanes != 1 && lanes != 2 => {
+            // Commit the placeholder.
+        }
+        4 | 5 => {
+            log.push(1);
+            return;
+        }
+        6 => {}
+        _ => log.push(11),
+    }
+    log.push(2);
+}
+
 fn main() {
     let mut log = Vec::new();
     for tag in [HOISTABLE, SINGLETON, COMPONENT, TEXT, PORTAL, FRAGMENT, VIEW, 99] {
@@ -151,6 +169,7 @@ fn main() {
     for exit_status in 0..8 {
         for lanes in 0..7 {
             finished(exit_status, lanes, &mut log);
+            compared(exit_status, lanes, &mut log);
         }
     }
     println!("{log:?}");

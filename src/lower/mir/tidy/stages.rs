@@ -857,6 +857,7 @@ const JUMPS: &[Pass] = &[
     pass("continues written", |b, h| {
         js::statement_lists(b, &mut |s| continues_written(s, &h.written.continues))
     }),
+    pass("joined ands", |b, _| js::statement_lists(b, &mut |s| joined_ands(s))),
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),
     pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
     pass("branch values", branch_values_of),

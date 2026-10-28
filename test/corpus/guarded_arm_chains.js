@@ -157,6 +157,28 @@ function finished(exitStatus, lanes, log) {
   log.push(3);
 }
 
+// The same of a guard of comparisons, which MIR tests in parts each
+// failing the same way, `if (lanes !== 1 && lanes !== 2) { break; }`, no
+// label (ADR 0905, amended, lb2).
+function compared(exitStatus, lanes, log) {
+  switch (exitStatus) {
+    case 4:
+      if (lanes !== 1 && lanes !== 2) {
+        // Commit the placeholder.
+        break;
+      }
+    // Fallthrough
+    case 5:
+      log.push(1);
+      return;
+    case 6:
+      break;
+    default:
+      log.push(11);
+  }
+  log.push(2);
+}
+
 function main() {
   let log = [];
   for (const tag of [HOISTABLE, SINGLETON, COMPONENT, TEXT, PORTAL, FRAGMENT, VIEW, 99]) {
@@ -186,6 +208,7 @@ function main() {
   for (let exitStatus = 0; exitStatus < 8; exitStatus++) {
     for (let lanes = 0; lanes < 7; lanes++) {
       finished(exitStatus, lanes, log);
+      compared(exitStatus, lanes, log);
     }
   }
   console.log(`[${log.join(", ")}]`);

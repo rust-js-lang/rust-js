@@ -526,4 +526,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
     snapshots: true,
   },
+  {
+    name: "joined-ands-off",
+    breaks: "a guard of comparisons MIR tests in parts, each failing the same way, `4 if lanes != 1 && lanes != 2 => { // .. }`, is nested ifs and a label, `bb4: { switch .. if (lanes !== 1) { if (lanes !== 2) { } else { break bb4; } ..`, not `if (lanes !== 1 && lanes !== 2) { // ..\n break; }` (ADR 0905, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            && crate::lower::mir::tidy::decisions::same_stmt(&inner[0], &otherwise[0])\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
+    snapshots: true,
+  },
 ];
