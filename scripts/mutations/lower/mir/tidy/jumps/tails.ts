@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        | StmtKind::Try(body, _)\n        | StmtKind::TryCatch(body, ..) => first_written(body),\n",
     replace: "        => first_written(body),\n",
-    tests: ["test/corpus.test.ts", "-t", "^loop_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^untagged_enums.rs$"],
     snapshots: true,
   },
   {
@@ -283,11 +283,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-goes-on",
-    breaks: "a list that ends in a loop nothing leaves is taken to go on, so an `||` the program wrote before it reads negated, `if (indent >= 3 && (..)) { ..; return; } desc = ..; break;` (ADR 0805)",
+    breaks: "a list that ends in a loop nothing leaves is taken to go on, so an `||` the program wrote before it isn't a guard as written but an `else if` of the arm before, `} else if (indent < 3 || (..)) { desc = ..; break desc; } else { .. }` (ADR 0805)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        StmtKind::While { .. } => ends(last) && !js::names_jump(std::slice::from_ref(last), label),\n",
     replace: "",
-    tests: ["test/lowering-labels.test.ts", "-t", "an \\|\\| before a loop"],
+    tests: ["test/corpus.test.ts", "-t", "^or_before_a_returning_loop.rs$"],
+    snapshots: true,
   },
   {
     name: "loop-to-block-end-exits",
