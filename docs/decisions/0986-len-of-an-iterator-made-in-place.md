@@ -1,6 +1,8 @@
 # 0986. `len()` of an iterator made in place is counted through its adapters
 
-Status: Accepted. A gap closed, found by #382's triage: `len()` of an
+Status: Accepted; its reading of a map of a `rev()`'s items, which read
+a reversed range forward, is corrected by
+[0987](0987-a-rev-made-in-place-read-by-its-form.md). A gap closed, found by #382's triage: `len()` of an
 `ExactSizeIterator` made where it's asked, `v.iter().map(f).len()`, was
 refused.
 

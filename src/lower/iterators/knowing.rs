@@ -7,6 +7,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty`, a map's or a filter's, is one the crate steps from its
     /// back (ADR 0545), made knowing it where it's made: the one answer, of
     /// what's made and what's stepped.
+    /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
+    fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
+        let range_back = self.range_kind(source.peel_refs()).and_then(|kind| kind.step(true));
+        crate::lower::iterators::reversal(value, range_back)
+    }
+
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         (self.krate.back_stepped).contains(&self.tcx.erase_and_anonymize_regions(ty.peel_refs()))
     }
@@ -256,35 +262,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
-        // A `rev()` made here (ADR 0986): `$rev(source)`, or a range's
-        // stepped from its back, `$iterator(range, $rangeNextBack)`, `$rev`
-        // of its source made knowing its back and length; an array's items
-        // reversed where they're made, `$iter(xs.toReversed())`, which knows
-        // them; a map of them, `$iter(xs.toReversed()).map(f)`, made knowing
-        // them as its source's map is. Not one a dictionary steps from its
-        // back, `$iterator(it, nextBack)`, which knows neither.
-        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty) {
-            let reversed = match &value.kind {
-                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$rev") && args.len() == 1 => {
-                    Some(args[0].clone())
+        // A `rev()` made here, by its form (`reversal`, ADRs 0986, 0987):
+        // `$rev` of its source, or of a range stepped from its end, made
+        // knowing its back and length; of an array's items reversed, as its
+        // source's of them is. Not one a dictionary steps from its back,
+        // `$iterator(it, nextBack)`, which knows neither.
+        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
+            && let Some(reversal) = self.reversal_of(&value, source)
+        {
+            return match reversal {
+                Reversal::Stepped(it) | Reversal::Range(it) => {
+                    let it = self.as_exact_size(it.clone(), source, true, span)?;
+                    Ok(Expr::call_helper("$rev", vec![it]))
                 }
-                _ if self.range_kind(source).is_some() => crate::lower::iterators::stepped_form(&value).cloned(),
-                _ => None,
+                Reversal::Items => Ok(value.clone()),
+                Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),
             };
-            if let Some(reversed) = reversed {
-                let reversed = self.as_exact_size(reversed, source, true, span)?;
-                return Ok(Expr::call_helper("$rev", vec![reversed]));
-            }
-            if crate::lower::iterators::is_stepped_items(&value) {
-                return Ok(value);
-            }
-            if crate::lower::recognition::mapped_source(self.tcx, source.peel_refs()).is_some()
-                && let js::ExprKind::Call(callee, _) = &value.kind
-                && let js::ExprKind::Member(_, method) = &callee.kind
-                && method == "map"
-            {
-                return self.as_exact_size(value, source, back, span);
-            }
         }
         Err(self.unsupported(
             span,
@@ -306,6 +299,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_user_iterator(source)
         {
             return self.reversed_user_knowing(value, source, (true, false), span);
+        }
+        // A `rev()` made here, by its form (`reversal`, ADR 0987), before
+        // its range is read out of it: `$rev(it)` as it is, `it` made
+        // knowing its back where it was made; `$rev` of a range stepped from
+        // its end made knowing its back; of an array's items reversed, as
+        // its source's of them is.
+        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
+            && let Some(reversal) = self.reversal_of(&value, source)
+        {
+            return match reversal {
+                Reversal::Stepped(_) => Ok(value.clone()),
+                Reversal::Range(range) => {
+                    let range = self.as_double_ended(range.clone(), source, span)?;
+                    Ok(Expr::call_helper("$rev", vec![range]))
+                }
+                Reversal::Items => Ok(value.clone()),
+                Reversal::Chain => self.as_double_ended(value.clone(), source, span),
+            };
         }
         let value = stepped_value(&value).unwrap_or(value);
         // One a struct holds, which keeps its source (ADR 0542): of one given

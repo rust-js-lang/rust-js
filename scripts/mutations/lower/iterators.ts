@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "reversal-of-range-chain-as-items",
+    breaks: "a map of a range stepped from its end, made in place, is read as its source's map, which steps the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987)",
+    file: "src/lower/iterators.rs",
+    find: "            _ if is_stepped_items(e) => true,\n",
+    replace: "            _ if is_stepped_items(e) || stepped_form(e).is_some() => true,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a map of a reversed range given where its length is asked"],
+  },
+  {
     name: "discarded-iterator-kept",
     breaks: "a discarded `drain(0..i)` in bounds is `$iter(queue.splice(0, i));`, an iterator nothing steps",
     file: "src/lower/iterators.rs",

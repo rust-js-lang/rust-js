@@ -542,7 +542,11 @@ What's refused is in [the limitations](limitations.md).
   is `v.length`, and `f` isn't called; `take(n)`'s is `Math.min(len, n)`,
   `skip(n)`'s `Math.max(len - n, 0)`, a `rev()`'s or an `enumerate()`'s its
   source's, a range's its count, a generic one's its own `it.len()`
-  ([0986](../decisions/0986-len-of-an-iterator-made-in-place.md)).
+  ([0986](../decisions/0986-len-of-an-iterator-made-in-place.md)). A
+  `rev()` made where generic code steps it from its back or asks its
+  length, `ends((1..4).rev())`, is stepped as Rust's `Rev` steps it; a map
+  of a reversed range given so is refused
+  ([0987](../decisions/0987-a-rev-made-in-place-read-by-its-form.md)).
 - **Room asked past `isize::MAX` bytes panics `capacity overflow`, as
   std's does:** `Vec::with_capacity(n)` is `$roomFor(n, 4); []`, of the
   items' size, and `reserve`, `vec![x; n]`, a slice's `repeat`,

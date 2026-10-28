@@ -533,6 +533,53 @@ pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
     }
 }
 
+/// What a `rev()` made in place is, as `rev_items` and `reversed_inward`
+/// make it: the one reader of its form (ADRs 0986, 0987).
+pub(in crate::lower) enum Reversal<'e> {
+    /// `$rev(it)`, which steps `it` from its back: `it`.
+    Stepped(&'e Expr),
+    /// A range stepped from its end, `$iterator(range, $rangeNextBack)`:
+    /// the range.
+    Range(&'e Expr),
+    /// An array's items reversed where they're made, `$iter(xs.toReversed())`,
+    /// which knows its back and its length.
+    Items,
+    /// A map or a filter of them, `$iter(xs.toReversed()).map(f)`: what its
+    /// source's is of the items reversed, read as its source's type is. Not
+    /// a chain of a range stepped from its end, which as its source's would
+    /// step forward.
+    Chain,
+}
+
+/// `e`'s reversal, of a `rev()` made in place whose source is a range
+/// stepped from its end by `range_back`, `$rangeNextBack`, or not a range.
+pub(in crate::lower) fn reversal<'e>(e: &'e Expr, range_back: Option<&str>) -> Option<Reversal<'e>> {
+    fn of_items(e: &Expr) -> bool {
+        match &e.kind {
+            _ if is_stepped_items(e) => true,
+            js::ExprKind::Call(callee, args)
+                if let js::ExprKind::Member(base, method) = &callee.kind
+                    && matches!(method.as_str(), "map" | "filter")
+                    && args.len() == 1 =>
+            {
+                of_items(base)
+            }
+            _ => false,
+        }
+    }
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match (callee.helper_name(), args.as_slice()) {
+        (Some("$rev"), [it]) => Some(Reversal::Stepped(it)),
+        (Some("$iterator"), [range, step]) if range_back.is_some() && step.helper_name() == range_back => {
+            Some(Reversal::Range(range))
+        }
+        _ if is_stepped_items(e) => Some(Reversal::Items),
+        _ => of_items(e).then_some(Reversal::Chain),
+    }
+}
+
 /// A range's numbers as `stepped_by` steps them, `$iterator({ start: a,
 /// end: b }, $rangeNext)`: its bounds, whether its end is in it, `a..=b`'s,
 /// and whether it's stepped from its end.
