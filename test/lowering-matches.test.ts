@@ -350,8 +350,8 @@ pub fn ignored(values: (u32, u32)) -> u32 {
 
 // ADR 0590: a \`match\` of a number by the crate's constants tests each by
 // its name, as React's scheduler's \`switch (priorityLevel)\` does, its own
-// module's or another's, imported; a value written another way too is its
-// number. A comment before an arm is before its body.
+// module's or another's, imported, each `matches!` as it's written (ADR
+// 0590, amended). A comment before an arm is before its body.
 test("a match of constants cases each by its name, its comments in its arms", async () => {
   const dir = fixture("const-patterns");
   writeFileSync(join(dir, "lib.rs"), `pub mod levels {
@@ -387,7 +387,7 @@ pub fn both(a: u8, b: u8) -> bool {
   expect(js).toContain("  switch (level) {\n    case IMMEDIATE:\n      // Times out immediately\n      return -1;\n");
   expect(js).toContain("    case NORMAL:\n      // Normal\n      return 5000;\n");
   expect(js).toContain("    case IDLE:\n      // Never times out\n");
-  expect(js).toContain("a === 3");
+  expect(js).toContain("  return a === NORMAL && (b === 3 || b === 4);\n");
   const lib = await import(join(dir, "lib.js"));
   expect([1, 3, 5, 9].map(lib.timeout)).toEqual([-1, 5000, 1073741823, 10000]);
   expect([lib.both(3, 4), lib.both(3, 5), lib.both(1, 3)]).toEqual([true, false, false]);

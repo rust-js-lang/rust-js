@@ -332,13 +332,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = std::mem::replace(made, Expr::undefined());
                     *made = self.spill("_$", value, &mut out);
                 }
+                // Where in what a pattern matches it is, which names its
+                // constants (`body_queries::pattern_places`).
+                let tested = (discr.place())
+                    .map(|place| crate::lower::body_queries::pattern_places(self.tcx, state.body, place));
                 let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
                 let mut always = None;
                 // Past a guard that holds, to its arm (`held_arms`).
                 let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
                 for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
                     if reached(target) {
-                        let test = self.switch_test(&subject, ty, value, span)?;
+                        let test = self.switch_test(&subject, ty, value, span, tested.as_deref())?;
                         // A test that's a constant: its branch alone, or none.
                         match test.kind {
                             js::ExprKind::Bool(false) => {}
@@ -610,8 +614,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Folding ─────────────────────────────────────────────────────────
 
     /// The test that `subject`, of type `ty`, is `value`: of an enum's
-    /// discriminant, its variant.
-    pub(super) fn switch_test(&mut self, subject: &Value<'tcx>, ty: Ty<'tcx>, value: u128, span: Span) -> R<Expr> {
+    /// discriminant, its variant. `tested` is where in what a pattern
+    /// matches it is, of MIR's place of it (`body_queries::pattern_places`).
+    pub(super) fn switch_test(
+        &mut self,
+        subject: &Value<'tcx>,
+        ty: Ty<'tcx>,
+        value: u128,
+        span: Span,
+        tested: Option<&[(Ty<'tcx>, Vec<crate::lower::body_queries::PatternStep>)]>,
+    ) -> R<Expr> {
         match subject {
             // Of an `Option` whose test is known: it, of its `Some` (ADR 0642).
             Value::Tested(test) => Ok(match value {
@@ -654,12 +666,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => subject,
                     });
                 }
-                // A value the program's patterns name by a `const`, as that
-                // reads (ADR 0590): `priorityLevel === ImmediatePriority`.
-                if let Some(Some(named)) = (self.frame.facts.constant_patterns)
-                    .get(&crate::lower::body_queries::PatternValue::Bits(ty, value))
-                    .copied()
-                {
+                // A value the program's patterns name by a `const` where it's
+                // tested, as that reads (ADR 0590, amended): `priorityLevel
+                // === ImmediatePriority`.
+                let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value);
+                if let Some(named) = (self.frame.facts.constant_patterns).named(self.tcx, &value_of, span, tested) {
                     let named = self.named_const(named, ty::List::empty(), ty, span)?;
                     return Ok(Expr::bin(Op::Eq, subject, named));
                 }

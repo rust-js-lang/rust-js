@@ -100,3 +100,37 @@ Held by `test/lowering-constants.test.ts`, "a match of a transparent
 struct's constants names them in a switch", run; the mutations
 `transparent-constant-unnamed`, `transparent-constant-field-walked`
 (`body_queries.ts`) and `transparent-constant-no-case` (`mir/hints.ts`).
+
+## Amendment: each `match` names its own constants (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a constant and its
+value test the same.
+
+React's renderRootConcurrent, `switch (workInProgressSuspendedReason) {
+.. case SuspendedOnInstanceAndReadyToContinue: { switch
+(workInProgress.tag) { case HostHoistable: .. case HostComponent: .. } }
+}`, tests two constants of one value, 5, in two `match`es (gap wl7 of the
+port). A value was named by the body's patterns together, so the one value
+two constants name was neither: `case 5:` and `tag === 5`.
+
+**A value is named by the patterns of the `match` or `let` that tests
+it, at the part of what it matches the test reads**
+(`body_queries::ConstantPatterns::named`): the innermost written around
+the test, a macro's, `matches!`'s, where it's called; and in it, the
+patterns whose steps from what's matched, fields and variants, are those of
+the test's MIR place from a part of it of the matched type
+(`pattern_places`), so `(SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE,
+HOST_TEXT)` and `(_, HOST_COMPONENT)` name each field's. One a `match`
+writes another way too there, a literal or another constant, is its number
+there, and named by its constant in another `match`, as each is written:
+`matches!(a, NORMAL) && matches!(b, 3 | 4)` is `a === NORMAL && (b === 3
+|| b === 4)`.
+
+Held by `test/lowering-constants.test.ts`, "constants of one value each
+name it where they're tested", run: nested `match`es, a tuple's fields,
+a tuple in a tuple, `if let`, `let … else`, two `matches!`, a value written
+two ways in one `match`; and the mutations
+`same-valued-constants-of-the-outer-match`, `-of-any-field`,
+`-of-any-part`, `-of-another-expansion`, `if-let-constants-unnamed`,
+`let-else-constants-unnamed` and `constant-written-two-ways-named`
+(`body_queries.ts`).

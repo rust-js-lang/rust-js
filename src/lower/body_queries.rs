@@ -14,8 +14,13 @@ use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
+mod constants;
 mod ranges;
 
+use constants::constant_patterns;
+pub(super) use constants::{
+    ConstantPatterns, PatternStep, PatternValue, pattern_places, pattern_value, transparent_subpattern,
+};
 pub(super) use ranges::ranges;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).
@@ -142,8 +147,8 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) in_place_adapters: HashSet<Span>,
     pub(super) in_place_adapter_steps: HashSet<Span>,
     /// Each value the body's patterns test and the `const` they name it by,
-    /// `constant_patterns`'s (ADRs 0590, 0634).
-    pub(super) constant_patterns: HashMap<PatternValue<'tcx>, Option<DefId>>,
+    /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
+    pub(super) constant_patterns: ConstantPatterns<'tcx>,
     /// The props given to the crate's components, and what's a base of
     /// them, `jsx_given_props`'s.
     pub(super) jsx_given: HashSet<ExprId>,
@@ -877,53 +882,6 @@ fn jsx_given_props<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> (HashSet<ExprI
     (props, bases)
 }
 
-/// A value a pattern tests, which a `const` may name (`constant_patterns`):
-/// a number's or a `char`'s, by its type and bits; or the registry's
-/// symbol's, `js::SymbolFor`'s, by its key (ADR 0634).
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub(super) enum PatternValue<'tcx> {
-    Bits(ty::Ty<'tcx>, u128),
-    Key(String),
-}
-
-/// Each value a body's patterns test of a number, a `char` or the
-/// registry's symbol, and the `const` they name it by:
-/// `Some(IMMEDIATE_PRIORITY)` where every pattern of it is that constant,
-/// `None` where one is written another way, a literal, another constant or
-/// a trait's (ADRs 0590, 0634).
-fn constant_patterns<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashMap<PatternValue<'tcx>, Option<DefId>> {
-    let mut found: HashMap<PatternValue<'tcx>, Option<DefId>> = HashMap::new();
-    let mut of = |pattern: &Pat<'tcx>| {
-        pattern.walk(|pat| {
-            // A constant of no generics: a trait's, `<u8 as Level>::HIGH`, is
-            // of a type the pattern doesn't keep, so it's its value.
-            let named = (pat.extra.as_ref().and_then(|extra| extra.expanded_const))
-                .filter(|&d| tcx.generics_of(d).count() == 0);
-            let value = pattern_value(tcx, pat);
-            // Not again of a `#[repr(transparent)]` struct's field, its value.
-            let into = value.is_none() || transparent_subpattern(tcx, pat).is_none();
-            if let Some(value) = value {
-                (found.entry(value))
-                    .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))
-                    .or_insert(named);
-            }
-            into
-        });
-    };
-    thir.arms.iter().for_each(|arm| of(&arm.pattern));
-    for expr in thir.exprs.iter() {
-        if let ExprKind::Let { ref pat, .. } = expr.kind {
-            of(pat);
-        }
-    }
-    for stmt in thir.stmts.iter() {
-        if let thir::StmtKind::Let { ref pattern, .. } = stmt.kind {
-            of(pattern);
-        }
-    }
-    found
-}
-
 /// The `const`s `thir` names: read, `URGENT_LANES`, and tested, a
 /// pattern's, `IMMEDIATE_PRIORITY =>`, which a test names too (ADR 0590).
 pub(super) fn consts_named(thir: &Thir<'_>) -> HashSet<DefId> {
@@ -1443,47 +1401,8 @@ fn tests_registered<'tcx>(tcx: TyCtxt<'tcx>, pattern: &Pat<'tcx>) -> bool {
     }
 }
 
-/// The value `pat` tests, of a number, a `char` or the registry's symbol,
-/// itself, not what's in it: the one answer to which value a constant
-/// pattern is (`PatternValue`).
-pub(super) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
-    match &pat.kind {
-        PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
-            .valtree
-            .try_to_leaf()
-            .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),
-        // A `#[repr(transparent)]` struct's, which is its field in JS (ADR
-        // 0584): its field's, `EventPriority(2)`'s `2`.
-        PatKind::Leaf { .. } if let Some(field) = transparent_subpattern(tcx, pat) => pattern_value(tcx, field),
-        // Its key's pattern, a string's, inside it.
-        PatKind::Leaf { subpatterns }
-            if matches!(pat.ty.kind(), ty::Adt(adt, _)
-            if super::recognition::is_symbol_for_def(tcx, adt.did())) =>
-        {
-            match &subpatterns[..] {
-                [key] => pattern_text(&key.pattern).map(PatternValue::Key),
-                _ => None,
-            }
-        }
-        _ => None,
-    }
-}
-
-/// The pattern of the field a `#[repr(transparent)]` struct's pattern is in
-/// JS, as the struct is its field (ADR 0584): a constant's, `EventPriority(2)`
-/// of `DISCRETE_EVENT_PRIORITY =>`, its `2`.
-pub(super) fn transparent_subpattern<'p, 'tcx>(tcx: TyCtxt<'tcx>, pat: &'p Pat<'tcx>) -> Option<&'p Pat<'tcx>> {
-    let (PatKind::Leaf { subpatterns }, ty::Adt(adt, _)) = (&pat.kind, pat.ty.kind()) else {
-        return None;
-    };
-    let at = super::recognition::transparent_field(tcx, *adt)?;
-    (subpatterns.iter())
-        .find(|field| field.field.as_usize() == at)
-        .map(|field| &field.pattern)
-}
-
 /// The text a pattern of a string, `"react.memo"`, is.
-fn pattern_text(pattern: &Pat<'_>) -> Option<String> {
+pub(super) fn pattern_text(pattern: &Pat<'_>) -> Option<String> {
     match &pattern.kind {
         PatKind::Deref { subpattern, .. } => pattern_text(subpattern),
         PatKind::Constant { value } if pattern.ty.is_str() => {

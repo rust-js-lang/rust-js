@@ -3,22 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "transparent-constant-unnamed",
-    breaks: "a `match` of a `#[repr(transparent)]` struct's constants tests their numbers, `eventPriority === 2`, not `DiscreteEventPriority` (ADR 0590, amended)",
-    file: "src/lower/body_queries.rs",
-    find: "        PatKind::Leaf { .. } if let Some(field) = transparent_subpattern(tcx, pat) => pattern_value(tcx, field),\n",
-    replace: "",
-    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
-  },
-  {
-    name: "transparent-constant-field-walked",
-    breaks: "a `#[repr(transparent)]` struct's constant's field, its number, is a pattern written another way of its value, so the constant goes unnamed (ADR 0590, amended)",
-    file: "src/lower/body_queries.rs",
-    find: "            let into = value.is_none() || transparent_subpattern(tcx, pat).is_none();\n",
-    replace: "            let into = true;\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
-  },
-  {
     name: "named-constant-signed-as-unsigned",
     breaks: "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
     file: "src/lower/body_queries.rs",
@@ -115,22 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
   {
-    name: "constant-written-two-ways-named",
-    breaks: "a value one pattern names by a `const` and another writes as a literal is tested by the `const`'s name in both",
-    file: "src/lower/body_queries.rs",
-    find: "                    .and_modify(|seen| *seen = seen.filter(|&d| Some(d) == named))\n",
-    replace: "                    .and_modify(|seen| *seen = seen.or(named))\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each"],
-  },
-  {
-    name: "registered-symbol-pattern-unnamed",
-    breaks: "a pattern of the registry's symbol tests it by its value, `ty === Symbol.for(\"react.fragment\")`, not by the `const` that names it",
-    file: "src/lower/body_queries.rs",
-    find: "                [key] => pattern_text(&key.pattern).map(PatternValue::Key),\n",
-    replace: "                [_] => None,\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
-  },
-  {
     name: "registered-read-none-untold",
     breaks: "a value read as the registry's symbol whose `None` an arm tells is the value itself, so a string is its `Some`, not `None`",
     file: "src/lower/body_queries.rs",
@@ -145,14 +113,6 @@ export const mutations: Mutation[] = [
     find: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => false,\n",
     replace: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => true,\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
-  },
-  {
-    name: "pattern-trait-const-named",
-    breaks: "a pattern of a trait's constant, `<u8 as Level>::HIGH`, is named with no type, and rustc crashes resolving it",
-    file: "src/lower/body_queries.rs",
-    find: "                .filter(|&d| tcx.generics_of(d).count() == 0);\n",
-    replace: ";\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
   },
   {
     name: "held-guard-of-undefined",

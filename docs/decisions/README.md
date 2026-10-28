@@ -473,7 +473,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0587 A function given to `with_borrow` is asked what it borrows](0587-a-function-given-to-with-borrow-is-asked-as-a-closure.md)
 - [0588 A binding may throw by the result it's declared with](0588-a-binding-throws-by-its-declared-result.md)
 - [0589 A `Drop` dropped in one place is its body there](0589-a-drop-dropped-once-is-its-body-there.md) *(amended by 0705: a guard's field of a variable is that variable)*
-- [0590 A `match` of constants tests each by its name, its comments in its arms](0590-a-match-of-constants-names-them.md) *(amended: a transparent struct's constant is named too)*
+- [0590 A `match` of constants tests each by its name, its comments in its arms](0590-a-match-of-constants-names-them.md) *(amended: a transparent struct's constant is named too; amended: each `match` names its own constants)*
 - [0591 `is_some_and` of an equality with its `Some` is the equality](0591-is-some-and-of-an-equality-is-the-equality.md)
 - [0592 An impl's dictionary is its module's `const`](0592-a-dictionary-is-its-modules-const.md) *(amended: a cycle refuses only a dictionary the crate's own code reaches)*
 - [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](0593-a-lazy-argument-is-its-value.md)

@@ -361,3 +361,105 @@ pub fn priority(n: i32) -> EventPriority {
   const lib = await import(join(dir, "lib.js"));
   expect([2, 8, 32].map((n) => lib.schedulerPriority(lib.priority(n)))).toEqual([1, 2, 3]);
 });
+
+// React's renderRootConcurrent, `switch (workInProgressSuspendedReason) {
+// .. case SuspendedOnInstanceAndReadyToContinue: { switch
+// (workInProgress.tag) { case HostHoistable: .. case HostComponent: .. } }
+// }`, two constants of one value, 5: each names it where its `match` or
+// `let` tests it, of where in what's matched, not its number for both (ADR
+// 0590, amended). A value its `match` writes two ways is its number, as
+// before.
+test("constants of one value each name it where they're tested", async () => {
+  const dir = fixture("same-valued-consts");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::name = "SuspendedOnError")]
+pub const SUSPENDED_ON_ERROR: u8 = 1;
+#[cfg_attr(rust_js, rust_js::name = "SuspendedOnInstanceAndReadyToContinue")]
+pub const SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE: u8 = 5;
+#[cfg_attr(rust_js, rust_js::name = "HostHoistable")]
+pub const HOST_HOISTABLE: u8 = 26;
+#[cfg_attr(rust_js, rust_js::name = "HostComponent")]
+pub const HOST_COMPONENT: u8 = 5;
+#[cfg_attr(rust_js, rust_js::name = "HostText")]
+pub const HOST_TEXT: u8 = 6;
+
+pub fn resume(reason: u8, tag: u8) -> u8 {
+    match reason {
+        SUSPENDED_ON_ERROR => 1,
+        SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE => match tag {
+            HOST_HOISTABLE | HOST_COMPONENT => 2,
+            _ => 3,
+        },
+        _ => 4,
+    }
+}
+
+pub fn paired(reason: u8, tag: u8) -> u8 {
+    match (reason, tag) {
+        (SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE, HOST_TEXT) => 1,
+        (_, HOST_COMPONENT) => 2,
+        _ => 3,
+    }
+}
+
+pub fn tested(tag: Option<u8>, first: bool) -> u8 {
+    if let Some(HOST_COMPONENT) = tag {
+        return 1;
+    }
+    let Some(HOST_TEXT) = tag else {
+        return match tag {
+            Some(5) if first => 2,
+            Some(HOST_COMPONENT) => 3,
+            _ => 4,
+        };
+    };
+    5
+}
+
+pub fn nested(reason: u8, tag: u8, other: u8) -> u8 {
+    match (reason, (tag, other)) {
+        (SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE, (HOST_COMPONENT, _)) => 1,
+        _ => 2,
+    }
+}
+
+pub fn both(reason: u8, tag: u8) -> bool {
+    matches!(reason, SUSPENDED_ON_INSTANCE_AND_READY_TO_CONTINUE) && matches!(tag, HOST_COMPONENT)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "    case SuspendedOnInstanceAndReadyToContinue:\n      switch (tag) {\n        case HostHoistable:\n        case HostComponent:\n",
+  );
+  expect(js).toContain("  if (reason === SuspendedOnInstanceAndReadyToContinue && tag === HostText) {\n");
+  expect(js).toContain("  if (tag === HostComponent) {\n    return 2;\n");
+  expect(js).toContain("  if (tag === HostComponent) {\n    return 1;\n");
+  expect(js).toContain("  if (tag === HostText) {\n    return 5;\n");
+  // Of the inner tuple's first, not the outer's.
+  expect(js).toMatch(/ \(reason === SuspendedOnInstanceAndReadyToContinue && .*\] === HostComponent\) \{\n {4}return 1;/);
+  // Of each `matches!`, written alike in core.
+  expect(js).toContain("  return reason === SuspendedOnInstanceAndReadyToContinue && tag === HostComponent;\n");
+  // Written two ways in one `match`: its number there.
+  expect(js).toContain("  if (tag === 5) {\n");
+  expect(js).not.toMatch(/case 5:|=== 5 &&|=== 5;|tag === 5 \|\|/);
+  const lib = await import(join(dir, "lib.js"));
+  const resumed = [
+    [1, 0],
+    [5, 26],
+    [5, 5],
+    [5, 7],
+    [9, 5],
+  ].map(([r, t]) => lib.resume(r, t));
+  expect(resumed).toEqual([1, 2, 2, 3, 4]);
+  const paired = [
+    [5, 6],
+    [1, 5],
+    [5, 7],
+  ].map(([r, t]) => lib.paired(r, t));
+  expect(paired).toEqual([1, 2, 3]);
+  expect([lib.tested(5, true), lib.tested(null, true), lib.tested(6, false)]).toEqual([1, 4, 5]);
+  expect([lib.nested(5, 5, 0), lib.nested(5, 6, 0), lib.both(5, 5), lib.both(5, 6)]).toEqual([1, 2, true, false]);
+});

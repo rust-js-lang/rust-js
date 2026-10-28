@@ -230,7 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Discriminant(_, enum_ty, _) => *enum_ty,
                         _ => ty,
                     };
-                    let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span)?;
+                    let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span, None)?;
                     return Ok(Value::Expr(match op {
                         BinOp::Eq => test,
                         _ => test.negated_test(),

@@ -193,8 +193,8 @@ export const mutations: Mutation[] = [
     name: "constant-patterns-numbered",
     breaks: "a `match` of the crate's constants tests their numbers, `priorityLevel === 1`",
     file: "src/lower/mir/structure.rs",
-    find: "                    .get(&crate::lower::body_queries::PatternValue::Bits(ty, value))\n",
-    replace: "                    .get(&crate::lower::body_queries::PatternValue::Bits(ty, value + 1000))\n",
+    find: "                let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value);\n",
+    replace: "                let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value + 1000);\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each"],
   },
   {

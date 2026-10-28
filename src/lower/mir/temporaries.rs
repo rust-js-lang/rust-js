@@ -571,7 +571,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut made = Expr::int(last);
         for &(bits, number) in rest.iter().rev() {
-            let test = self.switch_test(discriminant, enum_ty, bits, span)?;
+            let test = self.switch_test(discriminant, enum_ty, bits, span, None)?;
             made = Expr::cond(test, Expr::int(number), made);
         }
         Ok(made)

@@ -1421,7 +1421,11 @@ of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.m
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,
-and a comment before an arm is before its body:
+where its `match` or `let` writes it, so two constants of one value, a
+`HOST_COMPONENT` and a `SUSPENDED_ON_DATA` of 5, each name it in their own
+`match` ([ADR 0590](../../decisions/0590-a-match-of-constants-names-them.md),
+amended); one its `match` writes another way too, a literal, is its number.
+A comment before an arm is before its body:
 
 ```rust
 pub const IMMEDIATE: u8 = 1;

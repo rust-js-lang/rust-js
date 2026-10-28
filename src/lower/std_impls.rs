@@ -1015,12 +1015,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.eq_value(a, b, ty, span, out)
     }
 
-    /// The registry's symbol of `text`: the `const` the body's patterns name
-    /// it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else `Symbol.for(text)`.
+    /// The registry's symbol of `text`: the `const` the patterns tested at
+    /// `span` name it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else
+    /// `Symbol.for(text)`.
     fn named_symbol(&mut self, text: &Expr, span: Span) -> R<Expr> {
         if let js::ExprKind::Str(key) = &text.kind
-            && let Some(&Some(named)) =
-                (self.frame.facts.constant_patterns).get(&super::body_queries::PatternValue::Key(key.clone()))
+            && let Some(named) = (self.frame.facts.constant_patterns).named(
+                self.tcx,
+                &super::body_queries::PatternValue::Key(key.clone()),
+                span,
+                None,
+            )
         {
             let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
             return self.named_const(named, ty::List::empty(), ty, span);
