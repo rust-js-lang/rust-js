@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        }) => !span.is_none(),\n",
     replace: "        }) => false,\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+    tests: ["test/port-performance-track.test.ts", "-t", "addValueToProperties is a switch whose case breaks where it's written"],
   },
   {
     name: "read-before-written-past-a-write",
