@@ -38,8 +38,6 @@ pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "flags",
         passes: &[
-            // A guard of a handle made for it alone: the place it's a handle on.
-            pass("unguarded", |b, _| crate::lower::std_types::cell::unguarded(b)),
             // Where a drop's flag is known, no test of it, nor a `try` for it.
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
         ],
@@ -603,12 +601,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("innermost jumps", |b, _| {
                 js::statement_lists(b, &mut |s| innermost_jumps(s))
             }),
-            // And a `continue` those left where its loop's turn ends anyway,
-            // React's `if (i !== j) { ..; continue; }` that ends a `for`'s
-            // body (ADR 0961).
-            pass("tail continues", |b, h| {
-                js::statement_lists(b, &mut |s| tail_continues(s, &h.written.continues))
-            }),
             // Each `break` a loop that ends a block MIR made leaves it by,
             // once what's after each loop is placed: the loop's own, a
             // `loop` that ends an `if`'s branch, its `else` after it, as
@@ -672,7 +664,9 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             // A case's `break` to the `return;` after its `switch`, of an
             // arm the program wrote a `return` in: that `return;` (ADR
-            // 0905, amended).
+            // 0905, amended). And each `continue` the stage left where its
+            // loop's turn ends anyway, a default's and React's `if (i !== j)
+            // { ..; continue; }` that ends a `for`'s body (ADR 0961).
             pass("returns of cases", |b, h| {
                 js::statement_lists(b, &mut |s| {
                     case_rests::returns_of_cases(s, &h.written.switches, h.returns)

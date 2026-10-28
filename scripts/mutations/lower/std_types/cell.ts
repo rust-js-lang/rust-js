@@ -108,14 +108,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-tidy-rethrow-kept",
-    breaks: "`try { s } catch (error) { throw error; }` stays, not `s`",
-    file: "src/lower/std_types/cell.rs",
-    find: "                && let [rethrow] = handler.as_slice()\n",
-    replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "field only ever borrowed for a moment"],
-  },
-  {
     name: "dyn-cell-guard-value",
     breaks: "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
     file: "src/lower/std_types/cell.rs",
