@@ -388,3 +388,39 @@ a flag, one the other way, one whose `return` may throw and one whose
 `flagged-try-never`, `flagged-try-throwing-return`,
 `flagged-try-negation-unseen` and `flagged-try-result-read-after`.
 
+
+## Amendment: a loop's `try` of a closure that returns early (the user's decision, 2026-10-28, wl4)
+
+React's renderRootSync and renderRootConcurrent write `outer: do { try {
+switch (..) { case X: ..; break outer; } ..; break; } catch (thrownValue)
+{ handleThrow(root, thrownValue); } } while (true);`. Rust can't `break` a
+loop from inside the closure, so the port's `'outer: loop { match
+catch_unwind(|| { .. return; .. }) { Ok(()) => break 'outer, Err(e) =>
+handle(e) } }` printed `try { (() => { .. return; .. })(); break; }`, an
+arrow called in place; and tidy dropped `'outer`, which no jump named
+before preparation inlined anything.
+
+- **A loop label the program wrote stays through tidy** (`unlabeled`
+  drops only MIR's, `bbN`, and `written labels`, first of the `jumps`
+  stage, names each written loop as the program did); **preparation drops
+  each that nothing names then** (`prepare/labels.rs`'s `loops`), so a
+  label stays only where a jump needs it, as before.
+- **A loop's `try` whose body is a closure called in place, then the `Ok`
+  arm's jump, is the closure's body, each `return;` of it that jump**
+  (`tried_jumps`): `break` as it is where nothing between the `return`
+  and the `try` would take it, a `switch` a `break` or a loop either;
+  else the loop's label, `break outer`; and where the loop has none, the
+  closure stays, as no label the program didn't write is made. A `try`
+  that ends the loop's body, the `Ok` arm's `continue` gone, is the same
+  of `continue`. Not of a closure of a value, nor one labeling what the
+  loop's label names.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): each `return` went on
+to that jump, which runs where it did; what the closure declares is the
+`try` block's, as the jump after it reads none of it.
+
+Held by `test/corpus/tried_loop_jumps.rs`, against native Rust; mutations
+`tried-jumps-off`, `tried-jump-taken-by-its-switch`,
+`tried-try-ending-the-body-kept`, `written-loop-label-unnamed-kept`
+(`prepare/labels.ts`) and `written-loop-label-dropped-in-tidy`
+(`tidy/jumps/labels.ts`).

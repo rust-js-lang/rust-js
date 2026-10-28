@@ -46,14 +46,19 @@ pub(super) const NOTHING_AFTER_A_JUMP: Contract = Contract {
     },
 };
 
-/// Each label is one a jump inside it names.
+/// Each label is one a jump inside it names, but a loop's the program
+/// wrote, which preparation drops where nothing names it (wl4).
 pub(super) const LABELS_NAMED: Contract = Contract {
     name: "each label named",
     broken: |body| {
         let mut found = None;
         crate::js::each_list(body, &mut |stmts| {
             for stmt in stmts.iter() {
+                let written = |l: &str| !crate::lower::mir::is_block_label(l);
                 if found.is_none()
+                    && !matches!(&stmt.kind, StmtKind::While { label: Some(l), .. }
+                        | StmtKind::ForOf { label: Some(l), .. }
+                        | StmtKind::For { label: Some(l), .. } if written(l))
                     && let StmtKind::Labeled(label, inner)
                     | StmtKind::While {
                         label: Some(label),

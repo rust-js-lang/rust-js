@@ -813,6 +813,13 @@ pub(super) const STAGES: &[Stage] = &[
 
 /// `jumps`, run twice.
 const JUMPS: &[Pass] = &[
+    // A loop the program labeled, `'outer: loop`, by its name from the
+    // first, which tidy keeps where nothing names it yet: preparation
+    // drops it where nothing does then (the user's decision, 2026-10-28,
+    // wl4).
+    pass("written labels", |b, h| {
+        js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+    }),
     // A loop that ends the function, whose way out MIR wrote as its
     // `return;`: its `break`, as a loop followed by code is left.
     pass("loop ends returned", |b, _| loop_ends_returned(b)),

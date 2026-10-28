@@ -1352,6 +1352,58 @@ export function checked(f) {
 }
 ```
 
+In a loop whose `Ok` arm leaves it, the closure's `return` is that jump,
+`break outer` where a `switch` would take a `break`, of the label you wrote
+on the loop; with none, the closure stays one, as JS can't say where it
+goes. A loop label you wrote that nothing names in the JS is left out:
+
+```rust
+use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn render(reason: u8, work: fn(u8)) -> u8 {
+    let mut status = 0;
+    'outer: loop {
+        match catch_unwind(AssertUnwindSafe(|| {
+            match reason {
+                1 => {
+                    status = 6;
+                    return;
+                }
+                2 | 3 => work(reason),
+                _ => {}
+            }
+            status = 1;
+        })) {
+            Ok(()) => break 'outer,
+            Err(_) => status = 9,
+        }
+    }
+    status
+}
+```
+
+```js
+export function render(reason, work) {
+  let status = 0;
+  outer: while (true) {
+    try {
+      switch (reason) {
+        case 1:
+          status = 6;
+          break outer;
+        case 2:
+        case 3:
+          work(reason);
+      }
+      status = 1;
+      break;
+    } catch {}
+    status = 9;
+  }
+  return status;
+}
+```
+
 ## `switch` and `match`
 
 `match` is `switch` that can't fall through, can't forget a case, and has a

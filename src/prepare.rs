@@ -1,8 +1,7 @@
-//! Readability preparation on the completed JS tree. No rustc types or APIs.
-//! Nothing moves: what JSX holds stays where it's written, a list's callback
-//! of several statements and a handler's too, as a person writes them, and
-//! oxfmt lays them out where they are (ADR 0218). The printer only lays out
-//! the result.
+//! Readability preparation on the completed JS tree. No rustc types or APIs. Nothing moves: what
+//! JSX holds stays where it's written, a list's callback of several statements and a handler's
+//! too, as a person writes them, and oxfmt lays them out where they are (ADR 0218). The printer
+//! only lays out the result.
 
 use std::collections::HashSet;
 
@@ -11,6 +10,7 @@ use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp}
 mod catches;
 mod do_whiles;
 mod initializers;
+mod labels;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
@@ -35,6 +35,7 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
+    js::each_item_block_mut(&mut module.items, &mut |stmts| labels::loops(stmts));
     js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot));
     js::each_item_block_mut(&mut module.items, &mut tested_assignments);
     reclaim::module(module);
@@ -709,9 +710,8 @@ fn declares_underscore(body: &[Stmt]) -> bool {
     })
 }
 
-/// A function's body, a closure's too: its last `return;` isn't written, as
-/// it falls off its end there, as a person ends one (ADR 0299); and its
-/// parameters' patterns, as its body's (`left_out_params`).
+/// A function's body, a closure's too: its last `return;` isn't written, as it falls off its end
+/// there, as a person ends one (ADR 0299); and its parameters' patterns (`left_out_params`).
 fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     block(body, true);
     left_out_params(params, body);

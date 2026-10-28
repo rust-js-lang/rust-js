@@ -340,7 +340,9 @@ pub(in crate::lower::mir::tidy) fn fits_in_place(stmts: &[Stmt], i: usize, inner
 }
 
 /// A label nothing breaks to or continues: a block's statements in its
-/// place, where they declare nothing its neighbors do; a loop, unlabeled.
+/// place, where they declare nothing its neighbors do; a loop, unlabeled,
+/// where MIR made the label: one the program wrote stays through tidy,
+/// which preparation drops where nothing names it then (wl4).
 pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -357,7 +359,9 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
         if let StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmts[i].kind
-            && label.as_deref().is_some_and(|l| !js::names_jump(body, l))
+            && label
+                .as_deref()
+                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l))
         {
             *label = None;
         }

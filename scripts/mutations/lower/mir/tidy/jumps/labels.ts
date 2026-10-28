@@ -221,4 +221,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },
+  {
+    name: "written-loop-label-dropped-in-tidy",
+    breaks: "tidy drops a loop label the program wrote that nothing names yet, `'outer: loop`'s, so a closure's `return` in a `switch` can't be the loop's `break outer` and the `try` keeps its closure (the user's decision, wl4)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l))\n",
+    replace: "                .is_some_and(|l| !js::names_jump(body, l))\n",
+    tests: ["test/corpus.test.ts", "-t", "^tried_loop_jumps.rs$"],
+    snapshots: true,
+  },
 ];
