@@ -78,25 +78,25 @@ function main() {
   );
   try {
     const next = $next(f);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = next ? value(next) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = next ? map(next) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const nth = $nthDropping($lent(f), 1, loudDrop_drop, false);
-    function value$2(l) {
+    function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$3 = nth ? value$2(nth) : undefined;
-    console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+    const value$1 = nth ? map$1(nth) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     f.return();
   }
-  const map = $held(
+  const value = $held(
     $rev(
       $knowing(
         iterator_fuse(
@@ -156,12 +156,12 @@ function main() {
   );
   let r;
   try {
-    r = $next(map);
+    r = $next(value);
   } finally {
-    map.return();
+    value.return();
   }
   console.log(`${r == null ? "None" : `Some(${r})`}`);
-  const value = $held(
+  const value$1 = $held(
     iterator_fuse(
       $iter(louds(3)),
       { next: $next },
@@ -176,15 +176,15 @@ function main() {
   );
   let c;
   try {
-    c = $next(value);
+    c = $next(value$1);
   } finally {
-    value.return();
+    value$1.return();
   }
   console.log(`${c == null ? "None" : `Some(${c})`}`);
-  const value$1 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = backs($iter($iter(louds(3))), $dropEach(loudDrop_drop));
-  console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
+  const value$2 = firsts($iter(louds(3)), $dropEach(loudDrop_drop));
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = backs($iter($iter(louds(3))), $dropEach(loudDrop_drop));
+  console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
   const held = $held(
     iterator_fuse(
       iterator_rev(
@@ -204,13 +204,13 @@ function main() {
   );
   try {
     const loud = $nthDropping($lent(held), 2, loudDrop_drop, false);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = loud ? value(loud) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = loud ? map(loud) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const nextBack = fuseDoubleEndedIterator_nextBack(
       held,
       {
@@ -260,13 +260,13 @@ function main() {
       },
       loudDrop_drop,
     );
-    function value$2(l) {
+    function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$3 = nextBack ? value$2(nextBack) : undefined;
-    console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
+    const value$1 = nextBack ? map$1(nextBack) : undefined;
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   } finally {
     held.return();
   }

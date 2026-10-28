@@ -157,10 +157,8 @@ function main() {
   }
   console.log("after loop");
   let fuse;
-  let tmp;
   try {
     fuse = iterator_fuse(["summed", 4], { next: loudIterator_next }, false, loudDrop_drop);
-    tmp = (n) => (n * 10) >>> 0;
   } catch (error) {
     if (steady$live) {
       steady.return();
@@ -172,7 +170,7 @@ function main() {
   }
   let map;
   try {
-    map = fuse.map(tmp);
+    map = fuse.map((n) => (n * 10) >>> 0);
   } catch (error) {
     if (steady$live) {
       steady.return();

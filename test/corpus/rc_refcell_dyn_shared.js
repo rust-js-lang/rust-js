@@ -159,16 +159,8 @@ function main() {
     throw error;
   }
   let upgrade;
-  let tmp$2;
   try {
     upgrade = $upgrade(tmp$1.value);
-    tmp$2 = (p) => {
-      const result = p.value.name;
-      $rcDrop(p, (value) => {
-        $weakDrop(value.parent);
-      });
-      return result;
-    };
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -179,9 +171,16 @@ function main() {
     });
     throw error;
   }
-  let map;
+  function map(p) {
+    const result = p.value.name;
+    $rcDrop(p, (value) => {
+      $weakDrop(value.parent);
+    });
+    return result;
+  }
+  let tmp$2;
   try {
-    map = upgrade ? tmp$2(upgrade) : undefined;
+    tmp$2 = upgrade ? map(upgrade) : undefined;
   } catch (error) {
     $unborrow(tmp$1);
     $rcDrop(leaf, (value) => {
@@ -192,7 +191,7 @@ function main() {
     });
     throw error;
   }
-  console.log(`${leaf.value.name} of ${map ?? ""}`);
+  console.log(`${leaf.value.name} of ${tmp$2 ?? ""}`);
   try {
     $unborrow(tmp$1);
   } catch (error) {

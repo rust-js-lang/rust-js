@@ -136,13 +136,13 @@ function main() {
             $dropEach(loudDrop_drop),
             loudDrop_drop,
           );
-          function value(l) {
+          function map(l) {
             const result = l[0];
             loudDrop_drop(l);
             return result;
           }
-          const value$1 = loud ? value(loud) : undefined;
-          console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const value = loud ? map(loud) : undefined;
+          console.log(`${value == null ? "None" : `Some(${value})`}`);
         } finally {
           $rcDrop(d.rcbuffer, (value) => {
             for (const item of value.backlog) {
@@ -161,13 +161,13 @@ function main() {
           $dropEach(loudDrop_drop),
           loudDrop_drop,
         );
-        function value$1(l) {
+        function map(l) {
           const result = l[0];
           loudDrop_drop(l);
           return result;
         }
-        const value$2 = value ? value$1(value) : undefined;
-        console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+        const value$1 = value ? map(value) : undefined;
+        console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
       } finally {
         $rcDrop(c.rcbuffer, (value) => {
           for (const item of value.backlog) {

@@ -118,12 +118,12 @@ function main() {
   let found;
   try {
     const find = $findDropping($lent(value$2), (l) => l[0] === 2, loudDrop_drop, false);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    found = find ? value(find) : undefined;
+    found = find ? map(find) : undefined;
   } finally {
     for (const item of value$2) {
       loudDrop_drop(item);

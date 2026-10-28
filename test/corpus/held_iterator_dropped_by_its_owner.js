@@ -98,13 +98,13 @@ function main() {
   );
   try {
     const nth = $nthDropping($lent(takeWhile), 0, dDrop_drop, false);
-    function value(d) {
+    function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$1 = nth ? value(nth) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = nth ? map(nth) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     takeWhile.return();
   }
@@ -132,26 +132,25 @@ function main() {
     const some = $held($closing($iter(ds(50)), $dropEach(dDrop_drop)).take(2));
     let some$live = true;
     let next;
-    let tmp;
     try {
       next = $next(some);
-      tmp = (d) => {
-        const result = d[0];
-        dDrop_drop(d);
-        return result;
-      };
     } catch (error) {
       some.return();
       throw error;
     }
-    let tmp$1;
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    let tmp;
     try {
-      tmp$1 = next ? tmp(next) : undefined;
+      tmp = next ? map(next) : undefined;
     } catch (error) {
       some.return();
       throw error;
     }
-    console.log(`${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
+    console.log(`${tmp == null ? "None" : `Some(${tmp})`}`);
     if (total > 0) {
       some$live = false;
       const rest = some
@@ -182,12 +181,12 @@ function main() {
           return result;
         }),
       );
-      const value = (d) => d[0] > 0;
+      const keep = (d) => d[0] > 0;
       const kept = new Set(
         $closing($iter(ds(100)), $dropEach(dDrop_drop))
           .take(2)
           .filter((item) => {
-            if (value(item)) {
+            if (keep(item)) {
               return true;
             }
             dDrop_drop(item);

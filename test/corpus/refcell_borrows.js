@@ -63,15 +63,15 @@ function main() {
     $unborrow(writing);
   }
   const value = $tryBorrow(cell);
-  function value$1(v) {
+  function map(v) {
     $unborrow(v);
     return v.length;
   }
-  const map = value.TAG === "Ok" ? { TAG: "Ok", _0: value$1(value._0) } : value;
+  const value$1 = value.TAG === "Ok" ? { TAG: "Ok", _0: map(value._0) } : value;
   const value$2 = $tryBorrow(cell, true);
   try {
     console.log(
-      `${map.TAG === "Ok" ? `Ok(${map._0})` : `Err(${$debugParseError(map._0, "BorrowError")})`} ${value$2.TAG === "Ok"}`,
+      `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugParseError(value$1._0, "BorrowError")})`} ${value$2.TAG === "Ok"}`,
     );
   } finally {
     if (value$2.TAG === "Ok") {

@@ -96,18 +96,17 @@ function consume(n) {
   const value = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$1 = [[30], [31]];
   let tmp;
-  let tmp$1;
   try {
     tmp = $iter(value$1);
-    tmp$1 = (l) => l[0] < 30;
   } catch (error) {
     value.return();
     throw error;
   }
+  const skip$1 = (l) => l[0] < 30;
   let skipWhile;
   try {
     skipWhile = $lazySkipWhile($closing(tmp, $dropEach(loudDrop_drop)), (item) => {
-      if (tmp$1(item)) {
+      if (skip$1(item)) {
         loudDrop_drop(item);
         return true;
       }
@@ -127,10 +126,10 @@ function consume(n) {
     loudDrop_drop(value$2[1]);
   }
   console.log(`last ${last}`);
-  const skip$1 = (l) => l[0] < 99;
+  const skip$2 = (l) => l[0] < 99;
   const max = $max(
     $lazySkipWhile($closing($iter(three()), $dropEach(loudDrop_drop)).take(n), (item) => {
-      if (skip$1(item)) {
+      if (skip$2(item)) {
         loudDrop_drop(item);
         return true;
       }
@@ -256,21 +255,21 @@ function consume(n) {
   const value$6 = limit();
   const value$7 = $closing(value$5, $dropEach(loudDrop_drop)).take(value$6);
   const value$8 = [[20]];
+  let tmp$1;
+  try {
+    tmp$1 = $iter(value$8);
+  } catch (error) {
+    value$7.return();
+    throw error;
+  }
   let tmp$2;
   try {
-    tmp$2 = $iter(value$8);
+    tmp$2 = $closing(tmp$1, $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
     value$7.return();
     throw error;
   }
-  let tmp$3;
-  try {
-    tmp$3 = $closing(tmp$2, $dropEach(loudDrop_drop)).take(0);
-  } catch (error) {
-    value$7.return();
-    throw error;
-  }
-  const chain = $held($lazyChain(value$7, tmp$3));
+  const chain = $held($lazyChain(value$7, tmp$2));
   try {
     console.log(
       `chained ${$lent(chain).every((_2) => {
@@ -329,30 +328,30 @@ function consume(n) {
   console.log(`front ${front}`);
   const value$9 = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$10 = [[20]];
+  let tmp$3;
+  try {
+    tmp$3 = $iter(value$10);
+  } catch (error) {
+    value$9.return();
+    throw error;
+  }
   let tmp$4;
   try {
-    tmp$4 = $iter(value$10);
+    tmp$4 = $closing(tmp$3, $dropEach(loudDrop_drop)).take(0);
   } catch (error) {
     value$9.return();
     throw error;
   }
-  let tmp$5;
-  try {
-    tmp$5 = $closing(tmp$4, $dropEach(loudDrop_drop)).take(0);
-  } catch (error) {
-    value$9.return();
-    throw error;
-  }
-  const stepped = $held($lazyChain(value$9, tmp$5));
+  const stepped = $held($lazyChain(value$9, tmp$4));
   try {
     const next = $next(stepped);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = next ? value(next) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = next ? map(next) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const loud = $next(stepped);
     console.log(`${!loud}`);
     if (loud != null) {

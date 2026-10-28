@@ -128,12 +128,12 @@ function main() {
   let first;
   try {
     const find = $findDropping($lent(value$4), (loud) => loud[0] >= 30, loudDrop_drop, false);
-    function value(loud) {
+    function map(loud) {
       const result = loud[0];
       loudDrop_drop(loud);
       return result;
     }
-    first = find ? value(find) : undefined;
+    first = find ? map(find) : undefined;
   } finally {
     value$4.return();
   }
@@ -173,13 +173,13 @@ function main() {
   );
   try {
     const loud = $findDropping($lent(value$6), (loud) => loud[0] >= 40, loudDrop_drop, false);
-    function value(loud) {
+    function map(loud) {
       const result = loud[0];
       loudDrop_drop(loud);
       return result;
     }
-    const value$1 = loud ? value(loud) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = loud ? map(loud) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } finally {
     value$6.return();
   }

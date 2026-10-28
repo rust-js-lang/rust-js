@@ -24,12 +24,12 @@ function main() {
   let firstBig;
   try {
     const find = $findDropping($lent(value), (l) => l[0] > 5, loudDrop_drop, false);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    firstBig = find ? value$1(find) : undefined;
+    firstBig = find ? map(find) : undefined;
   } finally {
     value.return();
   }

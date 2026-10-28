@@ -310,4 +310,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_destructors.rs$"],
     snapshots: true,
   },
+  {
+    name: "capture-free-closure-held",
+    breaks: "a closure that captures nothing, made in a closure before what reads its captures, is held in a `const` first, so the crate's FnOnce callback it only passes its call on to stays an arrow, `runWith((queue, value) => commit(queue, value), ..)` (ADR 0605, amended)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            && args.as_closure().upvar_tys().is_empty()\n        {\n            return true;\n",
+    replace: "            && args.as_closure().upvar_tys().is_empty()\n            && false\n        {\n            return true;\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
+  },
 ];

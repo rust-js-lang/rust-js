@@ -152,23 +152,23 @@ function main() {
       }
     }
     const next = $next(zipped);
-    function value([a, b]) {
+    function map([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
     }
-    const value$1 = next ? value(next) : undefined;
-    console.log(`zip ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
-    const value$2 = $next(zipped);
-    function value$3([a, b]) {
+    const value = next ? map(next) : undefined;
+    console.log(`zip ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+    const value$1 = $next(zipped);
+    function map$1([a, b]) {
       const result = [a[0], b[0]];
       loudDrop_drop(b);
       loudDrop_drop(a);
       return result;
     }
-    const value$4 = value$2 ? value$3(value$2) : undefined;
-    console.log(`zip ${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`}`);
+    const value$2 = value$1 ? map$1(value$1) : undefined;
+    console.log(`zip ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
   } finally {
     zipped.return();
   }
@@ -190,13 +190,13 @@ function main() {
   let chained$live;
   try {
     const loud = $next(chained);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$1 = loud ? value(loud) : undefined;
-    console.log(`chain ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = loud ? map(loud) : undefined;
+    console.log(`chain ${value == null ? "None" : `Some(${value})`}`);
     chained$live = false;
   } finally {
     chained.return();
@@ -209,9 +209,9 @@ function main() {
   });
   mapped.return();
 
-  const value$2 = (l) => l[0] % 2 === 1;
+  const keep = (l) => l[0] % 2 === 1;
   const kept = $closing($iter(louds(60, 4)), $dropEach(loudDrop_drop)).filter((item) => {
-    if (value$2(item)) {
+    if (keep(item)) {
       return true;
     }
     loudDrop_drop(item);
@@ -220,13 +220,13 @@ function main() {
   let kept$live;
   try {
     const value = $next(kept);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`filter ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$1 = value ? map(value) : undefined;
+    console.log(`filter ${value$1 == null ? "None" : `Some(${value$1})`}`);
     kept$live = false;
   } finally {
     kept.return();
@@ -236,23 +236,23 @@ function main() {
   let numbered$live;
   try {
     const value = $next(numbered);
-    function value$1([i, l]) {
+    function map([i, l]) {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`enumerate ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
+    const value$1 = value ? map(value) : undefined;
+    console.log(`enumerate ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`);
     numbered$live = false;
   } finally {
     numbered.return();
   }
 
-  const value$3 = (l) => l[0] < 82;
+  const skip = (l) => l[0] < 82;
   const skipping = $lazySkipWhile(
     $closing($iter(louds(80, 4)), $dropEach(loudDrop_drop)),
     (item) => {
-      if (value$3(item)) {
+      if (skip(item)) {
         loudDrop_drop(item);
         return true;
       }
@@ -262,21 +262,21 @@ function main() {
   let skipping$live;
   try {
     const value = $next(skipping);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`skip_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$1 = value ? map(value) : undefined;
+    console.log(`skip_while ${value$1 == null ? "None" : `Some(${value$1})`}`);
     skipping$live = false;
   } finally {
     skipping.return();
   }
 
-  const value$4 = (l) => l[0] < 91;
+  const keep$1 = (l) => l[0] < 91;
   const taking = $lazyTakeWhile($closing($iter(louds(90, 4)), $dropEach(loudDrop_drop)), (item) => {
-    if (value$4(item)) {
+    if (keep$1(item)) {
       return true;
     }
     loudDrop_drop(item);
@@ -286,17 +286,17 @@ function main() {
   let taking$live;
   try {
     const value = $next(taking);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`take_while ${value$2 == null ? "None" : `Some(${value$2})`}`);
-    const value$3 = $next(taking);
-    ended = !value$3;
-    if (value$3 != null) {
-      loudDrop_drop(value$3);
+    const value$1 = value ? map(value) : undefined;
+    console.log(`take_while ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value$2 = $next(taking);
+    ended = !value$2;
+    if (value$2 != null) {
+      loudDrop_drop(value$2);
     }
     taking$live = false;
   } finally {
@@ -314,32 +314,32 @@ function main() {
   let stepped$live;
   try {
     const value = $next(stepped);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`step_by ${value$2 == null ? "None" : `Some(${value$2})`}`);
-    const value$3 = $next(stepped);
-    function value$4(l) {
+    const value$1 = value ? map(value) : undefined;
+    console.log(`step_by ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value$2 = $next(stepped);
+    function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$5 = value$3 ? value$4(value$3) : undefined;
-    console.log(`step_by ${value$5 == null ? "None" : `Some(${value$5})`}`);
+    const value$3 = value$2 ? map$1(value$2) : undefined;
+    console.log(`step_by ${value$3 == null ? "None" : `Some(${value$3})`}`);
     stepped$live = false;
   } finally {
     stepped.return();
   }
 
-  function value$5(l) {
+  function inspect(l) {
     console.log(`see ${l[0]}`);
   }
   const total = $closing($iter(louds(110, 3)), $dropEach(loudDrop_drop))
     .map((item) => {
-      value$5(item);
+      inspect(item);
       return item;
     })
     .map((l) => {
@@ -360,13 +360,13 @@ function main() {
   let fused$live;
   try {
     const value = $next(fused);
-    function value$1(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    const value$2 = value ? value$1(value) : undefined;
-    console.log(`fuse ${value$2 == null ? "None" : `Some(${value$2})`}`);
+    const value$1 = value ? map(value) : undefined;
+    console.log(`fuse ${value$1 == null ? "None" : `Some(${value$1})`}`);
     fused$live = false;
   } finally {
     fused.return();
@@ -555,17 +555,83 @@ function main() {
     throw error;
   }
   let tmp$5;
-  let tmp$6;
   try {
     tmp$5 = $next(z);
-    tmp$6 = ([a, b]) => {
-      const result = [a[0], b[0]];
-      loudDrop_drop(b);
-      loudDrop_drop(a);
-      return result;
-    };
   } catch (error) {
     z.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  function map([a, b]) {
+    const result = [a[0], b[0]];
+    loudDrop_drop(b);
+    loudDrop_drop(a);
+    return result;
+  }
+  let tmp$6;
+  try {
+    tmp$6 = tmp$5 ? map(tmp$5) : undefined;
+  } catch (error) {
+    z.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  console.log(`generic zip ${tmp$6 == null ? "None" : `Some((${tmp$6[0]}, ${tmp$6[1]}))`}`);
+  try {
+    z.return();
+  } catch (error) {
     if (fused$live) {
       fused.return();
     }
@@ -597,41 +663,7 @@ function main() {
   }
   let tmp$7;
   try {
-    tmp$7 = tmp$5 ? tmp$6(tmp$5) : undefined;
-  } catch (error) {
-    z.return();
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  console.log(`generic zip ${tmp$7 == null ? "None" : `Some((${tmp$7[0]}, ${tmp$7[1]}))`}`);
-  try {
-    z.return();
+    tmp$7 = louds(160, 2);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -664,42 +696,9 @@ function main() {
   }
   let tmp$8;
   try {
-    tmp$8 = louds(160, 2);
+    tmp$8 = louds(170, 2);
   } catch (error) {
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  let tmp$9;
-  try {
-    tmp$9 = louds(170, 2);
-  } catch (error) {
-    for (const item of tmp$8) {
+    for (const item of tmp$7) {
       loudDrop_drop(item);
     }
     if (fused$live) {
@@ -734,8 +733,8 @@ function main() {
   let c;
   try {
     c = chain(
+      tmp$7,
       tmp$8,
-      tmp$9,
       vecIntoIterator,
       vecIntoIterator,
       $dropEach(loudDrop_drop),
@@ -773,119 +772,118 @@ function main() {
     }
     throw error;
   }
+  let tmp$9;
+  try {
+    tmp$9 = $next(c);
+  } catch (error) {
+    c.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  function map$1(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
   let tmp$10;
+  try {
+    tmp$10 = tmp$9 ? map$1(tmp$9) : undefined;
+  } catch (error) {
+    c.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  console.log(`generic chain ${tmp$10 == null ? "None" : `Some(${tmp$10})`}`);
+  try {
+    c.return();
+  } catch (error) {
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  const value$2 = { left: 3, _tag: [999] };
   let tmp$11;
   try {
-    tmp$10 = $next(c);
-    tmp$11 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    tmp$11 = louds(240, 2);
   } catch (error) {
-    c.return();
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  let tmp$12;
-  try {
-    tmp$12 = tmp$10 ? tmp$11(tmp$10) : undefined;
-  } catch (error) {
-    c.return();
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  console.log(`generic chain ${tmp$12 == null ? "None" : `Some(${tmp$12})`}`);
-  try {
-    c.return();
-  } catch (error) {
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  const value$6 = { left: 3, _tag: [999] };
-  let tmp$13;
-  try {
-    tmp$13 = louds(240, 2);
-  } catch (error) {
-    loudDrop_drop(value$6._tag);
+    loudDrop_drop(value$2._tag);
     if (fused$live) {
       fused.return();
     }
@@ -918,8 +916,8 @@ function main() {
   let counted;
   try {
     counted = chain(
-      value$6,
-      tmp$13,
+      value$2,
+      tmp$11,
       { intoIter: (items) => items, IntoIterIterator: () => ({ next: countdownIterator_next }) },
       vecIntoIterator,
       $dropEach(loudDrop_drop),
@@ -959,119 +957,118 @@ function main() {
     }
     throw error;
   }
+  let tmp$12;
+  try {
+    tmp$12 = $next(counted);
+  } catch (error) {
+    counted.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  function map$2(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  let tmp$13;
+  try {
+    tmp$13 = tmp$12 ? map$2(tmp$12) : undefined;
+  } catch (error) {
+    counted.return();
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  console.log(`generic chain of its own ${tmp$13 == null ? "None" : `Some(${tmp$13})`}`);
+  try {
+    counted.return();
+  } catch (error) {
+    if (fused$live) {
+      fused.return();
+    }
+    if (stepped$live) {
+      stepped.return();
+    }
+    if (taking$live) {
+      taking.return();
+    }
+    if (skipping$live) {
+      skipping.return();
+    }
+    if (numbered$live) {
+      numbered.return();
+    }
+    if (kept$live) {
+      kept.return();
+    }
+    if (chained$live) {
+      chained.return();
+    }
+    if (pair$live) {
+      if (pair != null) {
+        loudDrop_drop(pair[0]);
+        loudDrop_drop(pair[1]);
+      }
+    }
+    throw error;
+  }
+  const value$3 = { left: 3, _tag: [998] };
   let tmp$14;
-  let tmp$15;
   try {
-    tmp$14 = $next(counted);
-    tmp$15 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    tmp$14 = louds(250, 2);
   } catch (error) {
-    counted.return();
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  let tmp$16;
-  try {
-    tmp$16 = tmp$14 ? tmp$15(tmp$14) : undefined;
-  } catch (error) {
-    counted.return();
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  console.log(`generic chain of its own ${tmp$16 == null ? "None" : `Some(${tmp$16})`}`);
-  try {
-    counted.return();
-  } catch (error) {
-    if (fused$live) {
-      fused.return();
-    }
-    if (stepped$live) {
-      stepped.return();
-    }
-    if (taking$live) {
-      taking.return();
-    }
-    if (skipping$live) {
-      skipping.return();
-    }
-    if (numbered$live) {
-      numbered.return();
-    }
-    if (kept$live) {
-      kept.return();
-    }
-    if (chained$live) {
-      chained.return();
-    }
-    if (pair$live) {
-      if (pair != null) {
-        loudDrop_drop(pair[0]);
-        loudDrop_drop(pair[1]);
-      }
-    }
-    throw error;
-  }
-  const value$7 = { left: 3, _tag: [998] };
-  let tmp$17;
-  try {
-    tmp$17 = louds(250, 2);
-  } catch (error) {
-    loudDrop_drop(value$7._tag);
+    loudDrop_drop(value$3._tag);
     if (fused$live) {
       fused.return();
     }
@@ -1104,10 +1101,10 @@ function main() {
   let own;
   try {
     own = $lazyChain(
-      $closing($iterator(value$7, countdownIterator_next), (it) => {
+      $closing($iterator(value$3, countdownIterator_next), (it) => {
         loudDrop_drop(it.of._tag);
       }),
-      $closing($iter(tmp$17), $dropEach(loudDrop_drop)),
+      $closing($iter(tmp$14), $dropEach(loudDrop_drop)),
     );
   } catch (error) {
     if (fused$live) {
@@ -1139,15 +1136,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$18;
-  let tmp$19;
+  let tmp$15;
   try {
-    tmp$18 = $next(own);
-    tmp$19 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    tmp$15 = $next(own);
   } catch (error) {
     own.return();
     if (fused$live) {
@@ -1179,9 +1170,14 @@ function main() {
     }
     throw error;
   }
-  let tmp$20;
+  function map$3(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  let tmp$16;
   try {
-    tmp$20 = tmp$18 ? tmp$19(tmp$18) : undefined;
+    tmp$16 = tmp$15 ? map$3(tmp$15) : undefined;
   } catch (error) {
     own.return();
     if (fused$live) {
@@ -1213,7 +1209,7 @@ function main() {
     }
     throw error;
   }
-  console.log(`chain of its own ${tmp$20 == null ? "None" : `Some(${tmp$20})`}`);
+  console.log(`chain of its own ${tmp$16 == null ? "None" : `Some(${tmp$16})`}`);
   try {
     own.return();
   } catch (error) {
@@ -1246,9 +1242,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$21;
+  let tmp$17;
   try {
-    tmp$21 = louds(180, 3);
+    tmp$17 = louds(180, 3);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1281,7 +1277,7 @@ function main() {
   }
   let t;
   try {
-    t = firsts(tmp$21, 2, vecIntoIterator, loudDrop_drop, $dropEach(loudDrop_drop));
+    t = firsts(tmp$17, 2, vecIntoIterator, loudDrop_drop, $dropEach(loudDrop_drop));
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1312,15 +1308,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$22;
-  let tmp$23;
+  let tmp$18;
   try {
-    tmp$22 = $next(t);
-    tmp$23 = (l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    };
+    tmp$18 = $next(t);
   } catch (error) {
     t.return();
     if (fused$live) {
@@ -1352,9 +1342,14 @@ function main() {
     }
     throw error;
   }
-  let tmp$24;
+  function map$4(l) {
+    const result = l[0];
+    loudDrop_drop(l);
+    return result;
+  }
+  let tmp$19;
   try {
-    tmp$24 = tmp$22 ? tmp$23(tmp$22) : undefined;
+    tmp$19 = tmp$18 ? map$4(tmp$18) : undefined;
   } catch (error) {
     t.return();
     if (fused$live) {
@@ -1386,7 +1381,7 @@ function main() {
     }
     throw error;
   }
-  console.log(`generic take ${tmp$24 == null ? "None" : `Some(${tmp$24})`}`);
+  console.log(`generic take ${tmp$19 == null ? "None" : `Some(${tmp$19})`}`);
   try {
     t.return();
   } catch (error) {
@@ -1419,12 +1414,12 @@ function main() {
     }
     throw error;
   }
-  const value$8 = [1, 2, 3];
-  const value$9 = [4];
+  const value$4 = [1, 2, 3];
+  const value$5 = [4];
 
   let plain;
   try {
-    plain = zip(value$8, value$9);
+    plain = zip(value$4, value$5);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1455,9 +1450,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$25;
+  let tmp$20;
   try {
-    tmp$25 = $next(plain);
+    tmp$20 = $next(plain);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1491,7 +1486,7 @@ function main() {
   try {
     const value = $next(plain);
     console.log(
-      `plain zip ${tmp$25 == null ? "None" : `Some((${tmp$25[0]}, ${tmp$25[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
+      `plain zip ${tmp$20 == null ? "None" : `Some((${tmp$20[0]}, ${tmp$20[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
     );
   } catch (error) {
     if (fused$live) {
@@ -1523,9 +1518,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$26;
+  let tmp$21;
   try {
-    tmp$26 = louds(190, 3);
+    tmp$21 = louds(190, 3);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1556,9 +1551,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$27;
+  let tmp$22;
   try {
-    tmp$27 = $iter(tmp$26);
+    tmp$22 = $iter(tmp$21);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1589,11 +1584,11 @@ function main() {
     }
     throw error;
   }
-  let tmp$28;
+  let tmp$23;
   try {
-    tmp$28 = louds(200, 3);
+    tmp$23 = louds(200, 3);
   } catch (error) {
-    for (const item of tmp$27) {
+    for (const item of tmp$22) {
       loudDrop_drop(item);
     }
     if (fused$live) {
@@ -1628,12 +1623,12 @@ function main() {
   let eq;
   try {
     eq = $iterEq(
-      $closing(tmp$27, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(tmp$28), $dropEach(loudDrop_drop)),
+      $closing(tmp$22, $dropEach(loudDrop_drop)),
+      $closing(Iterator.from(tmp$23), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,
-      [tmp$27.end - tmp$27.at, tmp$28.length],
+      [tmp$22.end - tmp$22.at, tmp$23.length],
     );
   } catch (error) {
     if (fused$live) {
@@ -1666,9 +1661,9 @@ function main() {
     throw error;
   }
   console.log(`eq ${eq}`);
-  let tmp$29;
+  let tmp$24;
   try {
-    tmp$29 = louds(190, 3);
+    tmp$24 = louds(190, 3);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1699,9 +1694,9 @@ function main() {
     }
     throw error;
   }
-  let tmp$30;
+  let tmp$25;
   try {
-    tmp$30 = $iter(tmp$29);
+    tmp$25 = $iter(tmp$24);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1732,16 +1727,16 @@ function main() {
     }
     throw error;
   }
-  const value$10 = [[210], [5], [212]];
-  let tmp$31;
+  const value$6 = [[210], [5], [212]];
+  let tmp$26;
   try {
-    tmp$31 = $iterEq(
-      $closing(tmp$30, $dropEach(loudDrop_drop)),
-      $closing(Iterator.from(value$10), $dropEach(loudDrop_drop)),
+    tmp$26 = $iterEq(
+      $closing(tmp$25, $dropEach(loudDrop_drop)),
+      $closing(Iterator.from(value$6), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,
       loudDrop_drop,
-      [tmp$30.end - tmp$30.at, value$10.length],
+      [tmp$25.end - tmp$25.at, value$6.length],
     );
   } catch (error) {
     if (fused$live) {
@@ -1773,10 +1768,10 @@ function main() {
     }
     throw error;
   }
-  console.log(`eq ${tmp$31}`);
-  let tmp$32;
+  console.log(`eq ${tmp$26}`);
+  let tmp$27;
   try {
-    tmp$32 = louds(220, 2);
+    tmp$27 = louds(220, 2);
   } catch (error) {
     if (fused$live) {
       fused.return();
@@ -1807,11 +1802,11 @@ function main() {
     }
     throw error;
   }
-  let tmp$33;
+  let tmp$28;
   try {
-    tmp$33 = louds(230, 2);
+    tmp$28 = louds(230, 2);
   } catch (error) {
-    for (const item of tmp$32) {
+    for (const item of tmp$27) {
       loudDrop_drop(item);
     }
     if (fused$live) {
@@ -1843,11 +1838,11 @@ function main() {
     }
     throw error;
   }
-  let tmp$34;
+  let tmp$29;
   try {
-    tmp$34 = equal(
-      tmp$32,
-      tmp$33,
+    tmp$29 = equal(
+      tmp$27,
+      tmp$28,
       loudPartialEq,
       $dropEach(loudDrop_drop),
       loudDrop_drop,
@@ -1884,7 +1879,7 @@ function main() {
     }
     throw error;
   }
-  console.log(`equal ${tmp$34}`);
+  console.log(`equal ${tmp$29}`);
   console.log("end");
   fused$live = false;
   stepped$live = false;

@@ -81,11 +81,11 @@ function main() {
   }
   console.log(`first ${first != null ? map(first) : 0}`);
 
-  const value = (l) => l[0] < 5;
+  const skip = (l) => l[0] < 5;
   const skipped = $lazySkipWhile(
     $closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)),
     (item) => {
-      if (value(item)) {
+      if (skip(item)) {
         loudDrop_drop(item);
         return true;
       }

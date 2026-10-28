@@ -352,8 +352,8 @@ each where it's given decides
 So is one the crate's own function takes as an `impl FnOnce(..)`, which
 it calls once, `run_with_fiber_in_dev(fiber, |queue, instance, _, _, _|
 commit_callbacks(queue, instance), queue, instance, (), (), ())`'s
-`runWithFiberInDEV(fiber, commitCallbacks, queue, instance)` (ADR 0605,
-amended).
+`runWithFiberInDEV(fiber, commitCallbacks, queue, instance)`, inside a
+closure too, of what it captured (ADR 0605, amended).
 
 ## Many promises at once
 

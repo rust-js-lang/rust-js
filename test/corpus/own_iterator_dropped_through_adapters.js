@@ -584,7 +584,7 @@ function main() {
   } finally {
     rev.return();
   }
-  const map = $held(
+  const value$1 = $held(
     $enumerate(
       iterator_fuse(
         count(),
@@ -596,9 +596,9 @@ function main() {
   );
   let indexed;
   try {
-    indexed = $lent(map).drop(1).take(1).toArray()[0];
+    indexed = $lent(value$1).drop(1).take(1).toArray()[0];
   } finally {
-    map.return();
+    value$1.return();
   }
   console.log(
     `${second == null ? "None" : `Some(${second})`} ${indexed == null ? "None" : `Some(${indexed})`}`,
@@ -670,12 +670,12 @@ function main() {
     let second;
     try {
       const nth = $nthDropping($lent(value), 1, loudDrop_drop, false);
-      function value$1(l) {
+      function map(l) {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       }
-      second = nth ? value$1(nth) : undefined;
+      second = nth ? map(nth) : undefined;
     } finally {
       value.return();
     }

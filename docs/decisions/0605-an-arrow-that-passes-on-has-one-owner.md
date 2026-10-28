@@ -279,3 +279,27 @@ borrow, a module's variable, a thunk, a closure called, a closure that
 captures nothing each stay the arrow; and the guide's `dispatcher`.
 Mutations `bound-any-variable`, `bound-thunk`, `bound-a-closure`,
 `bound-of-nothing-captured`, `bound-never` (`passed_on.ts`).
+
+## Amendment: a closure that captures nothing is made where it's given (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a function that
+reads nothing where it's made is the same function made anywhere.
+
+React's createRootErrorUpdate gives `update.callback` a closure that calls
+`run_with_fiber_in_dev(error_info.source.clone(), |root, error_info, _, _,
+_| log_uncaught_error(root, error_info), &*root, &*error_info, (), (), ())`
+(gap ce4 of the port). At the top of a function it was upstream's
+`runWithFiberInDEV(.., logUncaughtError, root, errorInfo)`; in the
+closure, it was `(root, errorInfo) => logUncaughtError(root, errorInfo)`:
+reading what the closure captured, `&*root`, settled what was made before
+it, the inner closure held in a `const` and read by its name, so the call
+was given a variable, not the arrow its fact is of, and inlined after.
+
+**A closure that captures nothing reads the same anywhere**
+(`temporaries::reads_same_anywhere`, of a closure type of no upvars): it's
+made where it's given, so its taker sees the arrow and its fact, and may
+take the function it passes its call on to. Held by
+`test/lowering-passed-on.test.ts`, "a closure given to the crate's FnOnce
+callback that only passes its call on is the function", its `later`, run;
+mutation `capture-free-closure-held` (`mir/temporaries.ts`).
+

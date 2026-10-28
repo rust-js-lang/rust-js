@@ -195,10 +195,9 @@ function main() {
         dDrop_drop(kept);
       }
       const value$1 = make(5);
-      const value$2 = (d) => d[0] > 4;
       let kept$1;
       try {
-        if (value$1 != null && value$2(value$1)) {
+        if (value$1 != null && value$1[0] > 4) {
           kept$1 = value$1;
         }
       } finally {
@@ -264,15 +263,15 @@ function main() {
           try {
             const value = make(10);
             const value$1 = [11];
-            function value$2(d) {
-              const result = [(d[0] + 100) >>> 0];
-              dDrop_drop(d);
-              return result;
-            }
             let mapped;
             if (value != null) {
               try {
-                mapped = value$2(value);
+                function map(d) {
+                  const result = [(d[0] + 100) >>> 0];
+                  dDrop_drop(d);
+                  return result;
+                }
+                mapped = map(value);
               } finally {
                 dDrop_drop(value$1);
               }

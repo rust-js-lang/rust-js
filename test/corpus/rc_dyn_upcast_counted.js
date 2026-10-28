@@ -144,18 +144,8 @@ function main() {
   }
   const weak = a.weak;
   let upgrade;
-  let tmp$4;
   try {
     upgrade = $upgrade(w);
-    tmp$4 = (n) => {
-      try {
-        return n.impl.name(n.value);
-      } finally {
-        $rcDrop(n, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-      }
-    };
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -169,9 +159,18 @@ function main() {
     });
     throw error;
   }
-  let map;
+  function map(n) {
+    try {
+      return n.impl.name(n.value);
+    } finally {
+      $rcDrop(n, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    }
+  }
+  let tmp$4;
   try {
-    map = upgrade ? tmp$4(upgrade) : undefined;
+    tmp$4 = upgrade ? map(upgrade) : undefined;
   } catch (error) {
     $weakDrop(w);
     $rcDrop(b, (value) => {
@@ -185,7 +184,7 @@ function main() {
     });
     throw error;
   }
-  console.log(`${weak} ${map ?? ""}`);
+  console.log(`${weak} ${tmp$4 ?? ""}`);
   try {
     $rcDrop(n1, (value) => {
       value.impl.$drop?.(value.value);

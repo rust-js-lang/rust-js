@@ -171,8 +171,9 @@ pub fn dyn_mapped(xs: &[u32], f: &dyn Fn(&u32) -> u32) -> Vec<u32> {
 // ADR 0605, amended: React's runWithFiberInDEV(fiber, commitCallbacks,
 // updateQueue, instance), the crate's own function of an `impl FnOnce(A0,
 // .., A4)` it calls with the arguments after it. A closure given to it that
-// only passes its call on, its `()`s left out, is the function; one given to
-// an `impl Fn`'s, which the function may call again and keep, stays.
+// only passes its call on, its `()`s left out, is the function, in a
+// closure too, React's update.callback (gap ce4); one given to an `impl
+// Fn`'s, which the function may call again and keep, stays.
 test("a closure given to the crate's FnOnce callback that only passes its call on is the function", async () => {
   const dir = fixture("crate-once-callbacks");
   writeFileSync(join(dir, "lib.rs"), `pub fn run_with<A0, A1, A2, T>(callback: impl FnOnce(A0, A1, A2) -> T, arg0: A0, arg1: A1, arg2: A2) -> T {
@@ -195,14 +196,24 @@ pub fn callbacks(queue: &js::Unknown, value: u32) -> u32 {
     run_with(|queue: &js::Unknown, value: u32, _: ()| commit(queue, value), queue, value, ());
     twice(|value| doubled(value), value)
 }
+
+pub fn later(queue: std::rc::Rc<&'static js::Unknown>, value: u32) -> impl Fn() {
+    move || {
+        run_with(|queue: &js::Unknown, value: u32, _: ()| commit(queue, value), &**queue, value, ());
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  runWith(commit, queue, value);\n");
   expect(js).toContain("  return twice((value) => doubled(value), value);\n");
+  // Inside a closure, of what it captured: as it is.
+  expect(js).toContain("    runWith(commit, queue, value);\n  };\n");
   const lib = await import(join(dir, "lib.js"));
   const queue: Record<string, number> = {};
   expect([lib.callbacks(queue, 3), queue]).toEqual([12, { value: 3 }]);
+  lib.later(queue, 5)();
+  expect(queue).toEqual({ value: 5 });
 });
 
 // React's ContextOnlyDispatcher gives each hook one function, `useCallback:

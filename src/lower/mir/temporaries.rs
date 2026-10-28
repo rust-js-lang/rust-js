@@ -489,6 +489,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A context's `Provider` or `Consumer`, `react::provider`'s, which
         // React never changes.
         let context_member = crate::lower::recognition::is_context_member(self.tcx, ty);
+        // A closure that captures nothing, an arrow of what it's given and
+        // the module's names alone: the same function made anywhere, so
+        // where it's given, which may take the function it calls in its
+        // place (ADR 0605, amended).
+        if let ty::Closure(_, args) = ty.kind()
+            && args.as_closure().upvar_tys().is_empty()
+        {
+            return true;
+        }
         match &e.kind {
             js::ExprKind::Member(..) if context_member => true,
             // A thread-local made where it's first used, `key()`, the same

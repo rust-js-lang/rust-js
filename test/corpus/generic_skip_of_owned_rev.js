@@ -35,12 +35,12 @@ function skipped(it, dropI) {
 function nthOf(it, dropI) {
   try {
     const nth = $nthDropping($lent(Iterator.from(it)), 1, noisyDrop_drop, false);
-    function value(n) {
+    function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     dropI?.(it);
   }
@@ -52,12 +52,12 @@ function chainedNth(a, b, dropI) {
   );
   try {
     const nth = $nthDropping($lent(chain), 3, noisyDrop_drop, false);
-    function value(n) {
+    function map(n) {
       const result = n[0];
       noisyDrop_drop(n);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     chain.return();
   }

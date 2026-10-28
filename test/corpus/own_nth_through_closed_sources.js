@@ -80,12 +80,12 @@ function taken() {
   const stepBy = $held($stepBy(take, step, loudDrop_drop));
   try {
     const nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -131,12 +131,12 @@ function counted() {
       },
       false,
     );
-    function value([i, l]) {
+    function map([i, l]) {
       const result = [i, l[0]];
       loudDrop_drop(l);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -161,12 +161,12 @@ function fused() {
   const stepBy = $held($stepBy(fuse, step, loudDrop_drop));
   try {
     const nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }
@@ -190,12 +190,12 @@ function peeked() {
   const stepBy = $held($stepBy(peekable, step, loudDrop_drop));
   try {
     const nth = $nthDropping($lent(stepBy), id(2), loudDrop_drop, false);
-    function value(l) {
+    function map(l) {
       const result = l[0];
       loudDrop_drop(l);
       return result;
     }
-    return nth ? value(nth) : undefined;
+    return nth ? map(nth) : undefined;
   } finally {
     stepBy.return();
   }

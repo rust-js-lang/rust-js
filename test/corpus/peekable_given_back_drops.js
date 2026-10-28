@@ -44,12 +44,12 @@ function main() {
     const d = $peek(p);
     console.log(`${d?.[0] ?? 0}`);
     const next = $next(p);
-    function value(d) {
+    function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    console.log(`${(next ? value(next) : undefined) ?? 0}`);
+    console.log(`${(next ? map(next) : undefined) ?? 0}`);
     console.log("end");
   } finally {
     p.return();

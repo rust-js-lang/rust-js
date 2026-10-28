@@ -205,12 +205,12 @@ function groupsFirstOfNext_firstOfNext(
     const value$1 = IItemIntoIterator.intoIter(inner);
     try {
       const value$2 = IItemIntoIterator.IntoIterIterator().next(value$1);
-      function value$3(_2) {
+      const value = $someValue(value$2);
+      function map(_2) {
         dropIItemItem?.(_2);
         return 1;
       }
-      const value = $someValue(value$2);
-      result = value$2 != null ? value$3(value) : 0;
+      result = value$2 != null ? map(value) : 0;
     } finally {
       dropIItemIntoIter?.(value$1);
     }

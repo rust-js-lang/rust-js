@@ -76,28 +76,27 @@ function main() {
   }
   const value = a.weak;
   let upgrade;
-  let tmp$1;
   try {
     upgrade = $upgrade(weak);
-    tmp$1 = (n) => {
-      const result = n.value;
-      $rcDrop(n);
-      return result;
-    };
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  let tmp$2;
+  function map(n) {
+    const result = n.value;
+    $rcDrop(n);
+    return result;
+  }
+  let tmp$1;
   try {
-    tmp$2 = upgrade ? tmp$1(upgrade) : undefined;
+    tmp$1 = upgrade ? map(upgrade) : undefined;
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  console.log(`${value} ${tmp$2 == null ? "None" : `Some(${tmp$2})`}`);
+  console.log(`${value} ${tmp$1 == null ? "None" : `Some(${tmp$1})`}`);
   let shared;
   try {
     shared = $rcClone(a);
@@ -117,39 +116,39 @@ function main() {
     throw error;
   }
   console.log(`${(a.value + 1) | 0}`);
-  let tmp$3;
+  let tmp$2;
   try {
     a = $makeMut(a);
-    tmp$3 = a;
+    tmp$2 = a;
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  tmp$3.value = (tmp$3.value + 10) | 0;
+  tmp$2.value = (tmp$2.value + 10) | 0;
   console.log(`${a.value} ${shared.value} ${a === shared}`);
-  let tmp$4;
+  let tmp$3;
   try {
-    tmp$4 = $tryUnwrap(shared);
+    tmp$3 = $tryUnwrap(shared);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  console.log(`${tmp$4.TAG === "Ok" ? `Ok(${tmp$4._0})` : `Err(${tmp$4._0.value})`}`);
+  console.log(`${tmp$3.TAG === "Ok" ? `Ok(${tmp$3._0})` : `Err(${tmp$3._0.value})`}`);
   try {
-    if (tmp$4.TAG === "Err") {
-      $rcDrop(tmp$4._0);
+    if (tmp$3.TAG === "Err") {
+      $rcDrop(tmp$3._0);
     }
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
     throw error;
   }
-  let tmp$5;
+  let tmp$4;
   try {
-    tmp$5 = $upgrade(weak);
+    tmp$4 = $upgrade(weak);
   } catch (error) {
     $weakDrop(weak);
     $rcDrop(a);
@@ -159,11 +158,11 @@ function main() {
     try {
       const value = $intoInner(a);
       console.log(
-        `${tmp$5 == null ? "None" : `Some(${tmp$5.value})`} ${value == null ? "None" : `Some(${value})`}`,
+        `${tmp$4 == null ? "None" : `Some(${tmp$4.value})`} ${value == null ? "None" : `Some(${value})`}`,
       );
     } finally {
-      if (tmp$5 != null) {
-        $rcDrop(tmp$5);
+      if (tmp$4 != null) {
+        $rcDrop(tmp$4);
       }
     }
     const value = $upgrade(weak);
@@ -201,22 +200,48 @@ function main() {
       throw error;
     }
     let tmp;
-    let tmp$1;
     try {
       tmp = $upgrade(borrow.value);
-      tmp$1 = (p) => {
-        const result = p.value.name;
-        function dropNode(node) {
-          $weakDrop(node.parent);
-          for (const item of node.children) {
-            $rcDrop(item, dropNode);
-          }
-        }
-        $rcDrop(p, dropNode);
-        return result;
-      };
     } catch (error) {
       $unborrow(borrow);
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    function map(p) {
+      const result = p.value.name;
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(p, dropNode);
+      return result;
+    }
+    let tmp$1;
+    try {
+      tmp$1 = tmp ? map(tmp) : undefined;
+    } catch (error) {
+      $unborrow(borrow);
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
+    console.log(`${tmp$1 == null ? "None" : `Some(${$debugStr(tmp$1)})`}`);
+    try {
+      $unborrow(borrow);
+    } catch (error) {
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -228,34 +253,7 @@ function main() {
     }
     let tmp$2;
     try {
-      tmp$2 = tmp ? tmp$1(tmp) : undefined;
-    } catch (error) {
-      $unborrow(borrow);
-      function dropNode(node) {
-        $weakDrop(node.parent);
-        for (const item of node.children) {
-          $rcDrop(item, dropNode);
-        }
-      }
-      $rcDrop(leaf, dropNode);
-      throw error;
-    }
-    console.log(`${tmp$2 == null ? "None" : `Some(${$debugStr(tmp$2)})`}`);
-    try {
-      $unborrow(borrow);
-    } catch (error) {
-      function dropNode(node) {
-        $weakDrop(node.parent);
-        for (const item of node.children) {
-          $rcDrop(item, dropNode);
-        }
-      }
-      $rcDrop(leaf, dropNode);
-      throw error;
-    }
-    let tmp$3;
-    try {
-      tmp$3 = [$rcClone(leaf)];
+      tmp$2 = [$rcClone(leaf)];
     } catch (error) {
       $weakDrop($weakNone);
       function dropNode(node) {
@@ -271,14 +269,14 @@ function main() {
       value: {
         name: "branch",
         parent: $weakNone,
-        children: tmp$3,
+        children: tmp$2,
       },
       strong: 1,
       weak: 0,
     };
-    let tmp$4;
+    let tmp$3;
     try {
-      tmp$4 = $downgrade(branch);
+      tmp$3 = $downgrade(branch);
     } catch (error) {
       function dropNode(node) {
         $weakDrop(node.parent);
@@ -300,7 +298,7 @@ function main() {
     try {
       borrowMut = $borrowMut($fieldCell(leaf.value, "parent"), true);
     } catch (error) {
-      $weakDrop(tmp$4);
+      $weakDrop(tmp$3);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -320,7 +318,7 @@ function main() {
     try {
       $weakDrop(borrowMut.value);
     } catch (error) {
-      borrowMut.value = tmp$4;
+      borrowMut.value = tmp$3;
       $unborrow(borrowMut);
       function dropNode(node) {
         $weakDrop(node.parent);
@@ -338,9 +336,29 @@ function main() {
       $rcDrop(leaf, dropNode$1);
       throw error;
     }
-    borrowMut.value = tmp$4;
+    borrowMut.value = tmp$3;
     try {
       $unborrow(borrowMut);
+    } catch (error) {
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(branch, dropNode);
+      function dropNode$1(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode$1);
+        }
+      }
+      $rcDrop(leaf, dropNode$1);
+      throw error;
+    }
+    let tmp$5;
+    try {
+      tmp$5 = $borrow($fieldCell(leaf.value, "parent"), true);
     } catch (error) {
       function dropNode(node) {
         $weakDrop(node.parent);
@@ -360,8 +378,9 @@ function main() {
     }
     let tmp$6;
     try {
-      tmp$6 = $borrow($fieldCell(leaf.value, "parent"), true);
+      tmp$6 = $upgrade(tmp$5.value);
     } catch (error) {
+      $unborrow(tmp$5);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -377,45 +396,23 @@ function main() {
       }
       $rcDrop(leaf, dropNode$1);
       throw error;
+    }
+    function map$1(p) {
+      const result = p.value.name;
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(p, dropNode);
+      return result;
     }
     let tmp$7;
-    let tmp$8;
     try {
-      tmp$7 = $upgrade(tmp$6.value);
-      tmp$8 = (p) => {
-        const result = p.value.name;
-        function dropNode(node) {
-          $weakDrop(node.parent);
-          for (const item of node.children) {
-            $rcDrop(item, dropNode);
-          }
-        }
-        $rcDrop(p, dropNode);
-        return result;
-      };
+      tmp$7 = tmp$6 ? map$1(tmp$6) : undefined;
     } catch (error) {
-      $unborrow(tmp$6);
-      function dropNode(node) {
-        $weakDrop(node.parent);
-        for (const item of node.children) {
-          $rcDrop(item, dropNode);
-        }
-      }
-      $rcDrop(branch, dropNode);
-      function dropNode$1(node) {
-        $weakDrop(node.parent);
-        for (const item of node.children) {
-          $rcDrop(item, dropNode$1);
-        }
-      }
-      $rcDrop(leaf, dropNode$1);
-      throw error;
-    }
-    let map;
-    try {
-      map = tmp$7 ? tmp$8(tmp$7) : undefined;
-    } catch (error) {
-      $unborrow(tmp$6);
+      $unborrow(tmp$5);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -434,11 +431,11 @@ function main() {
     }
     const value$1 = branch.strong;
     const value$2 = branch.weak;
-    let tmp$9;
+    let tmp$8;
     try {
-      tmp$9 = $borrow(branch.value.children, true);
+      tmp$8 = $borrow(branch.value.children, true);
     } catch (error) {
-      $unborrow(tmp$6);
+      $unborrow(tmp$5);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -456,12 +453,12 @@ function main() {
       throw error;
     }
     console.log(
-      `${map == null ? "None" : `Some(${$debugStr(map)})`} ${value$1} ${value$2} ${tmp$9.length}`,
+      `${tmp$7 == null ? "None" : `Some(${$debugStr(tmp$7)})`} ${value$1} ${value$2} ${tmp$8.length}`,
     );
     try {
-      $unborrow(tmp$9);
+      $unborrow(tmp$8);
     } catch (error) {
-      $unborrow(tmp$6);
+      $unborrow(tmp$5);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -479,7 +476,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$6);
+      $unborrow(tmp$5);
     } catch (error) {
       function dropNode(node) {
         $weakDrop(node.parent);
@@ -516,10 +513,24 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
+    let tmp$9;
+    try {
+      tmp$9 = $borrow($fieldCell(leaf.value, "parent"), true);
+    } catch (error) {
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(leaf, dropNode);
+      throw error;
+    }
     let tmp$10;
     try {
-      tmp$10 = $borrow($fieldCell(leaf.value, "parent"), true);
+      tmp$10 = $upgrade(tmp$9.value);
     } catch (error) {
+      $unborrow(tmp$9);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -528,24 +539,23 @@ function main() {
       }
       $rcDrop(leaf, dropNode);
       throw error;
+    }
+    function map$2(p) {
+      const result = p.value.name;
+      function dropNode(node) {
+        $weakDrop(node.parent);
+        for (const item of node.children) {
+          $rcDrop(item, dropNode);
+        }
+      }
+      $rcDrop(p, dropNode);
+      return result;
     }
     let tmp$11;
-    let tmp$12;
     try {
-      tmp$11 = $upgrade(tmp$10.value);
-      tmp$12 = (p) => {
-        const result = p.value.name;
-        function dropNode(node) {
-          $weakDrop(node.parent);
-          for (const item of node.children) {
-            $rcDrop(item, dropNode);
-          }
-        }
-        $rcDrop(p, dropNode);
-        return result;
-      };
+      tmp$11 = tmp$10 ? map$2(tmp$10) : undefined;
     } catch (error) {
-      $unborrow(tmp$10);
+      $unborrow(tmp$9);
       function dropNode(node) {
         $weakDrop(node.parent);
         for (const item of node.children) {
@@ -555,23 +565,9 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    let tmp$13;
+    console.log(`${tmp$11 == null ? "None" : `Some(${$debugStr(tmp$11)})`} ${leaf.strong}`);
     try {
-      tmp$13 = tmp$11 ? tmp$12(tmp$11) : undefined;
-    } catch (error) {
-      $unborrow(tmp$10);
-      function dropNode(node) {
-        $weakDrop(node.parent);
-        for (const item of node.children) {
-          $rcDrop(item, dropNode);
-        }
-      }
-      $rcDrop(leaf, dropNode);
-      throw error;
-    }
-    console.log(`${tmp$13 == null ? "None" : `Some(${$debugStr(tmp$13)})`} ${leaf.strong}`);
-    try {
-      $unborrow(tmp$10);
+      $unborrow(tmp$9);
     } catch (error) {
       function dropNode(node) {
         $weakDrop(node.parent);
@@ -598,9 +594,9 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    let tmp$14;
+    let tmp$12;
     try {
-      tmp$14 = $unwrapOrClone(text);
+      tmp$12 = $unwrapOrClone(text);
     } catch (error) {
       $rcDrop(other);
       function dropNode(node) {
@@ -612,7 +608,7 @@ function main() {
       $rcDrop(leaf, dropNode);
       throw error;
     }
-    console.log(`${tmp$14} ${other.strong}`);
+    console.log(`${tmp$12} ${other.strong}`);
 
     // Its text, as `{}` shows it, what it points at.
     const seven = { value: 7, strong: 1, weak: 0 };
