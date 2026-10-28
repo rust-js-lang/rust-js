@@ -158,7 +158,11 @@ statement written in either branch and left the guard.
 - **A guard whose exit is a lone jump MIR made, or put where the test is,
   is the written `else`'s** where the rest is written in the other
   branch (`written_elses`); the jump loses the test's span, so `let else
-  first` doesn't take it for a `let … else`'s, written first.
+  first` doesn't take it for a `let … else`'s, written first. Not of a
+  `while let`'s own test, `if (next == null) { break; } ..`, whose `else`
+  is the whole loop: taken for one, it left React's
+  propagateContextChanges `break; break;`, which a debug build's contract
+  refused (mutation `written-else-of-a-while-test`).
 
 Each is the same jump either way. Held by `test/corpus/else_break_ends_loop.rs`,
 against native Rust; mutations `written-else-break-continued`,

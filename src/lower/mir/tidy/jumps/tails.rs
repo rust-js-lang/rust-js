@@ -849,8 +849,12 @@ fn linked_elses(
                 (false, true) => branch(then, Some(cond)).map(|k| (true, k)),
                 // A jump alone MIR made, or put where the test is, `if (!b)
                 // { break; }` of a written `else { break; }` (`early
-                // breaks`): the branch the rest isn't written in.
-                (false, false) if matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) => {
+                // breaks`): the branch the rest isn't written in. Not a
+                // `while`'s, whose `else` is the whole loop.
+                (false, false)
+                    if otherwise.lo >= then.hi
+                        && matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) =>
+                {
                     (branch(then, Some(cond)).map(|k| (true, k)))
                         .or_else(|| branch(otherwise, None).map(|k| (false, k)))
                 }

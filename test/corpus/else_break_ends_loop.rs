@@ -3,6 +3,7 @@
 // getOwnerStackByComponentInfoInDev writes it, not `} else { if (..) {
 // ..; continue; } break; }` of the `continue` MIR made at the body's end
 // (ADR 0237, amended).
+use std::cell::RefCell;
 use std::rc::Rc;
 
 struct Owner {
@@ -48,6 +49,56 @@ fn first_long(words: &[&str]) -> Option<usize> {
     if seen > 3 { Some(seen) } else { None }
 }
 
+// A `while let`'s own test isn't a written `else`, whose rest would be
+// its branch: React's propagateContextChanges' walk up to a sibling.
+struct Node {
+    id: u32,
+    child: RefCell<Option<Rc<Node>>>,
+    sibling: RefCell<Option<Rc<Node>>>,
+    parent: RefCell<Option<Rc<Node>>>,
+}
+
+fn walk(root: &Rc<Node>, log: &mut Vec<u32>) {
+    let mut fiber = root.child.borrow().clone();
+    while let Some(current) = fiber {
+        log.push(current.id);
+        let mut next_fiber = current.child.borrow().clone();
+        if let Some(next) = &next_fiber {
+            next.parent.replace(Some(Rc::clone(&current)));
+        } else {
+            next_fiber = Some(current);
+            while let Some(next) = next_fiber {
+                if Rc::ptr_eq(&next, root) {
+                    next_fiber = None;
+                    break;
+                }
+                let sibling = next.sibling.borrow().clone();
+                if let Some(sibling) = sibling {
+                    let parent = next.parent.borrow().clone();
+                    sibling.parent.replace(parent);
+                    next_fiber = Some(sibling);
+                    break;
+                }
+                next_fiber = next.parent.borrow().clone();
+            }
+        }
+        fiber = next_fiber;
+    }
+}
+
+fn node(id: u32, child: Option<Rc<Node>>, sibling: Option<Rc<Node>>) -> Rc<Node> {
+    let node = Rc::new(Node {
+        id,
+        child: RefCell::new(child),
+        sibling: RefCell::new(sibling),
+        parent: RefCell::new(None),
+    });
+    if let Some(child) = node.child.borrow().as_ref() {
+        child.parent.replace(Some(Rc::clone(&node)));
+    }
+    node
+}
+
 fn main() {
     let leaf = Rc::new(Owner {
         tag: None,
@@ -86,4 +137,9 @@ fn main() {
         first_long(&["ab", "c", "efghijk"]),
         first_long(&["abc", "de"])
     );
+    let leaf = node(4, None, None);
+    let tree = node(1, Some(node(2, Some(leaf), Some(node(3, None, None)))), None);
+    let mut log = Vec::new();
+    walk(&tree, &mut log);
+    println!("{log:?}");
 }
