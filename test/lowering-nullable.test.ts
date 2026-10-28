@@ -1121,12 +1121,13 @@ pub fn each(children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'stati
 });
 
 // React's `ReactSharedInternalsClient`, a library: its DEV-only `actQueue`,
-// an optional nullable `Cell` of `RendererTask`s, each a `Box<dyn FnMut>`,
-// whose drop glue made its `Cell::new(None)` a temporary of its own, read
-// `{}.value` where the literal was made (ADR 0810, amended). It's left out,
-// as the other optional fields are. Its `set(None)` drops what it held,
-// nothing: the library makes no `dyn Fn` of what drops, and a consumer whose
-// `RendererTask` would is refused (ADR 0626, amended).
+// an optional nullable `Cell` of `RendererTask`s, each a `Box<dyn FnMut>`.
+// Its `Cell::new(None)` was once a temporary of its own, read `{}.value`
+// where the literal was made (ADR 0810, amended), when a library's `dyn
+// Fn` was taken to hold what a consumer's destructor drops. Now it drops
+// what the library's own make hold, nothing, and a consumer whose
+// `RendererTask` would is refused (ADR 0626, amended): it's left out, as
+// the other optional fields are, and its `set(None)` drops nothing.
 test("an optional nullable field of what has drop glue is left out where it's made", async () => {
   const dir = fixture("nullable-optional-drops");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;

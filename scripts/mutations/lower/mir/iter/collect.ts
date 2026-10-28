@@ -113,15 +113,16 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "rposition-of-lent-wrapped",
-    "breaks": "`rposition` of a kept iterator is given its `$lent` wrapper, whose items it can't see, so it finds none",
+    "breaks": "`rposition` of a kept iterator is given its `$lent` wrapper, `$rposition($lent(it), f)`, where `it` is what it steps: the wrapper passes on its back and its length, so it finds the same, but the JS reads a helper no one wrote",
     "file": "src/lower/mir/iter/collect.rs",
     "find": "        let items = crate::lower::iterators::unlent(&it).clone();\n",
     "replace": "        let items = it;\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",
-      "rposition"
-    ]
+      "^rposition.rs$"
+    ],
+    "snapshots": true
   },
   {
     "name": "rposition-of-lazy-unrefused",

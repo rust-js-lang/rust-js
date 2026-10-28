@@ -239,12 +239,11 @@ pub fn counted(values: &[&Unknown], out: &mut Vec<String>) -> usize {
 });
 
 // React's enqueueTask (shared/enqueueTask.js) sets `channel.port1.onmessage
-// = () => { callback(); }`. In a library, a `Box<dyn FnMut>` may hold what
-// a consumer's destructor drops, so its MIR's drops are elaborated: the
-// drop of the `Box<closure>` it's made of, which drops nothing in JS,
-// never unwinds to the cleanup that drops the `Box<dyn FnMut>`, so that
-// isn't held, `const value = () => ..` (ADR 0800). Of every callback the
-// closure holds, the same.
+// = () => { callback(); }`. A library's `Box<dyn FnMut>` drops what the
+// functions it and its libraries make hold, as a program's does (ADR 0626,
+// amended): none here, of every callback the closure holds, so nothing
+// holds the closure past the call, `const value = () => ..`, and it's
+// written where it's given (ADR 0800).
 test("a closure given to a setter of a getter's object is written where it's given", async () => {
   const { js, lib } = await compiled(
     "closure-to-a-setter",
