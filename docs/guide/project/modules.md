@@ -1131,8 +1131,10 @@ To share one on npm ([ADR 0414](../../decisions/0414-a-library-on-npm-as-rescrip
 - **Say which crate it has** in `package.json`, `"rust-js": { "crate":
   "acme-greet" }`, with `main` and `types` its root's files.
 - **If it has `exports`, export the JS**: `"./src/*": "./src/*"`. A rust-js
-  app imports `@acme/greet/src/lib.js`, and `rust-js build` refuses one
-  whose `exports` hide it, saying what to export.
+  app imports what its root module exports by the package's name,
+  `@acme/greet`, and another module's by its file, `@acme/greet/src/util.js`,
+  and `rust-js build` refuses one whose `exports` hide that, saying what to
+  export ([ADR 1008](../../decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)).
 - **Depend on `@rust-js/runtime`** where its JS imports it, as any package
   depends on what it imports.
 

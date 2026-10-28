@@ -114,6 +114,13 @@ react.dev's TopNav passes the same closure instead.
   One whose module's load can't make it before what it reads, an import
   cycle's or one reading itself, is refused. Listed in the guide's
   differences (`semantics.md`, 30).
+- **A package's default entry is its root**, the second case's, which the
+  user decided (2026-10-28, gap rd55, ADR 1008, amended): React DOM's
+  `import {Children} from 'react'` is of `react`'s `"default":
+  "./index.js"`, ReactClient's; a host that resolves its `react-server`
+  condition gets ReactServer's, another value, as upstream's import does.
+  Only a host that sets a condition of the package's tells them apart.
+  Listed in the guide's differences (`semantics.md`, 31).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

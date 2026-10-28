@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: ";",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
+  {
+    name: "package-root-module-by-file",
+    breaks: "an item of a package's root module, ADR 0414's `src/lib.js`, is imported by its file, `@acme/greet/src/lib.js`, where no path the crate writes names it, a method's type's, a second way beside the package's name (ADR 1008, amended)",
+    file: "src/library.rs",
+    find: "Some((name, entry)) if item.module.is_empty() =>",
+    replace: "Some((name, entry)) if false =>",
+    tests: ["test/libraries.test.ts", "-t", "compiles a library from npm"],
+  },
 ];

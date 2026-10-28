@@ -298,4 +298,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "unboxed function"],
   },
+  {
+    name: "package-root-path-unread",
+    breaks: "an item the crate's Rust names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
+    file: "src/lower/library.rs",
+    find: "            imported.by_package_root();\n",
+    replace: "",
+    tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
 ];

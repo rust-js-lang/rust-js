@@ -365,6 +365,20 @@ pub struct Imported {
     pub name: String,
     pub member: Option<String>,
     pub calling: Calling,
+    /// The package's name and its root's name for it, where the package's
+    /// root re-exports it from its module, which it's imported by where the
+    /// crate's Rust names it through the library's root (ADR 1008, amended).
+    pub rooted: Option<(String, String)>,
+}
+
+impl Imported {
+    /// Imported by its package's name, as its root re-exports it, where
+    /// it does.
+    pub fn by_package_root(&mut self) {
+        if let Some((name, entry)) = self.rooted.take() {
+            (self.from, self.export) = (name, entry);
+        }
+    }
 }
 
 /// A binding a library's module holds as a consumer imports it: from a JS
@@ -490,26 +504,41 @@ impl Dependencies {
                 Ok(crate::paths::specifier(parent, &module.file))
             };
             // What its package's root re-exports, by the package's name,
-            // where Node finds that package from the crate's JS (ADR 1008).
+            // where Node finds that package from the crate's JS (ADR 1008):
+            // an item of its root module, whichever path names it; another,
+            // where the crate's Rust names it through the library's root, as
+            // `import_through_roots` says (ADR 1008, amended).
             let package = (library.package.as_ref())
                 .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
-            let imported_from = |module: &Vec<String>, export: String| -> Result<(String, String), String> {
-                let entry = package.and_then(|package| {
+            let rooted_of = |module: &Vec<String>, export: &str| {
+                package.and_then(|package| {
                     (package.exports.iter())
                         .find(|reexport| &reexport.module == module && reexport.export == export)
                         .map(|reexport| (package.name.clone(), reexport.entry.clone()))
-                });
-                entry.map_or_else(|| Ok((specifier(module)?, export)), Ok)
+                })
+            };
+            // Of its root module, by the package's name, whatever names it.
+            let imported_from = |module: &Vec<String>, export: String| -> Result<(String, String), String> {
+                match rooted_of(module, &export) {
+                    Some(rooted) if module.is_empty() => Ok(rooted),
+                    _ => Ok((specifier(module)?, export)),
+                }
             };
             for item in library.items {
-                let (from, export) = imported_from(&item.module, item.exported_as())?;
-                let imported = Imported {
-                    from,
+                let export = item.exported_as();
+                let rooted = rooted_of(&item.module, &export);
+                let mut imported = Imported {
+                    from: specifier(&item.module)?,
                     export,
                     name: item.export,
                     member: item.member,
                     calling: item.calling,
+                    rooted: None,
                 };
+                match rooted {
+                    Some((name, entry)) if item.module.is_empty() => (imported.from, imported.export) = (name, entry),
+                    rooted => imported.rooted = rooted,
+                }
                 if exports.items.insert(item.key, imported).is_some() {
                     return Err("duplicate dependency export".into());
                 }
@@ -518,7 +547,13 @@ impl Dependencies {
             for declared in library.types {
                 let declared_here = (manifest.modules.iter()).any(|m| m.module == declared.module && m.types.is_some());
                 if declared_here {
-                    let imported = (specifier(&declared.module)?, declared.name, declared.default);
+                    let export = if declared.default {
+                        "default".to_string()
+                    } else {
+                        declared.name.clone()
+                    };
+                    let (from, _) = imported_from(&declared.module, export)?;
+                    let imported = (from, declared.name, declared.default);
                     if exports.types.insert(declared.key, imported).is_some() {
                         return Err("duplicate dependency export".into());
                     }
@@ -596,6 +631,7 @@ impl Dependencies {
                 name: item.export,
                 member: item.member,
                 calling: item.calling,
+                rooted: None,
             };
             if exports.items.insert(item.key, imported).is_some() {
                 return Err("duplicate std export".into());

@@ -285,8 +285,12 @@ greet = { package = "acme-greet", version = "1" }
 
 ```js
 // the app's src/lib.js
-import { greet } from "@acme/greet/src/lib.js";
+import { greet } from "@acme/greet";
 ```
+
+What the crate's root module exports is imported by the package's name,
+where its `main`, or its `exports`' `"."`, is that module's JS; another
+module's item by its file, `@acme/greet/src/util.js`.
 
 A JS app imports the author's JS as it imports any package. See
 [Emitting modules](modules.md#libraries) for how to publish one.
@@ -294,32 +298,45 @@ A JS app imports the author's JS as it imports any package. See
 ### A package's entry
 
 A crate whose directory has a `package.json`, a workspace's member too,
-may have an entry of its own, as React's `packages/react/index.js` is:
+may have an entry of its own, as React's `packages/react/index.js` is,
+and its root re-export what the entry does:
 
 ```js
 // packages/react/index.js, the package's "main"
 export {Children, createElement} from './src/ReactClient';
 ```
 
+```rust excerpt
+// packages/react/react.rs, the crate's root
+pub use react_client::{CHILDREN, create_element};
+```
+
 An item the entry re-exports is imported by the package's name, as
-upstream writes it, where Node finds that package from the consumer
+upstream writes it, where the Rust names it through the crate's root and
+Node finds the package from the consumer
 ([ADR 1008](../../decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)):
 
 ```js
-// of `use react_isomorphic::react_client::CHILDREN;`
+// of `use react_isomorphic::CHILDREN;`
 import { Children } from "react";
+// of `use react_isomorphic::react_client::CHILDREN;`
+import { Children } from "../../react/src/ReactClient.js";
 ```
 
+- **The path you write decides**: through the crate's root, by the
+  package's name; through the item's module, by its module's file. A crate
+  that names an item both ways imports it by the package's name.
 - **Re-exports alone**: `export { .. } from` and `export * from` of the
   crate's modules. An entry with code of its own imports nothing by the
-  package's name.
-- **Every condition's entry**: where `exports["."]` names several, by
-  conditions, each must re-export the item from its module by one name;
-  else it's imported by its module's file.
-- **An item of its own module**: one the module re-exports of another is
+  package's name. An item its module only re-exports of another is
   imported by its own module's file.
+- **The default entry**: of `exports["."]`'s conditions, the `import` or
+  `default` one, or both where they name one file; what another condition,
+  `react-server`'s, gives is the host's to choose
+  ([the semantics](../semantics.md), 31).
 - **JS, not Flow**: an entry with types in it is refused, naming it. Keep
-  its types in a `.d.ts` beside it, `index.d.ts`.
+  its types in a `.d.ts` beside it, `index.d.ts`; an `@flow` header over
+  plain JS is fine.
 
 ## Versions
 

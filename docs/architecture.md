@@ -357,7 +357,8 @@ held bindings, input fingerprints and crate identity; rustc metadata alone
 cannot describe JS linkage. Of a crate whose directory has a `package.json`,
 `src/packages.rs` reads its package and what its entry re-exports, by
 `to_oxc::entry_exports`, as artifact planning asks; a consumer imports what
-the entry re-exports by the package's name where Node finds it
+the entry re-exports by the package's name where Node finds it and its Rust
+names it through the library's root (`lower::import_through_roots`)
 ([ADR 1008](decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)). Consumers validate library/compiler identity and
 required dependencies. Cargo provides build configuration and caching;
 `src/cargo.rs` makes compiler identity visible to Cargo's fingerprints.

@@ -917,6 +917,13 @@ export function hasSetImmediate() {
   revoked `Proxy`, where it throws
   ([0743](../decisions/0743-a-part-of-a-chain-a-test-decides-is-left-out.md)).
 
+- **A library's item its package's entry re-exports is imported by the
+  package's name**, of its default entry, the `import` or `default`
+  condition of `exports["."]`; a host that resolves another condition,
+  `react-server`'s, gets what that one gives
+  ([1008](../decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md),
+  amended, the user's decision).
+
 JSON through serde_json writes and reads as serde_json does, a 64-bit
 integer to the digit; `rename`, `tag`, `untagged`, `flatten`, `default`,
 `skip` and the other common attributes are supported
@@ -1027,3 +1034,8 @@ React and JSX are [their own pages](README.md#react).
 30. A `pub` thread-local is made as its module loads, so what its
     initializer prints, panics with, reads and changes is done then, where
     Rust does it at its first use (ADR 1006, the user's decision).
+31. A library's item its package's default entry re-exports is imported
+    by the package's name, so a host that resolves another of its
+    conditions, `react-server`, gets that condition's module, where the
+    Rust names the default entry's (ADR 1008, amended, the user's
+    decision).

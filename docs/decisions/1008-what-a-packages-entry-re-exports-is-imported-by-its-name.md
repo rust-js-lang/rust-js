@@ -1,6 +1,8 @@
 # 1008. What a package's entry re-exports is imported by the package's name
 
-Status: Accepted. The user's decision. Extends
+Status: Accepted. The user's decision. Amended (the user's decisions):
+the default entry alone; the Rust's path decides; a generated root too.
+Extends
 [0414](0414-a-library-on-npm-as-rescripts-are.md), a library's crate as an
 npm package, and [0100](0100-separate-crates.md), a library's contract.
 React port gap rd55.
@@ -124,3 +126,42 @@ parses an entry.
   (`packages.rs`), `package-imported-wherever-installed` (`library.rs`),
   `package-entry-unread-by-cargo` (`output.rs`) and
   `entry-statements-plain` (`to_oxc/loads.rs`).
+
+## Amendment: the default entry, the Rust's path, and the root module
+
+The user decided rd55's three questions (2026-10-28).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B for the first, an
+exception listed in ADR 0262's Consequences and the guide's differences
+(`semantics.md`, 31); none for the others.
+
+- **The default entry alone.** Of `exports["."]`'s conditions, the one an
+  `import` resolves to by default is read: `import` or `default`, and of
+  both, only where they agree, as Node takes whichever the object names
+  first, an order `serde_json` doesn't keep; a fallback array's first. React's
+  `react-server` entry, which gives ReactServer's `Children`, is the
+  host's to choose, as it is of upstream's `import {Children} from
+  'react'`. Mutation `package-entry-conditions-one` goes: there's one
+  entry; `package-entry-default-unread` holds it.
+- **The Rust's path decides.** An item of another module than the root is
+  imported by the package's name only where the crate's Rust names it
+  through the library's root, `use react_isomorphic::CHILDREN;` of the
+  root's `pub use react_client::CHILDREN;`: a path whose last but one
+  segment is the library's root (`lower::import_through_roots`, of every
+  path the crate's HIR has, `use`s and expressions). One named by its
+  module's path, `react_reconciler::react_fiber_reconciler::..`, is
+  imported by its module's file, as upstream's `'react-reconciler/src/..'`
+  is by its path. Of the crate as a whole: one it names both ways is
+  imported by the package's name (each import of the crate's is named
+  once, ADR 0202). Mutation `package-root-path-unread`.
+- **A generated root too: one way.** Where the package's root is the
+  crate's root module's JS, ADR 0414's `"main": "src/lib.js"`, what that
+  module exports, its own items and its `pub use`s, is what the root
+  re-exports, and is imported by the package's name: `import { Greeting,
+  greet } from "@acme/greet"`, where it was `@acme/greet/src/lib.js`. A
+  root module's item is imported so whatever path names it, as each path
+  to it is through the root; its declared types and held bindings too.
+  Another module's item is imported by its file, `@acme/greet/src/loud.js`,
+  which the host's `exports` check still holds. `test/libraries.test.ts`'
+  ADR 0414 tests say `@acme/greet`; its `exports` test refuses a hidden
+  `./src/loud.js`. Mutation `package-root-module-by-file`.

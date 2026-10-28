@@ -96,6 +96,7 @@ use bindings::{Export, is_binding};
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
+pub use library::import_through_roots;
 pub use pipeline::{Built, Lowered, lower_crate};
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).

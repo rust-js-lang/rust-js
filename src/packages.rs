@@ -59,17 +59,19 @@ pub enum Reexport {
 }
 
 /// One of the crate's modules, as an entry names it: its path, the files
-/// its JS is, where it's written and where it goes in source, and the names
-/// it exports.
+/// its JS is, where it's written and where it goes in source, the names
+/// it exports, and what it re-exports of the crate's modules, each by the
+/// module, its name there and the name it gives.
 pub struct Module<'a> {
     pub path: &'a [String],
     pub files: Vec<PathBuf>,
     pub exports: &'a [String],
+    pub reexports: Vec<(Vec<String>, String, String)>,
 }
 
 /// What the crate's package is: the files read to say, `package.json` and
-/// each entry of its root, which the build read; and its name and what its
-/// root re-exports of the crate's modules, where it has a name and one.
+/// its root's entry, which the build read; and its name and what its root
+/// re-exports of the crate's modules, where it has a name and one.
 #[derive(Default)]
 pub struct Read {
     pub files: Vec<PathBuf>,
@@ -77,11 +79,11 @@ pub struct Read {
 }
 
 /// The package of the crate in `dir`, of `modules`, where a `package.json`
-/// is there: what its root re-exports under every condition, each of its
-/// entries by the same name from the same module (ADR 1008). None of a
-/// root that's one of the crate's own modules' JS (ADR 0414's), nor of
-/// one Node can't import, a file not there or of none of the crate's. An
-/// entry that isn't JS, Flow's types in it, is refused, naming it.
+/// is there: what its root's entry, the one an `import` of it resolves to
+/// by default (ADR 1008, amended), re-exports. The crate's root module's
+/// own JS, ADR 0414's `src/lib.js`, exports what that module does; another
+/// module's, or a file Node can't import, nothing. An entry that isn't JS,
+/// Flow's types in it, is refused, naming it.
 pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<Entry, String>) -> Result<Read, String> {
     let manifest = dir.join("package.json");
     if !manifest.is_file() {
@@ -96,93 +98,95 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
     let Some(name) = json["name"].as_str() else {
         return Ok(read);
     };
-    let Some(entries) = root_entries(dir, &json) else {
+    // The first of the files it may be that's one, or one of the crate's
+    // modules' JS, which may not be written yet.
+    let own = |file: &PathBuf| modules.iter().any(|module| module.files.contains(file));
+    let candidates = root_entry(dir, &json).into_iter().flatten();
+    let candidates = candidates.filter_map(|entry| crate::paths::absolute(&entry).ok());
+    let Some(file) = candidates.into_iter().find(|file| own(file) || file.is_file()) else {
         return Ok(read);
     };
-    let own: BTreeSet<PathBuf> = modules.iter().flat_map(|module| module.files.iter().cloned()).collect();
-    let mut agreed: Option<BTreeMap<(Vec<String>, String), String>> = None;
-    for entry in entries {
-        let Ok(file) = crate::paths::absolute(&entry) else {
-            return Ok(read);
-        };
-        let js = file.extension().is_some_and(|e| e == "js" || e == "mjs" || e == "jsx");
-        if !file.is_file() || !js || own.contains(&file) {
-            return Ok(read);
+    let exports = match modules.iter().find(|module| module.files.contains(&file)) {
+        // The crate's root module's JS, which exports its own and what it
+        // re-exports, as its module says.
+        Some(root) if root.path.is_empty() => {
+            let own = (root.exports.iter()).map(|export| ((Vec::new(), export.clone()), export.clone()));
+            let reexported = (root.reexports.iter())
+                .map(|(module, export, alias)| ((module.clone(), export.clone()), alias.clone()));
+            own.chain(reexported).collect()
         }
-        read.files.push(file.clone());
-        let code = std::fs::read_to_string(&file).map_err(|e| format!("{}: {e}", file.display()))?;
-        let parsed = parse(&code).map_err(|error| {
-            format!(
-                "rust-js can't read `{}`, package `{name}`'s entry, as JavaScript: {error}. rust-js reads what a \
-                 package's entry re-exports, to import it by the package's name: keep only JS in it, its types in \
-                 a `.d.ts` beside it, `{}`",
-                file.display(),
-                file.with_extension("d.ts")
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-            )
-        })?;
-        let exports = reexported(crate::paths::parent_dir(&file), &parsed, modules);
-        agreed = Some(match agreed {
-            None => exports,
-            Some(mut agreed) => {
-                agreed.retain(|key, exported| exports.get(key) == Some(exported));
-                agreed
+        Some(_) => return Ok(read),
+        None => {
+            let js = file.extension().is_some_and(|e| e == "js" || e == "mjs" || e == "jsx");
+            if !file.is_file() || !js {
+                return Ok(read);
             }
-        });
-    }
+            read.files.push(file.clone());
+            let code = std::fs::read_to_string(&file).map_err(|e| format!("{}: {e}", file.display()))?;
+            let parsed = parse(&code).map_err(|error| {
+                format!(
+                    "rust-js can't read `{}`, package `{name}`'s entry, as JavaScript: {error}. rust-js reads what \
+                     a package's entry re-exports, to import it by the package's name: keep only JS in it, its \
+                     types in a `.d.ts` beside it, `{}`",
+                    file.display(),
+                    file.with_extension("d.ts")
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                )
+            })?;
+            reexported(crate::paths::parent_dir(&file), &parsed, modules)
+        }
+    };
     read.package = Some(Package {
         name: name.to_string(),
         dir: crate::paths::absolute(dir)?,
-        exports: (agreed.unwrap_or_default().into_iter())
+        exports: (exports.into_iter())
             .map(|((module, export), entry)| PackageExport { module, export, entry })
             .collect(),
     });
     Ok(read)
 }
 
-/// The files the package's root may be, `"."`, under each of its
-/// conditions, of `exports`, else its `main`, else `index.js`, as Node
-/// resolves its name: None where it may be none, `null`'s, or exports no
-/// root.
-fn root_entries(dir: &Path, json: &serde_json::Value) -> Option<Vec<PathBuf>> {
+/// The file the package's root, `"."`, is to an `import` of its name by
+/// default, of `exports`: a condition's `import` or `default`, one where
+/// both are, as Node takes whichever an object names first, a fallback
+/// array's first; the others, `react-server`'s,
+/// `browser`'s, the host's to choose (the user's decision, ADR 1008,
+/// amended, listed in ADR 0262). Else its `main`, else `index.js`, as
+/// Node finds a file of it, each it may be. None where it's none, `null`'s,
+/// or exports no root.
+fn root_entry(dir: &Path, json: &serde_json::Value) -> Option<Vec<PathBuf>> {
     use serde_json::Value;
-    fn targets(value: &Value, found: &mut Vec<String>) -> bool {
+    fn target(value: &Value) -> Option<&str> {
         match value {
-            Value::String(target) => {
-                found.push(target.clone());
-                true
+            Value::String(target) => Some(target),
+            Value::Array(each) => each.first().and_then(target),
+            // `import`'s or `default`'s; of both, one where they agree, as
+            // which Node takes is whichever is written first, an order
+            // `serde_json` doesn't keep.
+            Value::Object(conditions) => {
+                let import = conditions.get("import").map(target);
+                let default = conditions.get("default").map(target);
+                match (import, default) {
+                    (Some(import), Some(default)) => (import == default).then_some(import).flatten(),
+                    (Some(one), None) | (None, Some(one)) => one,
+                    (None, None) => None,
+                }
             }
-            Value::Array(each) => each.iter().all(|value| targets(value, found)),
-            Value::Object(conditions) => conditions.values().all(|value| targets(value, found)),
-            _ => false,
+            _ => None,
         }
     }
-    let mut found = Vec::new();
-    match &json["exports"] {
+    let found = match &json["exports"] {
         Value::Null => {
             let main = json["main"].as_str().unwrap_or("index.js");
             let file = dir.join(main);
-            return [file.clone(), file.with_extension("js"), file.join("index.js")]
-                .into_iter()
-                .find(|file| file.is_file())
-                .map(|file| vec![file]);
+            return Some(vec![file.clone(), file.with_extension("js"), file.join("index.js")]);
         }
-        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => {
-            if !targets(map.get(".")?, &mut found) {
-                return None;
-            }
-        }
-        exports => {
-            if !targets(exports, &mut found) {
-                return None;
-            }
-        }
-    }
-    (found.iter())
-        .map(|target| target.starts_with("./").then(|| dir.join(&target[2..])))
-        .collect()
+        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => target(map.get(".")?)?,
+        exports => target(exports)?,
+    };
+    found.strip_prefix("./").map(|path| vec![dir.join(path)])
 }
 
 /// What `entry`, in `dir`, re-exports of `modules`: each module's export,

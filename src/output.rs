@@ -497,10 +497,24 @@ impl OutputPlan {
                         absolute(&self.js_path(&module.path))?,
                         absolute(&self.in_source(module)?)?,
                     ];
+                    // What it re-exports of the crate's modules, by each
+                    // one's name there and the name it gives (ADR 0240).
+                    let reexports = (module.reexports.iter())
+                        .filter_map(|reexport| match &reexport.from {
+                            js::ImportFrom::Module(from) => Some((from, &reexport.named)),
+                            js::ImportFrom::Specifier(_) => None,
+                        })
+                        .flat_map(|(from, named)| {
+                            named
+                                .iter()
+                                .map(|(name, alias)| (from.clone(), name.clone(), alias.clone()))
+                        })
+                        .collect();
                     Ok(crate::packages::Module {
                         path: &module.path,
                         files,
                         exports,
+                        reexports,
                     })
                 })
                 .collect::<Result<Vec<_>, String>>()?;

@@ -398,7 +398,7 @@ export function packageOf(packages, file) {
  * (ADR 0101), that names a file copied too names the copy, from `to`;
  * after a directive, in an `export .. from` or in a declaration alike. One
  * in another npm package than `to` is by the package's name, as Node finds
- * it wherever its package manager put it, `@acme/greet/src/lib.js` (ADR
+ * it wherever its package manager put it, `@acme/greet/src/util.js` (ADR
  * 0414). Nothing else changes: a string that reads like an import is the
  * program's.
  * @param {Buffer} bytes
@@ -427,7 +427,7 @@ function relinked(bytes, links, to, moved, packages) {
 
 /**
  * The specifier a package's file, `subpath` in it, `./src/lib.js`, is
- * imported by: the package's name and the path, `@acme/greet/src/lib.js`,
+ * imported by: the package's name and the path, `@acme/greet/src/util.js`,
  * which its `exports`, if it has them, export as that file, as Node reads
  * them; else an error that says what to export (ADR 0414).
  * @param {{ name: string, dir: string }} home

@@ -5,11 +5,11 @@ const test = ["test/libraries.test.ts", "-t", "entry re-exports"];
 
 export const mutations: Mutation[] = [
   {
-    name: "package-entry-conditions-one",
-    breaks: "a package's root is read of its first condition's entry alone, so an item another condition's entry doesn't re-export is imported by the package's name, which a host of that condition finds another module of (ADR 1008)",
+    name: "package-entry-default-unread",
+    breaks: "a package's root is read of its first condition's entry, `react-server`'s, where an `import` resolves its `default` (ADR 1008, amended)",
     file: "src/packages.rs",
-    find: "                agreed.retain(|key, exported| exports.get(key) == Some(exported));\n",
-    replace: "",
+    find: '                let default = conditions.get("default").map(target);\n',
+    replace: '                let default = conditions.values().next().map(target);\n',
     tests: test,
   },
   {

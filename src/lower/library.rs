@@ -904,3 +904,52 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
             .flat_map(|library| library.items.values())
     }
 }
+
+/// Each library item the crate's Rust names through its library's root,
+/// `use react_isomorphic::CHILDREN;` of a `pub use react_client::CHILDREN;`
+/// there, imported by its package's name where its package's root
+/// re-exports it, `import {Children} from 'react'`; one named by its
+/// module's path, `react_reconciler::react_fiber_reconciler::..`, by its
+/// module's file, as upstream's `'react-reconciler/src/..'` (the user's
+/// decision, ADR 1008, amended). Of the whole crate: one it names both ways
+/// is imported by the package's name.
+pub fn import_through_roots(tcx: TyCtxt<'_>, dependencies: &mut Dependencies) {
+    use rustc_hir::def::{DefKind, Res};
+    use rustc_hir::intravisit::{self, Visitor};
+    struct Paths<'tcx> {
+        tcx: TyCtxt<'tcx>,
+        rooted: HashSet<DefId>,
+    }
+    impl<'tcx> Visitor<'tcx> for Paths<'tcx> {
+        type NestedFilter = rustc_middle::hir::nested_filter::All;
+        fn maybe_tcx(&mut self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        fn visit_path(&mut self, path: &rustc_hir::Path<'tcx>, id: rustc_hir::HirId) {
+            // A path whose last but one segment is the library's root.
+            if let Res::Def(_, item) = path.res
+                && !item.is_local()
+                && let [.., parent, _] = path.segments
+                && let Res::Def(DefKind::Mod, module) = parent.res
+                && module == item.krate.as_def_id()
+            {
+                self.rooted.insert(item);
+            }
+            intravisit::walk_path(self, path);
+            let _ = id;
+        }
+    }
+    let mut paths = Paths {
+        tcx,
+        rooted: HashSet::new(),
+    };
+    tcx.hir_visit_all_item_likes_in_crate(&mut paths);
+    for item in paths.rooted {
+        let crate_name = tcx.crate_name(item.krate).to_string();
+        if let Some(imported) =
+            (dependencies.libraries.get_mut(&crate_name)).and_then(|exports| exports.items.get_mut(&key(tcx, item)))
+        {
+            imported.by_package_root();
+        }
+    }
+}

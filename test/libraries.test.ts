@@ -85,7 +85,7 @@ test("a rust-js app compiles a library from npm into its package, and imports it
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
-  expect(js).toContain('from "@acme/greet/src/lib.js";');
+  expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
   expect(js).not.toContain("node_modules");
   expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toBe(readFileSync(join(lib, "src", "lib.js"), "utf8"));
   expect(welcome(dir)).toBe("Hello, Ada!");
@@ -113,7 +113,7 @@ test("a library from pnpm's store is compiled into its package without changing 
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
-  expect(js).toContain('from "@acme/greet/src/lib.js";');
+  expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
   expect(js).not.toContain(".pnpm");
   expect(welcome(dir)).toBe("Hello, Ada!");
   // The store's file is as it was: the package's was replaced, not written through.
@@ -134,20 +134,27 @@ test("a JS app imports a rust-js library's JS as its author built it", () => {
   expect(run([node ?? "node", join(dir, "main.js")]).trim()).toBe("Hello, Ada!");
 }, 600_000);
 
-// The app imports a package's JS by path, `@acme/greet/src/lib.js`: a package
-// with `exports` exports it too, or the build says what to export.
+// The app imports a package's root by its name, `@acme/greet`, and another
+// module's JS by its path, `@acme/greet/src/loud.js`: a package with
+// `exports` exports it too, or the build says what to export (ADR 1008,
+// amended).
 test("a library whose exports hide its JS is refused, and one exporting it is imported by path", () => {
+  const loud = "\npub mod loud {\n    pub fn shout(text: &str) -> String {\n        text.to_uppercase()\n    }\n}\n";
   for (const [exports, ok] of [[{ ".": "./src/lib.js" }, false], [{ ".": "./src/lib.js", "./src/*": "./src/*" }, true]] as const) {
-    const lib = library(exports);
+    const lib = library(exports, loud);
     const dir = app("library-exports");
+    writeFileSync(join(dir, "src", "lib.rs"), 'pub fn welcome() -> String {\n    greet::greet(&greet::loud::shout("Ada")).text()\n}\n');
     packed(lib, join(dir, "node_modules", "@acme", "greet"), cpSync);
     const built = build(dir);
     if (ok) {
       expect(built.stderr).toBe("");
-      expect(welcome(dir)).toBe("Hello, Ada!");
+      const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
+      expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
+      expect(js).toContain('import { shout } from "@acme/greet/src/loud.js";\n');
+      expect(welcome(dir)).toBe("Hello, ADA!");
     } else {
       expect(built.code).not.toBe(0);
-      expect(built.stderr).toContain("@acme/greet's `exports` hides ./src/lib.js, which the app's JS imports, `@acme/greet/src/lib.js`: export it, `\"./src/*\": \"./src/*\"`");
+      expect(built.stderr).toContain("@acme/greet's `exports` hides ./src/loud.js, which the app's JS imports, `@acme/greet/src/loud.js`: export it, `\"./src/*\": \"./src/*\"`");
     }
   }
 }, 600_000);
@@ -199,7 +206,7 @@ test("a library packed by npm is built into an app by each package manager's ins
     linkSync(installedJs, join(work, `${manager}-witness.js`));
     const built = build(dir);
     expect({ manager, code: built.code, stderr: built.stderr }).toEqual({ manager, code: 0, stderr: "" });
-    expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).toContain('from "@acme/greet/src/lib.js";');
+    expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).toContain('import { Greeting, greet } from "@acme/greet";\n');
     expect(welcome(dir)).toBe("Hello, Ada!");
     expect(readFileSync(installedJs, "utf8")).not.toContain("an older rust-js's");
     expect({ manager, witness: readFileSync(join(work, `${manager}-witness.js`), "utf8") }).toEqual({ manager, witness: shipped });
@@ -210,10 +217,12 @@ test("a library packed by npm is built into an app by each package manager's ins
 
 // A package's entry, React's `index.js`, `export {Children} from
 // './src/ReactClient'`, is what a consumer imports a library's item by,
-// where every entry of its root re-exports it from its module, by the
-// package's name (ADR 1008): `import {Children} from 'react'`, one module
-// instance with what's imported by its file. An entry that isn't JS,
-// Flow's types in it, is refused, naming it.
+// where its root's default entry re-exports it from its module and the
+// crate's Rust names it through the library's root, by the package's name
+// (ADR 1008, amended): `import {Children} from 'react'`, one module
+// instance with what's imported by its file; one named by its module's
+// path, by its file. An entry that isn't JS, Flow's types in it, is
+// refused, naming it.
 test("an item a package's entry re-exports is imported by the package's name", () => {
   const dir = fixture("package-entry");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["kids", "dom"]\nresolver = "3"\n');
@@ -225,7 +234,7 @@ test("an item a package's entry re-exports is imported by the package's name", (
   const manifest = (exports?: unknown) =>
     writeFileSync(join(kids, "package.json"), JSON.stringify({ name: "@acme/kids", type: "module", main: "index.js", exports }));
   manifest();
-  writeFileSync(join(kids, "src", "lib.rs"), "pub mod client;\npub mod hooks;\n");
+  writeFileSync(join(kids, "src", "lib.rs"), "pub mod client;\npub mod hooks;\n\npub use client::bump;\npub use hooks::hook;\n");
   writeFileSync(join(kids, "src", "client.rs"), `use std::cell::Cell;
 
 thread_local! {
@@ -240,10 +249,10 @@ pub fn count() -> u32 {
     BUMPS.with(Cell::get)
 }
 `);
-  writeFileSync(join(kids, "src", "hooks.rs"), "pub fn hook() -> u32 {\n    7\n}\n");
+  writeFileSync(join(kids, "src", "hooks.rs"), "pub fn hook() -> u32 {\n    7\n}\n\npub fn other() -> u32 {\n    0\n}\n");
   const entry = "export {bump} from './src/client.js';\nexport * from './src/hooks.js';\n";
   writeFileSync(join(kids, "index.js"), entry);
-  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub fn run() -> u32 {\n    kids::client::bump();\n    kids::client::bump();\n    kids::client::count() * 10 + kids::hooks::hook()\n}\n");
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), "pub fn run() -> u32 {\n    kids::bump();\n    kids::client::bump();\n    kids::client::count() * 10 + kids::hook() + kids::hooks::other()\n}\n");
   mkdirSync(join(dir, "node_modules", "@acme"), { recursive: true });
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
@@ -254,11 +263,12 @@ pub fn count() -> u32 {
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
   expect(js()).toContain('import { count } from "../../kids/src/client.js";\n');
+  expect(js()).toContain('import { other } from "../../kids/src/hooks.js";\n');
   expect(ran()).toBe("27");
-  // Each condition's entry, the package's to choose: `bump` only where
-  // every one re-exports it, the library rebuilt as its package.json changes.
+  // The default condition's entry alone, another the host's to choose
+  // (ADR 0262's exception), the library rebuilt as its package.json changes.
   writeFileSync(join(kids, "server.js"), "export * from './src/hooks.js';\n");
-  manifest({ ".": { server: "./server.js", default: "./index.js" } });
+  manifest({ ".": { browser: "./index.js", default: "./server.js" } });
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { hook } from "@acme/kids";\n');
   expect(js()).toContain('import { bump, count } from "../../kids/src/client.js";\n');
@@ -266,7 +276,7 @@ pub fn count() -> u32 {
   // An entry that runs more than its re-exports as it loads, which the
   // Rust doesn't, and a package Node finds no copy of from the crate's JS,
   // or another: each by its file, as the Rust has it.
-  const byFiles = 'import { bump, count } from "../../kids/src/client.js";\nimport { hook } from "../../kids/src/hooks.js";\n';
+  const byFiles = 'import { bump, count } from "../../kids/src/client.js";\nimport { hook, other } from "../../kids/src/hooks.js";\n';
   manifest();
   writeFileSync(join(kids, "index.js"), `${entry}console.log("loaded");\n`);
   expect(built().stderr).toBe("");
