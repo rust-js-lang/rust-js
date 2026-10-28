@@ -111,3 +111,24 @@ owns is joined by `[String]::join`, as before.
 Held by `test/js-collections.test.ts`'s "js::array::join is an array of
 any values' join", run in Node, and the guide's `deps_text`.
 
+
+## Amendment: `js::array::splice` takes numbers, as JS's does (2026-10-28)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, JS's own operation
+on a JS value, given what the program gives it.
+
+React's copyWithDeleteImpl writes `updated.splice(key, 1)` of a path's
+key, any number (gap rc5 of the port). Its start was a `u32`, narrower
+than JS's `number`: the port cast it, `at as u32`, so the JS converted it
+first, `$f64ToInt(key, 0, 4294967295)`, and a negative key, which JS's
+`splice` counts from the end, was `0`: what the Rust said, not what
+upstream does.
+
+**`js::array::splice(value, start, delete_count)` takes `f64`s**, as
+TypeScript's `splice(start: number, deleteCount: number)` does:
+`updated.splice(at, 1)`, JS converting each as it does, a negative
+`start` from the end.
+
+Held by `test/js-object.test.ts`'s "an object spread, a splice and a set
+by any key are JS's", run of a negative and a fractional start, and the
+guide's `copy_with_delete`.

@@ -1426,8 +1426,9 @@ pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
 // 1)` or `delete updated[key]`, and `updated[key] = ..` of a string or a
 // number key. `js::object::spread` is `{ ...value }`, which defines a
 // `__proto__` key as its own, where `Object.assign({}, value)` sets the
-// prototype; `js::array::splice` is `value.splice(start, n)`; `js::set` takes
-// a key as `js::get` does.
+// prototype; `js::array::splice` is `value.splice(start, n)`, of numbers as
+// JS's, a negative start from the end; `js::set` takes a key as `js::get`
+// does.
 test("an object spread, a splice and a set by any key are JS's", async () => {
   const { js, lib, warnings } = await compiled("js-object-spread", `use js::{Kind, Unknown};
 
@@ -1440,7 +1441,7 @@ fn copy_with_delete_impl(obj: &'static Unknown, path: &[&'static Unknown], index
     if index + 1 == path.len() {
         if js::array::is_array(Some(updated)) {
             if let Kind::Number(at) = js::classify(Some(key)) {
-                js::array::splice(updated, at as u32, 1);
+                js::array::splice(updated, at, 1.0);
             }
         } else {
             js::delete(updated, key);
@@ -1462,7 +1463,8 @@ pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
 `);
   expect(warnings).toEqual([]);
   expect(js).toContain("  const updated = Array.isArray(obj) ? obj.slice() : { ...obj };\n");
-  expect(js).toContain("        updated.splice(value, 1);\n");
+  expect(js).toContain("        updated.splice(key, 1);\n");
+  expect(js).not.toContain("$f64ToInt");
   expect(js).toContain("      delete updated[key];\n");
   expect(js).toContain("  updated[key] = copyWithDeleteImpl(inner, path, (index + 1) >>> 0);\n");
   const state = { a: { b: [1, 2, 3], c: 4 }, d: 5 };
@@ -1470,6 +1472,10 @@ pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
   expect(copy).toEqual({ a: { b: [1, 3], c: 4 }, d: 5 });
   expect(state).toEqual({ a: { b: [1, 2, 3], c: 4 }, d: 5 });
   expect(lib.copyWithDelete(state as never, ["a", "c"] as never)).toEqual({ a: { b: [1, 2, 3] }, d: 5 });
+  // A negative start counts from the end, as JS's `splice` does; a
+  // fractional one is its whole part.
+  expect((lib.copyWithDelete(state as never, ["a", "b", -1] as never) as any).a.b).toEqual([1, 2]);
+  expect((lib.copyWithDelete(state as never, ["a", "b", 1.5] as never) as any).a.b).toEqual([1, 3]);
   // A `__proto__` key is the copy's own, its prototype `Object.prototype`.
   const keyed = JSON.parse('{"__proto__": {"x": 1}, "y": 2}');
   const spread = lib.copied(keyed as never) as any;
