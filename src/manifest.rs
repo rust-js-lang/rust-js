@@ -6,12 +6,23 @@ use serde::{Deserialize, Serialize};
 
 pub const VERSION: u32 = 1;
 pub const ABI_VERSION: u32 = 1;
+/// This build of the compiler, a hash of what it's made of (`build.rs`, ADR
+/// 1004).
+pub const BUILD: &str = env!("RUST_JS_BUILD");
 
 #[derive(PartialEq, Serialize, Deserialize)]
 pub struct Compiler {
     pub version: String,
     pub toolchain: String,
     pub abi: u32,
+    /// Which build of the compiler it is, a hash of what it's made of
+    /// (`build.rs`): two builds of one version decide otherwise, so what one
+    /// made is another's to refuse, and Cargo's to build again (ADR 1003).
+    /// None of `@rust-js/std`'s manifest, built into the compiler that reads
+    /// it, which it doesn't check; and none of a compiler before it, whose
+    /// libraries are then refused.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build: Option<String>,
 }
 
 impl Compiler {
@@ -28,6 +39,7 @@ impl Compiler {
             version: env!("CARGO_PKG_VERSION").to_owned(),
             toolchain,
             abi: ABI_VERSION,
+            build: Some(BUILD.to_owned()),
         }
     }
 }
@@ -127,6 +139,15 @@ impl Manifest {
         self.stale.iter_mut().for_each(|a| rel(&mut a.file));
         if let Some(library) = &mut self.library {
             library.inputs.iter_mut().for_each(|a| rel(&mut a.file));
+        }
+        self
+    }
+
+    /// The manifest, its compiler's build left out: `@rust-js/std`'s,
+    /// committed, and built into each build of the compiler (ADR 1003).
+    pub fn of_no_build(mut self) -> Self {
+        if let Some(compiler) = &mut self.compiler {
+            compiler.build = None;
         }
         self
     }

@@ -459,7 +459,8 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
 /// says into each crate's fingerprint and file names, so a build by another
 /// rust-js, an app's upgrade or its rollback, is another build: an installed
 /// compiler's file is as old as its package says, too old for Cargo to see
-/// by its date that it changed.
+/// by its date that it changed. Its build too: another build of one version,
+/// another checkout's or worktree's, is another build (ADR 1003).
 fn verbose_version(rustc: &str) -> Invocation {
     let output = match std::process::Command::new(rustc).arg("-vV").output() {
         Ok(output) => output,
@@ -476,11 +477,13 @@ fn verbose_version(rustc: &str) -> Invocation {
         version,
         toolchain,
         abi,
+        ..
     } = Compiler::current();
+    let build = crate::manifest::BUILD;
     let mut out = std::io::stdout().lock();
     match out
         .write_all(&output.stdout)
-        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}"))
+        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}"))
     {
         Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
         Err(error) => {

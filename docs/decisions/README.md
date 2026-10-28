@@ -787,6 +787,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1000 The default build stays the recognizers' rewrites, checked against std's meaning](1000-the-default-stays-the-checked-rewrites.md)
 - [1001 What generic code steps from its back is stepped of its callers' types](1001-what-generic-code-steps-from-its-back-is-its-callers.md)
 - [1002 A range stepped already is made knowing its length as its range](1002-a-range-stepped-already-is-its-range.md)
+- [1003 A compiler's build is part of its identity](1003-a-compilers-build-is-its-identity.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

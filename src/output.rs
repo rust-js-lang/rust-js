@@ -648,8 +648,11 @@ impl OutputPlan {
                 },
                 tests,
             };
+            // `@rust-js/std`'s is committed beside its JS, its paths relative
+            // to it, and of no one build of the compiler, which builds it in
+            // (ADR 1003).
             let manifest = match self.std_bodies {
-                true => manifest.relative_to(parent_dir(&path)),
+                true => manifest.relative_to(parent_dir(&path)).of_no_build(),
                 false => manifest,
             };
             // What Cargo is told of the build, then the manifest, last: a

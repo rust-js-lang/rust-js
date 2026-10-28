@@ -119,7 +119,8 @@ Bun-only users can run `bun node_modules/.bin/rust-js build`. The builder
 invokes the compiler with its own runtime.
 
 The builder queries `rust-js --version-json` before a build: its `version`,
-`toolchain`, and `abi`, matching the compiler identity in emitted manifests.
+`toolchain`, `abi` and `build`, a hash of what that build of the compiler
+is made of, matching the compiler identity in emitted manifests (ADR 1003).
 Cargo runs that toolchain, and `@rust-js/runtime` and `@rust-js/std` must
 be that version.
 `rust-js --version` remains the human-readable form.

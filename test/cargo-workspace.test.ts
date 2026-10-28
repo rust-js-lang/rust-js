@@ -71,11 +71,15 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
 // another rust-js, an app's upgrade or its rollback, is another build, as an
 // installed compiler's file is as old as its package says: by its date
 // alone, Cargo had the other one's crates as done. Found upgrading the
-// pilot to 0.0.3 and back.
+// pilot to 0.0.3 and back. And which build of it, a hash of what it's made
+// of: another checkout's or worktree's compiler of one version had a
+// workspace's crates as done, and their libraries' facts were another
+// build's (ADR 1003).
 test("Cargo is told which rust-js it runs, so another one's crates are built again", async () => {
   serde.rmeta();
   const identity = JSON.parse(run([compiler, "--version-json"]));
-  const line = `rust-js: ${identity.version}, Rust ${identity.toolchain}, ABI ${identity.abi}`;
+  expect(identity.build).toMatch(/^[0-9a-f]{16}$/);
+  const line = `rust-js: ${identity.version}, Rust ${identity.toolchain}, ABI ${identity.abi}, build ${identity.build}`;
   const said = run([compiler, "rustc", "-vV"]);
   expect(said).toBe(run(["rustc", "-vV"]) + line + "\n");
   // As Cargo asked it, and kept what it said.

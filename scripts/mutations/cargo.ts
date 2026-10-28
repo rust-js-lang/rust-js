@@ -83,6 +83,14 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
   },
   {
+    name: "cargo-version-without-build",
+    breaks: "`rustc -vV` through rust-js says its version but not its build, so Cargo has another build's crates, of another checkout's compiler, as done (ADR 1003)",
+    file: "src/cargo.rs",
+    find: '        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}"))\n',
+    replace: '        .and_then(|()| writeln!(out, "rust-js: {version}, Rust {toolchain}, ABI {abi}{}", &build[..0]))\n',
+    tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
+  },
+  {
     name: "cargo-app-a-library",
     breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and copies a `Copy` struct only a library's consumers could change (ADR 0844)",
     file: "src/cargo.rs",

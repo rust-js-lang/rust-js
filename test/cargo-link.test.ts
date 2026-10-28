@@ -52,6 +52,10 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   for (const [edit, message] of [
     [(m: any) => m.library.version = 2, "unsupported library ABI 2; expected 10"],
     [(m: any) => m.compiler.toolchain = "wrong", "incompatible dependency compiler identity"],
+    // Another build of the compiler, of one version, or one before builds
+    // were told apart (ADR 1003).
+    [(m: any) => m.compiler.build = "0123456789abcdef", "incompatible dependency compiler identity"],
+    [(m: any) => delete m.compiler.build, "incompatible dependency compiler identity"],
     [(m: any) => m.library.items = [], "isn't one of the items `shared`'s manifest exports"],
   ] as const) {
     const contract = JSON.parse(original);

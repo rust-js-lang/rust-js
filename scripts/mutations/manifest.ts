@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "manifest-build-unread",
+    breaks: "a manifest's compiler build isn't read, so a library another build of one version made is taken for this one's, its facts another compiler's (ADR 1003)",
+    file: "src/manifest.rs",
+    find: "    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub build: Option<String>,\n",
+    replace: "    #[serde(skip_deserializing, default = \"Compiler::this_build\", skip_serializing_if = \"Option::is_none\")]\n    pub build: Option<String>,\n}\n\nimpl Compiler {\n    fn this_build() -> Option<String> {\n        Some(BUILD.to_owned())\n    }\n",
+    tests: ["test/cargo-link.test.ts", "-t", "a real Cargo dependency links"],
+  },
+  {
     name: "manifest-any-version-read",
     breaks: "a library's manifest of another version is read as this one's, its fields taken for what they aren't",
     file: "src/manifest.rs",

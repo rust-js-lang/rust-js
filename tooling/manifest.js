@@ -3,7 +3,9 @@ function validCompiler(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     && typeof value.version === "string" && value.version.length > 0
     && typeof value.toolchain === "string" && value.toolchain.length > 0
-    && value.abi === 1;
+    && value.abi === 1
+    // ADR 1003: which build of it, absent of `@rust-js/std`'s.
+    && (value.build === undefined || typeof value.build === "string" && /^[0-9a-f]{16}$/.test(value.build));
 }
 
 export function parseCompilerIdentity(text) {

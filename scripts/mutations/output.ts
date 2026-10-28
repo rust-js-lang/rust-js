@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-manifest-of-a-build",
+    breaks: "`@rust-js/std`'s committed manifest says which build of the compiler wrote it, so each build's is another (ADR 1003)",
+    file: "src/output.rs",
+    find: "                true => manifest.relative_to(parent_dir(&path)).of_no_build(),\n",
+    replace: "                true => manifest.relative_to(parent_dir(&path)),\n",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "cargo-unit-of-another-refused",
     breaks: "a Cargo build into the unit directory a crate of the same name at another path wrote first fails, its manifest taken for another compilation's",
     file: "src/output.rs",

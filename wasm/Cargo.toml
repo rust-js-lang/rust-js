@@ -16,6 +16,9 @@ name = "rust-js-wasm"
 version = "0.0.0"
 edition = "2024"
 publish = false
+# The native compiler's, whose identity, `RUST_JS_BUILD`, its sources make
+# (ADR 1003).
+build = "../build.rs"
 
 [[bin]]
 name = "rust-js"

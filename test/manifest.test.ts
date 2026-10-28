@@ -58,7 +58,10 @@ fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); 
 test("compiler identities reject incompatible ABI and missing version fields", () => {
   const identity = { version: "0.1.0", toolchain: "1.99.0", abi: 1 };
   expect(parseCompilerIdentity(JSON.stringify(identity))).toEqual(identity);
-  for (const value of [null, {}, [], { ...identity, abi: 2 }, { ...identity, version: "" }, { ...identity, toolchain: "" }]) {
+  // ADR 1003: and which build of it, a hash of what it's made of.
+  const built = { ...identity, build: "52c100506ffb5402" };
+  expect(parseCompilerIdentity(JSON.stringify(built))).toEqual(built);
+  for (const value of [null, {}, [], { ...identity, abi: 2 }, { ...identity, version: "" }, { ...identity, toolchain: "" }, { ...identity, build: "" }, { ...identity, build: 1 }]) {
     expect(() => parseCompilerIdentity(JSON.stringify(value))).toThrow();
     expect(() => parseManifest(JSON.stringify({ ...manifest, compiler: value }))).toThrow();
   }

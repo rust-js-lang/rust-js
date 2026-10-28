@@ -37,6 +37,8 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
   // hash, which rustc makes of where its source is.
   const contract = ({ crate_hash, inputs, ...rest }: Record<string, unknown>) => rest;
   expect(contract(manifest.library)).toEqual(contract(committed.library));
+  // Of no one build of the compiler, each of which builds it in (ADR 1003).
+  expect([manifest.compiler.build, committed.compiler.build]).toEqual([undefined, undefined]);
   expect(manifest.modules.map((m: { module: string[]; file: string }) => [m.module, m.file])).toEqual(
     committed.modules.map((m: { module: string[]; file: string }) => [m.module, m.file]),
   );
