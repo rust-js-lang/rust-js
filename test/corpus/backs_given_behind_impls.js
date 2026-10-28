@@ -145,7 +145,7 @@ function main() {
     ).join(", ")}]`,
   );
   const c = copied(v);
-  console.log(`${c.end - c.at} [${$rest(c).toReversed().join(", ")}]`);
+  console.log(`${c.len()} [${$rest(c).toReversed().join(", ")}]`);
   const m = mapped(v);
   const nextBack = mapDoubleEndedIterator_nextBack(m);
   console.log(

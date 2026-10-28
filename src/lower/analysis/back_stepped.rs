@@ -8,8 +8,8 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, filtered_source, flattened_source, is_double_ended, is_iter_adapter_def,
-    mapped_source,
+    Recognition, back_stepped_source, copied_source, filtered_source, flattened_source, is_double_ended,
+    is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -161,10 +161,13 @@ fn back_stepped_adapter<'tcx>(
         return Some(tcx.erase_and_anonymize_regions(adapter));
     }
     let mapped = mapped_source(tcx, adapter);
-    let source = mapped.or_else(|| filtered_source(tcx, adapter))?.peel_refs();
+    let copied = copied_source(tcx, adapter);
+    let source = (mapped.or_else(|| filtered_source(tcx, adapter)).or(copied))?.peel_refs();
     // A map of an array's items steps from its back by its own form, its
-    // source's last item mapped; a filter's has none.
-    let native = mapped.is_some()
+    // source's last item mapped, and a copy of them by its items'; a
+    // filter's has none. A copy of another, a type parameter's, `Copied<I>`
+    // generic code steps from its back, made knowing it (#385).
+    let native = (mapped.is_some() || copied.is_some())
         && !given
         && recognition.array_source(source).is_some()
         && !dropping_items(recognition, adapter, &drops);
@@ -180,7 +183,10 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
     for ty in stepped {
         let mut source = back_stepped_source(tcx, ty);
         while let Some(held) = source.map(|held| held.peel_refs()) {
-            if mapped_source(tcx, held).is_some() || filtered_source(tcx, held).is_some() {
+            if mapped_source(tcx, held).is_some()
+                || filtered_source(tcx, held).is_some()
+                || copied_source(tcx, held).is_some()
+            {
                 all.insert(tcx.erase_and_anonymize_regions(held));
             }
             source = back_stepped_source(tcx, held);

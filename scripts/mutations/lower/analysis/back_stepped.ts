@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "generic-copied-back-unstepped",
+    breaks: "a copy given to generic code as `Copied<I>` and stepped from its back there isn't made knowing its back: `next_back()` of a lazy or generic `Copied` is refused (#385)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    let source = (mapped.or_else(|| filtered_source(tcx, adapter)).or(copied))?.peel_refs();\n",
+    replace: "    let source = (mapped.or_else(|| filtered_source(tcx, adapter)))?.peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
+  },
+  {
     name: "generic-back-steps-uncarried",
     breaks: "a filter given to generic code as `Filter<I, P>` and stepped from its back there isn't made knowing its back where its caller makes it: `TypeError: it.back is not a function` (#388)",
     file: "src/lower/analysis/back_stepped.rs",
@@ -14,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "filter-of-items-native",
     breaks: "a filter of an array's items stepped from its back is taken to have a form of its own that does it, and is refused: `v.iter().filter(p).next_back()` (ADR 0990)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "    let native = mapped.is_some()\n        && !given\n",
+    find: "    let native = (mapped.is_some() || copied.is_some())\n        && !given\n",
     replace: "    let native = !given\n",
     tests: ["test/corpus.test.ts", "-t", "^(next_back_lazy|held_adapters_by_ref).rs$"],
   },
@@ -105,7 +113,7 @@ export const mutations: Mutation[] = [
     name: "stepped-sources-any-adapter",
     breaks: "a held `filter_map` a back-stepped map steps is marked, and steps a JS iterator with no back, which throws, where it's refused (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some() || filtered_source(tcx, held).is_some() {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(back_stepped_adapter_sources|held_filter_map_back_refused).rs$"],
   },

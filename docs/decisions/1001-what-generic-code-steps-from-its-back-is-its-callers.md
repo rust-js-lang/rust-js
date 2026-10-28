@@ -1,7 +1,7 @@
 # 1001. What generic code steps from its back is stepped of its callers' types
 
 Status: Accepted. Extends [0545](0545-a-map-stepped-from-its-back-is-made-knowing-it.md).
-Fixes #388.
+Fixes #388. Amended: a copy too, `Copied<I>` (#385).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change. The
 program threw where Rust steps from the back.
@@ -45,3 +45,19 @@ std's struct (ADR 0997):
 
 Both go with their mutations, `adapter-impl-asks-unread` and
 `adapter-impl-asks-of-references`.
+
+## Amendment: a copy too (#385)
+
+`fn copied_back<I: DoubleEndedIterator<Item = &u32>>(mut it: Copied<I>)`
+calling `it.next_back()` was refused: "`next_back()` of a lazy or generic
+`Copied`". The analysis recorded maps and filters alone, and a copy was
+taken to know its back where its source does, which `I` doesn't in the
+generic code. A copy is recorded as a map is, and not when it's of an
+array's items, which know their back already. So the caller gives
+`$iter(v)` or `$filterEnds(..)` and the generic code steps it, `$nextBack(it)`.
+
+- `test/corpus/copied_given_to_generic_backs.rs` checks a copy given
+  directly, passed on, and of a filter, against native Rust.
+- `backs_given_behind_impls.js`: a copy behind an `impl`, now made knowing
+  its back, asks its length as `c.len()`, where it was `c.end - c.at`.
+- The mutation is `generic-copied-back-unstepped`.
