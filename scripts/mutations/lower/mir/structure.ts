@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     find: "                            Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),\n",
     replace: "                            Value::Expr(e) => Value::Expr(e),\n",
     tests: [
-      "test/lowering-nullable.test.ts",
+      "test/lowering-nullable-reads.test.ts",
       "test/lowering-options.test.ts",
       "-t",
       "a variable of what a nullable function gave is returned and stored as it is|nullable function's call is the call",
