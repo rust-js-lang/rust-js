@@ -250,8 +250,8 @@ export const mutations: Mutation[] = [
     name: "consumer-rcs-uncounted",
     breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852)",
     file: "src/lower/analysis.rs",
-    find: "                (params_may_drop, &reached.counted_rcs, &|owner, index| {\n",
-    replace: "                (params_may_drop, &[], &|owner, index| {\n",
+    find: "                (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {\n",
+    replace: "                (params_may_drop, &[], &|owner, index, pointee| {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type|three crates: rc_generic"],
   },
   {
@@ -358,6 +358,14 @@ export const mutations: Mutation[] = [
     find: "    if closure_facts.makes_dropping_fn_dyns || library {\n",
     replace: "    if closure_facts.makes_dropping_fn_dyns {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library drops a dyn Fn its consumer gives it"],
+  },
+  {
+    name: "library-rcs-of-own-calls-unsettled",
+    breaks: "a library takes no drop its own calls give a type parameter, so where it reads another library's context of a `Loud`, which that library counts none of, it's not refused and its last clone drops nothing (ADR 0852, amended)",
+    file: "src/lower/analysis.rs",
+    find: "            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
+    replace: "            if library {\n                return counted;\n            }\n            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
+    tests: ["test/crates.test.ts", "-t", "counts another library"],
   },
   {
     name: "rc-drop-params-unsettled",

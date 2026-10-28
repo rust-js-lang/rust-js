@@ -686,6 +686,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
     }
 
+    /// Is `pointee` a type of a library's that counts no `Rc` that may be
+    /// it, whose contract then decides it for every consumer of either,
+    /// refusing one that would count it (ADR 0852, amended)?
+    pub(super) fn counts_no_rc_of_its_type(&self, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
+        match *pointee.kind() {
+            rustc_middle::ty::Adt(adt, _) => {
+                let krate = adt.did().krate;
+                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee)
+            }
+            _ => false,
+        }
+    }
+
     /// Does `krate`, a library, count an `Rc` of `pointee` (ADR 0852)?
     fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
         (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))

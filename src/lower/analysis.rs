@@ -837,21 +837,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // caller gives it one whose drop runs, which counting more may make
     // more of; both only grow, so they settle (ADR 0914, amended). A
     // library's, of any its consumers may give, whose `Rc`s share its
-    // counts (ADR 0852).
+    // counts (ADR 0852); but not one of another library's type that it
+    // counts none of, which that library's contract decides for every
+    // consumer, refusing one that would count it: only what the crate's
+    // own calls give (ADR 0852, amended).
     let counted_with = |closure_facts: &ClosureFacts| {
         let mut given: HashSet<(DefId, u32)> = HashSet::new();
         loop {
             let counted = counted_rcs(
                 tcx,
                 all_bodies,
-                (params_may_drop, &reached.counted_rcs, &|owner, index| {
-                    library || given.contains(&(owner, index))
+                (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {
+                    library && !foreign.counts_no_rc_of_its_type(pointee) || given.contains(&(owner, index))
                 }),
                 |counted, pointee| super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee),
             );
-            if library {
-                return counted;
-            }
             let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);
             let more: HashSet<(DefId, u32)> = (drop_params(tcx, all_bodies, &item_set, &foreign, library, runs))
                 .into_iter()

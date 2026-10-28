@@ -6,7 +6,8 @@ whose library counted every `Rc` or none, and whose contract said which,
 a counting library handed an `Rc` counted every one; and
 [0494](0494-a-generic-rc-is-counted-where-it-may-drop.md), whose generic
 `Rc` of a type parameter's value that may drop counted every `Rc`, and
-was found through what a body read behind a reference too.
+was found through what a body read behind a reference too. Amended: a
+library counts another library's type's `Rc`s as that library does, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for an `Rc` of a type
 nothing counts, which can't tell it's the value itself; C for one whose
@@ -189,3 +190,71 @@ export function share(value, dropT) {
   `library-rc-unreached`, `uncounted-library-rcs-unseen`),
   `scripts/mutations/lower/analysis.ts` (`consumer-rcs-uncounted`) and
   `scripts/mutations/library.ts` (`contract-counts-unread`).
+
+## Amendment: a library counts another library's type's `Rc`s as that library does
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none where it compiles,
+each `Rc` counted where Rust's count or drop can be seen; D, refused, for a
+crate that would give such an `Rc` a value whose drop runs.
+
+React DOM's bindings depend on the reconciler, which `rust-js build` then
+compiles as a library (ADR 0360), and it was refused: "this crate counts an
+`Rc<react_isomorphic::react_context::ReactContext<..>>` .. but
+`react_isomorphic`, a rust-js library that counts none of them, hands it
+one". Built as the app it compiled. Its `read_context_for_consumer<T:
+Clone>` keeps an `Rc::clone(context)` of an `Rc<ReactContext<T>>`, and a
+library's type parameters are taken to be given a drop by its unseen
+consumers, so a generic `Rc` a body owns of one that may have a destructor
+was counted, `ReactContext<T>` and with it every context. `react`, whose
+`create_context` takes a `T: Copy`, counts none.
+
+**A library's generic `Rc` of another library's type is counted as that
+library counts it: it's counted for the consumers it can't see only where
+that library counts one that may be it** (`Foreign::counts_no_rc_of_its_type`).
+Where that library counts none, a consumer that would count one, of a type
+parameter given a value whose drop runs, is refused by the rule above: the
+`Rc` it holds is one the libraries hand it as the value itself. Its own
+calls are still seen: a library, as a program, gives a type parameter a
+drop where its crate's calls give one (`drop_params`, ADR 0914), so a
+library whose own call reads another's context of a `Loud` counts it, and
+is refused. Of its own types, and std's, a library still counts the `Rc`s
+of any type parameter its consumers may give, as before: their `Rc`s share
+its counts, which its contract lists.
+
+So the reconciler, a library, reads `react`'s context as the app did:
+
+```js
+function readContextForConsumer(consumer, context) {
+  const value = isPrimaryRenderer ? context._currentValue : context._currentValue2;
+```
+
+### Why
+
+- **One owner of a type's counts across crates**: the library whose type it
+  is decides, in its contract, for each of its consumers, which is what this
+  decision's "a crate it hands an `Rc` counts it exactly where the library
+  does" says. A second library guessing for consumers it can't see could
+  only disagree with it.
+- **Still correct**: whichever crate gives the type parameter a value whose
+  drop runs holds the `Rc` of it, or calls a library function whose
+  signature does, and is refused; the library's own calls are found as a
+  program's.
+
+### Alternatives
+
+- **The library compiled as the app**: two answers for one crate's JS, by
+  which package `rust-js build` was given.
+- **`react` counting every context**: `{ value, strong, weak }` contexts,
+  which upstream's JS isn't, for consumers that give none a destructor.
+
+### What holds it
+
+- `test/crates/triples/rc_context_read_generically`, run against native
+  Rust; `test/crates.test.ts`, "a library counts another library's Rcs as
+  that library does, refusing what would count one": the library's
+  `readContext` is `const value = context.currentValue;`, its contract
+  counts none, and a consumer, and the library's own call, giving the
+  context a `Loud` are refused.
+- Mutations `library-type-rcs-counted-for-unseen-consumers`
+  (`lower/library.rs`) and `library-rcs-of-own-calls-unsettled`
+  (`lower/analysis.rs`).

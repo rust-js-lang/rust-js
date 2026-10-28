@@ -245,6 +245,29 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
     .toThrow("this crate counts an `Rc<std::string::String>`");
 }, 300_000);
 
+// ADR 0852, amended (rd57): a library generic over another library's type,
+// React's reconciler reading `react`'s context of any `T: Clone`, counts its
+// `Rc`s as that library does, none, though its own consumers are unseen: a
+// consumer giving it a context of what drops is refused, as is the library
+// where its own call gives one.
+test("a library counts another library's Rcs as that library does, refusing what would count one", () => {
+  const out = chain(triples, "rc_context_read_generically", ["dep", "mid", "app"]);
+  const mid = readFileSync(join(out, "mid", "lib.js"), "utf8");
+  expect(mid).toContain("export function readContext(context) {\n  const value = context.currentValue;\n  return value;\n}");
+  expect(mid).not.toContain("strong");
+  expect(JSON.parse(readFileSync(join(out, "mid", "lib.manifest.json"), "utf8")).library.counted_rcs).toBeUndefined();
+  const loud = "#[derive(Clone)]\npub struct Loud(pub u32);\n\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\n\n";
+  const read = "pub fn main() {\n    let context = std::rc::Rc::new(dep::Context {\n        current_value: std::cell::RefCell::new(Loud(1)),\n        provider: std::cell::Cell::new(std::rc::Weak::new()),\n    });\n    println!(\"{}\", mid::read_context(&context).0);\n}\n";
+  expect(() => counting(out, `${loud}${read}`, ["dep", "mid"])).toThrow("this crate counts an `Rc<dep::Context<Loud>>`");
+  const own = join(out, "mid_reading_loud.rs");
+  const fresh = "pub fn read_fresh<T: Clone + 'static>(value: T) -> T {\n    let context = Rc::new(Context {\n        current_value: RefCell::new(value),\n        provider: std::cell::Cell::new(std::rc::Weak::new()),\n    });\n    read_context(&context)\n}\n\npub fn main() {\n    println!(\"{}\", read_fresh(Loud(1)).0);\n}\n";
+  writeFileSync(own, `${readFileSync(join(triples, "rc_context_read_generically", "mid.rs"), "utf8")}\n${loud}${fresh}`);
+  const dep = join(out, "dep");
+  expect(() => run([compiler, own, "-o", join(out, "own", "lib.js"), "--library", "--manifest", join(out, "own", "lib.manifest.json"),
+    "--dependency", join(dep, "lib.manifest.json"), "--", "--crate-name", "mid", "--extern", `dep=${join(dep, "libdep.rmeta")}`, "-L", `dependency=${dep}`]))
+    .toThrow("this crate counts an `Rc<dep::Context<T>>`");
+}, 300_000);
+
 // ADRs 0289, amended, 0914: a library's generic function of a `T: Copy`
 // takes the copies its own crate's calls give it, none here: its JS is
 // the program's, which JS calls as its declarations say, as React's JS
@@ -501,12 +524,12 @@ function contract(out: string) {
   return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;
 }
 
-/** `source`, a crate using `out`'s `dep`, compiled. */
-function counting(out: string, source: string) {
+/** `source`, a crate using `out`'s `dep`, or the crates `uses` names, compiled. */
+function counting(out: string, source: string, uses = ["dep"]) {
   const file = join(out, "counting.rs");
   writeFileSync(file, source);
-  run([compiler, file, "-o", join(out, "counting", "lib.js"), "--dependency", join(out, "dep", "lib.manifest.json"),
-    "--", "--crate-name", "counting", "--extern", `dep=${join(out, "dep", "libdep.rmeta")}`, "-L", `dependency=${join(out, "dep")}`]);
+  run([compiler, file, "-o", join(out, "counting", "lib.js"), ...uses.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
+    "--", "--crate-name", "counting", ...uses.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`, "-L", `dependency=${join(out, u)}`])]);
 }
 
 // A library edited to read an `Rc`'s count, its API the same: rebuilt with

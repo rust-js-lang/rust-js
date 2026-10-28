@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-libraries.test.ts", "-t", "default class"],
   },
   {
+    name: "library-type-rcs-counted-for-unseen-consumers",
+    breaks: "a library generic over another library's type counts its `Rc`s for consumers it can't see, though that library counts none, so React's reconciler, a library, is refused for `react`'s context (ADR 0852, amended)",
+    file: "src/lower/library.rs",
+    find: "                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee)\n",
+    replace: "                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee) && false\n",
+    tests: ["test/crates.test.ts", "-t", "counts another library"],
+  },
+  {
     name: "uncounted-library-rcs-unseen",
     breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
     file: "src/lower/library.rs",

@@ -1345,7 +1345,12 @@ export function share(doc) {
   refused where it would count one the library hands as the value itself
   ([ADR 0844](../../decisions/0844-a-library-that-reads-no-count-counts-no-rc.md)),
   `Rc::strong_count` of a library's `Rc<String>` that the library counts
-  none of: read the count in the library, which then counts it. A library
+  none of: read the count in the library, which then counts it. A
+  library generic over another library's type counts its `Rc`s as that
+  library does, for consumers it can't see: React's reconciler, a
+  library, reads `react`'s `ReactContext<T>` of any `T: Clone` as the
+  value itself, and a crate giving one a value whose drop runs is refused
+  (ADR 0852, amended). A library
   hands what the items of its the crate uses reach, an `Rc` in a
   function's parameters or result or a type's fields, not one of a type
   parameter the crate gives it, nor what a closure of the crate's holds

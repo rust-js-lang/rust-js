@@ -99,6 +99,10 @@ pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>
     }
 }
 
+/// Whether a function's type parameter, by its owner and index, is given a
+/// value whose drop runs, asked of a generic `Rc`'s pointee.
+pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
+
 /// The types whose `Rc`s the crate reads a count of, `strong_count`,
 /// `get_mut`, `try_unwrap` and the rest, or asks a `Weak` of whether it's
 /// alive, `upgrade` or a count (ADR 0843), and those
@@ -109,7 +113,7 @@ pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>
 /// And an `Rc` of a value of a type parameter's, `Rc<RefCell<Buffer<I>>>`,
 /// where `params_may_drop`, a type may have a destructor, and the
 /// parameter is given one, `drop_given`'s, by a caller of its function,
-/// where a body owns it: what it's made of may be one whose last clone
+/// asked with what the `Rc` points at, where a body owns it: what it's made of may be one whose last clone
 /// drops it (ADRs 0494, 0844). Not of one only its crate's callers give,
 /// none of them a value whose drop runs a destructor, as each of them has
 /// it, `read_context::<Option<Rc<Cache>>>`'s: a consumer that gives one
@@ -127,7 +131,7 @@ pub(in crate::lower) fn may_be<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<'tcx>
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &dyn Fn(DefId, u32) -> bool),
+    (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &DropGiven<'_, 'tcx>),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
@@ -170,7 +174,7 @@ pub(super) fn counted_rcs<'tcx>(
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
-        let given = |index| drop_given(owner, index);
+        let given = |index, pointee| drop_given(owner, index, pointee);
         let mut seen = HashSet::new();
         let mut owned_seen = HashSet::new();
         // A parameter nothing reads is dropped where no expression is of it.
@@ -300,11 +304,11 @@ fn made_where_given(thir: &Thir<'_>, mut given: ExprId) -> bool {
 /// Each `Rc` a body owns in `ty`, not behind a reference, a pointer or a
 /// `Weak`, nor of a function's type, which names its arguments' types and
 /// holds no value of them, through the fields of the crates' types, of a value of a type parameter
-/// a caller gives one with a destructor, `given` by its index, `seen` once each: what
+/// a caller gives one with a destructor, `given` by its index and the `Rc`'s pointee, `seen` once each: what
 /// its last clone drops may be one (ADRs 0494, 0844), so it's counted.
 fn owned_dropping<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (env, given): (ty::TypingEnv<'tcx>, &dyn Fn(u32) -> bool),
+    (env, given): (ty::TypingEnv<'tcx>, &dyn Fn(u32, Ty<'tcx>) -> bool),
     ty: Ty<'tcx>,
     seen: &mut HashSet<Ty<'tcx>>,
     counted: &mut HashSet<Ty<'tcx>>,
@@ -324,7 +328,7 @@ fn owned_dropping<'tcx>(
                 walk.skip_current_subtree();
             } else if let Some(pointee) = rc_pointee(tcx, part)
                 && pointee.has_non_region_param()
-                && owns_dropping_param(tcx, (env, given), pointee)
+                && owns_dropping_param(tcx, (env, &|index| given(index, pointee)), pointee)
             {
                 counted.insert(tcx.erase_and_anonymize_regions(pointee));
             } else if let ty::Adt(adt, args) = *part.kind()
