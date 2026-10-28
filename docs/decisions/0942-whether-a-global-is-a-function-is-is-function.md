@@ -6,7 +6,8 @@ with [0624](0624-is-defined-of-a-path-of-bindings.md)'s paths and
 second question; and [0887](0887-std-items-that-are-math-are-math.md)'s
 `Math`, which every host has, to ECMAScript's first edition's globals.
 Amended: a chain of its tests reads as written, a comment before it kept;
-and of a value of a function's type JS gives, it asks the value (below).
+and of a value of a function's type JS gives, it asks the value; and of a
+path it asks the last part alone, not each before it (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -52,7 +53,8 @@ export function canPreventExtensions() {
 Each part of a path before the last is asked whether it's there, as
 `js::is_defined` asks it, `typeof rustJsKit !== "undefined" && typeof
 rustJsKit.hook === "function"`, and only the last whether it's a
-function. A refusal names the function the program wrote.
+function (superseded below: only the last is asked). A refusal names the
+function the program wrote.
 
 **A path's global that's one of ECMAScript's first edition's, every
 host's, isn't asked of**: `Object`, `Function`, `Array`, `String`,
@@ -216,3 +218,52 @@ guide's `run` (interop/global-scope.md). Mutations `is-function-of-no-value`,
 `is-function-value-of-a-transparent-struct-refused`,
 `is-function-value-of-the-crates-function` (`mir/calls.ts`) and
 `is-function-value-unread` (`mir/temporaries.ts`).
+
+## Amendment (2026-10-28): of a path, it asks the last part alone
+
+react-dom-bindings' estimateBandwidth asks
+
+```js
+if (typeof performance.getEntriesByType === 'function') {
+```
+
+which throws a `ReferenceError` where the host has no `performance`. Its
+port, `js::is_function(Performance::get_entries_by_type)`, was `typeof
+performance !== "undefined" && typeof performance.getEntriesByType ===
+"function"`, false there: another result than upstream's (gap rd22). And
+nothing could write upstream's test, where the guarded one has a spelling
+of its own, the program asking whether the global is there first.
+
+**`js::is_function` of a path asks only its last part, whether it's a
+function**: `typeof performance.getEntriesByType === "function"`, which
+throws as JS's does where a part before it is missing, as reading it
+would. A program whose host may lack the global asks so, as JS writes it:
+
+```rust
+js::is_defined(performance) && js::is_function(Performance::get_entries_by_type)
+```
+
+```js
+typeof performance !== "undefined" && typeof performance.getEntriesByType === "function"
+```
+
+- **`js::is_defined` asks each part still** (ADR 0624, decided with the
+  user): its question is whether the host has it, which a missing part
+  before it answers, as React's ExecutionEnvironment writes `typeof window
+  !== 'undefined' && typeof window.document !== 'undefined' && ..`.
+  `js::is_function`'s is whether what's read is a function, which JS asks
+  of the read alone.
+- **Each test written is kept**: `js::is_defined(x) && js::is_function(x)`
+  asks both, as written (ADR 0964 drops only a `typeof` an earlier test of
+  the `&&` already asked).
+- Case ([0262](0262-when-rust-and-js-disagree.md)): A, what's asked of
+  the host as JS asks it; the result, a `ReferenceError` where the global
+  is missing, is upstream's.
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_function is whether
+a binding's global is a function": `typeof rustJsKit.hook === "function"`
+throwing where `rustJsKit` is missing, and `is_defined` before it false
+there; `typeof Symbol.for === "function"` of "js::SymbolFor is
+Symbol.for"; the guide's `logRender`. Mutation `is-function-asks-each-part`
+(`mir/calls.ts`).
+

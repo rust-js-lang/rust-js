@@ -506,8 +506,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `typeof` of each part of `global`'s path, joined by `&&`: each but
-    /// the last whether the host has it, and the last what `asked` asks.
+    /// `typeof` of each part of `global`'s path, joined by `&&`: of
+    /// `js::is_defined`, each whether the host has it; of `js::is_function`,
+    /// the last alone, whether it's a function, as upstream's `typeof
+    /// performance.getEntriesByType === 'function'` asks, which throws where
+    /// the host hasn't `performance` (ADR 0942, amended).
     fn mir_defined_parts(&self, global: Option<String>, asked: Asked, span: Span) -> R<Option<Expr>> {
         // Each part of its path, `typeof console !== "undefined" && typeof
         // console.log !== "undefined"`: a host may lack any of them.
@@ -531,8 +534,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 read = Expr::member(read, part.to_string());
             }
             let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
-            if k + 1 == parts.len() && asked == Asked::Function {
-                tests.push(Expr::bin(Op::Eq, typeof_, Expr::str("function")));
+            if asked == Asked::Function {
+                if k + 1 == parts.len() {
+                    tests.push(Expr::bin(Op::Eq, typeof_, Expr::str("function")));
+                }
             } else if k + 1 == parts.len() || !(k == 0 && every_host_has(part)) {
                 tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
             }
