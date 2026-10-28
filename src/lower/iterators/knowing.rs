@@ -171,9 +171,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of an array's items made knowing its back, `$mapEnds` of their
         // `$iter`, which knows its length too.
         if let Some(source) = crate::lower::recognition::length_kept_source(self.tcx, ty) {
+            // And of std's compiled struct that knows it, a `Fuse`'s, of a
+            // map the crate steps from its back, made knowing it,
+            // `$knowing(fuse, back, len)` (#385).
+            let compiled_exact = || {
+                crate::lower::recognition::is_compiled_std_iterator(self.tcx, source.peel_refs())
+                    && (self.recognition().exact_size_iterator())
+                        .is_some_and(|exact| self.recognition().implements_trait(source.peel_refs(), exact))
+            };
             return self.knows_its_length(source)
                 || self.made_knowing(source, self.recognition().exact_size_iterator())
-                || self.steps_an_array(source) && self.knows_its_back(ty);
+                || self.steps_an_array(source) && self.knows_its_back(ty)
+                || crate::lower::recognition::mapped_source(self.tcx, ty).is_some()
+                    && compiled_exact()
+                    && self.stepped_from_its_back(ty);
         }
         if let Some(id) = crate::lower::recognition::dyn_iter_trait(self.tcx, ty) {
             return crate::lower::recognition::is_exact_size(self.tcx, id);

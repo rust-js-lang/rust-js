@@ -81,5 +81,8 @@ on its back and its length.
   closure's drop, against native Rust.
 - The mutations are `closing-map-asked-unrecorded` and
   `closing-map-length-unasked`.
-- Still refused: such a map of a `fuse()`, as a `Fuse` doesn't count its
-  length by its source.
+- Such a map of a `fuse()` too: its source, std's compiled `Fuse`, is
+  made `$knowing(fuse, back, len)`, its own steps, so the map knows its
+  length where the crate steps it from its back. That's read of a map
+  so recorded alone, so a `rev()` held over a compiled `Enumerate` is
+  as it was. The mutation is `compiled-source-map-length-unknown`.

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-source-map-length-unknown",
+    breaks: "a map whose closure has a destructor, of a `fuse()`, std's compiled struct, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#385)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    && compiled_exact()\n",
+    replace: "                    && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
+  },
+  {
     name: "inspect-made-here-backless",
     breaks: "an `inspect(f)` made in place and `rev()`'d isn't stepped from its back as the map it's made as: refused",
     file: "src/lower/iterators/knowing.rs",
@@ -342,8 +350,8 @@ export const mutations: Mutation[] = [
     name: "mapped-array-length-unknown",
     breaks: "a map of an array's items made knowing its back knows its length",
     file: "src/lower/iterators/knowing.rs",
-    find: "                || self.steps_an_array(source) && self.knows_its_back(ty);",
-    replace: "                ;",
+    find: "                || self.steps_an_array(source) && self.knows_its_back(ty)\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^(returned_impl_ends|owned_maps_asked_their_length).rs$"],
   },
   {
