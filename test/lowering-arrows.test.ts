@@ -198,3 +198,35 @@ pub static IMPORT: Import = Import { double: |x| x * 2 };
   const lib = await import(join(dir, "lib.js"));
   expect([lib.DISPATCHER.readContext(1), lib.DISPATCHER.useMemo(2), lib.IMPORT.double(3)]).toEqual([2, 5, 6]);
 });
+
+// ADR 0029: an `async fn`'s body, its coroutine's, is the async function's
+// own, not `return (async () => { .. })()`, where what it captures first is
+// made as it starts: a copy of an array it's given, `values.slice()`, too.
+// The caller's array changed while it waits isn't the one it reads.
+test("an async fn that reads its array past an await copies it as it starts", async () => {
+  const dir = fixture("async-array-captured");
+  writeFileSync(join(dir, "lib.rs"), `async fn ready() {}
+
+pub async fn total(values: [u32; 3]) -> u32 {
+    ready().await;
+    values.iter().sum()
+}
+
+pub async fn doubled(mut values: [u32; 3]) -> [u32; 3] {
+    ready().await;
+    for v in &mut values {
+        *v *= 2;
+    }
+    values
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export async function total(values) {\n");
+  expect(js).not.toContain("async () =>");
+  const lib = await import(join(dir, "lib.js"));
+  const given = [1, 2, 3];
+  const [sum, twice] = [lib.total(given), lib.doubled(given)];
+  given[0] = 10;
+  expect([await sum, await twice, given]).toEqual([6, [2, 4, 6], [10, 2, 3]]);
+});

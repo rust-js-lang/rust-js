@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/queries.rs",
     find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))\n",
     replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars()))\n",
-    tests: ["test/corpus.test.ts", "-t", "future_sizes"],
+    tests: ["test/lowering-arrows.test.ts", "-t", "an async fn that reads its array past an await"],
   },
   {
     name: "constant-index-checked",

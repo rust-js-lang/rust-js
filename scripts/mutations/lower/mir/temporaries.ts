@@ -259,6 +259,7 @@ export const mutations: Mutation[] = [
     find: "                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::undefined());\n                    *subject = self.spill(\"_$\", made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n",
     replace: "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+    snapshots: true,
   },
   {
     name: "fresh-evaluation-pending-lost",
