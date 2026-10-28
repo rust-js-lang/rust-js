@@ -927,13 +927,19 @@ pub fn yield_ms() -> f64 {
 
 // Two references to one field, `let a = &x.0; let b = &x.0;`: each its
 // own name, not one taken apart, `const [b] = x`, which lost `a` (rustc's
-// borrow-tuple-fields).
+// borrow-tuple-fields); and of two patterns, `let (a, _) = x; let (b, _) = x;`.
 test("two names of one field are each kept", async () => {
   const dir = fixture("same-field-twice");
   writeFileSync(join(dir, "lib.rs"), `pub fn both(x: (i32, i32)) -> i32 {
     let a = &x.0;
     let b = &x.0;
     *a + *b
+}
+
+pub fn patterns(x: (i32, i32)) -> i32 {
+    let (a, _) = x;
+    let (b, _) = x;
+    a * 10 + b
 }
 
 pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
@@ -948,7 +954,7 @@ pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.both([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 13]);
+  expect([lib.both([3, 4]), lib.patterns([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 33, 13]);
 });
 
 // Two loops of ranges a call ends, each end held: two names, as two

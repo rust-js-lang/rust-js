@@ -1078,13 +1078,23 @@ pub fn toggles() -> (bool, bool) {
     };
     (start(), running.get())
 }
+
+pub fn summed(v: &[u32]) -> u32 {
+    let total = Rc::new(Cell::new(0));
+    v.iter().for_each(|&x| {
+        let t = total.clone();
+        t.set(t.get() + x);
+    });
+    total.get()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("let running = false;");
+  expect(js).toContain("  let total = 0;\n  v.forEach((x) => {\n    total = (total + x) >>> 0;\n  });\n");
   expect(js).not.toContain(".value");
   const lib = await import(join(dir, "mir.js"));
-  expect(lib.toggles()).toEqual([true, false]);
+  expect([lib.toggles(), lib.summed([1, 2, 3])]).toEqual([[true, false], 6]);
 });
 
 test("a cell from MIR only its function reads and sets is its variable", async () => {

@@ -637,6 +637,16 @@ pub fn ref_kept(props: Option<&'static js::Unknown>, other: Option<&'static js::
     }
     other
 }
+
+// A return of an if the program wrote, after a statement, in a guard: the
+// conditional returned.
+pub fn pick(c: bool, a: u32, b: u32) -> u32 {
+    if a > 3 {
+        println!("big");
+        return if c { a } else { b };
+    }
+    0
+}
 `);
   expect(js).toContain("      const parent = fiber.parent;\n      if (parent != null) {\n        return rootName(parent);\n      }\n      return null;\n");
   expect(js).toContain("  return parent != null ? parent.depth : 0;\n");
@@ -644,11 +654,14 @@ pub fn ref_kept(props: Option<&'static js::Unknown>, other: Option<&'static js::
   // shows the value isn't \`undefined\` (ADR 0620, amended).
   expect(js).toContain("    const refProp = props.ref;\n    return refProp !== undefined ? refProp : null;\n  }\n  return null;\n");
   expect(js).toContain("  if (refProp !== undefined) {\n    return refProp;\n  }\n  return other ?? null;\n");
+  expect(js).toContain('    console.log("big");\n    return c ? a : b;\n  }\n');
   const root = { depth: 0, parent: null };
   const leaf = { depth: 1, parent: root };
   expect([lib.rootName(leaf as never), lib.rootName({ depth: 1, parent: null } as never), lib.rootName({ depth: 2, parent: root } as never), lib.depthOr(leaf as never), lib.depthOr(root as never)]).toEqual(["root", null, "two", 0, 0]);
   expect([lib.refOf({ ref: 3 } as never, "A" as never), lib.refOf({ ref: null } as never, "A" as never), lib.refOf({} as never, undefined as never)]).toEqual([3, null, null]);
   expect([lib.refKept({ ref: 3 } as never, 4 as never), lib.refKept({ ref: null } as never, 4 as never), lib.refKept({} as never, undefined as never)]).toEqual([3, null, null]);
+  const pick = lib.pick as unknown as (c: boolean, a: number, b: number) => number;
+  expect([pick(true, 4, 5), pick(false, 4, 5), pick(true, 1, 5)]).toEqual([4, 5, 0]);
 });
 
 // React's runWithFiberInDEV, ported: `if let Some(fiber) = &fiber && let
