@@ -93,3 +93,34 @@ the program did.
 
 Held by `test/corpus/let_chain_else_of_reads.rs`, against native Rust;
 mutation `chain-binding-between-tests-kept` (`mir/tidy/logicals.ts`).
+
+## Amendment: a let chain with an `else` inside an `if` (2026-10-28)
+
+React's attachSuspenseRetryListeners tests its let chain inside `if
+(enableX && ..)`, and goes on after that `if`. MIR's block for the chain's
+`else` is then the whole `if`'s: `bb23: { if (enabled && present) { if
+(lanes != null) { if (root != null) { s; break bb23; } } throw .. } }`,
+which `branch_values`' `&&` chain (`or_chain`) didn't see, as the block
+isn't the chain alone, and the label stayed.
+
+**A block MIR made whose one statement is an `if` of no `else`, of such
+`if`s down to an `&&` chain to the block's end, is those `if`s, the chain
+one `if` of its tests and its `else`:** `if (enabled && present) { if
+(lanes != null && root != null) { s } else { throw .. } }` (the pass
+"chains in blocks", `tidy/branches.rs`, after the passes that name the
+chain's temporaries and join its `if`s). A `break` of the block from the
+chain's end goes where the `if`s end, the block's end, so nothing moves.
+
+A let chain's binding between its tests, `const r = root;` of a variable
+or a path of properties from one, goes into the chain's body, each test
+of it a test of what it reads, `if (a != null && root != null) { const r
+= root; .. }`: read only once each test before it holds, as it was, and
+the same value, as no test calls anything; where one does, `&& swap()`,
+the chain is left as it was.
+
+Case N of [ADR 0262](0262-when-rust-and-js-disagree.md): the same tests in
+the same order, and the same statements under them.
+
+Tested by the corpus case `let_chain_else_inside_if`; mutations
+`chain-in-blocks-unfolded`, `sunk-binding-untested`,
+`chain-bindings-sunk-past-calls` (`tidy/branches.ts`).

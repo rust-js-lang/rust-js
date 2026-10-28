@@ -356,6 +356,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("skipped tests", |b, h| {
                 js::statement_lists(b, &mut |s| logicals::skipped_tests(s, &h.written.logicals))
             }),
+            // A let chain's `&&` with an `else`, in the `if`s a block MIR made
+            // is all of, its tests one now (ADR 0946, amended).
+            pass("chains in blocks", |b, _| {
+                js::statement_lists(b, &mut |s| chains_in_blocks(s))
+            }),
             // An `if` the program wrote with an `else`, as it wrote it, its
             // tests one now; and the `continue`s its branches end with, which
             // it didn't write, gone where the loop's body ends anyway.
