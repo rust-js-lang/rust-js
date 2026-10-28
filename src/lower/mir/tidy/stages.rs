@@ -224,6 +224,11 @@ pub(super) const STAGES: &[Stage] = &[
                 })
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
+            // A tuple of an `if`'s value taken apart: a `let` of each part,
+            // assigned in each branch (rd45).
+            pass("conditional tuples", |b, _| {
+                js::statement_lists(b, &mut conditional_tuples)
+            }),
             // A pattern's copy of a variable, `const error = raw;`: the variable.
             pass("copied bindings", |b, h| {
                 js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))

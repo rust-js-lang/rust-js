@@ -794,6 +794,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
 - [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*
+- [1010 A tuple of an `if`'s value taken apart is a `let` of each part](1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md) *(the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

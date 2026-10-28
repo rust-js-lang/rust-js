@@ -212,4 +212,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
     snapshots: true,
   },
+  {
+    name: "conditional-tuples-kept-whole",
+    breaks: "`let (a, b) = if c { (x, y) } else { (z, w) };` is `const [a, b] = c ? [x, y] : [z, w];`, two arrays made, where upstream's trackHydrated assigns two variables in each branch (rd45)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "            && matches!(value.kind, ExprKind::Cond(..))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_an_if_taken_apart.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "conditional-tuples-else-dropped",
+    breaks: "a tuple of an `if`'s value taken apart assigns its parts in the `then` branch alone, so the `else`'s values are never given (a wrong answer, rd45)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                StmtKind::If((**test).clone(), then, Some(otherwise)).at(value.span),\n",
+    replace: "                StmtKind::If((**test).clone(), then, None).at(value.span),\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_an_if_taken_apart.rs$"],
+  },
 ];

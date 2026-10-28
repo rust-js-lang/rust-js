@@ -253,8 +253,15 @@ export function App() {
     return outputState(output._0, false);
   }, [output]);
   const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
-  const [outputPaths, shown] =
-    output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
+  let outputPaths;
+  let shown;
+  if (output.TAG === "Files") {
+    outputPaths = output.files.map(([path]) => path);
+    shown = output.shown;
+  } else {
+    outputPaths = [];
+    shown = "";
+  }
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
   const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;

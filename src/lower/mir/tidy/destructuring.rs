@@ -736,3 +736,63 @@ pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Ve
         });
     }
 }
+
+/// `const [a, b] = c ? [x, y] : [z, w];`, a tuple of an `if`'s or a
+/// `match`'s value taken apart, `let (a, b) = if c { (x, y) } else { (z,
+/// w) };`, which clippy's `needless_late_init` asks for: each part a
+/// variable of its own, assigned in each branch, `let a; let b; if (c) { a
+/// = x; b = y; } else { a = z; b = w; }`, as upstream's trackHydrated
+/// writes it, no array made (the user's decision, 2026-10-28, React port
+/// gap rd45). Each branch's parts are given in their order, as the array's
+/// were, and none reads the variables, declared here.
+pub(super) fn conditional_tuples(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::Destructure {
+            pattern: js::Pattern::Array(items),
+            value,
+            ..
+        } = &stmts[i].kind
+            && let Some(names) = (items.iter())
+                .map(|item| match item {
+                    Some(js::Pattern::Name(name)) => Some(name.clone()),
+                    _ => None,
+                })
+                .collect::<Option<Vec<String>>>()
+            && matches!(value.kind, ExprKind::Cond(..))
+            && let Some(assigned) = assigned_in_branches(value, &names)
+        {
+            let span = stmts[i].span;
+            let mut made: Vec<Stmt> = (names.iter())
+                .map(|name| StmtKind::Let(name.clone(), None).at(span))
+                .collect();
+            made.extend(assigned);
+            let count = made.len();
+            stmts.splice(i..=i, made);
+            i += count;
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// Of a conditional each of whose values is an array, each `names`' assignments of its items, in an `if`
+/// of its test, and an `else` of the rest.
+fn assigned_in_branches(value: &Expr, names: &[String]) -> Option<Vec<Stmt>> {
+    match &value.kind {
+        ExprKind::Cond(test, then, otherwise) => {
+            let then = assigned_in_branches(then, names)?;
+            let otherwise = assigned_in_branches(otherwise, names)?;
+            Some(vec![
+                StmtKind::If((**test).clone(), then, Some(otherwise)).at(value.span),
+            ])
+        }
+        // A tuple's, or an array's a pattern of as many names takes apart.
+        ExprKind::Array(items) => Some(
+            (names.iter().zip(items))
+                .map(|(name, item)| StmtKind::Assign(Expr::var(name), item.clone()).at(item.span))
+                .collect(),
+        ),
+        _ => None,
+    }
+}
