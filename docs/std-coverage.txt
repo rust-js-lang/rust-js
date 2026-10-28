@@ -1067,10 +1067,10 @@
 + Chain::size_hint	memory
 + Chain::try_fold	spec
 + Chain::try_rfold	spec
-# Zip 4 of 5; bodies: 0 safe, 5 spec, 0 opaque, 0 memory, 0 none
+# Zip 5 of 5; bodies: 0 safe, 5 spec, 0 opaque, 0 memory, 0 none
 + Zip::fold	spec
 + Zip::next	spec
-- Zip::next_back	spec
++ Zip::next_back	spec
 + Zip::nth	spec
 + Zip::size_hint	spec
 # Cycle 2 of 3; bodies: 2 safe, 1 spec, 0 opaque, 0 memory, 0 none
