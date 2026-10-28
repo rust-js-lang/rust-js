@@ -120,17 +120,25 @@ test("a Cargo build's JS in source is beside each module's Rust, and follows the
   expect(existsSync(join(app, "notes.js"))).toBe(true);
 }, 600_000);
 // A crate's declarations (ADR 0196) are beside its Rust too, `App.d.ts`
-// beside `App.js`, each module's, for the TypeScript that imports it.
+// beside `App.js`, each module's, for the TypeScript that imports it. One
+// of types alone, React DOM's `PluginModuleType`, is its `.d.ts` alone, no
+// JS (the user's decision, ADR 1005), which another's imports types from.
 test("a Cargo build's declarations in source are beside each module's JS", async () => {
   const dir = fixture("cargo-in-source-declarations");
   const src = join(dir, "src");
   mkdirSync(src, { recursive: true });
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n');
-  writeFileSync(join(src, "App.rs"), "mod util;\n\npub fn answer(n: u32) -> u32 {\n    util::twice(n)\n}\n");
+  writeFileSync(join(src, "App.rs"), "pub mod plugin_types;\nmod util;\n\npub fn answer(n: u32) -> u32 {\n    util::twice(n)\n}\n\npub fn plugin(name: plugin_types::PluginName) -> plugin_types::Flags {\n    name.len() as plugin_types::Flags\n}\n");
   writeFileSync(join(src, "util.rs"), "pub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
-  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
-  expect(readdirSync(src).filter((file) => file.endsWith(".d.ts")).sort()).toEqual(["App.d.ts", "util.d.ts"]);
-  expect(readFileSync(join(src, "App.d.ts"), "utf8")).toContain("export function answer(n: number): number;");
+  writeFileSync(join(src, "plugin_types.rs"), "pub type PluginName = String;\npub type Flags = i32;\n");
+  const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
+  expect(readdirSync(src).filter((file) => file.endsWith(".d.ts")).sort()).toEqual(["App.d.ts", "plugin_types.d.ts", "util.d.ts"]);
+  const app = readFileSync(join(src, "App.d.ts"), "utf8");
+  expect(app).toContain("export function answer(n: number): number;");
+  expect(app).toContain('import type { Flags, PluginName } from "./plugin_types.js";');
+  expect(readFileSync(join(src, "plugin_types.d.ts"), "utf8")).toContain("export type PluginName = string;\n\nexport type Flags = number;");
+  expect([existsSync(join(src, "plugin_types.js")), existsSync(join(src, "plugin_types.js.map"))]).toEqual([false, false]);
+  expect((built.files.get("app") ?? []).map((file: string) => basename(file)).sort()).toEqual(["App.js", "util.js"]);
 }, 600_000);
 
 // Where a module names another's file is where the compiler's own parse

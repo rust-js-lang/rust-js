@@ -4,7 +4,7 @@
 // caller is held to it.
 
 import { beforeAll, expect, test } from "bun:test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
@@ -124,4 +124,32 @@ pub fn radius(complex: &Complex) -> f64 {
   const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
   expect(declarations).toContain('import type Complex from "../dep/complex.js";\n');
   expect(declarations).toContain("export function radius(complex: Complex): number;");
+});
+
+// A library's module of types alone, React DOM's `PluginModuleType`, is its
+// `.d.ts` alone (the user's decision, ADR 1005): a consumer imports its
+// types from where its JS would be, which TypeScript finds the `.d.ts` of.
+test("a library's module of types alone gives its types to its consumer's declarations", () => {
+  const dir = fixture("declarations-library-types-only");
+  compiled(dir, {
+    "dep.rs": "pub mod plugin_types;\n\npub fn flags() -> plugin_types::Flags {\n    1\n}\n",
+    "plugin_types.rs": "pub type PluginName = String;\npub type Flags = i32;\n\npub struct DispatchEvent {\n    pub name: PluginName,\n}\n",
+  }, `use dep::plugin_types::{DispatchEvent, PluginName};
+
+pub fn named(event: &DispatchEvent) -> PluginName {
+    event.name.clone() + "!"
+}
+`);
+  expect([existsSync(join(dir, "dep", "plugin_types.js")), readFileSync(join(dir, "dep", "plugin_types.d.ts"), "utf8")])
+    .toEqual([false, expect.stringContaining("export type PluginName = string;")]);
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { DispatchEvent } from "../dep/plugin_types.js";\n');
+  writeFileSync(join(dir, "caller.ts"), `import { named } from "./app/lib.js";
+
+named({ name: "one" });
+named({ name: 1 });
+`);
+  const errors = typeChecked(dir, "caller.ts");
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("caller.ts(4,");
 });

@@ -1230,7 +1230,17 @@ pub fn lower_crate<'tcx>(
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
+                types_only: false,
             };
+            // One of types alone has no JS of its own: what it imports is
+            // what its items read, of which it has none (the user's
+            // decision, ADR 1005).
+            lowered.types_only = lowered.items.is_empty()
+                && lowered.packages.is_empty()
+                && lowered.reexports.is_empty()
+                && lowered.default_export.is_none()
+                && lowered.aliases.is_empty()
+                && lowered.directives.is_empty();
             // What it exports by another name it exports by that alone,
             // `function getCurrentTime() {}`, whoever else reads it (ADR
             // 0596, amended).

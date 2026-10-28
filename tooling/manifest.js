@@ -79,6 +79,8 @@ export function parseManifest(text) {
       || !Array.isArray(result.modules) || !result.modules.every(module => object(module)
         && strings(module.module) && path(module.file) && path(module.map)
         && (module.types === undefined || path(module.types))
+        // ADR 1005: of types alone, its `.d.ts` alone, written.
+        && (module.types_only === undefined || module.types_only === true && module.types !== undefined)
         && (module.source === null || path(module.source)) && paths(module.imports)
         && (module.in_source === undefined || module.in_source === null || path(module.in_source))
         && (module.exports === undefined || strings(module.exports))
@@ -93,7 +95,7 @@ export function parseManifest(text) {
   const modules = new Set(result.modules.map(module => module.file));
   if (artifacts.size !== result.artifacts.length
       || modules.size !== result.modules.length
-      || result.modules.some(module => !artifacts.has(module.file) || !artifacts.has(module.map)
+      || result.modules.some(module => !module.types_only && (!artifacts.has(module.file) || !artifacts.has(module.map))
         || (module.types !== undefined && !artifacts.has(module.types))
         || module.imports.some(file => !modules.has(file)))
       || (result.tests !== undefined && !artifacts.has(result.tests))) {

@@ -221,8 +221,9 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
   const manifests = [...validated].map(([crate, manifest]) => ({ crate, ...manifest }));
-  // Each crate's modules' JS, where it's served from.
-  const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
+  // Each crate's modules' JS, where it's served from: none of one of
+  // types alone (ADR 1005).
+  const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.filter((module) => !module.types_only).map((module) => where(module.file))]));
   if (!inSource) return { js, crates, manifests: validated, files: served((file) => file), warnings };
   // A crate of crates.io's JS is the app's, where its Cargo.toml is (ADR 0415).
   const vendored = build.dependencies.map((dependency) => ({ ...dependency, to: join(dirname(manifest), "rust-js", "crates", `${dependency.name}-${dependency.version}`) }));
@@ -244,7 +245,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], in_source?: string, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
+ * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, types_only?: boolean, source: string, module: string[], in_source?: string, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -316,13 +317,16 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
   }
   const crates = manifests.map(({ input, modules }) => {
     const files = [];
-    for (const { file, map, types, links, type_links } of modules) {
+    for (const { file, map, types, types_only, links, type_links } of modules) {
       if (vendoredFile(file) && !reached.has(file)) continue;
       const to = moved.get(file);
-      const js = relinked(readFileSync(file), links, to, moved, packages).toString("utf8")
-        .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
-      writes.set(to, Buffer.from(js));
-      files.push(to);
+      // Of types alone, its `.d.ts` alone (ADR 1005).
+      if (!types_only) {
+        const js = relinked(readFileSync(file), links, to, moved, packages).toString("utf8")
+          .replace(/\/\/# sourceMappingURL=\S+(\s*)$/, `//# sourceMappingURL=${basename(to)}.map$1`);
+        writes.set(to, Buffer.from(js));
+        files.push(to);
+      }
       // Its declarations, `Tag.d.ts` beside `Tag.jsx` (ADR 0196), naming
       // what they import where it's copied too.
       if (types && existsSync(types) && !routed(to)) {
@@ -330,7 +334,7 @@ export function writeInSource(manifests, ledger, routes = [], { check = false, p
         writes.set(typesTo, relinked(readFileSync(types), type_links ?? [], typesTo, moved, packages));
         files.push(typesTo);
       }
-      if (map && existsSync(map)) {
+      if (!types_only && map && existsSync(map)) {
         const json = JSON.parse(readFileSync(map, "utf8"));
         json.file = basename(to);
         json.sources = (json.sources ?? []).map((path) => relative(dirname(to), resolve(dirname(map), path)));

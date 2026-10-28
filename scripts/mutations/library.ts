@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "types-only-module-needs-js",
+    breaks: "a library's module of types alone, which has no JS, is refused as one whose JS isn't fingerprinted, so its consumer can't import its types (ADR 1005)",
+    file: "src/library.rs",
+    find: "                let written = match module.types_only {\n",
+    replace: "                let written = match false {\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "module of types alone"],
+  },
+  {
     name: "library-type-without-declarations-imported",
     breaks: "a library's type is imported from a `.d.ts` its library was written without (ADR 0210, amended)",
     file: "src/library.rs",

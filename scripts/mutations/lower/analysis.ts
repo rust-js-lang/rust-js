@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "types-only-module-unlisted",
+    breaks: "a module of only `pub type`s and structs writes no `.d.ts`, so TypeScript importing its types finds no module (ADR 1005)",
+    file: "src/lower/analysis.rs",
+    find: "        if types && seen_modules.insert(module) {\n",
+    replace: "        if false && types && seen_modules.insert(module) {\n",
+    tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
+  },
+  {
     name: "exported-lazy-local-unrefused",
     breaks: "a `pub` thread-local made where it's first used is exported as the function that makes it, which JS's importers read for its value (ADR 0037, amended)",
     file: "src/lower/analysis.rs",

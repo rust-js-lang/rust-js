@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "types-only-module-written-as-js",
+    breaks: "a module of types alone writes a JS file of nothing and its map beside its `.d.ts`, where the user decided it's Rust and a `.d.ts` (ADR 1005)",
+    file: "src/lower/pipeline.rs",
+    find: "            lowered.types_only = lowered.items.is_empty()\n",
+    replace: "            lowered.types_only = false && lowered.items.is_empty()\n",
+    tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
+  },
+  {
     name: "default-class-exported-by-name",
     breaks: "a class that's its module's default is `export function Complex` too",
     file: "src/lower/pipeline.rs",

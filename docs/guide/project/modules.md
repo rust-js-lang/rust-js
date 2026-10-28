@@ -211,7 +211,13 @@ export function welcome(name: string): string;
 - **An item another module uses is exported**, so that module can import
   it: `pub(crate)` and `pub(super)` too.
 - **The `.d.ts` declares what's `pub`**, your crate's API for TypeScript.
-  `format.rs` has nothing `pub`, so it has no `.d.ts`.
+  `format.rs` has nothing `pub`, so it has no `.d.ts`. A module of types
+  alone, `pub type`s and structs with no functions, React DOM's
+  `PluginModuleType`, has no JS: its `.d.ts` is all that's written of it,
+  which another module's imports its types from as if its JS were there,
+  `import type { PluginName } from "./PluginModuleType.js"`, as
+  TypeScript finds it
+  ([ADR 1005](../../decisions/1005-a-module-of-types-alone-is-its-declarations.md)).
 - **Names are JavaScript's**: `total_area` is `totalArea`. See
   [JavaScript types](../interop/types.md) and
   [Export Rust APIs to JavaScript](../interop/export-to-javascript.md).

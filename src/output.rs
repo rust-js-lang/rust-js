@@ -138,6 +138,37 @@ impl OutputPlan {
                 header.push_str("\n\n");
                 header.push_str(comments);
             }
+            // What it exports, typed, for the TypeScript that imports it (ADR 0196).
+            let declarations = match self.settings.declarations {
+                true => module.declarations,
+                false => None,
+            };
+            let mut declare = |mut declarations: serde_json::Value, header: &str| -> Result<(), String> {
+                declarations["header"] = header.into();
+                // Another module's types, from its file, as its JS imports it (ADR 0210).
+                // A JS module's, a binding's re-export, as its JS has it (ADR 0240).
+                for import in declarations["declarations"].as_array_mut().into_iter().flatten() {
+                    let object = import.as_object_mut().expect("a declaration");
+                    let from = match (object.remove("module"), object.remove("specifier")) {
+                        (Some(path), _) => {
+                            js::ImportFrom::Module(serde_json::from_value(path).map_err(|e| e.to_string())?)
+                        }
+                        (None, Some(serde_json::Value::String(specifier))) => js::ImportFrom::Specifier(specifier),
+                        _ => continue,
+                    };
+                    object.insert("from".into(), from_here(&from).into());
+                }
+                typed.push((types_path(&js_path), types_path(&destination), declarations));
+                Ok(())
+            };
+            // One of types alone, its `.d.ts` alone (the user's decision,
+            // ADR 1005).
+            if module.types_only {
+                if let Some(declarations) = declarations {
+                    declare(declarations, &header)?;
+                }
+                continue;
+            }
             let mut js_module = js::Module {
                 header,
                 directives: module.directives,
@@ -203,25 +234,8 @@ impl OutputPlan {
                 destination: destination.clone(),
                 printed,
             });
-            // What it exports, typed, for the TypeScript that imports it (ADR 0196).
-            if self.settings.declarations
-                && let Some(mut declarations) = module.declarations
-            {
-                declarations["header"] = js_module.header.clone().into();
-                // Another module's types, from its file, as its JS imports it (ADR 0210).
-                // A JS module's, a binding's re-export, as its JS has it (ADR 0240).
-                for import in declarations["declarations"].as_array_mut().into_iter().flatten() {
-                    let object = import.as_object_mut().expect("a declaration");
-                    let from = match (object.remove("module"), object.remove("specifier")) {
-                        (Some(path), _) => {
-                            js::ImportFrom::Module(serde_json::from_value(path).map_err(|e| e.to_string())?)
-                        }
-                        (None, Some(serde_json::Value::String(specifier))) => js::ImportFrom::Specifier(specifier),
-                        _ => continue,
-                    };
-                    object.insert("from".into(), from_here(&from).into());
-                }
-                typed.push((types_path(&js_path), types_path(&destination), declarations));
+            if let Some(declarations) = declarations {
+                declare(declarations, &js_module.header)?;
             }
         }
         // Printed by TypeScript, all in one session of its (ADR 0207).
@@ -488,11 +502,18 @@ impl OutputPlan {
             let requested = self.js_path(&module.path);
             let file = absolute(&requested)?;
             let map = absolute(&PathBuf::from(format!("{}.map", requested.display())))?;
-            planned.extend([file.clone(), map.clone()]);
             let types = match self.settings.declarations && module.declarations.is_some() {
                 true => Some(absolute(&types_path(&requested))?),
                 false => None,
             };
+            // One of types alone is its `.d.ts`, where there's one, and
+            // nothing where there's none (ADR 1005).
+            if module.types_only && types.is_none() {
+                continue;
+            }
+            if !module.types_only {
+                planned.extend([file.clone(), map.clone()]);
+            }
             planned.extend(types.clone());
             let imports = module
                 .imports
@@ -504,6 +525,7 @@ impl OutputPlan {
                 file,
                 map,
                 types,
+                types_only: module.types_only,
                 source: module.file.as_deref().map(absolute).transpose()?,
                 in_source: Some(self.in_source(module)?),
                 imports,
@@ -581,7 +603,9 @@ impl OutputPlan {
         // parse of what was printed: what a host that copies them elsewhere
         // rewrites (ADR 0101).
         for module in &mut modules {
-            module.links = links(&artifacts, &module.file, false)?;
+            if !module.types_only {
+                module.links = links(&artifacts, &module.file, false)?;
+            }
             if let Some(types) = &module.types {
                 module.type_links = links(&artifacts, types, true)?;
             }

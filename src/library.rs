@@ -463,7 +463,14 @@ impl Dependencies {
                 let module = (manifest.modules.iter())
                     .find(|m| &m.module == path)
                     .ok_or("dependency export references a missing module")?;
-                if !manifest.artifacts.iter().any(|a| a.file == module.file) {
+                // Of types alone, its `.d.ts` is, and its types are imported
+                // from where its JS would be, as TypeScript finds them (ADR
+                // 1005).
+                let written = match module.types_only {
+                    true => module.types.as_ref(),
+                    false => Some(&module.file),
+                };
+                if !written.is_some_and(|written| manifest.artifacts.iter().any(|a| &a.file == written)) {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
                 Ok(crate::paths::specifier(parent, &module.file))

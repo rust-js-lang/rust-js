@@ -80,6 +80,11 @@ pub struct Module {
     /// Its `.d.ts`, where the crate asks for one (ADR 0196).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub types: Option<PathBuf>,
+    /// Whether it's of types alone: its `.d.ts` is written, and no `file`
+    /// nor `map`, which are where its JS would be, as a module imports its
+    /// types from (the user's decision, ADR 1005).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub types_only: bool,
     pub source: Option<PathBuf>,
     /// Where its JS goes in source, beside its Rust, as a project commits it
     /// (ADRs 0041, 0273): what a host that writes it there writes. Absent of

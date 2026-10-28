@@ -84,6 +84,10 @@ pub struct LoweredModule {
     /// Whether its file is where its `#[path]` says, not its path's: its JS
     /// goes beside that file, as a Next.js page's `[code].rs` (ADR 0273).
     pub located: bool,
+    /// Whether it's of types alone, `pub type`s and structs, with no JS:
+    /// its `.d.ts` is all that's written of it (the user's decision, ADR
+    /// 1005).
+    pub types_only: bool,
 }
 
 /// Named exports used from one Rust module, before its JS path is resolved.
