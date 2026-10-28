@@ -657,6 +657,26 @@ pub fn picked(js: bool) -> f64 {
 pub fn pointed(f: fn(f64, Option<i8>) -> f64) -> f64 {
     f(1.0, None)
 }
+
+// One whose signature holds a \`dyn Fn\`, React's \`Children.forEach\`: of the
+// crate's own alone, or given from outside.
+pub struct Children {
+    pub for_each: fn(f64, &dyn Fn(f64) -> f64, Option<f64>) -> f64,
+}
+
+fn for_each(a: f64, f: &dyn Fn(f64) -> f64, b: Option<f64>) -> f64 {
+    f(a) + b.unwrap_or(0.0)
+}
+
+static CHILDREN: Children = Children { for_each };
+
+pub fn walked() -> f64 {
+    (CHILDREN.for_each)(1.0, &|x| x * 2.0, None)
+}
+
+pub fn walked_by(f: fn(f64, &dyn Fn(f64) -> f64, Option<u8>) -> f64) -> f64 {
+    f(1.0, &|x| x, None)
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -671,6 +691,8 @@ pub fn pointed(f: fn(f64, Option<i8>) -> f64) -> f64 {
   expect(js).toContain("DISPATCHER.useState(1)");
   expect(js).toContain("max(1, undefined)");
   expect(js).toContain("f(1, undefined)");
+  expect(js).toContain("CHILDREN.forEach(1, (x) => x * 2)");
+  expect(js).toContain("f(1, (x) => x, undefined)");
   const call = (expression: string) =>
     run([node ?? "node", "--input-type=module", "--eval", `const m = await import(${JSON.stringify(out)}); console.log(${expression});`]);
   expect(call("m.bound()")).toBe("NaN\n");
@@ -678,4 +700,5 @@ pub fn pointed(f: fn(f64, Option<i8>) -> f64) -> f64 {
   expect(call("m.called()")).toBe("1\n");
   expect(call("m.closed(3)")).toBe("14\n");
   expect(call("[m.dispatched(), m.picked(true), m.picked(false), m.pointed(Math.max)].join()")).toBe("1,NaN,1,NaN\n");
+  expect(call("[m.walked(), m.walkedBy((a, f, b) => f(a) + (b === undefined ? 3 : 0))].join()")).toBe("2,4\n");
 });

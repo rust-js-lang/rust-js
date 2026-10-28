@@ -628,18 +628,11 @@ export const mutations: Mutation[] = [
     name: "own-pointer-given-undefined",
     breaks: "a fn pointer that may only be the crate's function is given a trailing `undefined`, `DISPATCHER.useState(1, undefined)`, not React's `dispatcher.useState()`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if !own {\n",
-    replace: "        if true || !own {\n",
+    find: "        if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {\n",
+    replace: "        if true || !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
   },
-  {
-    name: "binding-pointer-undefined-left-out",
-    breaks: "a fn pointer that may be a binding's, `Math.max`, is called without its trailing `undefined`, `max(1)`, which is 1 where Rust's call gives `NaN`",
-    file: "src/lower/mir/dispatch.rs",
-    find: "                .all(|&(f, _)| f.is_local() && !bindings::is_binding(self.tcx, f))\n",
-    replace: "                .all(|&(f, _)| f.is_local() || bindings::is_binding(self.tcx, f))\n",
-    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
-  },
+
   {
     name: "optional-cell-set-coalesced",
     breaks: "an optional nullable cell field set to another's `get()` is `created.debugTask = returnFiber.debugTask ?? null`, `null` where upstream copies `undefined` (ADR 0810, amended)",

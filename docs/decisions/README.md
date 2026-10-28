@@ -349,7 +349,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0327 Cells', locks', a `VecDeque`'s, `char`'s and arrays' other methods](0327-cell-deque-char-methods.md)
 - [0328 A `RefCell` counts its borrows, as std's does](0328-refcell-borrow-counts.md) *(amended by 0863: a `RefCell` of an object is the object, its borrows counted only where one may meet another)*
 - [0329 A `Pin` is its pointer](0329-pin.md)
-- [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md) *(amended: a `fold`'s start; a fn pointer that may only be the crate's functions is called as they are)*
+- [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md) *(amended: a `fold`'s start; a fn pointer that may only be the crate's functions is called as they are; amended by 1007: a library's own, of a field its contract says so of, too)*
 - [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](0331-dyn-any.md) *(amended by 0660: what unwound is one)*
 - [0332 A `MaybeUninit` is its value, or `undefined` before it's written](0332-maybe-uninit.md)
 - [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](0333-heap-and-vec-methods.md)
@@ -693,7 +693,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`; amended: a guard that falls to nothing beside one that falls to the next is a case too; amended: a fall-through the program's comment says gets no `// Fallthrough`; a guard whose next arm's test is in its `else` falls through; amended: a guard's `break` reaches what's after the `switch` too, a wrong answer fixed; amended: a guarded arm that does nothing before one of its constants alone is that one's case; amended: a case of an arm that returns ends with its `return`; amended: a chain of guarded arms beside another is one `switch`; amended: a guard of `&&` tested in parts falls through too; amended: a `switch` that ends a function has its cases' `break`s)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
-- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are; amended: `bind` binds a function's first arguments, a binding's function itself; amended: a binding's method bound is the method)*
+- [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are; amended: `bind` binds a function's first arguments, a binding's function itself; amended: a binding's method bound is the method; amended by 1007: a signature that holds a `dyn` is keyed)*
 - [0909 A type parameter's value is any value: `js::any_of`](0909-a-type-parameters-value-is-any-value.md)
 - [0910 An object or an array is one value: `kind.object()`](0910-an-object-or-an-array-is-one-value-kind-object.md) *(amended: an `Option` made where it's tested is its test before its branches are one value)*
 - [0911 A binding's class is the global class TypeScript names](0911-a-bindings-class-is-the-global-typescript-names.md)
@@ -791,6 +791,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1004 The mutations surviving at main's head](1004-survivors-at-mains-head.md)
 - [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision; amended: one another module's JS imports keeps its JS)*
 - [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision)*
+- [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

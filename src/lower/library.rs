@@ -322,21 +322,26 @@ pub(in crate::lower) fn item_key(tcx: TyCtxt<'_>, id: DefId) -> String {
     key(tcx, id)
 }
 
-/// What a library's contract says of each of `ids`, its structs' fields,
-/// each of `facts`, sorted by key (ADR 0906).
+/// What a library's contract says of its structs' fields, each fact by its
+/// owner, sorted by key (ADR 0906): those `ref_cells` says are quiet (ADR
+/// 0863, amended), and those whose fn pointers may only be Rust functions,
+/// `pointers`' (ADR 0330, amended).
 pub(super) fn fields(
     tcx: TyCtxt<'_>,
-    ids: impl IntoIterator<Item = DefId>,
-    facts: &[crate::library::FieldFact],
+    ref_cells: Option<&super::drops::RefCells<'_>>,
+    pointers: &super::analysis::FnPointers<'_>,
 ) -> Vec<crate::library::Field> {
-    let mut fields: Vec<crate::library::Field> = (ids.into_iter())
-        .map(|id| crate::library::Field {
-            key: key(tcx, id),
-            facts: facts.iter().copied().collect(),
-        })
-        .collect();
-    fields.sort_by(|a, b| a.key.cmp(&b.key));
-    fields
+    let mut facts: std::collections::BTreeMap<String, BTreeSet<crate::library::FieldFact>> = Default::default();
+    for (id, fact) in ref_cells
+        .into_iter()
+        .flat_map(|found| found.fields())
+        .chain(pointers.rust_fields())
+    {
+        facts.entry(key(tcx, id)).or_default().insert(fact);
+    }
+    (facts.into_iter())
+        .map(|(key, facts)| crate::library::Field { key, facts })
+        .collect()
 }
 
 /// What a library's contract calls each of `tys`, sorted, each once (ADR
@@ -712,6 +717,18 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// What each library does with its `RefCell`s (ADR 0863), by its name.
     /// Each field of a library's struct its contract says is `fact`, by its
     /// key, and the library that says so (ADR 0906).
+    /// Whether `field`, a library's struct's, is one its contract says
+    /// `fact` of (ADR 0906).
+    pub(super) fn field_has(&self, field: DefId, fact: crate::library::FieldFact) -> bool {
+        !field.is_local()
+            && (self
+                .dependencies
+                .libraries
+                .get(self.tcx.crate_name(field.krate).as_str()))
+            .and_then(|library| library.fields.get(&key(self.tcx, field)))
+            .is_some_and(|facts| facts.contains(&fact))
+    }
+
     pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> HashMap<String, String> {
         (self.dependencies.libraries.iter())
             .flat_map(|(name, library)| {

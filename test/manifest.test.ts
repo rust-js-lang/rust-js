@@ -77,7 +77,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, marks: ["copy", "clone"], stepped: ["9f0e"] }], facts: ["takes_location"] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
-    fields: [{ key: "gh78", facts: ["quiet"] }],
+    fields: [{ key: "gh78", facts: ["quiet"] }, { key: "ij90", facts: ["rust_functions"] }],
   };
   const value = { ...manifest, library };
   expect(parseManifest(JSON.stringify(value))).toEqual(value);

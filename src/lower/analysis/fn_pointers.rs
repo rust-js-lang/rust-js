@@ -18,7 +18,7 @@ use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind, PointerCoercion};
-use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt, TypeckResults};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeFolder, TypeVisitableExt, TypeckResults};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
@@ -32,6 +32,13 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// A value of a type rustc can't normalize may come from outside,
     /// which may hold any fn pointer.
     all_open: bool,
+    /// The types whose values may be a library's own Rust functions, read
+    /// of a field its contract says holds only those (ADR 0330, amended):
+    /// what they run is the library's, not followed, but never JS's.
+    library_rust: HashSet<Ty<'tcx>>,
+    /// The crate's structs' fields a consumer may read whose fn pointers
+    /// may only be Rust functions (`rust_only`), its contract's to say.
+    rust_fields: Vec<DefId>,
 }
 
 impl<'tcx> FnPointers<'tcx> {
@@ -62,6 +69,7 @@ impl<'tcx> FnPointers<'tcx> {
             };
             made.visit_body(tcx.hir_body_owned_by(owner));
         }
+        found.rust_fields = found.fields_of_rust(recognition);
         found
     }
 
@@ -74,10 +82,58 @@ impl<'tcx> FnPointers<'tcx> {
         ptr: Ty<'tcx>,
     ) -> Option<&[(DefId, ty::GenericArgsRef<'tcx>)]> {
         let key = key(tcx, ptr)?;
-        if self.all_open || self.open.contains(&key) {
+        if self.all_open || self.open.contains(&key) || self.library_rust.contains(&key) {
             return None;
         }
         Some(self.made.get(&key).map_or(&[], Vec::as_slice))
+    }
+
+    /// Whether a value of `ptr`, a fn pointer type, may only be a Rust
+    /// function, which never counts its arguments: each the crate makes
+    /// one of is its own function or closure, none a binding's, and any
+    /// other may only be a library's own, of a field its contract says
+    /// holds only those (ADR 0330, amended). A call of it is one of
+    /// rust-js's own.
+    pub(in crate::lower) fn rust_only(&self, tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> bool {
+        let Some(key) = key(tcx, ptr) else { return false };
+        !self.all_open
+            && !self.open.contains(&key)
+            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() && !is_binding(tcx, f))
+    }
+
+    /// What its contract says of its structs' fields (ADR 0330, amended):
+    /// each one a consumer may read whose fn pointers may only be Rust
+    /// functions (`rust_only`), which the consumer reads as the library's
+    /// own (`FieldFact::RustFunctions`).
+    pub(in crate::lower) fn rust_fields(&self) -> impl Iterator<Item = (DefId, crate::library::FieldFact)> + '_ {
+        (self.rust_fields.iter()).map(|&field| (field, crate::library::FieldFact::RustFunctions))
+    }
+
+    /// Of the crate's structs a consumer may reach, each field that holds a
+    /// fn pointer, each of which may only be a Rust function.
+    fn fields_of_rust(&self, recognition: &Recognition<'_, 'tcx>) -> Vec<DefId> {
+        let tcx = recognition.tcx;
+        let mut fields = Vec::new();
+        for id in tcx.hir_crate_items(()).definitions() {
+            if !matches!(tcx.def_kind(id), DefKind::Struct) || !crate::lower::library::reachable(tcx, id.to_def_id()) {
+                continue;
+            }
+            let adt = tcx.adt_def(id);
+            for field in adt.all_fields() {
+                let held = held(
+                    recognition,
+                    tcx.type_of(field.did).instantiate_identity().skip_normalization(),
+                );
+                if !held.any
+                    && !held.keys.is_empty()
+                    && held.rust.is_empty()
+                    && held.keys.iter().all(|&key| self.rust_only(tcx, key))
+                {
+                    fields.push(field.did);
+                }
+            }
+        }
+        fields
     }
 
     /// `f` made a fn pointer of type `ptr`.
@@ -96,21 +152,36 @@ impl<'tcx> FnPointers<'tcx> {
         let held = held(recognition, ty);
         self.all_open |= held.any;
         self.open.extend(held.keys);
+        self.library_rust.extend(held.rust);
     }
 }
 
-/// A fn pointer type as each of its values is, whatever its lifetimes:
-/// `for<'a> fn(&'a u32)` and `fn(&'static u32)` are one. `None` of one
-/// that's not a fn pointer, or whose signature has a binder of its own,
-/// whose types aren't compared.
+/// A fn pointer type as each of its values is, whatever its lifetimes,
+/// those its signature binds too, a `dyn Fn`'s and a nested fn pointer's:
+/// `for<'a> fn(&'a u32)` and `fn(&'static u32)` are one, and so are
+/// `fn(&dyn for<'a> Fn(&'a u32))` and `fn(&dyn Fn(&'static u32))`, which
+/// subtyping may make one of the other. `None` of one that's not a fn
+/// pointer.
 fn key<'tcx>(tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let ty::FnPtr(..) = ptr.kind() else { return None };
-    let sig = tcx.instantiate_bound_regions_with_erased(ptr.fn_sig(tcx));
-    let nested = (sig.inputs_and_output.iter())
-        .flat_map(|ty| ty.walk())
-        .filter_map(|part| part.as_type())
-        .any(|part| matches!(part.kind(), ty::FnPtr(..) | ty::Dynamic(..)));
-    (!nested).then(|| tcx.erase_and_anonymize_regions(Ty::new_fn_ptr(tcx, ty::Binder::dummy(sig))))
+    Some(ptr.fold_with(&mut Lifetimeless(tcx)))
+}
+
+/// A type with no lifetime, bound or free, and no binder of any.
+struct Lifetimeless<'tcx>(TyCtxt<'tcx>);
+
+impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Lifetimeless<'tcx> {
+    fn cx(&self) -> TyCtxt<'tcx> {
+        self.0
+    }
+
+    fn fold_binder<T: TypeFoldable<TyCtxt<'tcx>>>(&mut self, t: ty::Binder<'tcx, T>) -> ty::Binder<'tcx, T> {
+        ty::Binder::dummy(t.skip_binder().fold_with(self))
+    }
+
+    fn fold_region(&mut self, _: ty::Region<'tcx>) -> ty::Region<'tcx> {
+        self.0.lifetimes.re_erased
+    }
 }
 
 /// The fn pointer types a value of a type may hold, through what it's
@@ -122,6 +193,9 @@ fn key<'tcx>(tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> Option<Ty<'tcx>> {
 #[derive(Default)]
 struct Held<'tcx> {
     keys: HashSet<Ty<'tcx>>,
+    /// Those held only by a library's field its contract says holds only
+    /// its own Rust functions (`FieldFact::RustFunctions`).
+    rust: HashSet<Ty<'tcx>>,
     any: bool,
 }
 
@@ -135,10 +209,7 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
         let tcx = recognition.tcx;
         for part in ty.walk().filter_map(|part| part.as_type()) {
             match part.kind() {
-                // One of no key, whose signature holds a fn pointer or a
-                // `dyn`, is anything already, and no keyed type's value
-                // can be one: no coercion or subtyping makes one of the
-                // other. What its signature holds, the walk goes on to.
+                // What its signature holds, the walk goes on to.
                 ty::FnPtr(..) => {
                     if let Some(key) = key(tcx, part) {
                         held.keys.insert(key);
@@ -163,7 +234,19 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
                     if (adt.did().is_local() || !recognition.in_sysroot(adt.did())) && seen.insert(part) =>
                 {
                     for field in adt.all_fields() {
-                        walk(recognition, field.ty(tcx, args).skip_normalization(), seen, held);
+                        let ty = field.ty(tcx, args).skip_normalization();
+                        // A library's field of its own Rust functions alone.
+                        if recognition
+                            .foreign
+                            .field_has(field.did, crate::library::FieldFact::RustFunctions)
+                        {
+                            let mut theirs = Held::default();
+                            walk(recognition, ty, seen, &mut theirs);
+                            held.rust.extend(theirs.keys.into_iter().chain(theirs.rust));
+                            held.any |= theirs.any;
+                            continue;
+                        }
+                        walk(recognition, ty, seen, held);
                     }
                 }
                 _ => {}

@@ -412,3 +412,11 @@ arity out fails that test's compile.
 Not covered: a parameter left that borrows still has one lifetime (Limits,
 above), React's `callback.bind(null, instance)` of a view transition's
 `callback(instance, types)` (the port's gap wl1).
+
+## Amendment: a signature that holds a `dyn` is keyed (rd56)
+
+Every fn pointer type is keyed, its lifetimes erased, those its signature
+binds too, so one whose signature holds a `dyn Fn`, React's
+`Children.forEach`'s, is known as any other is; and a consumer reads a
+library's field its contract says holds only Rust functions as such. See
+[1007](1007-a-libraries-own-fn-pointers-are-rust-functions.md).

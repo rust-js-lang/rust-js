@@ -291,6 +291,11 @@ pub enum FieldFact {
     /// and holds no borrow of one while code that may borrow it runs. What
     /// it holds, the value or the object, both read of its declaration.
     Quiet,
+    /// Each fn pointer it holds is one of the library's Rust functions, or
+    /// a library's of its own, never a binding's nor JS's (ADR 0330,
+    /// amended): a consumer's call of one leaves out a trailing
+    /// `undefined`, as of the crate's own.
+    RustFunctions,
 }
 
 /// What a library does with its `RefCell`s (ADR 0863), each type by its

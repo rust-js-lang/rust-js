@@ -817,11 +817,13 @@ export function repeat(text, times) {
 
 A trailing `None` after another argument, given to the crate's own
 function, is left out, `repeat("ab")`, and so is one given through a `fn`
-pointer that may only be the crate's functions and closures, a
-dispatcher's. Given to what may be JS's, a binding's, a `dyn Fn`'s, or a
-pointer JS may have made, it's `undefined`, as a JS function may count its
-arguments ([ADR 0330](../../decisions/0330-undefined-given-to-js.md),
-amended):
+pointer that may only be Rust functions: the crate's functions and
+closures, a dispatcher's, or a library's own, of a field its contract says
+holds only those, React's `Children.forEach(children, fn)`. Given to what
+may be JS's, a binding's, a `dyn Fn`'s, or a pointer JS may have made,
+it's `undefined`, as a JS function may count its arguments
+([ADR 0330](../../decisions/0330-undefined-given-to-js.md), amended;
+[ADR 1007](../../decisions/1007-a-libraries-own-fn-pointers-are-rust-functions.md)):
 
 ```rust
 pub struct Dispatcher {

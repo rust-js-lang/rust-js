@@ -71,7 +71,7 @@ export function parseManifest(text) {
         // What it says of each of its structs' fields, by key (ADRs 0863,
         // amended, 0906).
         || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
-          && typeof field.key === "string" && facts(field.facts, ["quiet"])))) {
+          && typeof field.key === "string" && facts(field.facts, ["quiet", "rust_functions"])))) {
       throw new Error("Invalid rust-js library contract; expected library ABI 10");
     }
   }

@@ -121,12 +121,8 @@ impl<'tcx> RefCells<'tcx> {
 
     /// What its contract says of its structs' fields (ADRs 0863, amended,
     /// 0906): each quiet one.
-    pub(in crate::lower) fn fields(&self, tcx: TyCtxt<'tcx>) -> Vec<crate::library::Field> {
-        crate::lower::library::fields(
-            tcx,
-            self.quiet_fields.iter().copied(),
-            &[crate::library::FieldFact::Quiet],
-        )
+    pub(in crate::lower) fn fields(&self) -> impl Iterator<Item = (DefId, crate::library::FieldFact)> + '_ {
+        (self.quiet_fields.iter()).map(|&field| (field, crate::library::FieldFact::Quiet))
     }
 
     /// Whether a `RefCell` of type `ty` is the object it holds, not a

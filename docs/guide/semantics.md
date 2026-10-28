@@ -300,8 +300,10 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be
   anything; one whose signature holds a `dyn`, `function::bind`'s of a
-  `fn(&dyn Fn() -> u32) -> u32`, makes no other type anything
-  ([0907](../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md)):
+  `fn(&dyn Fn() -> u32) -> u32`, is told apart by its signature as any
+  other, whatever lifetimes it binds, and makes no other type anything
+  ([0907](../decisions/0907-a-fn-pointer-runs-what-the-crate-made-it-of.md),
+  [1007](../decisions/1007-a-libraries-own-fn-pointers-are-rust-functions.md)):
 
 ```rust
 # use std::cell::RefCell;

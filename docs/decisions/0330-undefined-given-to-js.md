@@ -79,3 +79,11 @@ argument": a private dispatcher's pointer, `DISPATCHER.useState(1)`; one
 that may be `Math.max`, `NaN`; one given from outside, `NaN`; and the
 guide's `twice`. Mutations `own-pointer-given-undefined` and
 `binding-pointer-undefined-left-out`.
+
+## Amendment: a library's own fn pointers (rd56)
+
+A call through a fn pointer of a library's struct field its contract says
+holds only its own Rust functions is one of rust-js's own too, React DOM's
+`Children.forEach(props.children, fn)`; and whether a call is one is
+`FnPointers::rust_only`'s answer. See
+[1007](1007-a-libraries-own-fn-pointers-are-rust-functions.md).

@@ -504,12 +504,11 @@ pub fn lower_crate<'tcx>(
                 let imports = module_imports(&places, &fns, edges, &imported, js_modules);
                 // A thread-local made as its module loads, of a function of a
                 // module that may load after it: made where it's first used,
-                // the crate lowered again so (ADR 0037, amended).
-                let cyclic = load_cycles::made_in_cycles(tcx, &local_makers, &fns, &imports);
+                // the crate lowered again so, a `pub` one refused (ADR 1006).
+                let cyclic = load_cycles::made_in_cycles(tcx, (&local_makers, &exported_locals), &fns, &imports);
                 if !cyclic.is_empty() {
                     return Lowered::MadeWhereUsed(cyclic);
                 }
-                load_cycles::refuse_exported_out_of_order(tcx, &exported_locals, &fns, &imports);
                 let again = load_cycles::load_cycles(tcx, &lowered_items, &fns, &loads, &imports);
                 if again.is_empty() {
                     break;
@@ -1437,7 +1436,7 @@ pub fn lower_crate<'tcx>(
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop,
                         counted: &counted,
                         ref_cells: ref_cell_facts(),
-                        fields: ref_cells.get().map(|found| found.fields(tcx)).unwrap_or_default(),
+                        fields: super::library::fields(tcx, ref_cells.get(), cell_borrows.pointers()),
                         lazy_locals: &lazy_locals,
                         variables: &variables,
                         identities: &identities,

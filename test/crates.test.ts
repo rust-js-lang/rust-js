@@ -528,6 +528,20 @@ test("a thread-local of a library's flag is made as its module loads", () => {
   expect(app).toContain("const SUPPORTS_USER_TIMING = ENABLE_PROFILER_TIMER;\nconst SEEN = $local(() => count);\n");
 }, 300_000);
 
+// ADR 0330, amended (React port gap rd56): a library's struct field whose
+// fn pointers may only be its own Rust functions, React's `Children`, is one
+// its contract says so of, and a consumer's call through it leaves out a
+// trailing `undefined`, as of the crate's own: `Children.forEach(children,
+// fn)`. One a consumer may give it keeps it. `two crates:
+// fn_pointer_of_a_library` runs it against native Rust.
+test("a library's field of its own functions is called as the crate's own", () => {
+  const out = chain(pairs, "fn_pointer_of_a_library", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain('  children.forEach("ab", (i) => {\n');
+  expect(app).toContain(".onEach(1, undefined)");
+  expect(contract(out).fields.map((field: { facts: string[] }) => field.facts)).toEqual([["rust_functions"], ["rust_functions"]]);
+}, 300_000);
+
 /** The library contract of `out`'s `dep`. */
 function contract(out: string) {
   return JSON.parse(readFileSync(join(out, "dep", "lib.manifest.json"), "utf8")).library;

@@ -12,7 +12,7 @@ use crate::lower::FnInfo;
 use crate::lower::bindings::Export;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::{DefId, LocalModId};
+use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// Each body run where its module loads, of `loads`, that reads another of
@@ -47,19 +47,25 @@ pub(super) fn load_cycles(
         .collect()
 }
 
+/// Each `pub` thread-local, and what its initializer may run and read as its
+/// module loads; `None`, what rust-js can't follow (ADR 1006).
+type Exported = HashMap<LocalDefId, Option<Vec<DefId>>>;
+
 /// Each thread-local, of `makers`, made as its module loads by functions of
 /// the crate's that only make a value, or of another module's thread-local
 /// its initializer reads (ADR 0037, amended), one of which is
 /// of a module that may load after its own: of another module that reaches
 /// its own by what the crate's modules import of each other, `imports`, an
 /// import cycle. Its maker may read what that module hasn't made yet, a
-/// `const`, so it's made where it's first used.
+/// `const`, so it's made where it's first used. Where none is, each `pub`
+/// one of `exported`, which is made as its module loads whatever it runs,
+/// is refused where it can't be (`refuse_exported_out_of_order`, ADR 1006).
 pub(super) fn made_in_cycles(
     tcx: TyCtxt<'_>,
-    makers: &HashMap<rustc_span::def_id::LocalDefId, Vec<DefId>>,
+    (makers, exported): (&HashMap<LocalDefId, Vec<DefId>>, &Exported),
     fns: &HashMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
-) -> Vec<rustc_span::def_id::LocalDefId> {
+) -> Vec<LocalDefId> {
     let mut cyclic: Vec<_> = (makers.iter())
         .filter(|&(&key, makers)| {
             let own = fns[&key.to_def_id()].module;
@@ -71,6 +77,9 @@ pub(super) fn made_in_cycles(
         .map(|(&key, _)| key)
         .collect();
     cyclic.sort_by_key(|&key| tcx.def_span(key));
+    if cyclic.is_empty() {
+        refuse_exported_out_of_order(tcx, exported, fns, imports);
+    }
     cyclic
 }
 
@@ -83,9 +92,9 @@ pub(super) fn made_in_cycles(
 /// each other, `imports`, an import cycle. Its own module's `const`s and
 /// thread-locals are made before it where it reads them
 /// (`js::in_load_order`), and a module it imports, of no cycle, has loaded.
-pub(super) fn refuse_exported_out_of_order(
+fn refuse_exported_out_of_order(
     tcx: TyCtxt<'_>,
-    exported: &HashMap<rustc_span::def_id::LocalDefId, Option<Vec<DefId>>>,
+    exported: &Exported,
     fns: &HashMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
 ) {
