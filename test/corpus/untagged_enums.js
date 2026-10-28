@@ -29,14 +29,6 @@ function valueDebug_fmt(value) {
   return `At(${pointDebug_fmt(value)})`;
 }
 
-function valueFromString_from(text) {
-  return text;
-}
-
-function valueFromI32_from(n) {
-  return n;
-}
-
 function posDebug_fmt(pos) {
   return `Pos { x: ${pos.x} }`;
 }

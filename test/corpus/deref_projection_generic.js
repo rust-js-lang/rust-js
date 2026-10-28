@@ -4,10 +4,6 @@ export function entry() {
   main();
 }
 
-function stackDeref_deref(stack, CAP) {
-  return stack.xs;
-}
-
 function stackDerefMut_derefMut(stack, CAP) {
   return stack.xs;
 }

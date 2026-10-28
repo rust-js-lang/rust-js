@@ -20,6 +20,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "generic-only-methods-written-unreached",
+    breaks: "a `From` or `Deref` impl's method nothing calls is written as a function of its module, `eventPriorityFromI32_from`, which upstream's JS hasn't (ADR 0477, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),\n",
+    replace: "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied().filter(|_| false))),\n",
+    tests: ["test/crates.test.ts", "-t", "a library's From impl nothing of its own calls"],
+  },
+  {
     name: "identity-eq-written-unreached",
     breaks: "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
     file: "src/lower/pipeline/reached.rs",

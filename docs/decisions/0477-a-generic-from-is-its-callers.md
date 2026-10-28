@@ -1,6 +1,6 @@
 # 0477. A generic `From::from` is its caller's
 
-Status: Accepted. Extends [0108](0108-generic-operators-and-into.md).
+Status: Accepted. Extends [0108](0108-generic-operators-and-into.md). Amended: an impl's method nothing calls is written nowhere, below.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): the same value, made
 by the same conversion.
@@ -43,3 +43,33 @@ conv(7, { from: (n) => n });
 ## Consequences
 
 - **What compiles grows**: `From::from` through a bound.
+
+## Amendment: an impl's method nothing calls is written nowhere
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a function nothing
+calls is no function of the JS.
+
+React's reconciler reads a lane back as an `EventPriority`, its
+`ReactEventPriorities`' newtype of one, by `impl From<Lane> for
+EventPriority`, which React DOM calls and nothing of the reconciler does.
+Its module printed `function eventPriorityFromI32_from(lane) { return lane;
+}`, which upstream's hasn't and nothing reads: the impl's dictionary was
+written only where generic code reads it, but its method everywhere.
+
+**An impl of a trait only generic code reads a dictionary of
+(`read_only_generically`: `From`, the operators, `Deref` and the others) is
+written only where it's reached, its methods with it**: each is called as
+it is, by its name, where anything calls it, which reaches it. A consumer
+calling a library's compiles its own, as of any impl's method its library's
+JS doesn't export (ADR 0914, amended): `const priority =
+eventPriorityFromI32_from(8);` and the function beside it. So corpus
+`untagged_enums`' `valueFromString_from` and `deref_projection_generic`'s
+`stackDeref_deref`, which nothing called, are gone.
+
+### What holds it
+
+- `test/crates/pairs/from_impl_unused`, run against native Rust;
+  `test/crates.test.ts`, "a library's From impl nothing of its own calls is
+  a consumer's to compile".
+- Mutation `generic-only-methods-written-unreached`
+  (`lower/pipeline/reached.rs`).

@@ -842,7 +842,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0474 An iterator another bound reads is given as it is](0474-an-iterator-another-bound-reads-is-given-as-it-is.md)
 - [0475 A generic `into_iter()` is the iterator concrete code has](0475-a-generic-into-iter-is-the-iterator-concrete-code-has.md)
 - [0476 A generic `sum` is its caller's](0476-a-generic-sum-is-its-callers.md)
-- [0477 A generic `From::from` is its caller's](0477-a-generic-from-is-its-callers.md)
+- [0477 A generic `From::from` is its caller's](0477-a-generic-from-is-its-callers.md) *(amended: an impl's method nothing calls is written nowhere)*
 - [0478 An associated type of one is given its drop too](0478-an-associated-type-of-one-is-given-its-drop-too.md)
 - [0479 `reduce` is std's](0479-reduce-is-std-s.md)
 - [0480 An associated type steps from its back as a type parameter does](0480-an-associated-type-steps-from-its-back-as-a-parameter-does.md)

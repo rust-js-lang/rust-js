@@ -68,8 +68,13 @@ pub(super) fn written_where_reached<'tcx>(
                 || foreign.is_instance(id)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
+        // And their methods, each called as it is, by its name, where
+        // anything calls it: `From<Lane>`'s `from` nothing calls is
+        // written nowhere (ADR 0477, amended).
         .chain(
-            (trait_impls.iter().copied()).filter(|&id| super::super::traits::read_only_generically(tcx, trait_of(id))),
+            (trait_impls.iter().copied())
+                .filter(|&id| super::super::traits::read_only_generically(tcx, trait_of(id)))
+                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),
         )
         .chain(lowered.filter(|&id| {
             id.is_local()

@@ -245,6 +245,15 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
     .toThrow("this crate counts an `Rc<std::string::String>`");
 }, 300_000);
 
+// ADR 0477, amended (ep1b): a `From` impl's method nothing of its crate
+// calls is written nowhere in its JS, React's reconciler's `EventPriority`
+// of a lane; a consumer that calls it compiles its own (ADR 0914).
+test("a library's From impl nothing of its own calls is a consumer's to compile", () => {
+  const out = chain(pairs, "from_impl_unused", ["dep", "app"]);
+  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("_from");
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("  const priority = eventPriorityFromI32_from(8);\n");
+}, 300_000);
+
 // ADR 0852, amended (rd57): a library generic over another library's type,
 // React's reconciler reading `react`'s context of any `T: Clone`, counts its
 // `Rc`s as that library does, none, though its own consumers are unseen: a
