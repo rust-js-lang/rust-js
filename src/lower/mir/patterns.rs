@@ -664,13 +664,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What the body's `let`s bind, by the names `state` gives them: a
     /// struct or tuple pattern's bindings (`let_pattern_bindings`); a name
     /// alone, `let init = lazy.init;`, a statement of its own, which no
-    /// pattern of a part read beside it is (ADR 0598, amended); and of
-    /// those, a variable given another type, `let lazy: &LazyComponent =
-    /// unsafe { js::cast(children) };`, a binding that's its argument
-    /// (`JsForm::This`), as TypeScript's `as` gives one, which JS has as it
-    /// is; and one an `if let` takes apart, its scrutinee the variable
-    /// alone, `let types = t.types.borrow().clone(); if let Some(types) =
-    /// types` (ADR 0866).
+    /// pattern of a part read beside it is (ADR 0598, amended), a cast's
+    /// too, `let lazy: &LazyComponent = unsafe { js::cast(children) };`,
+    /// `const lazy = children;`; and of those, one an `if let` takes
+    /// apart, its scrutinee the variable alone, `let types =
+    /// t.types.borrow().clone(); if let Some(types) = types` (ADR 0866),
+    /// not a cast's, the program's name for a value of the type it gives.
     pub(super) fn let_names(&self, body: &mir::Body<'tcx>, state: &State<'_, 'tcx>) -> super::tidy::LetNames {
         let thir = self.frame.thir;
         // Through an `unsafe { .. }` of the value alone, and what `strip` is through.
@@ -684,17 +683,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => return e,
             }
         };
-        // A cast, `js::cast(..)`, and of what: `Some(true)` of a variable.
-        let cast_of = |e: thir::ExprId| {
-            let thir::ExprKind::Call { fun, ref args, .. } = thir[through(e)].kind else {
-                return None;
+        // A cast, `js::cast(..)`.
+        let is_cast = |e: thir::ExprId| {
+            let thir::ExprKind::Call { fun, .. } = thir[through(e)].kind else {
+                return false;
             };
             let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
-                return None;
+                return false;
             };
-            (bindings::is_binding(self.tcx, def_id)
-                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This))
-            .then(|| matches!(&args[..], [arg] if matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { .. })))
+            bindings::is_binding(self.tcx, def_id)
+                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
         };
         // The field a borrow's receiver is, `&current.child`, by its Rust name.
         let field_named = |receiver: Option<thir::ExprId>| {
@@ -752,7 +750,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let mut named = Vec::new();
-        let mut casts = Vec::new();
         let mut ends_borrow = Vec::new();
         let mut guards = Vec::new();
         // A `let` of a cast of anything, `let instance: Option<&Instance> =
@@ -779,10 +776,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if initializer.and_then(borrow_cloned) == Some(binding) {
                     ends_borrow.push(pattern.span);
                 }
-                match initializer.and_then(cast_of) {
-                    Some(true) => casts.push(pattern.span),
-                    Some(false) => typed.push(var),
-                    None => {}
+                if initializer.is_some_and(is_cast) {
+                    typed.push(var);
                 }
             }
         }
@@ -832,7 +827,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(l, _)| state.locals.names[l].clone())
                 .collect(),
             named: names(&named),
-            casts: names(&casts),
             taken_apart: names(&taken_apart),
             ends_borrow: names(&ends_borrow),
             guards,

@@ -479,38 +479,6 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &HashSet<String>) {
     }
 }
 
-/// `const lazy = children;` of `let lazy: &LazyComponent = unsafe {
-/// js::cast(children) };`, a variable given another type, `casts`, which
-/// JS has as it is: `children` where `lazy` is read, `children._payload`,
-/// as `(children as any)._payload` reads in TypeScript, where nothing reads
-/// `children` after it, and nothing after sets either again, nor reads
-/// `lazy` in a closure, which may run after (ADR 0598, amended).
-pub(super) fn cast_bindings(stmts: &mut Vec<Stmt>, casts: &HashSet<String>) {
-    let mut i = 0;
-    while i < stmts.len() {
-        if let StmtKind::Const(b, value) = &stmts[i].kind
-            && casts.contains(b)
-            && let ExprKind::Var(a) = &value.kind
-            && a != b
-        {
-            let (a, b) = (a.clone(), b.clone());
-            let rest = &stmts[i + 1..];
-            if js::mentions_in(rest, &a) == 0 && !rebinds(rest, &a) && !rebinds(rest, &b) && !in_closure(rest, &b) {
-                stmts.remove(i);
-                js::each_expr_mut(&mut stmts[i..], &mut |e| {
-                    if let ExprKind::Var(v) = &mut e.kind
-                        && *v == b
-                    {
-                        *v = a.clone();
-                    }
-                });
-                continue;
-            }
-        }
-        i += 1;
-    }
-}
-
 /// Whether `stmts` set `name` again, or declare it, a closure's in them too:
 /// their own lists, then each closure's, each found once by `each_expr`,
 /// however deep.

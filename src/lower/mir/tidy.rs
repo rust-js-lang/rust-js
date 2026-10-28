@@ -53,9 +53,6 @@ pub(super) struct LetNames {
     pub(super) patterns: HashSet<String>,
     /// What a name alone binds, `let x = p.x;`.
     pub(super) named: HashSet<String>,
-    /// Of those, a variable given another type, `let lazy: &LazyComponent
-    /// = unsafe { js::cast(children) };`.
-    pub(super) casts: HashSet<String>,
     /// Of those, one an `if let` takes apart, the variable alone its
     /// scrutinee, `let types = t.types.borrow().clone(); if let Some(types)
     /// = types`: a `let` that ends a borrow, which reads as its value

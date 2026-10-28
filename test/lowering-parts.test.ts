@@ -1,8 +1,8 @@
 // What the compiler writes of a value's parts the program reads into names
 // (ADR 0598, amended): a pattern's parts one destructuring, `const { a, b }
 // = p;`; a `let` of a name alone, `let x = p.x;`, a statement of its own,
-// as written; and a variable given another type, `js::cast`'s, the
-// variable. Each test is a program of its own, compiled and run.
+// as written, a cast's too. Each test is a program of its own, compiled and
+// run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -11,13 +11,15 @@ import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-// React's `mapIntoArray` (ReactChildren.js) reads a lazy component's
-// `_payload` and `_init` of `children` as it is, `(children as any)`:
-// upstream writes `const payload = children._payload; const init =
-// children._init;`, which the Rust's `let lazy: &LazyComponent = unsafe {
-// js::cast(children) };` and two `let`s were, as `const lazy = children;
-// const { _payload: payload, _init: init } = lazy;`.
-test("a let of a part is its own statement, and a cast's variable is the variable", async () => {
+// React's `mountLazyComponent` (ReactFiberBeginWork.js) names its cast,
+// `const lazyComponent: LazyComponentType<any, any> = elementType;`: the
+// Rust's `let lazy: &LazyComponent = unsafe { js::cast(children) };` is
+// `const lazy = children;`, as every written `let` is a `const`. Its
+// `mapIntoArray` (ReactChildren.js) reads `(children as any)._payload`
+// with no variable: the Rust writes the cast where it's read, `unsafe {
+// js::cast::<&LazyComponent>(children) }.payload`, `children._payload`
+// (ADR 0598, amended: the user's decision, 2026-10-28).
+test("a let of a part is its own statement, a cast's too, and a cast read in place is its value", async () => {
   const dir = fixture("parts-read");
   writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
 
@@ -38,6 +40,12 @@ pub fn resolved(children: Option<&'static Unknown>) -> i32 {
     let lazy: &LazyComponent = unsafe { js::cast(children) };
     let payload = &lazy.payload;
     let init = lazy.init;
+    init(payload)
+}
+
+pub fn in_place(children: Option<&'static Unknown>) -> i32 {
+    let payload = &unsafe { js::cast::<&LazyComponent>(children) }.payload;
+    let init = unsafe { js::cast::<&LazyComponent>(children) }.init;
     init(payload)
 }
 
@@ -83,12 +91,19 @@ pub fn matched(point: &Labeled) -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`export function resolved(children) {
+  const lazy = children;
+  const payload = lazy._payload;
+  const init = lazy._init;
+  return init(payload);
+}`);
+  expect(js).toContain(`export function inPlace(children) {
   const payload = children._payload;
   const init = children._init;
   return init(payload);
 }`);
-  // \`children\` read after it: the name the program gave stays.
-  expect(js).toContain("const lazy = children;");
+  // \`children\` read after it: the name the program gave, as before.
+  expect(js).toContain(`export function readAgain(children) {
+  const lazy = children;`);
   // Two \`let\`s side by side, two \`const\`s, as written, as React writes
   // \`const type = element.type; const key = element.key;\`; a pattern, one
   // destructuring (ADR 0598, amended).
@@ -104,8 +119,8 @@ pub fn matched(point: &Labeled) -> f64 {
   expect(js).toContain("  const { x, y } = point;\n  return x * y + $byteLen(point.label);");
   const lib = await import(join(dir, "lib.js"));
   const lazy = { _payload: { status: 4 }, _init: (p: { status: number }) => p.status * 10 };
-  expect([lib.resolved(lazy), lib.readAgain(lazy), lib.sum({ x: 1, y: 2 }), lib.patterned({ x: 5, y: 2 }), lib.paired([3, 4]), lib.matched({ x: 2, y: 3, label: "ab" })])
-    .toEqual([40, [4, true], 3, 3, 12, 8]);
+  expect([lib.resolved(lazy), lib.inPlace(lazy), lib.readAgain(lazy), lib.sum({ x: 1, y: 2 }), lib.patterned({ x: 5, y: 2 }), lib.paired([3, 4]), lib.matched({ x: 2, y: 3, label: "ab" })])
+    .toEqual([40, 40, [4, true], 3, 3, 12, 8]);
 });
 
 // React's markUpdateLaneFromFiberToRoot: `const offscreenInstance =

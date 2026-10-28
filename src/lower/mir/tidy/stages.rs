@@ -212,11 +212,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("copied bindings", |b, h| {
                 js::statement_lists(b, &mut |s| copied_bindings(s, &h.named.user))
             }),
-            // A variable given another type, `const lazy = children;`: the
-            // variable, where it's read no more (ADR 0598, amended).
-            pass("cast bindings", |b, h| {
-                js::statement_lists(b, &mut |s| cast_bindings(s, &h.lets.casts))
-            }),
             // A tuple read item by item, `children[0]`: its items.
             pass("tuple reads", |b, h| {
                 let changing = changing(b);

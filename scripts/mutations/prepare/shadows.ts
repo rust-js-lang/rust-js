@@ -166,4 +166,12 @@ export const mutations: Mutation[] = [
     replace: "                        paired &= true || list.get(i + 1).is_some_and(\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
   },
+  {
+    name: "pattern-names-not-own",
+    breaks: "a closure's `for…of` variable shadowed by its cast, React's cache's `let arg: &JsObject = unsafe { js::cast(arg) };`, is `const arg$1 = arg;` (ADRs 0853, 0598, amended)",
+    file: "src/prepare/shadows.rs",
+    find: "                    own.extend(pattern.names().into_iter().map(str::to_string));\n",
+    replace: "",
+    tests: ["test/lowering-shadows.test.ts", "-t", "shadowed by its own value"],
+  },
 ];

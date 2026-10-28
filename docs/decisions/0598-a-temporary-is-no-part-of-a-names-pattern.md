@@ -7,7 +7,9 @@ a `let`-`else`'s too;
 no pattern binds a name rust-js gave. Amended (2026-10-27, the user's
 decision): `let`s side by side are `const`s side by side, as written;
 only a pattern destructures, which supersedes "`let`s side by side, each
-named as its part, are one destructuring".
+named as its part, are one destructuring". Amended (2026-10-28, the
+user's decision): a cast's `let` is a `const` as every `let` is, which
+supersedes "a cast's is the variable".
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: one pattern or two
 reads of the same properties, in the same order.
@@ -246,3 +248,32 @@ read once, in its order, either way.
   (`lower/mir/tidy/destructuring.ts`), a `let` of a name joining a pattern,
   fails both. The mutations `body-reads-apart` and
   `body-reads-renamed-together` went with `read_together_in`.
+
+## Amendment: a cast's `let` is a `const`, as every `let` is
+
+The user's decision (2026-10-28). React's `mountLazyComponent`
+(ReactFiberBeginWork.js) names its cast, `const lazyComponent:
+LazyComponentType<any, any> = elementType;`, where `mapIntoArray` reads
+`(children as any)._payload` with no name. The same Rust, `let lazy:
+&LazyComponent = unsafe { js::cast(x) };`, can't give both, and the
+amendment above, "a cast's is the variable", folded the `let` away where
+nothing read `x` after: `mountLazyComponent`'s port printed
+`resolveLazy(elementType)`, its `const lazyComponent` lost (the port's
+gap ml1). Nor was it one rule: `js::cast(Some(x))` of a reference kept its
+`let`.
+
+**A `let` the program writes is a `const`, a cast's too**: `let
+lazy_component: &LazyComponent = unsafe { js::cast(element_type) };` is
+`const lazyComponent = elementType;`. A program that wants no name writes
+the cast where it reads it, as upstream does: `unsafe {
+js::cast::<&LazyComponent>(children) }.payload` is `children._payload`.
+`tidy/bindings.rs`'s `cast_bindings` and `LetNames::casts` are gone; a
+cast's `let` is still the program's name for a value of the type it
+gives, not a `let` that ends a borrow (`mir/patterns.rs`'s `typed`). Case
+A: the same reads, in the same order, of one name more.
+
+- `test/lowering-parts.test.ts`, "a let of a part is its own statement, a
+  cast's too, and a cast read in place is its value", run.
+- Mutations `cast-let-named` and `cast-variable-read-after` went with the
+  fold; `cast-let-of-a-place-tested-in-its-place` holds the rest.
+

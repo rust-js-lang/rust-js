@@ -179,14 +179,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {
-    name: "cast-let-named",
-    breaks: "`let lazy: &LazyComponent = unsafe { js::cast(children) };` is `const lazy = children;`, read `lazy._payload`",
-    file: "src/lower/mir/patterns.rs",
-    find: "                    Some(true) => casts.push(pattern.span),\n",
-    replace: "                    Some(true) => {}\n",
-    tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
-  },
-  {
     name: "cast-let-of-a-place-tested-in-its-place",
     breaks: "`let instance: Option<&Instance> = unsafe { js::cast(node.state_node.get()) }; if let Some(instance) = instance && ..` reads `node.stateNode` twice in the test, the program's name gone",
     file: "src/lower/mir/patterns.rs",

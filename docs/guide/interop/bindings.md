@@ -840,11 +840,12 @@ export async function open(other) {
   ([above](#a-binding-as-a-value)). A slice declared is refused.
 - **A cast is `this`, unchecked, so it's an `unsafe fn`**; check first with
   `instanceof`. webapi has one for each interface,
-  `html_input_element::unchecked_from(target)`. A `let` of a variable
-  cast, `let lazy: &LazyComponent = unsafe { js::cast(children) };`, is
-  that variable where nothing reads it after, `children._payload`, as
-  TypeScript's `(children as any)._payload` reads; else its own name,
-  `const lazy = children;`
+  `html_input_element::unchecked_from(target)`. A `let` of a cast is a
+  `const` as every `let` is, `let lazy: &LazyComponent = unsafe {
+  js::cast(children) };` `const lazy = children;`, React's `const
+  lazyComponent = elementType;`; a cast read where it's written, `unsafe {
+  js::cast::<&LazyComponent>(children) }.payload`, is `children._payload`,
+  as TypeScript's `(children as any)._payload` reads
   ([ADR 0598](../../decisions/0598-a-temporary-is-no-part-of-a-names-pattern.md), amended).
   `js::cast` vouches the value is what JS has of its type: one that may be
   `undefined`, `js::get(timers, "setImmediate")`, is cast to an `Option`,
