@@ -56,23 +56,10 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                 }
                 // Of one statement, where the program wrote the `continue`,
                 // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
-                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect("matched").span) => {
-                    let Some(Stmt {
-                        kind: StmtKind::If(test, then, None),
-                        span,
-                    }) = body.pop()
-                    else {
-                        unreachable!("matched")
-                    };
-                    body.push(
-                        StmtKind::If(
-                            test.negated_test(),
-                            vec![StmtKind::Continue(None).at(js::Span::NONE)],
-                            None,
-                        )
-                        .at(span),
-                    );
-                    body.extend(then);
+                Some(StmtKind::If(_, _, None)) => {
+                    if !turned_continue(body, guards) {
+                        break;
+                    }
                 }
                 _ => break,
             }
@@ -177,7 +164,10 @@ enum Kept {
 /// Of `stmts`, a loop's body or what's in it but another loop's or a
 /// `switch`'s, `at_end` where the turn ends after it: the jumps of `kept`
 /// each `if`'s branches end with as written (`kept_jumps`).
-fn kept_in_turn(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written, kept: Kept, at_end: bool) {
+fn kept_in_turn(stmts: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Written, kept: Kept, at_end: bool) {
+    if at_end && kept == Kept::Continues {
+        turned_continue(stmts, &written.continues);
+    }
     let last = stmts.len().saturating_sub(1);
     for (k, stmt) in stmts.iter_mut().enumerate() {
         let end = at_end && k == last;
@@ -195,14 +185,47 @@ fn kept_in_turn(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written,
     }
 }
 
+/// The last of `stmts`, where the turn ends after them, `if (!c) { rest }`
+/// of an `if` the program wrote of a `continue`, `if c { continue; } rest`,
+/// whose `then` is what it wrote after it, as MIR turns it: as written,
+/// `if (c) { continue; } rest`, as React's findAllNodes skips a hidden
+/// subtree; of a loop body's last too, first (`continued`). What the rest
+/// declares is named apart from what's before it already, `doubled$1`
+/// of a second `let doubled` (`written_jumps_kept.rs`'s `shadowed`).
+fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js::Span)]) -> bool {
+    let Some(Stmt {
+        kind: StmtKind::If(test, then, None),
+        span,
+    }) = stmts.last()
+    else {
+        return false;
+    };
+    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1) else {
+        return false;
+    };
+    if !then.iter().all(|s| s.span.is_none() || s.span.hi > at.lo) {
+        return false;
+    }
+    let Some(Stmt {
+        kind: StmtKind::If(test, then, None),
+        span,
+    }) = stmts.pop()
+    else {
+        unreachable!("matched")
+    };
+    let jump = vec![StmtKind::Continue(None).at(at)];
+    stmts.push(StmtKind::If(test.negated_test(), jump, None).at(span));
+    stmts.extend(then);
+    true
+}
+
 /// A branch of the `if` at `span` testing `test`, given the jump the program
 /// wrote it ends with, of `jumps`, its `continue`s' and its `break`s' (the
 /// `then`'s or the `else`'s, `Written::continues` or `else_continues`),
 /// where it's of `kept`; at that jump's place, which its comment is before.
-/// A `return;` only of a branch of nothing written after the `break`, so
-/// not the other of an `if` tidy turned, `std_enumerate.rs`'s; a
-/// `continue`, where the turn ends after either branch, in the one of its
-/// list.
+/// Only of a branch of nothing written after the jump, so not the other of
+/// an `if` tidy turned, `std_enumerate.rs`'s `return;`, React's
+/// findAllNodes' `if (!isHiddenSubtree(node)) { .. }`.
 fn kept_in_branch(
     branch: &mut Vec<Stmt>,
     span: js::Span,
@@ -221,7 +244,9 @@ fn kept_in_branch(
     };
     match kept {
         Kept::Continues if end && !branch.last().is_some_and(ends) => {
-            if let Some(at) = tested(continues) {
+            if let Some(at) = tested(continues)
+                && !after(at)
+            {
                 branch.push(StmtKind::Continue(None).at(at));
             }
         }

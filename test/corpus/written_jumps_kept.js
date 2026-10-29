@@ -72,6 +72,50 @@ function elseBreaks(xs, out) {
   }
 }
 
+function roots(tree, out) {
+  let index = 0;
+  while (index < tree.length) {
+    const tag = tree[index][0];
+    const hidden = tree[index][1];
+    const value = tree[index][2];
+    index++;
+    if (tag === 5 || tag === 6) {
+      if (hidden) {
+        continue;
+      }
+      out.push(value);
+    } else {
+      out.push(-value | 0);
+    }
+  }
+}
+
+function shadowed(tree, out) {
+  for (const [tag, hidden, value] of tree) {
+    if (tag === 5) {
+      const doubled = (value * 2) | 0;
+      out.push(doubled);
+      if (hidden) {
+        continue;
+      }
+      const doubled$1 = (doubled + 1) | 0;
+      out.push(doubled$1);
+    } else {
+      out.push(0);
+    }
+  }
+}
+
+function lastContinue(xs, out) {
+  for (const x of xs) {
+    out.push(0);
+    if (x > 3) {
+      out.push(x);
+      continue;
+    }
+  }
+}
+
 function droppedAfter(xs) {
   for (const x of xs) {
     if (x > 3) {
@@ -96,6 +140,16 @@ function main() {
   keptElse([1, 5, 2, 9], out);
   elseContinues([3, -2, 0, 4], out);
   elseBreaks([5, 7, 1, 9], out);
+  const tree = [
+    [5, false, 1],
+    [6, true, 2],
+    [1, false, 3],
+    [6, false, 4],
+  ];
+  roots(tree, out);
+  shadowed(tree, out);
+  shadowed([[5, true, 7]], out);
+  lastContinue([2, 8], out);
   console.log(`[${out.join(", ")}]`);
   droppedAfter([1, 5]);
 }

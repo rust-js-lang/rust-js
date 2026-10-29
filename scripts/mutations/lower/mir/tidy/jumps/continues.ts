@@ -62,6 +62,24 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "kept-turned-continue-unturned",
+    breaks: "`if c { continue; } rest` in an arm, MIR's `if (!c) { rest }`, stays so, not React's findAllNodes' `if (isHiddenSubtree(node)) { continue; }` (ADR 0684, amended)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        turned_continue(stmts, &written.continues);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "kept-turned-continue-of-any-then",
+    breaks: "an `if` of a written `continue` whose `then` is written before the jump, `if (x > 3) { out.push(x); }` of `if x > 3 { out.push(x); continue; }`, is turned, `if (x <= 3) { continue; } out.push(x);`, not as written",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "    if !then.iter().all(|s| s.span.is_none() || s.span.hi > at.lo) {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
     name: "written-continue-else-dropped",
     breaks: "a written `else` after a `then` that ends in a written `continue` is gone, `if (x > 3) { ..; continue; } out.push(0);` (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
@@ -82,9 +100,9 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
-    replace: "                Some(StmtKind::If(_, _, None)) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"],
+    find: "                    if !turned_continue(body, guards) {\n",
+    replace: "                    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exits.rs$"],
     snapshots: true,
   },
   {
@@ -99,8 +117,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-written-continue-nested",
     breaks: "a loop body's last `if` of more than one statement is an early `continue` the program never wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
-    replace: "                Some(StmtKind::If(_, then, None)) if tests_continue(guards, body.last().expect(\"matched\").span) || then.len() > 1 => {\n",
+    find: "    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1) else {\n",
+    replace: "    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1).or((then.len() > 1).then_some(js::Span::NONE)) else {\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a loop.s early break"],
   },
   {
@@ -115,9 +133,10 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-continue-written-negated-only",
     "breaks": "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
     "file": "src/lower/mir/tidy/jumps/continues.rs",
-    "find": "                Some(StmtKind::If(_, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) => {\n",
-    "replace": "                Some(StmtKind::If(test, _, None)) if tests_continue(guards, body.last().expect(\"matched\").span) && matches!(test.kind, ExprKind::Unary(UnaryOp::Not, _)) => {\n",
-    "tests": ["test/lowering-numbers.test.ts", "-t", "division by a constant from MIR"]
+    "find": "                Some(StmtKind::If(_, _, None)) => {\n",
+    "replace": "                Some(StmtKind::If(test, _, None)) if matches!(test.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
+    "tests": ["test/corpus.test.ts", "-t", "^loop_exits.rs$"],
+    "snapshots": true
   },
   {
     name: "block-jump-not-forwarded",
@@ -289,8 +308,8 @@ export const mutations: Mutation[] = [
     name: "restored-continue-at-its-if",
     breaks: "a `continue` restored where the program wrote it is placed at its `if`, so `written jumps` leaves it there and its comment is before the loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "vec![StmtKind::Continue(None).at(js::Span::NONE)]",
-    replace: "vec![StmtKind::Continue(None).at(span)]",
+    find: "    let jump = vec![StmtKind::Continue(None).at(at)];\n",
+    replace: "    let jump = vec![StmtKind::Continue(None).at(span)];\n",
     tests: keysIn,
   },
   {

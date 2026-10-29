@@ -326,3 +326,32 @@ and one before a drop, which MIR shares after the `if`.
   `last-loop-break-returned` and `last-loop-return-of-any-if-broken` moved
   to `kept_jumps` (`continues.ts`); `written-else-of-a-made-return-unturned`
   (`tails.ts`).
+
+### And a guard's `continue` where it's written (rd152)
+
+`kept_jumps` gave a written `continue` back to the `then` of `if (!c) {
+rest }`, MIR's turn of `if c { continue; } rest` in an arm, as the end of
+a branch the turn ends after: `if (!isHiddenSubtree(node)) { ..; continue;
+}` in React's findAllNodes, `if (!warnedAbout[key]) { ..; continue; }` in
+validateShorthandPropertyCollisionInDev. **Such an `if`, where the turn
+ends after it and its `then` is all written after the jump, is turned
+back, `if (c) { continue; } rest`** (`turned_continue`), the one rule
+`continued` applied to a loop body's last alone, which now calls it
+first and `kept_jumps` everywhere a turn ends; a statement written across
+the jump, `node = { ..; if c { continue; } node }`'s assignment, is after
+it. One the program wrote last in its `then`, `if x > 3 { out.push(x);
+continue; }`, is no longer turned, `if (x <= 3) { continue; }
+out.push(x);`, but kept, its `continue` given back. A rest of a second
+`let` of a name declares it apart, `doubled$1`, so moving it out of the
+`then` clashes with nothing.
+
+React DOM's restoreControlledInputState now prints the port's `if
+(otherNode === rootNode || otherNode.form != rootNode.form) { continue; }`
+as its Rust writes it, one `if` of `||`, where it printed two (upstream
+writes two `if`s; the port's Rust, one).
+
+- `written_jumps_kept.rs`'s `roots`, `shadowed` and `last_continue`,
+  against native Rust; mutations `kept-turned-continue-unturned`,
+  `kept-turned-continue-of-any-then`, and `mir-tidy-continue-guard-kept`,
+  `mir-tidy-written-continue-nested`, `mir-tidy-continue-written-negated-only`
+  and `restored-continue-at-its-if` moved to `turned_continue`.

@@ -6,8 +6,11 @@
 // as its `return;`, and what follows an `if` written without an `else`
 // after it; a written `else` kept beside its `then`'s `continue`; an
 // `else`'s `continue` at the turn's end; and an `else`'s `break` of the
-// loop a function ends with. Where a value's drop follows the `if`, the
-// `continue` stays MIR's: the turn doesn't end after the branch.
+// loop a function ends with; and `if c { continue; } rest` inside an arm,
+// which MIR turns `if (!c) { rest }`, as written, React's findAllNodes'
+// `if (isHiddenSubtree(node)) { continue; }`, of a rest that shadows a
+// name the arm declares before it too. Where a value's drop follows the `if`,
+// the `continue` stays MIR's: the turn doesn't end after the branch.
 struct Noisy(i32);
 
 impl Drop for Noisy {
@@ -83,6 +86,48 @@ fn else_breaks(xs: &[i32], out: &mut Vec<i32>) {
     }
 }
 
+fn roots(tree: &[(u8, bool, i32)], out: &mut Vec<i32>) {
+    let mut index = 0;
+    while index < tree.len() {
+        let (tag, hidden, value) = tree[index];
+        index += 1;
+        if tag == 5 || tag == 6 {
+            if hidden {
+                continue;
+            }
+            out.push(value);
+        } else {
+            out.push(-value);
+        }
+    }
+}
+
+fn shadowed(tree: &[(u8, bool, i32)], out: &mut Vec<i32>) {
+    for &(tag, hidden, value) in tree {
+        if tag == 5 {
+            let doubled = value * 2;
+            out.push(doubled);
+            if hidden {
+                continue;
+            }
+            let doubled = doubled + 1;
+            out.push(doubled);
+        } else {
+            out.push(0);
+        }
+    }
+}
+
+fn last_continue(xs: &[i32], out: &mut Vec<i32>) {
+    for &x in xs {
+        out.push(0);
+        if x > 3 {
+            out.push(x);
+            continue;
+        }
+    }
+}
+
 fn dropped_after(xs: &[i32]) {
     for &x in xs {
         let n = Noisy(x);
@@ -104,6 +149,11 @@ fn main() {
     kept_else(&[1, 5, 2, 9], &mut out);
     else_continues(&[3, -2, 0, 4], &mut out);
     else_breaks(&[5, 7, 1, 9], &mut out);
+    let tree = [(5, false, 1), (6, true, 2), (1, false, 3), (6, false, 4)];
+    roots(&tree, &mut out);
+    shadowed(&tree, &mut out);
+    shadowed(&[(5, true, 7)], &mut out);
+    last_continue(&[2, 8], &mut out);
     println!("{out:?}");
     dropped_after(&[1, 5]);
 }
