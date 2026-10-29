@@ -1958,6 +1958,24 @@ pub mod string {
     pub fn locale_compare(this: &str, that: &str) -> core::cmp::Ordering {
         unreachable!()
     }
+
+    /// [`text.toLocaleLowerCase(locales)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase):
+    /// `text` lowered as the first of `locales` it has lowers it, or the
+    /// host's of `None`, left out: Turkish's `I` is a dotless `ı`, where
+    /// `str::to_lowercase`, which is no locale's, gives `i`.
+    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleLowerCase")]
+    pub fn to_locale_lower_case(this: &str, locales: Option<&[&str]>) -> String {
+        unreachable!()
+    }
+
+    /// [`text.toLocaleUpperCase(locales)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleUpperCase):
+    /// `text` raised as the first of `locales` it has raises it, or the
+    /// host's of `None`, left out: Turkish's `i` is a dotted `İ`, where
+    /// `str::to_uppercase` gives `I`.
+    #[cfg_attr(rust_js, rust_js::link_name = "toLocaleUpperCase")]
+    pub fn to_locale_upper_case(this: &str, locales: Option<&[&str]>) -> String {
+        unreachable!()
+    }
 }
 
 /// A JS number's methods, for where Rust's own `format!` isn't what's wanted.
