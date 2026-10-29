@@ -2,6 +2,7 @@
 
 import {
   $KeyMap,
+  $btreeMap,
   $cmp,
   $debugStr,
   $eq,
@@ -58,11 +59,43 @@ function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
 function main() {
   const tupleCopy = { copy: (value) => [value[0], value[1]] };
   const tupleOrd = { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) };
-  const graph = new $KeyMap();
-  addEdge(graph, [0, "a"], [1, "b"], 4, tupleOrd, tupleCopy, $KeyMap);
-  addEdge(graph, [0, "a"], [2, "c"], 1, tupleOrd, tupleCopy, $KeyMap);
-  addEdge(graph, [2, "c"], [1, "b"], 2, tupleOrd, tupleCopy, $KeyMap);
-  addEdge(graph, [0, "a"], [1, "b"], 3, tupleOrd, tupleCopy, $KeyMap);
+  const graph = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))();
+  addEdge(
+    graph,
+    [0, "a"],
+    [1, "b"],
+    4,
+    tupleOrd,
+    tupleCopy,
+    $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
+  );
+  addEdge(
+    graph,
+    [0, "a"],
+    [2, "c"],
+    1,
+    tupleOrd,
+    tupleCopy,
+    $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
+  );
+  addEdge(
+    graph,
+    [2, "c"],
+    [1, "b"],
+    2,
+    tupleOrd,
+    tupleCopy,
+    $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
+  );
+  addEdge(
+    graph,
+    [0, "a"],
+    [1, "b"],
+    3,
+    tupleOrd,
+    tupleCopy,
+    $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
+  );
   console.log(
     `{${Array.from($sortedEntries(graph, (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])))
       .map(
@@ -82,14 +115,17 @@ function main() {
     ],
     tupleOrd,
     tupleCopy,
-    $KeyMap,
+    $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
   );
   const value = $index(maps, 0);
-  const merged = new $KeyMap(value);
+  const merged = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))(value);
   const value$1 = $index(maps, 1);
   $extendMap(
     merged,
-    $sortedEntries(new $KeyMap(value$1), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])),
+    $sortedEntries(
+      new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))(value$1),
+      (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+    ),
     false,
   );
   merged.set([1, "x"], 5);

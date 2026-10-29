@@ -3,8 +3,11 @@
 // Vec, for loops, RefCell and `&mut` to objects (ADR 0025).
 
 import {
+  $BTreeMap,
+  $BTreeSet,
   $add,
   $at,
+  $btreeMap,
   $cmp,
   $cmpIn,
   $cmpItems,
@@ -300,7 +303,7 @@ export function grouped(n) {
 }
 
 export function sortedMaps(text) {
-  const counts = new Map();
+  const counts = new $BTreeMap();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);
     counts.set(word, (current + 1) >>> 0);
@@ -309,8 +312,8 @@ export function sortedMaps(text) {
   for (const [word, n] of $sortedEntries(counts, $cmp)) {
     order.push(`${word}=${n}`);
   }
-  const set = new Set([30, 4, 100, 7]);
-  const tiers = new Map([
+  const set = new $BTreeSet([30, 4, 100, 7]);
+  const tiers = new ($btreeMap((a, b) => $cmpIn(["Gold", "Bronze", "Silver"], a, b)))([
     ["Silver", 2],
     ["Gold", 3],
     ["Bronze", 1],

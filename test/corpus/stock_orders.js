@@ -3,6 +3,7 @@
 import {
   $add,
   $binarySearch,
+  $btreeMap,
   $byteLen,
   $cmp,
   $cmpIn,
@@ -135,7 +136,7 @@ const Inventory = {
   },
 
   byCategory(inventory) {
-    const groups = new Map();
+    const groups = new ($btreeMap((a, b) => $cmpIn(["Tools", "Garden", "Kitchen"], a, b)))();
     for (const item of Array.from(inventory.items.values())) {
       if (!groups.has(item.category)) {
         groups.set(item.category, []);

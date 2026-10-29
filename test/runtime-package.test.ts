@@ -170,7 +170,7 @@ pub fn once() -> u32 {
 test("a map keyed by a struct, hashed or ordered, reads as a Map to the JS given it", () => {
   const dir = fixture("runtime-key-map");
   writeFileSync(join(dir, "lib.rs"), `use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Point {
@@ -205,6 +205,39 @@ pub fn ordered() -> BTreeMap<Point, u32> {
     m.remove(&Point { x: 2, y: 0 });
     m
 }
+
+// Of a derived \`Ord\`, and of numbers: kept in key order too, as JS reads
+// them, where they're added out of it (#237).
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Cell {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub fn derived() -> BTreeMap<Cell, u32> {
+    let mut m = BTreeMap::new();
+    m.insert(Cell { x: 4, y: 5 }, 6);
+    m.insert(Cell { x: 1, y: 2 }, 3);
+    m
+}
+
+pub fn ranks() -> BTreeMap<u32, &'static str> {
+    let mut m = BTreeMap::from([(3, "bronze"), (1, "gold")]);
+    m.insert(2, "silver");
+    m
+}
+
+pub fn seen() -> BTreeSet<u32> {
+    BTreeSet::from([3, 1, 2])
+}
+
+// Emptied where it isn't yet sorted again: none to read.
+pub fn emptied() -> BTreeMap<u32, char> {
+    let mut m = BTreeMap::from([(2, 'b'), (1, 'a')]);
+    m.remove(&1);
+    m.remove(&2);
+    m
+}
 `);
   const out = join(dir, "lib.js");
   run([compiler, join(dir, "lib.rs"), "-o", out]);
@@ -215,9 +248,19 @@ console.log(JSON.stringify(seen), JSON.stringify([...m.keys()]), JSON.stringify(
   expect(run([node ?? "node", "--input-type=module", "--eval", read])).toBe(
     '[[1,2,3],[4,5,6]] [{"x":1,"y":2},{"x":4,"y":5}] [3,6] [[{"x":1,"y":2},3],[{"x":4,"y":5},6]] 6 true false 2\n',
   );
-  // A B-tree's `$OrdMap` is kept in its keys' order, as its JS sees it.
-  expect(run([node ?? "node", "--input-type=module", "--eval", read.replace(".places()", ".ordered()")])).toBe(
-    '[[1,2,3],[4,5,6]] [{"x":1,"y":2},{"x":4,"y":5}] [3,6] [[{"x":1,"y":2},3],[{"x":4,"y":5},6]] 6 true false 2\n',
+  // A B-tree is kept in its keys' order, as its JS sees it, whatever its
+  // key: its own `Ord`'s `$OrdMap`, or a derived one's (#237).
+  for (const made of [".ordered()", ".derived()"]) {
+    expect(run([node ?? "node", "--input-type=module", "--eval", read.replace(".places()", made)])).toBe(
+      '[[1,2,3],[4,5,6]] [{"x":1,"y":2},{"x":4,"y":5}] [3,6] [[{"x":1,"y":2},3],[{"x":4,"y":5},6]] 6 true false 2\n',
+    );
+  }
+  const numbers = `const lib = await import(${JSON.stringify(out)});
+const seen = [];
+lib.ranks().forEach((value, key) => seen.push(key));
+console.log(JSON.stringify([...lib.ranks()]), JSON.stringify([...lib.ranks().keys()]), JSON.stringify(seen), JSON.stringify([...lib.seen()]), JSON.stringify([...lib.emptied()]));`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", numbers])).toBe(
+    '[[1,"gold"],[2,"silver"],[3,"bronze"]] [1,2,3] [1,2,3] [1,2,3] []\n',
   );
 });
 

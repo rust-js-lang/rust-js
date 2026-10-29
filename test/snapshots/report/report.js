@@ -6,6 +6,7 @@
 // parse error (ADR 0070).
 
 import {
+  $BTreeMap,
   $cmp,
   $debugF64,
   $debugParseError,
@@ -115,7 +116,7 @@ export function table(input) {
     const value$1 = grade(r.score, r.age);
     out += `${$pad(value, 8, "<")}|${String(r.score).padStart(6)}|${$pad(value$1, 7, "^")}|${r.team.toUpperCase()}\n`;
   }
-  const byTeam = new Map();
+  const byTeam = new $BTreeMap();
   for (const r of rows) {
     if (!byTeam.has(r.team)) {
       byTeam.set(r.team, []);

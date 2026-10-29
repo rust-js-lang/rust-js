@@ -4,6 +4,8 @@ import {
   $KeyMap,
   $KeySet,
   $add,
+  $btreeMap,
+  $btreeSet,
   $cmp,
   $debugStr,
   $mutGet,
@@ -47,7 +49,10 @@ function main() {
   const value = marks.get(undefined);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
 
-  const levels = new $KeyMap();
+  const levels = new ($btreeMap(
+    (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+    $KeyMap,
+  ))();
   levels.set(2, 2);
   levels.set(node.parent, 0);
   levels.set(undefined, 1);
@@ -61,7 +66,10 @@ function main() {
       .join(", ")}}`,
   );
 
-  const sorted = new $KeySet();
+  const sorted = new ($btreeSet(
+    (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+    $KeySet,
+  ))();
   sorted.add("a");
   sorted.add(node.label);
   sorted.add(undefined);

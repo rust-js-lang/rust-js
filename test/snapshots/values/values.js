@@ -5,6 +5,7 @@
 // and `&mut` to numbers, fields and items handed to functions (ADR 0074).
 
 import {
+  $BTreeMap,
   $cmp,
   $debugF64,
   $debugStr,
@@ -158,13 +159,13 @@ function price(v) {
 }
 
 export function tree() {
-  const shop = new Map();
+  const shop = new $BTreeMap();
   shop.set("name", { TAG: "Str", _0: 'corner "shop"' });
   shop.set("open", { TAG: "Bool", _0: true });
   shop.set("qty", { TAG: "Num", _0: 3 });
-  const apple = new Map();
+  const apple = new $BTreeMap();
   apple.set("price", { TAG: "Num", _0: 0.5 });
-  const pear = new Map();
+  const pear = new $BTreeMap();
   pear.set("price", { TAG: "Num", _0: 1.25 });
   pear.set("tags", { TAG: "List", _0: [{ TAG: "Str", _0: "ripe" }, "Null"] });
   shop.set("items", {
@@ -196,7 +197,7 @@ export function tree() {
       : value.TAG === "Obj"
         ? {
             ...value,
-            _0: new Map(Array.from(value._0).map(([key, value]) => [key, cloneValue(value)])),
+            _0: new $BTreeMap(Array.from(value._0).map(([key, value]) => [key, cloneValue(value)])),
           }
         : value;
   const copy = cloneValue(v);

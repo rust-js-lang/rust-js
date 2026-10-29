@@ -4,6 +4,8 @@ import {
   $CowMap,
   $CowSet,
   $add,
+  $btreeMap,
+  $btreeSet,
   $cmp,
   $debugStr,
   $insert,
@@ -51,7 +53,7 @@ function main() {
     `${$add(seen, { TAG: "Borrowed", _0: "x" })} ${$add(seen, { TAG: "Owned", _0: "x" })}`,
   );
 
-  const tree = new $CowMap();
+  const tree = new ($btreeMap((a, b) => $cmp(a._0, b._0), $CowMap))();
   tree.set({ TAG: "Owned", _0: "pear" }, 1);
   tree.set({ TAG: "Borrowed", _0: "apple" }, 2);
   tree.set({ TAG: "Borrowed", _0: "pear" }, 3);
@@ -59,7 +61,7 @@ function main() {
     console.log(`${k._0} ${v} ${kind(k)}`);
   }
   const made = $treeFrom(
-    new $CowSet(),
+    new ($btreeSet((a, b) => $cmp(a._0, b._0), $CowSet))(),
     $iter([
       { TAG: "Borrowed", _0: "z" },
       { TAG: "Owned", _0: "z" },

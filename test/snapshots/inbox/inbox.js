@@ -8,6 +8,7 @@
 // apart.
 
 import {
+  $BTreeSet,
   $cmp,
   $debugF64,
   $debugFields,
@@ -314,7 +315,7 @@ function holderDeserialize_deserialize(json) {
       ["boxed", $json.u32],
       ["shared", $json.string],
       ["queue", $json.vec($json.i16)],
-      ["set", $json.set($json.char)],
+      ["set", (json) => new $BTreeSet($json.vec($json.char)(json))],
       ["by_char", $json.map($json.key.char, $json.u8)],
       ["by_int", $json.map($json.key.number($json.i32), $json.f64)],
       ["nested", $json.option($json.vec($json.option(ptDeserialize_deserialize)))],

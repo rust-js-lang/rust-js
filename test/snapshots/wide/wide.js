@@ -6,6 +6,7 @@
 // `<<` wrap as release Rust's do. JSON reads and writes them to the digit.
 
 import {
+  $BTreeMap,
   $bigAbs,
   $bigChecked,
   $bigCheckedDiv,
@@ -110,7 +111,7 @@ function paymentDeserialize_deserialize(json) {
 
 /** Each account's total, in cents. */
 export function balances(entries) {
-  const totals = new Map();
+  const totals = new $BTreeMap();
   for (const [account, cents] of entries) {
     const current = $orInsert(totals, account, 0n);
     totals.set(account, BigInt.asIntN(64, current + cents));

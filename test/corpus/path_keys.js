@@ -4,6 +4,8 @@ import {
   $PathMap,
   $PathSet,
   $add,
+  $btreeMap,
+  $btreeSet,
   $cmp,
   $debugStr,
   $insert,
@@ -49,7 +51,7 @@ function main() {
     console.log(`${p} ${$add(seen, p)}`);
   }
 
-  const tree = new $PathMap();
+  const tree = new ($btreeMap($pathCmp, $PathMap))();
   for (const [i, p] of ["a.b", "a/b", "a", "/z", "../up", "./here"].entries()) {
     tree.set(p, i & 255);
   }
@@ -58,14 +60,19 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
-  const set = $treeFrom(new $PathSet(), $iter(["b/c", "b", "b//c"]), true, $pathCmp);
+  const set = $treeFrom(
+    new ($btreeSet($pathCmp, $PathSet))(),
+    $iter(["b/c", "b", "b//c"]),
+    true,
+    $pathCmp,
+  );
   console.log(
     `{${Array.from($sortedKeys(set, $pathCmp))
       .map((item) => $debugStr(item))
       .join(", ")}}`,
   );
   const from = $treeFrom(
-    new $PathMap(),
+    new ($btreeMap($pathCmp, $PathMap))(),
     [
       ["x/y", 1],
       ["x//y", 2],

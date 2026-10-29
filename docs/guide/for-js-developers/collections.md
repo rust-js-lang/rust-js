@@ -925,7 +925,8 @@ export function pending(keys) {
 ```
 
 A map you want in key order is a `BTreeMap`, a set a `BTreeSet`. It's a JS
-`Map` too, and Rust code iterates it in key order:
+`Map` too, a `$BTreeMap`, kept in key order where it's read, by Rust code
+and by the JS you hand it, however it was filled:
 
 ```rust
 use std::collections::BTreeMap;
@@ -941,10 +942,10 @@ pub fn scores() {
 ```
 
 ```js
-import { $cmp, $sortedEntries } from "@rust-js/runtime";
+import { $BTreeMap, $cmp, $sortedEntries } from "@rust-js/runtime";
 
 export function scores() {
-  const scores = new Map();
+  const scores = new $BTreeMap();
   scores.set("b", 2);
   scores.set("a", 1);
   for (const [name, score] of $sortedEntries(scores, $cmp)) {

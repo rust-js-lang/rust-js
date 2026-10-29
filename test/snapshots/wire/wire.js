@@ -8,6 +8,7 @@
 // 0079).
 
 import {
+  $BTreeMap,
   $cmp,
   $debugF64,
   $debugFields,
@@ -417,10 +418,10 @@ export function sample() {
     paid: true,
     cache: 99,
   };
-  const counts = new Map();
+  const counts = new $BTreeMap();
   counts.set("x", 1);
   counts.set("a", 2);
-  const byId = new Map();
+  const byId = new $BTreeMap();
   byId.set(10, true);
   byId.set(2, false);
   return {

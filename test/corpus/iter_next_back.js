@@ -2,6 +2,7 @@
 
 import { iterator_peekable, peekableDoubleEndedIterator_nextBack } from "@rust-js/std/iter.js";
 import {
+  $BTreeMap,
   $cmp,
   $debugStr,
   $iter,
@@ -74,7 +75,7 @@ function main() {
   const value$4 = $next(both);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
 
-  const tree = new Map([
+  const tree = new $BTreeMap([
     [1, "a"],
     [2, "b"],
     [3, "c"],

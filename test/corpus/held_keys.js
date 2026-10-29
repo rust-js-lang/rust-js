@@ -5,12 +5,14 @@ import {
   $CowSet,
   $PathMap,
   $PathSet,
+  $btreeMap,
   $cmp,
   $debugStr,
   $entry,
   $entryRemove,
   $getKeyValue,
   $ordSet,
+  $pathCmp,
   $setReplace,
   $setTake,
   $storedKey,
@@ -69,7 +71,7 @@ function main() {
   const get = $storedKey(tags, "new");
   console.log(`${get != null && get.TAG === "Owned"}`);
 
-  const sizes = new $PathMap();
+  const sizes = new ($btreeMap($pathCmp, $PathMap))();
   sizes.set("a/b", 1);
   const entry = $entry(sizes, "a//b");
   if (entry.TAG === "Occupied") {

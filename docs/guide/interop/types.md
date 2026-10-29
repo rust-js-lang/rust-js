@@ -242,7 +242,7 @@ pub fn middle(items: &[i32]) -> &[i32] {
 ```
 
 ```js
-import { $cmp, $slice, $sortedEntries } from "@rust-js/runtime";
+import { $BTreeMap, $cmp, $slice, $sortedEntries } from "@rust-js/runtime";
 
 export function scores() {
   return [["Ada", 3]];
@@ -265,7 +265,7 @@ export function logTags(tags) {
 }
 
 export function ranks() {
-  return new Map([
+  return new $BTreeMap([
     [2, "silver"],
     [1, "gold"],
   ]);
@@ -293,7 +293,11 @@ export function middle(items) {
   `Array.from(tags)` has them
   ([ADR 0877](../../decisions/0877-a-sets-for-each-is-its-own.md)).
 - **A `BTreeMap` is a `Map` and a `BTreeSet` a `Set`,** iterated in key
-  order.
+  order by Rust and by the JS it's given alike, whatever its key: a
+  `$BTreeMap`, a `$btreeMap(cmp, $KeyMap)` of a key compared by value, or
+  an `$ordMap(cmp)` of a key with an `Ord` of its own, each a `Map`.
+  Rust reads a `Map` JS gives it in key order too
+  ([ADR 0404](../../decisions/0404-a-b-tree-keyed-by-value.md), amended).
 - **A `js::Map` is JS's `Map` of any key**, as TypeScript's `Map<K, V>`
   is, each key the one JS's `SameValueZero` says, an object by itself,
   `undefined` and `null` apart, `NaN` itself: `Map<Option<&Unknown>, V>`

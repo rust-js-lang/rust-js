@@ -3,6 +3,8 @@
 import {
   $KeyMap,
   $KeySet,
+  $btreeMap,
+  $btreeSet,
   $cmp,
   $cmpItems,
   $debugStr,
@@ -26,7 +28,7 @@ function pointDebug_fmt(point) {
 }
 
 function main() {
-  const grid = new $KeyMap();
+  const grid = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))();
   grid.set([2, 1], "a");
   grid.set([1, 5], "b");
   grid.set([1, -3], "c");
@@ -94,7 +96,7 @@ function main() {
       .join(", ")}}`,
   );
 
-  const points = new $KeySet([
+  const points = new ($btreeSet((a, b) => $cmp(a.x, b.x) || $cmp(a.y, b.y), $KeySet))([
     { x: 3, y: 0 },
     { x: 1, y: 9 },
     { x: 1, y: 2 },
@@ -107,7 +109,19 @@ function main() {
       .join(", ")}} ${last == null ? "None" : `Some(${pointDebug_fmt(last)})`} ${points.size}`,
   );
 
-  const shapes = new $KeyMap();
+  const shapes = new ($btreeMap(
+    (a, b) =>
+      $cmp(
+        a.TAG === "Rect" ? 0 : a.TAG === "Circle" ? 1 : 2,
+        b.TAG === "Rect" ? 0 : b.TAG === "Circle" ? 1 : 2,
+      ) ||
+      (a.TAG === "Rect"
+        ? $cmp(a._0, b._0) || $cmp(a._1, b._1)
+        : a.TAG === "Circle"
+          ? $cmp(a._0, b._0)
+          : 0),
+    $KeyMap,
+  ))();
   shapes.set("Dot", "dot");
   shapes.set({ TAG: "Circle", _0: 2 }, "small");
   shapes.set({ TAG: "Rect", _0: 1, _1: 9 }, "tall");
@@ -131,7 +145,12 @@ function main() {
       .join(", ")}]`,
   );
 
-  const paths = new $KeySet();
+  const paths = new ($btreeSet(
+    (a, b) =>
+      (a[0] == null ? (b[0] == null ? 0 : -1) : b[0] == null ? 1 : $cmp(a[0], b[0])) ||
+      $cmpItems(a[1], b[1], $cmp),
+    $KeySet,
+  ))();
   paths.add([1, [2, 3]]);
   paths.add([undefined, [9]]);
   paths.add([1, [2]]);

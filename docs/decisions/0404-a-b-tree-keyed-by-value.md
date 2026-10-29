@@ -90,3 +90,40 @@ JS calls and no Rust program does. A B-tree handed to JS iterates in key
 order only where its key has an `Ord` of its own; any other is a `Map` in
 insertion order, which Rust sorts as it steps it: #237 asks which the
 boundary should be.
+
+## Amendment: a B-tree is read in its keys' order by the JS it's given (#237)
+
+A B-tree of keys a hashed map finds, a number's, a string's, or a
+derived `Ord`'s, was a `Map` or a `$KeyMap` in the order it was added,
+sorted only where Rust read it (`$sortedEntries`): `ranks()`'s `new
+Map([[2, "silver"], [1, "gold"]])` gave a JS `for...of` 2 first, where a
+key of its own `Ord`, an `$OrdMap`, gave 1. One type, two orders a JS
+caller sees, and the guide's "iterated in key order" true of one. Case C
+([0262](0262-when-rust-and-js-disagree.md)): the order a caller reads is
+the type's, Rust's, so JS's must be it too.
+
+**A B-tree of keys a hashed map finds is a `$btreeMap(cmp, Base)` or
+`$btreeSet(cmp, Base)`, of the class a hashed map of them is, `Map`,
+`$KeyMap` or another, read in `cmp`'s order by Rust and by JS alike;
+`$BTreeMap` and `$BTreeSet` of keys `$cmp` orders** (`map::btree_class`,
+the user's choice of a lazily sorted class). A key added past its last
+is in place; one added before it sorts its entries again, in place,
+before it's next read, so adding and finding stay a hashed map's, and
+reading in order costs a sort once each change.
+
+```js
+const ranks = new $BTreeMap([[2, "silver"], [1, "gold"]]);
+const grid = new ($btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap))();
+```
+
+- **Rust still reads it by `$sortedEntries`**, as a `Map` JS hands a
+  `&BTreeMap` may be in any order: a sort of one already sorted is a
+  pass over it.
+- **A key of its own `Ord`** is an `$OrdMap` as before, found by it.
+
+Held by `test/runtime-package.test.ts` ("a map keyed by a struct, hashed
+or ordered, reads as a Map to the JS given it"), each kind of key read by
+JS's `for...of`, `keys()` and `forEach` in key order, one emptied before
+it's sorted again read as empty, 64 corpus cases against native Rust,
+and the mutations `btree-*` (`runtime/btree.ts`,
+`lower/std_types/map.ts`).

@@ -7,6 +7,7 @@
 // them.
 
 import {
+  $BTreeMap,
   $cmp,
   $debugF64,
   $debugJsonError,
@@ -1758,7 +1759,7 @@ export function report() {
   out += (value$46.TAG === "Ok" ? value$46._0 : $displayJsonError(value$46._0)) + "\n";
   const value$47 = $toJson({ items: [1] }, badSeqSerialize_serialize, false);
   out += (value$47.TAG === "Ok" ? value$47._0 : $displayJsonError(value$47._0)) + "\n";
-  const listing = { name: "p", meta: { page: 2, total: 3 }, extra: new Map() };
+  const listing = { name: "p", meta: { page: 2, total: 3 }, extra: new $BTreeMap() };
   out +=
     $unwrapOk(
       $toJson({ listing, flag: false }, nestedSerialize_serialize, true),

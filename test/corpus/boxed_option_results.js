@@ -3,6 +3,7 @@
 import { iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $KeySet,
+  $btreeSet,
   $cmp,
   $iter,
   $nextIfSome,
@@ -60,7 +61,10 @@ function main() {
     `${first == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(first))})`} ${second == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(second))})`} ${arg == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(arg))})`}`,
   );
 
-  const set = new $KeySet([2, undefined]);
+  const set = new ($btreeSet(
+    (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),
+    $KeySet,
+  ))([2, undefined]);
   const value$6 = $treeEnd(
     set,
     (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)),

@@ -4,6 +4,8 @@ import {
   $KeyMap,
   $KeySet,
   $add,
+  $btreeMap,
+  $btreeSet,
   $cmp,
   $entry,
   $extendMap,
@@ -133,7 +135,7 @@ function main() {
       keyDrop_drop(item);
     }
   }
-  const t = new $KeyMap();
+  const t = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
   try {
     $insert(t, [9], "a", keyDrop_drop);
     $insert(t, [8], "b", keyDrop_drop);
@@ -142,7 +144,7 @@ function main() {
       keyDrop_drop(key);
     }
     t.clear();
-    const sorted = new $KeySet();
+    const sorted = new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))();
     try {
       $add(sorted, [11], keyDrop_drop);
       $add(sorted, [10], keyDrop_drop);

@@ -636,4 +636,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/limitations.test.ts", "-t", "A map or set in generic code keyed by a type made of a type parameter"],
   },
+  {
+    name: "btree-class-hashed",
+    breaks: "a B-tree of keys a hashed map finds is a plain `Map` or `$KeyMap` in the order it's added, so JS reads `[[2, \"silver\"], [1, \"gold\"]]` where Rust's order is its keys' (#237)",
+    file: "src/lower/std_types/map.rs",
+    find: "        if !sorted {\n            return Ok(base.unwrap_or_else(",
+    replace: "        if true {\n            return Ok(base.unwrap_or_else(",
+    tests: ["test/runtime-package.test.ts", "-t", "reads as a Map"],
+  },
 ];

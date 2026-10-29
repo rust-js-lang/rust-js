@@ -372,12 +372,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // parts, that one's `$id` (ADR 1015, amended).
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) => {
                 let parts = self.key_parts_fn("key", key, span)?;
-                return Ok(Expr::call_helper(["$keyMap", "$keySet"][usize::from(set)], vec![parts]));
+                let class = Expr::call_helper(["$keyMap", "$keySet"][usize::from(set)], vec![parts]);
+                return self.btree_class((set, sorted), key, Some(class), span);
             }
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
-            _ => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
+            Some(key) => return self.btree_class((set, sorted), key, None, span),
+            None => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
         };
-        Ok(Expr::helper(name))
+        match key {
+            Some(key) => self.btree_class((set, sorted), key, Some(Expr::helper(name)), span),
+            None => Ok(Expr::helper(name)),
+        }
+    }
+
+    /// The class of a map or a set of `key`s made of `base`, its hashed
+    /// one's, `Map` and `Set` of `None`: of a B-tree, `$btreeMap(cmp, base)`
+    /// and `$btreeSet(cmp, base)`, read in its keys' order by Rust and by
+    /// the JS it's given alike, `$BTreeMap` and `$BTreeSet` of keys `$cmp`
+    /// orders (ADR 0404, amended; #237).
+    fn btree_class(&mut self, (set, sorted): (bool, bool), key: Ty<'tcx>, base: Option<Expr>, span: Span) -> R<Expr> {
+        if !sorted {
+            return Ok(base.unwrap_or_else(|| Expr::var(["Map", "Set"][usize::from(set)])));
+        }
+        let cmp = self.cmp_fn(key, false, span)?;
+        if base.is_none() && cmp.helper_name() == Some("$cmp") {
+            return Ok(Expr::helper(["$BTreeMap", "$BTreeSet"][usize::from(set)]));
+        }
+        let args = std::iter::once(cmp).chain(base).collect();
+        Ok(Expr::call_helper(["$btreeMap", "$btreeSet"][usize::from(set)], args))
     }
 
     /// What a call makes: a map or a set of what its key is, as its type
