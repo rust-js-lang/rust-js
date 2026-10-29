@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-class-a-tuple",
+    breaks: "an untagged enum's `js::Class` variant is tested `Array.isArray(value)`, as a tuple struct, so a class given is no `Class` (#303)",
+    file: "src/lower/untagged.rs",
+    find: "            && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
+    replace: "            && false && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
+    tests: ["test/compiler.test.ts", "-t", "js::Class is a function"],
+  },
+  {
     name: "untagged-ref-cell-refused",
     breaks: "an untagged enum's variant of a `RefCell<Vec<f64>>`, the array, is refused, React's `ThenableState` (ADR 0214, amended)",
     file: "src/lower/untagged.rs",

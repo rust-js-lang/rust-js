@@ -329,3 +329,28 @@ by the class TypeScript names", whose undeclared `Tag` and whose
 threw"; and by the mutations `binding-class-any-name` (retargeted) and
 `untagged-js-error-an-object`. `test/untagged.rs` declares the `types` of
 its `Error` and `TypeError` classes, which it tests by `instanceof`.
+
+## Amendment: the js crate's `Class` and timeout ids (#303)
+
+Two of the js crate's types were tested wrong as an untagged enum's
+payload:
+- `js::Class` was taken for a tuple struct, since its `PhantomData` of a
+  pair kept it from being a JS object type, and tested `Array.isArray`. A
+  class given was no `Class`.
+- `js::TimeoutId` and `js::IntervalId` declared no TypeScript, so they were
+  tested `typeof value === "object"`. In a browser they're numbers, so
+  that test was false.
+
+Both are wrong answers, so ADR 0262's "results change" case: Rust's
+behavior is kept, or the program refused.
+
+- `Class`, which `recognition::is_js_class` recognizes, is a function,
+  `typeof value === "function"`, of any signature.
+- The timeout ids now declare what they are, `#[rust_js::types = "number |
+  object"]`. That's a union, which no test tells from another number or
+  object, so an untagged variant of one is refused. Their `.d.ts` reads
+  `number | object` too, not `any`.
+
+The case is compiler.test.ts's "an untagged enum's js::Class is a
+function, and a timeout id is refused". The mutation is
+`untagged-class-a-tuple`.

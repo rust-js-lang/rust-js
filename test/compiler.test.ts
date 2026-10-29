@@ -1338,3 +1338,52 @@ test("generic iterators take arrays and JS iterators alike", async () => {
   // One of the crate's own, given where a generic one goes.
   expect(js).toContain("total($iterator({ n }, countdownIterator_next))");
 });
+
+// #303: the js crate's types JS tells apart by what they are: a `Class`, a
+// constructor, is a function, `typeof value === "function"`, of any
+// signature; a `TimeoutId` or an `IntervalId`, a number in a browser and an
+// object in Node, `number | object`, is refused, as nothing tells it from
+// another number or object.
+test("an untagged enum's js::Class is a function, and a timeout id is refused", async () => {
+  buildReact();
+  const dir = fixture("untagged-js-kinds");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Class;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Made<'a> {
+    Class(&'a Class),
+    Text(&'a str),
+}
+
+pub fn is_class(made: Made<'_>) -> bool {
+    matches!(made, Made::Class(_))
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return typeof made === "function";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.isClass(class Point {}), lib.isClass("Point")]).toEqual([true, false]);
+  const timer = fixture("untagged-timeout-id");
+  writeFileSync(
+    join(timer, "lib.rs"),
+    `use js::TimeoutId;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Timer<'a> {
+    Id(&'a TimeoutId),
+    Count(u32),
+}
+
+pub fn is_id(timer: Timer<'_>) -> bool {
+    matches!(timer, Timer::Id(_))
+}
+`,
+  );
+  const refused = Bun.spawnSync([compiler, join(timer, "lib.rs"), "-o", join(timer, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(refused.exitCode).not.toBe(0);
+  expect(refused.stderr.toString()).toContain("JS can't tell a `&'a js::TimeoutId` from another variant's value");
+});

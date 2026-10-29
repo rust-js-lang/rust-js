@@ -1545,10 +1545,13 @@ pub fn is_finite(value: f64) -> bool {
 }
 
 /// What `set_timeout` gives, to clear it with: a number in a browser, an
-/// object in Node.
+/// object in Node, which JS can't tell from another number or object.
+#[cfg_attr(rust_js, rust_js::types = "number | object")]
 pub struct TimeoutId(PhantomData<JsObject>);
 
-/// What `set_interval` gives, to clear it with.
+/// What `set_interval` gives, to clear it with: a number in a browser, an
+/// object in Node, as `TimeoutId` is.
+#[cfg_attr(rust_js, rust_js::types = "number | object")]
 pub struct IntervalId(PhantomData<JsObject>);
 
 // Timers: not the language's own, but every JS runtime's, browsers', workers'

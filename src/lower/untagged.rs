@@ -281,6 +281,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Kind::Test(test));
         }
+        // `js::Class`, a constructor, is a function, of any signature (#303).
+        if let ty::Adt(adt, _) = ty.kind()
+            && crate::lower::recognition::is_js_class(self.tcx, adt.did())
+        {
+            return Some(Kind::Function);
+        }
         // Of any other JS object type, what TypeScript names it (#391): a
         // global class, `#[rust_js::types = "HTMLElement"]`, which
         // `instanceof` tests by that name; an object of no class

@@ -764,7 +764,11 @@ export function size(input) {
   module doesn't import, and so is a type that declares none, never
   `instanceof` a class of its name JS may not have. `JsError`, what JS
   threw, may be any value, and is an error as a variant's payload
-  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A `RefCell` of an array or an object is that, and an
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A
+  `js::Class`, a constructor, is a function, `typeof value === "function"`;
+  a `js::TimeoutId` or `js::IntervalId`, `number | object`, a number in a
+  browser and an object in Node, is an error, as nothing tells it from
+  another number or object. A `RefCell` of an array or an object is that, and an
   `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
   an array, except where the crate has one as a box, `{ value }` or
   counted, an error. One without fields is its name's string, or `undefined`,
