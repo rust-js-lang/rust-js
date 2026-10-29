@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { validate } from "../../models/src/lib.js";
 // A new contact: checked as the server will check it (`models::validate`)
 // before it's sent, then the server's answer, its errors by field.
-import { Failure, create } from "./api.js";
+import { Failure } from "./api.js";
+import * as Api from "./api.js";
 import { go } from "./route.js";
 import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/runtime";
 
@@ -45,7 +46,7 @@ export function NewContactForm() {
     setErrors([]);
     setSending(true);
     (async () => {
-      const value = await create(new$);
+      const value = await Api.create(new$);
       if (value.TAG !== "Err") {
         toast(`Added ${value._0.name}`);
         go(`#/contacts/${value._0.id}`);

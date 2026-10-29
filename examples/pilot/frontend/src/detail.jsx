@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 // One contact, loaded by its id, or why it can't be.
-import { Failure, contact } from "./api.js";
+import { Failure } from "./api.js";
+import * as Api from "./api.js";
 
 export function ContactPage({ id }) {
   const [loaded, setLoaded] = useState("Loading");
@@ -11,7 +12,7 @@ export function ContactPage({ id }) {
     const signal = controller.signal;
     setLoaded("Loading");
     (async () => {
-      const value = await contact(id, signal);
+      const value = await Api.contact(id, signal);
       if (value.TAG === "Err") {
         if (value._0 === "Aborted") {
           return;

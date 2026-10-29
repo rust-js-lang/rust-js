@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 // The contacts, searched as you type. Each search replaces the last: the
 // one before is aborted, so an answer that comes late never shows.
-import { Failure, contacts } from "./api.js";
+import { Failure } from "./api.js";
+import * as Api from "./api.js";
 
 export function ContactList() {
   const [query, setQuery] = useState("");
@@ -14,7 +15,7 @@ export function ContactList() {
     const signal = controller.signal;
     setLoaded("Loading");
     (async () => {
-      const value = await contacts(query, signal);
+      const value = await Api.contacts(query, signal);
       if (value.TAG !== "Err") {
         setLoaded({ TAG: "Contacts", _0: value._0 });
       } else if (value._0 !== "Aborted") {
