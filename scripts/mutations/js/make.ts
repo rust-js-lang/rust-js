@@ -510,20 +510,11 @@ export const mutations: Mutation[] = [
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
   },
   {
-    name: "text-joined-unknown",
-    breaks: "text joined already isn't known text, so `\";\" + name + \":\" + (\"\" + value)` keeps its `\"\" +` (rd74)",
-    file: "src/js/make.rs",
-    find: "        ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),\n",
-    replace: "        ExprKind::Binary(Op::Add, lhs, _) => false && is_text(lhs),\n",
-    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
-    snapshots: true,
-  },
-  {
     name: "known-text-unread",
     breaks: "a `String` written to isn't known text, so `s += &js::concat_text(n)` keeps its `\"\" +`, `s += \"\" + n` (ADR 0639, amended)",
     file: "src/js/make.rs",
-    find: "    if e.facts.has(Known::Text) {\n        return true;\n    }\n",
-    replace: "",
+    find: "    e.facts.has(Known::Text)\n        || matches!(",
+    replace: "    false\n        || matches!(",
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
   },
   {

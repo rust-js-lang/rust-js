@@ -1179,18 +1179,15 @@ fn typed_present(test: &Expr, place: &Expr) -> bool {
     }
 }
 
-/// Whether `e` is text whatever its parts are: a string, a template, a
-/// `+` of text to anything, which JS's `+` makes text, or what's known to
-/// be (`Known::Text`).
+/// Whether `e` is text whatever its parts are: a string, a template, or
+/// what's known to be (`Known::Text`), as a `String` added to is
+/// (`Expr::text_joined`), `";" + name + ":"`.
 fn is_text(e: &Expr) -> bool {
-    if e.facts.has(Known::Text) {
-        return true;
-    }
-    match &e.kind {
-        ExprKind::Str(_) | ExprKind::Written(_) | ExprKind::Template(..) => true,
-        ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),
-        _ => false,
-    }
+    e.facts.has(Known::Text)
+        || matches!(
+            &e.kind,
+            ExprKind::Str(_) | ExprKind::Written(_) | ExprKind::Template(..)
+        )
 }
 
 /// `x === null` of `x !== undefined && x == null`, `x !== null` of `x ===

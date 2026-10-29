@@ -152,3 +152,17 @@ once. Held by `test/bindings.test.ts`'s "any value is read as JS reads
 it" (`appended`, run) and the mutations `known-text-unread`,
 `appended-text-unjoined`, `add-assign-text-unjoined` and
 `concat-text-unjoined`.
+
+## Amendment (2026-10-29): text joined already is known text alone
+
+With a `String`'s `+` known text (the amendment above), `is_text`'s arm
+of a `+` of text to anything, `";" + name + ":"`, reached nothing: the
+left side of every such `+` the lowering makes is a `String` added to,
+marked `Known::Text` by `Expr::text_joined`. With the arm out, no corpus
+case's JS changed (snapshots compared), nor the lowering, snapshot, JSX,
+bindings, compiler or port suites', nor React's port's JS, built from a
+copy; and its mutation, `text-joined-unknown`, survived. The arm went with
+it: what's text is a string, a template, or what's known to be.
+`createDangerousStringForStyles`'s `";" + name + ":" + value + "px"` is
+still held by "any value is read as JS reads it" (`styled`, run) and
+`known-text-unread`.
