@@ -797,4 +797,12 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+  {
+    name: "closing-source-holding-nothing-unclosed",
+    breaks: "a zip of a slice's `iter_mut()` or a `chars()` and a `Vec` of items with a destructor is dropped by its fields, `for (const item of iter.b)`, which a `$lazyZip` hasn't: a TypeError (#406)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)\n",
+    replace: "        (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_borrowed_and_owned.rs$"],
+  },
 ];

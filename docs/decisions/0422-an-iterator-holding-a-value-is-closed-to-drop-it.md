@@ -97,3 +97,20 @@ still has. `skip(n)` of one is `$skipDropping(it, n, drop)`, which drops
 what it passes over as it's first stepped, as Rust's `nth` does, and what
 it hasn't given when it's closed, where JS's `drop` would pass over them
 undropped. The `take_destructors` corpus case runs each with native Rust.
+
+## Amendment: a side that holds nothing to drop (#406)
+
+A zip of a slice's `iter_mut()`, a `chars()` or a map's `keys()` and a
+`Vec` whose items have a destructor threw where it ended: `for (const item
+of iter.b) ..`, std's `Zip`'s drop of its fields, of a `$lazyZip`, which
+has no `b`. Closing such a zip drops what's left of the `Vec`, but
+`closing_source` gave no answer of its other side, only an array's
+`iter()` and a range being known to hold nothing. **A side that holds
+nothing a drop runs code for, as rustc's `needs_drop` says of its type,
+closes dropping nothing**, so the zip is closed as it's dropped,
+`iter.return()`. Case R: the JS threw where Rust drops. Its case's zips
+step in `while (true)`, as a closing one does, the readability baseline's
+share of those blessed for it. Held by
+`test/corpus/zip_of_borrowed_and_owned.rs` against native Rust, at the
+zip's end and at a `break`, and the mutation
+`closing-source-holding-nothing-unclosed` (`recognition/iterators.ts`).

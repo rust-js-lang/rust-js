@@ -403,7 +403,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(source));
         }
-        (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)
+        // One that holds nothing a drop runs code for, a `chars()` or an
+        // `iter_mut()`: closing it drops nothing, its zip's other side (#406).
+        let holds_nothing =
+            !rustc_middle::ty::TypeVisitableExt::has_param(&source) && !source.needs_drop(self.tcx, self.typing_env);
+        (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)
     }
 
     /// The `Iterator` method `name` the impl of the crate's iterator `ty`
