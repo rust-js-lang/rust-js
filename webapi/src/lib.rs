@@ -6632,6 +6632,230 @@ impl AbortSignal {
 
 }
 
+/// `Document | ShadowRoot`, a value of each: what they all have, as TypeScript's union of them has it.
+#[cfg_attr(rust_js, rust_js::types = "Document | ShadowRoot")]
+pub struct DocumentOrShadowRoot(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DocumentOrShadowRoot {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentOrShadowRoot {}
+
+impl Deref for DocumentOrShadowRoot {
+    type Target = Node;
+
+    fn deref(&self) -> &Node {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const Node) }
+    }
+}
+
+pub mod document_or_shadow_root {
+    use super::*;
+
+    /// Treats `this` as `DocumentOrShadowRoot` without checking that it is one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unchecked_from(this: &EventTarget) -> &'static DocumentOrShadowRoot {
+        unreachable!()
+    }
+}
+
+impl DocumentOrShadowRoot {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/getElementById)
+    #[cfg_attr(rust_js, rust_js::link_name = "getElementById")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_element_by_id(&self, element_id: &str) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/styleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "get styleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn style_sheets(&self) -> &'static StyleSheetList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "get adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn adopted_style_sheets(&self) -> &'static [&'static CSSStyleSheet] {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/adoptedStyleSheets)
+    #[cfg_attr(rust_js, rust_js::link_name = "set adoptedStyleSheets")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_adopted_style_sheets(&self, value: &[&CSSStyleSheet]) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/customElementRegistry)
+    #[cfg_attr(rust_js, rust_js::link_name = "get customElementRegistry")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn custom_element_registry(&self) -> Option<&'static CustomElementRegistry> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/fullscreenElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fullscreen_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/activeElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get activeElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn active_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/pictureInPictureElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/pointerLockElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pointer_lock_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/getAnimations)
+    #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_animations(&self) -> Vec<&'static Animation> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/children)
+    #[cfg_attr(rust_js, rust_js::link_name = "get children")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn children(&self) -> &'static HTMLCollection {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/firstElementChild)
+    #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn first_element_child(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/lastElementChild)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn last_element_child(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/childElementCount)
+    #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn child_element_count(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/prepend)
+    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn prepend(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/append)
+    #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn append(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/replaceChildren)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_children(&self, nodes: impl Rest<dyn IntoNodeOrStr>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/moveBefore)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
+    #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_before(&self, node: &Node, child: Option<&Node>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/querySelector)
+    #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/querySelectorAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
+        unreachable!()
+    }
+
+    /// A `Document` or a `ShadowRoot`, or one that extends one, as a `Document | ShadowRoot`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn of(this: &impl IsA<DocumentOrShadowRoot>) -> &DocumentOrShadowRoot {
+        unreachable!()
+    }
+
+}
+
 /// [`HTMLElement`](https://developer.mozilla.org/docs/Web/API/HTMLElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLElement")]
 pub struct HTMLElement(PhantomData<JsObject>);
@@ -116276,6 +116500,12 @@ impl<'a> From<&'a DocumentFragment> for NodeOrStr<'a> {
     }
 }
 
+impl<'a> From<&'a DocumentOrShadowRoot> for NodeOrStr<'a> {
+    fn from(value: &'a DocumentOrShadowRoot) -> Self {
+        NodeOrStr::Node(value)
+    }
+}
+
 impl<'a> From<&'a HTMLElement> for NodeOrStr<'a> {
     fn from(value: &'a HTMLElement) -> Self {
         NodeOrStr::Node(value)
@@ -117194,6 +117424,7 @@ impl IntoNodeOrStr for &Comment {}
 impl IntoNodeOrStr for &Element {}
 impl IntoNodeOrStr for &Document {}
 impl IntoNodeOrStr for &DocumentFragment {}
+impl IntoNodeOrStr for &DocumentOrShadowRoot {}
 impl IntoNodeOrStr for &HTMLElement {}
 impl IntoNodeOrStr for &HTMLAnchorElement {}
 impl IntoNodeOrStr for &HTMLButtonElement {}
@@ -120186,6 +120417,7 @@ mod sealed {
     impl Sealed for &DeviceOrientationEvent {}
     impl Sealed for &Document {}
     impl Sealed for &DocumentFragment {}
+    impl Sealed for &DocumentOrShadowRoot {}
     impl Sealed for &DocumentPictureInPictureEvent {}
     impl Sealed for &DocumentType {}
     impl Sealed for &DragEvent {}
@@ -122908,6 +123140,85 @@ impl Listen<events::Validationstatuschange> for DocumentFragment { type Event = 
 impl Listen<events::Wheel> for DocumentFragment { type Event = WheelEvent; }
 
 impl Listen<events::Abort> for AbortSignal { type Event = Event; }
+
+impl Listen<events::DOMActivate> for DocumentOrShadowRoot { type Event = UIEvent; }
+impl Listen<events::DOMFocusIn> for DocumentOrShadowRoot { type Event = FocusEvent; }
+impl Listen<events::DOMFocusOut> for DocumentOrShadowRoot { type Event = FocusEvent; }
+impl Listen<events::Animationcancel> for DocumentOrShadowRoot { type Event = AnimationEvent; }
+impl Listen<events::Animationend> for DocumentOrShadowRoot { type Event = AnimationEvent; }
+impl Listen<events::Animationiteration> for DocumentOrShadowRoot { type Event = AnimationEvent; }
+impl Listen<events::Animationstart> for DocumentOrShadowRoot { type Event = AnimationEvent; }
+impl Listen<events::Auxclick> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Beforeinput> for DocumentOrShadowRoot { type Event = InputEvent; }
+impl Listen<events::Beforematch> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Beforexrselect> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Cancel> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Change> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Click> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Compositionend> for DocumentOrShadowRoot { type Event = CompositionEvent; }
+impl Listen<events::Compositionstart> for DocumentOrShadowRoot { type Event = CompositionEvent; }
+impl Listen<events::Compositionupdate> for DocumentOrShadowRoot { type Event = CompositionEvent; }
+impl Listen<events::Contextmenu> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Copy> for DocumentOrShadowRoot { type Event = ClipboardEvent; }
+impl Listen<events::Cut> for DocumentOrShadowRoot { type Event = ClipboardEvent; }
+impl Listen<events::Dblclick> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Drag> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Dragend> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Dragenter> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Dragleave> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Dragover> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Dragstart> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Drop> for DocumentOrShadowRoot { type Event = DragEvent; }
+impl Listen<events::Enterpictureinpicture> for DocumentOrShadowRoot { type Event = PictureInPictureEvent; }
+impl Listen<events::Fencedtreeclick> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Focusin> for DocumentOrShadowRoot { type Event = FocusEvent; }
+impl Listen<events::Focusout> for DocumentOrShadowRoot { type Event = FocusEvent; }
+impl Listen<events::Formdata> for DocumentOrShadowRoot { type Event = FormDataEvent; }
+impl Listen<events::Fullscreenchange> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Fullscreenerror> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Gotpointercapture> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Input> for DocumentOrShadowRoot { type Event = InputEvent; }
+impl Listen<events::Installresult> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Keydown> for DocumentOrShadowRoot { type Event = KeyboardEvent; }
+impl Listen<events::Keypress> for DocumentOrShadowRoot { type Event = KeyboardEvent; }
+impl Listen<events::Keyup> for DocumentOrShadowRoot { type Event = KeyboardEvent; }
+impl Listen<events::Leavepictureinpicture> for DocumentOrShadowRoot { type Event = PictureInPictureEvent; }
+impl Listen<events::Lostpointercapture> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Mousedown> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Mousemove> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Mouseout> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Mouseover> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Mouseup> for DocumentOrShadowRoot { type Event = MouseEvent; }
+impl Listen<events::Navbeforefocus> for DocumentOrShadowRoot { type Event = UIEvent; }
+impl Listen<events::Navnotarget> for DocumentOrShadowRoot { type Event = UIEvent; }
+impl Listen<events::Paste> for DocumentOrShadowRoot { type Event = ClipboardEvent; }
+impl Listen<events::Pointercancel> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointerdown> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointermove> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointerout> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointerover> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointerrawupdate> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Pointerup> for DocumentOrShadowRoot { type Event = PointerEvent; }
+impl Listen<events::Promptaction> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Promptdismiss> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Reset> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Securitypolicyviolation> for DocumentOrShadowRoot { type Event = SecurityPolicyViolationEvent; }
+impl Listen<events::Select> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Selectionchange> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Selectstart> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Slotchange> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Submit> for DocumentOrShadowRoot { type Event = SubmitEvent; }
+impl Listen<events::TextInput> for DocumentOrShadowRoot { type Event = TextEvent; }
+impl Listen<events::Touchcancel> for DocumentOrShadowRoot { type Event = TouchEvent; }
+impl Listen<events::Touchend> for DocumentOrShadowRoot { type Event = TouchEvent; }
+impl Listen<events::Touchmove> for DocumentOrShadowRoot { type Event = TouchEvent; }
+impl Listen<events::Touchstart> for DocumentOrShadowRoot { type Event = TouchEvent; }
+impl Listen<events::Transitioncancel> for DocumentOrShadowRoot { type Event = TransitionEvent; }
+impl Listen<events::Transitionend> for DocumentOrShadowRoot { type Event = TransitionEvent; }
+impl Listen<events::Transitionrun> for DocumentOrShadowRoot { type Event = TransitionEvent; }
+impl Listen<events::Transitionstart> for DocumentOrShadowRoot { type Event = TransitionEvent; }
+impl Listen<events::Validationstatuschange> for DocumentOrShadowRoot { type Event = Event; }
+impl Listen<events::Wheel> for DocumentOrShadowRoot { type Event = WheelEvent; }
 
 impl Listen<events::DOMActivate> for HTMLElement { type Event = UIEvent; }
 impl Listen<events::DOMFocusIn> for HTMLElement { type Event = FocusEvent; }
@@ -137500,6 +137811,7 @@ unsafe impl IsA<EventTarget> for Element {}
 unsafe impl IsA<Document> for Document {}
 unsafe impl IsA<Node> for Document {}
 unsafe impl IsA<EventTarget> for Document {}
+unsafe impl IsA<DocumentOrShadowRoot> for Document {}
 unsafe impl IsA<DocumentFragment> for DocumentFragment {}
 unsafe impl IsA<Node> for DocumentFragment {}
 unsafe impl IsA<EventTarget> for DocumentFragment {}
@@ -137509,6 +137821,9 @@ unsafe impl IsA<HTMLCollection> for HTMLCollection {}
 unsafe impl IsA<AbortController> for AbortController {}
 unsafe impl IsA<AbortSignal> for AbortSignal {}
 unsafe impl IsA<EventTarget> for AbortSignal {}
+unsafe impl IsA<DocumentOrShadowRoot> for DocumentOrShadowRoot {}
+unsafe impl IsA<Node> for DocumentOrShadowRoot {}
+unsafe impl IsA<EventTarget> for DocumentOrShadowRoot {}
 unsafe impl IsA<HTMLElement> for HTMLElement {}
 unsafe impl IsA<Element> for HTMLElement {}
 unsafe impl IsA<Node> for HTMLElement {}
@@ -139034,6 +139349,7 @@ unsafe impl IsA<ShadowRoot> for ShadowRoot {}
 unsafe impl IsA<DocumentFragment> for ShadowRoot {}
 unsafe impl IsA<Node> for ShadowRoot {}
 unsafe impl IsA<EventTarget> for ShadowRoot {}
+unsafe impl IsA<DocumentOrShadowRoot> for ShadowRoot {}
 unsafe impl IsA<SharedWorker> for SharedWorker {}
 unsafe impl IsA<EventTarget> for SharedWorker {}
 unsafe impl IsA<SourceBuffer> for SourceBuffer {}
@@ -139165,6 +139481,7 @@ unsafe impl IsA<XMLDocument> for XMLDocument {}
 unsafe impl IsA<Document> for XMLDocument {}
 unsafe impl IsA<Node> for XMLDocument {}
 unsafe impl IsA<EventTarget> for XMLDocument {}
+unsafe impl IsA<DocumentOrShadowRoot> for XMLDocument {}
 unsafe impl IsA<XMLHttpRequest> for XMLHttpRequest {}
 unsafe impl IsA<XMLHttpRequestEventTarget> for XMLHttpRequest {}
 unsafe impl IsA<EventTarget> for XMLHttpRequest {}
@@ -139193,6 +139510,7 @@ unsafe impl Defined for NodeList {}
 unsafe impl Defined for HTMLCollection {}
 unsafe impl Defined for AbortController {}
 unsafe impl Defined for AbortSignal {}
+unsafe impl Defined for DocumentOrShadowRoot {}
 unsafe impl Defined for HTMLElement {}
 unsafe impl Defined for HTMLAnchorElement {}
 unsafe impl Defined for HTMLButtonElement {}

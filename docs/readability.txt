@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1344
-lines	129242
+files	1345
+lines	129304
 temporaries	1	0.1
 labeled blocks	15	1.2
 while (true)	115	8.9
 $iter	1061	82.1
 Iterator.from	119	9.2
 return;	138	10.7
-renamed x$1	8425	651.9
+renamed x$1	8425	651.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1975	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	186	0	0	0	6	0	0	29
@@ -76,6 +76,7 @@ test/corpus/block_modules.js	28	0	0	0	0	0	0	4
 test/corpus/bool_call_of_another_module.js	21	0	0	0	0	0	0	0
 test/corpus/bool_ops_by_ref.js	30	0	0	0	1	0	0	0
 test/corpus/borrow_mut_supertrait.js	97	0	0	0	0	0	0	0
+test/corpus/borrowed_loop_value_if.js	49	0	0	0	0	0	0	0
 test/corpus/bounds_by_a_value.js	123	0	0	0	0	0	0	0
 test/corpus/box_as_mut_and_ref.js	46	0	0	0	0	0	0	0
 test/corpus/box_uninit.js	36	0	0	0	0	0	0	0
@@ -1334,7 +1335,7 @@ test/snapshots/playground/tree.js	58	0	0	0	0	0	0	2
 test/snapshots/ports/scheduler/SchedulerFeatureFlags.js	18	0	0	0	0	0	0	0
 test/snapshots/ports/scheduler/SchedulerMinHeap.js	80	0	0	0	0	0	2	0
 test/snapshots/ports/scheduler/SchedulerPriorities.js	16	0	0	0	0	0	0	0
-test/snapshots/ports/scheduler/forks/Scheduler.js	466	0	0	1	0	0	3	9
+test/snapshots/ports/scheduler/forks/Scheduler.js	461	0	0	1	0	0	3	9
 test/snapshots/queues/queues.js	283	0	0	0	0	2	1	5
 test/snapshots/report/report.js	170	0	0	0	1	0	0	11
 test/snapshots/results/results.js	105	0	0	0	0	0	2	8
@@ -1349,7 +1350,7 @@ test/snapshots/todomvc/model.js	111	0	0	0	0	0	1	2
 test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0
 test/snapshots/values/values.js	263	0	0	0	0	0	4	25
 test/snapshots/versions/versions.js	215	0	0	0	3	0	2	4
-test/snapshots/web_forms/web_forms.js	263	0	0	0	0	2	0	6
+test/snapshots/web_forms/web_forms.js	281	0	0	0	0	2	0	6
 test/snapshots/webapi_events/webapi-events.js	209	0	0	0	0	0	0	3
 test/snapshots/wide/wide.js	248	0	0	0	0	0	0	7
 test/snapshots/wire/wire.js	539	0	0	0	0	0	0	2

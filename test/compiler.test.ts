@@ -965,7 +965,11 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
   expect(js).toContain('return registry.get("x-card") !== undefined;');
-  const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined } = await import(join(target, "web_forms.js"));
+  // A `Document | ShadowRoot`, what both have, and a document as one (rd193).
+  expect(js).toContain('  const links = root.querySelectorAll("link").length;\n  return [links, root.nodeType === 9];');
+  expect(js).toContain("  return hoisted(document);\n");
+  const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined, hoisted } = await import(join(target, "web_forms.js"));
+  expect(hoisted({ querySelectorAll: () => ({ length: 2 }), nodeType: 11 })).toEqual([2, false]);
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();

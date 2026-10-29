@@ -32,6 +32,8 @@ const INTERFACES = [
   // dom
   "EventTarget", "Event", "Node", "CharacterData", "Text", "Comment", "Element", "Document",
   "DocumentFragment", "DOMTokenList", "NodeList", "HTMLCollection", "AbortController", "AbortSignal",
+  // A mixin as the union of what includes it, `Document | ShadowRoot` (`UNIONS`).
+  "DocumentOrShadowRoot",
   // html
   "HTMLElement", "HTMLAnchorElement", "HTMLButtonElement", "HTMLDivElement", "HTMLFormElement",
   "HTMLHeadingElement", "HTMLImageElement", "HTMLInputElement", "HTMLLabelElement", "HTMLLIElement",
@@ -374,6 +376,10 @@ type Interface = {
   isNamespace?: boolean;
   /** The global scope's: functions called bare, `fetch(url)` (ADR 0269). */
   isGlobal?: boolean;
+  /** Of a mixin's union (`UNIONS`), TypeScript's type, `Document |
+   * ShadowRoot`, and the interfaces that are one. */
+  ts?: string;
+  includers?: string[];
   /** `[Global]`: a global object, a `Window`, whose `onerror` JS calls with
    * an error's message, where it was and what was thrown (rd192). */
   globalObject?: boolean;
@@ -419,6 +425,32 @@ for (const d of read) {
 for (const [target, names] of includes) {
   const i = interfaces.get(target);
   for (const name of names) i?.members.push(...(mixins.get(name) ?? []).map((member) => ({ member, from: target })));
+}
+// A mixin that's a type of its own, the union of the interfaces that
+// include it, as TypeScript's `Document | ShadowRoot` is, React DOM's
+// `HoistableRoot` (rd193): a value of any of them, given each member they
+// all have, their nearest common ancestor's by `Deref` and each mixin each
+// includes, itself or by an ancestor, `root.querySelector(..)` of
+// `ParentNode`'s. Each includer is one, `DocumentOrShadowRoot::of(document)`
+// (ADR 1024).
+const UNIONS: Record<string, string[]> = { DocumentOrShadowRoot: ["Document", "ShadowRoot"] };
+const chainOf = (name: string): string[] => {
+  const parent = interfaces.get(name)?.parent;
+  return parent ? [name, ...chainOf(parent)] : [name];
+};
+const mixinsOf = (name: string): Set<string> => new Set(chainOf(name).flatMap((level) => includes.get(level) ?? []));
+for (const [union, includers] of Object.entries(UNIONS)) {
+  const chains = includers.map(chainOf);
+  const parent = chains[0].find((level) => level !== includers[0] && chains.every((chain) => chain.includes(level)));
+  const shared = [...mixinsOf(includers[0])].filter((mixin) => includers.every((i) => mixinsOf(i).has(mixin)));
+  interfaces.set(union, {
+    name: union,
+    parent,
+    members: shared.flatMap((mixin) => (mixins.get(mixin) ?? []).map((member) => ({ member, from: includers[0] }))),
+    constructible: false,
+    ts: includers.join(" | "),
+    includers,
+  });
 }
 // What every JS global scope has, a window's, a worker's or Node's: its
 // functions, `fetch` and `queueMicrotask`, called bare, where a window's
@@ -1762,7 +1794,8 @@ function listing(i: Interface, f: Fn): Fn {
     const moduleFn = !f.params[0]?.startsWith("this:");
     return { ...f, params: f.params.map(of), result: of(f.result), ...(moduleFn ? { typeParams: ["T"] } : {}) };
   }
-  const item = typescriptDom.get(jsName(i))?.lists.get(f.jsName.replace(/^get /, ""));
+  // A union's, as each it's of lists it.
+  const item = typescriptDom.get(i.includers?.[0] ?? jsName(i))?.lists.get(f.jsName.replace(/^get /, ""));
   if (!item || !known.has(item) || !/\bNodeList\b/.test(f.result)) return f;
   return { ...f, result: f.result.replace(/\bNodeList\b/, `NodeList<${typeName(item)}>`) };
 }
@@ -1776,11 +1809,11 @@ for (const name of INTERFACES) {
   const type = typeName(name);
   const listOf = name === "NodeList";
   line();
-  line(`/// [\`${jsName(i)}\`](${mdn(name)})`);
+  line(i.ts ? `/// \`${i.ts}\`, a value of each: what they all have, as TypeScript's union of them has it.` : `/// [\`${jsName(i)}\`](${mdn(name)})`);
   // Its JS class, as `instanceof` names it, where its Rust name isn't (ADR 0214).
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   // What it is to TypeScript: its DOM lib's interface of the same name.
-  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : jsName(i))})]`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : (i.ts ?? jsName(i)))})]`);
   line(listOf ? `pub struct ${type}<T = Node>(PhantomData<JsObject>, PhantomData<T>);` : `pub struct ${type}(PhantomData<JsObject>);`);
   // Equal only to itself, as JS's `===` has an object: `ptr::eq`, the
   // binding of `===`, `a == b` and `v.contains(&a)` its `includes(a)`
@@ -1852,11 +1885,27 @@ for (const name of INTERFACES) {
   }
   module(snake(qualified(name)),fns.filter((f) => !methods.includes(f)).map((f) => listing(i, f)), [], [...(constantsOf.get(name)?.values() ?? [])]);
   count += methods.length;
+  // A mixin's union of a value of one of its interfaces, as it is, as a
+  // union enum's `of` is (ADR 0229): `DocumentOrShadowRoot::of(document)`.
+  const unionOf: Fn[] = [];
+  if (i.includers) {
+    unionOf.push({
+      name: "of",
+      jsName: "this",
+      params: [`this: &impl IsA<${type}>`],
+      result: `&${type}`,
+      doc: [`A \`${i.includers.join("` or a `")}\`, or one that extends one, as a \`${i.ts}\`: the value itself.`],
+    });
+  }
   if (methods.length > 0 || TYPED[name]) {
     line();
     line(listOf ? `impl<T> ${type}<T> {` : `impl ${type} {`);
     for (const f of methods.map((f) => listing(i, f))) {
       line(generic({ ...f, params: ["&self", ...f.params.slice(1)] }));
+      line();
+    }
+    for (const f of unionOf) {
+      line(generic(f));
       line();
     }
     for (const t of TYPED[name] ?? []) {
@@ -2284,6 +2333,10 @@ for (const tag of svgTagNames) line(`impl SVGTag for svg_tags::${nameType(tag)} 
 line();
 for (const name of INTERFACES) {
   for (const a of [name, ...chain(name)]) line(`unsafe impl IsA<${typeName(a)}> for ${typeName(name)} {}`);
+  // And each mixin's union one of its interfaces is, by itself or an ancestor.
+  for (const [union, includers] of Object.entries(UNIONS)) {
+    if (name !== union && [name, ...chain(name)].some((a) => includers.includes(a))) line(`unsafe impl IsA<${typeName(union)}> for ${typeName(name)} {}`);
+  }
 }
 
 // What WebIDL marks `[Serializable]`, a `Blob` say, the browser's structured

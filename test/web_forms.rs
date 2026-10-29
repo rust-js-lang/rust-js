@@ -217,3 +217,19 @@ pub fn adopted(sheet: &webapi::CSSStyleSheet) -> usize {
 pub fn defined(registry: &webapi::CustomElementRegistry) -> bool {
     registry.get("x-card").is_some()
 }
+
+/// A `Document | ShadowRoot`, React DOM's hoistable root: what each has,
+/// read of either as JS reads it, and each one as it is (rd193).
+pub fn hoisted(root: &webapi::DocumentOrShadowRoot) -> (f64, bool) {
+    let links = root.query_selector_all("link").length();
+    (links, root.node_type() == node::DOCUMENT_NODE)
+}
+
+pub fn hoisted_of_document() -> (f64, bool) {
+    hoisted(webapi::DocumentOrShadowRoot::of(document))
+}
+
+pub fn hoisted_of(node: &webapi::Node) -> (f64, bool) {
+    // Safety: the node is a document or a shadow root.
+    hoisted(webapi::document_or_shadow_root::unchecked_from(node))
+}

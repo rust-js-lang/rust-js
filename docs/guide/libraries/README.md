@@ -365,6 +365,13 @@ How WebIDL maps to Rust, one rule for each:
   `el.append(...children)`
   ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)).
 - **A cast is `unchecked_from`:** `html_input_element::unchecked_from(el)`.
+- **A mixin its interfaces share is the union of them,** a type of what
+  each has: `DocumentOrShadowRoot`, TypeScript's `Document | ShadowRoot`,
+  React DOM's hoistable root, is a `Node`, and has `query_selector`,
+  `query_selector_all`, `get_element_by_id`, `active_element` and the rest
+  each has, `root.querySelector(..)`; a document is one as it is,
+  `DocumentOrShadowRoot::of(document)`, `document`
+  ([ADR 1024](../../decisions/1024-a-mixins-union-is-a-type.md)).
 
 ## `node`: Node.js
 

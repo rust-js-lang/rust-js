@@ -259,4 +259,22 @@ export function adopted(sheet) {
 export function defined(registry) {
   return registry.get("x-card") !== undefined;
 }
+
+/**
+ * A `Document | ShadowRoot`, React DOM's hoistable root: what each has,
+ * read of either as JS reads it, and each one as it is (rd193).
+ */
+export function hoisted(root) {
+  const links = root.querySelectorAll("link").length;
+  return [links, root.nodeType === 9];
+}
+
+export function hoistedOfDocument() {
+  return hoisted(document);
+}
+
+export function hoistedOf(node) {
+  // Safety: the node is a document or a shadow root.
+  return hoisted(node);
+}
 //# sourceMappingURL=web_forms.js.map
