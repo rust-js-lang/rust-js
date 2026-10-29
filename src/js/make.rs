@@ -816,6 +816,14 @@ impl Expr {
         Expr::new(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)))
     }
 
+    /// `text + part` of a `text` that's text whatever it's of, a `String`
+    /// written to or added to: `s + n` of `s + ("" + n)`, `bin`'s rule of
+    /// text joined to `"" +` (ADR 0639, amended).
+    pub fn text_joined(mut text: Expr, part: Expr) -> Expr {
+        text.facts = text.facts.with(Known::Text);
+        Expr::bin(Op::Add, text, part)
+    }
+
     pub fn cond(test: Expr, then: Expr, els: Expr) -> Expr {
         // `true ? a : b` is `a`: the branch that runs.
         if let ExprKind::Bool(b) = test.kind {
@@ -1132,9 +1140,13 @@ fn typed_present(test: &Expr, place: &Expr) -> bool {
     }
 }
 
-/// Whether `e` is text whatever its parts are: a string, a template, or
-/// a `+` of text to anything, which JS's `+` makes text.
+/// Whether `e` is text whatever its parts are: a string, a template, a
+/// `+` of text to anything, which JS's `+` makes text, or what's known to
+/// be (`Known::Text`).
 fn is_text(e: &Expr) -> bool {
+    if e.facts.has(Known::Text) {
+        return true;
+    }
     match &e.kind {
         ExprKind::Str(_) | ExprKind::Written(_) | ExprKind::Template(..) => true,
         ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),

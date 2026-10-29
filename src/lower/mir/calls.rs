@@ -113,7 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rhs = self.value_expr(rhs.clone(), span)?;
             let rhs = crate::lower::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
             let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
-                Expr::bin(Op::Add, place.clone(), rhs)
+                Expr::text_joined(place.clone(), rhs)
             } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {
                 self.binary(op, place.clone(), rhs, None, ty, span)?
             } else if let Some((def_id, generic_args, known)) =

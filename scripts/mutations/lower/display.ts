@@ -270,4 +270,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^class_display.rs$"],
     snapshots: true,
   },
+  {
+    name: "appended-text-unjoined",
+    breaks: "`s.push_str(&js::concat_text(n))` is `s += \"\" + n`, its `String` not known text (ADR 0639, amended)",
+    file: "src/lower/display.rs",
+    find: "Expr::text_joined(target.clone(), part)",
+    replace: "Expr::bin(Op::Add, target.clone(), part)",
+    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+  },
 ];

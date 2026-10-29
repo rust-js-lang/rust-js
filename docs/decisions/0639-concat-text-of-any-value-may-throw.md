@@ -4,7 +4,7 @@ Status: Accepted. Amends [0310](0310-any-value-as-js-reads-it.md), whose
 `concat_text` gave a `String` of every value, and
 [0637](0637-a-match-of-a-throwing-call-is-try-catch.md), whose `try` was
 of a `match` whose arms are statements. Amended below: `"" + value`, empty
-text first.
+text first; and a `String` appended to or added to is text joined.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, N. Results would
 change, so Rust's is kept: `value + ""` of a symbol throws, where its
@@ -136,3 +136,19 @@ is made text by one `+` of it to a string. Held by `test/bindings.test.ts`'s
 "any value is read as JS reads it" (`styled`, run) and the mutation
 `text-joined-unknown`.
 
+## Amendment (2026-10-29): a `String` appended to or added to
+
+A `String` variable isn't text by its JS's shape, a variable, so `s +=
+&js::concat_text(n)`, `s.push_str(&js::concat_text(n))` and `s +
+&js::concat_text(n)` kept the `"" +`: `s += "" + n`. **What a `String`
+is written to or added to is known text, `js::Known::Text`**, which
+`is_text` reads: `Expr::text_joined(text, part)`, the one way the
+lowering joins a part to a `String`, `s += t`'s and `push_str`'s
+(`display::append_written`, `mir/calls.rs`'s `+=`) and a `String`'s `+`
+(`Std::Concat`), marks its left side so, and `bin`'s rule drops the
+part's `"" +`: `s += n`, `s + n`. Case: none; a string's `+` makes text
+of a number or an object as `"" +` does, by the same `ToPrimitive`,
+once. Held by `test/bindings.test.ts`'s "any value is read as JS reads
+it" (`appended`, run) and the mutations `known-text-unread`,
+`appended-text-unjoined`, `add-assign-text-unjoined` and
+`concat-text-unjoined`.

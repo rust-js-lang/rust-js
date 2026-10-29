@@ -374,4 +374,12 @@ export const mutations: Mutation[] = [
     replace: "        if name == \"$slice\" {\n",
     tests: ["test/corpus.test.ts", "-t", "slice_range_from_panic"],
   },
+  {
+    name: "concat-text-unjoined",
+    breaks: "`s + &js::concat_text(n)` of a `String` is `s + (\"\" + n)`, its `String` not known text (ADR 0639, amended)",
+    file: "src/lower/std_types/text.rs",
+    find: "            Std::Concat => Expr::text_joined(arg(), arg()),\n",
+    replace: "            Std::Concat => Expr::bin(Op::Add, arg(), arg()),\n",
+    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+  },
 ];

@@ -814,7 +814,7 @@ pub(super) fn append_written(target: &Expr, written: Expr, pieces: bool, js_span
         vec![written]
     };
     for part in parts {
-        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target.clone(), part)).at(js_span));
+        out.push(StmtKind::Assign(target.clone(), Expr::text_joined(target.clone(), part)).at(js_span));
     }
 }
 

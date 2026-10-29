@@ -897,7 +897,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match known {
-            Std::Concat => Expr::bin(Op::Add, arg(), arg()),
+            // A `String`'s `+`: text joined to what's added (ADR 0639, amended).
+            Std::Concat => Expr::text_joined(arg(), arg()),
             Std::Method(name) => {
                 let this = arg();
                 let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();

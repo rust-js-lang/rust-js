@@ -600,7 +600,8 @@ request.url;`, and tested as that, not read again in the test
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
 JS's `try`. Text joined to it is `+`, `"require".to_owned() +
-&js::concat_text(n)` is `"require" + n`. JS's `a && b` of a value of any
+&js::concat_text(n)` is `"require" + n`, and a `String` appended to,
+`s += &js::concat_text(n)`, `s += n`. JS's `a && b` of a value of any
 shape is `if js::truthy(a) { b } else { a }`, and `a || b` its other
 way round, `if js::truthy(a) { a } else { b }`
 ([ADR 0880](../../decisions/0880-a-test-of-truth-and-its-value-is-and.md)):

@@ -502,4 +502,12 @@ export const mutations: Mutation[] = [
     replace: "        let copy = self.called_copy((def_id, generic_args), span).map(|_| None)?;",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
   },
+  {
+    name: "add-assign-text-unjoined",
+    breaks: "`s += &js::concat_text(n)` of a `String` is `s += \"\" + n`, its `String` not known text (ADR 0639, amended)",
+    file: "src/lower/mir/calls.rs",
+    find: "                Expr::text_joined(place.clone(), rhs)\n",
+    replace: "                Expr::bin(Op::Add, place.clone(), rhs)\n",
+    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+  },
 ];

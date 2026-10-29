@@ -518,4 +518,12 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
     snapshots: true,
   },
+  {
+    name: "known-text-unread",
+    breaks: "a `String` written to isn't known text, so `s += &js::concat_text(n)` keeps its `\"\" +`, `s += \"\" + n` (ADR 0639, amended)",
+    file: "src/js/make.rs",
+    find: "    if e.facts.has(Known::Text) {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+  },
 ];

@@ -735,6 +735,10 @@ pub enum Known {
     /// TypeScript writes a value of a function's type, never a function
     /// declared, which a closure a `let` binds is (ADR 0882, amended).
     Valued,
+    /// Text whatever it's of, a `String` written to, `s` of `s += t`: a
+    /// `+` of it makes text of what's joined to it, as `"" +` would
+    /// (`Expr::text_joined`, ADR 0639, amended).
+    Text,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
