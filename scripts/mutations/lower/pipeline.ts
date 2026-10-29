@@ -585,7 +585,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-given-copy-unimported",
-    breaks: "a copy of another module's function a module calls isn't imported, so `relay`'s `wrappedUnboxed` has no import and the compiler fails",
+    breaks: "a copy of another module's function a module calls by the name its `use` gives isn't imported, so `relay_named`'s `wrappedUnboxed` has no import, and the case fails",
     file: "src/lower/pipeline.rs",
     find: "        targets.entry(from).or_default().insert(target);",
     replace: "        let _ = (from, target);",

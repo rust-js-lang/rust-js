@@ -242,11 +242,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-continue-elsed",
-    breaks: "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, `if (c) { a } else { b }`",
+    breaks: "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, so rev_loops' `if (x > 100) { break; }` and what follows it, after a written `continue`, is `if (!(x > 100)) { ..; continue; } break;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        && tests_continue(continues, *span)\n",
     replace: "        && false\n",
-    tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in is JS"],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_loops|mut_ref_loop|inclusive_range_loops)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "jumps-past-blocks-returns-kept",

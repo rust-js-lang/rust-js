@@ -17,12 +17,20 @@ mod helpers {
     }
 }
 
+use helpers::wrapped;
+
 pub fn pass<T>(x: T) -> T {
     helpers::same(x)
 }
 
 pub fn relay<T>(x: T) -> Option<T> {
     helpers::wrapped(x)
+}
+
+/// Of a function the module's `use` names, by its name: its copy is
+/// imported by its name too.
+pub fn relay_named<T>(x: T) -> Option<T> {
+    wrapped(x)
 }
 
 pub fn count_some<T>(xs: Vec<T>) -> usize {
@@ -79,6 +87,7 @@ pub fn length<T>(items: &[T]) -> usize {
 fn main() {
     println!("{} {}", relay(()).is_some(), relay(None::<i32>).is_some());
     println!("{:?} {:?}", relay(5), relay("five"));
+    println!("{} {}", relay_named(()).is_some(), relay_named(6).is_some());
     println!("{}", helpers::wrapped(()).is_some());
     println!("{:?} {:?}", helpers::same(()), pass(4));
     println!("{} {}", count_some(vec![(), ()]), count_some(vec![1, 2, 3]));
