@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            if let Some(branch) = branch {\n",
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
-    tests: ["test/lowering-names.test.ts", "-t", "declared where it.s first named"],
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "declared where it.s first named"],
   },
   {
     name: "mir-tidy-loop-let-outside",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && !looped_reads(&stmts[first], &name)\n",
     replace: "            && false\n",
-    tests: ["test/lowering-names.test.ts", "-t", "loop.s body makes, from MIR"],
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "loop.s body makes, from MIR"],
   },
   {
     name: "mir-tidy-let-outside-label",
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
     "replace": "                && (false",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
+    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
   },
   {
     "name": "alias-takes-prop-name",
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "                    || assigned_on(&stmts[at..], name, false, past))",
     "replace": "                    || false)",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let each turn assigns"]
+    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"]
   },
   {
     "name": "mir-tidy-turn-continue-goes-on",
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/bindings.rs",
     "find": "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
     "replace": "            StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let each turn assigns"]
+    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"]
   },
   {
     name: "mir-tidy-receiver-named-value",

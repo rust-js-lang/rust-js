@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/names.rs",
     find: "    let root = apart(base).map_or(base, |(root, _)| root);\n",
     replace: "    let root = base;\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a name given apart twice is reclaimed"],
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "a name given apart twice is reclaimed"],
   },
   {
     name: "dictionary-cache-is-a-helpers-name",

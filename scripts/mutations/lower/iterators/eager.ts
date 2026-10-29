@@ -302,7 +302,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "            if zip.helper_name() == Some(\"$lazyZip\")\n",
     replace: "            if zip.helper_name() == Some(\"$lazyZipped\")\n",
-    tests: ["test/lowering-branches.test.ts", "test/lowering-cells.test.ts", "test/lowering-collections.test.ts", "test/lowering-functions.test.ts", "test/lowering-iterators.test.ts", "test/lowering-loops.test.ts", "test/lowering-matches.test.ts", "test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "test/lowering-options.test.ts", "test/lowering-strings.test.ts", "test/lowering-structs-enums.test.ts", "test/lowering.test.ts", "-t", "MIR"],
+    tests: ["test/lowering-branches.test.ts", "test/lowering-cells.test.ts", "test/lowering-collections.test.ts", "test/lowering-functions.test.ts", "test/lowering-iterators.test.ts", "test/lowering-loops.test.ts", "test/lowering-matches.test.ts", "test/lowering-mir-lets.test.ts", "test/lowering-names.test.ts", "test/lowering-numbers.test.ts", "test/lowering-options.test.ts", "test/lowering-strings.test.ts", "test/lowering-structs-enums.test.ts", "test/lowering.test.ts", "-t", "MIR"],
   },
   {
     name: "generic-into-iter-js",

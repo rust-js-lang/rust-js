@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/locals.rs",
     "find": "ty::Adt(adt, _) if info.name.as_str() == \"self\" =>",
     "replace": "ty::Adt(adt, _) if false =>",
-    "tests": ["test/lowering-names.test.ts", "-t", "a method's self from MIR is named after its type"]
+    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a method's self from MIR is named after its type"]
   },
   {
     name: "mir-derived-params-unnamed",

@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"sunk lets\", |b, _| js::statement_lists(b, &mut sunk_lets)),\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "declared where it.s first named"],
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "declared where it.s first named"],
   },
   {
     name: "mir-tidy-late-consts-kept",
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"temporaries named\", |b, h| {\n                bindings::readable_temporaries(&h.params.borrow(), b, h.suggested)\n            }),\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "held temporary is named"],
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "held temporary is named"],
   },
   {
     name: "unwound-stages-none",
