@@ -602,6 +602,15 @@ js::get(request, "url").map(js::classify)`, is read once, `const url =
 request.url;`, and tested as that, not read again in the test
 ([ADR 0672](../../decisions/0672-a-property-a-test-reads-is-read-once.md)).
 
+So is a field of a struct JS made, an object the program didn't build:
+one `js::cast`, a binding or a library gives. Each read of it is JS's, as
+often as Rust reads it, so `let margin = style_prop.margin; if
+margin.is_some() { style.set_margin(margin) }` is `const margin =
+styleProp.margin;` and `style.margin = margin`, not `styleProp.margin`
+again, which a getter would answer twice. A struct the program builds
+itself is its own data, read in place
+([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md)).
+
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is

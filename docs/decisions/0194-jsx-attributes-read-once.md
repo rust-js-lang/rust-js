@@ -1,6 +1,6 @@
 # 0194. An attribute read before a child is read once
 
-Status: Accepted. Amends [0040](0040-jsx.md).
+Status: Accepted; amended by [1022](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md): a field of a struct JS made is a JS object's, read as often as Rust reads it. Amends [0040](0040-jsx.md).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 

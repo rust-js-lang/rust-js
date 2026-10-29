@@ -556,6 +556,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
             (Shape::Object(fields), _) => {
                 let field = Expr::member(base, fields[i].0.clone());
+                // Of a JS object the program didn't build, a getter may
+                // answer it (rd204, ADR 1022).
+                let field = match ty.kind() {
+                    ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()) => {
+                        field.answered_by_a_getter()
+                    }
+                    _ => field,
+                };
                 let def = self.struct_field_def(ty, i);
                 match self.nullable_cell_field(ty, (i, fields[i].1)) {
                     // One there where it's made, which stores `null` for

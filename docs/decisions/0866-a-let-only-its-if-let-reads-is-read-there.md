@@ -1,6 +1,6 @@
 # 0866. A `let` only the `if let` that takes it apart reads is read there
 
-Status: Accepted; amended below: named as its field by their Rust names; a `let` of a cast is no `let` that ends a
+Status: Accepted; amended by [1022](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md): a place's read is plain only of a struct the program built; amended below: named as its field by their Rust names; a `let` of a cast is no `let` that ends a
 borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first; and an `if let`'s
 binding of a thread-local's value only its test reads; and a `let` that

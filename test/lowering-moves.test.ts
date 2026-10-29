@@ -433,3 +433,86 @@ pub fn chosen(flag: bool) -> String {
   expect([lib.chosen(true), lib.chosen(false)]).toEqual(["link side", "link quote"]);
   expect(names.said).toEqual(["side"]);
 });
+
+// A struct `js::cast` gives, a JS object the program didn't build, whose
+// properties a getter may answer: React DOM's restoreViewTransitionName,
+// `let margin = style_prop.margin; if margin.is_some() { .. margin .. }`,
+// reads `styleProp.margin` once, as Rust does, in its `const`. One the
+// program builds is plain data, read in place (rd204, ADR 1022).
+test("a field of a struct JS made is read as often as Rust reads it", async () => {
+  const { js, lib } = await compiled("js-made-field-read-once", `use js::Unknown;
+
+pub struct StyleProp {
+    pub margin: Option<&'static Unknown>,
+    pub padding: Option<&'static Unknown>,
+}
+
+unsafe impl js::Defined for StyleProp {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set margin")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
+#[allow(unused_variables)]
+fn set_margin(this: &Unknown, value: Option<&Unknown>) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set padding")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
+#[allow(unused_variables)]
+fn set_padding(this: &Unknown, value: Option<&Unknown>) {
+    unreachable!()
+}
+
+fn apply(style: &Unknown, style_prop: &StyleProp) {
+    let margin = style_prop.margin;
+    if margin.is_some() {
+        set_margin(style, margin);
+    } else {
+        let padding = style_prop.padding;
+        set_padding(style, padding);
+    }
+}
+
+pub fn restore(style: &Unknown, props: &Unknown) {
+    // Safety: a style prop is an object of these fields.
+    let style_prop: Option<&StyleProp> = unsafe { js::cast(js::get(props, "style")) };
+    if let Some(style_prop) = style_prop {
+        apply(style, style_prop);
+    }
+}
+
+struct Own {
+    margin: Option<&'static Unknown>,
+    padding: Option<&'static Unknown>,
+}
+
+fn own_margin(style: &Unknown, own: &Own) {
+    let margin = own.margin;
+    if margin.is_some() {
+        set_margin(style, margin);
+    } else {
+        let padding = own.padding;
+        set_padding(style, padding);
+    }
+}
+
+pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
+    own_margin(style, &Own { margin, padding: None });
+}
+`);
+  expect(js).toContain("  const margin = styleProp.margin;\n  if (margin != null) {\n    style.margin = margin;\n");
+  // The program's own struct's field is read in place.
+  expect(js).toContain("  if (own.margin != null) {\n    style.margin = own.margin;\n");
+  let reads = 0;
+  const styleProp = {
+    get margin() {
+      reads++;
+      return reads === 1 ? "4px" : "changed";
+    },
+  };
+  const style: Record<string, unknown> = {};
+  lib.restore(style as never, { style: styleProp } as never);
+  expect([style.margin, reads]).toEqual(["4px", 1]);
+  lib.own(style as never, "1px" as never);
+  expect(style.margin).toBe("1px");
+});

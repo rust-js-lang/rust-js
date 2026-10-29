@@ -13,15 +13,9 @@ import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  let run;
-  let page;
-  if (program != null) {
-    run = program.run;
-    page = program.page;
-  } else {
-    run = 0;
-    page = "";
-  }
+  const value = program != null ? [program.run, program.page] : [0, ""];
+  const run = value[0];
+  const page = value[1];
   // Listen for this run's report. If there's none, say so: something
   // stopped its script.
   useEffect(() => {

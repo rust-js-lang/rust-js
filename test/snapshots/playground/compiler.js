@@ -291,8 +291,9 @@ export async function compile(loaded, sources, rootFile, test) {
         files.set(file, text);
       }
     }
-    if (manifest.tests != null) {
-      const file = path(manifest.tests);
+    const runner = manifest.tests;
+    if (runner != null) {
+      const file = path(runner);
       const text = written.get(file);
       if (text != null) {
         files.set(file, text);

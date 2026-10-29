@@ -201,6 +201,13 @@ pub(in crate::lower) fn serde_visitor(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && tcx.item_name(id).as_str() == "Visitor"
 }
 
+/// Whether `id` is serde's or serde_json's, whose calls rust-js lowers
+/// itself (ADR 0459): what they give is the compiler's, of JSON's data, never
+/// a JS object of getters (ADR 1022).
+pub(in crate::lower) fn lowered_serde(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    matches!(tcx.crate_name(id.krate).as_str(), "serde" | "serde_core" | "serde_json")
+}
+
 /// `def_id` as a call of serde's data model a hand-written impl makes (ADR
 /// 0459), or `None`.
 pub(in crate::lower) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {

@@ -11,6 +11,12 @@
 //! to change; a library's static or constant holds it; JS or a consumer
 //! calls an exported function with it, or is given one that holds it; or
 //! std's code makes it of what it isn't given, as `transmute` does.
+//!
+//! And, of the same calls, which structs code that isn't the crate's may
+//! make a value of (rd204, the user's decision): a JS object the program
+//! didn't build, `js::cast`'s, a binding's or a library's result, or what
+//! JS calls a function it's given with, whose properties a getter may
+//! answer, each read as often as Rust reads it (ADR 1022).
 
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::Recognition;
@@ -47,6 +53,11 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     with_this: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
     /// Whether one is made in generic code, of what its callers give.
     with_this_generic: bool,
+    /// The structs a value code that isn't the crate's makes may be, or
+    /// hold, through what it's made of (`made_outside`), and whether one of a
+    /// type rustc can't normalize may be any.
+    js_made: HashSet<DefId>,
+    js_made_any: bool,
     /// Each field of a `dyn Fn` of the crate's structs, and whether each
     /// write of it the crate makes, a literal's or an assignment's, is of
     /// a closure or a function of its own, `Box::new(move || ..)`, never
@@ -170,6 +181,93 @@ impl<'tcx> FnPointers<'tcx> {
             }
         }
         fields
+    }
+
+    /// Whether a value of the struct `adt` may be a JS object the program
+    /// didn't build, whose properties a getter may answer, so each read of
+    /// a field of it is JS's, as often as Rust reads it (rd204, the user's
+    /// decision; ADR 1022): one code that isn't the crate's made, `js::cast`'s
+    /// or a binding's result.
+    pub(in crate::lower) fn js_may_make(&self, adt: DefId) -> bool {
+        self.js_made_any || self.js_made.contains(&adt)
+    }
+
+    /// A value of `ty` code that isn't the crate's made: each struct it is
+    /// or holds, through its fields and what a function it holds gives, may
+    /// be a JS object. What such a function is called with is the crate's,
+    /// and so is what JS calls a function of the crate's with: its own
+    /// objects, given back, a bound function's or a state's (ADR 1022).
+    fn made_outside(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) {
+        self.outside(recognition, ty, &mut HashSet::new());
+    }
+
+    fn outside(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) {
+        let tcx = recognition.tcx;
+        if !seen.insert(ty) {
+            return;
+        }
+        // What a pointer points at, as a reference's.
+        if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty) {
+            return self.outside(recognition, pointee, seen);
+        }
+        match *ty.kind() {
+            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => self.outside(recognition, inner, seen),
+            ty::Tuple(parts) => {
+                for part in parts {
+                    self.outside(recognition, part, seen);
+                }
+            }
+            ty::Adt(adt, args) => {
+                if adt.is_struct() {
+                    self.js_made.insert(adt.did());
+                }
+                // Std's types hold what their arguments say; another's, its
+                // fields.
+                match !adt.did().is_local() && recognition.in_sysroot(adt.did()) {
+                    true => {
+                        for part in args.types() {
+                            self.outside(recognition, part, seen);
+                        }
+                    }
+                    false => {
+                        for field in adt.all_fields() {
+                            self.outside(recognition, field.ty(tcx, args).skip_normalization(), seen);
+                        }
+                    }
+                }
+            }
+            // What a function gives.
+            ty::FnPtr(..) => {
+                let sig = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx));
+                self.outside(recognition, sig.output(), seen);
+            }
+            // A `dyn Fn(A) -> R`'s `R`; another trait's arguments, what it
+            // may give.
+            ty::Dynamic(predicates, ..) => {
+                for predicate in predicates.iter() {
+                    match predicate.skip_binder() {
+                        ty::ExistentialPredicate::Trait(t) if !tcx.is_fn_trait(t.def_id) => {
+                            for part in t.args.types() {
+                                self.outside(recognition, part, seen);
+                            }
+                        }
+                        ty::ExistentialPredicate::Projection(p) => {
+                            if let Some(part) = p.term.as_type() {
+                                self.outside(recognition, part, seen);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            ty::Alias(..) if !ty.has_param() => match tcx
+                .try_normalize_erasing_regions(ty::TypingEnv::fully_monomorphized(), ty::Unnormalized::new_wip(ty))
+            {
+                Ok(normal) if normal != ty => self.outside(recognition, normal, seen),
+                _ => self.js_made_any = true,
+            },
+            _ => {}
+        }
     }
 
     /// `f` made a fn pointer of type `ptr`.
@@ -337,6 +435,10 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
         }
+        // What serde gives is the compiler's own, of JSON's data.
+        if !crate::lower::recognition::lowered_serde(tcx, f) {
+            self.found.made_outside(recognition, result);
+        }
     }
 }
 
@@ -418,7 +520,8 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                         && !adt.did().is_local()
                         && !self.recognition.in_sysroot(adt.did()) =>
                 {
-                    self.found.given_in(self.recognition, adjustment.target)
+                    self.found.given_in(self.recognition, adjustment.target);
+                    self.found.made_outside(self.recognition, adjustment.target);
                 }
                 _ => {}
             }
@@ -491,6 +594,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                     && !id.is_local()
                 {
                     self.found.given_in(self.recognition, results.expr_ty(expr));
+                    self.found.made_outside(self.recognition, results.expr_ty(expr));
                 }
             }
             _ => {}

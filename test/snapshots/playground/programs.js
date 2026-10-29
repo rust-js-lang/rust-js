@@ -220,11 +220,13 @@ ${start}
 /** What a report says happened. */
 export function outcome(report) {
   if (report.error != null) {
-    return { TAG: "Failed", _0: report.error };
+    const error = report.error;
+    return { TAG: "Failed", _0: error };
   } else if (report.ran) {
     return "Ran";
   } else if (report.tested != null) {
-    return { TAG: "Tested", _0: report.tested };
+    const tested = report.tested;
+    return { TAG: "Tested", _0: tested };
   }
 }
 //# sourceMappingURL=programs.js.map

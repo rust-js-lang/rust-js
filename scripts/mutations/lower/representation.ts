@@ -671,4 +671,12 @@ export const mutations: Mutation[] = [
     replace: "                    true if !self.null_where_made(ty, i) || true => self.nullable_cell_handle(field.defined(), def, fields[i].1),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
   },
+  {
+    name: "js-made-field-plain",
+    breaks: "a field of a struct JS made is read as plain data, `styleProp.margin` read again where the `let` of it is used, a getter run twice (rd204)",
+    file: "src/lower/representation.rs",
+    find: "                        field.answered_by_a_getter()\n",
+    replace: "                        field\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a field of a struct JS made is read as often as Rust reads it"],
+  },
 ];
