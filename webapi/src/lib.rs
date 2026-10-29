@@ -101834,11 +101834,11 @@ impl<T: IsA<EventTarget>> EventTargetExt for T {}
 /// and an event handler property's setter, set_onclick(Some(&listener(..))).
 /// The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.
 /// Specify the event when inference needs it: listener::<PointerEvent>(|e| ..).
-/// Of any function of the event, a `function::with_this(..)`'s too, whose `this` is what it's added to (rd209).
+/// A function made already, a `function::with_this(..)`'s box, is kept as one by `Box::leak(..)` (rd209).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 // rust-js writes its JS: the body never runs, nor reads a parameter.
 #[allow(unused_variables)]
-pub fn listener<E: 'static>(this: impl Fn(&'static E) + 'static) -> &'static dyn Fn(&'static E) {
+pub fn listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E) {
     unreachable!()
 }
 
@@ -101913,13 +101913,13 @@ impl<E> IntoEventListener<E> for EventListenerOrEventListenerObject {}
 impl<E> IntoEventListener<E> for &'static EventListenerObject {}
 
 /// What a listener parameter of `remove_event_listener` takes: one added
-/// before, as it was, `listener(..)`'s shared function, or a listener JS
-/// gave (ADR 1021). A closure made for the call is a new function, which
-/// removes nothing.
+/// before, as it was, `listener(..)`'s shared function, a reference to a
+/// function of the event of any lifetime, or a listener JS gave (ADR 1021).
+/// A closure made for the call is a new function, which removes nothing.
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a listener added before", note = "removal finds the listener added: a shared one, `listener(..)`'s, or one JS gave, an `EventListenerOrEventListenerObject`")]
 #[cfg_attr(rust_js, rust_js::types = "EventListenerOrEventListenerObject")]
 pub trait IntoAddedEventListener<E>: listeners::Sealed<E> {}
-impl<E: 'static> IntoAddedEventListener<E> for &'static dyn Fn(&'static E) {}
+impl<E: 'static, F: ?Sized + Fn(&'static E) + 'static> IntoAddedEventListener<E> for &'static F {}
 impl<E> IntoAddedEventListener<E> for EventListenerOrEventListenerObject {}
 impl<E> IntoAddedEventListener<E> for &'static EventListenerObject {}
 

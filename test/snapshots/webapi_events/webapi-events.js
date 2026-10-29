@@ -158,7 +158,8 @@ export function givenWrapped(button, given) {
 }
 
 // FragmentInstance's `once` wrapper, kept to add to each child and remove
-// by identity: a function of its `this`, a JS-owned listener (rd209).
+// by identity: a function of its `this`, kept for good, `Box::leak(..)`,
+// as JS keeps it (rd209).
 export function keptWrapped(buttons, given) {
   function attached(event) {
     globalThis.record(20);
@@ -170,6 +171,22 @@ export function keptWrapped(buttons, given) {
     button.addEventListener("custom", attached);
   }
   return attached;
+}
+
+// React DOM's listeners, typed as a Rust engineer types them, `&'static
+// dyn Fn(&Event)`: one made of a closure of `&Event`, assigned over the one
+// given and returned as one, and the one given removed.
+export function unsubscribed(button, given, once) {
+  let shared = given;
+  if (once) {
+    const original = shared;
+    shared = (event) => {
+      button.removeEventListener("custom", original);
+      original(event);
+    };
+  }
+  button.addEventListener("custom", shared);
+  return shared;
 }
 
 // React DOM's checkPassiveEvents: an options object whose `passive` is a

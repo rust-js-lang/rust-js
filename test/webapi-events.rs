@@ -149,9 +149,10 @@ pub fn given_wrapped(button: &HTMLButtonElement, given: EventListenerOrEventList
 }
 
 // FragmentInstance's `once` wrapper, kept to add to each child and remove
-// by identity: a function of its `this`, a JS-owned listener (rd209).
+// by identity: a function of its `this`, kept for good, `Box::leak(..)`,
+// as JS keeps it (rd209).
 pub fn kept_wrapped(buttons: &[&HTMLButtonElement], given: EventListenerOrEventListenerObject) -> EventListenerOrEventListenerObject {
-    let attached = listener(function::with_this(move |this, (event,): (&'static Event,)| {
+    let attached = Box::leak(function::with_this(move |this, (event,): (&'static Event,)| {
         record(20);
         if let EventListenerOrEventListenerObject::EventListener(f) = given {
             function::call(f, this.map(|t| t as &dyn js::IntoUnknown), (event,));
@@ -162,6 +163,22 @@ pub fn kept_wrapped(buttons: &[&HTMLButtonElement], given: EventListenerOrEventL
         button.add_event_listener_named("custom", attached, None);
     }
     attached
+}
+
+// React DOM's listeners, typed as a Rust engineer types them, `&'static
+// dyn Fn(&Event)`: one made of a closure of `&Event`, assigned over the one
+// given and returned as one, and the one given removed.
+pub fn unsubscribed(button: &'static HTMLButtonElement, given: &'static dyn Fn(&Event), once: bool) -> &'static dyn Fn(&Event) {
+    let mut shared = given;
+    if once {
+        let original = shared;
+        shared = listener(move |event: &Event| {
+            button.remove_event_listener_named("custom", original, None);
+            original(event);
+        });
+    }
+    button.add_event_listener_named("custom", shared, None);
+    shared
 }
 
 // React DOM's checkPassiveEvents: an options object whose `passive` is a

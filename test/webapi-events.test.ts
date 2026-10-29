@@ -26,11 +26,14 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   // checkPassiveEvents' options object, the listener and both options.
   expect(js).toContain('button.addEventListener("test", listener, options);\n  button.removeEventListener("test", listener, options);');
   expect(js).toContain('if (typeof given === "function") {\n      given.call(this, event);\n    } else {\n      given.handleEvent(event);\n    }');
+  // A listener typed `&'static dyn Fn(&Event)`, of every event's lifetime, is
+  // one too: made, assigned, returned and removed as the function itself.
+  expect(js).toContain('if (once) {\n    const original = shared;\n    shared = (event) => {\n      button.removeEventListener("custom", original);\n      original(event);\n    };\n  }\n  button.addEventListener("custom", shared);\n  return shared;');
 });
 
 // FragmentInstance's \`once\` wrapper, a \`function::with_this\` function kept
 // as an \`EventListener\` to add to each child and remove by identity:
-// \`listener(..)\` of it, the function itself (rd209).
+// \`Box::leak(..)\` of it, the function itself (rd209).
 test("a function of its this is kept as a listener, the function itself", async () => {
   const js = compileEvents();
   expect(js).toContain('  function attached(event) {\n    globalThis.record(20);\n    if (typeof given === "function") {\n      given.call(this, event);\n    }\n  }\n  for (const button of buttons) {\n    button.addEventListener("custom", attached);\n  }\n  return attached;');

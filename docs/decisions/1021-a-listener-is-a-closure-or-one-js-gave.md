@@ -166,3 +166,54 @@ a listener, the function itself" (`kept_wrapped`, run: added to two
 targets, the one function, called with its `this`). No mutation: the
 generator's.
 
+## Amendment: a shared listener is `&'static dyn Fn(&E)` again; a box kept is `Box::leak(..)`'s (rd209's regression)
+
+The amendment above typed `listener(..)` `&'static dyn Fn(&'static E)`,
+and removal took only that. React DOM's port types its listeners as a
+Rust engineer types a function of the event, `&'static dyn Fn(&Event)`,
+of every lifetime: `remove_event_listener(target, type, listener:
+&'static dyn Fn(&Event), capture)`, a listener assigned over the one
+given, `listener = webapi::listener(move |event: &Event| ..)`, and one
+returned, `-> &'static dyn Fn(&AnyNativeEvent)`. None compiled: such a
+`dyn` isn't one of `&'static` events (rustc's "not general enough"), and
+one of `&'static` events doesn't coerce to it.
+
+No one type serves both. A function of `&'static` events, a
+`with_this(..)` box's, is no function of every lifetime's (a closure that
+keeps the event couldn't soundly be called with a borrowed one), and
+`listener(..)` giving what it was given, `&'static F`, makes a listener
+that removes itself, `Rc<Cell<Option<..>>>` captured by its own closure
+(React DOM's setSrcObject), a type of infinite size. Two impls of
+removal, one for each `dyn`, differ only in whether a lifetime is
+higher-ranked, which rustc's coherence warns of as a future error
+(`coherence_leak_check`, rust-lang/rust#56105).
+
+**`listener<E>(impl Fn(&E) + 'static) -> &'static dyn Fn(&E)`**, as before
+rd209: a closure of `&E` is the listener, of every lifetime. **Removal
+takes a reference to any function of the event JS keeps**, `impl<E:
+'static, F: ?Sized + Fn(&'static E) + 'static> IntoAddedEventListener<E>
+for &'static F`, one impl: `listener(..)`'s, `&'static dyn Fn(&'static
+Event)` an `EventListener` gave, a named `fn`'s. A closure made for the
+call, given by value, still isn't one. A function already made, a
+`with_this(..)` box, is kept for good as any box is, `Box::leak(..)`,
+which is the function itself (`Box::leak` is the value, ADR 0238), and
+an `EventListener` as it is:
+
+```rust
+let attached = Box::leak(function::with_this(move |this, (event,): (&'static Event,)| { .. }));
+let attached = EventListenerOrEventListenerObject::EventListener(attached);
+```
+
+prints `function attached(event) { .. }` as before. `listener(..)`
+makes a function of a closure; `Box::leak` keeps one that's made: each
+is the one way for what it's given.
+
+Held by `test/webapi-events.test.ts`'s "event methods and reusable
+listeners emit direct JavaScript" (`unsubscribed`: a `&'static dyn
+Fn(&Event)` given, removed, assigned over by `listener(..)` and returned)
+and "a function of its this is kept as a listener" (`kept_wrapped`, now
+`Box::leak`), and by building react-in-rust's react-dom-bindings, whose
+four sites compile as written. The refusal of a closure that names a
+different event is rustc's closure-signature error now, where the
+`EventListenerOrEventListenerObject` note was. No mutation: the
+generator's.
