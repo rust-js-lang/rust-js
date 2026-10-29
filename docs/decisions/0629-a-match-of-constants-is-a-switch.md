@@ -524,3 +524,51 @@ that fall through is the next link's test", the guide's `count` of
 `guarded-shared-break-of-some-cases`, `guarded-chain-break-not-an-else`,
 `guarded-chain-else-of-a-going-branch`, `guarded-chain-ending-breaks-kept`,
 `guarded-chain-empty-link-kept` and `exits-after-tuple-unplaced`.
+
+## Amendment: a loop left through MIR's block is left by the arm's `break` (#389c, 2026-10-29)
+
+The second item the amendment above left: a `match` of no guards in a
+loop whose turn goes on past it, an arm of which breaks the loop, `b'a' =>
+break`, or a nested `match`'s, `b'd' => match n { 0 => break, .. }`. MIR
+leaves the loop through a block of its own, `bb22: { if (codes[i] === 97)
+{ break bb22; } ..; continue; } break;`, so `switches` saw a block's
+`break`, not the loop's, built the `switch`, and printed `bb22: { switch
+(..) { case 97: break bb22; .. } ..; continue; } break;`, a label the Rust
+has none of.
+
+**A loop's body that ends with a block MIR made, then the loop's `break;`,
+is the block's statements, each `break` of it the loop's `break;`**
+(`continues::blocks_breaking_loops`, tidy's `chains` stage after `while
+tests`, before `switches`): the same jump, where the block's end went on
+to. `switches` then sees the arms' `break` of the loop, and the #389 rule
+makes them the `if` chain they are where the turn goes on past the
+`match`: `if (codes[i] === 97) { break; } if (codes[i] === 98) { i += 2;
+continue; } if (codes[i] === 100) { if (n === 0) { break; } .. }`. Not a
+loop the program labeled, whose `break`s are its label's
+(`case_rests::loops_left_by_cases`, which reads that shape after
+`switches`); nor a block a `break` of which is in a loop or a `switch` of
+its own, where `break;` would leave that one (`rows_until`: a wrong answer
+otherwise, the mutation `blocks-breaking-loops-inner-loop`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+Not yet: the subject read through MIR's copy of its index, `const value =
+i; if (codes[value] === 97)`, where `codes[i]` reads the same (no arm's
+test runs after `i` changes); the guarded arm placed after the chain's
+block (`1 if on(n) => break, 1 | 2 => { let m = if n > 4 { 1 } else {
+return 0 }; .. }`, `bb26: { bb12: { .. } .. }`), which needs the chain
+rebuilder of #389b's write-up; and an inner loop's way out MIR shares with
+the outer block, `rows_until`'s `while (true) { .. if (k) { break; } break
+bb25; }`.
+
+The readability ratchet's `labeled blocks` and `while (true)` shares grew
+(1.3 to 1.4, 10.4 to 10.5 in 10,000 lines), blessed for this reason:
+`rows_until` is the case that holds a block's `break` in an inner loop
+apart, the wrong answer otherwise, and its `bb25:` and `while (true)` are
+that open gap, above, not a shape this change makes.
+
+Held by `test/corpus/match_breaks_its_loop.rs` (`skipped`, `rows_until`,
+`shadowed`) against native Rust, and the mutations
+`blocks-breaking-loops-kept`, `blocks-breaking-loops-of-written-label`
+(`while_let_at_end.rs`) and `blocks-breaking-loops-inner-loop`
+(`mir/tidy/jumps/continues.ts`).

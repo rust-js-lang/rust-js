@@ -462,6 +462,73 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// A loop's body that ends with a block MIR made, then the loop's
+/// `break;`, `l: { if (c === 97) { break l; } ..; continue; } break;`, a
+/// `match` whose arm leaves the loop, `b'a' => break`, MIR's way out
+/// through the block: each `break l` the loop's `break;`, which goes where
+/// the block's end does, the block's statements in its place, so the arms
+/// break the loop as written and `switches` reads them so (#389c). Not one
+/// a `break l` of which is in a loop or a `switch` of its own, where a
+/// `break;` would leave that; nor a loop the program labeled, whose
+/// `break`s are its label's (`case_rests::loops_left_by_cases`). A name
+/// the block declares that the turn's before it does too is the names
+/// stage's to tell apart, later.
+pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
+    stmts: &mut [Stmt],
+    loops: &[(js::Span, bool, Option<String>)],
+) {
+    for stmt in stmts {
+        if written_loop(loops, stmt.span).is_some_and(|(.., label)| label.is_some()) {
+            continue;
+        }
+        let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
+        else {
+            continue;
+        };
+        let [.., block, after] = body.as_slice() else {
+            continue;
+        };
+        let (StmtKind::Labeled(label, inner), StmtKind::Break(None)) = (&block.kind, &after.kind) else {
+            continue;
+        };
+        if !block.span.is_none() || !crate::lower::mir::is_block_label(label) {
+            continue;
+        }
+        let (label, mut broken) = (label.clone(), inner.clone());
+        loop_breaks(&mut broken, &label);
+        let at = body.len() - 2;
+        if js::names_break(&broken, &label) {
+            continue;
+        }
+        body.splice(at..=at, broken);
+        if body[..body.len() - 1].last().is_some_and(ends) {
+            body.pop();
+        }
+    }
+}
+
+/// Each `break label` of `stmts`, not in a loop or a `switch` of their
+/// own, a `break;` of the loop they're in.
+fn loop_breaks(stmts: &mut [Stmt], label: &str) {
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Break(broken) if broken.as_deref() == Some(label) => *broken = None,
+            StmtKind::If(_, a, b) => {
+                loop_breaks(a, label);
+                if let Some(b) = b {
+                    loop_breaks(b, label);
+                }
+            }
+            StmtKind::Labeled(_, body) => loop_breaks(body, label),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                loop_breaks(a, label);
+                loop_breaks(b, label);
+            }
+            _ => {}
+        }
+    }
+}
+
 /// A labeled block MIR made that a loop ends, `l: { .. if (t) { .. while
 /// (true) { ..; break l; } } }`, as the last of loops each in the one
 /// before's way out is once `exits after` puts each after it: the `break

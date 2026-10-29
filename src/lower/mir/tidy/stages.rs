@@ -452,6 +452,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("while tests", |b, h| {
                 js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))
             }),
+            // A block MIR made that a loop's body ends with, then its
+            // `break;`: the block's `break`s the loop's, as an arm's `break`
+            // is written (#389c).
+            pass("blocks breaking loops", |b, h| {
+                js::statement_lists(b, &mut |s| blocks_breaking_loops(s, &h.written.loops))
+            }),
             // What those leave at the end, a `return;` the program didn't write.
             pass("tail returns", |b, h| tail_returns(b, h.returns)),
             // A loop's early exits again, of what's taken its shape since.

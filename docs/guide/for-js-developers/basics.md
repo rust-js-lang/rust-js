@@ -1816,10 +1816,11 @@ the loop's turn ends at the `switch`, its cases `break;` it and one
 where the turn goes on past it, the arms are an `if` chain, guarded arms
 that fall through too, each arm's test its constants and those of each
 guarded arm before it that names them, then its guard, `(tag === 2 || tag
-=== 3) && on(tag)`, as Rust tries them; a loop the program labeled,
-`'rows: for ..`, keeps its `switch` and `break rows;`
+=== 3) && on(tag)`, as Rust tries them; an arm that breaks the loop from
+a nested `match`, `b'd' => match n { 0 => break, .. }`, too; a loop the
+program labeled, `'rows: for ..`, keeps its `switch` and `break rows;`
 ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md),
-amended, #389, #389b):
+amended, #389, #389b, #389c):
 
 ```rust
 pub fn count(s: &str) -> u32 {

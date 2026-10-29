@@ -311,4 +311,32 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
     snapshots: true,
   },
+  {
+    name: "blocks-breaking-loops-kept",
+    breaks: "a block MIR made that a loop's turn ends with, then the loop's `break;`, stays, its arms' `break bb22;` of it: `bb22: { switch (codes[value]) { case 97: break bb22; .. } .. continue; } break;` (#389c)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        body.splice(at..=at, broken);\n",
+    replace: "        continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "blocks-breaking-loops-of-written-label",
+    breaks: "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        if written_loop(loops, stmt.span).is_some_and(|(.., label)| label.is_some()) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "blocks-breaking-loops-inner-loop",
+    breaks: "a `break` of the block inside a loop of its own becomes `break;`, leaving that inner loop, not the one around the block: a wrong answer",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        if js::names_break(&broken, &label) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(match_breaks_its_loop|while_let_at_end|guarded_arms_nested_break|inner_while_then_break|loop_break_choice).rs$"],
+    snapshots: true,
+  },
+
 ];
