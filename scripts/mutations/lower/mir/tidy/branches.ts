@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-implied-guard-kept",
     breaks: "`if (x != null) { if (x === \"a\") { s } }` keeps the guard its chain says",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test, breaks)) =>\n",
-    replace: "                if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test, breaks)) =>\n",
+    find: "            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
+    replace: "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
   },
   {
@@ -108,8 +108,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-guarded-chain-else",
     breaks: "a chain with a last `else` drops its guard, its `else` then run where the guard fails",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    .is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard, breaks)))\n        }\n        _ => false,\n",
-    replace: "                    .is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard, breaks)))\n        }\n        _ => true,\n",
+    find: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => false,\n",
+    replace: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
     tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
   },
   {
@@ -584,14 +584,5 @@ export const mutations: Mutation[] = [
     find: " || (null(yes) && undefined(no))\n",
     replace: "\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
-  },
-  {
-    name: "guard-of-written-break-implied",
-    breaks: "a `while let`'s `if (word != null) { if (word) { .. } }`, the inner the program's `if word.is_empty() { break; }`, is `if (word)` alone, so the loop is `while ((word = words[i]))` and the `break`'s `if` and its comment are gone (#301, ADR 0702 amended)",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "                && !super::jumps::apart_from_written_break(breaks, test, guard)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
-    snapshots: true,
   },
 ];

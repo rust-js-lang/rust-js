@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
     name: "guarded-chains-late-off",
     breaks: "a chain of a string's literals that `returns into branches` leaves guarded by `typeof s === \"string\"` keeps its `typeof`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"guarded chains\", |b, h| {\n                js::statement_lists(b, &mut |s| guarded_chains(s, &h.written.breaks))\n            }),\n",
+    find: "            pass(\"guarded chains\", |b, _| js::statement_lists(b, &mut guarded_chains)),\n",
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "a block MIR made followed by a return"],
   },

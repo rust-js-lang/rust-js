@@ -449,9 +449,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain those leave guarded by what each of its tests says,
             // `typeof s === "string"` of `s === "a"`'s: the chain alone (ADR
             // 0755).
-            pass("guarded chains", |b, h| {
-                js::statement_lists(b, &mut |s| guarded_chains(s, &h.written.breaks))
-            }),
+            pass("guarded chains", |b, _| js::statement_lists(b, &mut guarded_chains)),
             pass("settle branches", |b, _| settle_jumps(b)),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.

@@ -696,3 +696,19 @@ Held by `test/corpus/labeled_loop_left_from_inner.rs` against native
 Rust; mutation `blocks-breaking-loops-written-label-unnamed`
 (`mir/tidy/jumps/continues.ts`), and `blocks-breaking-loops-of-written-label`
 on its new line.
+
+## Amendment: `guarded_chains` keeps no guard beside a written `break`'s `if` (2026-10-29)
+
+The #301 amendment kept a guard beside an `if` the program wrote of a
+`break` (`jumps::apart_from_written_break`), as `guarded_chains` took the
+`while let`'s `if (word != null)` away where the inner `if (word)` said it.
+That reading, a value's truth saying it's there, went with ADR 0870's
+`truth-implies-nothing` (bd5160c8e), and its mutation,
+`guard-of-written-break-implied`, survived a full check: with the guard
+out, no corpus case's JS changes (snapshots compared), nor the lowering,
+JSX, React, port, snapshot, tidy-stage, iterator-form or compiler suites',
+nor any of the `while let`s of a string literal's `===`, and `if let`s in
+a loop, written to reach it. The guard and
+`apart_from_written_break` went with the mutation. Case
+([0262](0262-when-rust-and-js-disagree.md)): N; a chain it would have kept
+guarded runs the same tests either way, as the guard's test is implied.

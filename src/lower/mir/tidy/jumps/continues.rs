@@ -317,19 +317,6 @@ pub(in crate::lower::mir::tidy) fn jump_tested(written: &[(js::Span, js::Span)],
     })
 }
 
-/// Whether `by`, a test, is of an `if` the program wrote of a `break`,
-/// `jumps`' (`Written::breaks`), and `test` isn't of that one: MIR's test
-/// beside it, a `while let`'s `Some`, which stays a test of its own where
-/// `by` would say it, so that `if` stays the program's (#301).
-pub(in crate::lower::mir::tidy) fn apart_from_written_break(
-    jumps: &[(js::Span, js::Span)],
-    by: &Expr,
-    test: &Expr,
-) -> bool {
-    let of = jump_tested(jumps, written_at(by));
-    of.is_some() && of != jump_tested(jumps, written_at(test))
-}
-
 /// Where `test` is written: of one of no place, a test `&&` or `||` joins
 /// where the program didn't, a `!` or a read tidy made of a method's call,
 /// `!words[i]` of `!words[i].is_empty()`, the first place of what it's
