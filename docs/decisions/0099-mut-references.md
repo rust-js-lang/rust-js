@@ -488,8 +488,10 @@ port compiled with a probe in it reached it nowhere).
 - The mutation is `mir-assign-op-call-place-twice`.
 
 The readability ratchet's `renamed x$1` share rose with it, 668.3 to
-668.5 per 10,000 lines, blessed: the new case does five such assignments
-in one `main`, each its own `const item`, so four are `item$1` to
-`item$4`, as five `*first(&mut v) += five`s already give `value` to
-`value$4`. The names are the one `fixed_place_of` gives a place's object;
+668.5 per 10,000 lines, blessed: every one of the nine is the new case's,
+whose `main` reaches six places through a call's `&mut`, five compound
+assignments and a `bump(first(&mut v), ..)` whose argument is boxed and
+written back, each its own `const item`, so five are `item$1` to
+`item$5`, as six `*first(&mut v) += five`s already give `value` to
+`value$5`. The name is the one `fixed_place_of` gives a place's object;
 a program that does one in a scope gets `item`.
