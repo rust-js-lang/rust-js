@@ -3,6 +3,8 @@
 Status: Accepted. Extends [0364](0364-mir-lowering.md). Amended
 (2026-10-26): a copy, a temporary's or a pattern's binding's, is the
 variable where each read of it is before the variable is set, on every way.
+Amended (2026-10-29): a branch that sets it and leaves is no way to what's
+after it.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): a read of a variable
 where it holds what its temporary holds gives the same value.
@@ -128,3 +130,33 @@ Held by `test/lowering-shadows.test.ts`, "a while let binding read before
 its variable is set again is the variable", run in JS; the corpus case
 `binding_read_before_set.rs`'s walk of its list, against native Rust; and
 the mutation `while-let-binding-kept` (`lower/mir/tidy/copied.ts`).
+
+## Amendment: a branch that leaves is no way past it (2026-10-29)
+
+React's TreeReflection walks a fiber's children with one variable, `while
+(child !== null) { if (child === skip) { child = child.sibling; continue;
+} .. child = child.sibling; }`. Its port, `while let Some(current) = child
+{ if Rc::ptr_eq(&current, skip) { child = current.sibling.clone();
+continue; } .. }`, kept `const current = child;`: the branch that sets
+`child` was taken for a way to the reads after the `if`, though it leaves
+the turn (the port's gap rd59).
+
+**The user's decision: a `while let`'s binding read only while its
+variable still holds the same value is the variable, by its name.** So a
+branch whose last statement leaves, by `continue`, `break`, `return` or a
+`throw` (`js::ends`), is no way to what's after its `if`: what it sets is
+set on none of them. Its jump leaves the statements followed too, as the
+walk (`read_before_set`) follows an `if`'s branches and no loop's or
+label's block, which a jump might stay in. A binding read once the
+variable holds another value on any way, the branch that sets it going on,
+stays its own `const`. Case A, as above: where nothing set the variable on
+the way, it and its copy are the same value.
+
+- Held by the corpus case `while_let_binding_is_its_scrutinee.rs`, against
+  native Rust: a branch left by `continue`, `break` and `return`; a binding
+  read after its variable is set in a `then` or an `else` that goes on, of
+  an `Rc` and of a reference, which a `while let` copies; and an `else`
+  the program wrote. `while_let_steps.rs`'s `longOnes` is now one
+  variable. Mutations `set-in-a-leaving-branch-carried`,
+  `set-in-a-going-on-then-lost` and `set-in-a-going-on-else-lost`
+  (`lower/mir/tidy/bindings.ts`).

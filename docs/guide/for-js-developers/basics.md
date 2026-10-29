@@ -2285,6 +2285,19 @@ pub fn self_time(fiber: &Fiber) -> f64 {
     }
     total
 }
+
+pub fn count_skipping(mut child: Option<Rc<Fiber>>, skip: &Rc<Fiber>) -> u32 {
+    let mut n = 0;
+    while let Some(current) = child {
+        if Rc::ptr_eq(&current, skip) {
+            child = current.sibling.clone();
+            continue;
+        }
+        n += 1;
+        child = current.sibling.clone();
+    }
+    n
+}
 ```
 
 ```js
@@ -2303,7 +2316,27 @@ export function selfTime(fiber) {
   }
   return total;
 }
+
+export function countSkipping(child, skip) {
+  let n = 0;
+  while (child != null) {
+    if (child === skip) {
+      child = child.sibling;
+      continue;
+    }
+    n = (n + 1) >>> 0;
+    child = child.sibling;
+  }
+  return n;
+}
 ```
+
+The `while let`'s binding is its variable, `child`, where each read of it
+is before the variable is set again on every way to it; a branch that sets
+it and leaves the turn, by `continue`, `break` or `return`, is no way to
+what's after it ([ADR 0434](../../decisions/0434-a-temporary-of-a-variable-is-the-variable.md)).
+Read once the variable holds another value, the binding is a `const` of
+its own.
 
 A `loop` each of whose ways ends advancing to the next item where it
 passes a test, else `break`, the same test of each, is a `do … while`, as

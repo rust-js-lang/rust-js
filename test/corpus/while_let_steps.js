@@ -88,13 +88,12 @@ function longOnes(fiber) {
   let total = 0;
   let child = fiber.child;
   while (child != null) {
-    const current = child;
-    if (current.duration < 2) {
-      child = current.sibling;
+    if (child.duration < 2) {
+      child = child.sibling;
       continue;
     }
-    total += current.duration;
-    child = current.sibling;
+    total += child.duration;
+    child = child.sibling;
   }
   return total;
 }

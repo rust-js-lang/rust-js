@@ -210,13 +210,19 @@ pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut b
                     return false;
                 }
                 *set |= sets(&test);
+                let otherwise = otherwise.as_deref().unwrap_or_default();
                 let mut other = *set;
-                if !read_before_set(then, alias, of, set)
-                    || !read_before_set(otherwise.as_deref().unwrap_or_default(), alias, of, &mut other)
-                {
+                if !read_before_set(then, alias, of, set) || !read_before_set(otherwise, alias, of, &mut other) {
                     return false;
                 }
-                *set |= other;
+                // A branch that leaves, by `continue`, `break` or `return`,
+                // is no way to what's after the `if`: what's set there is
+                // set on none, `if (child === skip) { child = child.sibling;
+                // continue; }` (ADR 0434, amended). Its jump leaves `stmts`
+                // too, as this follows no loop's or label's block, which its
+                // jump might stay in.
+                let goes_on = |stmts: &[Stmt]| !stmts.last().is_some_and(js::ends);
+                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);
             }
             StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v == of) => {
                 let value = [StmtKind::Expr(value.clone()).at(stmt.span)];
