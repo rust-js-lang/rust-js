@@ -212,11 +212,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "constant-flags-never",
-    breaks: "a library's optimized MIR's drop flag, a consumer's copy of `vec![t]`'s, is `const value = false;` and a `catch` testing it, `if (value) { dropT?.(t); }` (#381)",
+    breaks: "a library's optimized MIR's drop flag, a consumer's copy of `vec![t]`'s, is `const value = false;` and a `catch` testing it, `if (value) { dropT?.(t); }` (#381), and React's `runWithFiberInDEV`'s copy nests its flags' tests 2^k ways (#394)",
     file: "src/lower/mir/drops.rs",
     find: "        .map(|(local, _)| local)\n        .collect();\n    flags.sort();",
     replace: "        .map(|(local, _)| local)\n        .filter(|_| false)\n        .collect();\n    flags.sort();",
-    tests: ["test/crates.test.ts", "-t", "never crashes"],
+    tests: ["test/crates.test.ts", "-t", "never crashes|settles its cleanup"],
   },
   {
     name: "constant-flags-of-any-use",

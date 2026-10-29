@@ -744,3 +744,9 @@ or read otherwise is none. Held by `test/crates.test.ts`'s
 `generic_boxed_drop` pair against native Rust, `dep::given`'s flag, of a
 value moved on one path, still tested where it isn't known and dropped
 by a panic, and the mutations `constant-flags-*` (`mir/drops.ts`).
+
+The same settles React's `runWithFiberInDEV`'s copy (#394): its optimized
+MIR's cleanup tested a flag of each argument, a `()`'s drop of nothing
+joining both ways of each test, which each `catch` nested 2^k ways,
+about 450 lines; none is tested now. Held by the `generic_flags_given`
+pair against native Rust.

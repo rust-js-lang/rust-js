@@ -766,6 +766,18 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
   refused("    println!(\"{}\", dep::unboxed(Loud(1)).0);\n", lib, "rust-js does not support");
 }, 300_000);
 
+// #394: a consumer's copy of React's `runWithFiberInDEV`, compiled from its
+// optimized MIR, tests each argument's drop flag in its cleanup: settled as
+// rust-js's own (#381), none is tested, where each `catch` nested them 2^k
+// ways, about 450 lines; it drops what it's given where Rust does.
+test("a consumer's copy of a library's generic function settles its cleanup's drop flags", () => {
+  const out = chain(pairs, "generic_flags_given", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const copy = app.slice(app.indexOf("function runWithFiberInDev("), app.indexOf("export function main("));
+  expect(copy).not.toContain("if (");
+  expect(copy.split("\n").length).toBeLessThan(30);
+}, 300_000);
+
 // A library's generic trait method is given a drop for its own type
 // parameters, as its trait declares them (ADR 0163): a consumer's value with
 // a destructor is dropped where Rust drops it, at the end of `put`, called on
