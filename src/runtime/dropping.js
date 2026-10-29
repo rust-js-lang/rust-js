@@ -13,3 +13,16 @@ function $dropping(f, drop) {
 function $dispose(f) {
   f[$disposeKey]?.();
 }
+
+// A `Fn` or an `FnMut` closure made a `dyn FnOnce`: its call consumes it,
+// so what it took drops as the call returns or unwinds, as std's
+// `call_once` shim drops it; dropped uncalled, its drop too (#409).
+function $droppingOnce(f, drop) {
+  return $dropping((...args) => {
+    try {
+      return f(...args);
+    } finally {
+      drop();
+    }
+  }, drop);
+}

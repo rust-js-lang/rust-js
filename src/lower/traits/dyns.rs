@@ -475,10 +475,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let function = self.pointee(source);
             let facts = &self.krate.closure_facts;
-            let carried = matches!(function.kind(), ty::Closure(id, _)
-                    if facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id))
+            let handed = matches!(function.kind(), ty::Closure(id, _) if facts.handed_to_js(*id));
+            let carried = matches!(function.kind(), ty::Closure(id, _) if facts.carries_its_drop(self.tcx, *id))
                 || matches!(function.kind(), ty::Dynamic(..));
-            if carried || self.drops(function) == crate::lower::drops::Drops::Nothing {
+            // Of a `Fn` or an `FnMut` made a `dyn FnOnce`, whose call
+            // consumes it, as std's `call_once` shim does: what it took
+            // dropped as the call returns, or unwinds, `$droppingOnce(f,
+            // drop)`; an `FnOnce`'s own body drops it (#409).
+            let once = crate::lower::recognition::is_fn_once_dyn(self.tcx, predicates)
+                && !matches!(function.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce)
+                && !matches!(function.kind(), ty::Dynamic(of, ..) if crate::lower::recognition::is_fn_once_dyn(self.tcx, of));
+            // A `dyn Fn`'s drop, of one only where the program makes one of
+            // what has something to drop (ADR 0626, amended).
+            let dropping = match function.kind() {
+                ty::Dynamic(..) => facts.fn_dyns_drop,
+                _ => carried || self.drops(function) != crate::lower::drops::Drops::Nothing,
+            };
+            if once && !handed && dropping {
+                let f = self.spill("f", value, out);
+                let mut dropped = Vec::new();
+                match carried {
+                    true => {
+                        dropped.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![f.clone()])).at(js::Span::NONE))
+                    }
+                    false => self.drop_value(f.clone(), function, span, &mut dropped)?,
+                }
+                return Ok(Expr::call_helper(
+                    "$droppingOnce",
+                    vec![f, Expr::arrow(Vec::new(), dropped)],
+                ));
+            }
+            if carried || handed || self.drops(function) == crate::lower::drops::Drops::Nothing {
                 return Ok(value);
             }
             let f = self.spill("f", value, out);

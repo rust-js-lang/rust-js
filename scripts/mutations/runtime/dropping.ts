@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  f[$disposeKey]();\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
+  {
+    name: "dropping-once-not-on-unwind",
+    breaks: "a `Fn` closure made a `dyn FnOnce` whose call panics never drops what it took as it unwinds (#409)",
+    file: "src/runtime/dropping.js",
+    find: "    try {\n      return f(...args);\n    } finally {\n      drop();\n    }\n",
+    replace: "    const result = f(...args);\n    drop();\n    return result;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
+  },
 ];

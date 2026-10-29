@@ -89,3 +89,26 @@ captures, which the drop query answers; a `dyn Fn` made another is a
 function already, whose own coercion answers. Held by the corpus's
 `dyn_fn_generic_closure_drops` against native Rust, and ADR 0626's
 amendment's tests and mutations.
+
+## Amendment: a `Fn` made a `dyn FnOnce` is consumed by its call (#409)
+
+A closure rustc infers `Fn` or `FnMut`, made first and then a
+`Box<dyn FnOnce()>`, `let f = move || { let n = &d; .. }; let task:
+Box<dyn FnOnce()> = Box::new(f); task();`, carried its drop, which ran
+only where the box was dropped uncalled: called, it never dropped what
+it took, where std's `call_once` shim consumes the box and drops the
+closure as the call returns. A closure made a `dyn FnOnce` where it's
+written is inferred `FnOnce`, and its own body drops it, so it was
+right. **A function made a `dyn FnOnce` that isn't an `FnOnce` closure,
+nor a `dyn FnOnce` already, a `Fn`'s, an `FnMut`'s or a `dyn Fn`'s, is
+`$droppingOnce(f, drop)`: its call runs `f`, then the drop, in a
+`finally`, as the call returns or unwinds; dropped uncalled, the drop**
+(`dyns.rs`, `recognition::is_fn_once_dyn`). A `dyn Fn`'s drop is its
+`$dispose`, of one only where the program makes a `dyn Fn` of what has
+something to drop (`fn_dyns_drop`, ADR 0626): else it's as it is,
+`queueMicrotask(callback)`. Case C: Rust's drops, as it
+runs them. Held by `test/corpus/fn_boxed_once_drops.rs` against native
+Rust, `dyn_fn_once_drops_itself.rs` unchanged, and the mutations
+`fn-made-dyn-fn-once-unconsumed`, `fn-once-closure-consumed-twice`,
+`fn-once-dyn-consumed-again` (`lower/traits/dyns.ts`) and
+`dropping-once-not-on-unwind` (`runtime/dropping.ts`).

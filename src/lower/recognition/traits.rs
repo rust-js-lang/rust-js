@@ -891,6 +891,12 @@ pub(crate) fn is_fn_dyn(tcx: TyCtxt<'_>, predicates: &ty::List<ty::PolyExistenti
     })
 }
 
+/// Whether a `dyn` of `predicates` is a `dyn FnOnce`, whose call consumes
+/// what it's of (#409).
+pub(crate) fn is_fn_once_dyn(tcx: TyCtxt<'_>, predicates: &ty::List<ty::PolyExistentialPredicate<'_>>) -> bool {
+    (predicates.principal_def_id()).is_some_and(|id| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce))
+}
+
 /// `Clone::clone_from`, which a `Clone` dictionary has where its impl
 /// writes its own (ADR 0324).
 pub(crate) fn is_clone_from(tcx: TyCtxt<'_>, id: DefId) -> bool {
