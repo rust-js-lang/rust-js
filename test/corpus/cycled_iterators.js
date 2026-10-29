@@ -52,14 +52,14 @@ function counterIterator_next(counter) {
   return counter.n;
 }
 
-function firsts(iter, n, IIterator, IClone, dropI) {
+function firsts(iter, n, IIterator, IClone, dropI, dropIItem) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
   const result = Array.from(iter$1);
   iter$1.return();
   return result;
 }
 
-function two(iter, dropI) {
+function two(iter, dropI, dropIItem) {
   const iter$1 = $closing(Iterator.from(iter), dropI).take(2);
   const result = Array.from(iter$1);
   iter$1.return();
@@ -114,7 +114,7 @@ function main() {
       }),
   );
   console.log(`[${tags.join(", ")}]`);
-  const held = firsts([0], 3, { next: genIterator_next }, clone);
+  const held = firsts([0], 3, { next: genIterator_next }, clone, undefined, loudDrop_drop);
   console.log(`held ${held.length}`);
   for (const item of held) {
     loudDrop_drop(item);

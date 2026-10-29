@@ -41,7 +41,14 @@ class $Steps extends Iterator {
   // source has left, one a variable moved here held (#206).
   fold(init, f) {
     let folded = init;
-    for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    // Closed though `f` throws, a panic, as Rust's `fold` drops what it
+    // took, what's left of it, as it unwinds (#422).
+    try {
+      for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    } catch (error) {
+      this.return();
+      throw error;
+    }
     this.return();
     return folded;
   }

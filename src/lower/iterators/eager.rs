@@ -376,7 +376,12 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         js::ExprKind::Call(callee, args)
             if callee.helper_name() == Some("$closing")
                 && whole
-                && stages.iter().all(|(name, _)| matches!(*name, "map" | "filter")) =>
+                && stages.iter().all(|(name, f)| {
+                    // Not one a panic stops early, which drops what's left
+                    // as it closes (#422), its stages' or what takes them.
+                    matches!(*name, "map" | "filter") && !crate::lower::iterators::in_place::may_throw(f)
+                })
+                && taker.is_none_or(|f| !crate::lower::iterators::in_place::may_throw(f)) =>
         {
             &args[0]
         }

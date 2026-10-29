@@ -12,7 +12,13 @@ function loudDrop_drop(loud) {
 
 function main() {
   const noneLast = $lastDropping(
-    $iter([[1], undefined]),
+    $closing($iter([[1], undefined]), (intoIter) => {
+      for (const item of intoIter) {
+        if (item != null) {
+          loudDrop_drop(item);
+        }
+      }
+    }),
     (option) => {
       if (option != null) {
         loudDrop_drop(option);
@@ -26,7 +32,13 @@ function main() {
   const value$1 = [undefined, [2]];
   try {
     const someLast = $lastDropping(
-      $iter(value$1),
+      $closing($iter(value$1), (intoIter) => {
+        for (const item of intoIter) {
+          if (item != null) {
+            loudDrop_drop(item);
+          }
+        }
+      }),
       (option) => {
         if (option != null) {
           loudDrop_drop(option);
@@ -68,7 +80,13 @@ function main() {
 
       try {
         const empty = $lastDropping(
-          $iter([]),
+          $closing($iter([]), (intoIter) => {
+            for (const item of intoIter) {
+              if (item != null) {
+                loudDrop_drop(item);
+              }
+            }
+          }),
           (option) => {
             if (option != null) {
               loudDrop_drop(option);

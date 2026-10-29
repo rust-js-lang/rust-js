@@ -290,8 +290,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // exhausted at its last (#414).
             let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            // Of one a panic may stop, from an owning source or of items
+            // with a destructor: what it collected dropped, then its
+            // source closed, as std's unwinds (#422).
+            let dropped = match item {
+                Some(item) if self.drops(item) != crate::lower::drops::Drops::Nothing => {
+                    self.drop_function(item, span)?
+                }
+                _ => None,
+            };
+            let unwinds = crate::lower::iterators::chain_may_throw(&it)
+                && (dropped.is_some() || crate::lower::iterators::closes_a_source(&it));
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
+                None if unwinds => Expr::call_helper("$collectDropping", std::iter::once(it).chain(dropped).collect()),
                 None if folded && self.steps_lent_inclusive(iter_ty) => Expr::call_helper("$foldToArray", vec![it]),
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,

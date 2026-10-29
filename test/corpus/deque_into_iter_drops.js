@@ -4,6 +4,7 @@ import { iterator_fuse, iterator_peekable } from "@rust-js/std/iter.js";
 import {
   $closing,
   $cmp,
+  $collectDropping,
   $count,
   $dropEach,
   $heapFrom,
@@ -39,7 +40,7 @@ function main() {
   console.log(`counted ${counted}`);
 
   const keep = (l) => l[0] < 5;
-  const taken = Array.from(
+  const taken = $collectDropping(
     $lazyTakeWhile($closing($iter(deque([2, 3, 9, 4])), $dropEach(loudDrop_drop)), (item) => {
       if (keep(item)) {
         return true;
@@ -47,6 +48,7 @@ function main() {
       loudDrop_drop(item);
       return false;
     }),
+    loudDrop_drop,
   );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {

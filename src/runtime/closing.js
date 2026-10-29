@@ -55,8 +55,18 @@ function $closing(it, drop, slices = true) {
   // a `step_by` over it asks it (#261).
   if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
   if (it.ownNth) closing.ownNth = true;
+  // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
+  // of what it took as it unwinds (#422).
+  const unwound = (fold) => {
+    try {
+      return fold();
+    } catch (error) {
+      close();
+      throw error;
+    }
+  };
   closing.fold = (init, f) => {
-    const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
+    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init)));
     if (it.ownFold) closed = true;
     close();
     return folded;
@@ -65,7 +75,7 @@ function $closing(it, drop, slices = true) {
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
   const rfoldClosing = (init, f) => {
-    const folded = it.rfold(init, f);
+    const folded = unwound(() => it.rfold(init, f));
     if (it.ownRfold) closed = true;
     close();
     return folded;

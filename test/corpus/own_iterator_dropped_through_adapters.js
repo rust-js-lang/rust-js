@@ -10,6 +10,7 @@ import {
 } from "@rust-js/std/iter.js";
 import {
   $closing,
+  $collectDropping,
   $dropEach,
   $enumerate,
   $exactLen,
@@ -282,7 +283,7 @@ function main() {
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `[${Array.from(
+    `[${$collectDropping(
       $rev(
         $taking(
           $closing(

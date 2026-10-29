@@ -1704,7 +1704,7 @@ function main() {
   let eq;
   try {
     eq = $iterEq(
-      $closing(tmp$22, $dropEach(loudDrop_drop)),
+      $closing($closing(tmp$22, $dropEach(loudDrop_drop)), $dropEach(loudDrop_drop)),
       $closing(Iterator.from(tmp$23), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,
@@ -1812,7 +1812,7 @@ function main() {
   let tmp$26;
   try {
     tmp$26 = $iterEq(
-      $closing(tmp$25, $dropEach(loudDrop_drop)),
+      $closing($closing(tmp$25, $dropEach(loudDrop_drop)), $dropEach(loudDrop_drop)),
       $closing(Iterator.from(value$6), $dropEach(loudDrop_drop)),
       loudPartialEq_eq,
       loudDrop_drop,

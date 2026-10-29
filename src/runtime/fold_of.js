@@ -15,3 +15,25 @@ function $foldToArray(it) {
     return items;
   });
 }
+
+// `collect()` into a `Vec` of what may throw as it's stepped, a panic in a
+// closure, of items with a destructor, `drop`, or from an owning source: as
+// std's unwinds, what it collected dropped, then what's left of what it
+// steps, closed (#422).
+function $collectDropping(it, drop) {
+  const items = [];
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
+  } catch (error) {
+    try {
+      if (drop !== undefined) $dropItems(items, drop);
+    } finally {
+      it.return?.();
+    }
+    throw error;
+  }
+  // And at its end, as std's `collect` drops what it took then, what an
+  // adapter that stops early left (ADR 0570).
+  it.return?.();
+  return items;
+}

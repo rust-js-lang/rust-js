@@ -323,4 +323,12 @@ export const mutations: Mutation[] = [
     replace: "            true => iter_ty,\n            false => iter_ty,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
+  {
+    name: "collect-unwinding-unseen",
+    breaks: "a `collect` into a `Vec` a closure's panic may stop is `Array.from`, which drops neither what it collected nor what's left (#422)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            let unwinds = crate::lower::iterators::chain_may_throw(&it)\n",
+    replace: "            let unwinds = false && crate::lower::iterators::chain_may_throw(&it)\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+  },
 ];

@@ -638,7 +638,7 @@ function main() {
     owned$live = false;
     let tmp$9;
     try {
-      tmp$9 = owned.reduce((n, item) => {
+      tmp$9 = $closing(owned, $dropEach(nDrop_drop)).reduce((n, item) => {
         nDrop_drop(item);
         return n + 1;
       }, 0);

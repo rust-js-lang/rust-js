@@ -73,7 +73,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         self.check_leaves_none(method, name, span)?;
-        Ok(it)
+        // One that takes each item, `for_each`'s, `fold`'s, `collect`'s,
+        // closed too: a panic stops it early, and what's left is dropped as
+        // it unwinds, by its closing (#422). Of one lent, its lender's; of
+        // a type parameter's, its own drop after, which MIR writes, unwinding
+        // too.
+        // Not a `collect()`, which runs nothing of its own as it steps, its
+        // adapters' closing their source already.
+        let runs_nothing = method == Some(IterMethod::Collect);
+        match lent || runs_nothing || crate::lower::recognition::known_by_bounds(iter_ty) {
+            true => Ok(it),
+            false => self.closing(it, iter_ty, span),
+        }
     }
 
     /// `it`, a JS iterator of a `ty` an adapter is given to hold, closed to

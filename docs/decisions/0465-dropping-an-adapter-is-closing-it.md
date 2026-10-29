@@ -450,3 +450,39 @@ Readability: the case's lines add `$iter` (83 to 83.7 in 10,000 lines),
 renamed temporaries (677.8 to 681.4), each `let`'s drops of what a panic
 would leave, and its `while let`'s `while (true)` (10.4 to 10.5), as each
 such case does.
+
+## Amendment: a panic stops a chain early (2026-10-30, #422)
+
+A chain of `map`s and `filter`s over an owning source, or a consumer that
+takes each item, `for_each`, `fold`, runs over every item, so its
+`$closing` was dropped, or never made: unless a closure panics, which
+stops it early. Rust then drops, as it unwinds, what the panicking closure
+held, what a `collect` had collected, and what's left of the source; JS
+dropped the first alone, `drop 3` where native drops 3, 1, 2, 4. Results
+change, so Rust's behavior is kept (ADR 0262):
+- **A consumer that runs code as it takes each item of an owning source
+  is given it closed** (`dropping_source`), not a `collect()`, whose
+  adapters close theirs already, nor a type parameter's, which MIR's own
+  drop after the call drops, unwinding too.
+- **`$Steps.fold`, and `$closing`'s `fold` and `rfold`, close it though
+  their function throws**, as Rust's `fold` drops what it took.
+- **A `collect` into a `Vec` a stage's panic may stop
+  (`chain_may_throw`), from an owning source (`closes_a_source`) or of
+  items with a destructor, is `$collectDropping(it, drop)`**: what it
+  collected dropped, then its source closed; and closed at its end too, as
+  `Array.from`'s iteration was.
+- **`$extend` closes what it's given where stepping it throws.**
+- **The eager forms keep `$closing` where a stage, or the function taking
+  them, may throw** (`in_place::may_throw`).
+14 corpus cases read so, 89 lines more, an owning source's `$closing`
+where a closure runs, and drop bodies given as a function where one's
+passed. Held by `panic_mid_iteration_drops.rs` against native Rust and the
+mutations `closing-fold-unclosed-on-throw` (`runtime/closing.ts`),
+`collect-dropping-keeps-collected` (`runtime/fold_of.ts`),
+`extend-unclosed-on-throw` (`runtime/extend.ts`),
+`consumer-source-unclosed` (`lower/mir/iter/closing.ts`),
+`eager-taker-throw-unseen` (`lower/iterators/eager.ts`) and
+`collect-unwinding-unseen` (`lower/mir/iter/collect.ts`). `docs/readability.txt`'s
+`$iter` share went from 82.1 to 82.4 in 10,000 lines, blessed: each a
+source that keeps its `$closing`, `$closing($iter(v), ..)`, where a closure
+may panic, and the new case's own.

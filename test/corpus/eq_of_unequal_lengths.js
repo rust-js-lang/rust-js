@@ -13,7 +13,7 @@ function main() {
   const value = $iter([[1], [2], [3]]);
   const value$1 = [[9], [2]];
   let same = $iterEq(
-    $closing(value, $dropEach(dDrop_drop)),
+    $closing($closing(value, $dropEach(dDrop_drop)), $dropEach(dDrop_drop)),
     $closing(Iterator.from(value$1), $dropEach(dDrop_drop)),
     $eq,
     dDrop_drop,
@@ -24,7 +24,7 @@ function main() {
   const value$2 = $iter([[4], [5]]);
   const value$3 = [[4], [6], [7]];
   same = $iterEq(
-    $closing(value$2, $dropEach(dDrop_drop)),
+    $closing($closing(value$2, $dropEach(dDrop_drop)), $dropEach(dDrop_drop)),
     $closing(Iterator.from(value$3), $dropEach(dDrop_drop)),
     $eq,
     dDrop_drop,
@@ -35,7 +35,7 @@ function main() {
   const value$4 = $iter([[8]]);
   const value$5 = [[8], [10]];
   same = $iterEq(
-    $closing(value$4, $dropEach(dDrop_drop)),
+    $closing($closing(value$4, $dropEach(dDrop_drop)), $dropEach(dDrop_drop)),
     $closing(Iterator.from(value$5), $dropEach(dDrop_drop)),
     $eq,
     dDrop_drop,
@@ -46,7 +46,7 @@ function main() {
   const value$6 = $iter([[11], [12]]);
   const value$7 = [[11]];
   const ne = !$iterEq(
-    $closing(value$6, $dropEach(dDrop_drop)),
+    $closing($closing(value$6, $dropEach(dDrop_drop)), $dropEach(dDrop_drop)),
     $closing(Iterator.from(value$7), $dropEach(dDrop_drop)),
     $eq,
     dDrop_drop,
@@ -57,7 +57,7 @@ function main() {
   const value$8 = $iter([[13], [14]]);
   const value$9 = [[13], [15]];
   same = $iterEq(
-    $closing(value$8, $dropEach(dDrop_drop)),
+    $closing($closing(value$8, $dropEach(dDrop_drop)), $dropEach(dDrop_drop)),
     $closing(Iterator.from(value$9), $dropEach(dDrop_drop)),
     $eq,
     dDrop_drop,

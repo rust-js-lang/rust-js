@@ -2,11 +2,13 @@
 
 import {
   $checked,
+  $closing,
   $cmp,
   $count,
   $debugStr,
   $dropEach,
   $intoIter,
+  $iter,
   $iterator,
   $lastDropping,
   $maxBy,
@@ -81,7 +83,12 @@ function countdownIterator_next(countdown) {
 
 function main() {
   const ord = { cmp: (a, b) => (a == null ? (b == null ? 0 : -1) : b == null ? 1 : $cmp(a, b)) };
-  const max = $maxBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
+  const max = $maxBy(
+    $closing($iter(loud()), $dropEach(loudDrop_drop)),
+    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+    false,
+    loudDrop_drop,
+  );
   try {
     console.log(`${max == null ? "None" : `Some(${loudDebug_fmt(max)})`}`);
   } finally {
@@ -89,7 +96,12 @@ function main() {
       loudDrop_drop(max);
     }
   }
-  const min = $minBy(loud(), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
+  const min = $minBy(
+    $closing($iter(loud()), $dropEach(loudDrop_drop)),
+    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+    false,
+    loudDrop_drop,
+  );
   try {
     console.log(`${min == null ? "None" : `Some(${loudDebug_fmt(min)})`}`);
   } finally {
@@ -129,7 +141,12 @@ function main() {
       loudDrop_drop(minByKey);
     }
   }
-  const value = $maxBy([], (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), false, loudDrop_drop);
+  const value = $maxBy(
+    $closing($iter([]), $dropEach(loudDrop_drop)),
+    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+    false,
+    loudDrop_drop,
+  );
   try {
     console.log(`${value == null ? "None" : `Some(${loudDebug_fmt(value)})`}`);
   } finally {

@@ -116,6 +116,55 @@ pub(super) fn counts(f: &Expr) -> bool {
             if matches!(&a.kind, js::ExprKind::Var(v) if v == n) && one.as_int() == Some(1)))
 }
 
+/// Whether calling `f` may throw, a panic: anything but an arrow none of
+/// whose statements may, as an owning chain's stage it runs over each item
+/// of then, which a panic stops early (#422).
+pub(in crate::lower) fn may_throw(f: &Expr) -> bool {
+    fn stmts_may_throw(stmts: &[Stmt]) -> bool {
+        stmts.iter().any(|stmt| match &stmt.kind {
+            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Expr(e) => {
+                e.may_throw()
+            }
+            StmtKind::Let(_, None) | StmtKind::Return(None) => false,
+            StmtKind::Assign(target, e) => target.may_throw() || e.may_throw(),
+            StmtKind::If(test, then, otherwise) => {
+                test.may_throw() || stmts_may_throw(then) || otherwise.as_deref().is_some_and(stmts_may_throw)
+            }
+            _ => !stmt.cannot_throw(),
+        })
+    }
+    match &f.kind {
+        js::ExprKind::Arrow(_, body) => stmts_may_throw(body),
+        _ => true,
+    }
+}
+
+/// Whether stepping a chain, `it`, may throw by what its stages are given:
+/// an arrow that may, `may_throw`'s, or of a chain given a stage, its own
+/// (#422).
+pub(in crate::lower) fn chain_may_throw(it: &Expr) -> bool {
+    let js::ExprKind::Call(callee, args) = &it.kind else {
+        return false;
+    };
+    let own = matches!(&callee.kind, js::ExprKind::Member(object, _) if chain_may_throw(object));
+    own || args.iter().any(|arg| match &arg.kind {
+        js::ExprKind::Arrow(..) => may_throw(arg),
+        js::ExprKind::Call(..) => chain_may_throw(arg),
+        _ => false,
+    })
+}
+
+/// Whether a chain, `it`, steps an owning source closed to drop what it
+/// hasn't given, `$closing(..)`.
+pub(in crate::lower) fn closes_a_source(it: &Expr) -> bool {
+    let js::ExprKind::Call(callee, args) = &it.kind else {
+        return false;
+    };
+    callee.helper_name() == Some("$closing")
+        || matches!(&callee.kind, js::ExprKind::Member(object, _) if closes_a_source(object))
+        || args.iter().any(closes_a_source)
+}
+
 /// Whether calling `f` may do what can be seen, or throw: anything but an
 /// arrow whose statements only make and give back what does nothing.
 pub(in crate::lower) fn does(f: &Expr) -> bool {

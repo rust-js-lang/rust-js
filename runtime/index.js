@@ -1406,7 +1406,14 @@ export class $Steps extends Iterator {
   // source has left, one a variable moved here held (#206).
   fold(init, f) {
     let folded = init;
-    for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    // Closed though `f` throws, a panic, as Rust's `fold` drops what it
+    // took, what's left of it, as it unwinds (#422).
+    try {
+      for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+    } catch (error) {
+      this.return();
+      throw error;
+    }
     this.return();
     return folded;
   }
@@ -1992,6 +1999,28 @@ export function $foldToArray(it) {
   });
 }
 
+// `collect()` into a `Vec` of what may throw as it's stepped, a panic in a
+// closure, of items with a destructor, `drop`, or from an owning source: as
+// std's unwinds, what it collected dropped, then what's left of what it
+// steps, closed (#422).
+export function $collectDropping(it, drop) {
+  const items = [];
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
+  } catch (error) {
+    try {
+      if (drop !== undefined) $dropItems(items, drop);
+    } finally {
+      it.return?.();
+    }
+    throw error;
+  }
+  // And at its end, as std's `collect` drops what it took then, what an
+  // adapter that stops early left (ADR 0570).
+  it.return?.();
+  return items;
+}
+
 // `it`, an iterator a variable or a temporary holds, which its owner drops
 // where Rust drops it, at its scope's or its statement's end: held, so
 // nothing it steps is dropped as it's done or ends early, but as it's
@@ -2128,8 +2157,18 @@ export function $closing(it, drop, slices = true) {
   // a `step_by` over it asks it (#261).
   if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
   if (it.ownNth) closing.ownNth = true;
+  // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
+  // of what it took as it unwinds (#422).
+  const unwound = (fold) => {
+    try {
+      return fold();
+    } catch (error) {
+      close();
+      throw error;
+    }
+  };
   closing.fold = (init, f) => {
-    const folded = it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init);
+    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init)));
     if (it.ownFold) closed = true;
     close();
     return folded;
@@ -2138,7 +2177,7 @@ export function $closing(it, drop, slices = true) {
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
   const rfoldClosing = (init, f) => {
-    const folded = it.rfold(init, f);
+    const folded = unwound(() => it.rfold(init, f));
     if (it.ownRfold) closed = true;
     close();
     return folded;
@@ -11553,9 +11592,17 @@ export function $charIndicesOffset(it) {
   return last === undefined ? 0 : last[0] + $byteLen(last[1]);
 }
 
+// `v.extend(items)`: each pushed in turn. Where stepping them throws, a
+// panic in a closure, what's left of them closed, dropped, as Rust drops
+// the iterator it was given as it unwinds; what it pushed stays, `v`'s
+// (#422).
 export function $extend(v, items) {
-  for (const item of items) {
-    v.push(item);
+  const it = items[Symbol.iterator]();
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) v.push(step.value);
+  } catch (error) {
+    it.return?.();
+    throw error;
   }
 }
 

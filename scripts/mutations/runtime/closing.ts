@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "    closing.nth = (k) => done(closing.advanceBy(k) > 0 ? { done: true, value: undefined } : it.next());\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
+  {
+    name: "closing-fold-unclosed-on-throw",
+    breaks: "a `for_each` or `fold` whose closure panics leaves what's left of an owning source undropped, its `$closing` never closed (#422)",
+    file: "src/runtime/closing.js",
+    find: "      close();\n      throw error;\n",
+    replace: "      throw error;\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+  },
 ];
