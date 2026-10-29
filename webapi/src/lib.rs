@@ -11177,6 +11177,7 @@ impl HTMLInputElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionStart)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionStart")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_start(&self) -> Option<f64> {
@@ -11195,6 +11196,7 @@ impl HTMLInputElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/selectionEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectionEnd")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn selection_end(&self) -> Option<f64> {
@@ -58491,6 +58493,7 @@ impl EncodedAudioChunk {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunk/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -58564,6 +58567,7 @@ impl EncodedVideoChunk {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunk/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -66193,6 +66197,7 @@ impl IDBVersionChangeEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/newVersion)
     #[cfg_attr(rust_js, rust_js::link_name = "get newVersion")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn new_version(&self) -> Option<f64> {
@@ -73332,6 +73337,7 @@ impl OfflineAudioContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn length(&self) -> Option<f64> {
@@ -77554,6 +77560,7 @@ impl PushSubscription {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/expirationTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get expirationTime")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn expiration_time(&self) -> Option<f64> {
@@ -77853,6 +77860,7 @@ impl RTCDataChannel {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/maxPacketLifeTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxPacketLifeTime")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_packet_life_time(&self) -> Option<f64> {
@@ -77862,6 +77870,7 @@ impl RTCDataChannel {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/maxRetransmits)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxRetransmits")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_retransmits(&self) -> Option<f64> {
@@ -77887,6 +77896,7 @@ impl RTCDataChannel {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDataChannel/id)
     #[cfg_attr(rust_js, rust_js::link_name = "get id")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn id(&self) -> Option<f64> {
@@ -78419,6 +78429,7 @@ impl RTCError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sdpLineNumber)
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpLineNumber")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sdp_line_number(&self) -> Option<f64> {
@@ -78428,6 +78439,7 @@ impl RTCError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sctpCauseCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get sctpCauseCode")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sctp_cause_code(&self) -> Option<f64> {
@@ -78437,6 +78449,7 @@ impl RTCError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/receivedAlert)
     #[cfg_attr(rust_js, rust_js::link_name = "get receivedAlert")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn received_alert(&self) -> Option<f64> {
@@ -78446,6 +78459,7 @@ impl RTCError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/sentAlert)
     #[cfg_attr(rust_js, rust_js::link_name = "get sentAlert")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sent_alert(&self) -> Option<f64> {
@@ -78555,6 +78569,7 @@ impl RTCIceCandidate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/sdpMLineIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "get sdpMLineIndex")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn sdp_m_line_index(&self) -> Option<f64> {
@@ -78582,6 +78597,7 @@ impl RTCIceCandidate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/priority)
     #[cfg_attr(rust_js, rust_js::link_name = "get priority")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn priority(&self) -> Option<f64> {
@@ -78609,6 +78625,7 @@ impl RTCIceCandidate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/port)
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn port(&self) -> Option<f64> {
@@ -78645,6 +78662,7 @@ impl RTCIceCandidate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/relatedPort)
     #[cfg_attr(rust_js, rust_js::link_name = "get relatedPort")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn related_port(&self) -> Option<f64> {
@@ -79327,6 +79345,7 @@ impl RTCPeerConnectionIceErrorEvent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEvent/port)
     #[cfg_attr(rust_js, rust_js::link_name = "get port")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn port(&self) -> Option<f64> {
@@ -79802,6 +79821,7 @@ impl RTCSctpTransport {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport/maxChannels)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxChannels")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=65535")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_channels(&self) -> Option<f64> {
@@ -88573,6 +88593,7 @@ impl VideoFrame {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/duration)
     #[cfg_attr(rust_js, rust_js::link_name = "get duration")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=18446744073709551615")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn duration(&self) -> Option<f64> {
@@ -96219,6 +96240,7 @@ impl WebTransportError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/streamErrorCode)
     #[cfg_attr(rust_js, rust_js::link_name = "get streamErrorCode")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn stream_error_code(&self) -> Option<f64> {

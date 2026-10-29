@@ -1,6 +1,7 @@
 # 0994. A number a binding takes is TypeScript's `number`, an `f64`
 
-Status: Accepted. Amends [0024](0024-web-crate.md), whose WebIDL integer
+Status: Accepted; amended (below; the last: a nullable one's `Some`, and
+a variable given one). Amends [0024](0024-web-crate.md), whose WebIDL integer
 parameters were Rust integers, an `unsigned long` a `u32`; and
 [0283](0283-js-crate-covers-typescripts-es-library.md), whose typed
 arrays took their element's type and `u32`/`i32` lengths, indices and
@@ -230,3 +231,36 @@ saturation and the refusals) and `test/lowering-numbers.test.ts`'s
 "an f64 known to be a whole number in range is cast as it is", and the
 `whole-` mutations of `body_queries`, `calls`, `display/written` and
 `bindings`.
+
+## Amendment (2026-10-29): a nullable one's `Some`, and a variable given one
+
+`#[rust_js::whole]` was of an `f64` alone, and known only of the call
+itself: `let status = response.status(); format!("{status}")` was
+`${$displayF64(status)}`, and a nullable WebIDL integer, `selectionStart`'s
+`unsigned long?`, an `Option<f64>`, had none, so `if let Some(start) =
+input.selection_start()` was `$displayF64(start)` and `start as u32`
+`$f64ToInt(start, 0, 4294967295)`.
+
+- **`#[rust_js::whole]` is of an `f64` or an `Option<f64>`**, its `Some`'s
+  number (`bindings::whole_output`); webapi's generator writes it of each
+  nullable WebIDL integer too (22 bindings).
+- **A variable given what one gives is known whole where it's read**
+  (`LocalFacts::wholes`, `mir_wholes`, read by `LocalFacts::variable`):
+  each of whose writes in its MIR is such a binding's call, or a copy of
+  another such variable, an `Option`'s `Some` number too, borrowed only
+  to be read, as `format!` borrows it. Never a parameter, whose caller
+  gives it first, nor one written any other way, in part, through a
+  `&mut` or a pointer: `n = response.status()` of a parameter given `-0`
+  is still `$displayF64(n)`, Rust's `-0`.
+- **A cast of a `Some`'s number a `let` or an `if let` binds** is ranged
+  as a `let` of the call is (`whole_casts`): `let Some(end) =
+  input.selection_end() else { .. }; end as u32` is `end`.
+
+Case: none; each such number is whole and in range, so JS's text and
+Rust's `{}` agree, and the cast is the number. Held by
+`test/webapi-bindings.test.ts`'s "a WebIDL integer is a whole number in
+its type's range" (`status_text`, `selection`, `selection_end`,
+`given_or_status`, `changed`, run); mutations `whole-option-unseen`,
+`whole-variable-unknown`, `whole-some-payload-unread`,
+`whole-parameter-trusted`, `whole-cast-some-binding-unranged`;
+`whole-fact-unset` moved.

@@ -83,6 +83,16 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
         }
         _ => None,
     };
+    // The `f64` variable a pattern binds by value, itself.
+    let binding = |pattern: &Pat<'tcx>| match pattern.kind {
+        PatKind::Binding {
+            var,
+            mode: BindingMode(ByRef::No, _),
+            subpattern: None,
+            ..
+        } if pattern.ty.is_floating_point() => Some(var),
+        _ => None,
+    };
     // What a value given to a variable may be, as a range of whole numbers.
     let given = |e: ExprId| match thir[strip(thir, e)].kind {
         ExprKind::Literal { .. } => constant(e).filter(|v| v.fract() == 0.0).map(|v| (v, v)),
@@ -104,18 +114,40 @@ pub(super) fn whole_casts<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet
             else_block: None,
             ..
         } = stmt.kind
-            && let PatKind::Binding {
-                var,
-                mode: BindingMode(ByRef::No, _),
-                subpattern: None,
-                ..
-            } = pattern.kind
-            && pattern.ty.is_floating_point()
+            && let Some(var) = binding(pattern)
         {
             bound.insert(var);
             if let Some(init) = initializer {
                 join(&mut values, var, given(init));
             }
+        }
+    }
+    // A `Some`'s number a `let` or an `if let` binds, of what such a
+    // binding gives, a nullable WebIDL integer: `let Some(end) =
+    // input.selection_end() else { .. }`.
+    let lets = (thir.stmts.iter()).filter_map(|stmt| match &stmt.kind {
+        thir::StmtKind::Let {
+            pattern, initializer, ..
+        } => Some((&**pattern, (*initializer)?)),
+        _ => None,
+    });
+    let if_lets = (thir.exprs.iter()).filter_map(|expr| match &expr.kind {
+        ExprKind::Let { pat, expr } => Some((&**pat, *expr)),
+        _ => None,
+    });
+    for (pattern, of) in lets.chain(if_lets) {
+        if let PatKind::Variant {
+            variant_index,
+            subpatterns,
+            ..
+        } = &pattern.kind
+            && variant_index.as_u32() == 1
+            && let [field] = subpatterns.as_slice()
+            && let Some(var) = binding(&field.pattern)
+            && let Some(range) = whole_call(of)
+        {
+            bound.insert(var);
+            join(&mut values, var, Some(range));
         }
     }
     let mut sets: HashMap<LocalVarId, usize> = HashMap::new();

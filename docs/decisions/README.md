@@ -778,7 +778,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0991 Every adapter that holds a function drops it](0991-every-adapter-holding-a-function-drops-it.md)
 - [0992 `eq()` of two `TrustedLen` iterators asks their lengths first](0992-eq-of-trusted-len-iterators-asks-their-lengths.md)
 - [0993 What compiled `rev()` is given is made knowing its back where it's made](0993-what-compiled-rev-is-given-is-made-where-its-made.md)
-- [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`; a WebIDL integer is `#[rust_js::whole]`)*
+- [0994 A number a binding takes is TypeScript's `number`, an `f64`](0994-a-number-a-binding-takes-is-typescripts-number.md) *(amended: what it gives is an `f64`, and a number it must be given is `impl Into<f64>`; a WebIDL integer is `#[rust_js::whole]`; of a nullable one's `Some` too, and of a variable given one)*
 - [0995 A std body takes a JS iterator's dictionary where it's given none](0995-a-std-body-takes-a-js-iterators-dictionary-by-default.md)
 - [0996 A `take()` then tested is the place tested, taken where it's `Some`](0996-a-take-then-tested-is-the-place-tested.md) *(the user's decision)*
 - [0997 A zip std folds otherwise than it steps is std's struct](0997-a-zip-that-folds-apart-is-stds-struct.md)

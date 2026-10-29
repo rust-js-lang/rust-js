@@ -241,7 +241,7 @@ pub async fn load(url: &str) -> String {
 ```
 
 ```js
-import { $displayF64, $unwrap } from "@rust-js/runtime";
+import { $unwrap } from "@rust-js/runtime";
 
 export function mount() {
   const app = $unwrap(document.getElementById("app"), "the page has an #app");
@@ -256,7 +256,7 @@ export function mount() {
       return;
     }
     try {
-      storage.setItem("clicked-at", $displayF64(x));
+      storage.setItem("clicked-at", String(x));
     } catch {}
   });
   app.append(button);

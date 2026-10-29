@@ -821,6 +821,42 @@ pub fn kind(node: &webapi::Node) -> i16 {
 pub fn scaled(response: &Response) -> String {
     format!("{}", response.status() / 8.0)
 }
+
+pub fn status_text(response: &Response) -> String {
+    let status = response.status();
+    format!("{status}!")
+}
+
+pub fn selection(input: &webapi::HTMLInputElement) -> String {
+    match input.selection_start() {
+        Some(start) => format!("at {start}"),
+        None => String::new(),
+    }
+}
+
+pub fn given_or_status(mut n: f64, response: &Response) -> String {
+    if n < 0.0 {
+        n = response.status();
+    }
+    format!("{n}")
+}
+
+fn zero(n: &mut f64) {
+    *n = -0.0;
+}
+
+pub fn changed(response: &Response) -> String {
+    let mut n = response.status();
+    zero(&mut n);
+    format!("{n}")
+}
+
+pub fn selection_end(input: &webapi::HTMLInputElement) -> u32 {
+    let Some(end) = input.selection_end() else {
+        return 0;
+    };
+    end as u32
+}
 `;
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -831,11 +867,19 @@ pub fn scaled(response: &Response) -> String {
   expect(js).toContain("  return $f64ToInt(node.nodeType, -32768, 32767);\n");
   expect(js).toContain("$displayF64(response.status / 8)");
   expect(js).not.toContain("$f64ToInt(options.length");
+  // A variable given one, an \`Option\`'s \`Some\` too, a nullable integer's.
+  expect(js).toContain("  const status = response.status;\n  return `${status}!`;\n");
+  expect(js).toContain("start !== null ? `at ${start}` : \"\"");
+  expect(js).toContain("  return end;\n");
   const lib = await import(join(dir, "lib.js"));
   const options = [{ selected: false }, { selected: true }];
   expect([lib.selected({ options }), lib.selected({ options: [] })]).toEqual([1, undefined]);
   expect([lib.statusLine({ status: 404 }), lib.statusByte({ status: 404 }), lib.kind({ nodeType: 1 }), lib.scaled({ status: 404 })])
     .toEqual(["HTTP 404", 255, 1, "50.5"]);
+  expect([lib.statusText({ status: 200 }), lib.selection({ selectionStart: 3 }), lib.selection({ selectionStart: null }), lib.selectionEnd({ selectionEnd: 7 }), lib.selectionEnd({ selectionEnd: null })])
+    .toEqual(["200!", "at 3", "", 7, 0]);
+  // Not of a parameter, nor of one changed through a \`&mut\`: Rust's \`-0\`.
+  expect([lib.givenOrStatus(-0, { status: 200 }), lib.changed({ status: 200 })]).toEqual(["-0", "-0"]);
   // It's said of a binding giving an `f64`, by its least and most numbers;
   // `#[rust_js::position]` was indexOf's, `whole = "-1..=4294967294"`.
   for (const [attr, message] of [

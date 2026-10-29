@@ -29,8 +29,8 @@ pub(super) use nullable::{
     nullable_tuple_item, of_type_parameter, optional_result,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
-pub(in crate::lower) use whole::whole_range;
 use whole::whole_refused;
+pub(in crate::lower) use whole::{whole_output, whole_range};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
 /// must not silently become an ordinary Rust function with an unreachable body.

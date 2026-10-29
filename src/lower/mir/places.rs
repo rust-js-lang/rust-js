@@ -21,6 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             e.facts = e.facts.with(none);
         }
+
         // A field's path, `element.editable`: whether it's a `bool`, which
         // tidy writes an `||` of as one.
         if let Some(path) = tidy::field_path(&e) {
@@ -79,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     state.named.insert(place.local);
                     match state.facts.pointed().locals.contains(&place.local) {
                         true => Expr::held(Expr::var(name)),
-                        false => Expr::var(name),
+                        false => state.facts.variable(place.local, name),
                     }
                 }
             }

@@ -67,6 +67,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
     /// name, which that local is.
     own: Option<(HashMap<BasicBlock, Local>, Expr)>,
+    /// Each `f64` or `Option<f64>` whose number is a whole one, as a
+    /// `#[rust_js::whole]` binding's is (`mir_wholes`).
+    wholes: HashSet<Local>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -171,6 +174,17 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         let (blocks, name) = self.own.as_ref()?;
         blocks.get(&block).map(|&local| (local, name))
     }
+
+    /// `local`'s variable, `name`, read: of one whose number a
+    /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
+    /// `{}` JS's text of it (ADR 0994, amended).
+    pub(super) fn variable(&self, local: Local, name: &str) -> Expr {
+        let mut read = Expr::var(name);
+        if self.wholes.contains(&local) {
+            read.facts = read.facts.with(js::Known::Whole);
+        }
+        read
+    }
 }
 
 /// What naming a body's locals settles, before the first statement is
@@ -258,8 +272,86 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
             unlowered: handles.unlowered(def_id),
             own,
+            wholes: self.mir_wholes(body, locals),
         };
         (facts, bindings)
+    }
+
+    /// The locals `LocalFacts::wholes` says: an `f64` or an `Option<f64>`,
+    /// each of whose writes gives what a `#[rust_js::whole]` binding gives:
+    /// its call, or a copy of another such, an `Option`'s `Some` number's
+    /// too, `let Some(start) = input.selection_start()`'s `start`; borrowed
+    /// only to be read, as a `format!` borrows it. Never a parameter, which
+    /// its caller gives first, nor one written any other way, in part,
+    /// through a `&mut` or a pointer (ADR 0994, amended).
+    fn mir_wholes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashSet<Local> {
+        let tcx = self.tcx;
+        // What each write gives: a binding's whole number, or another's.
+        let mut writes: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
+        let mut unknown: HashSet<Local> = HashSet::new();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let assign = match &statement.kind {
+                StatementKind::Assign(assign) => assign,
+                StatementKind::SetDiscriminant { place, .. } => {
+                    unknown.insert(place.local);
+                    continue;
+                }
+                _ => continue,
+            };
+            if let Rvalue::RawPtr(_, of) | Rvalue::Ref(_, BorrowKind::Mut { .. }, of) = &assign.1 {
+                unknown.insert(of.local);
+            }
+            let given = match &assign.1 {
+                Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) => match read.projection.as_slice() {
+                    [] => Some(read.local),
+                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => Some(read.local),
+                    _ => None,
+                },
+                _ => None,
+            };
+            match given {
+                Some(of) if assign.0.projection.is_empty() => writes.entry(assign.0.local).or_default().push(Some(of)),
+                _ => _ = unknown.insert(assign.0.local),
+            }
+        }
+        for block in body.basic_blocks.iter() {
+            match &block.terminator().kind {
+                TerminatorKind::Call { func, destination, .. } => {
+                    let whole = (func.const_fn_def()).is_some_and(|(def_id, _)| {
+                        bindings::is_binding(tcx, def_id) && bindings::whole_range(tcx, def_id).is_some()
+                    });
+                    match whole && destination.projection.is_empty() {
+                        true => writes.entry(destination.local).or_default().push(None),
+                        false => _ = unknown.insert(destination.local),
+                    }
+                }
+                TerminatorKind::Yield { resume_arg, .. } => _ = unknown.insert(resume_arg.local),
+                _ => {}
+            }
+        }
+        let known = |local: Local| {
+            local.as_usize() > body.arg_count
+                && !unknown.contains(&local)
+                && bindings::whole_output(tcx, body.local_decls[local].ty)
+                && writes.get(&local).is_some_and(|w| w.len() == locals.writes[local])
+        };
+        // Those of a binding's first, then each of what those are, until no
+        // more are.
+        let mut wholes: HashSet<Local> = HashSet::new();
+        loop {
+            let more: Vec<Local> = (writes.iter())
+                .filter(|&(&local, each)| {
+                    !wholes.contains(&local)
+                        && known(local)
+                        && each.iter().all(|of| of.is_none_or(|of| wholes.contains(&of)))
+                })
+                .map(|(&local, _)| local)
+                .collect();
+            if more.is_empty() {
+                return wholes;
+            }
+            wholes.extend(more);
+        }
     }
 
     /// Of `body`'s calls of a `RefCell`'s, those of a place no borrow of

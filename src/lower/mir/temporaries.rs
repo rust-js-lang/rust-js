@@ -355,7 +355,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "" => Ok(Value::Expr(Expr::undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
             name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
-            name => Ok(Value::Expr(Expr::var(name))),
+            name => Ok(Value::Expr(state.facts.variable(local, name))),
         }
     }
 

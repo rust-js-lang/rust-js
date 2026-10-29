@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     name: "whole-fact-unset",
     breaks: "what a `#[rust_js::whole]` binding gives isn't known whole, so its `{}` is `$displayF64(response.status)`",
     file: "src/lower/calls.rs",
-    find: "    if output.is_floating_point() && super::bindings::whole_range(tcx, def_id).is_some() {\n",
+    find: "    if super::bindings::whole_output(tcx, output) && super::bindings::whole_range(tcx, def_id).is_some() {\n",
     replace: "    if false {\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },

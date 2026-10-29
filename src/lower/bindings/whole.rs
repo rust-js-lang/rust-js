@@ -2,8 +2,9 @@
 //! (ADRs 0302, 0994, amended): its bounds, and why one is refused.
 
 use super::is_binding;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
@@ -22,14 +23,12 @@ pub(super) fn whole_refused(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     let attr = tcx.get_attrs_by_path(def_id, &path).next()?;
     let gives_f64 = matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
         && is_binding(tcx, def_id)
-        && tcx
-            .fn_sig(def_id)
-            .skip_binder()
-            .skip_binder()
-            .output()
-            .is_floating_point();
+        && whole_output(tcx, tcx.fn_sig(def_id).skip_binder().skip_binder().output());
     if !gives_f64 {
-        return Some("rust-js: `#[rust_js::whole]` is of a binding that gives an `f64`".to_string());
+        return Some(
+            "rust-js: `#[rust_js::whole]` is of a binding that gives an `f64`, or an `Option<f64>`, a nullable one's"
+                .to_string(),
+        );
     }
     match attr.value_str().and_then(|text| whole_bounds(text.as_str())) {
         Some(_) => None,
@@ -38,6 +37,15 @@ pub(super) fn whole_refused(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
                 .to_string(),
         ),
     }
+}
+
+/// Whether `output` is what `#[rust_js::whole]` is of: an `f64`, or an
+/// `Option<f64>`, whose `Some`'s number it says, a nullable WebIDL
+/// integer's, `selectionStart`'s `unsigned long?`.
+pub(in crate::lower) fn whole_output<'tcx>(tcx: TyCtxt<'tcx>, output: Ty<'tcx>) -> bool {
+    output.is_floating_point()
+        || matches!(output.kind(), ty::Adt(adt, args)
+            if tcx.is_lang_item(adt.did(), LangItem::Option) && args.type_at(0).is_floating_point())
 }
 
 /// `#[rust_js::whole = "lo..=hi"]`: a binding whose number is always a

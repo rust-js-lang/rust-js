@@ -1095,9 +1095,10 @@ function functionsOf(declared: Interface): Fn[] {
 
   // The whole numbers a result is, where it's an `f64` of a WebIDL
   // integer, `status`'s `unsigned short`, through its typedefs, `GLenum`'s
-  // (ADR 0994, amended); not of a nullable one, an `Option`.
+  // (ADR 0994, amended); of a nullable one, an `Option<f64>`, its `Some`'s,
+  // `selectionStart`'s `unsigned long?`.
   const wholeOf = (t: IdlType, result: string): string | undefined => {
-    if (result !== "f64" || t.union || t.generic) return undefined;
+    if ((result !== "f64" && result !== "Option<f64>") || t.union || t.generic) return undefined;
     const name = t.idlType as string;
     const aliased = typedefs.get(name);
     return aliased ? wholeOf(aliased, result) : INTEGERS[name];

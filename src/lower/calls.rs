@@ -280,7 +280,7 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
         facts = facts.with(Known::Defined);
     }
     let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
-    if output.is_floating_point() && super::bindings::whole_range(tcx, def_id).is_some() {
+    if super::bindings::whole_output(tcx, output) && super::bindings::whole_range(tcx, def_id).is_some() {
         facts = facts.with(Known::Whole);
     }
     if let Some(none) = none_given_by(tcx, def_id)

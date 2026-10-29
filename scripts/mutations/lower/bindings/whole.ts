@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },
+  {
+    name: "whole-option-unseen",
+    breaks: "a nullable WebIDL integer's `Option<f64>`, `selection_start()`, isn't whole, so `{start}` of its `Some` is `$displayF64(start)` (ADR 0994, amended)",
+    file: "src/lower/bindings/whole.rs",
+    find: "            if tcx.is_lang_item(adt.did(), LangItem::Option) && args.type_at(0).is_floating_point())\n",
+    replace: "            if false && tcx.is_lang_item(adt.did(), LangItem::Option) && args.type_at(0).is_floating_point())\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
 ];

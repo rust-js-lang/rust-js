@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && c.with == lo {\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "whole number in range"],
   },
+  {
+    name: "whole-cast-some-binding-unranged",
+    breaks: "`end as u32` of the `Some` a `let .. else` binds of a nullable WebIDL integer is `$f64ToInt(end, 0, 4294967295)`, not `end` (ADR 0994, amended)",
+    file: "src/lower/body_queries/whole_casts.rs",
+    find: "            bound.insert(var);\n            join(&mut values, var, Some(range));\n",
+    replace: "            let _ = (var, range);\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
 ];

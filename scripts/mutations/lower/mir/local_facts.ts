@@ -82,4 +82,28 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
   },
+  {
+    name: "whole-variable-unknown",
+    breaks: "a variable given a WebIDL integer, `let status = response.status()`, isn't known whole, `${$displayF64(status)}` (ADR 0994, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "            read.facts = read.facts.with(js::Known::Whole);\n",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "whole-some-payload-unread",
+    breaks: "the `Some`'s number of a nullable WebIDL integer, `Some(start) => ..`, isn't known whole (ADR 0994, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => Some(read.local),\n",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
+  {
+    name: "whole-parameter-trusted",
+    breaks: "a parameter set again to a WebIDL integer is known whole, though its caller gave `-0`, which `${n}` writes `0` (ADR 0994, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "            local.as_usize() > body.arg_count\n                && ",
+    replace: "            ",
+    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
+  },
 ];
