@@ -101,9 +101,10 @@ pub fn ByCallback(target: RefCallback<&'static HTMLElement>) -> JSX::Element {
   expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a ref of `&'static react::webapi::HTMLDivElement`")], wrong.stderr.toString()).toEqual([false, true]);
 });
 
-// An async handler is the async function itself, as react.dev's
-// `async function handleCopy()` is, where `spawn` in a closure would call
-// one in place, `(async () => { .. })()`.
+// An async handler is the async function itself, where `spawn` in a
+// closure would call one in place, `(async () => { .. })()`; held by a
+// `let` of the `Box` `spawn` gives, a `const` of its arrow (ADR 0882,
+// amended), where react.dev writes `async function handleCopy()`.
 test("JSX takes an async event handler as the async function it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Promise;
@@ -143,9 +144,9 @@ pub fn Parsed(text: String) -> JSX::Element {
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("async function handleCopy() {\n    await Promise.resolve();\n    setCopied(true);\n  }");
+  expect(jsx).toContain("const handleCopy = async () => {\n    await Promise.resolve();\n    setCopied(true);\n  };");
   // One that may return early, as react.dev's does, takes no event either.
-  expect(jsx.match(/async function handleCopy\(\) \{/g)?.length).toBe(2);
+  expect(jsx.match(/const handleCopy = async \(\) => \{/g)?.length).toBe(2);
   expect(jsx).not.toContain("(async");
   const { Button } = await import(join(dir, "lib.jsx"));
   let clicked = false;
