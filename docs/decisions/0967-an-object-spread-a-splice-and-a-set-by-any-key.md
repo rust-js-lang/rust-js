@@ -1,6 +1,6 @@
 # 0967. An object spread, a splice and a set by any key
 
-Status: Accepted. Amended: `js::array::join` (below); `js::array::splice` takes numbers; a `Dict` spread, and a tuple of them in order (the user's decision, 2026-10-28).
+Status: Accepted. Amended: `js::array::join` (below); `js::array::splice` takes numbers; a `Dict` spread, and a tuple of them in order (the user's decision, 2026-10-28); an `f64` is a key (rd101).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, JS's own
 operation on a JS value, as TypeScript has it of an `any`'s.
@@ -212,3 +212,19 @@ mutations `object-spread-tuple-whole`, `object-spread-parts-made-in-place`,
 `object-spread-read-before-call` (`lower/mir/tidy/moves.ts`) and
 `spread-written-out-kept` (`prepare/objects.ts`); the guide's
 `ui_event_interface`.
+
+## Amendment: an `f64` is a key (rd101, 2026-10-29)
+
+Case N: JS's own property access, of the number it's given.
+
+React's ReactDOMEventReplaying walks its form replaying queue, a JS array,
+three items at a time: `formReplayingQueue[i + 1]`, `i += 3`. A key was
+text, a JS value or a `u32`, `i32` or `usize`, so the port's index was a
+`usize`, `formReplayingQueue[(i + 1) >>> 0]`, `i = (i + 3) >>> 0`.
+
+**`f64`, TypeScript's `number`, is a `PropertyKey`**, as ADR 0994 makes
+WebIDL's numbers `f64`s: `js::get(queue, &(i + 1.0))` is `queue[i + 1]`,
+the number as JS has it, `1.5`'s `"1.5"` and `NaN`'s `"NaN"` as JS names
+them. Held by `test/js-any-values.test.ts`'s "an f64 is a property key,
+its index as JS writes it", run on an array; no lowering changed, so no
+mutation: without the impl the test doesn't compile.

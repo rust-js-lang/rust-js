@@ -1059,6 +1059,9 @@ impl PropertyKey for Unknown {}
 impl PropertyKey for u32 {}
 impl PropertyKey for i32 {}
 impl PropertyKey for usize {}
+/// A JS number, TypeScript's `number`, as ADR 0994 gives WebIDL's: an
+/// index into a JS array as JS writes it, `queue[i + 1]` of an `f64` `i`.
+impl PropertyKey for f64 {}
 
 /// `value[key] = to`: `to` as JS has it, a string or a number, or an
 /// object, set on any value, by a name as [`get`] reads it, text, a

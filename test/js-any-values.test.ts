@@ -67,3 +67,30 @@ pub fn same(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
   expect([lib.clobbers("0.0", 0), lib.clobbers("1", 1), lib.clobbers("1", 2), lib.clobbers("a", "a"), lib.clobbers("", 0)]).toEqual([false, false, true, false, false]);
   expect([lib.same(null, undefined), lib.same(undefined, 0), lib.same("1", true), lib.same(null, false)]).toEqual([true, false, true, false]);
 });
+
+// React's ReactDOMEventReplaying walks its form replaying queue, a JS
+// array, three items at a time, `formReplayingQueue[i + 1]`, `i += 3`: an
+// `f64` is a property key, TypeScript's `number`, as ADR 0994 gives
+// WebIDL's numbers, so the index is JS's number as it is, no `>>> 0`
+// (React port gap rd101).
+test("an f64 is a property key, its index as JS writes it", async () => {
+  const { js, lib } = await compiled("f64-property-key", `use js::Unknown;
+
+pub fn replay(queue: &Unknown, length: f64) -> u32 {
+    let mut found = 0;
+    let mut i = 0.0;
+    while i < length {
+        if js::get(queue, &(i + 1.0)).is_some() {
+            js::set(queue, &(i + 2.0), "seen");
+            found += 1;
+        }
+        i += 3.0;
+    }
+    found
+}
+`);
+  expect(js).toContain("  for (let i = 0; i < length; i += 3) {\n    if (queue[i + 1] != null) {\n      queue[i + 2] = \"seen\";\n");
+  const queue = [0, "a", null, 1, null, null, 2, "b", 0];
+  expect(lib.replay(queue, queue.length)).toBe(2);
+  expect(queue).toEqual([0, "a", "seen", 1, null, null, 2, "b", "seen"]);
+});
