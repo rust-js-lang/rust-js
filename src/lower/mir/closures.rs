@@ -102,6 +102,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => mir,
         };
+        // One rustc infers `Fn` or `FnMut` that a binding calls once, as its
+        // `call_once` runs it, dropping what it took (ADR 1020).
+        let once;
+        let mir = match self.krate.closure_facts.called_once(def_id) {
+            true => {
+                once = (mir.called_once(self.tcx))
+                    .ok_or_else(|| self.unsupported(span, "a closure called once that reads itself whole"))?;
+                &once
+            }
+            false => mir,
+        };
         // Its handle on itself, where it reads one: its `Rc`'s variable, its
         // own name, and the cell it captured no JS (`analysis/self_handles.rs`,
         // ADR 0843, amended).

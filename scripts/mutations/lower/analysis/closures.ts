@@ -157,4 +157,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn drops in its consumer only where"],
   },
+  {
+    name: "called-once-closures-unseen",
+    breaks: "a closure rustc infers `Fn`, given where it's made to a binding that calls it once, `js::set_timeout(move || { let m = &n; .. }, ms)`'s, isn't found, so it's refused, as one JS keeps and calls again would be (ADR 1020)",
+    file: "src/lower/analysis/closures.rs",
+    find: "                && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)\n",
+    replace: "                && Taker::parameter(tcx, id, i) == Some(Taker::Handler)\n",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
+  {
+    name: "called-once-of-fn-once-closures",
+    breaks: "a closure rustc infers `FnOnce`, which drops what it took in its own body, is taken for one called once that reads itself by reference, and refused (ADR 1020)",
+    file: "src/lower/analysis/closures.rs",
+    find: "                && closure_args.as_closure().kind() != ty::ClosureKind::FnOnce\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
 ];

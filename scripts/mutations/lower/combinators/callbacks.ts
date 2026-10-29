@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "            let Some(when) = self.handled_argument(known, at, ty) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
   },
+  {
+    name: "called-once-closure-refused-in-mir",
+    breaks: "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused where its MIR call is lowered (ADR 1020)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
 ];

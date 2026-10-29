@@ -366,4 +366,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
     snapshots: true,
   },
+  {
+    name: "called-once-drops-nothing-returning",
+    breaks: "a closure a binding calls once, rustc's `Fn`, drops nothing of what it took as its call returns, where Rust's `call_once` drops it (ADR 1020)",
+    file: "src/lower/mir.rs",
+    find: "                TerminatorKind::Return => *kind = dropped(returned, UnwindAction::Continue),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
+  {
+    name: "called-once-own-cleanup-resumes",
+    breaks: "a closure a binding calls once, rustc's `Fn`, whose body drops a value of its own as it unwinds, resumes after it, dropping nothing of what it took (ADR 1020)",
+    file: "src/lower/mir.rs",
+    find: "                TerminatorKind::UnwindResume => *kind = TerminatorKind::Goto { target: unwound },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
+  {
+    name: "called-once-self-left-a-reference",
+    breaks: "a closure a binding calls once, taken by value, reads what it took through itself as a reference still (ADR 1020)",
+    file: "src/lower/mir.rs",
+    find: "                        place.projection = self.tcx.mk_place_elems(&place.projection[1..]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+  },
 ];

@@ -276,6 +276,41 @@ Node and Bun refuse with a `TypeError`, as JS does. An interval runs a
 `Box<dyn FnMut()>`. They're the one way a program sets a timer: webapi's
 `window.set_timeout`, of text alone, is gone, an error naming them
 ([ADR 1020](../../decisions/1020-a-timer-is-the-js-crates-global.md)).
+A closure that owns a value with a destructor and only borrows it, which
+rustc infers `Fn`, is called as Rust's `call_once` calls it, the timer's
+one call: what it took is dropped as that call ends, after what its own
+body drops, and as it unwinds:
+
+```rust
+pub struct Lease(pub String);
+
+impl Drop for Lease {
+    fn drop(&mut self) {
+        println!("released {}", self.0);
+    }
+}
+
+pub fn hold(lease: Lease) {
+    js::set_timeout(
+        move || {
+            let held = &lease;
+            println!("holding {}", held.0);
+        },
+        Some(100.0),
+    );
+}
+```
+
+```js
+export function hold(lease) {
+  setTimeout(() => {
+    const held = lease;
+    console.log(`holding ${held[0]}`);
+    console.log(`released ${lease[0]}`);
+  }, 100);
+}
+```
+
 Each is a value too, held where the host has it, as React DOM holds
 `scheduleTimeout`; `set_timeout` is generic, so it's asked of by any of
 its instances, `set_timeout::<fn()>`, and held as the one its type says:

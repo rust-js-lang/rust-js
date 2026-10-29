@@ -145,3 +145,46 @@ test("webapi's window.set_timeout is gone, an error naming js::set_timeout", () 
     expect([code === 0, stderr]).toEqual([false, expect.stringContaining("a window's timers are gone: a timer is the js crate's global, `js::set_timeout(handler, ms)`")]);
   }
 });
+
+// A closure rustc infers `Fn`, as it only borrows what it took, is called
+// as Rust's `call_once` calls it, the timer's one call: what it took is
+// dropped as that call ends, after its body's own (ADR 1020).
+test("a timer's closure that only borrows what it owns drops it after its one call", async () => {
+  const { code, stderr, dir, js } = compiled("timer-drops", `pub struct Lease(pub &'static str);
+
+impl Drop for Lease {
+    fn drop(&mut self) {
+        println!("released {}", self.0);
+    }
+}
+
+pub fn hold(lease: Lease) {
+    js::set_timeout(
+        move || {
+            let held = &lease;
+            let note = Lease("note");
+            println!("holding {} {}", held.0, note.0);
+        },
+        Some(1.0),
+    );
+}
+
+pub fn lease(name: &'static str) -> Lease {
+    Lease(name)
+}
+`);
+  expect([code, stderr]).toEqual([0, ""]);
+  expect(js).toContain("setTimeout(() => {\n    const held = lease;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    lib.hold(lib.lease("desk"));
+    expect(logged).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["holding desk note", "released note", "released desk"]);
+});

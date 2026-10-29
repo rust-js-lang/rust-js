@@ -93,7 +93,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A function called by `&` or `&mut` that holds a value with a
     /// destructor, given where `callee` calls it by `FnOnce` alone, as its
     /// argument: refused, as that call drops none of it, where Rust's drops
-    /// it once it's run (ADR 0470).
+    /// it once it's run (ADR 0470); but a closure made where it's given to a
+    /// binding that calls it once, whose body drops what it took as its
+    /// call ends (`ClosureFacts::called_once`, ADR 1020).
     pub(in crate::lower) fn check_called_once(
         &self,
         callee: rustc_span::def_id::DefId,
@@ -104,6 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (&ty, &input) in tys.iter().zip(inputs) {
             let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
             if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
+                && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))
                 && crate::lower::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
                 && self.drops_function(ty)
             {

@@ -1,6 +1,6 @@
 # 1020. A timer is the js crate's global, which takes a function as it is
 
-Status: Accepted (the user's decision, rd10). Amends
+Status: Accepted (the user's decision, rd10; amended, rd10's follow-up: a closure the timer calls once drops what it took). Amends
 [0102](0102-js-and-webapi.md) (timers are the builtins crate's): a
 timeout's handler is TypeScript's `TimerHandler`, and a window's timers
 are gone; [0229](0229-union-parameters.md) (a union parameter takes each
@@ -94,11 +94,8 @@ impl IntoTimerHandler for &String {}
   `js::is_defined(js::set_timeout::<fn()>)`.
 - **A closure that holds a value with a destructor and only borrows it**,
   `move || { let m = &n; .. }`, isn't inferred `FnOnce` by rustc from a
-  bound of a union, as it was from `Box<dyn FnOnce()>`, so it's refused,
-  as for any binding's type parameter that isn't bound by `FnOnce`, where
-  it compiled before and dropped what it took after its body (the guide's
-  limitations). Lifting it is a closure called once by its callee lowered
-  as one that drops what it took, a separate change.
+  bound of a union, as it was from `Box<dyn FnOnce()>`. It was refused
+  at first; it's called as Rust calls it now (amended below).
 - **`Box<dyn IntoTimerHandler>`**, not generic, kept
   `js::is_function(js::set_timeout)`, but a `Box<dyn FnOnce()>` a program
   has would be boxed again, `Box::new(task)`, and a binding crate's union
@@ -107,15 +104,67 @@ impl IntoTimerHandler for &String {}
   but stays narrower than TypeScript's `TimerHandler`: rejected by the
   user's decision.
 
+## Amended: a closure the timer calls once drops what it took (rd10)
+
+The user's decision: keep the generic `set_timeout` and its turbofish,
+and lift the refusal. Case (ADR 0262): results change, so Rust's
+behavior is kept. Natively the handler is called by `FnOnce`: a closure
+rustc infers `Fn` or `FnMut` is called through rustc's
+`ClosureOnceShim`, which calls it by reference and then drops it, so
+what it took is dropped as the call ends, after what its own body drops,
+in the order it took them, and as it unwinds.
+
+- **The fact:** `ClosureFacts::called_once`, the closures rustc infers
+  `Fn` or `FnMut` made where they're given to a binding's parameter whose
+  callback JS calls once (`Taker::parameter`'s `OnceCallback`, a type
+  parameter of a union whose `Function` member is called by `FnOnce`).
+  JS keeps it and calls it once, or never, as Rust's `call_once` takes it.
+  Both refusals of a borrowing closure given away (`drops/facts.rs`, and
+  `check_called_once` where its MIR call is lowered) ask it.
+- **The body:** `Mir::called_once`, the shim inlined into the closure's
+  own MIR: `_1` taken by value (`(*_1).f` read as `_1.f`), a `drop(_1)`
+  before its return, and its cleanup's resume going on to drop it. The
+  drop elaboration and structuring are the body's as for any closure
+  rustc infers `FnOnce`, so the drops print where its body ends, in a
+  `finally` where it can throw:
+
+  ```js
+  setTimeout(() => {
+    const held = lease;
+    console.log(`holding ${held[0]}`);
+    console.log(`released ${lease[0]}`);
+  }, 100);
+  ```
+
+- **Not lifted:** a closure given from a variable, `let f = move || ..;
+  js::set_timeout(f, ms)`, which may be called by reference before (still
+  refused, the guide's limitations), and a type parameter no bound says
+  is called once.
+- **Alternatives:** a JS wrapper calling the arrow and then its drop
+  (`() => { f(); drop }`) adds an arrow per timer and a second drop
+  writer beside the MIR's; lowering rustc's shim as a body of its own
+  calls the closure from another function. Both rejected for the inlined
+  shim, which reads as an `FnOnce` closure does.
+- **Seen with it (#409, a wrong answer, fixed by 781c6cbdc, ADR 0521):** a
+  closure rustc infers `Fn`, held in a variable and made a `Box<dyn
+  FnOnce()>`, then called, never dropped what it took; it's
+  `$droppingOnce(f, drop)` now.
+
 ## What holds it
 
 - `test/js-timers.test.ts`: "a timer's handler is a function as it is, or
   text of code" (run, and text given as it is), "a timer and
   queueMicrotask are held as values where the host has them", "webapi's
   window.set_timeout is gone, an error naming js::set_timeout".
+- `test/corpus/called_once_closure_drops_after.rs` against native Rust
+  (borrowed, a `return`, an `FnMut`, an `FnOnce`, unwinding with and
+  without a cleanup of its own) and `test/js-timers.test.ts`'s "a timer's
+  closure that only borrows what it owns drops it after its one call".
 - `test/lowering-passed-on.test.ts`'s once-callbacks: `js::set_timeout(||
   ping(), None)` is `setTimeout(ping)`.
 - `test/compiler.test.ts`'s timers, `test/builtins.rs`; the scheduler's
   port, `test/ports/scheduler`.
-- Mutations in `scripts/mutations/lower/recognition/traits.ts` and
-  `scripts/mutations/lower/passed_on.ts`.
+- Mutations in `scripts/mutations/lower/recognition/traits.ts`,
+  `scripts/mutations/lower/passed_on.ts`, and the `called-once-*` ones in
+  `analysis/closures.ts`, `mir.ts`, `drops/facts.ts` and
+  `combinators/callbacks.ts`.

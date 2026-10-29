@@ -205,8 +205,15 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     }
                 }
             },
+            // One a binding calls once, made where it's given, drops what it
+            // took as that call ends (ADR 1020).
             ExprKind::Call { ref args, ty, .. }
-                if !self.drops_given(ty) && args.iter().any(|&a| self.borrowing_closure(self.thir[a].ty)) =>
+                if !self.drops_given(ty)
+                    && args.iter().any(|&a| {
+                        let ty = self.thir[a].ty;
+                        self.borrowing_closure(ty)
+                            && !matches!(*ty.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))
+                    }) =>
             {
                 self.closure_problem(
                     expr.span,

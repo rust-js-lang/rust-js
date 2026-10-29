@@ -3,6 +3,7 @@
 //! 0521), and which are cloned apart (ADR 0522); and, as a `dyn Fn`'s, of
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
+use crate::lower::passed_on::Taker;
 use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
 use crate::lower::{Body, bindings};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -34,6 +35,11 @@ pub struct ClosureFacts {
     /// Of them, those a clone of which isn't the closure itself, each made
     /// by a function of what it holds, which its clone is made by again.
     pub(super) cloned_apart: HashSet<DefId>,
+    /// The closures rustc infers `Fn` or `FnMut` made where they're given
+    /// to a binding that calls what it's given once, `js::set_timeout(move
+    /// || { let m = &n; .. }, ms)`'s, of a union bound (ADR 1020): each
+    /// called as its `call_once` runs it, dropping what it took.
+    called_once: HashSet<DefId>,
     /// Whether the crate is a library, whose callers' closures may be.
     library: bool,
 }
@@ -56,6 +62,9 @@ impl ClosureFacts {
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
             .partition(|&(_, handed)| handed);
         let made_fn_dyns: HashSet<DefId> = made.into_iter().filter_map(|(ty, _)| closure_of(ty)).collect();
+        let called_once = (all_bodies.iter())
+            .flat_map(|body| called_once_by_js(tcx, &body.thir))
+            .collect();
         let handed_fn_dyns = (handed.into_iter())
             .filter_map(|(ty, _)| closure_of(ty))
             .filter(|id| !made_fn_dyns.contains(id))
@@ -75,6 +84,7 @@ impl ClosureFacts {
             handed_fn_dyns,
             cloned,
             cloned_apart: HashSet::new(),
+            called_once,
             library,
         }
     }
@@ -91,6 +101,14 @@ impl ClosureFacts {
     /// each dropped where its maker's variables it took aren't seen.
     pub(in crate::lower) fn carries_its_drop(&self, tcx: TyCtxt<'_>, closure: DefId) -> bool {
         self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)
+    }
+
+    /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, is
+    /// made where it's given to a binding that calls it once, which then
+    /// drops what it took: its body is its `call_once`'s, `Mir::called_once`
+    /// (ADR 1020).
+    pub(in crate::lower) fn called_once(&self, closure: DefId) -> bool {
+        self.called_once.contains(&closure)
     }
 
     /// Whether the closure `closure` is made a `dyn Fn` only to hand it to
@@ -277,6 +295,41 @@ fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> HashSet<ExprId> {
         }
     }
     handed
+}
+
+/// The closures in `thir` rustc infers `Fn` or `FnMut`, made where they're
+/// given to a binding's parameter whose callback JS calls once
+/// (`Taker::parameter`), a type parameter of a union whose `Function`
+/// member is called by `FnOnce`, `js::set_timeout`'s `H: IntoTimerHandler`
+/// (ADR 1020): JS calls it once, or never, and keeps it, as Rust's
+/// `call_once` takes it, so what it took is dropped as its call ends.
+fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
+    let mut once = Vec::new();
+    for expr in thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        let ty::FnDef(id, _) = *thir[fun].ty.kind() else {
+            continue;
+        };
+        if !bindings::is_binding(tcx, id) {
+            continue;
+        }
+        for (i, &arg) in args.iter().enumerate() {
+            let mut e = arg;
+            while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+                e = inner;
+            }
+            if let ExprKind::Closure(_) = thir[e].kind
+                && let ty::Closure(closure, closure_args) = *thir[e].ty.kind()
+                && closure_args.as_closure().kind() != ty::ClosureKind::FnOnce
+                && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)
+            {
+                once.push(closure);
+            }
+        }
+    }
+    once
 }
 
 /// Whether the binding `id` may give a function back: what it returns, or

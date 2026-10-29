@@ -181,6 +181,90 @@ impl<'tcx> Mir<'tcx> {
         };
         Mir { body, promoted, awaits }
     }
+
+    /// Of a closure's body rustc infers `Fn` or `FnMut`, which takes
+    /// itself by `&` or `&mut`, the body its `call_once` runs, rustc's
+    /// `ClosureOnceShim` inlined: itself taken by value, and dropped as it
+    /// returns, or as it unwinds, after what its own body drops. A closure
+    /// a binding calls once is called so (ADR 1020). `None` where its body
+    /// reads itself other than through the reference, as its fields.
+    pub(super) fn called_once(&self, tcx: ty::TyCtxt<'tcx>) -> Option<Self> {
+        use rustc_middle::mir::visit::MutVisitor;
+        struct ByValue<'tcx> {
+            tcx: ty::TyCtxt<'tcx>,
+            whole: bool,
+        }
+        impl<'tcx> MutVisitor<'tcx> for ByValue<'tcx> {
+            fn tcx(&self) -> ty::TyCtxt<'tcx> {
+                self.tcx
+            }
+            fn visit_place(&mut self, place: &mut Place<'tcx>, _: PlaceContext, _: mir::Location) {
+                if place.local != SELF {
+                    return;
+                }
+                match place.projection.first() {
+                    Some(PlaceElem::Deref) => {
+                        place.projection = self.tcx.mk_place_elems(&place.projection[1..]);
+                    }
+                    _ => self.whole = true,
+                }
+            }
+        }
+        const SELF: Local = Local::from_u32(1);
+        let mut body = self.body.clone();
+        let ty::Ref(_, closure, _) = *body.local_decls[SELF].ty.kind() else {
+            return None;
+        };
+        let mut by_value = ByValue { tcx, whole: false };
+        by_value.visit_body(&mut body);
+        if by_value.whole {
+            return None;
+        }
+        body.local_decls[SELF].ty = closure;
+        let terminator = |kind| mir::Terminator {
+            source_info: mir::SourceInfo::outermost(body.span),
+            kind,
+            attributes: Default::default(),
+        };
+        let block = |terminator, is_cleanup| mir::BasicBlockData::new(Some(terminator), is_cleanup);
+        let dropped = |target, unwind| TerminatorKind::Drop {
+            place: SELF.into(),
+            target,
+            unwind,
+            replace: false,
+            drop: None,
+        };
+        let blocks = body.basic_blocks.as_mut();
+        let resumed = blocks.push(block(terminator(TerminatorKind::UnwindResume), true));
+        let unwound = blocks.push(block(
+            terminator(dropped(
+                resumed,
+                UnwindAction::Terminate(mir::UnwindTerminateReason::InCleanup),
+            )),
+            true,
+        ));
+        let returned = blocks.push(block(terminator(TerminatorKind::Return), false));
+        for (at, data) in blocks.iter_enumerated_mut() {
+            if [resumed, unwound, returned].contains(&at) {
+                continue;
+            }
+            // What unwinds through its body's own cleanup goes on to drop
+            // it. A call that unwinds with no cleanup of its own needs no
+            // edge to it: the drop as it returns is a `finally` around
+            // what can throw, as the lowering writes one.
+            let kind = &mut data.terminator_mut().kind;
+            match kind {
+                TerminatorKind::Return => *kind = dropped(returned, UnwindAction::Continue),
+                TerminatorKind::UnwindResume => *kind = TerminatorKind::Goto { target: unwound },
+                _ => {}
+            }
+        }
+        Some(Mir {
+            body,
+            promoted: self.promoted.clone(),
+            awaits: self.awaits.clone(),
+        })
+    }
 }
 
 /// Of an optimized body, another crate's, each `Box` read through the
