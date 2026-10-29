@@ -118,3 +118,10 @@ link_name's `* as` names it", and the guide's example, compiled; and
 the mutations `namespace-name-unread`, `namespace-names-unchecked`
 (`lower/bindings.ts`, `lower/analysis/naming.ts`).
 
+## Amendment: PascalCase, after its file (2026-10-29)
+
+Amended by [1018](1018-a-function-called-through-its-module-is-read-through-its-namespace.md)
+(rd114b, the user's decision): a namespace is PascalCase, as every
+namespace is, `import * as Scheduler from "scheduler"`, `SideMenu` of
+`mod side_menu`, `React` of a module's `const` of `react#*`; and a
+`* as Name` that repeats that name is an error, naming `#*.path`.

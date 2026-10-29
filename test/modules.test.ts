@@ -497,13 +497,13 @@ pub fn timed() -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import * as ContextMenu from "./menu.js";');
   expect(js).toContain("ContextMenu.Root({ modal: true }) + ContextMenu.Item()");
-  // A module's name as every Rust name is, camelCase (ADR 0573).
-  expect(js).toContain('import * as sideMenu from "./side.js";');
+  // A module's name PascalCase, as every namespace is (rd114b, ADR 1018).
+  expect(js).toContain('import * as SideMenu from "./side.js";');
   // A module of other code too, which only calls a member, names it by
   // what it's imported from, as the crate's root does (ADR 0256, amended).
-  expect(readFileSync(join(dir, "cache.js"), "utf8")).toContain('import * as scheduler from "./scheduler.js";');
+  expect(readFileSync(join(dir, "cache.js"), "utf8")).toContain('import * as Scheduler from "./scheduler.js";');
   // And one that holds another module's binding too.
-  expect(js).toContain('import * as timers from "./timers.js";');
+  expect(js).toContain('import * as Timers from "./timers.js";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.both(), lib.timed()]).toEqual([16, 48]);
 });
@@ -1323,7 +1323,7 @@ export { half, double as unstable_double } from "./runtime.js";
 // import; each of its module's must name it the same, or it's an error.
 test("a namespace import is named as its link_name's * as names it", () => {
   const dir = fixture("namespace-named");
-  const source = (second: string) => `#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_now")]
+  const source = (first: string, second: string) => `#[cfg_attr(rust_js, rust_js::link_name = "${first}")]
 fn unstable_now() -> f64 {
     unreachable!()
 }
@@ -1341,18 +1341,29 @@ pub fn yielded(value: u32) {
     unstable_yield_value(value);
 }
 `;
-  writeFileSync(join(dir, "lib.rs"), source("scheduler#* as Scheduler.unstable_yieldValue"));
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('import * as Scheduler from "scheduler";\n');
-  expect(js).toContain("export const now = Scheduler.unstable_now;\n");
-  expect(js).toContain("  Scheduler.unstable_yieldValue(value);\n");
-  for (const second of ["scheduler#*.unstable_yieldValue", "scheduler#* as Sched.unstable_yieldValue"]) {
-    writeFileSync(join(dir, "lib.rs"), source(second));
-    expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
+  const compile = (first: string, second: string) => {
+    writeFileSync(join(dir, "lib.rs"), source(first, second));
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+    return readFileSync(join(dir, "lib.js"), "utf8");
+  };
+  // Named PascalCase by what it's imported from where no path names it, as
+  // every namespace is (rd114b, ADR 1018).
+  const plain = compile("scheduler#*.unstable_now", "scheduler#*.unstable_yieldValue");
+  expect(plain).toContain('import * as Scheduler from "scheduler";\n');
+  expect(plain).toContain("export const now = Scheduler.unstable_now;\n");
+  const js = compile("scheduler#* as Sched.unstable_now", "scheduler#* as Sched.unstable_yieldValue");
+  expect(js).toContain('import * as Sched from "scheduler";\n');
+  expect(js).toContain("export const now = Sched.unstable_now;\n");
+  expect(js).toContain("  Sched.unstable_yieldValue(value);\n");
+  for (const second of ["scheduler#*.unstable_yieldValue", "scheduler#* as Other.unstable_yieldValue"]) {
+    expect(() => compile("scheduler#* as Sched.unstable_now", second)).toThrow(
       "each `link_name` of its `*` names it the same, `scheduler#* as Name.path`",
     );
   }
+  // One that names it as it's named anyway says it twice.
+  expect(() => compile("scheduler#* as Scheduler.unstable_now", "scheduler#* as Scheduler.unstable_yieldValue")).toThrow(
+    "`scheduler#* as Scheduler` names the namespace as it's named anyway: write `scheduler#*.path`",
+  );
 });
 
 // nm1, React's ReactFiberHooks: `import { NotPendingTransition as
@@ -1428,7 +1439,9 @@ pub fn reset() -> Option<&'static Unknown> {
 // one through a module that re-exports another's is that one's import.
 test("a function called through its module is read through its namespace", async () => {
   const dir = fixture("module-namespace");
-  writeFileSync(join(dir, "lib.rs"), `pub mod plugin;
+  writeFileSync(join(dir, "lib.rs"), `#[path = "events/DOMPluginEventSystem.rs"]
+pub mod dom_plugin_event_system;
+pub mod plugin;
 pub mod plugins;
 pub mod shared;
 
@@ -1437,9 +1450,11 @@ pub fn base() -> u32 {
 }
 
 pub fn run() -> u32 {
-    plugin::nested::depth() + plugins::doubled(2)
+    plugin::nested::depth() + plugins::doubled(2) + dom_plugin_event_system::dispatch()
 }
 `);
+  mkdirSync(join(dir, "events"), { recursive: true });
+  writeFileSync(join(dir, "events", "DOMPluginEventSystem.rs"), "pub fn dispatch() -> u32 {\n    4\n}\n");
   writeFileSync(join(dir, "plugin.rs"), `pub fn extract_events(n: u32) -> u32 {
     n * 2
 }
@@ -1457,8 +1472,12 @@ pub mod nested {
   expect(nested).toContain('import { base } from "../lib.js";\nimport { extractEvents } from "../plugin.js";\nimport * as Plugin from "../plugin.js";\n');
   expect(nested).toContain("return (((extractEvents(1) + Plugin.extractEvents(2)) >>> 0) + base()) >>> 0;");
   const lib = readFileSync(join(dir, "out", "lib.js"), "utf8");
-  expect(lib).toContain('import * as Nested from "./plugin/nested.js";\nimport { doubled } from "./shared.js";\n');
-  expect(lib).toContain("return (Nested.depth() + doubled(2)) >>> 0;");
+  expect(lib).toContain('import { doubled } from "./shared.js";\n');
+  expect(lib).toContain('import * as Nested from "./plugin/nested.js";\n');
+  // A #[path] module's namespace is named as its JS file is, as upstream's
+  // file names it (rd114c, ADR 1018).
+  expect(lib).toContain('import * as DOMPluginEventSystem from "./events/DOMPluginEventSystem.js";\n');
+  expect(lib).toContain("return (((Nested.depth() + doubled(2)) >>> 0) + DOMPluginEventSystem.dispatch()) >>> 0;");
   const { run: ran } = await import(join(dir, "out", "lib.js"));
-  expect(ran()).toBe(11);
+  expect(ran()).toBe(15);
 });

@@ -559,9 +559,9 @@ export default assign;
 
 ```js
 // src/internals.js
-import * as react from "react";
+import * as React from "react";
 
-const ReactSharedInternals = react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+const ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
 export default ReactSharedInternals;
 ```

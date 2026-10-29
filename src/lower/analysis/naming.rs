@@ -176,6 +176,23 @@ pub(super) fn js_uses<'tcx>(
     for (export, paths) in namespaces {
         let names: BTreeSet<Option<&str>> = paths.iter().map(|(name, _)| name.as_deref()).collect();
         match names.iter().collect::<Vec<_>>().as_slice() {
+            // One that names it as it's named anyway is said twice: written
+            // `from#*.path` (rd114b, ADR 1018), as a `#[rust_js::name]` that
+            // repeats its default is refused.
+            [Some(name)] if *name == namespace_default(tcx, &uses, &export) => {
+                let at = paths
+                    .iter()
+                    .map(|(_, id)| *id)
+                    .min_by_key(|&id| tcx.def_span(id))
+                    .unwrap_or(paths[0].1);
+                tcx.dcx().span_err(
+                    tcx.def_span(at),
+                    format!(
+                        "rust-js: `{}#* as {name}` names the namespace as it's named anyway: write `{}#*.path` (ADR 1018)",
+                        export.0, export.0
+                    ),
+                );
+            }
             [Some(name)] => {
                 uses.named.insert(export, name.to_string());
             }
@@ -251,19 +268,7 @@ pub(super) fn name_imports(
             // class whose statics one holds, `mod app`, is the class's, `App`
             // (ADR 0355): a module of its crate's, or of a bindings crate's,
             // `next::app::app`.
-            let module_of = |id: &DefId| {
-                let mut module = tcx.parent(*id);
-                while tcx.def_kind(module) != DefKind::Mod {
-                    module = tcx.parent(module);
-                }
-                module
-            };
-            let holder = uses.bound_to.get(export_key).and_then(|held| {
-                let mut modules = held.iter().map(module_of);
-                let first = modules.next()?;
-                (!first.is_crate_root() && modules.all(|module| module == first))
-                    .then(|| (tcx.item_name(first).to_string(), first))
-            });
+            let holder = holder(tcx, uses, export_key);
             let statics = uses
                 .bound_to
                 .get(export_key)
@@ -271,14 +276,16 @@ pub(super) fn name_imports(
             let base = match (export.as_str(), held_by, holder) {
                 _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),
                 ("default", Some(name), _) => name,
-                ("default", None, Some((module, _))) if statics => crate::lower::upper_first(&camel_case(&module)),
-                // As every Rust name is, camelCase, `side_menu` as `sideMenu`
-                // (ADR 0256, amended for ADR 0573). A module of other items
-                // too, a file that calls a few of its members, names it by
-                // what it's imported from, `scheduler`, as the crate's root
-                // does (ADR 0256, amended).
-                ("*", _, Some((module, id))) if holds_only(tcx, id, from) => camel_case(&module),
-                ("default" | "*", _, _) => module_binding(from),
+                ("default", None, Some(module)) if statics => {
+                    crate::lower::upper_first(&camel_case(tcx.item_name(module).as_str()))
+                }
+                // A namespace PascalCase, as every namespace is, `side_menu` as
+                // `SideMenu` (rd114b, ADR 1018; ADR 0256, amended). A module
+                // of other items too, a file that calls a few of its members,
+                // names it by what it's imported from, `Scheduler` of
+                // `scheduler`, as the crate's root does (ADR 0256, amended).
+                ("*", _, _) => namespace_default(tcx, uses, export_key),
+                ("default", _, _) => module_binding(from),
                 _ => export.clone(),
             };
             (export_key, base)
@@ -333,6 +340,37 @@ pub(super) fn name_imports(
             (module, names)
         })
         .collect()
+}
+
+/// What a binding's namespace, `export`, a `*`, is named where no path
+/// names it, `#* as Name` (ADR 0256, amended): the module that holds its
+/// bindings alone, `ContextMenu` of `mod ContextMenu` (`holds_only`), else
+/// what it's imported from, `Scheduler` of `scheduler`, as
+/// `crate::lower::namespace_name` names every namespace (rd114b, ADR
+/// 1018).
+fn namespace_default(tcx: TyCtxt<'_>, uses: &JsUses, export: &Export) -> String {
+    match holder(tcx, uses, export) {
+        Some(module) if holds_only(tcx, module, &export.0) => {
+            crate::lower::namespace_name(tcx.item_name(module).as_str())
+        }
+        _ => crate::lower::namespace_name(bindings::file_stem(&export.0)),
+    }
+}
+
+/// The one module of the crate's, or of a bindings crate's, but a root,
+/// that holds each binding of `export`, `mod ContextMenu` of
+/// `@radix-ui/react-context-menu#*`'s, if one does (ADR 0256).
+fn holder(tcx: TyCtxt<'_>, uses: &JsUses, export: &Export) -> Option<DefId> {
+    let module_of = |id: &DefId| {
+        let mut module = tcx.parent(*id);
+        while tcx.def_kind(module) != DefKind::Mod {
+            module = tcx.parent(module);
+        }
+        module
+    };
+    let mut modules = uses.bound_to.get(export)?.iter().map(module_of);
+    let first = modules.next()?;
+    (!first.is_crate_root() && modules.all(|module| module == first)).then_some(first)
 }
 
 /// Whether `module` is `from`'s namespace's own, of no code: what it holds

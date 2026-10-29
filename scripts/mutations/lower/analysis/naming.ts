@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "default-statics-named-by-file",
     breaks: "a default class used for its statics, in `mod greeter`, is `greeter`, not `Greeter`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"default\", None, Some((module, _))) if statics => crate::lower::upper_first(&camel_case(&module)),",
-    replace: "                (\"default\", None, Some((module, _))) if false && statics => crate::lower::upper_first(&camel_case(&module)),",
+    find: "                (\"default\", None, Some(module)) if statics => {\n",
+    replace: "                (\"default\", None, Some(module)) if false && statics => {\n",
     tests: ["test/modules.test.ts", "-t", "default import of a class"],
   },
   {
@@ -150,10 +150,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-named-by-file",
-    breaks: "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as menu`",
+    breaks: "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as Menu`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"*\", _, Some((module, id))) if holds_only(tcx, id, from) => camel_case(&module),\n",
-    replace: "\n",
+    find: "        Some(module) if holds_only(tcx, module, &export.0) => {\n",
+    replace: "        Some(module) if false && holds_only(tcx, module, &export.0) => {\n",
     tests: ["test/modules.test.ts", "-t", "namespace import is named"],
   },
   {
@@ -255,10 +255,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-module-as-written",
-    breaks: "a namespace import a snake_case module holds is named `side_menu`, not camelCase `sideMenu`",
+    breaks: "a namespace import a snake_case module holds is named `side_menu`, not PascalCase `SideMenu`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"*\", _, Some((module, id))) if holds_only(tcx, id, from) => camel_case(&module),\n",
-    replace: "                (\"*\", _, Some((module, id))) if holds_only(tcx, id, from) => module,\n",
+    find: "            crate::lower::namespace_name(tcx.item_name(module).as_str())\n",
+    replace: "            tcx.item_name(module).to_string()\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
   },
   {
@@ -279,10 +279,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-of-any-holding-module",
-    breaks: "a namespace whose bindings a module of other code holds, `mod cache` calling `scheduler#*.unstable_now`, is named after that module, `import * as cache`, not `scheduler`",
+    breaks: "a namespace whose bindings a module of other code holds, `mod cache` calling `scheduler#*.unstable_now`, is named after that module, `import * as Cache`, not `Scheduler`",
     file: "src/lower/analysis/naming.rs",
-    find: "                (\"*\", _, Some((module, id))) if holds_only(tcx, id, from) => camel_case(&module),\n",
-    replace: "                (\"*\", _, Some((module, _))) => camel_case(&module),\n",
+    find: "        Some(module) if holds_only(tcx, module, &export.0) => {\n",
+    replace: "        Some(module) => {\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
   },
   {
@@ -484,5 +484,21 @@ export const mutations: Mutation[] = [
     find: "            DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),\n",
     replace: "            DefKind::Mod => false,\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
+  },
+  {
+    name: "namespace-named-camel-case",
+    breaks: "a binding's namespace imported from its file is `import * as scheduler`, camelCase, where every namespace is PascalCase, `import * as Scheduler`, as React writes it (rd114b, ADR 1018)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        _ => crate::lower::namespace_name(bindings::file_stem(&export.0)),\n",
+    replace: "        _ => module_binding(&export.0),\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module that holds it"],
+  },
+  {
+    name: "namespace-name-repeat-accepted",
+    breaks: "`scheduler#* as Scheduler.unstable_now` names the namespace as it's named anyway, which is accepted, two spellings of one import (rd114b, ADR 1018)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            [Some(name)] if *name == namespace_default(tcx, &uses, &export) => {\n",
+    replace: "            [Some(name)] if false && *name == namespace_default(tcx, &uses, &export) => {\n",
+    tests: ["test/modules.test.ts", "-t", "a namespace import is named as its link_name"],
   },
 ];

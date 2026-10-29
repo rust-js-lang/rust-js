@@ -119,6 +119,10 @@ pub struct LoweredImport {
 pub struct TestFn {
     /// The module it's in, and its JS name there.
     pub module: Vec<String>,
+    /// The name its module's namespace is imported by where the runner's
+    /// file calls it, `Tests` of `tests.js`, as every namespace is named
+    /// (`lower::namespace_name`, rd114b, ADR 1018).
+    pub namespace: String,
     pub name: String,
     /// What the runner calls it: `tests::adds`.
     pub label: String,

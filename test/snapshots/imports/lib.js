@@ -3,7 +3,7 @@
 import { join, posix } from "node:path";
 import { URL as URL$1 } from "node:url";
 import greet, { punctuation } from "./greet.js";
-import * as greet$1 from "./greet.js";
+import * as Greet from "./greet.js";
 
 export function paths() {
   // A local named like an import doesn't hide it.
@@ -20,6 +20,6 @@ export function urls() {
 }
 
 export function greetings() {
-  return [greet("world"), greet$1.polite("world"), punctuation];
+  return [greet("world"), Greet.polite("world"), punctuation];
 }
 //# sourceMappingURL=lib.js.map

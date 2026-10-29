@@ -850,7 +850,7 @@ pub fn internals() -> &'static Internals {
   writeFileSync(join(dir, "node_modules/react/index.js"), "export const __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { H: null };\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const internals = readFileSync(join(dir, "internals.js"), "utf8");
-  expect(internals).toContain('import * as react from "react";\n\nconst ReactSharedInternals = react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n\nexport default ReactSharedInternals;\n');
+  expect(internals).toContain('import * as React from "react";\n\nconst ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n\nexport default ReactSharedInternals;\n');
   const reconciler = readFileSync(join(dir, "reconciler.js"), "utf8");
   expect(reconciler).toContain('import assign from "./assign.js";\nimport ReactSharedInternals from "./internals.js";\nimport { keys } from "./keys.js";\n');
   expect(reconciler).toContain("  return assign(target, source);\n");
@@ -864,7 +864,7 @@ pub fn internals() -> &'static Internals {
   // Named itself, it's read in place.
   const direct = readFileSync(join(dir, "direct.js"), "utf8");
   expect(direct).toContain("  return Object.assign(target, source);\n");
-  expect(direct).toContain("  return react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n");
+  expect(direct).toContain("  return React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n");
   expect(direct).not.toContain("./");
   const lib = await import(join(dir, "reconciler.js"));
   expect(lib.merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });

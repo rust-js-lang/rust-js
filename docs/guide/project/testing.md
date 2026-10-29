@@ -111,9 +111,9 @@ runner's global `test()` for each `#[test]`:
 
 ```js
 // out/lib.test.js
-import * as tests from "./shapes/tests.js";
+import * as Tests from "./shapes/tests.js";
 
-test("shapes::tests::a_unit_circle_has_area_pi", tests.aUnitCircleHasAreaPi);
+test("shapes::tests::a_unit_circle_has_area_pi", Tests.aUnitCircleHasAreaPi);
 ```
 
 ```js

@@ -46,11 +46,29 @@ pub(in crate::lower) fn module_paths<'tcx>(
     paths.through
 }
 
-/// The name a module's namespace is imported by (rd114): its own name, as
-/// `crate::lower::namespace_name` cases it, `Plugin` of `plugin`; a
-/// library's root's, its crate's, `Scheduler` of `scheduler`.
-pub(in crate::lower) fn namespace_of(tcx: TyCtxt<'_>, module: DefId) -> String {
-    crate::lower::namespace_name(tcx.item_name(module).as_str())
+/// The name a crate's module's namespace is imported by: its JS file's,
+/// as `crate::lower::namespace_name` cases it, `Plugin` of `plugin.js`,
+/// `DOMPluginEventSystem` of a `#[path]`'s `DOMPluginEventSystem.js`
+/// (rd114b/c, ADR 1018).
+pub(in crate::lower) fn namespace_of(tcx: TyCtxt<'_>, module: LocalModId) -> String {
+    crate::lower::namespace_name(&crate::lower::module_file_stem(tcx, module))
+}
+
+/// The name a library's module's namespace is imported by, where the path
+/// in `scope` names `function` through it: the JS file it's imported from,
+/// `Events` of `../dep/events.js`; its root's by its crate's name, `Dep`,
+/// whatever its file is.
+fn library_namespace(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    (function, module, scope): (DefId, DefId, LocalModId),
+) -> String {
+    match foreign.import_key(function, scope) {
+        Some((from, _)) if !module.is_crate_root() => {
+            crate::lower::namespace_name(crate::lower::bindings::file_stem(&from))
+        }
+        _ => crate::lower::namespace_name(tcx.item_name(module).as_str()),
+    }
 }
 
 struct Paths<'a, 'b, 'tcx> {
@@ -72,8 +90,11 @@ impl<'tcx> intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {
         if let Some(qpath) = path
             && let Some((function, module)) = through(self.tcx, self.foreign, qpath)
         {
-            let namespace = namespace_of(self.tcx, module);
             let scope = self.tcx.parent_module(expr.hir_id);
+            let namespace = match module.as_local() {
+                Some(local) => namespace_of(self.tcx, LocalModId::new_unchecked(local)),
+                None => library_namespace(self.tcx, self.foreign, (function, module, scope)),
+            };
             let through = Through {
                 function,
                 module,

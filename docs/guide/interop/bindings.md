@@ -211,8 +211,9 @@ are properties ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 | `"sonner#toast"` | `import { toast } from "sonner"` |
 | `"node:path#join"` | `import { join } from "node:path"` |
 | `"canvas-confetti#default"` | `import confetti from "canvas-confetti"`, the default export |
-| `"./greet.js#*.polite"` | `import * as greet from "./greet.js"`, then `greet.polite` |
-| `"scheduler#* as Scheduler.unstable_now"` | `import * as Scheduler from "scheduler"`, then `Scheduler.unstable_now` |
+| `"./greet.js#*.polite"` | `import * as Greet from "./greet.js"`, then `Greet.polite` |
+| `"scheduler#*.unstable_now"` | `import * as Scheduler from "scheduler"`, then `Scheduler.unstable_now` |
+| `"react-dom#* as ReactDOM.flushSync"` | `import * as ReactDOM from "react-dom"`, then `ReactDOM.flushSync` |
 | `"chart.js#Chart.register"` | `import { Chart } from "chart.js"`, then `Chart.register` |
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
@@ -242,45 +243,50 @@ pub fn celebrate() {
 
 ```js
 import confetti from "canvas-confetti";
-import * as greet from "./greet.js";
+import * as Greet from "./greet.js";
 
 export function celebrate() {
   confetti();
-  console.log(`${greet.polite("Ada")}`);
+  console.log(`${Greet.polite("Ada")}`);
 }
 ```
 
-- **A namespace is named by what it's imported from**, `greet`, where its
-  bindings are in a file of other code too; a module of no code of its own,
-  its bindings and the props they take, `mod ContextMenu`, names it,
-  `import * as ContextMenu`
-  ([ADR 0256](../../decisions/0256-namespace-import-names.md), amended).
+- **A namespace is named by what it's imported from, PascalCase**,
+  `Greet` of `./greet.js` and `Scheduler` of `scheduler`, as every
+  namespace is, the crate's modules' too, where its bindings are in a
+  file of other code too; a module of no code of its own, its bindings
+  and the props they take, `mod ContextMenu`, names it, `import * as
+  ContextMenu` ([ADR 0256](../../decisions/0256-namespace-import-names.md),
+  amended; [ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
   Or as its path names it, `* as Name`, as JS's `import * as` writes it,
-  each `link_name` of its `*` naming it the same, or it's an error
-  (ADR 0256, amended):
+  `ReactDOM` of `react-dom`, whose words don't say its capitals, each
+  `link_name` of its `*` naming it the same, or it's an error; one that
+  names it as it's named anyway, `scheduler#* as Scheduler`, is an error
+  too, naming `scheduler#*.path` (ADR 1018):
 
 ```rust
-#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_now")]
+#[cfg_attr(rust_js, rust_js::link_name = "scheduler#*.unstable_now")]
 fn unstable_now() -> f64 {
     unreachable!()
 }
 
-#[cfg_attr(rust_js, rust_js::link_name = "scheduler#* as Scheduler.unstable_yieldValue")]
-fn unstable_yield_value(value: u32) {
+#[cfg_attr(rust_js, rust_js::link_name = "react-dom#* as ReactDOM.flushSync")]
+fn flush_sync(f: Box<dyn FnOnce()>) {
     unreachable!()
 }
 
-pub fn yielded(value: u32) -> f64 {
-    unstable_yield_value(value);
+pub fn flushed() -> f64 {
+    flush_sync(Box::new(|| {}));
     unstable_now()
 }
 ```
 
 ```js
+import * as ReactDOM from "react-dom";
 import * as Scheduler from "scheduler";
 
-export function yielded(value) {
-  Scheduler.unstable_yieldValue(value);
+export function flushed() {
+  ReactDOM.flushSync(() => {});
   return Scheduler.unstable_now();
 }
 ```

@@ -1363,7 +1363,7 @@ pub fn lower_crate<'tcx>(
                 imports.iter().map(|&(target, ..)| (&paths[&target], target)).collect();
             let namespaces: Vec<_> = (through.into_values())
                 .map(|target| {
-                    let name = super::analysis::namespace_of(tcx, target.to_def_id());
+                    let name = super::analysis::namespace_of(tcx, target);
                     (target, js::NAMESPACE.to_string(), js::NAMESPACE.to_string(), name)
                 })
                 .collect();

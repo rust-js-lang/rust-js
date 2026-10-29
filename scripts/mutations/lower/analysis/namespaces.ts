@@ -45,4 +45,12 @@ export const mutations: Mutation[] = [
     replace: "        && (true || !holds_a_callable(tcx, function));\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "called with no this"],
   },
+  {
+    name: "library-root-namespace-by-file",
+    breaks: "a library's root's namespace is named by its JS file, `import * as Lib from \"../dep/lib.js\"`, not its crate, `Dep` (rd114c, ADR 1018)",
+    file: "src/lower/analysis/namespaces.rs",
+    find: "        Some((from, _)) if !module.is_crate_root() => {\n",
+    replace: "        Some((from, _)) => {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "read through its namespace"],
+  },
 ];

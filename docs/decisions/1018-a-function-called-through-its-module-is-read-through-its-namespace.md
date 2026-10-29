@@ -207,3 +207,42 @@ mutations `namespace-of-functions-alone`, `namespace-of-a-callable-value`,
 `namespaced-variable-held`, `namespaced-library-variable-held`,
 `static-read-by-name-through-its-module` and
 `item-read-by-name-through-its-module`.
+
+## Amendment: every namespace is named PascalCase, after its JS file (rd114b/c)
+
+The user's decisions (2026-10-29). A crate's module's namespace was its
+Rust name PascalCase, `DomPluginEventSystem` of `#[path =
+"src/events/DOMPluginEventSystem.rs"] mod dom_plugin_event_system`,
+where upstream's file, and its JS, is `DOMPluginEventSystem`; and a
+binding's namespace (ADR 0256) was camelCase, `import * as scheduler`,
+where React writes `import * as Scheduler`: two rules for one name.
+
+**Every namespace import is named by its JS module's file, PascalCase**
+(`lower::namespace_name`, the one rule): a crate's module's by the
+file its JS is written to, a `#[path]` module's file's stem,
+`DOMPluginEventSystem`, any other's its Rust name, `EnterLeaveEventPlugin`
+of `enter_leave_event_plugin` (`lower::module_file_stem`, as ADR 0273
+places its JS); a library's module's by the file it's imported from,
+`Events` of `../dep/events.js`, its root's by its crate's name, `Dep`;
+a binding's by what it's imported from, `Scheduler` of `scheduler`,
+`ReactContextMenu` of `@radix-ui/react-context-menu`, or the module of
+its bindings alone, `SideMenu` of `mod side_menu` (ADR 0256); and the
+test runner's file's import of a module of `#[test]`s, `Tests` of
+`tests.js` (`program::TestFn::namespace`, ADR 0026). Given apart on a
+clash, as every import is. This settles c06.
+
+**A `link_name`'s `* as Name` names it otherwise only**, `react-dom#* as
+ReactDOM` of a name its file's words don't spell: one that names it as
+it's named anyway, `scheduler#* as Scheduler`, is an error naming
+`scheduler#*.path`, as a `#[rust_js::name]` that repeats its default is.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a local name.
+
+Held by `test/modules.test.ts` (a `#[path]` module's
+`DOMPluginEventSystem`, `scheduler#*`'s `Scheduler`, `* as Sched`, the
+repeat refused, `SideMenu`), `test/lowering-bindings.test.ts`
+(`React.__CLIENT_INTERNALS..`), `test/compiler.test.ts` (`Greet`), the
+snapshot `imports` and the guide's bindings page, compiled; and the
+mutations `namespace-named-by-rust-name`, `library-root-namespace-by-file`,
+`namespace-named-camel-case`, `namespace-name-repeat-accepted` and
+`namespace-of-any-holding-module`.

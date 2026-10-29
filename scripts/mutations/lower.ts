@@ -458,4 +458,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
     snapshots: true,
   },
+  {
+    name: "namespace-named-by-rust-name",
+    breaks: "a #[path] module's namespace is named by its Rust name, `DomPluginEventSystem` of `dom_plugin_event_system`, not as its JS file, upstream's, is, `DOMPluginEventSystem` (rd114c, ADR 1018)",
+    file: "src/lower.rs",
+    find: "    if !located(tcx, module) {\n        return name();\n",
+    replace: "    if true {\n        return name();\n",
+    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+  },
 ];

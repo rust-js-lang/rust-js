@@ -252,7 +252,7 @@ test("extern items from JS modules become import statements", async () => {
   const lib = await Bun.file(join(target, "imports", "lib.js")).text();
   // One statement per module and kind, as a person would write them. A
   // default or namespace import is named after its module.
-  expect(lib).toContain('import greet, { punctuation } from "./greet.js";\nimport * as greet$1 from "./greet.js";\n');
+  expect(lib).toContain('import greet, { punctuation } from "./greet.js";\nimport * as Greet from "./greet.js";\n');
   expect(lib).toContain('import { join, posix } from "node:path";');
   // Beside the global `URL`, the imported one is renamed.
   expect(lib).toContain('import { URL as URL$1 } from "node:url";');
@@ -260,7 +260,7 @@ test("extern items from JS modules become import statements", async () => {
   // A path goes on from the import, and a local doesn't hide one.
   expect(lib).toContain('return posix.basename("/tmp/x/y.txt");');
   expect(lib).toContain('const join$1 = "c.txt";\n  return join(join("a", "b"), join$1);');
-  expect(lib).toContain('greet$1.polite("world")');
+  expect(lib).toContain('Greet.polite("world")');
   // Two directories down, only what the file uses, from the same file.
   const leaf = await Bun.file(join(target, "imports", "inner", "leaf.js")).text();
   expect(leaf).toMatch(

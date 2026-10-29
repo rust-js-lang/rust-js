@@ -1339,6 +1339,7 @@ fn collect_tests<'tcx>(
             .output();
         tests.push(TestFn {
             module: module_path(tcx, module),
+            namespace: namespace_of(tcx, module),
             name: fns[&test.to_def_id()].name.clone(),
             label: label.to_string(),
             should_panic,

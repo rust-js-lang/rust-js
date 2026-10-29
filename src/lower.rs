@@ -1119,12 +1119,31 @@ fn camel_case(name: &str) -> String {
     words_joined(name, |word| word.to_string())
 }
 
-/// A module's namespace as JS names it where it's imported whole,
-/// `EnterLeaveEventPlugin` of `enter_leave_event_plugin`'s `import * as`
-/// (rd114, ADR 1018): its Rust name camelCase, its first letter a capital,
-/// as JS names a module's namespace after the module.
+/// A module's namespace as JS names it where it's imported whole, of its
+/// JS file's stem or its Rust name: its words camelCase, its first letter
+/// a capital, as JS names a namespace after its module's file (rd114b/c,
+/// ADR 1018). `DOMPluginEventSystem` is its file's, `EnterLeaveEventPlugin`
+/// of `enter_leave_event_plugin`, and a binding's namespace is named so
+/// too, `Scheduler` of `scheduler` (ADR 0256): the one rule of its name.
 fn namespace_name(name: &str) -> String {
-    upper_first(&camel_case(name))
+    upper_first(&bindings::stem_binding(name))
+}
+
+/// The stem of the JS file `module`'s JS is written to, which its
+/// namespace is named after (`namespace_name`): a `#[path]` module's
+/// file's, `DOMPluginEventSystem` of `#[path =
+/// "src/events/DOMPluginEventSystem.rs"]`, as ADR 0273 places its JS
+/// beside it; any other's its Rust name, its module path's last.
+fn module_file_stem(tcx: TyCtxt<'_>, module: LocalModId) -> String {
+    let name = || tcx.item_name(module.to_def_id()).to_string();
+    if !located(tcx, module) {
+        return name();
+    }
+    let file = module_file(tcx, module).name.clone().into_local_path();
+    (file.as_deref())
+        .and_then(std::path::Path::file_stem)
+        .and_then(|stem| stem.to_str())
+        .map_or_else(name, str::to_string)
 }
 
 /// A parameter's name as JS writes it: its `#[rust_js::name = ".."]`,
