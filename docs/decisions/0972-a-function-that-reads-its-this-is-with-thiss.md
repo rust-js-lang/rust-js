@@ -154,3 +154,41 @@ return this; }`, and keeps it where it's moved into another `let`; its
 `prototype()` is `SyntheticBaseEvent.prototype`, which a struct literal of
 `with_this` fields is assigned to as upstream's object of `function ()`s.
 Case: none, the same function, `this` and `new` as JS's.
+
+## Amendment: a call through a field gives no `this` (#402)
+
+Status: the user's decision (2026-10-29), "land now, narrow later": this
+as it is, and a follow-up keeping `s.f()` where no function that reads its
+`this` can be the field's value, of each type, as `FnPointers` asks of a
+fn pointer's.
+
+Rust's `(s.f)()` of a `with_this` function a field holds gives it `None`,
+but its JS was `s.f()`, which gives it `s`: a wrong answer, `true` where
+Rust's is `false`. So was any call of a `dyn Fn`, a generic `F` or a fn
+pointer that may be JS's, read as a member, `s.f`, or an item, `fs[0]`,
+which JS gives as its `this`. **Such a callee is held first, `const f =
+s.f; f()`** (`calls::called_unbound`), what's made before it flushed so
+it's read where Rust reads it, before its arguments, so it's called with
+none. A closure of the crate's, and a fn pointer that may only be a Rust
+function (`FnPointers::rust_only`, React's `dispatcher.useState()`),
+which never read their `this`, are called as they are, `p[0]()`. So is
+each call of a program whose code may hold no function that reads it
+(`FnPointers::may_read_this`): one that calls no binding's or library's
+function, whose JS or `with_this`'s it could be given, and none JS may
+call with a function value, a `pub fn` taking a `dyn Fn`, an `F` or a fn
+pointer. A program of Rust alone reads `thenable.then(first)` as before.
+One that may hold one holds each, React's `const enqueueForceUpdate =
+this.updater.enqueueForceUpdate; enqueueForceUpdate(this, ..)`, where
+upstream writes `this.updater.enqueueForceUpdate(this, ..)`, a cost the
+follow-up narrows.
+
+Case R: JS's `this` would be what Rust's isn't. Held by
+`test/js-functions.test.ts`, "a dyn Fn a field or an item holds is called
+with no this", run in JS: a field's, an item's, a generic pair's and a JS
+fn pointer's, each `false`, and a Rust fn pointer's and the crate's
+closure's called as they are, and a program whose one such function is
+`with_this`'s. Mutations `unbound-*`, `dyn-fn-call-bound`,
+`crate-closure-call-unbound` and `this-read-anywhere` (`mir/calls.ts`),
+`js-fn-pointer-call-bound` and `rust-fn-pointer-call-unbound`
+(`mir/dispatch.ts`), and `binding-functions-read-no-this` and
+`given-functions-read-no-this` (`analysis/fn_pointers.ts`).

@@ -82,4 +82,21 @@ export const mutations: Mutation[] = [
     replace: "        if self.all_open || self.open.contains(&key) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: fn_pointer_of_a_library"],
   },
+  {
+    name: "binding-functions-read-no-this",
+    breaks: "a with_this function a field holds, `(s.f)()`, is called `s.f()`, as a binding's call wasn't taken to give a function that reads its `this` (#402)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        self.found.js_functions = true;\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+  },
+  {
+    name: "given-functions-read-no-this",
+    breaks: "a generic `F` a field holds, in a function JS may call with a function, is called `guard.f(..)`, as what JS gives wasn't taken to read its `this` (#402)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                found.js_functions |= (sig.inputs().iter()).any(|ty| {\n",
+    replace: "                found.js_functions |= false && (sig.inputs().iter()).any(|ty| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_to_mut_ref.rs$"],
+    snapshots: true,
+  },
 ];

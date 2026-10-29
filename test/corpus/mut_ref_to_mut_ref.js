@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function scopeExitGuardDrop_drop(scopeExitGuard, dropT, dropData, dropF) {
-  scopeExitGuard.f(scopeExitGuard.data, {
+  const f = scopeExitGuard.f;
+  f(scopeExitGuard.data, {
     get value() {
       return scopeExitGuard.value;
     },

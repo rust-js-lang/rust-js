@@ -2446,7 +2446,8 @@ pub fn count_skipping(mut child: Option<Rc<Fiber>>, skip: &Rc<Fiber>) -> u32 {
 ```js
 export function callAll(callbacks) {
   for (let i = 0; i < callbacks.length; i++) {
-    callbacks[i]();
+    const f = callbacks[i];
+    f();
   }
 }
 

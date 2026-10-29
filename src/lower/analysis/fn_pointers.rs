@@ -39,6 +39,11 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// The crate's structs' fields a consumer may read whose fn pointers
     /// may only be Rust functions (`rust_only`), its contract's to say.
     rust_fields: Vec<DefId>,
+    /// Whether its code may hold a function JS made, or one
+    /// `js::function::with_this` makes, either of which may read its `this`:
+    /// it calls a binding's or a library's function, which may give one, or
+    /// JS may call one of its functions with a function value (#402).
+    js_functions: bool,
 }
 
 impl<'tcx> FnPointers<'tcx> {
@@ -61,6 +66,10 @@ impl<'tcx> FnPointers<'tcx> {
                 for ty in sig.inputs_and_output {
                     found.given_in(recognition, ty);
                 }
+                found.js_functions |= (sig.inputs().iter()).any(|ty| {
+                    (ty.walk().filter_map(|part| part.as_type()))
+                        .any(|part| matches!(part.kind(), ty::Dynamic(..) | ty::Param(_) | ty::FnPtr(..)))
+                });
             }
             let mut made = Made {
                 recognition,
@@ -99,6 +108,14 @@ impl<'tcx> FnPointers<'tcx> {
         !self.all_open
             && !self.open.contains(&key)
             && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() && !is_binding(tcx, f))
+    }
+
+    /// Whether a function its code calls may read its `this`: one JS made,
+    /// or `js::function::with_this`'s, a binding's (`js_functions`). Where
+    /// none may, a call through a field, `s.f()`, gives it nothing it reads
+    /// (#402).
+    pub(in crate::lower) fn may_read_this(&self) -> bool {
+        self.js_functions
     }
 
     /// What its contract says of its structs' fields (ADR 0330, amended):
@@ -298,6 +315,8 @@ impl<'tcx> Made<'_, '_, 'tcx> {
             }
             return;
         }
+        // A binding's or a library's, which may give a JS function.
+        self.found.js_functions = true;
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
         }

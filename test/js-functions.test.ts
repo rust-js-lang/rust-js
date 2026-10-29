@@ -422,3 +422,88 @@ pub fn orphan(value: Option<&Unknown>) -> bool {
   expect(() => lib.isAccessor(Object.create(null), "value")).toThrow(TypeError);
   expect(() => lib.namesOf(undefined)).toThrow(TypeError);
 });
+
+// #402: a call of what may read its `this`, a `dyn Fn` a field or an item
+// holds, `(s.f)()`, gives it none, as Rust gives a with_this function
+// `None` (ADR 0972): its callee held first, `const f = s.f; f()`, not
+// `s.f()`, whose `this` is `s`. A fn pointer that may be JS's is called so
+// too; a closure of the crate's and one that may only be a Rust function,
+// `dispatcher.useState()`, are called as they are.
+test("a dyn Fn a field or an item holds is called with no this", async () => {
+  const { js, lib } = await compiled("dyn-fn-field-this", `use js::Unknown;
+
+pub struct S {
+    pub f: Box<dyn Fn() -> bool>,
+}
+
+pub fn field() -> bool {
+    let s = S { f: js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some()) };
+    (s.f)()
+}
+
+pub fn first(fs: &[Box<dyn Fn() -> bool>]) -> bool {
+    if fs.is_empty() { false } else { fs[0]() }
+}
+
+pub fn pair<F: Fn() -> bool>(p: &(F, u32)) -> bool {
+    (p.0)()
+}
+
+pub struct Table {
+    pub g: fn() -> bool,
+}
+
+pub fn pointer(t: &Table) -> bool {
+    (t.g)()
+}
+
+struct Rust {
+    h: fn() -> u32,
+}
+
+fn one() -> u32 {
+    1
+}
+
+pub fn rust() -> u32 {
+    let r = Rust { h: one };
+    (r.h)()
+}
+
+pub fn closure(n: u32) -> u32 {
+    let p = (move || n + 1, 2u32);
+    (p.0)() + p.1
+}
+`);
+  expect(js).toContain("  const f = s.f;\n  return f();\n");
+  expect(js).toContain("const f = fs[0];\n");
+  expect(js).toContain("  const f = p[0];\n  return f();\n");
+  expect(js).toContain("  const g = t.g;\n  return g();\n");
+  expect(js).toContain("return r.h();");
+  expect(js).toContain("return (p[0]() + p[1]) >>> 0;");
+  const reads = function (this: unknown) {
+    return this !== undefined;
+  };
+  expect([lib.field(), lib.first([reads]), lib.pair([reads, 1]), lib.pointer({ g: reads }), lib.rust(), lib.closure(1)]).toEqual([
+    false,
+    false,
+    false,
+    false,
+    1,
+    4,
+  ]);
+  // A program whose one such function is with_this's, given JS nothing.
+  const alone = await compiled("dyn-fn-field-this-alone", `use js::Unknown;
+
+struct S {
+    f: Box<dyn Fn() -> bool>,
+}
+
+pub fn field() -> bool {
+    let s = S { f: js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some()) };
+    (s.f)()
+}
+`);
+  expect(alone.js).toContain("  const f = s.f;\n  return f();\n");
+  expect(alone.lib.field()).toBe(false);
+});

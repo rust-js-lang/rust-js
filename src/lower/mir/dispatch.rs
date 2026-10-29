@@ -44,10 +44,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `dispatcher.useState()` (ADR 0907); one that may be a binding's,
         // or come from JS, is given what JS is (ADR 0330, amended).
         let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
-        if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
-            crate::lower::calls::given_to_js(&mut exprs);
+        if self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
+            return Ok(Value::Expr(Expr::call(callee, exprs)));
         }
-        Ok(Value::Expr(Expr::call(callee, exprs)))
+        crate::lower::calls::given_to_js(&mut exprs);
+        self.called_unbound(state, Value::Expr(Expr::call(callee, exprs)), out)
     }
 
     pub(super) fn mir_call(
@@ -896,7 +897,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
                 || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
-            return self.mir_closure_call(values, &arg_tys, None, span);
+            return self.mir_closure_call(values, &arg_tys, None, span, Some((state, out)));
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.

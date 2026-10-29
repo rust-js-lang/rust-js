@@ -6,6 +6,37 @@ use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
+    /// A call of what may read its `this`, a `dyn Fn`'s, a generic one's or
+    /// a fn pointer's that may be JS's, whose callee is read as a member,
+    /// `s.f`, or an item, `fs[i]`, which JS would give it as its `this`:
+    /// its callee held first, `const f = s.f; f()`, so it's called with
+    /// none, as Rust calls it (#402, ADR 0972).
+    pub(super) fn called_unbound(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        call: Value<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let Value::Expr(Expr {
+            kind: js::ExprKind::Call(callee, args),
+            ..
+        }) = call
+        else {
+            return Ok(call);
+        };
+        if !self.krate.cell_borrows.pointers().may_read_this() {
+            return Ok(Value::Expr(Expr::call(*callee, args)));
+        }
+        let name = match &callee.kind {
+            js::ExprKind::Member(_, property) | js::ExprKind::OptionalMember(_, property) => property.clone(),
+            js::ExprKind::Index(..) => "f".to_string(),
+            _ => return Ok(Value::Expr(Expr::call(*callee, args))),
+        };
+        self.flush(state, out)?;
+        let callee = self.spill(&name, *callee, out);
+        Ok(Value::Expr(Expr::call(callee, args)))
+    }
+
     /// `async` one's, `AsyncFn::async_call`, which gives its promise.
     pub(super) fn mir_closure_call(
         &mut self,
@@ -13,6 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         writes: Option<usize>,
         span: Span,
+        unbound: Option<(&mut State<'_, 'tcx>, &mut Vec<Stmt>)>,
     ) -> R<Value<'tcx>> {
         let mut values = values.into_iter();
         let callee = match values.next().expect("the closure") {
@@ -56,18 +88,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // Not a closure of the crate's: a `dyn Fn`, a generic one or a
-        // pointer, which may be JS's (ADR 0330).
-        if !matches!(
+        // pointer, which may be JS's (ADR 0330), and read its `this`.
+        let own = matches!(
             arg_tys[0].peel_refs().kind(),
             ty::Closure(..) | ty::CoroutineClosure(..)
-        ) {
+        );
+        if !own {
             crate::lower::calls::given_to_js(&mut exprs);
         }
         // And its options, where the crate's writers take them (ADR 0137).
         if writes.is_some() {
             exprs.extend(self.given_to_writer(None));
         }
-        Ok(Value::Expr(Expr::call(callee, exprs)))
+        let call = Value::Expr(Expr::call(callee, exprs));
+        match unbound {
+            Some((state, out)) if !own => self.called_unbound(state, call, out),
+            _ => Ok(call),
+        }
     }
 
     /// `a += b` of a number or a string, through its `&mut`: the place

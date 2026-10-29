@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
             let values = self.take_operands(state, &[&args[0].node, &args[1].node], out)?;
-            let written = self.mir_closure_call(values, &arg_tys, Some(at), span)?;
+            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
             crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
@@ -181,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             operands.extend(args.iter().map(|a| &a.node));
             let mut values = self.take_operands(state, &operands, out)?;
             let callee = values.remove(0);
-            let written = self.mir_closure_call(vec![callee, Value::List(values)], &arg_tys, Some(at), span)?;
+            let written = self.mir_closure_call(vec![callee, Value::List(values)], &arg_tys, Some(at), span, None)?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
             crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);

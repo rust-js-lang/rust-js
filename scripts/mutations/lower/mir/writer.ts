@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "writer-callable-not-appended",
     breaks: "a writer callable's call isn't what's written: its text is lost",
     file: "src/lower/mir/writer.rs",
-    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);\n",
-    replace: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            out.push(js::StmtKind::Expr(written).at(self.js_span(span)));\n",
+    find: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);\n",
+    replace: "            let written = self.mir_closure_call(values, &arg_tys, Some(at), span, None)?;\n            let written = self.value_expr(written, span)?;\n            self.flush(state, out)?;\n            out.push(js::StmtKind::Expr(written).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {

@@ -247,7 +247,8 @@ export function Screen() {
   function play() {
     const handle = player.current;
     if (handle != null) {
-      handle.play();
+      const play = handle.play;
+      play();
     }
   }
   return (
