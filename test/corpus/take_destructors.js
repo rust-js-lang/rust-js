@@ -45,6 +45,18 @@ function splitFirst(iter, k, dropI, dropIItem) {
 function main() {
   const v = $range(1, 6).map((value) => [value]);
   let iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);
+  try {
+    let n;
+    while ((n = $next(iter)) != null) {
+      console.log(`got ${n[0]}`);
+      nDrop_drop(n);
+    }
+  } finally {
+    iter.return();
+  }
+  console.log("after loop");
+  const w = $range(6, 10).map((value) => [value]);
+  iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
   let tmp;
   while (true) {
     try {
@@ -53,27 +65,8 @@ function main() {
       iter.return();
       throw error;
     }
-    if (tmp == null) {
-      iter.return();
-      break;
-    }
-    const n = tmp;
-    console.log(`got ${n[0]}`);
-    nDrop_drop(n);
-  }
-  console.log("after loop");
-  const w = $range(6, 10).map((value) => [value]);
-  iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
-  let tmp$1;
-  while (true) {
-    try {
-      tmp$1 = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
-    if (tmp$1 != null) {
-      const n = tmp$1;
+    if (tmp != null) {
+      const n = tmp;
       if (n[0] === 7) {
         console.log("break");
         nDrop_drop(n);

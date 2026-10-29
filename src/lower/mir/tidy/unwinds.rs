@@ -495,3 +495,167 @@ fn hoist_read_after(body: &mut Vec<Stmt>, after: &[Stmt]) -> Vec<Stmt> {
     }
     hoisted
 }
+
+/// `stmts`, each `while (true)` loop that drops one value before each way
+/// out of it, `$unborrow(borrow); break;`, `$unborrow(borrow); return
+/// result;`, and in each `catch` of what may throw in it, `try { tmp =
+/// $next(iter); } catch (error) { $unborrow(borrow); throw error; }`, with
+/// those `try`s before it from where the value's first dropped so: one `try
+/// { .. } finally { $unborrow(borrow); }` of them, each of its drops gone,
+/// as a `for` over a `RefCell`'s borrow drops it at the loop's end, or as
+/// it's left (rd191). Each run is `tidied`, its loop made a `for` of what
+/// it steps as MIR's would be, and the `break` that left the loop, now
+/// after it, at the `try`'s end, gone. Whether it made one.
+pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, tidied: &mut dyn FnMut(&mut Vec<Stmt>)) -> bool {
+    let mut made = false;
+    let mut k = 0;
+    while k < stmts.len() {
+        let StmtKind::While { cond, .. } = &stmts[k].kind else {
+            k += 1;
+            continue;
+        };
+        let Some(drop) = (matches!(cond.kind, ExprKind::Bool(true)))
+            .then(|| first_drop(std::slice::from_ref(&stmts[k])).cloned())
+            .flatten()
+        else {
+            k += 1;
+            continue;
+        };
+        // From the first of the `try`s before it that drop it, past what
+        // can't throw between.
+        let mut start = k;
+        while start > 0
+            && (dropping_catch(&stmts[start - 1], &drop).is_some()
+                || matches!(stmts[start - 1].kind, StmtKind::Let(_, None)))
+        {
+            start -= 1;
+        }
+        // A `let x;` of them only they read is theirs, in the `try`, as a
+        // scope's (`scoped_drops`).
+        while start < k
+            && matches!(&stmts[start].kind, StmtKind::Let(name, None) if js::mentions_in(&stmts[k + 1..], name) > 0)
+        {
+            start += 1;
+        }
+        // What's before it, of no way out, and its body, whose `break`s
+        // are its ways out.
+        let mut run: Vec<Stmt> = stmts[start..k].to_vec();
+        let mut looped = stmts[k].clone();
+        let StmtKind::While { body, .. } = &mut looped.kind else {
+            unreachable!("a loop")
+        };
+        if !dropped_at_each_exit(&mut run, &drop, (0, false)) || !dropped_at_each_exit(body, &drop, (0, false)) {
+            k += 1;
+            continue;
+        }
+        let span = looped.span;
+        run.push(looped);
+        tidied(&mut run);
+        if let [
+            ..,
+            last_loop,
+            Stmt {
+                kind: StmtKind::Break(None),
+                ..
+            },
+        ] = run.as_slice()
+            && matches!(last_loop.kind, StmtKind::For { .. } | StmtKind::ForOf { .. })
+        {
+            run.pop();
+        }
+        stmts.splice(start..=k, [StmtKind::Try(run, vec![drop]).at(span)]);
+        made = true;
+        k = start + 1;
+    }
+    made
+}
+
+/// Of `try { .. } catch (error) { drop; throw error; }`, its body.
+fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
+    match &stmt.kind {
+        StmtKind::TryCatch(inner, Some(error), handler)
+            if matches!(handler.as_slice(), [dropped, thrown]
+                if alike(dropped, drop) && rethrows(std::slice::from_ref(thrown), error)) =>
+        {
+            Some(inner)
+        }
+        _ => None,
+    }
+}
+
+/// `stmts`, `depth` loops into the loop that drops `drop` before each way
+/// out of it, with each of those drops gone and each `try` that drops it
+/// only as it throws its body; whether each way out dropped it, each
+/// `return`, `throw` and `break` of the loop, and nothing else may throw,
+/// but in such a `try`, `caught`, or drop it, nor leave it by a label.
+fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught): (usize, bool)) -> bool {
+    let mut out = Vec::with_capacity(stmts.len());
+    let mut dropped = false;
+    for mut stmt in std::mem::take(stmts) {
+        if alike(&stmt, drop) {
+            if dropped {
+                return false;
+            }
+            dropped = true;
+            continue;
+        }
+        if let Some(inner) = dropping_catch(&stmt, drop) {
+            let mut inner = inner.clone();
+            // What it holds as it throws, the drop: its body as it runs,
+            // which a `finally` drops; but none of its own ways out.
+            if leaves(&inner, depth) || js::stmts_alike(&inner, std::slice::from_ref(drop)) {
+                return false;
+            }
+            if !dropped_at_each_exit(&mut inner, drop, (depth, true)) {
+                return false;
+            }
+            if dropped {
+                return false;
+            }
+            out.extend(inner);
+            continue;
+        }
+        let exit = match &stmt.kind {
+            StmtKind::Return(_) | StmtKind::Throw(_) => true,
+            StmtKind::Break(None) => depth == 0,
+            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => return false,
+            _ => false,
+        };
+        if exit {
+            if !dropped {
+                return false;
+            }
+            dropped = false;
+            out.push(stmt);
+            continue;
+        }
+        // A drop, then what isn't a way out: not this shape.
+        if dropped && !stmt.cannot_throw() {
+            return false;
+        }
+        let ok = match &mut stmt.kind {
+            StmtKind::If(test, a, b) => {
+                (caught || !test.may_throw())
+                    && dropped_at_each_exit(a, drop, (depth, caught))
+                    && b.as_mut()
+                        .is_none_or(|b| dropped_at_each_exit(b, drop, (depth, caught)))
+            }
+            StmtKind::While { cond, body, .. } => {
+                (caught || !cond.may_throw()) && dropped_at_each_exit(body, drop, (depth + 1, caught))
+            }
+            StmtKind::Labeled(..)
+            | StmtKind::Switch { .. }
+            | StmtKind::Try(..)
+            | StmtKind::TryCatch(..)
+            | StmtKind::For { .. }
+            | StmtKind::ForOf { .. } => false,
+            _ => caught || stmt.cannot_throw(),
+        };
+        if !ok {
+            return false;
+        }
+        out.push(stmt);
+    }
+    *stmts = out;
+    !dropped
+}

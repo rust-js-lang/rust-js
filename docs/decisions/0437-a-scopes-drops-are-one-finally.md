@@ -87,3 +87,29 @@ try {
   in every engine rust-js targets.
 - **One `finally` that drops a drop's flags**: also covers crossing lives,
   at the cost of a flag per value a reader has to follow.
+
+## Amendment: a loop's drops at each way out are one `finally` (rd191)
+
+A `for` over a `RefCell`'s borrow, `for child in
+self.children.borrow().iter().rev() { if f(child) { return true; } }`,
+holds the borrow as a temporary of the loop, which MIR drops before each
+way out of it, `$unborrow(borrow); break;`, `$unborrow(borrow); return
+result;`, and in a `catch` of each step that may throw: a `try` around
+`$next(iter)`, around `f(child)`, each, and a `while (true)` no `for`
+could be made of. `drop scopes` takes a run its drop ends, which a loop's
+drops at its ways out are not. **A `while (true)` loop that drops one
+value before each way out of it, its `return`s, `throw`s and own
+`break`s, and in each `catch` of what may throw in it, with the `try`s
+before it that drop it so, is one `try { .. } finally { drop }`, each of
+those drops gone; its loop is then made a `for` of what it steps, as
+`loops` makes one, and the `break` that left it, now at the `try`'s end,
+goes** (`unwinds::looped_drops`, the "looped drops" pass, before "drop
+scopes"). The borrow stays: a callback that borrows the cell mutably
+meanwhile panics, as Rust's does. Not of a loop with a way out that
+doesn't drop it, nor a labeled jump, nor a statement that may throw
+outside such a `catch`: a value whose scope is the loop is its header's
+temporary, which no way out moves, so none of those is MIR's of such a
+loop, and none is taken. Case A: the same drops at the same times. Held
+by `test/corpus/refcell_borrow_loops.rs` against native Rust, 8 corpus
+cases that read so, and the mutations `looped-drops-never` and
+`looped-drops-break-kept` (`mir/tidy/unwinds.ts`).

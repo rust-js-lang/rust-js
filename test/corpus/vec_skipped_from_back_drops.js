@@ -36,21 +36,14 @@ function main() {
     3,
     loudDrop_drop,
   );
-  let tmp;
-  while (true) {
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
+  try {
+    let loud;
+    while ((loud = $next(iter)) != null) {
+      console.log(`got ${loud[0]}`);
+      loudDrop_drop(loud);
     }
-    if (tmp == null) {
-      iter.return();
-      break;
-    }
-    const loud = tmp;
-    console.log(`got ${loud[0]}`);
-    loudDrop_drop(loud);
+  } finally {
+    iter.return();
   }
   const skip = $held(
     $skipping($rev($closing($iter(louds(5, 3)), $dropEach(loudDrop_drop))), 1, loudDrop_drop),

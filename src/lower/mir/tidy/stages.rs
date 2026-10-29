@@ -771,12 +771,27 @@ pub(super) const STAGES: &[Stage] = &[
         name: "scopes",
         passes: &[
             pass("parameters", |b, h| destructured_params(&mut h.params.borrow_mut(), b)),
+            // A loop that drops a value before each way out of it, a `for`
+            // over a `RefCell`'s borrow: one `try` of it whose `finally`
+            // drops it (rd191).
+            pass("looped drops", |b, h| {
+                let mut looped = false;
+                let mut taken = mentions(b);
+                // Its loop as MIR has it, its steps' `try`s gone: a `for`
+                // of what it steps, as `loops` makes one.
+                let mut tidied = |run: &mut Vec<Stmt>| {
+                    bindings::declarations(run);
+                    bottom_up(run, &mut |stmts| loops(stmts, &mut taken, h.numbers));
+                };
+                js::statement_lists(b, &mut |stmts| looped |= unwinds::looped_drops(stmts, &mut tidied));
+                h.again.set(h.again.get() || looped);
+            }),
             pass("drop scopes", |b, h| {
                 let mut scoped = false;
                 js::statement_lists(b, &mut |stmts| {
                     scoped |= unwinds::scoped_drops(stmts, h.result, &h.lets.guards)
                 });
-                h.again.set(scoped);
+                h.again.set(h.again.get() || scoped);
             }),
             pass("returns through finally", |b, _| {
                 js::statement_lists(b, &mut unwinds::returned_through_finally)

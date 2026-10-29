@@ -170,39 +170,32 @@ function main() {
     3,
     loudDrop_drop,
   );
-  let tmp$6;
-  while (true) {
-    try {
-      tmp$6 = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
+  try {
+    let loud;
+    while ((loud = $next(iter)) != null) {
+      console.log(`got ${loud[0]}`);
+      loudDrop_drop(loud);
     }
-    if (tmp$6 == null) {
-      iter.return();
-      break;
-    }
-    const loud = tmp$6;
-    console.log(`got ${loud[0]}`);
-    loudDrop_drop(loud);
+  } finally {
+    iter.return();
   }
   const value$10 = $rev($closing($iter(louds(28, 2)), $dropEach(loudDrop_drop)));
-  let tmp$7;
+  let tmp$6;
   try {
-    tmp$7 = louds(30, 2);
+    tmp$6 = louds(30, 2);
   } catch (error) {
     value$10.return();
     throw error;
   }
-  const value$11 = $lazyChain(value$10, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
-  let tmp$8;
+  const value$11 = $lazyChain(value$10, $closing($iter(tmp$6), $dropEach(loudDrop_drop)));
+  let tmp$7;
   try {
-    tmp$8 = louds(32, 2);
+    tmp$7 = louds(32, 2);
   } catch (error) {
     value$11.return();
     throw error;
   }
-  const nested = $lazyChain(value$11, $closing($iter(tmp$8), $dropEach(loudDrop_drop)));
+  const nested = $lazyChain(value$11, $closing($iter(tmp$7), $dropEach(loudDrop_drop)));
   console.log(
     `[${Array.from(
       $skipping(nested, 3, loudDrop_drop).map((l) => {
@@ -213,16 +206,16 @@ function main() {
     ).join(", ")}]`,
   );
   const value$12 = $rev($closing($iter(louds(34, 4)), $dropEach(loudDrop_drop)));
-  let tmp$9;
+  let tmp$8;
   try {
-    tmp$9 = louds(38, 1);
+    tmp$8 = louds(38, 1);
   } catch (error) {
     value$12.return();
     throw error;
   }
   const stepBy = $held(
     $stepBy(
-      $lazyChain(value$12, $closing($iter(tmp$9), $dropEach(loudDrop_drop))),
+      $lazyChain(value$12, $closing($iter(tmp$8), $dropEach(loudDrop_drop))),
       3,
       loudDrop_drop,
     ),
@@ -250,14 +243,14 @@ function main() {
   const value$13 = stepped != null ? map$4(stepped) : undefined;
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
   const skip = $skipping($closing($iter(louds(39, 4)), $dropEach(loudDrop_drop)), 1, loudDrop_drop);
-  let tmp$10;
+  let tmp$9;
   try {
-    tmp$10 = louds(43, 2);
+    tmp$9 = louds(43, 2);
   } catch (error) {
     skip.return();
     throw error;
   }
-  const value$14 = $held($lazyChain(skip, $closing($iter(tmp$10), $dropEach(loudDrop_drop))));
+  const value$14 = $held($lazyChain(skip, $closing($iter(tmp$9), $dropEach(loudDrop_drop))));
   let skipped;
   try {
     skipped = $nthDropping($lent(value$14), 2, loudDrop_drop, false);
@@ -283,15 +276,15 @@ function main() {
   // `Chain::count`: each side's own, a `Take`'s advancing a reversed
   // `Vec`, which drops what it passes as one slice (#283).
   const value$16 = $rev($closing($iter(louds(45, 2)), $dropEach(loudDrop_drop))).take(2);
-  let tmp$11;
+  let tmp$10;
   try {
-    tmp$11 = louds(47, 2);
+    tmp$10 = louds(47, 2);
   } catch (error) {
     value$16.return();
     throw error;
   }
   const counted = $count(
-    $lazyChain(value$16, $closing($iter(tmp$11), $dropEach(loudDrop_drop))),
+    $lazyChain(value$16, $closing($iter(tmp$10), $dropEach(loudDrop_drop))),
     loudDrop_drop,
   );
   console.log(`${counted}`);
@@ -303,14 +296,14 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  let tmp$12;
+  let tmp$11;
   try {
-    tmp$12 = louds(53, 1);
+    tmp$11 = louds(53, 1);
   } catch (error) {
     fuse.return();
     throw error;
   }
-  const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
+  const value$17 = $held($lazyChain(fuse, $closing($iter(tmp$11), $dropEach(loudDrop_drop))));
   let fused;
   try {
     fused = $nthDropping($lent(value$17), 2, loudDrop_drop, false);
@@ -350,14 +343,14 @@ function main() {
     },
     loudDrop_drop,
   ).take(2);
-  let tmp$13;
+  let tmp$12;
   try {
-    tmp$13 = louds(58, 1);
+    tmp$12 = louds(58, 1);
   } catch (error) {
     value$19.return();
     throw error;
   }
-  const value$20 = $held($lazyChain(value$19, $closing($iter(tmp$13), $dropEach(loudDrop_drop))));
+  const value$20 = $held($lazyChain(value$19, $closing($iter(tmp$12), $dropEach(loudDrop_drop))));
   let advanced;
   try {
     advanced = $nthDropping($lent(value$20), 2, loudDrop_drop, false);
@@ -389,28 +382,28 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
+  let tmp$13;
+  try {
+    tmp$13 = louds(71, 1);
+  } catch (error) {
+    value$22.return();
+    throw error;
+  }
   let tmp$14;
   try {
-    tmp$14 = louds(71, 1);
+    tmp$14 = $iter(tmp$13);
   } catch (error) {
     value$22.return();
     throw error;
   }
   let tmp$15;
   try {
-    tmp$15 = $iter(tmp$14);
+    tmp$15 = iterator_fuse(tmp$14, { next: $next }, true, $dropEach(loudDrop_drop), loudDrop_drop);
   } catch (error) {
     value$22.return();
     throw error;
   }
-  let tmp$16;
-  try {
-    tmp$16 = iterator_fuse(tmp$15, { next: $next }, true, $dropEach(loudDrop_drop), loudDrop_drop);
-  } catch (error) {
-    value$22.return();
-    throw error;
-  }
-  const value$23 = $held($lazyChain(value$22, tmp$16));
+  const value$23 = $held($lazyChain(value$22, tmp$15));
   let both;
   try {
     both = $nthDropping($lent(value$23), 2, loudDrop_drop, false);
@@ -441,16 +434,16 @@ function main() {
     $dropEach(loudDrop_drop),
     loudDrop_drop,
   );
-  let tmp$17;
+  let tmp$16;
   try {
-    tmp$17 = louds(62, 1);
+    tmp$16 = louds(62, 1);
   } catch (error) {
     value$25.return();
     throw error;
   }
   const last = $lastDropping(
     $skipping(
-      $lazyChain(value$25, $closing($iter(tmp$17), $dropEach(loudDrop_drop))),
+      $lazyChain(value$25, $closing($iter(tmp$16), $dropEach(loudDrop_drop))),
       2,
       loudDrop_drop,
     ),
@@ -470,14 +463,14 @@ function main() {
     2,
     loudDrop_drop,
   );
-  let tmp$18;
+  let tmp$17;
   try {
-    tmp$18 = louds(66, 2);
+    tmp$17 = louds(66, 2);
   } catch (error) {
     value$27.return();
     throw error;
   }
-  const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$18), $dropEach(loudDrop_drop))));
+  const value$28 = $held($lazyChain(value$27, $closing($iter(tmp$17), $dropEach(loudDrop_drop))));
   try {
     skipped = $nthDropping($lent(value$28), 2, loudDrop_drop, false);
   } catch (error) {

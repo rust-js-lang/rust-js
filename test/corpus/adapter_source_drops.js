@@ -36,20 +36,13 @@ function main() {
   const iter = $closing($iterator({ n: 2, name: "for" }, counterIterator_next), (it) => {
     console.log(`drop ${it.of.name}`);
   }).map((x) => (x * 10) >>> 0);
-  while (true) {
-    let tmp;
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
+  try {
+    let x;
+    while ((x = $next(iter)) != null) {
+      console.log(`for ${x}`);
     }
-    if (tmp == null) {
-      iter.return();
-      break;
-    }
-    const x = tmp;
-    console.log(`for ${x}`);
+  } finally {
+    iter.return();
   }
   // A chain's first part, done with before its second is stepped, as
   // Rust's `Chain` drops it.

@@ -85,20 +85,13 @@ function tTotals(TIterator, dropT) {
     looped(self) {
       let n = 0;
       const iter = self;
-      while (true) {
-        let tmp;
-        try {
-          tmp = TIterator.next(iter);
-        } catch (error) {
-          dropT?.(iter);
-          throw error;
+      try {
+        let x;
+        while ((x = TIterator.next(iter)) != null) {
+          n = (n + x) & 255;
         }
-        if (tmp == null) {
-          dropT?.(iter);
-          break;
-        }
-        const x = tmp;
-        n = (n + x) & 255;
+      } finally {
+        dropT?.(iter);
       }
       return n;
     },

@@ -178,4 +178,21 @@ export const mutations: Mutation[] = [
     replace: "                    self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "an early return in a guard's scope"],
   },
+  {
+    name: "looped-drops-never",
+    breaks: "a `for` over a `RefCell`'s borrow drops it in a `catch` around each step and before each way out, not one `try { for .. } finally { $unborrow(..) }` (rd191)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        stmts.splice(start..=k, [StmtKind::Try(run, vec![drop]).at(span)]);\n        made = true;\n",
+    replace: "        let _ = (run, span);\n        k += 1;\n        continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "looped-drops-break-kept",
+    breaks: "the `break` that left the loop is kept after its `for`, at the `try`'s end, which then breaks what holds it, or no loop at all (rd191)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        {\n            run.pop();\n        }\n",
+    replace: "        {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|take_destructors|loop_drops).rs$"],
+  },
 ];
