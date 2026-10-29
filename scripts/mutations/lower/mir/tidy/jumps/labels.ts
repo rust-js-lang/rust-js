@@ -95,11 +95,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exits-after-inner-label-moves",
-    breaks: "a statement that jumps to a block inside the loop moves after it, out of that block",
+    breaks: "a statement that jumps to a block inside the loop moves after it, out of that block, loop_value_after_loop's `break bb22` outside `bb22`, which tidy's contract refuses",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        !jumps.iter().any(|l| inner.contains(l) && !own.contains(l))\n",
     replace: "        true\n",
-    tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter|loop_value_after_loop).rs$"],
     snapshots: true,
   },
   {
