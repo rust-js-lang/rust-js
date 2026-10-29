@@ -321,18 +321,14 @@ function main() {
   }
 
   iter$1 = [3];
-  while (true) {
-    const n = countdownIterator_next(iter$1);
-    if (n != null) {
-      if (n[0] === "c1") {
-        noisyDrop_drop(n);
-      } else {
-        console.log(`count ${n[0]}`);
-        noisyDrop_drop(n);
-        continue;
-      }
+  let n;
+  while ((n = countdownIterator_next(iter$1)) != null) {
+    if (n[0] === "c1") {
+      noisyDrop_drop(n);
+      break;
     }
-    break;
+    console.log(`count ${n[0]}`);
+    noisyDrop_drop(n);
   }
   const value = firstLong([["s"], ["long"], ["rest"]]);
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);

@@ -34,6 +34,7 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
         if broken_in_then(body, &continues) {
             continue;
         }
+        broken_in_nested_then(body, &continues, breaks);
         // Tests each of nothing but the next: one test, `b && c`.
         let mut tests = Vec::new();
         let mut then: &[Stmt] = match body.as_slice() {
@@ -128,6 +129,72 @@ fn broken_in_then(body: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool) -> bo
     body.push(StmtKind::If(test, then, None).at(span));
     body.extend(otherwise);
     true
+}
+
+/// A loop's body that ends `if (b) { .. if (c) { a } else { d; continue
+/// l; } } break;`, of a `c` of an `if`
+/// the program wrote of a `break`, `breaks`', `a` going on to the loop's
+/// `break`: MIR's of `while let Some(n) = .. { if c { a; break; } d }`,
+/// which joins the `break` to the `while let`'s own way out. That `if` as
+/// the program wrote it, `if (c) { a; break; } d; continue l;`, its `break`
+/// where written, the `while let`'s test then read by `early_breaks`. So
+/// too of `if (!c) { d; continue l; } a` last, an `||`'s `c`, the `if` of
+/// what goes on MIR made first. The same tests in the same order: `a` then
+/// the loop's end either way.
+fn broken_in_nested_then(body: &mut [Stmt], continues: &dyn Fn(&Stmt) -> bool, breaks: &[(js::Span, js::Span)]) {
+    fn nested(then: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool, breaks: &[(js::Span, js::Span)]) {
+        let written = |test: &Expr| jump_tested(breaks, written_at(test));
+        let goes_on = |d: &[Stmt]| d.last().is_some_and(continues);
+        // `if (!c) { d; continue l; } a`, `a` going on.
+        if let Some(at) = (then.iter()).rposition(|s| matches!(&s.kind, StmtKind::If(..)))
+            && at + 1 < then.len()
+            && let StmtKind::If(test, d, None) = &then[at].kind
+            && let Some(k) = written(test)
+            && goes_on(d)
+            && fits_in_place(&then[..at], usize::MAX, d)
+        {
+            let mut a = then.split_off(at + 1);
+            let Some(Stmt {
+                kind: StmtKind::If(test, d, None),
+                span,
+            }) = then.pop()
+            else {
+                unreachable!("matched")
+            };
+            a.push(StmtKind::Break(None).at(breaks[k].1));
+            then.push(StmtKind::If(test.negated_test(), a, None).at(span));
+            then.extend(d);
+            return;
+        }
+        let Some((last, before)) = then.split_last() else {
+            return;
+        };
+        let StmtKind::If(test, _, Some(d)) = &last.kind else {
+            return;
+        };
+        let Some(k) = written(test) else {
+            return;
+        };
+        if !goes_on(d) || !fits_in_place(before, usize::MAX, d) {
+            return;
+        }
+        let Some(Stmt {
+            kind: StmtKind::If(test, mut a, Some(d)),
+            span,
+        }) = then.pop()
+        else {
+            unreachable!("matched")
+        };
+        a.push(StmtKind::Break(None).at(breaks[k].1));
+        then.push(StmtKind::If(test, a, None).at(span));
+        then.extend(d);
+    }
+    if let [.., last_if, last] = body
+        && matches!(last.kind, StmtKind::Break(None))
+        && let StmtKind::If(_, then, None) = &mut last_if.kind
+    {
+        nested(then, continues, breaks);
+    }
 }
 
 /// Whether `then` never goes on, or ends in an `if` whose own does so.

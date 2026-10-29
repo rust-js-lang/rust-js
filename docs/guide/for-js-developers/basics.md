@@ -2300,9 +2300,11 @@ export function lastNamed(names) {
   comment before a `break` or a `continue` is before it, inside its `if`,
   of a `while let`'s too, whose `Some` is the loop's test, `while ((word =
   words[i]) != null)`, even where the `if` tests the value's truth, `if
-  (!word)` of `word.is_empty()` (#301) ([ADR
+  (!word)` of `word.is_empty()` (#301), or does something before its
+  `break` ([ADR
   0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md),
-  [ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)):
+  [ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md),
+  [ADR 0730](../../decisions/0730-a-loops-early-break-is-in-the-if-it-was-written-in.md), amended):
 
 ```rust
 pub fn sentence(words: &[&str], limit: usize) -> usize {
@@ -2317,11 +2319,12 @@ pub fn sentence(words: &[&str], limit: usize) -> usize {
     i
 }
 
-pub fn until_tag(words: &[&str]) -> usize {
+pub fn until_tag(words: &[&str], tags: &mut Vec<String>) -> usize {
     let mut i = 0;
     while let Some(word) = words.get(i) {
         if word.starts_with('#') {
             // A tag ends it.
+            tags.push(word.to_string());
             break;
         }
         i += 1;
@@ -2343,12 +2346,13 @@ export function sentence(words, limit) {
   return i;
 }
 
-export function untilTag(words) {
+export function untilTag(words, tags) {
   let i = 0;
   let word;
   while ((word = words[i]) != null) {
     if (word.startsWith("#")) {
       // A tag ends it.
+      tags.push(word);
       break;
     }
     i++;

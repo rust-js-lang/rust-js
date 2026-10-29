@@ -70,3 +70,72 @@ wrote one**, by `Written::continues`; the guess by a `!` test is gone.
 - `drop_scopes`'s loop whose `else` dropped and went round now drops after
   the `if` that breaks.
 - Nothing else in the corpus needed the guess.
+
+## Amendment: in a `while let`'s `Some` (2026-10-29)
+
+A `while let` whose `if` the program wrote does something before its
+`break`:
+
+```rust
+while let Some(&n) = counts.get(i) {
+    if n == 0 {
+        log.push(format!("zero at {i}"));
+        break;
+    }
+    total += n;
+    i += 1;
+}
+```
+
+MIR has one way out of the loop for the `Some`'s test and the `if`'s
+`break`, so the `if` is in the `Some`'s and its `break` that way out,
+which tidy reads as the body's end:
+
+```js
+while (true) {
+  const n = counts[i];
+  if (n != null) {
+    if (n === 0) {
+      log.push(`zero at ${i}`);
+    } else {
+      total = (total + n) >>> 0;
+      i++;
+      continue;
+    }
+  }
+  break;
+}
+```
+
+`broken_in_then` took the shape only as the body's last `if`, not in the
+`Some`'s. **A loop body that ends `if (b) { .. if (c) { a } else { d;
+continue; } } break;`, of a `c` of an `if` the program wrote of a `break`
+(`Written::breaks`), is `if (b) { .. if (c) { a; break; } d; continue; }
+break;`, its `break` where written; and of `if (b) { .. if (!c) { d;
+continue; } a } break;`, an `||`'s `c`, which MIR tests as what goes on
+first, the same** (`broken_in_nested_then`). `early_breaks` then reads
+the `Some` as the loop's test (ADR 0702):
+
+```js
+let n;
+while ((n = counts[i]) != null) {
+  if (n === 0) {
+    log.push(`zero at ${i}`);
+    break;
+  }
+  total = (total + n) >>> 0;
+  i++;
+}
+```
+
+An `if` of no `break` the program wrote, `if n == 0 { .. } else { i += 1;
+continue; } break;`, keeps its `else`, as written; and the shape isn't
+taken where `d` declares a name beside it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests in
+the same order: `a` then the loop's end either way.
+
+Held by `test/corpus/while_let_break_after_work.rs` against native Rust,
+`loop_drops`'s countdown, which drops then breaks, and the mutations
+`mir-tidy-nested-written-break-elsed`, `-or-kept` and `-unwritten`
+(`mir/tidy/jumps.ts`).
