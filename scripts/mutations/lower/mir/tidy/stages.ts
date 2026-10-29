@@ -111,12 +111,11 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "late-while-tests-off",
-    "breaks": "a `while` whose test MIR held first, `const _7 = m.length;`, stays `while (true)` and a `return`",
+    "breaks": "a `while` whose test MIR held first, `const _7 = m.length;`, stays `while (true)` and a `return`, a `while` in a guard's scope's among them",
     "file": "src/lower/mir/tidy/stages.rs",
     "find": "            pass(\"while tests\", |b, h| {\n                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))\n            }),\n",
     "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "^signed_counter.rs$"],
-    "snapshots": true
+    "tests": ["test/lowering-written-loops.test.ts", "-t", "a while in a guard's scope is its test"]
   },
   {
     "name": "read-handles-off",
