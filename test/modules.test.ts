@@ -698,15 +698,15 @@ pub fn to_array() -> f64 {
   const read = (file: string) => readFileSync(join(dir, file), "utf8");
   expect(read("scheduler.js")).toContain("\nfunction getCurrentTime() {\n");
   expect(read("scheduler.js")).toContain("export { getCurrentTime as unstable_now, LIMIT as MAX };");
-  // A path through a re-export is to the item, read by its alias where the
-  // module's `use` names it so, else by its own name.
   // A function called through its module, its namespace's, by what it
-  // exports it as (ADR 1018).
+  // exports it as (ADR 1018); through a module that re-exports it, that
+  // module's, by the name it re-exports it as, `Index.getCurrentTime()`
+  // (rd137, ADR 1018, amended).
   // Its names listed by what each is exported as, `toArray` before
   // `unstable_now`, whatever it's named here.
   expect(read("lib.js")).toContain('import { toArray as zeroBased, unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
   expect(read("lib.js")).toContain("return unstable_now() + Scheduler.toArray() + zeroBased();");
-  expect(read("lib.js")).toContain("return Report.report() + unstable_now() + Scheduler.MAX;");
+  expect(read("lib.js")).toContain("return Report.report() + Index.getCurrentTime() + Scheduler.MAX;");
   expect(read("report.js")).toContain('import * as Scheduler from "./scheduler.js";\n\nexport');
   expect(read("report.js")).toContain("return Scheduler.unstable_now() * 10 + Scheduler.MAX;");
   expect(read("index.js")).toContain('export { unstable_now as getCurrentTime } from "./scheduler.js";');
@@ -1166,16 +1166,15 @@ pub fn values(x: u32) -> [u32; 3] {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt, $local } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
+    '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/runtime";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst { log, LN2 } = Math;\nfunction clz32Fallback(x) {\n',
   );
   const at = (text: string) => {
     expect(js).toContain(text);
     return js.indexOf(text);
   };
   // What only holds `scaled` is where it's written; what calls it is after
-  // what it reads, through the array and the thread-local holding it, and
-  // made where it's first used, as a call through a function pointer may
-  // run any of the crate's code (ADR 0037, amended).
+  // what it reads, through the array and the thread-local holding it, made
+  // as its module loads (ADR 1006, amended).
   expect(at("const pick = scaled;\nconst picked = [pick];\n")).toBeLessThan(at("const SCALE = 3;"));
   expect(at("const SCALE = 3;")).toBeLessThan(at("const USED ="));
   const { values } = await import(join(dir, "lib.js"));
