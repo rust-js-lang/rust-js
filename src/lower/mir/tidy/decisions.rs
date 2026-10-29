@@ -110,6 +110,29 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt]) -> Opt
     if shared.len() > SHARED || !shared.iter().all(|s| ends(s) && size(s) == 1) {
         return None;
     }
+    // Nor what one arm holds whole and another in part, an `if` the
+    // program wrote after the `match`, `if (x > 5) { .. }`, one arm's
+    // tail and the tests of the others' leaves: that arm's copy of it
+    // (kj-switch).
+    let held: Vec<Vec<*const Stmt>> = (arms.iter())
+        .map(|arm| {
+            let mut held = Vec::new();
+            for s in &arm.body {
+                js::each_list(std::slice::from_ref(*s), &mut |list| {
+                    held.extend(list.iter().map(|s| s as *const Stmt))
+                });
+            }
+            held
+        })
+        .collect();
+    let copied = (0..arms.len()).any(|i| {
+        (held[i].iter()).any(|s| {
+            (0..arms.len()).any(|j| j != i && held[j].contains(s)) && !shared.iter().any(|t| std::ptr::eq(*t, *s))
+        })
+    });
+    if copied {
+        return None;
+    }
     let mut bodies: Vec<Vec<Stmt>> = arms
         .iter()
         .map(|arm| arm.body.iter().map(|s| (*s).clone()).collect())

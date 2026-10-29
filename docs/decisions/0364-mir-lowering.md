@@ -14,7 +14,7 @@ a guarded arm's guard reads isn't written in the arm. Amended by
 nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
-arms. Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+arms; no arm holds a copy of what follows the `match` (kj-switch). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -283,3 +283,40 @@ review's example didn't make one `finally` of its guard's scope (ADR
 - Held by `test/corpus/format_argument_unwinds.rs`, against native Rust,
   and the mutations `held-format-argument-unwound-bare` and
   `held-arg-let-unnamed`.
+
+## Amendment: no arm holds a copy of what follows the `match` (kj-switch, 2026-10-29)
+
+```rust
+for &x in xs {
+    match x {
+        0 => { out.push(1); continue; }
+        1 => out.push(2),
+        _ => {}
+    }
+    if x > 5 { out.push(x); continue; }
+    out.push(-x);
+}
+```
+
+MIR's block of the `match`, `bb20: { if (x === 0) { ..; break bb20; } if
+(x === 1) { .. } if (x > 5) { .. } else { .. } }`, ends in the `if` the
+program wrote after the `match`, and `decisions` walked into it as one of
+the tree's tests: the arm `1` went on to the rest of the block, the whole
+`if`, and the leaves of the `_` were its branches, so the chain held it
+twice, `else if (x === 1) { out.push(2); if (x > 5) { .. } else { .. } }
+else if (x > 5) { .. } else { .. }`, a `switch` of it then each case's
+copy, and arm `0`'s `continue` the `switch`'s `break;`.
+
+**A tree one of whose arms holds a statement another holds a part of is
+no chain of arms**, as one that copies more than a jump isn't: the block
+stays for the later passes, whose `continue` it's followed by makes each
+of its `break`s the program's `continue`, and `switches` reads the arms
+before the `if`, `switch (x) { case 0: out.push(1); continue; case 1:
+out.push(2); } if (x > 5) { out.push(x); continue; } out.push(-x);`, as
+written. No other corpus case or port module changed.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests in
+the same order, each statement run as often.
+
+Held by `test/corpus/match_arm_continues.rs` against native Rust;
+mutation `decisions-tail-copied` (`mir/tidy/decisions.ts`).

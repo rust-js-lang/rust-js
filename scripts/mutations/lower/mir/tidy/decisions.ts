@@ -5,6 +5,15 @@ const chain = ["test/lowering-matches.test.ts", "-t", "arms of more than one pat
 
 export const mutations: Mutation[] = [
   {
+    name: "decisions-tail-copied",
+    breaks: "what the program wrote after a `match`, an `if`, is copied into the arm that goes on to it, and the `else` of the leaves its tests make, `case 1: ..; if (x > 5) { .. } break; default: if (x > 5) { .. }`, not once after the `switch` (kj-switch)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if copied {\n",
+    replace: "    if false && copied {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_continues.rs$"],
+    snapshots: true,
+  },
+  {
     name: "decisions-shared-assign-copied",
     breaks: "an arm's shared assignment, `r.value *= 10`, is copied into each arm",
     file: "src/lower/mir/tidy/decisions.rs",
