@@ -4,7 +4,8 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md), whose
 `else` after a branch that leaves goes only where each arm before it
 leaves too; extends [0575](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 and [0364](0364-mir-lowering.md)'s tidy. Amended below: an `||`'s block
-that gives one value is the conditional (#413).
+that gives one value is the conditional (#413); and an `if` of `||` whose
+branch jumps is one `if` (rd225).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each rewrite changes
 how the JS reads, not what runs.
@@ -122,3 +123,30 @@ currentTime + delay : currentTime;` (its snapshot, a guarded `match`'s
 value, was `let startTime; if (delay == null || !(delay > 0)) { .. } else
 { .. }`), `lowering-loops`' `const substr = .. ? "{...}" : String(value);`
 and `lowering-names`' `const n = x != null && x > 3 ? x : 0;`.
+
+## Amendment: an `if` of `||` whose branch jumps is one `if` (rd225, #413)
+
+hydrateHoistable's link and meta cases go on to the next node where an
+attribute differs, `if !a(..) || !b(..) || !c(..) || !d(..) { continue;
+}`, upstream's one `if (a !== (..) || b !== (..) || ..) { continue; }`.
+MIR jumps to the one `continue` from each side, and in a loop over a
+borrow, whose jumps settle only at `finish` (rd200's one `try`), what was
+left was an `if (..) { continue; }` of each side.
+
+**`if (a) { J } if (b) { J }`, of a jump alike, a `continue`, a `break`
+or a `return;`, where `a` and `b` are tests of one `if` condition the
+program wrote, is `if (a || b) { J }`** (`logicals.rs`'s `written_ors`,
+`finish`'s `written ors`, after `written jumps` settles them): `b` is
+tested once `a` is false, as `||` tests it. A test is of the smallest
+condition of `Written::ifs` that holds it, or that it holds ending where
+it ends, MIR's test of a whole `if`; two `if`s written apart, `if r !=
+rel { continue; } if t != title { continue; }`, are each of their own
+and stay two.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order. Held by `test/lowering-cell-borrows.test.ts`, "a condition
+of value ifs written with || in a borrow's loop is one if", run in Node;
+corpus case `borrowed_loop_value_if` (`apart`, two `if`s) against native
+Rust; mutations `written-ors-kept-apart`, `written-ors-of-any-ifs`
+(`mir/tidy/logicals.ts`). The jump alike in each is checked but has no
+mutation: MIR makes no two `if`s of one condition jump apart.

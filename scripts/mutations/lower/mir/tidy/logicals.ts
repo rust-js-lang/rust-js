@@ -3,6 +3,23 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-ors-kept-apart",
+    breaks: "an `if` whose condition the program wrote `a || b`, each side a value `if`'s comparison, is an `if (..) { continue; }` of each side, not `if (a !== (..) || b !== (..)) { continue; }` (rd225, ADR 0683, amended)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            && one(a.span, b.span)\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "written with"],
+  },
+  {
+    name: "written-ors-of-any-ifs",
+    breaks: "two `if`s the program wrote apart, each of a `continue`, are one `if (a || b)` (rd225)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            && one(a.span, b.span)\n",
+    replace: "            && true\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrowed_loop_value_if.rs$"],
+    snapshots: true,
+  },
+  {
     name: "unwritten-negation-kept",
     breaks: "`!matches!(status, Some(\"fulfilled\" | \"rejected\"))` is `!(status === \"fulfilled\" || status === \"rejected\")`, not each alternative's negated test (ADR 0879, amended)",
     file: "src/lower/mir/tidy/logicals.rs",

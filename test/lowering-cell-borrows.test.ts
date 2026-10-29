@@ -768,3 +768,62 @@ pub fn push_hook(hook: fn() -> u32) -> u32 {
   expect(lib.pendingCount()).toBe(2);
   expect(() => lib.pushHook(() => 4)).toThrow("RefCell already mutably borrowed");
 });
+
+// React Float's hydrateHoistable: in a loop over a `RefCell`'s borrow, one
+// `try` around it, a condition written with `||` of comparisons each with
+// a value `if`, its one `continue`, is one `if` of it all, `if (a !== (..)
+// || b !== (..)) { continue; }`, each value the conditional it is (#413,
+// rd225, ADR 0683, amended).
+test("a condition of value ifs written with || in a borrow's loop is one if", async () => {
+  const dir = fixture("borrow-loop-ors");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+use std::cell::RefCell;
+use webapi::Element;
+
+pub fn find(cache: &RefCell<Vec<&'static Element>>, props: &Unknown) -> Option<usize> {
+    let mut nodes = cache.borrow_mut();
+    for i in 0..nodes.len() {
+        let node = nodes[i];
+        if !js::strict_equals(
+            node.get_attribute("href"),
+            if js::get(props, "href").is_none() || js::strict_equals(js::get(props, "href"), "") {
+                js::null()
+            } else {
+                js::get(props, "href")
+            },
+        ) || !js::strict_equals(
+            node.get_attribute("title"),
+            if js::get(props, "title").is_none() { js::null() } else { js::get(props, "title") },
+        ) {
+            // mismatch, try the next node;
+            continue;
+        }
+        nodes.remove(i);
+        return Some(i);
+    }
+    None
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`      if (
+        node.getAttribute("href") !==
+          (props.href == null || props.href === "" ? null : props.href) ||
+        node.getAttribute("title") !== (props.title == null ? null : props.title)
+      ) {
+        // mismatch, try the next node;
+        continue;
+      }
+      nodes.splice(i, 1);`);
+  expect(js).not.toContain("let unknown");
+  const lib = await import(join(dir, "lib.js"));
+  const node = (href: string | null, title: string | null) => ({
+    getAttribute: (name: string) => (name === "href" ? href : title),
+  });
+  // The cell is the array it holds (ADR 0898).
+  const nodes = [node("a", null), node(null, "t"), node("b", "u")];
+  expect(lib.find(nodes, { title: "t" })).toBe(1);
+  expect(lib.find(nodes, { href: "b", title: "u" })).toBe(1);
+  expect(lib.find(nodes, { href: "", title: "x" })).toBeUndefined();
+  expect(nodes.length).toBe(1);
+});

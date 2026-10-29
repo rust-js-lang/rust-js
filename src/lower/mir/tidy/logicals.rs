@@ -661,6 +661,51 @@ fn unimplied(test: Expr) -> Expr {
         .expect("the last part is kept")
 }
 
+/// `if (a) { continue; } if (b) { continue; }`, MIR's of an `if` whose
+/// condition the program wrote `a || b`, each part's way to the one jump
+/// its branch is: `if (a || b) { continue; }`, as it's written, React
+/// DOM's hydrateHoistable's `if (node.getAttribute("href") !== (..) || ..)`
+/// (rd225, #413). The same `b` once `a` is false, as `||` tests it. Only
+/// where each test is of the one condition of `ifs`, the smallest that
+/// holds it or that it is, MIR's test of an `if` that one; and of a jump
+/// alike in each, a `continue`, a `break` or a `return` of nothing.
+pub(super) fn written_ors(stmts: &mut Vec<Stmt>, ifs: &[js::Span]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let written = |s: js::Span| {
+        (ifs.iter())
+            .filter(|c| within(c, s) || (within(&s, **c) && s.hi == c.hi))
+            .min_by_key(|c| c.hi - c.lo)
+            .copied()
+    };
+    let one = |a: js::Span, b: js::Span| written(a).is_some_and(|c| written(b) == Some(c));
+    let jump = |stmts: &[Stmt]| match stmts {
+        [stmt] => matches!(
+            stmt.kind,
+            StmtKind::Continue(_) | StmtKind::Break(_) | StmtKind::Return(None)
+        ),
+        _ => false,
+    };
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let StmtKind::If(a, then, None) = &stmts[i].kind
+            && let StmtKind::If(b, other, None) = &stmts[i + 1].kind
+            && jump(then)
+            && jump(other)
+            && super::decisions::same_stmt(&then[0], &other[0])
+            && one(a.span, b.span)
+        {
+            let b = b.clone();
+            stmts.remove(i + 1);
+            if let StmtKind::If(a, ..) = &mut stmts[i].kind {
+                let span = a.span;
+                *a = Expr::bin(Op::Or, std::mem::replace(a, Expr::undefined()), b).or_at(span);
+            }
+            continue;
+        }
+        i += 1;
+    }
+}
+
 /// `l: { if (p) { if (c) { if (d) { break l; } } t } } r`, MIR's of an
 /// `if` whose condition the program wrote with `&&`, `||` and `!` mixed,
 /// `if (p && !(c && d)) { t } r`, each `break l` a way its condition is
