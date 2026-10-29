@@ -1475,7 +1475,7 @@ pub fn joined(items: &[Option<&Unknown>], expanded: Option<&str>) -> (String, Op
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('    if (i > 0) {\n      str += ", ";\n    }\n    let substr;\n    if (value != null && typeof value === "object") {\n');
+  expect(js).toContain('    if (i > 0) {\n      str += ", ";\n    }\n    const substr = value != null && typeof value === "object" ? "{...}" : String(value);\n');
   expect(js).not.toContain("  let substr;\n  for");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.joined([1, { a: 1 }, "x", undefined], "2")).toEqual(["[1, {...}, x, undefined]", 11]);

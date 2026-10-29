@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0237](0237-no-else-after-leaving.md), whose
 `else` after a branch that leaves goes only where each arm before it
 leaves too; extends [0575](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
-and [0364](0364-mir-lowering.md)'s tidy.
+and [0364](0364-mir-lowering.md)'s tidy. Amended below: an `||`'s block
+that gives one value is the conditional (#413).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each rewrite changes
 how the JS reads, not what runs.
@@ -88,3 +89,36 @@ on.
   returns, unchanged; each run.
 - Mutations: `mir-tidy-and-chain-turned`, `else-if-unelsed`,
   `else-if-links-unheld`.
+
+## Amendment: an `||`'s block that gives one value is the conditional (#413)
+
+React Float's hydrateHoistable gives `getAttribute` a value `if`,
+`node.getAttribute("href") !== (href == null || props.href === "" ? null
+: props.href)` upstream, and so does rust-js where the loop is plain. In
+a loop over a `RefCell`'s borrow, one `try` around the loop (ADR 0437,
+rd200), the second test was a `const` read once, `const _41 =
+props.href === "";`, made of each step's `try`, until `in place` read it
+where it is; by then the `jumps again` run of `branch values` that folds
+MIR's block, `l: { if (a) { if (!b) { x = v; break l; } } x = null; }`,
+into `x = a && !b ? v : null` had passed, and `in place`'s run made the
+block the `if` above, `if (href == null || ..) { x = null; } else { x =
+v; }`, which nothing made one value again: `let unknown; if (..) { ..
+}`.
+
+**Where `branch values` makes such a block an `if` with an `else`, it
+runs again on the list** (`branches.rs`'s `unlabeled`), so the `if`'s
+branches that give one variable its value are the conditional, as any
+other `if`'s are (ADR 0657): `x = a || b ? null : v;`, read in place.
+What another run changes is only what one run changes of an `if` with an
+`else`, which a later run of the stage would see anyway.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order, the same value. Held by corpus case
+`borrowed_loop_value_if` against native Rust and mutation
+`unlabeled-chain-not-a-value` (`mir/tidy/branches.ts`). Other values MIR
+made such a block of are their conditionals now too, as the rule says of
+a value: the scheduler's `const startTime = delay != null && delay > 0 ?
+currentTime + delay : currentTime;` (its snapshot, a guarded `match`'s
+value, was `let startTime; if (delay == null || !(delay > 0)) { .. } else
+{ .. }`), `lowering-loops`' `const substr = .. ? "{...}" : String(value);`
+and `lowering-names`' `const n = x != null && x > 3 ? x : 0;`.

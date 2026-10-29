@@ -225,6 +225,9 @@ pub(super) fn branch_values(
     program: &crate::lower::mir::hints::Written,
 ) {
     let elses = &program.elses;
+    // Whether a labeled block became an `if` with an `else`, whose branches
+    // may give one value, which another run makes it.
+    let mut unlabeled = false;
     stmts.retain_mut(|stmt| {
         let mut span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -338,7 +341,10 @@ pub(super) fn branch_values(
                     .expect("one");
                 match then.is_empty() {
                     true => StmtKind::If(test, otherwise, None),
-                    false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
+                    false => {
+                        unlabeled = true;
+                        StmtKind::If(test.negated_test(), then, Some(otherwise))
+                    }
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
@@ -357,19 +363,14 @@ pub(super) fn branch_values(
         true
     });
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
+    // An `||`'s block, `if (a || b) { x = null; } else { x = v; }`, one
+    // value, `x = a || b ? null : v;`, as it is where MIR wrote no block
+    // (#413).
+    if unlabeled {
+        return branch_values(stmts, returns, booleans, (result, switches), program);
+    }
     guarded_chains(stmts);
     returned_branches(stmts, returns, booleans, program);
-}
-
-/// Whether the `if` of `test`, at `span`, is one with an `else` the
-/// program wrote as a statement, of a late `let`, `let error; if c { error
-/// = a; } else { error = b; }`, which stays as it's written, its branches
-/// no conditional (rd187, ADR 0969, amended).
-fn written_as_statement(test: &Expr, span: js::Span, program: &crate::lower::mir::hints::Written) -> bool {
-    program.statement_elses.iter().any(|c| {
-        let within = |s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-        within(test.span) || within(span)
-    })
 }
 
 /// `value`, which a branch of a conditional is, where its statement was,

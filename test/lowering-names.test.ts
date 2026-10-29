@@ -352,7 +352,7 @@ pub fn below() -> u32 {
   expect(js).toContain("/**\n * The sum, documented.\n * Of two lines.\n */\nexport function sum(x) {\n  // Add them.\n  const y");
   expect(js).toContain("  /* Then b. */\n  return (y + b()) >>> 0;");
   expect(js).not.toContain("No JS");
-  expect(js).toContain("/** One line. */\nexport function later(v) {\n  const first = v.length; // Its length.\n\n  // In a closure.\n  const f = (x) =>\n    // Inside.\n    (x + 1) >>> 0;\n  // Before a match.\n  const x = v[0];\n  let n;");
+  expect(js).toContain("/** One line. */\nexport function later(v) {\n  const first = v.length; // Its length.\n\n  // In a closure.\n  const f = (x) =>\n    // Inside.\n    (x + 1) >>> 0;\n  // Before a match.\n  const x = v[0];\n  const n = x != null && x > 3 ? x : 0;");
   expect(js).toContain("/// Globs: `src/**/*.rs`.\nexport function glob() {\n  return 3;");
   expect(js).not.toContain("nested");
   expect(js).toContain("}\n\n/** The count's start. */\nconst START = 5;\n");

@@ -5,6 +5,17 @@
 
 use super::*;
 
+/// Whether the `if` of `test`, at `span`, is one with an `else` the
+/// program wrote as a statement, of a late `let`, `let error; if c { error
+/// = a; } else { error = b; }`, which stays as it's written, its branches
+/// no conditional (rd187, ADR 0969, amended).
+pub(super) fn written_as_statement(test: &Expr, span: js::Span, program: &crate::lower::mir::hints::Written) -> bool {
+    program.statement_elses.iter().any(|c| {
+        let within = |s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+        within(test.span) || within(span)
+    })
+}
+
 /// Of `x = t ? q : r`, the rest of a chain of arms a variable's value is
 /// given by, folded, its arms as the chain writes them: `if (t) { x = q; }
 /// else ..`, the chain going on where `r` is another, `else if (c) { x = r;

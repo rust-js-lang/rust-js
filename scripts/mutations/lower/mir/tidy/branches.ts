@@ -535,6 +535,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "unlabeled-chain-not-a-value",
+    breaks: "a labeled block of an `||` that becomes `if (a || b) { x = null; } else { x = v; }` stays that `if`, `let unknown; if ..`, inside a borrow's `try`, not the conditional (#413, ADR 0683, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    if unlabeled {\n",
+    replace: "    if false && unlabeled {\n",
+    tests: ["test/corpus.test.ts", "-t", "^borrowed_loop_value_if.rs$"],
+    snapshots: true,
+  },
+  {
     name: "plain-chain-kept",
     breaks: "a value's chain of four arms each a plain value stays `let color; if (..) { color = .. } else if ..`, not upstream's `const color = a ? .. : b ? .. : ..` (ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
