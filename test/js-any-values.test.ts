@@ -94,3 +94,30 @@ pub fn replay(queue: &Unknown, length: f64) -> u32 {
   expect(lib.replay(queue, queue.length)).toBe(2);
   expect(queue).toEqual([0, "a", "seen", 1, null, null, 2, "b", "seen"]);
 });
+
+// React DOM's startViewTransition waits on `Array<Promise<any>>`, fonts'
+// `ready` and images' promises, and races `Promise.all(..)` against a
+// timeout's promise. A promise of any value is `promise.into_unknown()`,
+// the promise itself, what it fulfils any value (rd211).
+test("a promise of any value is the promise itself", async () => {
+  const { js, lib } = await compiled("js-promise-of-any", `use js::{Promise, Unknown, promise};
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.ready")]
+fn ready() -> Promise<&'static js::JsObject> {
+    unreachable!()
+}
+
+pub async fn blocked(image: Promise<()>, ms: f64) -> Option<&'static Unknown> {
+    let blocking: Vec<Promise<Option<&'static Unknown>>> = vec![ready().into_unknown(), image.into_unknown()];
+    let timeout = promise::new(move |resolve: &'static dyn Fn(Option<&'static Unknown>), _| {
+        js::set_timeout(move || resolve(None), Some(ms));
+    });
+    promise::race(vec![promise::all(blocking).into_unknown(), timeout]).await
+}
+`);
+  expect(js).toContain("const blocking = [globalThis.ready(), image];");
+  expect(js).toContain("return await Promise.race([Promise.all(blocking), timeout]);");
+  (globalThis as Record<string, unknown>).ready = () => Promise.resolve("fonts");
+  expect(await lib.blocked(Promise.resolve(), 50)).toEqual(["fonts", undefined]);
+  expect(await lib.blocked(new Promise(() => {}), 1)).toBe(undefined);
+});

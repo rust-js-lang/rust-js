@@ -10,6 +10,14 @@
 use super::{IntoUnknown, JsError, Promise, Unknown};
 
 impl<T> Promise<T> {
+    /// TypeScript's `Promise<any>` of it: the promise itself, what it
+    /// fulfils with any value, so promises of different values make one
+    /// list, `Promise.all([document.fonts.ready, image])` (rd211).
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn into_unknown(self) -> Promise<Option<&'static Unknown>> {
+        unreachable!()
+    }
+
     /// [`promise.then(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
     /// what `f` gives of what it fulfils, a value or a promise of one
     /// ([`Fulfils`]), TypeScript's `TResult | PromiseLike<TResult>`, as

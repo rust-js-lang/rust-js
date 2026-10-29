@@ -247,3 +247,24 @@ Promise<String> = ..`. Every caller in rust-js and react-in-rust inferred
 it already but `then_resolve`'s five, now `then`'s. Held by
 `test/js-builtins.test.ts` ("a promise's then handler gives a value or a
 promise"), which a `then` narrowed again doesn't compile.
+
+## Amendment: a promise of any value is `into_unknown()` (rd211)
+
+React DOM's startViewTransition collects `Array<Promise<any>>`, fonts'
+`ready` (a `Promise<FontFaceSet>`) beside images' `Promise<void>`s, and
+races `Promise.all(blockingPromises)` against a timeout's promise;
+`Promise.allSettled([navigation.finished, blockingReady])` too. A Rust
+`Vec` holds one type, and nothing viewed a `Promise<T>` as TypeScript's
+`Promise<any>`, `Promise<Option<&'static Unknown>>`: the port cast,
+`js::cast(Some(js::unknown(&p)))`.
+
+**`promise.into_unknown()` is the promise itself, what it fulfils any
+value**, `Promise<Option<&'static Unknown>>`: a binding of the form
+`this`, so nothing's written of it. A `From` impl can't say it, as it
+would overlap `From<T> for T` of a promise of any value already.
+`then(|v| js::unknown_of(v))` would be a new promise, a tick later.
+
+Held by `test/js-any-values.test.ts`'s "a promise of any value is the
+promise itself" (a list of two promises' values, raced against a timeout,
+run both ways). No mutation: a binding's.
+
