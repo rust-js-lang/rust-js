@@ -809,13 +809,11 @@ pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr, breaks: &[(js::Span, js::
     }
 }
 
-/// JS's own methods, of an array, an iterator, a map, a set or a string,
-/// whose answer is a `bool`, as rust-js writes them of std's.
-const BOOLEAN_METHODS: &[&str] = &["some", "every", "includes", "has", "startsWith", "endsWith"];
-
 /// Whether `e` is a `bool` whatever it reads: a comparison, a `!`, one of
-/// `booleans`, one lowering knows is (`Known::Boolean`), one of JS's
-/// methods whose answer is one, or `&&` and `||` of them.
+/// `booleans`, one lowering knows is (`Known::Boolean`): the value of any
+/// call of a function item that gives a `bool`, std's `v.some(f)` and
+/// `s.startsWith(p)` too (`calls::given_by`, ADR 0953, amended), or `&&`
+/// and `||` of them.
 pub(super) fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
@@ -823,9 +821,6 @@ pub(super) fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
         ExprKind::Var(name) => booleans.contains(name),
         ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
         ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,
-        ExprKind::Call(callee, _) if matches!(&callee.kind, ExprKind::Member(_, name) if BOOLEAN_METHODS.contains(&name.as_str())) => {
-            true
-        }
         ExprKind::Binary(
             Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
             ..,

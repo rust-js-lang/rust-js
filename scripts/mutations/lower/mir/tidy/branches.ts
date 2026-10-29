@@ -274,15 +274,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names are the enum"],
   },
   {
-    name: "boolean-methods-unknown",
-    breaks: "`v.some(f) && b` is `!!v.some(f) && b`, a `bool` made a `bool`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "const BOOLEAN_METHODS: &[&str] = &[\"some\", \"every\", \"includes\", \"has\", \"startsWith\", \"endsWith\"];\n",
-    replace: "const BOOLEAN_METHODS: &[&str] = &[];\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^sales_report.rs$"],
-  },
-  {
     name: "written-if-decided-away",
     breaks: "an `if` the program wrote that an earlier test decides is folded to its branch, React's `// $FlowFixMe[constant-condition]` lost with its `if (enableGestureTransition)`",
     file: "src/lower/mir/tidy/branches.rs",

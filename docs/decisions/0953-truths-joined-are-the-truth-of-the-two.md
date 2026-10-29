@@ -60,3 +60,18 @@ Held by `test/lowering-bool-ternaries.test.ts`, "a call of another
 module's function that gives a bool is one", run; corpus
 `bool_call_of_another_module`, against native Rust; the mutation
 `bool-call-result-unknown`. A regex's `test(c)`, a binding's `bool`, loses its `!!` too: the lexer's and calculator's `/^[0-9]$/.test(c) || c === "\r"`.
+
+## Amendment: no list of JS's methods that answer a `bool`
+
+`branches::is_boolean` also took a call of a method named `some`,
+`every`, `includes`, `has`, `startsWith` or `endsWith` for a `bool`, as
+rust-js writes std's: a rule of the JS's shape, beside the one above of
+what its Rust gives. Since the amendment above, each such method rust-js
+writes is the value of a call of std's that gives a `bool`, `any`,
+`all`, `contains`, `starts_with`, which `calls::given_by` knows is one,
+so the list decided nothing: emptied, every corpus case's JS and the 1,300
+snapshot, lowering, JSX, React and docs tests' were the same, and its
+mutation, `boolean-methods-unknown`, survived a full check (2026-10-29).
+The list is gone with its mutation; what a call gives is the one answer.
+
+Case N: as above.

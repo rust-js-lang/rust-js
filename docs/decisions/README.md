@@ -737,7 +737,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0950 A JS map's `get` flattened is its `get`, not `$someValue($someGet(..))`](0950-a-maps-get-flattened-is-its-get.md)
 - [0951 A map's or set's call nothing reads is JS's own in code that runs at load too](0951-a-discarded-insert-at-load-is-js-own.md)
 - [0952 Names in the closures of code that runs at load are named as written](0952-on-load-closures-names-as-written.md)
-- [0953 Two values' truths joined are the truth of the two, `!!(a && b)`](0953-truths-joined-are-the-truth-of-the-two.md) *(amended: a call that gives a `bool` is one, rd145)*
+- [0953 Two values' truths joined are the truth of the two, `!!(a && b)`](0953-truths-joined-are-the-truth-of-the-two.md) *(amended: a call that gives a `bool` is one, rd145; no list of JS methods that answer one)*
 - [0954 A call that never returns ends what it's in](0954-a-call-that-never-returns-ends.md)
 - [0955 A `return` of a function's call of values is copied as one value is, React's getTag one switch](0955-a-returned-call-of-values-is-one-value.md)
 - [0956 The arms of a `switch` keep their statements, a tail they share too](0956-switch-arms-keep-their-tails.md) *(amended: an arm that goes on to its value keeps it, `_`'s its `default`)*
