@@ -129,6 +129,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "mir-tidy-nested-written-break-twice",
+    breaks: "a loop body's last `if c { break; }`, MIR's `if (c) { break; } else { continue; }`, gets a second `break` after its own, which tidy's \"nothing after a jump\" refuses (rd141)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        if !goes_on(d) || a.last().is_some_and(ends) || !fits_in_place(before, usize::MAX, d) {\n",
+    replace: "        if !goes_on(d) || !fits_in_place(before, usize::MAX, d) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_ends_in_its_break.rs$"],
+  },
+  {
     name: "guarded-or-at-block",
     breaks: "the `if (a || b)` of guards MIR's labeled block makes is placed where the block is, nowhere, so the comment before it is before the next `if`",
     file: "src/lower/mir/tidy/jumps.rs",

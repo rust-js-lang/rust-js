@@ -130,7 +130,12 @@ while ((n = counts[i]) != null) {
 
 An `if` of no `break` the program wrote, `if n == 0 { .. } else { i += 1;
 continue; } break;`, keeps its `else`, as written; and the shape isn't
-taken where `d` declares a name beside it.
+taken where `d` declares a name beside it, nor where `a` leaves itself, a
+body's last `if count > 10 { break; }`, MIR's `if (c) { break; } else {
+continue; }`, which needs no `break` after its own: one there failed
+tidy's "nothing after a jump" in a debug build, React DOM's
+estimateBandwidth (rd141, held by `test/corpus/loop_ends_in_its_break.rs`
+and the mutation `mir-tidy-nested-written-break-twice`).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests in
 the same order: `a` then the loop's end either way.

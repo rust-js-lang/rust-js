@@ -140,7 +140,9 @@ fn broken_in_then(body: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool) -> bo
 /// where written, the `while let`'s test then read by `early_breaks`. So
 /// too of `if (!c) { d; continue l; } a` last, an `||`'s `c`, the `if` of
 /// what goes on MIR made first. The same tests in the same order: `a` then
-/// the loop's end either way.
+/// the loop's end either way. Not where `a` leaves itself, `if (c) { break;
+/// } else { continue; }` of a body's last `if c { break; }`, which needs no
+/// `break` after it (rd141).
 fn broken_in_nested_then(body: &mut [Stmt], continues: &dyn Fn(&Stmt) -> bool, breaks: &[(js::Span, js::Span)]) {
     fn nested(then: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool, breaks: &[(js::Span, js::Span)]) {
         let written = |test: &Expr| jump_tested(breaks, written_at(test));
@@ -169,13 +171,13 @@ fn broken_in_nested_then(body: &mut [Stmt], continues: &dyn Fn(&Stmt) -> bool, b
         let Some((last, before)) = then.split_last() else {
             return;
         };
-        let StmtKind::If(test, _, Some(d)) = &last.kind else {
+        let StmtKind::If(test, a, Some(d)) = &last.kind else {
             return;
         };
         let Some(k) = written(test) else {
             return;
         };
-        if !goes_on(d) || !fits_in_place(before, usize::MAX, d) {
+        if !goes_on(d) || a.last().is_some_and(ends) || !fits_in_place(before, usize::MAX, d) {
             return;
         }
         let Some(Stmt {
