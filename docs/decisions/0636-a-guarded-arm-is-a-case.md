@@ -6,7 +6,8 @@ whose `switch` had no arm with a guard. Amended by
 next arm names each of its constants falls through to that arm's case;
 and an or-pattern of a guard, which MIR tests by each alternative, is one
 case. Amended below: a guarded arm just before a last `_` that does
-something falls through to the `default`.
+something falls through to the `default`; and no `default` holds what
+follows the `match` past a failed guard (rd184).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the case runs the guard where the arm did, after its
@@ -176,3 +177,46 @@ Rust takes does.
   `switch-default-after-fall-unvalued` (`hints.ts`),
   `switch-default-fallen-refused` (`tidy/switches.ts`) and
   `default-fallthrough-unsaid` (`to_oxc/cases.ts`).
+
+## Amendment: no `default` of what follows the `match` past a failed guard (rd184, 2026-10-29)
+
+A wrong answer. React DOM's clearContainerSparingly, as its port writes
+it:
+
+```rust
+match node.node_name().as_str() {
+    "HTML" | "HEAD" | "BODY" => { ..; continue; }
+    "SCRIPT" | "STYLE" => { continue; }
+    "LINK" if is_stylesheet(node) => { continue; }
+    _ => {}
+}
+container.remove_child(node);
+```
+
+A `<link>` that isn't a stylesheet fails the guard, goes on to the `_`,
+which does nothing, and then to `remove_child`. MIR has `remove_child`
+where the `_`'s arm is, in the branch of the tests every arm but the
+first two goes on to, and `chain` gave all of it to the last arm, the
+`default`: `case 'LINK': if (..) { continue; } break; default:
+container.removeChild(node);`. The case's `break` goes past the
+`switch`, skipping the removal.
+
+**Where a guarded arm's case goes on past the `match` where its guard
+fails, and the `default` holds what MIR has of what's written past the
+`match`, there's no `switch`**: its arms stay the `if` chain they are,
+`if (name === "LINK") { if (..) { continue; } } container.removeChild(node);`.
+A `default` that holds none of that, or whose `return` the `switch` is
+followed by once it's moved after it (ADR 0905, amended), is a `switch`
+as before. Upstream's own form, the `switch` with `removeChild` after it
+and each arm's `continue` (kj-switch), is a readability change after this
+one; this is the correct form.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: the arm after a failed guard, and then what follows the
+`match`.
+
+Held by `test/corpus/guarded_arm_falls_to_tail.rs`, against native Rust
+(of strings, a `switch` of integers whose tail stays after it, and arms
+after the guarded one that do something); mutations
+`guard-failing-past-default-kept` and `guard-failing-past-any-default`
+(`mir/tidy/switches.ts`).

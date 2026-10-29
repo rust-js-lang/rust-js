@@ -1549,7 +1549,10 @@ or where it's a last `_` that does something, a case that falls through
 to the `default`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended). Any other `match`, of a range, a binding of a
 pattern's part or before the last arm (but a name a guard compares with a
-read, below), a guard a later arm goes on from, or
+read, below), a guard a later arm goes on from, a guard that fails to what
+follows the `match` where other arms leave, `"LINK" if keep => continue,
+_ => {}` and then `remove(node)` in a loop whose other arms `continue`
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended), or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has

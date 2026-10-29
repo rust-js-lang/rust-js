@@ -9,6 +9,23 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 const twoGuards = ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"];
 export const mutations: Mutation[] = [
   {
+    name: "guard-failing-past-default-kept",
+    breaks: "a guarded arm's case whose guard fails past the `match` `break`s past a `default` holding what follows the `match`: a `<link>` that isn't a stylesheet is never removed (rd184, a wrong answer)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    if fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {\n",
+    replace: "    if false && fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
+  },
+  {
+    name: "guard-failing-past-any-default",
+    breaks: "a `switch` whose guarded case fails past the `match` is refused though its `default` holds none of what follows the `match`, `4 if keep => continue, _ => {}` then `out.push(code)` after the `switch` (rd184)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    let held_past = |body: &[Stmt]| (body.iter()).any(|s| written_at(s).is_some_and(|at| !within(at, written.span)));\n",
+    replace: "    let held_past = |_: &[Stmt]| true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_past_match.rs$|^guarded_arm_falls_to_tail.rs$"],
+    snapshots: true,
+  },
+  {
     name: "copied-returns-unbroken",
     breaks: "MIR's copies, in each case, of the `return` after a `match` that ended a block stay, React's attemptEarlyBailoutIfNoScheduledUpdate's `return bailoutOnAlreadyFinishedWork(..)` in every case (ADR 0905, amended)",
     file: "src/lower/mir/tidy/switches.rs",

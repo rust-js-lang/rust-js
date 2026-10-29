@@ -445,6 +445,21 @@ fn switch_at(
             returns_broken(body, value.as_ref(), written.span);
         }
     }
+    // A guarded arm's case whose guard fails past the `match`, to a `_`
+    // that does nothing, goes on to what follows it, as the `_` does: not
+    // a `default` that holds what MIR has of that, written past the
+    // `match`, which the case's `break` would skip, `"LINK" if keep =>
+    // continue, _ => {}` and then `remove(node)` (rd184): no `switch`.
+    let fails_past = (cases.iter().zip(&falls)).any(|(case, &falls)| {
+        !falls
+            && !case.2
+            && !case.1.last().is_some_and(js::ends)
+            && (arms.iter()).any(|arm| arm.span == case.3 && arm.guard.is_some() && !arm.falls)
+    });
+    let held_past = |body: &[Stmt]| (body.iter()).any(|s| written_at(s).is_some_and(|at| !within(at, written.span)));
+    if fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {
+        return None;
+    }
     let mut switched = Vec::new();
     let mut default = None;
     for ((values, body, last, _), falls) in cases.into_iter().zip(falls) {
