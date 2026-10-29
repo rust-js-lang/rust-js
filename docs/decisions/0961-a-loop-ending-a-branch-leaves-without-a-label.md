@@ -62,3 +62,16 @@ stay `$index` and `$removeAt`: the index is in bounds only by an invariant
 of the loop (each turn removes at most one item, at `i`, then `i` steps
 down), which the ranges don't know of a `Vec` changed in the loop. Its
 `else if`s, each ending in `break`, print as `if`s.
+
+## Amendment: the settled stage's `innermost jumps` goes (2026-10-29)
+
+The nightly's mutation `mir-tidy-headed-labels-kept`, which took the
+settled stage's `innermost jumps` away, survived the whole corpus with
+its snapshots and the lowering, snapshot, JSX, port, compiler and
+tidy-stage suites: by then no tested program's jump names the loop it's
+in, so the pass changed nothing. It goes with its mutation; `tail_continues` still runs
+after `outer continues`, and no label comes back into any program's JS.
+The `loops` stage's pass stays: without it a label nothing names reaches
+the `chains` stage, whose `each label named` contract refuses it
+(`mir-tidy-innermost-jumps-labeled`, caught by
+`test/corpus/match_breaks_its_loop.rs`).

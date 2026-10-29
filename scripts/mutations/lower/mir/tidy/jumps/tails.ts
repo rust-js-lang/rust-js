@@ -82,7 +82,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            ending(body, label);\n",
     replace: "            let _ = (label, body);\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-inner-block-kept",
@@ -106,7 +107,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_deref(), result)\n        }\n        Some(StmtKind::If(",
     replace: "            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_deref(), result) && false\n        }\n        Some(StmtKind::If(",
-    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_place.rs$"],
+    snapshots: true,
   },
   {
     name: "loop-breaks-not-returned",

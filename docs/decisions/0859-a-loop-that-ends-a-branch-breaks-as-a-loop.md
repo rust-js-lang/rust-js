@@ -133,3 +133,22 @@ each loop leaves. The second names every label the first did, so the
 first changed no output and its mutation, `mir-labels-by-block`,
 survived. The `written` pass is gone, and the mutation now removes the
 `settled` call, which `lowering-loops`' nested loops hold.
+
+## Amendment: `written labels` names a loop's label, and a loop of no label leaves the block's (2026-10-29)
+
+ADR 0660's `written labels` (the user's decision, wl4) put the `jumps`
+stage's `named_labels` back, so `settled`'s call in `loops ending blocks`
+named nothing the first hadn't, and `mir-labels-by-block`, which removed
+it, survived. The `settled` call goes; the mutation now removes `written
+labels`, which `lowering-loops`' nested loops hold.
+
+`blocks_loops_end` gave a loop of no label whose body still named the
+block's label that label, `$given` while it worked, and put the block's
+statements in its place (`loop-ending-branch-label-not-moved`). No
+program reaches it: a loop the program labeled has its name from
+`written labels`, and the nightly's mutation, and one that skipped the
+whole path, changed nothing in the corpus with its snapshots or the
+lowering, snapshot, JSX, port, compiler and tidy-stage suites. It goes
+with its mutation. Where a loop of no label's body names the block, the
+block keeps its label, which its `break` leaves as it did: the same
+jump, and one label either way.

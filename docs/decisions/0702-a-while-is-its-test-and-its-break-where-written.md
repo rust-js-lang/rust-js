@@ -549,3 +549,14 @@ loop follows it, `while (j < xs.length) { .. } i = j; if (total > 10) {
 break; }`, as written. Each is the same jump either way. Held by
 `test/corpus/inner_while_then_break.rs`, against native Rust; mutation
 `exit-after-of-leaving-if-unmoved`.
+
+## Amendment: a `rest`'s `if (c) { break; }` isn't turned (2026-10-29)
+
+`fallen` turned a `rest` of `if (c) { break; } r` into `if (!c) { r }`,
+for getHostSibling's `if (!(node.flags & Placement)) { break; }`. That
+shape reaches `fallen` in no tested program, getHostSibling's lowering
+test included: the nightly's `fallen-test-not-negated`, a wrong answer
+wherever reached, survived the corpus with its snapshots and
+the lowering, snapshot, JSX, port, compiler and tidy-stage suites. The arm
+goes with its mutation: a `rest` whose first jump of the loop isn't its
+`break` leaves the `while (true)` as it is, which is right either way.

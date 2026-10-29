@@ -5,15 +5,6 @@ const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are a
 
 export const mutations: Mutation[] = [
   {
-    name: "written-else-break-continued",
-    breaks: "a loop's chain whose last arm is the `break` the program wrote is `} else { if (..) { ..; continue; } break; }`, not `} else if (..) { .. } else { break; }` (ADR 0237, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        && super::tails::written_else(\n",
-    replace: "        && false\n        && super::tails::written_else(\n",
-    tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
-    snapshots: true,
-  },
-  {
     name: "last-loop-break-returned",
     breaks: "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
@@ -28,14 +19,6 @@ export const mutations: Mutation[] = [
     find: "                        .any(|(test, _)| !span.is_none() && span.lo <= test.lo && test.hi <= span.hi);\n",
     replace: "                        .any(|_| true);\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "break of the loop a function ends with"],
-  },
-  {
-    name: "default-tail-continue-kept",
-    breaks: "a `switch` that ends a loop's body keeps its `default`'s `continue;`, which goes on anyway (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        }) => ends_going_on(default, looped, written),\n",
-    replace: "        }) => {}\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "arm that returns ends with its return"],
   },
   {
     name: "tail-continued-label-kept",
@@ -153,15 +136,6 @@ export const mutations: Mutation[] = [
     find: "                StmtKind::Labeled(_, body) => own_breaks(body, label),\n",
     replace: "                StmtKind::Labeled(_, body) | StmtKind::ForOf { body, .. } => own_breaks(body, label),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_ends_branch"],
-  },
-  {
-    name: "loop-ending-branch-label-not-moved",
-    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch keeps the block MIR made, `bb29: { .. }`, not the loop's `rows:` (ADR 0859)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            let leaves = !js::names_jump(body, &label) && super::labels::fits_in_place(stmts, i, body);\n",
-    replace: "            let leaves = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "loop_ends_branch"],
-    snapshots: true,
   },
   {
     name: "block-jump-unnamed-not-forwarded",

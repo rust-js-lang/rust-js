@@ -254,46 +254,12 @@ pub(in crate::lower::mir::tidy) fn tail_continues(stmts: &mut [Stmt], written: &
 
 /// A `continue` where the body of loop `looped` ends anyway, in the
 /// branches that end it: none. Of an `else` that's only one, `if (c) {
-/// ..; return; } else { continue; }`, no `else` (ADR 0684). And of an
-/// `if` the program wrote with an `else` of the loop's `break`, `else if
-/// (b) { .. } else { break; }`, MIR's `if (b) { ..; continue; } break;`:
-/// the `if` and its `else` (ADR 0237, amended).
+/// ..; return; } else { continue; }`, no `else` (ADR 0684).
 fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate::lower::mir::hints::Written) {
     let continues = &written.continues;
     // The `if` of a `continue` the program wrote, what goes on after it its
     // `else`: that after it, as written, its `continue` kept.
     let going_on = |l: &Option<String>| l.is_none() || l == looped;
-    if let [
-        ..,
-        Stmt {
-            kind: StmtKind::If(_, then, None),
-            span,
-        },
-        Stmt {
-            kind: StmtKind::Break(broken),
-            span: broken_at,
-        },
-    ] = &stmts[..]
-        && going_on(broken)
-        && broken_at.is_none()
-        && matches!(then.last(), Some(Stmt { kind: StmtKind::Continue(l), span }) if going_on(l) && span.is_none())
-        && super::tails::written_else(
-            &StmtKind::If(Expr::undefined(), then.clone(), Some(Vec::new())).at(*span),
-            &written.elses,
-        )
-    {
-        let broken = stmts.pop().expect("matched");
-        let Some(Stmt {
-            kind: StmtKind::If(test, then, otherwise),
-            ..
-        }) = stmts.last_mut()
-        else {
-            unreachable!("matched")
-        };
-        then.pop();
-        test.facts = test.facts.with(js::Known::Else);
-        *otherwise = Some(vec![broken]);
-    }
     if let Some(Stmt {
         kind: StmtKind::If(_, then, otherwise @ Some(_)),
         span,
@@ -320,11 +286,6 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
                 }
             }
         }
-        // A `switch` that ends it, its `default`, which ends it last: a
-        // case's `break` past it goes on too (ADR 0905, amended).
-        Some(StmtKind::Switch {
-            default: Some(default), ..
-        }) => ends_going_on(default, looped, written),
         _ => {}
     }
 }
@@ -543,9 +504,9 @@ fn loop_breaks(stmts: &mut [Stmt], label: &str) {
 /// .. } }` is `if (t) { while (true) { if (d) { break; } .. } } else { ..
 /// }`, as the program wrote it, with no label (ADR 0859). And one of a loop
 /// or a `switch` inside it, `break 'rows` in a `for` of the `loop` it
-/// names, the loop's, by its label, or the block's label where it has none,
-/// which `named labels` then names as the program did.
-pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut Vec<Stmt>, every: bool) {
+/// names, the loop's, by its label, which `named labels` then names as the
+/// program did.
+pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: bool) {
     // Each `break label` of the loop whose body is `stmts`: where a `break`
     // of no label leaves it.
     fn own_breaks(stmts: &mut [Stmt], label: &str) {
@@ -568,11 +529,9 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut Vec<Stmt>, every
         }
     }
     // Each loop `stmts` end with, through the `if`s and blocks they end
-    // with: where it ends, they do.
-    // A loop `stmts` end with, through the `if`s and blocks they end with,
-    // whose body still names `label` once its own `break`s are: given the
-    // label `to`, as each of those `break`s is, where `to` is given.
-    fn ending(stmts: &mut [Stmt], label: &str, every: bool, to: &mut Option<String>) {
+    // with: where it ends, they do. One whose body still names `label`
+    // once its own `break`s are, by a label of its own: that label.
+    fn ending(stmts: &mut [Stmt], label: &str, every: bool) {
         let Some(last) = stmts.last_mut() else {
             return;
         };
@@ -598,86 +557,28 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut Vec<Stmt>, every
                     return;
                 }
                 own_breaks(body, label);
-                match looped {
-                    _ if !js::names_break(body, label) => {}
-                    Some(looped) => super::tails::relabeled(body, label, looped),
-                    None => {
-                        if let Some(to) = to.take() {
-                            super::tails::relabeled(body, label, &to);
-                            *looped = Some(to);
-                        }
-                    }
+                if let Some(looped) = looped
+                    && js::names_break(body, label)
+                {
+                    super::tails::relabeled(body, label, looped);
                 }
             }
             StmtKind::If(_, a, b) => {
-                ending(a, label, every, to);
+                ending(a, label, every);
                 if let Some(b) = b {
-                    ending(b, label, every, to);
+                    ending(b, label, every);
                 }
             }
-            StmtKind::Labeled(_, body) => ending(body, label, every, to),
+            StmtKind::Labeled(_, body) => ending(body, label, every),
             _ => {}
         }
     }
-    // The loop labeled `GIVEN` in `stmts`, however deep: `label` its label
-    // and its `break`s' where `keep`, or none and the block's again.
-    fn relabel_loop(stmts: &mut Vec<Stmt>, label: &str, keep: bool) {
-        js::statement_lists(stmts, &mut |list| {
-            for stmt in list.iter_mut() {
-                if let StmtKind::While {
-                    label: looped, body, ..
-                }
-                | StmtKind::ForOf {
-                    label: looped, body, ..
-                }
-                | StmtKind::For {
-                    label: looped, body, ..
-                } = &mut stmt.kind
-                    && looped.as_deref() == Some(GIVEN)
-                {
-                    super::tails::relabeled(body, GIVEN, label);
-                    *looped = keep.then(|| label.to_string());
-                }
-            }
-        });
-    }
-    // A name no label has, a loop's while it's given the block's.
-    const GIVEN: &str = "$given";
-    let mut i = 0;
-    while i < stmts.len() {
-        let StmtKind::Labeled(label, body) = &mut stmts[i].kind else {
-            i += 1;
-            continue;
-        };
-        if !crate::lower::mir::is_block_label(label) {
-            i += 1;
-            continue;
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind
+            && crate::lower::mir::is_block_label(label)
+        {
+            ending(body, label, every);
         }
-        let label = label.clone();
-        let mut to = Some(GIVEN.to_string());
-        ending(body, &label, every, &mut to);
-        // A loop given the label, which nothing else names: the loop's,
-        // and the block's statements in its place, where they fit.
-        if to.is_none() {
-            let StmtKind::Labeled(_, body) = &stmts[i].kind else {
-                unreachable!("matched")
-            };
-            let leaves = !js::names_jump(body, &label) && super::labels::fits_in_place(stmts, i, body);
-            let StmtKind::Labeled(_, body) = &mut stmts[i].kind else {
-                unreachable!("matched")
-            };
-            relabel_loop(body, &label, leaves);
-            if leaves {
-                let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
-                    unreachable!("matched")
-                };
-                let n = body.len();
-                stmts.splice(i..i, body);
-                i += n;
-                continue;
-            }
-        }
-        i += 1;
     }
 }
 

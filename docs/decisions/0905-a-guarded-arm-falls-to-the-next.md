@@ -573,3 +573,16 @@ the `return` after the `switch`. Held by `test/corpus/switch_ends_function.rs`,
 against native Rust; mutations `ending-switch-returns-kept`,
 `ending-switch-written-returns-broken`, `ending-switch-breaks-kept`
 (`mir/tidy/case_rests.ts`) and `copied-returns-unbroken`.
+
+## Amendment: a `default`'s last `continue` is no longer `ends_going_on`'s (2026-10-29)
+
+The amendment of 2026-10-27 had `ends_going_on` drop the `continue;` a
+`switch`'s `default` ends a loop's body with. Since 98c8bb7b1 (#389c part 2, ADR 0629
+amended), no `default` reaches `tail_continues` ending in that
+`continue`: the nightly's `default-tail-continue-kept`, which skipped the `default`,
+survived the corpus with its snapshots, the lowering, snapshot, JSX, port,
+compiler and tidy-stage suites, and changed none of React's port's JS.
+The arm goes with its mutation; popToNextHostParent's test, "a case of an
+arm that returns ends with its return", still holds the `default` with
+no `continue;`.
+

@@ -636,18 +636,14 @@ pub(super) const STAGES: &[Stage] = &[
             pass("early breaks", |b, _| {
                 js::statement_lists(b, &mut |s| early_breaks(s, false))
             }),
-            // Their jumps then, of the loop they're now in, unnamed.
-            pass("innermost jumps", |b, _| {
-                js::statement_lists(b, &mut |s| innermost_jumps(s))
-            }),
             // Each `break` a loop that ends a block MIR made leaves it by,
             // once what's after each loop is placed: the loop's own, a
             // `loop` that ends an `if`'s branch, its `else` after it, as
             // written, with no label (ADR 0859); one a loop inside it
-            // leaves, its `break 'rows`, the loop's, by the program's name.
-            pass("loops ending blocks", |b, h| {
-                js::statement_lists(b, &mut |s| blocks_loops_end(s, true));
-                js::statement_lists(b, &mut |s| named_labels(s, &h.written.loops))
+            // leaves, its `break 'rows`, the loop's, by the name `written
+            // labels` gave it.
+            pass("loops ending blocks", |b, _| {
+                js::statement_lists(b, &mut |s| blocks_loops_end(s, true))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             // A `while` those leave its own `break`, `while (true) { if

@@ -22,7 +22,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "            if default.as_deref().is_some_and(does_nothing) {\n",
     replace: "            if false {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
+    snapshots: true,
   },
   {
     name: "switch-break-of-loop-unlabeled",
@@ -30,7 +31,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "            labeled_breaks(body, around.label);\n",
     replace: "",
-    tests: switches,
+    tests: ["test/corpus.test.ts", "-t", "^switch_fallthrough.rs$"],
   },
   {
     name: "switch-temporary-kept",

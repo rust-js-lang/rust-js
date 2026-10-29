@@ -148,7 +148,8 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
     replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they"],
+    tests: ["test/corpus.test.ts", "-t", "^or_before_a_returning_loop.rs$"],
+    snapshots: true,
   },
   {
     name: "stmts-alike-by-name",

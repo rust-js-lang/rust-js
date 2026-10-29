@@ -285,3 +285,13 @@ keeps its if's written else", run in JS; mutations
 `chained-checks-of-written-ifs` (`tidy/branches.ts`),
 `bit-test-drops-its-else` (`tidy/logicals.ts`), and
 `negation-else-dropped`, `if-facts-lost-to-its-test` on the shared set.
+
+## Amendment: `tail_continues` no longer makes the written `else { break; }` (2026-10-29)
+
+The first rule of the amendment above, `tail_continues`' `if (b) { ..;
+continue; } break;` into `if (b) { .. } else { break; }`, changed no
+program's JS by the time the nightly ran its mutation,
+`written-else-break-continued`: `written_elses` and the chains' passes
+make the same `else` first, and `else_break_ends_loop.rs`'s snapshot, with
+the whole corpus's and the lowering, snapshot, JSX, port, compiler and
+tidy-stage suites, was unchanged without it. It goes with its mutation.

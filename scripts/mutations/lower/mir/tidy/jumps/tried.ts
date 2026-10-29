@@ -136,14 +136,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^enumerate_mut_patterns.rs$"],
   },
   {
-    name: "fallen-test-not-negated",
-    breaks: "getHostSibling's `if (!(node.flags & Placement)) { break; } continue siblings;` after its loop is `if (!(..)) { continue siblings; }`, its test not turned",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            Some(StmtKind::If(test.clone().negated_test(), after, None).at(stmt.span))\n",
-    replace: "            Some(StmtKind::If(test.clone(), after, None).at(stmt.span))\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
-  },
-  {
     name: "let-else-exit-at-its-statement",
     breaks: "a `?`'s two `return`s, each MIR's at the `?`, are both its exit, so `if (hostFiber != null) { return ..; } return null;` stays turned (q1, ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tried.rs",
