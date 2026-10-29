@@ -209,6 +209,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Whether an iterator of type `ty` steps an inclusive range it's lent,
+    /// `r.by_ref()`, `&mut r`, or an adapter of one: what std's `fold`
+    /// leaves exhausted at its last, where `next` steps it past, so a
+    /// consumer std routes through `fold` takes it by its `fold` (#414).
+    pub(in crate::lower) fn steps_lent_inclusive(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().any(|arg| {
+            arg.as_type().is_some_and(|t| {
+                matches!(t.kind(), ty::Ref(_, inner, rustc_middle::ty::Mutability::Mut)
+                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))
+            })
+        })
+    }
+
     pub(in crate::lower) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             ty::Adt(_, args) => args.types().next(),

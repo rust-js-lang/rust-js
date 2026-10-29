@@ -2,6 +2,7 @@
 
 import {
   $debugStr,
+  $folded,
   $iter,
   $iterator,
   $lent,
@@ -27,7 +28,7 @@ function main() {
   const value = $rangeNext(numbers);
   console.log(`${value == null ? "None" : `Some(${value})`} ${numbers.start}..${numbers.end}`);
   const letters = { start: "a", end: "e" };
-  const some = Array.from($lent($iterator(letters, $rangeInclusiveNext)).take(2)).join("");
+  const some = Array.from($folded($lent($iterator(letters, $rangeInclusiveNext)).take(2))).join("");
   const arg = Array.from($iterator(letters, $rangeInclusiveNext)).join("");
   console.log(`${some} ${$debugStr(arg)}`);
   const items = [1, 2, 3, 4, 5, 6];

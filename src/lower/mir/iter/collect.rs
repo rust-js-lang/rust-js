@@ -139,11 +139,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
     /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
-    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182),
-    /// `$folded(it)`, its items as that gives them; else `it`.
+    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182), or
+    /// steps a lent inclusive range (#414), `$folded(it)`, its items as that
+    /// gives them; else `it`.
     pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
         let recognition = self.recognition();
-        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {
+        match recognition.folds_its_own(iter_ty)
+            || recognition.folds_by_its_own_nth(iter_ty)
+            || self.steps_lent_inclusive(iter_ty)
+        {
             true => Expr::call_helper("$folded", vec![it]),
             false => it,
         }
@@ -159,15 +163,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `capacity overflow` panic past `isize::MAX` bytes (#246). Of a
     /// `TrustedLen` one, before it's stepped; of another, which std steps
     /// once first, one whose steps run no code. What makes it, where that
-    /// runs code, held first.
+    /// runs code, held first. `receiver`, the type `collect` is given, an
+    /// inclusive range lent, `&mut r`, is what's collected as that, by its
+    /// `fold` (#414).
     pub(in crate::lower::mir) fn collected_counted(
         &mut self,
         it: Expr,
         (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
-        iter_ty: Ty<'tcx>,
+        receiver: Ty<'tcx>,
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let iter_ty = self.reveal(receiver.peel_refs());
         let runs_code = |ty: Ty<'tcx>| {
             ty.walk()
                 .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
@@ -212,7 +219,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(items);
         }
-        self.collected_into(it, output, item, Some(iter_ty), span)
+        let collected = match self.steps_lent_inclusive(receiver) {
+            true => receiver,
+            false => iter_ty,
+        };
+        self.collected_into(it, output, item, Some(collected), span)
     }
 
     pub(in crate::lower) fn collected_into(
@@ -274,11 +285,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => it,
             };
             // Of std's struct that's `TrustedLen`, by its `fold`, as std's
-            // `extend_trusted` collects it, a zip's `SpecFold` (#380).
-            let folded = self.compiled_struct_at(iter_ty, span)
+            // `extend_trusted` collects it, a zip's `SpecFold` (#380), and
+            // of one stepping a lent inclusive range, which that leaves
+            // exhausted at its last (#414).
+            let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
+                None if folded && self.steps_lent_inclusive(iter_ty) => Expr::call_helper("$foldToArray", vec![it]),
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
                     None if folded => Expr::call_helper("$foldToArray", vec![it]),

@@ -176,6 +176,23 @@ Rust and the mutations `range-inclusive-exhausted-unheld`
 (`runtime/range_inclusive_next.ts`), `range-inclusive-fold-by-next`
 (`runtime/range_len.ts`), `lent-fold-by-next` (`runtime/lent.ts`),
 `range-inclusive-clone-unexhausted` (`lower/std_impls.ts`) and
-`range-state-held-unread` (`lower/std_types/range.ts`). Still to come
-(stage 3): `collect()` of a lent one, which JS steps through its iterator
-protocol, `Array.from`, by `next`, and `$count` alike.
+`range-state-held-unread` (`lower/std_types/range.ts`). Stage 3 follows.
+
+## Amendment: a collect of a lent inclusive range is std's (2026-10-30, #414 stage 3)
+
+Std's `SpecFromIter` collects a `TrustedLen` iterator into a `Vec` by
+`extend_trusted`, `for_each`, a `fold`, and a string, a hash map or set
+always by `fold`; JS's `Array.from` steps its iterator protocol, `next`,
+so `r.by_ref().collect()` left `4..=3` where std leaves `3..=3
+(exhausted)`. **An iterator that steps a lent inclusive range,
+`steps_lent_inclusive`'s, one of its type's parts a `&mut RangeInclusive`,
+is collected as std collects it: into a `Vec`, where it's `TrustedLen`,
+`$foldToArray(it)`, else by `next`, a filter's, whose `next` is a `find`;
+into what std collects by `fold`, `$folded(it)` (`by_its_fold`).**
+`collected_counted` is given the type `collect` is, the receiver's, so a
+plain `r.by_ref().collect()` is seen lent. Held by
+`range_inclusive_exhausted.rs` (a plain one's, a `map`'s, a `filter`'s, a
+`take`'s, a string's, a `for` over a `map` of one) against native Rust and
+the mutations `steps-lent-inclusive-never` (`lower/std_types/range.ts`)
+and `collected-lent-range-peeled` (`lower/mir/iter/collect.ts`). With it,
+#414 is done.

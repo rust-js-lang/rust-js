@@ -62,6 +62,32 @@ fn main() {
     let mut last = char::MAX..=char::MAX;
     println!("{:?} {last:?}", last.next());
 
+    // Collected through `by_ref()`: as std's `SpecFromIter` takes it, by its
+    // `fold` where it's `TrustedLen`, by `next` where it's not, a filter's,
+    // whose `next` is a `find`, a `try_fold`; a string's always by `fold`.
+    let mut a = 1u8..=3;
+    let v: Vec<u8> = a.by_ref().collect();
+    println!("{v:?} {a:?}");
+    let mut b = 1u8..=3;
+    let w: Vec<u8> = b.by_ref().map(|x| x * 2).collect();
+    println!("{w:?} {b:?}");
+    let mut c = 1u8..=3;
+    let odd: Vec<u8> = c.by_ref().filter(|x| x % 2 == 1).collect();
+    println!("{odd:?} {c:?}");
+    let mut d = 'x'..='z';
+    println!("{} {d:?}", d.by_ref().filter(|x| *x != 'y').count());
+    let mut e = 1u8..=3;
+    for x in e.by_ref().map(|x| x + 1) {
+        print!("{x} ");
+    }
+    println!("{e:?}");
+    let mut t = 1u8..=3;
+    let text: String = t.by_ref().map(|x| x.to_string()).collect();
+    println!("{text} {t:?}");
+    let mut k = 1u8..=4;
+    let two: Vec<u8> = k.by_ref().take(2).collect();
+    println!("{two:?} {k:?}");
+
     // Stepped to its end below its type's last: no wrap, not exhausted.
     let mut s = 1u8..=3;
     while s.next().is_some() {}

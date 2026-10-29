@@ -289,4 +289,12 @@ export const mutations: Mutation[] = [
     replace: "        let own = range.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
+  {
+    name: "steps-lent-inclusive-never",
+    breaks: "a `collect()` of a lent inclusive range, or a `map` of one, steps it by `next`, past its end, `4..=3`, where std's `fold` leaves it exhausted at its last (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
+    replace: "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
 ];

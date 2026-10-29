@@ -693,7 +693,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             Some(IterMethod::AdvanceBy) => self.advanced_by(it, arg(), dropping, span)?,
             Some(IterMethod::ByRef) => it,
-            Some(IterMethod::Collect) => self.collected_counted(it, (output, item), iter_ty, span, made)?,
+            Some(IterMethod::Collect) => self.collected_counted(it, (output, item), receiver_ty, span, made)?,
             _ => return Ok(None),
         }))
     }

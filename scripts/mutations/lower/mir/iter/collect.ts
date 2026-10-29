@@ -286,8 +286,8 @@ export const mutations: Mutation[] = [
     name: "by-fold-ignores-own-nth",
     breaks: "what takes by fold asks a skip's nth(n - 1)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        match recognition.folds_its_own(iter_ty) || recognition.folds_by_its_own_nth(iter_ty) {",
-    replace: "        match recognition.folds_its_own(iter_ty) {",
+    find: "            || recognition.folds_by_its_own_nth(iter_ty)\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -314,5 +314,13 @@ export const mutations: Mutation[] = [
     replace: "            && let Some(items) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
     snapshots: true,
+  },
+  {
+    name: "collected-lent-range-peeled",
+    breaks: "a `collect()` of a lent inclusive range, `r.by_ref().collect()`, is taken as the range it lends, stepped by `next` past its end (#414)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            true => receiver,\n            false => iter_ty,\n",
+    replace: "            true => iter_ty,\n            false => iter_ty,\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

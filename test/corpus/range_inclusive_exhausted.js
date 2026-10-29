@@ -4,9 +4,12 @@ import {
   $BTreeMap,
   $cmp,
   $debugStr,
+  $foldToArray,
+  $folded,
   $iterator,
   $lent,
   $nthBack,
+  $print,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $rangeInclusiveNth,
@@ -46,12 +49,12 @@ function main() {
   console.log(
     `${value$3 == null ? "None" : `Some(${value$3})`} ${(u.exhausted ?? u).start & 255}..=${(u.exhausted ?? u).end & 255}${u.exhausted !== undefined || u.start > 255 || u.end < 0 ? " (exhausted)" : ""}`,
   );
-  const v = { start: 1, end: 5 };
+  let v = { start: 1, end: 5 };
   const nth = $rangeInclusiveNth(v, 9);
   console.log(
     `${nth == null ? "None" : `Some(${nth})`} ${(v.exhausted ?? v).start & 255}..=${(v.exhausted ?? v).end & 255}${v.exhausted !== undefined || v.start > 255 || v.end < 0 ? " (exhausted)" : ""} ${!(v.start <= v.end)}`,
   );
-  const w = { start: 1, end: 5 };
+  let w = { start: 1, end: 5 };
   const value$4 = $nthBack($iterator(w, $rangeInclusiveNext, false, $rangeInclusiveNextBack), 1);
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${(w.exhausted ?? w).start & 255}..=${(w.exhausted ?? w).end & 255}${w.exhausted !== undefined || w.start > 255 || w.end < 0 ? " (exhausted)" : ""}`,
@@ -123,11 +126,11 @@ function main() {
   console.log(
     `${$lent($iterator(h, $rangeInclusiveNext)).some((x) => x === 2)} ${(h.exhausted ?? h).start & 255}..=${(h.exhausted ?? h).end & 255}${h.exhausted !== undefined || h.start > 255 || h.end < 0 ? " (exhausted)" : ""}`,
   );
-  const k = { start: 1, end: 3 };
+  let k = { start: 1, end: 3 };
   console.log(
     `${$iterator(k, $rangeInclusiveNextBack).reduce((a, x) => (((a * 10) & 255) + x) & 255, 0)} ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""} ${(k.exhausted ?? k).start & 255}`,
   );
-  const c = { start: "x", end: "z" };
+  let c = { start: "x", end: "z" };
   console.log(
     `${$lent($iterator(c, $rangeInclusiveNext)).reduce((s, x) => s + x, "")} ${$debugStr((c.exhausted ?? c).start, "'")}..=${$debugStr((c.exhausted ?? c).end, "'")}${c.exhausted !== undefined ? " (exhausted)" : ""}`,
   );
@@ -135,6 +138,53 @@ function main() {
   const value$8 = $rangeInclusiveNext(last);
   console.log(
     `${value$8 == null ? "None" : `Some(${$debugStr(value$8, "'")})`} ${$debugStr((last.exhausted ?? last).start, "'")}..=${$debugStr((last.exhausted ?? last).end, "'")}${last.exhausted !== undefined ? " (exhausted)" : ""}`,
+  );
+
+  // Collected through `by_ref()`: as std's `SpecFromIter` takes it, by its
+  // `fold` where it's `TrustedLen`, by `next` where it's not, a filter's,
+  // whose `next` is a `find`, a `try_fold`; a string's always by `fold`.
+  const a = { start: 1, end: 3 };
+  v = $foldToArray($lent($iterator(a, $rangeInclusiveNext)));
+  console.log(
+    `[${v.join(", ")}] ${(a.exhausted ?? a).start & 255}..=${(a.exhausted ?? a).end & 255}${a.exhausted !== undefined || a.start > 255 || a.end < 0 ? " (exhausted)" : ""}`,
+  );
+  const b = { start: 1, end: 3 };
+  w = $foldToArray($lent($iterator(b, $rangeInclusiveNext)).map((x) => (x * 2) & 255));
+  console.log(
+    `[${w.join(", ")}] ${(b.exhausted ?? b).start & 255}..=${(b.exhausted ?? b).end & 255}${b.exhausted !== undefined || b.start > 255 || b.end < 0 ? " (exhausted)" : ""}`,
+  );
+  c = { start: 1, end: 3 };
+  const odd = Array.from($lent($iterator(c, $rangeInclusiveNext)).filter((x) => x % 2 === 1));
+  console.log(
+    `[${odd.join(", ")}] ${(c.exhausted ?? c).start & 255}..=${(c.exhausted ?? c).end & 255}${c.exhausted !== undefined || c.start > 255 || c.end < 0 ? " (exhausted)" : ""}`,
+  );
+  const d = { start: "x", end: "z" };
+  console.log(
+    `${$lent($iterator(d, $rangeInclusiveNext))
+      .filter((x) => x !== "y")
+      .reduce(
+        (n) => n + 1,
+        0,
+      )} ${$debugStr((d.exhausted ?? d).start, "'")}..=${$debugStr((d.exhausted ?? d).end, "'")}${d.exhausted !== undefined ? " (exhausted)" : ""}`,
+  );
+  const e = { start: 1, end: 3 };
+  for (const x of $lent($iterator(e, $rangeInclusiveNext)).map((x) => (x + 1) & 255)) {
+    $print(`${x} `);
+  }
+  console.log(
+    `${(e.exhausted ?? e).start & 255}..=${(e.exhausted ?? e).end & 255}${e.exhausted !== undefined || e.start > 255 || e.end < 0 ? " (exhausted)" : ""}`,
+  );
+  const t = { start: 1, end: 3 };
+  const text = Array.from(
+    $folded($lent($iterator(t, $rangeInclusiveNext)).map((x) => String(x))),
+  ).join("");
+  console.log(
+    `${text} ${(t.exhausted ?? t).start & 255}..=${(t.exhausted ?? t).end & 255}${t.exhausted !== undefined || t.start > 255 || t.end < 0 ? " (exhausted)" : ""}`,
+  );
+  k = { start: 1, end: 4 };
+  const two = $foldToArray($lent($iterator(k, $rangeInclusiveNext)).take(2));
+  console.log(
+    `[${two.join(", ")}] ${(k.exhausted ?? k).start & 255}..=${(k.exhausted ?? k).end & 255}${k.exhausted !== undefined || k.start > 255 || k.end < 0 ? " (exhausted)" : ""}`,
   );
 
   // Stepped to its end below its type's last: no wrap, not exhausted.
