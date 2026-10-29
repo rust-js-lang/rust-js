@@ -608,7 +608,10 @@ often as Rust reads it, so `let margin = style_prop.margin; if
 margin.is_some() { style.set_margin(margin) }` is `const margin =
 styleProp.margin;` and `style.margin = margin`, not `styleProp.margin`
 again, which a getter would answer twice. A struct the program builds
-itself is its own data, read in place
+itself is its own data, read in place. So is a struct JS gives an
+exported function, or a closure or `fn` pointer it calls, and one a
+generic `js::cast::<T>` gives: each relies on JS giving an object of plain
+data, no getters, as React's props and state are
 ([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md)).
 
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a

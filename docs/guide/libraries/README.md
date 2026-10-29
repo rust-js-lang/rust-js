@@ -349,7 +349,13 @@ How WebIDL maps to Rust, one rule for each:
   ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md)).
 - **A union is each of its members as it is:** `window.fetch(url, None)`
   and `window.fetch(request, None)`; a union a JS API gives is an enum of
-  its members ([ADR 0215](../../decisions/0215-webapi-unions.md)).
+  its members ([ADR 0215](../../decisions/0215-webapi-unions.md)). A
+  dictionary that extends a member is one too, as TypeScript's is:
+  `remove_event_listener(.., Some(&options))` of an
+  `AddEventListenerOptions`. A dictionary is a JS object, so it's a value of
+  any shape, `js::unknown(&options)`, and `object::define_property(&options,
+  "passive", ..)` gives it a getter
+  ([ADR 1023](../../decisions/1023-a-dictionary-is-a-js-object-and-its-parents.md)).
 - **A rest parameter is a tuple, each argument of its own type:**
   `el.append((node, "text"))` is `el.append(node, "text")`, and
   `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",

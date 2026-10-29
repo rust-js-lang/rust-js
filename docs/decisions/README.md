@@ -807,6 +807,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
 - [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185)*
 - [1022 A field of a struct JS made is read as often as Rust reads it](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md) *(the user's decision, rd204)*
+- [1023 A dictionary is a JS object, and a member of a union its parent is](1023-a-dictionary-is-a-js-object-and-its-parents.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

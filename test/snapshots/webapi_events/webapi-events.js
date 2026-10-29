@@ -156,4 +156,21 @@ export function givenWrapped(button, given) {
   }
   button.addEventListener("custom", attached);
 }
+
+// React DOM's checkPassiveEvents: an options object whose `passive` is a
+// getter, given as the listener too, an `EventListenerObject` of no
+// `handleEvent`, which JS calls only where "test" is dispatched; and to
+// removal, an `AddEventListenerOptions` an `EventListenerOptions` is.
+export function passive(button) {
+  const options = {};
+  Object.defineProperty(options, "passive", {
+    get() {
+      globalThis.record(1);
+    },
+  });
+  // Safety: nothing dispatches "test", so JS never calls its `handleEvent`.
+  const listener = options;
+  button.addEventListener("test", listener, options);
+  button.removeEventListener("test", listener, options);
+}
 //# sourceMappingURL=webapi-events.js.map

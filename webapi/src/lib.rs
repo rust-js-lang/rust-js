@@ -102372,12 +102372,16 @@ pub struct AddEventListenerOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
+unsafe impl Defined for AddEventListenerOptions<'_> {}
+
 /// The [`AllAcceptedCredentialsOptions`](https://developer.mozilla.org/docs/Web/API/AllAcceptedCredentialsOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AllAcceptedCredentialsOptions<'a> {
     pub rp_id: &'a str,
     pub user_id: &'a str,
     pub all_accepted_credential_ids: &'a [&'a str],
 }
+
+unsafe impl Defined for AllAcceptedCredentialsOptions<'_> {}
 
 /// The [`AnalyserOptions`](https://developer.mozilla.org/docs/Web/API/AnalyserOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102391,6 +102395,8 @@ pub struct AnalyserOptions<'a> {
     pub smoothing_time_constant: Option<f64>,
 }
 
+unsafe impl Defined for AnalyserOptions<'_> {}
+
 /// The [`AnimationEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AnimationEventInit<'a> {
@@ -102403,6 +102409,8 @@ pub struct AnimationEventInit<'a> {
     pub animation: Option<&'a CSSAnimation>,
 }
 
+unsafe impl Defined for AnimationEventInit<'_> {}
+
 /// The [`AnimationPlaybackEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AnimationPlaybackEventInit<'a> {
@@ -102413,11 +102421,15 @@ pub struct AnimationPlaybackEventInit<'a> {
     pub timeline_time: Option<CSSNumberish<'a>>,
 }
 
+unsafe impl Defined for AnimationPlaybackEventInit<'_> {}
+
 /// The [`AssignedNodesOptions`](https://developer.mozilla.org/docs/Web/API/AssignedNodesOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AssignedNodesOptions {
     pub flatten: Option<bool>,
 }
+
+unsafe impl Defined for AssignedNodesOptions {}
 
 /// The [`AudioBufferOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioBufferOptions {
@@ -102425,6 +102437,8 @@ pub struct AudioBufferOptions {
     pub length: f64,
     pub sample_rate: f64,
 }
+
+unsafe impl Defined for AudioBufferOptions {}
 
 /// The [`AudioBufferSourceOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102437,6 +102451,8 @@ pub struct AudioBufferSourceOptions<'a> {
     pub playback_rate: Option<f64>,
 }
 
+unsafe impl Defined for AudioBufferSourceOptions<'_> {}
+
 /// The [`AudioContextOptions`](https://developer.mozilla.org/docs/Web/API/AudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AudioContextOptions<'a> {
@@ -102446,6 +102462,8 @@ pub struct AudioContextOptions<'a> {
     pub render_size_hint: Option<StrOrNumber<'a>>,
 }
 
+unsafe impl Defined for AudioContextOptions<'_> {}
+
 /// The [`AudioDataCopyToOptions`](https://developer.mozilla.org/docs/Web/API/AudioDataCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioDataCopyToOptions<'a> {
     pub plane_index: f64,
@@ -102453,6 +102471,8 @@ pub struct AudioDataCopyToOptions<'a> {
     pub frame_count: Option<f64>,
     pub format: Option<&'a str>,
 }
+
+unsafe impl Defined for AudioDataCopyToOptions<'_> {}
 
 /// The [`AudioDataInit`](https://developer.mozilla.org/docs/Web/API/AudioDataInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioDataInit<'a> {
@@ -102465,17 +102485,23 @@ pub struct AudioDataInit<'a> {
     pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
+unsafe impl Defined for AudioDataInit<'_> {}
+
 /// The [`AudioDecoderInit`](https://developer.mozilla.org/docs/Web/API/AudioDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioDecoderInit<'a> {
     pub output: Box<dyn FnMut(&'a AudioData)>,
     pub error: Box<dyn FnMut(&'a DOMException)>,
 }
 
+unsafe impl Defined for AudioDecoderInit<'_> {}
+
 /// The [`AudioEncoderInit`](https://developer.mozilla.org/docs/Web/API/AudioEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioEncoderInit<'a> {
     pub output: Box<dyn FnMut(&'a EncodedAudioChunk, EncodedAudioChunkMetadata)>,
     pub error: Box<dyn FnMut(&'a DOMException)>,
 }
+
+unsafe impl Defined for AudioEncoderInit<'_> {}
 
 /// The [`AudioNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102484,6 +102510,8 @@ pub struct AudioNodeOptions<'a> {
     pub channel_count_mode: Option<&'a str>,
     pub channel_interpretation: Option<&'a str>,
 }
+
+unsafe impl Defined for AudioNodeOptions<'_> {}
 
 /// The [`AudioProcessingEventInit`](https://developer.mozilla.org/docs/Web/API/AudioProcessingEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioProcessingEventInit<'a> {
@@ -102495,10 +102523,14 @@ pub struct AudioProcessingEventInit<'a> {
     pub output_buffer: &'a AudioBuffer,
 }
 
+unsafe impl Defined for AudioProcessingEventInit<'_> {}
+
 /// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioSinkOptions<'a> {
     pub r#type: &'a str,
 }
+
+unsafe impl Defined for AudioSinkOptions<'_> {}
 
 /// The [`AudioWorkletNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102511,6 +102543,8 @@ pub struct AudioWorkletNodeOptions<'a> {
     pub output_channel_count: Option<&'a [f64]>,
 }
 
+unsafe impl Defined for AudioWorkletNodeOptions<'_> {}
+
 /// The [`AuthenticationExtensionsClientInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsClientInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AuthenticationExtensionsClientInputsJSON<'a> {
@@ -102520,6 +102554,8 @@ pub struct AuthenticationExtensionsClientInputsJSON<'a> {
     pub large_blob: Option<AuthenticationExtensionsLargeBlobInputsJSON<'a>>,
 }
 
+unsafe impl Defined for AuthenticationExtensionsClientInputsJSON<'_> {}
+
 /// The [`AuthenticationExtensionsLargeBlobInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsLargeBlobInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
@@ -102528,17 +102564,23 @@ pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
     pub write: Option<&'a str>,
 }
 
+unsafe impl Defined for AuthenticationExtensionsLargeBlobInputsJSON<'_> {}
+
 /// The [`AuthenticationExtensionsPRFInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
     pub eval: Option<AuthenticationExtensionsPRFValuesJSON<'a>>,
 }
 
+unsafe impl Defined for AuthenticationExtensionsPRFInputsJSON<'_> {}
+
 /// The [`AuthenticationExtensionsPRFValuesJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFValuesJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AuthenticationExtensionsPRFValuesJSON<'a> {
     pub first: &'a str,
     pub second: Option<&'a str>,
 }
+
+unsafe impl Defined for AuthenticationExtensionsPRFValuesJSON<'_> {}
 
 /// The [`BiquadFilterOptions`](https://developer.mozilla.org/docs/Web/API/BiquadFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102554,6 +102596,8 @@ pub struct BiquadFilterOptions<'a> {
     pub gain: Option<f64>,
 }
 
+unsafe impl Defined for BiquadFilterOptions<'_> {}
+
 /// The [`BlobEventInit`](https://developer.mozilla.org/docs/Web/API/BlobEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct BlobEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -102563,6 +102607,8 @@ pub struct BlobEventInit<'a> {
     pub timecode: Option<f64>,
 }
 
+unsafe impl Defined for BlobEventInit<'_> {}
+
 /// The [`BlobPropertyBag`](https://developer.mozilla.org/docs/Web/API/BlobPropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct BlobPropertyBag<'a> {
@@ -102570,12 +102616,16 @@ pub struct BlobPropertyBag<'a> {
     pub endings: Option<&'a str>,
 }
 
+unsafe impl Defined for BlobPropertyBag<'_> {}
+
 /// The [`BoxQuadOptions`](https://developer.mozilla.org/docs/Web/API/BoxQuadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct BoxQuadOptions<'a> {
     pub r#box: Option<&'a str>,
     pub relative_to: Option<GeometryNode<'a>>,
 }
+
+unsafe impl Defined for BoxQuadOptions<'_> {}
 
 /// The [`CacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/CacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102585,11 +102635,15 @@ pub struct CacheQueryOptions {
     pub ignore_vary: Option<bool>,
 }
 
+unsafe impl Defined for CacheQueryOptions {}
+
 /// The [`CaretPositionFromPointOptions`](https://developer.mozilla.org/docs/Web/API/CaretPositionFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CaretPositionFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
+
+unsafe impl Defined for CaretPositionFromPointOptions<'_> {}
 
 /// The [`ChannelMergerOptions`](https://developer.mozilla.org/docs/Web/API/ChannelMergerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102600,6 +102654,8 @@ pub struct ChannelMergerOptions<'a> {
     pub number_of_inputs: Option<f64>,
 }
 
+unsafe impl Defined for ChannelMergerOptions<'_> {}
+
 /// The [`ChannelSplitterOptions`](https://developer.mozilla.org/docs/Web/API/ChannelSplitterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ChannelSplitterOptions<'a> {
@@ -102609,6 +102665,8 @@ pub struct ChannelSplitterOptions<'a> {
     pub number_of_outputs: Option<f64>,
 }
 
+unsafe impl Defined for ChannelSplitterOptions<'_> {}
+
 /// The [`ChapterInformationInit`](https://developer.mozilla.org/docs/Web/API/ChapterInformationInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ChapterInformationInit<'a> {
@@ -102616,6 +102674,8 @@ pub struct ChapterInformationInit<'a> {
     pub start_time: Option<f64>,
     pub artwork: Option<&'a [MediaImage<'a>]>,
 }
+
+unsafe impl Defined for ChapterInformationInit<'_> {}
 
 /// The [`CheckVisibilityOptions`](https://developer.mozilla.org/docs/Web/API/CheckVisibilityOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102628,6 +102688,8 @@ pub struct CheckVisibilityOptions {
     pub visibility_property: Option<bool>,
 }
 
+unsafe impl Defined for CheckVisibilityOptions {}
+
 /// The [`ClipboardEventInit`](https://developer.mozilla.org/docs/Web/API/ClipboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ClipboardEventInit<'a> {
@@ -102637,11 +102699,15 @@ pub struct ClipboardEventInit<'a> {
     pub clipboard_data: Option<&'a DataTransfer>,
 }
 
+unsafe impl Defined for ClipboardEventInit<'_> {}
+
 /// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ClipboardUnsanitizedFormats<'a> {
     pub unsanitized: Option<&'a [&'a str]>,
 }
+
+unsafe impl Defined for ClipboardUnsanitizedFormats<'_> {}
 
 /// The [`CloseEventInit`](https://developer.mozilla.org/docs/Web/API/CloseEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102654,11 +102720,15 @@ pub struct CloseEventInit<'a> {
     pub reason: Option<&'a str>,
 }
 
+unsafe impl Defined for CloseEventInit<'_> {}
+
 /// The [`CloseWatcherOptions`](https://developer.mozilla.org/docs/Web/API/CloseWatcherOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CloseWatcherOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
+
+unsafe impl Defined for CloseWatcherOptions<'_> {}
 
 /// The [`CommandEventInit`](https://developer.mozilla.org/docs/Web/API/CommandEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102669,6 +102739,8 @@ pub struct CommandEventInit<'a> {
     pub source: Option<&'a Element>,
     pub command: Option<&'a str>,
 }
+
+unsafe impl Defined for CommandEventInit<'_> {}
 
 /// The [`CompositionEventInit`](https://developer.mozilla.org/docs/Web/API/CompositionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102682,11 +102754,15 @@ pub struct CompositionEventInit<'a> {
     pub data: Option<&'a str>,
 }
 
+unsafe impl Defined for CompositionEventInit<'_> {}
+
 /// The [`ConstantSourceOptions`](https://developer.mozilla.org/docs/Web/API/ConstantSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ConstantSourceOptions {
     pub offset: Option<f64>,
 }
+
+unsafe impl Defined for ConstantSourceOptions {}
 
 /// The [`ContentVisibilityAutoStateChangeEventInit`](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102697,12 +102773,16 @@ pub struct ContentVisibilityAutoStateChangeEventInit {
     pub skipped: Option<bool>,
 }
 
+unsafe impl Defined for ContentVisibilityAutoStateChangeEventInit {}
+
 /// The [`ConvertCoordinateOptions`](https://developer.mozilla.org/docs/Web/API/ConvertCoordinateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ConvertCoordinateOptions<'a> {
     pub from_box: Option<&'a str>,
     pub to_box: Option<&'a str>,
 }
+
+unsafe impl Defined for ConvertCoordinateOptions<'_> {}
 
 /// The [`ConvolverOptions`](https://developer.mozilla.org/docs/Web/API/ConvolverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102714,6 +102794,8 @@ pub struct ConvolverOptions<'a> {
     pub disable_normalization: Option<bool>,
 }
 
+unsafe impl Defined for ConvolverOptions<'_> {}
+
 /// The [`CookieChangeEventInit`](https://developer.mozilla.org/docs/Web/API/CookieChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CookieChangeEventInit<'a> {
@@ -102723,6 +102805,8 @@ pub struct CookieChangeEventInit<'a> {
     pub changed: Option<&'a [CookieListItem]>,
     pub deleted: Option<&'a [CookieListItem]>,
 }
+
+unsafe impl Defined for CookieChangeEventInit<'_> {}
 
 /// The [`CookieInit`](https://developer.mozilla.org/docs/Web/API/CookieInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct CookieInit<'a> {
@@ -102736,6 +102820,8 @@ pub struct CookieInit<'a> {
     pub max_age: Option<f64>,
 }
 
+unsafe impl Defined for CookieInit<'_> {}
+
 /// The [`CookieStoreDeleteOptions`](https://developer.mozilla.org/docs/Web/API/CookieStoreDeleteOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct CookieStoreDeleteOptions<'a> {
     pub name: &'a str,
@@ -102744,6 +102830,8 @@ pub struct CookieStoreDeleteOptions<'a> {
     pub partitioned: Option<bool>,
 }
 
+unsafe impl Defined for CookieStoreDeleteOptions<'_> {}
+
 /// The [`CredentialCreationOptions`](https://developer.mozilla.org/docs/Web/API/CredentialCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CredentialCreationOptions<'a> {
@@ -102751,6 +102839,8 @@ pub struct CredentialCreationOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
     pub public_key: Option<PublicKeyCredentialCreationOptions>,
 }
+
+unsafe impl Defined for CredentialCreationOptions<'_> {}
 
 /// The [`CredentialRequestOptions`](https://developer.mozilla.org/docs/Web/API/CredentialRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102761,11 +102851,15 @@ pub struct CredentialRequestOptions<'a> {
     pub public_key: Option<PublicKeyCredentialRequestOptions>,
 }
 
+unsafe impl Defined for CredentialRequestOptions<'_> {}
+
 /// The [`CSSMatrixComponentOptions`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponentOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct CSSMatrixComponentOptions {
     pub is2_d: Option<bool>,
 }
+
+unsafe impl Defined for CSSMatrixComponentOptions {}
 
 /// The [`CSSStyleSheetInit`](https://developer.mozilla.org/docs/Web/API/CSSStyleSheetInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102776,6 +102870,8 @@ pub struct CSSStyleSheetInit<'a> {
     pub disabled: Option<bool>,
 }
 
+unsafe impl Defined for CSSStyleSheetInit<'_> {}
+
 /// The [`CurrentUserDetailsOptions`](https://developer.mozilla.org/docs/Web/API/CurrentUserDetailsOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct CurrentUserDetailsOptions<'a> {
     pub rp_id: &'a str,
@@ -102783,6 +102879,8 @@ pub struct CurrentUserDetailsOptions<'a> {
     pub name: &'a str,
     pub display_name: &'a str,
 }
+
+unsafe impl Defined for CurrentUserDetailsOptions<'_> {}
 
 /// The [`CustomEventInit`](https://developer.mozilla.org/docs/Web/API/CustomEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102792,6 +102890,8 @@ pub struct CustomEventInit<'a> {
     pub composed: Option<bool>,
     pub detail: Option<&'a dyn IntoUnknown>,
 }
+
+unsafe impl Defined for CustomEventInit<'_> {}
 
 /// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102803,6 +102903,8 @@ pub struct DelayOptions<'a> {
     pub delay_time: Option<f64>,
 }
 
+unsafe impl Defined for DelayOptions<'_> {}
+
 /// The [`DeviceMotionEventAccelerationInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventAccelerationInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DeviceMotionEventAccelerationInit {
@@ -102810,6 +102912,8 @@ pub struct DeviceMotionEventAccelerationInit {
     pub y: Option<f64>,
     pub z: Option<f64>,
 }
+
+unsafe impl Defined for DeviceMotionEventAccelerationInit {}
 
 /// The [`DeviceMotionEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102823,6 +102927,8 @@ pub struct DeviceMotionEventInit {
     pub interval: Option<f64>,
 }
 
+unsafe impl Defined for DeviceMotionEventInit {}
+
 /// The [`DeviceMotionEventRotationRateInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventRotationRateInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DeviceMotionEventRotationRateInit {
@@ -102830,6 +102936,8 @@ pub struct DeviceMotionEventRotationRateInit {
     pub beta: Option<f64>,
     pub gamma: Option<f64>,
 }
+
+unsafe impl Defined for DeviceMotionEventRotationRateInit {}
 
 /// The [`DeviceOrientationEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102842,6 +102950,8 @@ pub struct DeviceOrientationEventInit {
     pub gamma: Option<f64>,
     pub absolute: Option<bool>,
 }
+
+unsafe impl Defined for DeviceOrientationEventInit {}
 
 /// The [`DisplayMediaStreamOptions`](https://developer.mozilla.org/docs/Web/API/DisplayMediaStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102856,6 +102966,8 @@ pub struct DisplayMediaStreamOptions<'a> {
     pub audio_selection: Option<&'a str>,
 }
 
+unsafe impl Defined for DisplayMediaStreamOptions<'_> {}
+
 /// The [`DocumentPictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct DocumentPictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -102863,6 +102975,8 @@ pub struct DocumentPictureInPictureEventInit<'a> {
     pub composed: Option<bool>,
     pub window: &'a Window,
 }
+
+unsafe impl Defined for DocumentPictureInPictureEventInit<'_> {}
 
 /// The [`DocumentPictureInPictureOptions`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102873,11 +102987,15 @@ pub struct DocumentPictureInPictureOptions {
     pub prefer_initial_window_placement: Option<bool>,
 }
 
+unsafe impl Defined for DocumentPictureInPictureOptions {}
+
 /// The [`DocumentTimelineOptions`](https://developer.mozilla.org/docs/Web/API/DocumentTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DocumentTimelineOptions {
     pub origin_time: Option<f64>,
 }
+
+unsafe impl Defined for DocumentTimelineOptions {}
 
 /// The [`DOMMatrix2DInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrix2DInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102895,6 +103013,8 @@ pub struct DOMMatrix2DInit {
     pub m41: Option<f64>,
     pub m42: Option<f64>,
 }
+
+unsafe impl Defined for DOMMatrix2DInit {}
 
 /// The [`DOMMatrixInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrixInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102924,6 +103044,8 @@ pub struct DOMMatrixInit {
     pub is2_d: Option<bool>,
 }
 
+unsafe impl Defined for DOMMatrixInit {}
+
 /// The [`DOMPointInit`](https://developer.mozilla.org/docs/Web/API/DOMPointInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DOMPointInit {
@@ -102932,6 +103054,8 @@ pub struct DOMPointInit {
     pub z: Option<f64>,
     pub w: Option<f64>,
 }
+
+unsafe impl Defined for DOMPointInit {}
 
 /// The [`DOMQuadInit`](https://developer.mozilla.org/docs/Web/API/DOMQuadInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102942,6 +103066,8 @@ pub struct DOMQuadInit {
     pub p4: Option<DOMPointInit>,
 }
 
+unsafe impl Defined for DOMQuadInit {}
+
 /// The [`DOMRectInit`](https://developer.mozilla.org/docs/Web/API/DOMRectInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DOMRectInit {
@@ -102950,6 +103076,8 @@ pub struct DOMRectInit {
     pub width: Option<f64>,
     pub height: Option<f64>,
 }
+
+unsafe impl Defined for DOMRectInit {}
 
 /// The [`DragEventInit`](https://developer.mozilla.org/docs/Web/API/DragEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -102986,6 +103114,8 @@ pub struct DragEventInit<'a> {
     pub data_transfer: Option<&'a DataTransfer>,
 }
 
+unsafe impl Defined for DragEventInit<'_> {}
+
 /// The [`DynamicsCompressorOptions`](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct DynamicsCompressorOptions<'a> {
@@ -102999,6 +103129,8 @@ pub struct DynamicsCompressorOptions<'a> {
     pub threshold: Option<f64>,
 }
 
+unsafe impl Defined for DynamicsCompressorOptions<'_> {}
+
 /// The [`ElementCreationOptions`](https://developer.mozilla.org/docs/Web/API/ElementCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ElementCreationOptions<'a> {
@@ -103006,11 +103138,15 @@ pub struct ElementCreationOptions<'a> {
     pub is: Option<&'a str>,
 }
 
+unsafe impl Defined for ElementCreationOptions<'_> {}
+
 /// The [`ElementDefinitionOptions`](https://developer.mozilla.org/docs/Web/API/ElementDefinitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ElementDefinitionOptions<'a> {
     pub extends: Option<&'a str>,
 }
+
+unsafe impl Defined for ElementDefinitionOptions<'_> {}
 
 /// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedAudioChunkInit<'a> {
@@ -103021,11 +103157,15 @@ pub struct EncodedAudioChunkInit<'a> {
     pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
+unsafe impl Defined for EncodedAudioChunkInit<'_> {}
+
 /// The [`EncodedAudioChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct EncodedAudioChunkMetadata {
     pub decoder_config: Option<AudioDecoderConfig>,
 }
+
+unsafe impl Defined for EncodedAudioChunkMetadata {}
 
 /// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedVideoChunkInit<'a> {
@@ -103036,6 +103176,8 @@ pub struct EncodedVideoChunkInit<'a> {
     pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
+unsafe impl Defined for EncodedVideoChunkInit<'_> {}
+
 /// The [`EncodedVideoChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct EncodedVideoChunkMetadata<'a> {
@@ -103043,6 +103185,8 @@ pub struct EncodedVideoChunkMetadata<'a> {
     pub svc: Option<SvcOutputMetadata>,
     pub alpha_side_data: Option<BufferSource<'a>>,
 }
+
+unsafe impl Defined for EncodedVideoChunkMetadata<'_> {}
 
 /// The [`ErrorEventInit`](https://developer.mozilla.org/docs/Web/API/ErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103057,6 +103201,8 @@ pub struct ErrorEventInit<'a> {
     pub error: Option<&'a dyn IntoUnknown>,
 }
 
+unsafe impl Defined for ErrorEventInit<'_> {}
+
 /// The [`EventInit`](https://developer.mozilla.org/docs/Web/API/EventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct EventInit {
@@ -103065,17 +103211,23 @@ pub struct EventInit {
     pub composed: Option<bool>,
 }
 
+unsafe impl Defined for EventInit {}
+
 /// The [`EventListenerOptions`](https://developer.mozilla.org/docs/Web/API/EventListenerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct EventListenerOptions {
     pub capture: Option<bool>,
 }
 
+unsafe impl Defined for EventListenerOptions {}
+
 /// The [`EventSourceInit`](https://developer.mozilla.org/docs/Web/API/EventSourceInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct EventSourceInit {
     pub with_credentials: Option<bool>,
 }
+
+unsafe impl Defined for EventSourceInit {}
 
 /// The [`FilePropertyBag`](https://developer.mozilla.org/docs/Web/API/FilePropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103085,11 +103237,15 @@ pub struct FilePropertyBag<'a> {
     pub last_modified: Option<f64>,
 }
 
+unsafe impl Defined for FilePropertyBag<'_> {}
+
 /// The [`FileSystemCreateWritableOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemCreateWritableOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FileSystemCreateWritableOptions {
     pub keep_existing_data: Option<bool>,
 }
+
+unsafe impl Defined for FileSystemCreateWritableOptions {}
 
 /// The [`FileSystemFlags`](https://developer.mozilla.org/docs/Web/API/FileSystemFlags) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103098,11 +103254,15 @@ pub struct FileSystemFlags {
     pub exclusive: Option<bool>,
 }
 
+unsafe impl Defined for FileSystemFlags {}
+
 /// The [`FileSystemGetDirectoryOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetDirectoryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FileSystemGetDirectoryOptions {
     pub create: Option<bool>,
 }
+
+unsafe impl Defined for FileSystemGetDirectoryOptions {}
 
 /// The [`FileSystemGetFileOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetFileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103110,11 +103270,15 @@ pub struct FileSystemGetFileOptions {
     pub create: Option<bool>,
 }
 
+unsafe impl Defined for FileSystemGetFileOptions {}
+
 /// The [`FileSystemRemoveOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemRemoveOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FileSystemRemoveOptions {
     pub recursive: Option<bool>,
 }
+
+unsafe impl Defined for FileSystemRemoveOptions {}
 
 /// The [`FocusEventInit`](https://developer.mozilla.org/docs/Web/API/FocusEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103128,12 +103292,16 @@ pub struct FocusEventInit<'a> {
     pub related_target: Option<&'a EventTarget>,
 }
 
+unsafe impl Defined for FocusEventInit<'_> {}
+
 /// The [`FocusOptions`](https://developer.mozilla.org/docs/Web/API/FocusOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FocusOptions {
     pub prevent_scroll: Option<bool>,
     pub focus_visible: Option<bool>,
 }
+
+unsafe impl Defined for FocusOptions {}
 
 /// The [`FontFaceDescriptors`](https://developer.mozilla.org/docs/Web/API/FontFaceDescriptors) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103150,6 +103318,8 @@ pub struct FontFaceDescriptors<'a> {
     pub line_gap_override: Option<&'a str>,
 }
 
+unsafe impl Defined for FontFaceDescriptors<'_> {}
+
 /// The [`FontFaceSetLoadEventInit`](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct FontFaceSetLoadEventInit<'a> {
@@ -103159,6 +103329,8 @@ pub struct FontFaceSetLoadEventInit<'a> {
     pub fontfaces: Option<&'a [&'a FontFace]>,
 }
 
+unsafe impl Defined for FontFaceSetLoadEventInit<'_> {}
+
 /// The [`FormDataEventInit`](https://developer.mozilla.org/docs/Web/API/FormDataEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct FormDataEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -103166,6 +103338,8 @@ pub struct FormDataEventInit<'a> {
     pub composed: Option<bool>,
     pub form_data: &'a FormData,
 }
+
+unsafe impl Defined for FormDataEventInit<'_> {}
 
 /// The [`FullscreenOptions`](https://developer.mozilla.org/docs/Web/API/FullscreenOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103175,6 +103349,8 @@ pub struct FullscreenOptions<'a> {
     pub navigation_ui: Option<&'a str>,
 }
 
+unsafe impl Defined for FullscreenOptions<'_> {}
+
 /// The [`GainOptions`](https://developer.mozilla.org/docs/Web/API/GainOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GainOptions<'a> {
@@ -103183,6 +103359,8 @@ pub struct GainOptions<'a> {
     pub channel_interpretation: Option<&'a str>,
     pub gain: Option<f64>,
 }
+
+unsafe impl Defined for GainOptions<'_> {}
 
 /// The [`GamepadEffectParameters`](https://developer.mozilla.org/docs/Web/API/GamepadEffectParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103195,6 +103373,8 @@ pub struct GamepadEffectParameters {
     pub right_trigger: Option<f64>,
 }
 
+unsafe impl Defined for GamepadEffectParameters {}
+
 /// The [`GamepadEventInit`](https://developer.mozilla.org/docs/Web/API/GamepadEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GamepadEventInit<'a> {
@@ -103204,6 +103384,8 @@ pub struct GamepadEventInit<'a> {
     pub gamepad: Option<&'a Gamepad>,
 }
 
+unsafe impl Defined for GamepadEventInit<'_> {}
+
 /// The [`GetAnimationsOptions`](https://developer.mozilla.org/docs/Web/API/GetAnimationsOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GetAnimationsOptions<'a> {
@@ -103211,11 +103393,15 @@ pub struct GetAnimationsOptions<'a> {
     pub pseudo_element: Option<&'a str>,
 }
 
+unsafe impl Defined for GetAnimationsOptions<'_> {}
+
 /// The [`GetComposedRangesOptions`](https://developer.mozilla.org/docs/Web/API/GetComposedRangesOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GetComposedRangesOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
+
+unsafe impl Defined for GetComposedRangesOptions<'_> {}
 
 /// The [`GetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/GetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103224,17 +103410,23 @@ pub struct GetHTMLOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
 
+unsafe impl Defined for GetHTMLOptions<'_> {}
+
 /// The [`GetNotificationOptions`](https://developer.mozilla.org/docs/Web/API/GetNotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GetNotificationOptions<'a> {
     pub tag: Option<&'a str>,
 }
 
+unsafe impl Defined for GetNotificationOptions<'_> {}
+
 /// The [`GetRootNodeOptions`](https://developer.mozilla.org/docs/Web/API/GetRootNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GetRootNodeOptions {
     pub composed: Option<bool>,
 }
+
+unsafe impl Defined for GetRootNodeOptions {}
 
 /// The [`GPUBindGroupDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBindGroupDescriptor<'a> {
@@ -103243,17 +103435,23 @@ pub struct GPUBindGroupDescriptor<'a> {
     pub entries: &'a [GPUBindGroupEntry<'a>],
 }
 
+unsafe impl Defined for GPUBindGroupDescriptor<'_> {}
+
 /// The [`GPUBindGroupEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupEntry) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBindGroupEntry<'a> {
     pub binding: f64,
     pub resource: GPUBindingResource<'a>,
 }
 
+unsafe impl Defined for GPUBindGroupEntry<'_> {}
+
 /// The [`GPUBindGroupLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBindGroupLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
     pub entries: &'a [GPUBindGroupLayoutEntry<'a>],
 }
+
+unsafe impl Defined for GPUBindGroupLayoutDescriptor<'_> {}
 
 /// The [`GPUBindGroupLayoutEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutEntry) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBindGroupLayoutEntry<'a> {
@@ -103265,6 +103463,8 @@ pub struct GPUBindGroupLayoutEntry<'a> {
     pub storage_texture: Option<GPUStorageTextureBindingLayout<'a>>,
 }
 
+unsafe impl Defined for GPUBindGroupLayoutEntry<'_> {}
+
 /// The [`GPUBlendComponent`](https://developer.mozilla.org/docs/Web/API/GPUBlendComponent) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUBlendComponent<'a> {
@@ -103273,11 +103473,15 @@ pub struct GPUBlendComponent<'a> {
     pub dst_factor: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUBlendComponent<'_> {}
+
 /// The [`GPUBlendState`](https://developer.mozilla.org/docs/Web/API/GPUBlendState) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBlendState<'a> {
     pub color: GPUBlendComponent<'a>,
     pub alpha: GPUBlendComponent<'a>,
 }
+
+unsafe impl Defined for GPUBlendState<'_> {}
 
 /// The [`GPUBufferBinding`](https://developer.mozilla.org/docs/Web/API/GPUBufferBinding) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBufferBinding<'a> {
@@ -103285,6 +103489,8 @@ pub struct GPUBufferBinding<'a> {
     pub offset: Option<f64>,
     pub size: Option<f64>,
 }
+
+unsafe impl Defined for GPUBufferBinding<'_> {}
 
 /// The [`GPUBufferBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUBufferBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103294,6 +103500,8 @@ pub struct GPUBufferBindingLayout<'a> {
     pub min_binding_size: Option<f64>,
 }
 
+unsafe impl Defined for GPUBufferBindingLayout<'_> {}
+
 /// The [`GPUBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUBufferDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -103301,6 +103509,8 @@ pub struct GPUBufferDescriptor<'a> {
     pub usage: f64,
     pub mapped_at_creation: Option<bool>,
 }
+
+unsafe impl Defined for GPUBufferDescriptor<'_> {}
 
 /// The [`GPUColorDict`](https://developer.mozilla.org/docs/Web/API/GPUColorDict) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUColorDict {
@@ -103310,6 +103520,8 @@ pub struct GPUColorDict {
     pub a: f64,
 }
 
+unsafe impl Defined for GPUColorDict {}
+
 /// The [`GPUColorTargetState`](https://developer.mozilla.org/docs/Web/API/GPUColorTargetState) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUColorTargetState<'a> {
     pub format: &'a str,
@@ -103317,17 +103529,23 @@ pub struct GPUColorTargetState<'a> {
     pub write_mask: Option<f64>,
 }
 
+unsafe impl Defined for GPUColorTargetState<'_> {}
+
 /// The [`GPUCommandBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUCommandBufferDescriptor<'a> {
     pub label: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUCommandBufferDescriptor<'_> {}
+
 /// The [`GPUCommandEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUCommandEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
 }
+
+unsafe impl Defined for GPUCommandEncoderDescriptor<'_> {}
 
 /// The [`GPUComputePassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103336,6 +103554,8 @@ pub struct GPUComputePassDescriptor<'a> {
     pub timestamp_writes: Option<GPUComputePassTimestampWrites<'a>>,
 }
 
+unsafe impl Defined for GPUComputePassDescriptor<'_> {}
+
 /// The [`GPUComputePassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPUComputePassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUComputePassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
@@ -103343,12 +103563,16 @@ pub struct GPUComputePassTimestampWrites<'a> {
     pub end_of_pass_write_index: Option<f64>,
 }
 
+unsafe impl Defined for GPUComputePassTimestampWrites<'_> {}
+
 /// The [`GPUComputePipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUComputePipelineDescriptor<'a> {
     pub label: Option<&'a str>,
     pub layout: GPUPipelineLayoutOrStr<'a>,
     pub compute: GPUProgrammableStage<'a>,
 }
+
+unsafe impl Defined for GPUComputePipelineDescriptor<'_> {}
 
 /// The [`GPUCopyExternalImageDestInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageDestInfo) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUCopyExternalImageDestInfo<'a> {
@@ -103360,12 +103584,16 @@ pub struct GPUCopyExternalImageDestInfo<'a> {
     pub premultiplied_alpha: Option<bool>,
 }
 
+unsafe impl Defined for GPUCopyExternalImageDestInfo<'_> {}
+
 /// The [`GPUCopyExternalImageSourceInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageSourceInfo) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUCopyExternalImageSourceInfo<'a> {
     pub source: GPUCopyExternalImageSource<'a>,
     pub origin: Option<GPUOrigin2D<'a>>,
     pub flip_y: Option<bool>,
 }
+
+unsafe impl Defined for GPUCopyExternalImageSourceInfo<'_> {}
 
 /// The [`GPUDepthStencilState`](https://developer.mozilla.org/docs/Web/API/GPUDepthStencilState) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUDepthStencilState<'a> {
@@ -103381,6 +103609,8 @@ pub struct GPUDepthStencilState<'a> {
     pub depth_bias_clamp: Option<f64>,
 }
 
+unsafe impl Defined for GPUDepthStencilState<'_> {}
+
 /// The [`GPUDeviceDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUDeviceDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUDeviceDescriptor<'a> {
@@ -103389,12 +103619,16 @@ pub struct GPUDeviceDescriptor<'a> {
     pub default_queue: Option<GPUQueueDescriptor<'a>>,
 }
 
+unsafe impl Defined for GPUDeviceDescriptor<'_> {}
+
 /// The [`GPUExtent3DDict`](https://developer.mozilla.org/docs/Web/API/GPUExtent3DDict) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUExtent3DDict {
     pub width: f64,
     pub height: Option<f64>,
     pub depth_or_array_layers: Option<f64>,
 }
+
+unsafe impl Defined for GPUExtent3DDict {}
 
 /// The [`GPUExternalTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUExternalTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUExternalTextureDescriptor<'a> {
@@ -103403,12 +103637,16 @@ pub struct GPUExternalTextureDescriptor<'a> {
     pub color_space: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUExternalTextureDescriptor<'_> {}
+
 /// The [`GPUFragmentState`](https://developer.mozilla.org/docs/Web/API/GPUFragmentState) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUFragmentState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
     pub targets: &'a [GPUColorTargetState<'a>],
 }
+
+unsafe impl Defined for GPUFragmentState<'_> {}
 
 /// The [`GPUMultisampleState`](https://developer.mozilla.org/docs/Web/API/GPUMultisampleState) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103418,12 +103656,16 @@ pub struct GPUMultisampleState {
     pub alpha_to_coverage_enabled: Option<bool>,
 }
 
+unsafe impl Defined for GPUMultisampleState {}
+
 /// The [`GPUOrigin2DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin2DDict) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUOrigin2DDict {
     pub x: Option<f64>,
     pub y: Option<f64>,
 }
+
+unsafe impl Defined for GPUOrigin2DDict {}
 
 /// The [`GPUOrigin3DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin3DDict) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103433,12 +103675,16 @@ pub struct GPUOrigin3DDict {
     pub z: Option<f64>,
 }
 
+unsafe impl Defined for GPUOrigin3DDict {}
+
 /// The [`GPUPipelineLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUPipelineLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUPipelineLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
     pub bind_group_layouts: &'a [&'a GPUBindGroupLayout],
     pub immediate_size: Option<f64>,
 }
+
+unsafe impl Defined for GPUPipelineLayoutDescriptor<'_> {}
 
 /// The [`GPUPrimitiveState`](https://developer.mozilla.org/docs/Web/API/GPUPrimitiveState) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103450,11 +103696,15 @@ pub struct GPUPrimitiveState<'a> {
     pub unclipped_depth: Option<bool>,
 }
 
+unsafe impl Defined for GPUPrimitiveState<'_> {}
+
 /// The [`GPUProgrammableStage`](https://developer.mozilla.org/docs/Web/API/GPUProgrammableStage) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUProgrammableStage<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
 }
+
+unsafe impl Defined for GPUProgrammableStage<'_> {}
 
 /// The [`GPUQuerySetDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQuerySetDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUQuerySetDescriptor<'a> {
@@ -103463,17 +103713,23 @@ pub struct GPUQuerySetDescriptor<'a> {
     pub count: f64,
 }
 
+unsafe impl Defined for GPUQuerySetDescriptor<'_> {}
+
 /// The [`GPUQueueDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQueueDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUQueueDescriptor<'a> {
     pub label: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUQueueDescriptor<'_> {}
+
 /// The [`GPURenderBundleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPURenderBundleDescriptor<'a> {
     pub label: Option<&'a str>,
 }
+
+unsafe impl Defined for GPURenderBundleDescriptor<'_> {}
 
 /// The [`GPURenderBundleEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderBundleEncoderDescriptor<'a> {
@@ -103485,6 +103741,8 @@ pub struct GPURenderBundleEncoderDescriptor<'a> {
     pub stencil_read_only: Option<bool>,
 }
 
+unsafe impl Defined for GPURenderBundleEncoderDescriptor<'_> {}
+
 /// The [`GPURenderPassColorAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassColorAttachment) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPassColorAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
@@ -103494,6 +103752,8 @@ pub struct GPURenderPassColorAttachment<'a> {
     pub load_op: &'a str,
     pub store_op: &'a str,
 }
+
+unsafe impl Defined for GPURenderPassColorAttachment<'_> {}
 
 /// The [`GPURenderPassDepthStencilAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDepthStencilAttachment) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPassDepthStencilAttachment<'a> {
@@ -103508,6 +103768,8 @@ pub struct GPURenderPassDepthStencilAttachment<'a> {
     pub stencil_read_only: Option<bool>,
 }
 
+unsafe impl Defined for GPURenderPassDepthStencilAttachment<'_> {}
+
 /// The [`GPURenderPassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPassDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -103518,12 +103780,16 @@ pub struct GPURenderPassDescriptor<'a> {
     pub max_draw_count: Option<f64>,
 }
 
+unsafe impl Defined for GPURenderPassDescriptor<'_> {}
+
 /// The [`GPURenderPassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPURenderPassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
     pub beginning_of_pass_write_index: Option<f64>,
     pub end_of_pass_write_index: Option<f64>,
 }
+
+unsafe impl Defined for GPURenderPassTimestampWrites<'_> {}
 
 /// The [`GPURenderPipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderPipelineDescriptor<'a> {
@@ -103536,6 +103802,8 @@ pub struct GPURenderPipelineDescriptor<'a> {
     pub fragment: Option<GPUFragmentState<'a>>,
 }
 
+unsafe impl Defined for GPURenderPipelineDescriptor<'_> {}
+
 /// The [`GPURequestAdapterOptions`](https://developer.mozilla.org/docs/Web/API/GPURequestAdapterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPURequestAdapterOptions<'a> {
@@ -103545,11 +103813,15 @@ pub struct GPURequestAdapterOptions<'a> {
     pub xr_compatible: Option<bool>,
 }
 
+unsafe impl Defined for GPURequestAdapterOptions<'_> {}
+
 /// The [`GPUSamplerBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUSamplerBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUSamplerBindingLayout<'a> {
     pub r#type: Option<&'a str>,
 }
+
+unsafe impl Defined for GPUSamplerBindingLayout<'_> {}
 
 /// The [`GPUSamplerDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUSamplerDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103567,11 +103839,15 @@ pub struct GPUSamplerDescriptor<'a> {
     pub max_anisotropy: Option<f64>,
 }
 
+unsafe impl Defined for GPUSamplerDescriptor<'_> {}
+
 /// The [`GPUShaderModuleCompilationHint`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleCompilationHint) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUShaderModuleCompilationHint<'a> {
     pub entry_point: &'a str,
     pub layout: Option<GPUPipelineLayoutOrStr<'a>>,
 }
+
+unsafe impl Defined for GPUShaderModuleCompilationHint<'_> {}
 
 /// The [`GPUShaderModuleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUShaderModuleDescriptor<'a> {
@@ -103579,6 +103855,8 @@ pub struct GPUShaderModuleDescriptor<'a> {
     pub code: &'a str,
     pub compilation_hints: Option<&'a [GPUShaderModuleCompilationHint<'a>]>,
 }
+
+unsafe impl Defined for GPUShaderModuleDescriptor<'_> {}
 
 /// The [`GPUStencilFaceState`](https://developer.mozilla.org/docs/Web/API/GPUStencilFaceState) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103589,12 +103867,16 @@ pub struct GPUStencilFaceState<'a> {
     pub pass_op: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUStencilFaceState<'_> {}
+
 /// The [`GPUStorageTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUStorageTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUStorageTextureBindingLayout<'a> {
     pub access: Option<&'a str>,
     pub format: &'a str,
     pub view_dimension: Option<&'a str>,
 }
+
+unsafe impl Defined for GPUStorageTextureBindingLayout<'_> {}
 
 /// The [`GPUTexelCopyBufferInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferInfo) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUTexelCopyBufferInfo<'a> {
@@ -103604,6 +103886,8 @@ pub struct GPUTexelCopyBufferInfo<'a> {
     pub buffer: &'a GPUBuffer,
 }
 
+unsafe impl Defined for GPUTexelCopyBufferInfo<'_> {}
+
 /// The [`GPUTexelCopyBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUTexelCopyBufferLayout {
@@ -103611,6 +103895,8 @@ pub struct GPUTexelCopyBufferLayout {
     pub bytes_per_row: Option<f64>,
     pub rows_per_image: Option<f64>,
 }
+
+unsafe impl Defined for GPUTexelCopyBufferLayout {}
 
 /// The [`GPUTexelCopyTextureInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyTextureInfo) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUTexelCopyTextureInfo<'a> {
@@ -103620,6 +103906,8 @@ pub struct GPUTexelCopyTextureInfo<'a> {
     pub aspect: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUTexelCopyTextureInfo<'_> {}
+
 /// The [`GPUTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct GPUTextureBindingLayout<'a> {
@@ -103627,6 +103915,8 @@ pub struct GPUTextureBindingLayout<'a> {
     pub view_dimension: Option<&'a str>,
     pub multisampled: Option<bool>,
 }
+
+unsafe impl Defined for GPUTextureBindingLayout<'_> {}
 
 /// The [`GPUTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUTextureDescriptor<'a> {
@@ -103640,6 +103930,8 @@ pub struct GPUTextureDescriptor<'a> {
     pub view_formats: Option<&'a [&'a str]>,
     pub texture_binding_view_dimension: Option<&'a str>,
 }
+
+unsafe impl Defined for GPUTextureDescriptor<'_> {}
 
 /// The [`GPUTextureViewDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureViewDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103656,6 +103948,8 @@ pub struct GPUTextureViewDescriptor<'a> {
     pub swizzle: Option<&'a str>,
 }
 
+unsafe impl Defined for GPUTextureViewDescriptor<'_> {}
+
 /// The [`GPUUncapturedErrorEventInit`](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUUncapturedErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -103664,12 +103958,16 @@ pub struct GPUUncapturedErrorEventInit<'a> {
     pub error: &'a GPUError,
 }
 
+unsafe impl Defined for GPUUncapturedErrorEventInit<'_> {}
+
 /// The [`GPUVertexAttribute`](https://developer.mozilla.org/docs/Web/API/GPUVertexAttribute) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexAttribute<'a> {
     pub format: &'a str,
     pub offset: f64,
     pub shader_location: f64,
 }
+
+unsafe impl Defined for GPUVertexAttribute<'_> {}
 
 /// The [`GPUVertexBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUVertexBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexBufferLayout<'a> {
@@ -103678,12 +103976,16 @@ pub struct GPUVertexBufferLayout<'a> {
     pub attributes: &'a [GPUVertexAttribute<'a>],
 }
 
+unsafe impl Defined for GPUVertexBufferLayout<'_> {}
+
 /// The [`GPUVertexState`](https://developer.mozilla.org/docs/Web/API/GPUVertexState) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPUVertexState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
     pub buffers: Option<&'a [GPUVertexBufferLayout<'a>]>,
 }
+
+unsafe impl Defined for GPUVertexState<'_> {}
 
 /// The [`HashChangeEventInit`](https://developer.mozilla.org/docs/Web/API/HashChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103697,11 +103999,15 @@ pub struct HashChangeEventInit<'a> {
     pub new_url: Option<&'a str>,
 }
 
+unsafe impl Defined for HashChangeEventInit<'_> {}
+
 /// The [`HighlightsFromPointOptions`](https://developer.mozilla.org/docs/Web/API/HighlightsFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct HighlightsFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
+
+unsafe impl Defined for HighlightsFromPointOptions<'_> {}
 
 /// The [`IDBIndexParameters`](https://developer.mozilla.org/docs/Web/API/IDBIndexParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103710,6 +104016,8 @@ pub struct IDBIndexParameters {
     pub multi_entry: Option<bool>,
 }
 
+unsafe impl Defined for IDBIndexParameters {}
+
 /// The [`IDBObjectStoreParameters`](https://developer.mozilla.org/docs/Web/API/IDBObjectStoreParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct IDBObjectStoreParameters<'a> {
@@ -103717,11 +104025,15 @@ pub struct IDBObjectStoreParameters<'a> {
     pub auto_increment: Option<bool>,
 }
 
+unsafe impl Defined for IDBObjectStoreParameters<'_> {}
+
 /// The [`IDBTransactionOptions`](https://developer.mozilla.org/docs/Web/API/IDBTransactionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct IDBTransactionOptions<'a> {
     pub durability: Option<&'a str>,
 }
+
+unsafe impl Defined for IDBTransactionOptions<'_> {}
 
 /// The [`IDBVersionChangeEventInit`](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103733,11 +104045,15 @@ pub struct IDBVersionChangeEventInit {
     pub new_version: Option<f64>,
 }
 
+unsafe impl Defined for IDBVersionChangeEventInit {}
+
 /// The [`IdleRequestOptions`](https://developer.mozilla.org/docs/Web/API/IdleRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct IdleRequestOptions {
     pub timeout: Option<f64>,
 }
+
+unsafe impl Defined for IdleRequestOptions {}
 
 /// The [`IIRFilterOptions`](https://developer.mozilla.org/docs/Web/API/IIRFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct IIRFilterOptions<'a> {
@@ -103747,6 +104063,8 @@ pub struct IIRFilterOptions<'a> {
     pub feedforward: &'a [f64],
     pub feedback: &'a [f64],
 }
+
+unsafe impl Defined for IIRFilterOptions<'_> {}
 
 /// The [`ImageBitmapOptions`](https://developer.mozilla.org/docs/Web/API/ImageBitmapOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103759,6 +104077,8 @@ pub struct ImageBitmapOptions<'a> {
     pub resize_quality: Option<&'a str>,
 }
 
+unsafe impl Defined for ImageBitmapOptions<'_> {}
+
 /// The [`ImageDataSettings`](https://developer.mozilla.org/docs/Web/API/ImageDataSettings) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ImageDataSettings<'a> {
@@ -103766,12 +104086,16 @@ pub struct ImageDataSettings<'a> {
     pub pixel_format: Option<&'a str>,
 }
 
+unsafe impl Defined for ImageDataSettings<'_> {}
+
 /// The [`ImageDecodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ImageDecodeOptions {
     pub frame_index: Option<f64>,
     pub complete_frames_only: Option<bool>,
 }
+
+unsafe impl Defined for ImageDecodeOptions {}
 
 /// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct ImageDecoderInit<'a> {
@@ -103784,6 +104108,8 @@ pub struct ImageDecoderInit<'a> {
     pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
+unsafe impl Defined for ImageDecoderInit<'_> {}
+
 /// The [`ImageEncodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ImageEncodeOptions<'a> {
@@ -103791,12 +104117,16 @@ pub struct ImageEncodeOptions<'a> {
     pub quality: Option<f64>,
 }
 
+unsafe impl Defined for ImageEncodeOptions<'_> {}
+
 /// The [`ImportNodeOptions`](https://developer.mozilla.org/docs/Web/API/ImportNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ImportNodeOptions<'a> {
     pub custom_element_registry: Option<&'a CustomElementRegistry>,
     pub self_only: Option<bool>,
 }
+
+unsafe impl Defined for ImportNodeOptions<'_> {}
 
 /// The [`InputEventInit`](https://developer.mozilla.org/docs/Web/API/InputEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103814,6 +104144,8 @@ pub struct InputEventInit<'a> {
     pub target_ranges: Option<&'a [&'a StaticRange]>,
 }
 
+unsafe impl Defined for InputEventInit<'_> {}
+
 /// The [`IntersectionObserverEntryInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntryInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct IntersectionObserverEntryInit<'a> {
     pub time: f64,
@@ -103826,6 +104158,8 @@ pub struct IntersectionObserverEntryInit<'a> {
     pub target: &'a Element,
 }
 
+unsafe impl Defined for IntersectionObserverEntryInit<'_> {}
+
 /// The [`IntersectionObserverInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct IntersectionObserverInit<'a> {
@@ -103836,6 +104170,8 @@ pub struct IntersectionObserverInit<'a> {
     pub delay: Option<f64>,
     pub track_visibility: Option<bool>,
 }
+
+unsafe impl Defined for IntersectionObserverInit<'_> {}
 
 /// The [`KeyboardEventInit`](https://developer.mozilla.org/docs/Web/API/KeyboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103869,6 +104205,8 @@ pub struct KeyboardEventInit<'a> {
     pub key_code: Option<f64>,
 }
 
+unsafe impl Defined for KeyboardEventInit<'_> {}
+
 /// The [`KeyframeAnimationOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeAnimationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct KeyframeAnimationOptions<'a> {
@@ -103890,6 +104228,8 @@ pub struct KeyframeAnimationOptions<'a> {
     pub range_end: Option<TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a>>,
 }
 
+unsafe impl Defined for KeyframeAnimationOptions<'_> {}
+
 /// The [`KeyframeEffectOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeEffectOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct KeyframeEffectOptions<'a> {
@@ -103907,6 +104247,8 @@ pub struct KeyframeEffectOptions<'a> {
     pub iteration_composite: Option<&'a str>,
 }
 
+unsafe impl Defined for KeyframeEffectOptions<'_> {}
+
 /// The [`LockOptions`](https://developer.mozilla.org/docs/Web/API/LockOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct LockOptions<'a> {
@@ -103916,10 +104258,14 @@ pub struct LockOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
+unsafe impl Defined for LockOptions<'_> {}
+
 /// The [`MediaElementAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaElementAudioSourceOptions<'a> {
     pub media_element: &'a HTMLMediaElement,
 }
+
+unsafe impl Defined for MediaElementAudioSourceOptions<'_> {}
 
 /// The [`MediaEncryptedEventInit`](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103931,12 +104277,16 @@ pub struct MediaEncryptedEventInit<'a> {
     pub init_data: Option<&'a ArrayBuffer>,
 }
 
+unsafe impl Defined for MediaEncryptedEventInit<'_> {}
+
 /// The [`MediaImage`](https://developer.mozilla.org/docs/Web/API/MediaImage) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaImage<'a> {
     pub src: &'a str,
     pub sizes: Option<&'a str>,
     pub r#type: Option<&'a str>,
 }
+
+unsafe impl Defined for MediaImage<'_> {}
 
 /// The [`MediaKeyMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaKeyMessageEventInit<'a> {
@@ -103947,11 +104297,15 @@ pub struct MediaKeyMessageEventInit<'a> {
     pub message: &'a ArrayBuffer,
 }
 
+unsafe impl Defined for MediaKeyMessageEventInit<'_> {}
+
 /// The [`MediaKeysPolicy`](https://developer.mozilla.org/docs/Web/API/MediaKeysPolicy) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MediaKeysPolicy<'a> {
     pub min_hdcp_version: Option<&'a str>,
 }
+
+unsafe impl Defined for MediaKeysPolicy<'_> {}
 
 /// The [`MediaMetadataInit`](https://developer.mozilla.org/docs/Web/API/MediaMetadataInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103963,6 +104317,8 @@ pub struct MediaMetadataInit<'a> {
     pub chapter_info: Option<&'a [ChapterInformationInit<'a>]>,
 }
 
+unsafe impl Defined for MediaMetadataInit<'_> {}
+
 /// The [`MediaPositionState`](https://developer.mozilla.org/docs/Web/API/MediaPositionState) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MediaPositionState {
@@ -103970,6 +104326,8 @@ pub struct MediaPositionState {
     pub playback_rate: Option<f64>,
     pub position: Option<f64>,
 }
+
+unsafe impl Defined for MediaPositionState {}
 
 /// The [`MediaQueryListEventInit`](https://developer.mozilla.org/docs/Web/API/MediaQueryListEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103980,6 +104338,8 @@ pub struct MediaQueryListEventInit<'a> {
     pub media: Option<&'a str>,
     pub matches: Option<bool>,
 }
+
+unsafe impl Defined for MediaQueryListEventInit<'_> {}
 
 /// The [`MediaRecorderOptions`](https://developer.mozilla.org/docs/Web/API/MediaRecorderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -103993,6 +104353,8 @@ pub struct MediaRecorderOptions<'a> {
     pub video_key_frame_interval_count: Option<f64>,
 }
 
+unsafe impl Defined for MediaRecorderOptions<'_> {}
+
 /// The [`MediaSessionActionDetails`](https://developer.mozilla.org/docs/Web/API/MediaSessionActionDetails) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaSessionActionDetails<'a> {
     pub action: &'a str,
@@ -104003,10 +104365,14 @@ pub struct MediaSessionActionDetails<'a> {
     pub enter_picture_in_picture_reason: Option<&'a str>,
 }
 
+unsafe impl Defined for MediaSessionActionDetails<'_> {}
+
 /// The [`MediaStreamAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaStreamAudioSourceOptions<'a> {
     pub media_stream: &'a MediaStream,
 }
+
+unsafe impl Defined for MediaStreamAudioSourceOptions<'_> {}
 
 /// The [`MediaStreamConstraints`](https://developer.mozilla.org/docs/Web/API/MediaStreamConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104017,6 +104383,8 @@ pub struct MediaStreamConstraints<'a> {
     pub peer_identity: Option<&'a str>,
 }
 
+unsafe impl Defined for MediaStreamConstraints<'_> {}
+
 /// The [`MediaStreamTrackEventInit`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MediaStreamTrackEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104025,12 +104393,16 @@ pub struct MediaStreamTrackEventInit<'a> {
     pub track: &'a MediaStreamTrack,
 }
 
+unsafe impl Defined for MediaStreamTrackEventInit<'_> {}
+
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct MemoryDescriptor<'a> {
     pub initial: &'a dyn IntoUnknown,
     pub maximum: Option<&'a dyn IntoUnknown>,
     pub address: Option<&'a str>,
 }
+
+unsafe impl Defined for MemoryDescriptor<'_> {}
 
 /// The [`MessageEventInit`](https://developer.mozilla.org/docs/Web/API/MessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104045,6 +104417,8 @@ pub struct MessageEventInit<'a> {
     pub ports: Option<&'a [&'a MessagePort]>,
 }
 
+unsafe impl Defined for MessageEventInit<'_> {}
+
 /// The [`MIDIConnectionEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MIDIConnectionEventInit<'a> {
@@ -104053,6 +104427,8 @@ pub struct MIDIConnectionEventInit<'a> {
     pub composed: Option<bool>,
     pub port: Option<&'a MIDIPort>,
 }
+
+unsafe impl Defined for MIDIConnectionEventInit<'_> {}
 
 /// The [`MIDIMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104063,12 +104439,16 @@ pub struct MIDIMessageEventInit<'a> {
     pub data: Option<&'a Uint8Array>,
 }
 
+unsafe impl Defined for MIDIMessageEventInit<'_> {}
+
 /// The [`MIDIOptions`](https://developer.mozilla.org/docs/Web/API/MIDIOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MIDIOptions {
     pub sysex: Option<bool>,
     pub software: Option<bool>,
 }
+
+unsafe impl Defined for MIDIOptions {}
 
 /// The [`MouseEventInit`](https://developer.mozilla.org/docs/Web/API/MouseEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104104,6 +104484,8 @@ pub struct MouseEventInit<'a> {
     pub movement_y: Option<f64>,
 }
 
+unsafe impl Defined for MouseEventInit<'_> {}
+
 /// The [`MultiCacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/MultiCacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct MultiCacheQueryOptions<'a> {
@@ -104112,6 +104494,8 @@ pub struct MultiCacheQueryOptions<'a> {
     pub ignore_vary: Option<bool>,
     pub cache_name: Option<&'a str>,
 }
+
+unsafe impl Defined for MultiCacheQueryOptions<'_> {}
 
 /// The [`MutationObserverInit`](https://developer.mozilla.org/docs/Web/API/MutationObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104124,6 +104508,8 @@ pub struct MutationObserverInit<'a> {
     pub character_data_old_value: Option<bool>,
     pub attribute_filter: Option<&'a [&'a str]>,
 }
+
+unsafe impl Defined for MutationObserverInit<'_> {}
 
 /// The [`NavigateEventInit`](https://developer.mozilla.org/docs/Web/API/NavigateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct NavigateEventInit<'a> {
@@ -104144,6 +104530,8 @@ pub struct NavigateEventInit<'a> {
     pub source_element: Option<&'a Element>,
 }
 
+unsafe impl Defined for NavigateEventInit<'_> {}
+
 /// The [`NavigationCurrentEntryChangeEventInit`](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct NavigationCurrentEntryChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104152,6 +104540,8 @@ pub struct NavigationCurrentEntryChangeEventInit<'a> {
     pub navigation_type: Option<&'a str>,
     pub from: &'a NavigationHistoryEntry,
 }
+
+unsafe impl Defined for NavigationCurrentEntryChangeEventInit<'_> {}
 
 /// The [`NavigationInterceptOptions`](https://developer.mozilla.org/docs/Web/API/NavigationInterceptOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104162,6 +104552,8 @@ pub struct NavigationInterceptOptions<'a> {
     pub scroll: Option<&'a str>,
 }
 
+unsafe impl Defined for NavigationInterceptOptions<'_> {}
+
 /// The [`NavigationNavigateOptions`](https://developer.mozilla.org/docs/Web/API/NavigationNavigateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NavigationNavigateOptions<'a> {
@@ -104170,11 +104562,15 @@ pub struct NavigationNavigateOptions<'a> {
     pub history: Option<&'a str>,
 }
 
+unsafe impl Defined for NavigationNavigateOptions<'_> {}
+
 /// The [`NavigationOptions`](https://developer.mozilla.org/docs/Web/API/NavigationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NavigationOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
 }
+
+unsafe impl Defined for NavigationOptions<'_> {}
 
 /// The [`NavigationReloadOptions`](https://developer.mozilla.org/docs/Web/API/NavigationReloadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104183,10 +104579,14 @@ pub struct NavigationReloadOptions<'a> {
     pub state: Option<&'a dyn IntoUnknown>,
 }
 
+unsafe impl Defined for NavigationReloadOptions<'_> {}
+
 /// The [`NavigationUpdateCurrentEntryOptions`](https://developer.mozilla.org/docs/Web/API/NavigationUpdateCurrentEntryOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct NavigationUpdateCurrentEntryOptions<'a> {
     pub state: &'a dyn IntoUnknown,
 }
+
+unsafe impl Defined for NavigationUpdateCurrentEntryOptions<'_> {}
 
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104208,6 +104608,8 @@ pub struct NotificationOptions<'a> {
     pub actions: Option<&'a [NotificationAction]>,
 }
 
+unsafe impl Defined for NotificationOptions<'_> {}
+
 /// The [`OfflineAudioCompletionEventInit`](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct OfflineAudioCompletionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104216,6 +104618,8 @@ pub struct OfflineAudioCompletionEventInit<'a> {
     pub rendered_buffer: &'a AudioBuffer,
 }
 
+unsafe impl Defined for OfflineAudioCompletionEventInit<'_> {}
+
 /// The [`OfflineAudioContextOptions`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct OfflineAudioContextOptions<'a> {
     pub number_of_channels: Option<f64>,
@@ -104223,6 +104627,8 @@ pub struct OfflineAudioContextOptions<'a> {
     pub sample_rate: f64,
     pub render_size_hint: Option<StrOrNumber<'a>>,
 }
+
+unsafe impl Defined for OfflineAudioContextOptions<'_> {}
 
 /// The [`OptionalEffectTiming`](https://developer.mozilla.org/docs/Web/API/OptionalEffectTiming) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104238,6 +104644,8 @@ pub struct OptionalEffectTiming<'a> {
     pub playback_rate: Option<f64>,
 }
 
+unsafe impl Defined for OptionalEffectTiming<'_> {}
+
 /// The [`OscillatorOptions`](https://developer.mozilla.org/docs/Web/API/OscillatorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct OscillatorOptions<'a> {
@@ -104250,6 +104658,8 @@ pub struct OscillatorOptions<'a> {
     pub periodic_wave: Option<&'a PeriodicWave>,
 }
 
+unsafe impl Defined for OscillatorOptions<'_> {}
+
 /// The [`PageRevealEventInit`](https://developer.mozilla.org/docs/Web/API/PageRevealEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PageRevealEventInit<'a> {
@@ -104258,6 +104668,8 @@ pub struct PageRevealEventInit<'a> {
     pub composed: Option<bool>,
     pub view_transition: Option<&'a ViewTransition>,
 }
+
+unsafe impl Defined for PageRevealEventInit<'_> {}
 
 /// The [`PageSwapEventInit`](https://developer.mozilla.org/docs/Web/API/PageSwapEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104269,6 +104681,8 @@ pub struct PageSwapEventInit<'a> {
     pub view_transition: Option<&'a ViewTransition>,
 }
 
+unsafe impl Defined for PageSwapEventInit<'_> {}
+
 /// The [`PageTransitionEventInit`](https://developer.mozilla.org/docs/Web/API/PageTransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PageTransitionEventInit {
@@ -104277,6 +104691,8 @@ pub struct PageTransitionEventInit {
     pub composed: Option<bool>,
     pub persisted: Option<bool>,
 }
+
+unsafe impl Defined for PageTransitionEventInit {}
 
 /// The [`PannerOptions`](https://developer.mozilla.org/docs/Web/API/PannerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104300,17 +104716,23 @@ pub struct PannerOptions<'a> {
     pub cone_outer_gain: Option<f64>,
 }
 
+unsafe impl Defined for PannerOptions<'_> {}
+
 /// The [`ParseHTMLUnsafeOptions`](https://developer.mozilla.org/docs/Web/API/ParseHTMLUnsafeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ParseHTMLUnsafeOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
 }
 
+unsafe impl Defined for ParseHTMLUnsafeOptions<'_> {}
+
 /// The [`PaymentCurrencyAmount`](https://developer.mozilla.org/docs/Web/API/PaymentCurrencyAmount) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentCurrencyAmount<'a> {
     pub currency: &'a str,
     pub value: &'a str,
 }
+
+unsafe impl Defined for PaymentCurrencyAmount<'_> {}
 
 /// The [`PaymentDetailsInit`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentDetailsInit<'a> {
@@ -104321,6 +104743,8 @@ pub struct PaymentDetailsInit<'a> {
     pub total: PaymentItem<'a>,
 }
 
+unsafe impl Defined for PaymentDetailsInit<'_> {}
+
 /// The [`PaymentDetailsModifier`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsModifier) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentDetailsModifier<'a> {
     pub supported_methods: &'a str,
@@ -104328,12 +104752,16 @@ pub struct PaymentDetailsModifier<'a> {
     pub additional_display_items: Option<&'a [PaymentItem<'a>]>,
 }
 
+unsafe impl Defined for PaymentDetailsModifier<'_> {}
+
 /// The [`PaymentItem`](https://developer.mozilla.org/docs/Web/API/PaymentItem) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentItem<'a> {
     pub label: &'a str,
     pub amount: PaymentCurrencyAmount<'a>,
     pub pending: Option<bool>,
 }
+
+unsafe impl Defined for PaymentItem<'_> {}
 
 /// The [`PaymentMethodChangeEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104344,10 +104772,14 @@ pub struct PaymentMethodChangeEventInit<'a> {
     pub method_name: Option<&'a str>,
 }
 
+unsafe impl Defined for PaymentMethodChangeEventInit<'_> {}
+
 /// The [`PaymentMethodData`](https://developer.mozilla.org/docs/Web/API/PaymentMethodData) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentMethodData<'a> {
     pub supported_methods: &'a str,
 }
+
+unsafe impl Defined for PaymentMethodData<'_> {}
 
 /// The [`PaymentOptions`](https://developer.mozilla.org/docs/Web/API/PaymentOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104360,6 +104792,8 @@ pub struct PaymentOptions<'a> {
     pub shipping_type: Option<&'a str>,
 }
 
+unsafe impl Defined for PaymentOptions<'_> {}
+
 /// The [`PaymentRequestUpdateEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PaymentRequestUpdateEventInit {
@@ -104367,6 +104801,8 @@ pub struct PaymentRequestUpdateEventInit {
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
 }
+
+unsafe impl Defined for PaymentRequestUpdateEventInit {}
 
 /// The [`PaymentShippingOption`](https://developer.mozilla.org/docs/Web/API/PaymentShippingOption) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PaymentShippingOption<'a> {
@@ -104376,6 +104812,8 @@ pub struct PaymentShippingOption<'a> {
     pub selected: Option<bool>,
 }
 
+unsafe impl Defined for PaymentShippingOption<'_> {}
+
 /// The [`PaymentValidationErrors`](https://developer.mozilla.org/docs/Web/API/PaymentValidationErrors) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PaymentValidationErrors<'a> {
@@ -104384,12 +104822,16 @@ pub struct PaymentValidationErrors<'a> {
     pub error: Option<&'a str>,
 }
 
+unsafe impl Defined for PaymentValidationErrors<'_> {}
+
 /// The [`PerformanceMarkOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMarkOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PerformanceMarkOptions<'a> {
     pub detail: Option<&'a dyn IntoUnknown>,
     pub start_time: Option<f64>,
 }
+
+unsafe impl Defined for PerformanceMarkOptions<'_> {}
 
 /// The [`PerformanceMeasureOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMeasureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104400,11 +104842,15 @@ pub struct PerformanceMeasureOptions<'a> {
     pub end: Option<StrOrNumber<'a>>,
 }
 
+unsafe impl Defined for PerformanceMeasureOptions<'_> {}
+
 /// The [`PerformanceObserverCallbackOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverCallbackOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PerformanceObserverCallbackOptions {
     pub dropped_entries_count: Option<f64>,
 }
+
+unsafe impl Defined for PerformanceObserverCallbackOptions {}
 
 /// The [`PerformanceObserverInit`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104414,11 +104860,15 @@ pub struct PerformanceObserverInit<'a> {
     pub buffered: Option<bool>,
 }
 
+unsafe impl Defined for PerformanceObserverInit<'_> {}
+
 /// The [`PeriodicWaveConstraints`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PeriodicWaveConstraints {
     pub disable_normalization: Option<bool>,
 }
+
+unsafe impl Defined for PeriodicWaveConstraints {}
 
 /// The [`PeriodicWaveOptions`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104428,6 +104878,8 @@ pub struct PeriodicWaveOptions<'a> {
     pub imag: Option<&'a [f64]>,
 }
 
+unsafe impl Defined for PeriodicWaveOptions<'_> {}
+
 /// The [`PictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/PictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104435,6 +104887,8 @@ pub struct PictureInPictureEventInit<'a> {
     pub composed: Option<bool>,
     pub picture_in_picture_window: &'a PictureInPictureWindow,
 }
+
+unsafe impl Defined for PictureInPictureEventInit<'_> {}
 
 /// The [`PointerEventInit`](https://developer.mozilla.org/docs/Web/API/PointerEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104485,11 +104939,15 @@ pub struct PointerEventInit<'a> {
     pub predicted_events: Option<&'a [&'a PointerEvent]>,
 }
 
+unsafe impl Defined for PointerEventInit<'_> {}
+
 /// The [`PointerLockOptions`](https://developer.mozilla.org/docs/Web/API/PointerLockOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PointerLockOptions {
     pub unadjusted_movement: Option<bool>,
 }
+
+unsafe impl Defined for PointerLockOptions {}
 
 /// The [`PopStateEventInit`](https://developer.mozilla.org/docs/Web/API/PopStateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104502,6 +104960,8 @@ pub struct PopStateEventInit<'a> {
     pub has_ua_visual_transition: Option<bool>,
 }
 
+unsafe impl Defined for PopStateEventInit<'_> {}
+
 /// The [`PositionOptions`](https://developer.mozilla.org/docs/Web/API/PositionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PositionOptions {
@@ -104509,6 +104969,8 @@ pub struct PositionOptions {
     pub timeout: Option<f64>,
     pub maximum_age: Option<f64>,
 }
+
+unsafe impl Defined for PositionOptions {}
 
 /// The [`ProgressEventInit`](https://developer.mozilla.org/docs/Web/API/ProgressEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104521,6 +104983,8 @@ pub struct ProgressEventInit {
     pub total: Option<f64>,
 }
 
+unsafe impl Defined for ProgressEventInit {}
+
 /// The [`PromiseRejectionEventInit`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PromiseRejectionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104529,6 +104993,8 @@ pub struct PromiseRejectionEventInit<'a> {
     pub promise: &'a dyn IntoUnknown,
     pub reason: Option<&'a dyn IntoUnknown>,
 }
+
+unsafe impl Defined for PromiseRejectionEventInit<'_> {}
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
@@ -104545,12 +105011,16 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
     pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
+unsafe impl Defined for PublicKeyCredentialCreationOptionsJSON<'_> {}
+
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
     pub r#type: &'a str,
     pub id: &'a str,
     pub transports: Option<&'a [&'a str]>,
 }
+
+unsafe impl Defined for PublicKeyCredentialDescriptorJSON<'_> {}
 
 /// The [`PublicKeyCredentialRequestOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialRequestOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
@@ -104563,12 +105033,16 @@ pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
+unsafe impl Defined for PublicKeyCredentialRequestOptionsJSON<'_> {}
+
 /// The [`PublicKeyCredentialUserEntityJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialUserEntityJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialUserEntityJSON<'a> {
     pub id: &'a str,
     pub name: &'a str,
     pub display_name: &'a str,
 }
+
+unsafe impl Defined for PublicKeyCredentialUserEntityJSON<'_> {}
 
 /// The [`PushSubscriptionOptionsInit`](https://developer.mozilla.org/docs/Web/API/PushSubscriptionOptionsInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104577,16 +105051,22 @@ pub struct PushSubscriptionOptionsInit<'a> {
     pub application_server_key: Option<BufferSourceOrStr<'a>>,
 }
 
+unsafe impl Defined for PushSubscriptionOptionsInit<'_> {}
+
 /// The [`QueuingStrategy`](https://developer.mozilla.org/docs/Web/API/QueuingStrategy) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct QueuingStrategy {
     pub high_water_mark: Option<f64>,
 }
 
+unsafe impl Defined for QueuingStrategy {}
+
 /// The [`QueuingStrategyInit`](https://developer.mozilla.org/docs/Web/API/QueuingStrategyInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct QueuingStrategyInit {
     pub high_water_mark: f64,
 }
+
+unsafe impl Defined for QueuingStrategyInit {}
 
 /// The [`ReadableStreamBYOBReaderReadOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReaderReadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104594,17 +105074,23 @@ pub struct ReadableStreamBYOBReaderReadOptions {
     pub min: Option<f64>,
 }
 
+unsafe impl Defined for ReadableStreamBYOBReaderReadOptions {}
+
 /// The [`ReadableStreamGetReaderOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamGetReaderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ReadableStreamGetReaderOptions<'a> {
     pub mode: Option<&'a str>,
 }
 
+unsafe impl Defined for ReadableStreamGetReaderOptions<'_> {}
+
 /// The [`ReadableWritablePair`](https://developer.mozilla.org/docs/Web/API/ReadableWritablePair) dictionary: a JS object of these fields, a `None` one not given.
 pub struct ReadableWritablePair<'a> {
     pub readable: &'a ReadableStream,
     pub writable: &'a WritableStream,
 }
+
+unsafe impl Defined for ReadableWritablePair<'_> {}
 
 /// The [`RegistrationOptions`](https://developer.mozilla.org/docs/Web/API/RegistrationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104614,12 +105100,16 @@ pub struct RegistrationOptions<'a> {
     pub update_via_cache: Option<&'a str>,
 }
 
+unsafe impl Defined for RegistrationOptions<'_> {}
+
 /// The [`ReportingObserverOptions`](https://developer.mozilla.org/docs/Web/API/ReportingObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ReportingObserverOptions<'a> {
     pub types: Option<&'a [&'a str]>,
     pub buffered: Option<bool>,
 }
+
+unsafe impl Defined for ReportingObserverOptions<'_> {}
 
 /// The [`RequestInit`](https://developer.mozilla.org/docs/Web/API/RequestInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104641,11 +105131,15 @@ pub struct RequestInit<'a> {
     pub window: Option<&'a dyn IntoUnknown>,
 }
 
+unsafe impl Defined for RequestInit<'_> {}
+
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ResizeObserverOptions<'a> {
     pub r#box: Option<&'a str>,
 }
+
+unsafe impl Defined for ResizeObserverOptions<'_> {}
 
 /// The [`ResponseInit`](https://developer.mozilla.org/docs/Web/API/ResponseInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104655,6 +105149,8 @@ pub struct ResponseInit<'a> {
     pub headers: Option<&'a [&'a [&'a str]]>,
 }
 
+unsafe impl Defined for ResponseInit<'_> {}
+
 /// The [`RTCDataChannelEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct RTCDataChannelEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104662,6 +105158,8 @@ pub struct RTCDataChannelEventInit<'a> {
     pub composed: Option<bool>,
     pub channel: &'a RTCDataChannel,
 }
+
+unsafe impl Defined for RTCDataChannelEventInit<'_> {}
 
 /// The [`RTCDataChannelInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104674,6 +105172,8 @@ pub struct RTCDataChannelInit<'a> {
     pub id: Option<f64>,
 }
 
+unsafe impl Defined for RTCDataChannelInit<'_> {}
+
 /// The [`RTCDTMFToneChangeEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCDTMFToneChangeEventInit<'a> {
@@ -104683,17 +105183,23 @@ pub struct RTCDTMFToneChangeEventInit<'a> {
     pub tone: Option<&'a str>,
 }
 
+unsafe impl Defined for RTCDTMFToneChangeEventInit<'_> {}
+
 /// The [`RTCEncodedAudioFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCEncodedAudioFrameOptions {
     pub metadata: Option<RTCEncodedAudioFrameMetadata>,
 }
 
+unsafe impl Defined for RTCEncodedAudioFrameOptions {}
+
 /// The [`RTCEncodedVideoFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCEncodedVideoFrameOptions {
     pub metadata: Option<RTCEncodedVideoFrameMetadata>,
 }
+
+unsafe impl Defined for RTCEncodedVideoFrameOptions {}
 
 /// The [`RTCErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct RTCErrorEventInit<'a> {
@@ -104702,6 +105208,8 @@ pub struct RTCErrorEventInit<'a> {
     pub composed: Option<bool>,
     pub error: &'a RTCError,
 }
+
+unsafe impl Defined for RTCErrorEventInit<'_> {}
 
 /// The [`RTCErrorInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct RTCErrorInit<'a> {
@@ -104712,6 +105220,8 @@ pub struct RTCErrorInit<'a> {
     pub sent_alert: Option<f64>,
     pub http_request_status_code: Option<f64>,
 }
+
+unsafe impl Defined for RTCErrorInit<'_> {}
 
 /// The [`RTCLocalIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104724,12 +105234,16 @@ pub struct RTCLocalIceCandidateInit<'a> {
     pub url: Option<&'a str>,
 }
 
+unsafe impl Defined for RTCLocalIceCandidateInit<'_> {}
+
 /// The [`RTCLocalSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCLocalSessionDescriptionInit<'a> {
     pub r#type: Option<&'a str>,
     pub sdp: Option<&'a str>,
 }
+
+unsafe impl Defined for RTCLocalSessionDescriptionInit<'_> {}
 
 /// The [`RTCOfferOptions`](https://developer.mozilla.org/docs/Web/API/RTCOfferOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104738,6 +105252,8 @@ pub struct RTCOfferOptions {
     pub offer_to_receive_audio: Option<bool>,
     pub offer_to_receive_video: Option<bool>,
 }
+
+unsafe impl Defined for RTCOfferOptions {}
 
 /// The [`RTCPeerConnectionIceErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct RTCPeerConnectionIceErrorEventInit<'a> {
@@ -104751,6 +105267,8 @@ pub struct RTCPeerConnectionIceErrorEventInit<'a> {
     pub error_text: Option<&'a str>,
 }
 
+unsafe impl Defined for RTCPeerConnectionIceErrorEventInit<'_> {}
+
 /// The [`RTCPeerConnectionIceEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCPeerConnectionIceEventInit<'a> {
@@ -104761,6 +105279,8 @@ pub struct RTCPeerConnectionIceEventInit<'a> {
     pub url: Option<&'a str>,
 }
 
+unsafe impl Defined for RTCPeerConnectionIceEventInit<'_> {}
+
 /// The [`RTCRtpTransceiverInit`](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct RTCRtpTransceiverInit<'a> {
@@ -104768,6 +105288,8 @@ pub struct RTCRtpTransceiverInit<'a> {
     pub streams: Option<&'a [&'a MediaStream]>,
     pub send_encodings: Option<&'a [RTCRtpEncodingParameters]>,
 }
+
+unsafe impl Defined for RTCRtpTransceiverInit<'_> {}
 
 /// The [`RTCTrackEventInit`](https://developer.mozilla.org/docs/Web/API/RTCTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct RTCTrackEventInit<'a> {
@@ -104780,6 +105302,8 @@ pub struct RTCTrackEventInit<'a> {
     pub transceiver: &'a RTCRtpTransceiver,
 }
 
+unsafe impl Defined for RTCTrackEventInit<'_> {}
+
 /// The [`SchedulerPostTaskOptions`](https://developer.mozilla.org/docs/Web/API/SchedulerPostTaskOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SchedulerPostTaskOptions<'a> {
@@ -104787,6 +105311,8 @@ pub struct SchedulerPostTaskOptions<'a> {
     pub priority: Option<&'a str>,
     pub delay: Option<f64>,
 }
+
+unsafe impl Defined for SchedulerPostTaskOptions<'_> {}
 
 /// The [`ScrollIntoViewOptions`](https://developer.mozilla.org/docs/Web/API/ScrollIntoViewOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104797,12 +105323,16 @@ pub struct ScrollIntoViewOptions<'a> {
     pub container: Option<&'a str>,
 }
 
+unsafe impl Defined for ScrollIntoViewOptions<'_> {}
+
 /// The [`ScrollTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ScrollTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ScrollTimelineOptions<'a> {
     pub source: Option<&'a Element>,
     pub axis: Option<&'a str>,
 }
+
+unsafe impl Defined for ScrollTimelineOptions<'_> {}
 
 /// The [`ScrollToOptions`](https://developer.mozilla.org/docs/Web/API/ScrollToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104811,6 +105341,8 @@ pub struct ScrollToOptions<'a> {
     pub left: Option<f64>,
     pub top: Option<f64>,
 }
+
+unsafe impl Defined for ScrollToOptions<'_> {}
 
 /// The [`SecurityPolicyViolationEventInit`](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104834,6 +105366,8 @@ pub struct SecurityPolicyViolationEventInit<'a> {
     pub column_number: Option<f64>,
 }
 
+unsafe impl Defined for SecurityPolicyViolationEventInit<'_> {}
+
 /// The [`SerialOptions`](https://developer.mozilla.org/docs/Web/API/SerialOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct SerialOptions<'a> {
     pub baud_rate: f64,
@@ -104844,6 +105378,8 @@ pub struct SerialOptions<'a> {
     pub flow_control: Option<&'a str>,
 }
 
+unsafe impl Defined for SerialOptions<'_> {}
+
 /// The [`SerialOutputSignals`](https://developer.mozilla.org/docs/Web/API/SerialOutputSignals) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SerialOutputSignals {
@@ -104851,6 +105387,8 @@ pub struct SerialOutputSignals {
     pub request_to_send: Option<bool>,
     pub r#break: Option<bool>,
 }
+
+unsafe impl Defined for SerialOutputSignals {}
 
 /// The [`SerialPortFilter`](https://developer.mozilla.org/docs/Web/API/SerialPortFilter) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104860,6 +105398,8 @@ pub struct SerialPortFilter<'a> {
     pub bluetooth_service_class_id: Option<BluetoothServiceUUID<'a>>,
 }
 
+unsafe impl Defined for SerialPortFilter<'_> {}
+
 /// The [`SerialPortRequestOptions`](https://developer.mozilla.org/docs/Web/API/SerialPortRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SerialPortRequestOptions<'a> {
@@ -104867,11 +105407,15 @@ pub struct SerialPortRequestOptions<'a> {
     pub allowed_bluetooth_service_class_ids: Option<&'a [BluetoothServiceUUID<'a>]>,
 }
 
+unsafe impl Defined for SerialPortRequestOptions<'_> {}
+
 /// The [`SetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/SetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SetHTMLOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
 }
+
+unsafe impl Defined for SetHTMLOptions<'_> {}
 
 /// The [`SetHTMLUnsafeOptions`](https://developer.mozilla.org/docs/Web/API/SetHTMLUnsafeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104879,6 +105423,8 @@ pub struct SetHTMLUnsafeOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
     pub run_scripts: Option<bool>,
 }
+
+unsafe impl Defined for SetHTMLUnsafeOptions<'_> {}
 
 /// The [`ShadowRootInit`](https://developer.mozilla.org/docs/Web/API/ShadowRootInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct ShadowRootInit<'a> {
@@ -104890,6 +105436,8 @@ pub struct ShadowRootInit<'a> {
     pub custom_element_registry: Option<&'a CustomElementRegistry>,
 }
 
+unsafe impl Defined for ShadowRootInit<'_> {}
+
 /// The [`ShareData`](https://developer.mozilla.org/docs/Web/API/ShareData) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ShareData<'a> {
@@ -104898,6 +105446,8 @@ pub struct ShareData<'a> {
     pub text: Option<&'a str>,
     pub url: Option<&'a str>,
 }
+
+unsafe impl Defined for ShareData<'_> {}
 
 /// The [`SharedWorkerOptions`](https://developer.mozilla.org/docs/Web/API/SharedWorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104908,11 +105458,15 @@ pub struct SharedWorkerOptions<'a> {
     pub extended_lifetime: Option<bool>,
 }
 
+unsafe impl Defined for SharedWorkerOptions<'_> {}
+
 /// The [`ShowPopoverOptions`](https://developer.mozilla.org/docs/Web/API/ShowPopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ShowPopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
 }
+
+unsafe impl Defined for ShowPopoverOptions<'_> {}
 
 /// The [`SpeechRecognitionErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct SpeechRecognitionErrorEventInit<'a> {
@@ -104923,6 +105477,8 @@ pub struct SpeechRecognitionErrorEventInit<'a> {
     pub message: Option<&'a str>,
 }
 
+unsafe impl Defined for SpeechRecognitionErrorEventInit<'_> {}
+
 /// The [`SpeechRecognitionEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct SpeechRecognitionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104931,6 +105487,8 @@ pub struct SpeechRecognitionEventInit<'a> {
     pub result_index: Option<f64>,
     pub results: &'a SpeechRecognitionResultList,
 }
+
+unsafe impl Defined for SpeechRecognitionEventInit<'_> {}
 
 /// The [`SpeechSynthesisErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct SpeechSynthesisErrorEventInit<'a> {
@@ -104945,6 +105503,8 @@ pub struct SpeechSynthesisErrorEventInit<'a> {
     pub error: &'a str,
 }
 
+unsafe impl Defined for SpeechSynthesisErrorEventInit<'_> {}
+
 /// The [`SpeechSynthesisEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct SpeechSynthesisEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -104957,12 +105517,16 @@ pub struct SpeechSynthesisEventInit<'a> {
     pub name: Option<&'a str>,
 }
 
+unsafe impl Defined for SpeechSynthesisEventInit<'_> {}
+
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StartViewTransitionOptions<'a> {
     pub update: Option<Box<dyn FnMut() -> Promise<Option<&'static Unknown>>>>,
     pub types: Option<&'a [&'a str]>,
 }
+
+unsafe impl Defined for StartViewTransitionOptions<'_> {}
 
 /// The [`StaticRangeInit`](https://developer.mozilla.org/docs/Web/API/StaticRangeInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct StaticRangeInit<'a> {
@@ -104972,6 +105536,8 @@ pub struct StaticRangeInit<'a> {
     pub end_offset: f64,
 }
 
+unsafe impl Defined for StaticRangeInit<'_> {}
+
 /// The [`StereoPannerOptions`](https://developer.mozilla.org/docs/Web/API/StereoPannerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StereoPannerOptions<'a> {
@@ -104980,6 +105546,8 @@ pub struct StereoPannerOptions<'a> {
     pub channel_interpretation: Option<&'a str>,
     pub pan: Option<f64>,
 }
+
+unsafe impl Defined for StereoPannerOptions<'_> {}
 
 /// The [`StorageEventInit`](https://developer.mozilla.org/docs/Web/API/StorageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -104994,6 +105562,8 @@ pub struct StorageEventInit<'a> {
     pub storage_area: Option<&'a Storage>,
 }
 
+unsafe impl Defined for StorageEventInit<'_> {}
+
 /// The [`StreamPipeOptions`](https://developer.mozilla.org/docs/Web/API/StreamPipeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StreamPipeOptions<'a> {
@@ -105003,11 +105573,15 @@ pub struct StreamPipeOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
 
+unsafe impl Defined for StreamPipeOptions<'_> {}
+
 /// The [`StructuredSerializeOptions`](https://developer.mozilla.org/docs/Web/API/StructuredSerializeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StructuredSerializeOptions<'a> {
     pub transfer: Option<&'a [&'a dyn core::any::Any]>,
 }
+
+unsafe impl Defined for StructuredSerializeOptions<'_> {}
 
 /// The [`SubmitEventInit`](https://developer.mozilla.org/docs/Web/API/SubmitEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105018,11 +105592,15 @@ pub struct SubmitEventInit<'a> {
     pub submitter: Option<&'a HTMLElement>,
 }
 
+unsafe impl Defined for SubmitEventInit<'_> {}
+
 /// The [`SvcOutputMetadata`](https://developer.mozilla.org/docs/Web/API/SvcOutputMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct SvcOutputMetadata {
     pub temporal_layer_id: Option<f64>,
 }
+
+unsafe impl Defined for SvcOutputMetadata {}
 
 /// The [`SVGBoundingBoxOptions`](https://developer.mozilla.org/docs/Web/API/SVGBoundingBoxOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105033,11 +105611,15 @@ pub struct SVGBoundingBoxOptions {
     pub clipped: Option<bool>,
 }
 
+unsafe impl Defined for SVGBoundingBoxOptions {}
+
 /// The [`TaskControllerInit`](https://developer.mozilla.org/docs/Web/API/TaskControllerInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TaskControllerInit<'a> {
     pub priority: Option<&'a str>,
 }
+
+unsafe impl Defined for TaskControllerInit<'_> {}
 
 /// The [`TaskPriorityChangeEventInit`](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct TaskPriorityChangeEventInit<'a> {
@@ -105047,17 +105629,23 @@ pub struct TaskPriorityChangeEventInit<'a> {
     pub previous_priority: &'a str,
 }
 
+unsafe impl Defined for TaskPriorityChangeEventInit<'_> {}
+
 /// The [`TaskSignalAnyInit`](https://developer.mozilla.org/docs/Web/API/TaskSignalAnyInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TaskSignalAnyInit<'a> {
     pub priority: Option<StrOrTaskSignal<'a>>,
 }
 
+unsafe impl Defined for TaskSignalAnyInit<'_> {}
+
 /// The [`TextDecodeOptions`](https://developer.mozilla.org/docs/Web/API/TextDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TextDecodeOptions {
     pub stream: Option<bool>,
 }
+
+unsafe impl Defined for TextDecodeOptions {}
 
 /// The [`TextDecoderOptions`](https://developer.mozilla.org/docs/Web/API/TextDecoderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105067,12 +105655,16 @@ pub struct TextDecoderOptions {
     pub ignore_bom: Option<bool>,
 }
 
+unsafe impl Defined for TextDecoderOptions {}
+
 /// The [`TimelineRangeOffset`](https://developer.mozilla.org/docs/Web/API/TimelineRangeOffset) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TimelineRangeOffset<'a> {
     pub range_name: Option<&'a str>,
     pub offset: Option<&'a CSSNumericValue>,
 }
+
+unsafe impl Defined for TimelineRangeOffset<'_> {}
 
 /// The [`ToggleEventInit`](https://developer.mozilla.org/docs/Web/API/ToggleEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105085,12 +105677,16 @@ pub struct ToggleEventInit<'a> {
     pub source: Option<&'a Element>,
 }
 
+unsafe impl Defined for ToggleEventInit<'_> {}
+
 /// The [`TogglePopoverOptions`](https://developer.mozilla.org/docs/Web/API/TogglePopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TogglePopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
     pub force: Option<bool>,
 }
+
+unsafe impl Defined for TogglePopoverOptions<'_> {}
 
 /// The [`TouchEventInit`](https://developer.mozilla.org/docs/Web/API/TouchEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105120,6 +105716,8 @@ pub struct TouchEventInit<'a> {
     pub changed_touches: Option<&'a [&'a Touch]>,
 }
 
+unsafe impl Defined for TouchEventInit<'_> {}
+
 /// The [`TouchInit`](https://developer.mozilla.org/docs/Web/API/TouchInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct TouchInit<'a> {
     pub identifier: f64,
@@ -105139,6 +105737,8 @@ pub struct TouchInit<'a> {
     pub touch_type: Option<&'a str>,
 }
 
+unsafe impl Defined for TouchInit<'_> {}
+
 /// The [`TrackEventInit`](https://developer.mozilla.org/docs/Web/API/TrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct TrackEventInit<'a> {
@@ -105147,6 +105747,8 @@ pub struct TrackEventInit<'a> {
     pub composed: Option<bool>,
     pub track: Option<&'a TextTrack>,
 }
+
+unsafe impl Defined for TrackEventInit<'_> {}
 
 /// The [`TransitionEventInit`](https://developer.mozilla.org/docs/Web/API/TransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105160,6 +105762,8 @@ pub struct TransitionEventInit<'a> {
     pub animation: Option<&'a CSSTransition>,
 }
 
+unsafe impl Defined for TransitionEventInit<'_> {}
+
 /// The [`UIEventInit`](https://developer.mozilla.org/docs/Web/API/UIEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct UIEventInit<'a> {
@@ -105171,17 +105775,23 @@ pub struct UIEventInit<'a> {
     pub which: Option<f64>,
 }
 
+unsafe impl Defined for UIEventInit<'_> {}
+
 /// The [`UnknownCredentialOptions`](https://developer.mozilla.org/docs/Web/API/UnknownCredentialOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct UnknownCredentialOptions<'a> {
     pub rp_id: &'a str,
     pub credential_id: &'a str,
 }
 
+unsafe impl Defined for UnknownCredentialOptions<'_> {}
+
 /// The [`URLPatternOptions`](https://developer.mozilla.org/docs/Web/API/URLPatternOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct URLPatternOptions {
     pub ignore_case: Option<bool>,
 }
+
+unsafe impl Defined for URLPatternOptions {}
 
 /// The [`ValidityStateFlags`](https://developer.mozilla.org/docs/Web/API/ValidityStateFlags) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105198,11 +105808,15 @@ pub struct ValidityStateFlags {
     pub custom_error: Option<bool>,
 }
 
+unsafe impl Defined for ValidityStateFlags {}
+
 /// The [`VideoDecoderInit`](https://developer.mozilla.org/docs/Web/API/VideoDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct VideoDecoderInit<'a> {
     pub output: Box<dyn FnMut(&'a VideoFrame)>,
     pub error: Box<dyn FnMut(&'a DOMException)>,
 }
+
+unsafe impl Defined for VideoDecoderInit<'_> {}
 
 /// The [`VideoEncoderEncodeOptions`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105211,17 +105825,23 @@ pub struct VideoEncoderEncodeOptions {
     pub avc: Option<VideoEncoderEncodeOptionsForAvc>,
 }
 
+unsafe impl Defined for VideoEncoderEncodeOptions {}
+
 /// The [`VideoEncoderEncodeOptionsForAvc`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptionsForAvc) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct VideoEncoderEncodeOptionsForAvc {
     pub quantizer: Option<f64>,
 }
 
+unsafe impl Defined for VideoEncoderEncodeOptionsForAvc {}
+
 /// The [`VideoEncoderInit`](https://developer.mozilla.org/docs/Web/API/VideoEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct VideoEncoderInit<'a> {
     pub output: Box<dyn FnMut(&'a EncodedVideoChunk, EncodedVideoChunkMetadata<'a>)>,
     pub error: Box<dyn FnMut(&'a DOMException)>,
 }
+
+unsafe impl Defined for VideoEncoderInit<'_> {}
 
 /// The [`VideoFrameBufferInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameBufferInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct VideoFrameBufferInit<'a> {
@@ -105240,6 +105860,8 @@ pub struct VideoFrameBufferInit<'a> {
     pub transfer: Option<&'a [&'a ArrayBuffer]>,
 }
 
+unsafe impl Defined for VideoFrameBufferInit<'_> {}
+
 /// The [`VideoFrameCallbackMetadata`](https://developer.mozilla.org/docs/Web/API/VideoFrameCallbackMetadata) dictionary: a JS object of these fields, a `None` one not given.
 pub struct VideoFrameCallbackMetadata {
     pub presentation_time: f64,
@@ -105254,6 +105876,8 @@ pub struct VideoFrameCallbackMetadata {
     pub rtp_timestamp: Option<f64>,
 }
 
+unsafe impl Defined for VideoFrameCallbackMetadata {}
+
 /// The [`VideoFrameCopyToOptions`](https://developer.mozilla.org/docs/Web/API/VideoFrameCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct VideoFrameCopyToOptions<'a> {
@@ -105262,6 +105886,8 @@ pub struct VideoFrameCopyToOptions<'a> {
     pub format: Option<&'a str>,
     pub color_space: Option<&'a str>,
 }
+
+unsafe impl Defined for VideoFrameCopyToOptions<'_> {}
 
 /// The [`VideoFrameInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105276,6 +105902,8 @@ pub struct VideoFrameInit<'a> {
     pub display_height: Option<f64>,
 }
 
+unsafe impl Defined for VideoFrameInit<'_> {}
+
 /// The [`ViewTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ViewTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ViewTimelineOptions<'a> {
@@ -105283,6 +105911,8 @@ pub struct ViewTimelineOptions<'a> {
     pub axis: Option<&'a str>,
     pub inset: Option<StrOrList<'a>>,
 }
+
+unsafe impl Defined for ViewTimelineOptions<'_> {}
 
 /// The [`WaveShaperOptions`](https://developer.mozilla.org/docs/Web/API/WaveShaperOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105294,12 +105924,16 @@ pub struct WaveShaperOptions<'a> {
     pub oversample: Option<&'a str>,
 }
 
+unsafe impl Defined for WaveShaperOptions<'_> {}
+
 /// The [`WebAssemblyCompileOptions`](https://developer.mozilla.org/docs/Web/API/WebAssemblyCompileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WebAssemblyCompileOptions<'a> {
     pub imported_string_constants: Option<&'a str>,
     pub builtins: Option<&'a [&'a str]>,
 }
+
+unsafe impl Defined for WebAssemblyCompileOptions<'_> {}
 
 /// The [`WebGLContextEventInit`](https://developer.mozilla.org/docs/Web/API/WebGLContextEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105310,6 +105944,8 @@ pub struct WebGLContextEventInit<'a> {
     pub status_message: Option<&'a str>,
 }
 
+unsafe impl Defined for WebGLContextEventInit<'_> {}
+
 /// The [`WebTransportErrorOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportErrorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WebTransportErrorOptions<'a> {
@@ -105317,11 +105953,15 @@ pub struct WebTransportErrorOptions<'a> {
     pub stream_error_code: Option<f64>,
 }
 
+unsafe impl Defined for WebTransportErrorOptions<'_> {}
+
 /// The [`WebTransportHash`](https://developer.mozilla.org/docs/Web/API/WebTransportHash) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WebTransportHash<'a> {
     pub algorithm: &'a str,
     pub value: BufferSource<'a>,
 }
+
+unsafe impl Defined for WebTransportHash<'_> {}
 
 /// The [`WebTransportOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105337,12 +105977,16 @@ pub struct WebTransportOptions<'a> {
     pub datagrams_readable_type: Option<&'a str>,
 }
 
+unsafe impl Defined for WebTransportOptions<'_> {}
+
 /// The [`WebTransportSendStreamOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WebTransportSendStreamOptions {
     pub send_order: Option<f64>,
     pub wait_until_available: Option<bool>,
 }
+
+unsafe impl Defined for WebTransportSendStreamOptions {}
 
 /// The [`WheelEventInit`](https://developer.mozilla.org/docs/Web/API/WheelEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105383,6 +106027,8 @@ pub struct WheelEventInit<'a> {
     pub momentum: Option<bool>,
 }
 
+unsafe impl Defined for WheelEventInit<'_> {}
+
 /// The [`WindowPostMessageOptions`](https://developer.mozilla.org/docs/Web/API/WindowPostMessageOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WindowPostMessageOptions<'a> {
@@ -105390,11 +106036,15 @@ pub struct WindowPostMessageOptions<'a> {
     pub target_origin: Option<&'a str>,
 }
 
+unsafe impl Defined for WindowPostMessageOptions<'_> {}
+
 /// The [`WorkerAndParameters`](https://developer.mozilla.org/docs/Web/API/WorkerAndParameters) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WorkerAndParameters<'a> {
     pub worker: &'a Worker,
     pub r#type: Option<&'a str>,
 }
+
+unsafe impl Defined for WorkerAndParameters<'_> {}
 
 /// The [`WorkerOptions`](https://developer.mozilla.org/docs/Web/API/WorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
@@ -105404,11 +106054,15 @@ pub struct WorkerOptions<'a> {
     pub credentials: Option<&'a str>,
 }
 
+unsafe impl Defined for WorkerOptions<'_> {}
+
 /// The [`WorkletOptions`](https://developer.mozilla.org/docs/Web/API/WorkletOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct WorkletOptions<'a> {
     pub credentials: Option<&'a str>,
 }
+
+unsafe impl Defined for WorkletOptions<'_> {}
 
 /// The [`WriteParams`](https://developer.mozilla.org/docs/Web/API/WriteParams) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WriteParams<'a> {
@@ -105417,6 +106071,8 @@ pub struct WriteParams<'a> {
     pub position: Option<f64>,
     pub data: Option<BufferSourceOrBlobOrStr<'a>>,
 }
+
+unsafe impl Defined for WriteParams<'_> {}
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
@@ -110807,6 +111463,7 @@ impl From<bool> for EventListenerOptionsOrBool {
 #[cfg_attr(rust_js, rust_js::types = "EventListenerOptions | boolean")]
 pub trait IntoEventListenerOptionsOrBool: sealed::Sealed {}
 impl IntoEventListenerOptionsOrBool for EventListenerOptions {}
+impl IntoEventListenerOptionsOrBool for AddEventListenerOptions<'_> {}
 impl IntoEventListenerOptionsOrBool for bool {}
 impl IntoEventListenerOptionsOrBool for EventListenerOptionsOrBool {}
 /// A rest parameter of `EventListenerOptions | boolean`s takes each member (ADR 0640).
@@ -116911,6 +117568,7 @@ impl<'a> From<KeyframeEffectOptions<'a>> for NumberOrKeyframeEffectOptions<'a> {
 pub trait IntoNumberOrKeyframeEffectOptions: sealed::Sealed {}
 impl IntoNumberOrKeyframeEffectOptions for f64 {}
 impl IntoNumberOrKeyframeEffectOptions for KeyframeEffectOptions<'_> {}
+impl IntoNumberOrKeyframeEffectOptions for KeyframeAnimationOptions<'_> {}
 impl IntoNumberOrKeyframeEffectOptions for NumberOrKeyframeEffectOptions<'_> {}
 /// A rest parameter of `number | KeyframeEffectOptions`s takes each member (ADR 0640).
 impl<A: IntoNumberOrKeyframeEffectOptions> Takes<A> for dyn IntoNumberOrKeyframeEffectOptions {}

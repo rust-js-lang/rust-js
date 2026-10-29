@@ -653,6 +653,12 @@ function dictionaryType(d: Def): string | { skip: string } {
 /** The fields of each dictionary a function takes, and whether they borrow. */
 const paramDictionaries = new Map<string, { fields: Field[]; borrows: boolean }>();
 
+/** The dictionaries `name` extends, its parent first. */
+function dictionaryAncestors(name: string): string[] {
+  const parent = dictionaries.get(name)?.inheritance;
+  return parent ? [parent, ...dictionaryAncestors(parent)] : [];
+}
+
 /** A dictionary's members, its parents' first: `AddEventListenerOptions` has `capture`. */
 function dictionaryMembers(d: Def): Member[] {
   const parent = d.inheritance ? dictionaries.get(d.inheritance) : undefined;
@@ -2039,6 +2045,9 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
     line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
   }
   line(`}`);
+  // A JS object, never nullish, so a value of any shape too (ADR 1023).
+  line();
+  line(`unsafe impl Defined for ${typeName(name)}${borrows ? "<'_>" : ""} {}`);
 }
 
 // The unions functions take (ADR 0215): untagged enums, each value the
@@ -2075,6 +2084,16 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
       line(`        ${union.name}::${v.name}(value)`);
       line(`    }`);
       line(`}`);
+    }
+    // A dictionary that extends a member is one, the object itself, as
+    // TypeScript's is: an `AddEventListenerOptions` an
+    // `EventListenerOptions | boolean` (ADR 1023). The parameter takes it;
+    // the enum, of the member's own fields, doesn't.
+    const dictionary = [...paramDictionaries.keys()].find((n) => typeName(n) === v.name);
+    if (dictionary) {
+      for (const [n, { borrows }] of paramDictionaries) {
+        if (n !== dictionary && dictionaryAncestors(n).includes(dictionary)) members.push(`${typeName(n)}${borrows ? "<'_>" : ""}`);
+      }
     }
   }
   const ts = union.ts;

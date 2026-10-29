@@ -64,8 +64,10 @@ read in place as before; so is what std makes of what it isn't given, a
 serde and serde_json give, which rust-js lowers itself (ADR 0459), of
 JSON's data (`recognition::lowered_serde`).
 
-**Not decided here: what JS calls an exported function with.** A struct
-parameter of an exported function, a component's props, a class's `this`,
+Three routes are left uncovered, the user's decision: each relies on JS
+giving an object of plain data, no getters.
+
+**What JS calls an exported function with.** A struct parameter of an exported function, a component's props, a class's `this`,
 is read as the program's data, as before. Taking each for a JS object,
 as a getter may answer, kept a `const` of nearly every field a component
 or a method reads, `const step = this.step;`, and made a `Cell` field of

@@ -23,6 +23,8 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
   // A listener JS gave is passed as it is, and called as JS would (rd185).
   expect(js).toContain('export function givenRemoved(button, given) {\n  button.addEventListener("custom", given);\n  button.removeEventListener("custom", given);\n}');
+  // checkPassiveEvents' options object, the listener and both options.
+  expect(js).toContain('button.addEventListener("test", listener, options);\n  button.removeEventListener("test", listener, options);');
   expect(js).toContain('if (typeof given === "function") {\n      given.call(this, event);\n    } else {\n      given.handleEvent(event);\n    }');
 });
 
@@ -93,7 +95,7 @@ test("a listener JS gave, a function or a handleEvent object, is added and remov
   const js = compileEvents();
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [name, expected] of Object.entries({ given: [1, 2, 1, 2], givenRemoved: [], givenWrapped: [10, 1, 10, 2, 10, 1, 10, 2] })) {
+    for (const [name, expected] of Object.entries({ given: [1, 2, 1, 2], givenRemoved: [], givenWrapped: [10, 1, 10, 2, 10, 1, 10, 2], passive: [1, 1] })) {
       const page = await browser.newPage();
       await page.setContent('<button id="button">Test</button>');
       const result = await page.evaluate(async ({ js, name }) => {

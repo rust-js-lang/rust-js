@@ -2,9 +2,10 @@ use std::cell::Cell;
 
 use webapi::{document};
 use webapi::events::{Click, Keydown};
-use js::function;
+use js::{PropertyDescriptor, function, object};
 use webapi::{
-    AddEventListenerOptions, Event, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt, HTMLButtonElement,
+    AddEventListenerOptions, Event, EventListenerObject, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt,
+    HTMLButtonElement,
     KeyboardEvent, PointerEvent, abort_controller, listener,
 };
 
@@ -145,4 +146,27 @@ pub fn given_wrapped(button: &HTMLButtonElement, given: EventListenerOrEventList
         }
     });
     button.add_event_listener_named("custom", attached, None);
+}
+
+// React DOM's checkPassiveEvents: an options object whose `passive` is a
+// getter, given as the listener too, an `EventListenerObject` of no
+// `handleEvent`, which JS calls only where "test" is dispatched; and to
+// removal, an `AddEventListenerOptions` an `EventListenerOptions` is.
+pub fn passive(button: &HTMLButtonElement) {
+    let options = AddEventListenerOptions::default();
+    object::define_property(
+        &options,
+        "passive",
+        &PropertyDescriptor {
+            get: Some(&|| {
+                record(1);
+                None
+            }),
+            ..Default::default()
+        },
+    );
+    // Safety: nothing dispatches "test", so JS never calls its `handleEvent`.
+    let listener: &EventListenerObject = unsafe { js::cast(Some(js::unknown(&options))) };
+    button.add_event_listener_named("test", listener, Some(&options));
+    button.remove_event_listener_named("test", listener, Some(&options));
 }
