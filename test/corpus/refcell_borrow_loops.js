@@ -38,6 +38,38 @@ const List = {
     }
   },
 
+  // The same in a labeled block it leaves from the loop, as
+  // hydrateHoistable's `break 'get_instance` does: each way out, the
+  // block's `break` among them, the `try`'s (rd200).
+  takeOrPush(list, f, made) {
+    let taken;
+    get: {
+      if (made > 0) {
+        const items = $borrowMut(list.items, true);
+        try {
+          const end = items.length;
+          for (let i = 0; i < end; i++) {
+            if (!f($index(items, i))) {
+              continue;
+            }
+            taken = items.splice(i, 1)[0];
+            break get;
+          }
+        } finally {
+          $unborrow(items);
+        }
+      }
+      const borrowMut = $borrowMut(list.items, true);
+      try {
+        borrowMut.push(made);
+      } finally {
+        $unborrow(borrowMut);
+      }
+      taken = made;
+    }
+    return taken;
+  },
+
   any(list, f) {
     const borrow = $borrow(list.items, true);
     try {
@@ -101,6 +133,10 @@ function main() {
   } finally {
     $unborrow(value$3);
   }
+  console.log(
+    `${List.takeOrPush(list, (x) => x === 8, 5)} ${List.takeOrPush(list, (x) => x === 99, 6)}`,
+  );
+  console.log(`${List.takeOrPush(list, (x) => x === 6, 0)}`);
   console.log(
     `${List.any(list, (x) => {
       if (x === 7) {

@@ -670,6 +670,11 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
         if let Some(kind) = emptied_branch(last.kind) {
             stmts.push(kind.at(last.span));
         }
+    } else if let Some(StmtKind::Try(body, _)) = stmts.last_mut().map(|s| &mut s.kind) {
+        // A `try`'s, its `finally` run as it goes on to the end anyway: a
+        // borrow's around a loop, `try { for (..) { .. } break bb26; }
+        // finally { $unborrow(nodes); }` (rd200).
+        drop_tail(body, jump);
     }
 }
 

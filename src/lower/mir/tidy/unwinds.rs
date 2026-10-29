@@ -703,9 +703,11 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labe
             StmtKind::Return(_) | StmtKind::Throw(_) => true,
             StmtKind::Break(None) => depth == 0,
             // A block's of its own, `bb25: { .. break bb25; }`, goes on in
-            // it; another label's leaves it.
-            StmtKind::Break(Some(label)) if labels.contains(label) => false,
-            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => return false,
+            // it; another label's leaves it, as a `return` does, the
+            // program's `break 'get_instance` out of the block the loop's in
+            // (rd200).
+            StmtKind::Break(Some(label)) => !labels.contains(label),
+            StmtKind::Continue(Some(_)) => true,
             _ => false,
         };
         if exit {

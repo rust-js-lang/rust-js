@@ -213,4 +213,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|const_param_drop_cells).rs$"],
     snapshots: true,
   },
+  {
+    name: "looped-drops-outer-break-refused",
+    breaks: "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "            StmtKind::Break(Some(label)) => !labels.contains(label),\n",
+    replace: "            StmtKind::Break(Some(label)) if labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
+    snapshots: true,
+  },
 ];

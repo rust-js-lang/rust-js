@@ -33,6 +33,28 @@ impl List {
         None
     }
 
+    // The same in a labeled block it leaves from the loop, as
+    // hydrateHoistable's `break 'get_instance` does: each way out, the
+    // block's `break` among them, the `try`'s (rd200).
+    fn take_or_push(&self, f: &dyn Fn(u32) -> bool, made: u32) -> u32 {
+        let taken;
+        'get: {
+            if made > 0 {
+                let mut items = self.items.borrow_mut();
+                for i in 0..items.len() {
+                    if !f(items[i]) {
+                        continue;
+                    }
+                    taken = items.remove(i);
+                    break 'get;
+                }
+            }
+            self.items.borrow_mut().push(made);
+            taken = made;
+        }
+        taken
+    }
+
     fn any(&self, f: &dyn Fn(u32) -> bool) -> bool {
         for &item in self.items.borrow().iter() {
             if f(item) {
@@ -80,6 +102,8 @@ fn main() {
     println!("{}", list.any(&|x| x == 2));
     println!("{:?} {:?}", list.take_first(&|x| x == 8), list.take_first(&|x| x > 99));
     list.items.borrow_mut().push(8);
+    println!("{} {}", list.take_or_push(&|x| x == 8, 5), list.take_or_push(&|x| x == 99, 6));
+    println!("{}", list.take_or_push(&|x| x == 6, 0));
     println!("{}", list.any(&|x| x == 7 || list.items.borrow().len() > 9));
     list.items.borrow_mut().push(7);
     let pushed = panic::catch_unwind(AssertUnwindSafe(|| {

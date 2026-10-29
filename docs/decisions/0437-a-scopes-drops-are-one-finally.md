@@ -145,3 +145,15 @@ React shape; 7 corpus cases read so, `refused_drops_and_displays.rs`'s
 `ending-try-return-kept` (`mir/tidy/jumps.ts`). `docs/readability.txt`'s
 renamed share went from 654.2 to 654.6 in 10,000 lines, blessed: no name
 is renamed that wasn't, the cases are fewer lines.
+
+Of a loop in a block it leaves, hydrateHoistable's `'get_instance: { if
+let Some(..) { let mut nodes = ..borrow_mut(); for i in 0..nodes.len() {
+.. break 'get_instance; } } instance = ..; }`, a `break` of a label
+outside the loop is a way out too, as a `return` is: the `finally` drops
+the borrow as it leaves, where MIR's drop before it did. And a `break` of
+a block MIR made that ends the `try` at that block's end goes, as one
+ending an `if` there does (`drop_tail`): the `finally` runs as the `try`
+goes on to the block's end anyway. Held by `refcell_borrow_loops.rs`'s
+`take_or_push` and the mutations `looped-drops-outer-break-refused`
+(`mir/tidy/unwinds.ts`) and `try-tail-break-kept`
+(`mir/tidy/jumps/tails.ts`).

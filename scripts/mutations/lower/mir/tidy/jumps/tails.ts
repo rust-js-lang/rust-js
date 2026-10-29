@@ -482,8 +482,8 @@ export const mutations: Mutation[] = [
     name: "tail-jump-branch-left-empty",
     breaks: "a branch a tail jump was all of stays, `if (!on) {} else { .. }`, so a guarded arm's `match` is no `switch`",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    }\n}\n",
-    replace: "    }\n}\n",
+    find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))",
+    replace: "    } else if let Some(StmtKind::Try(body, _))",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"],
   },
   {
@@ -606,6 +606,15 @@ export const mutations: Mutation[] = [
     find: "        if let Some(after) = tested_exit_after(stmts, i) {\n",
     replace: "        if let Some(after) = tested_exit_after(stmts, i).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "try-tail-break-kept",
+    breaks: "a `break` of a block MIR made that ends a `try` at the block's end stays, the block with it, `bb26: { if (..) { try { for (..) { .. } break bb26; } finally { .. } } }` (rd200)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        drop_tail(body, jump);\n    }\n}\n",
+    replace: "        let _ = body;\n    }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
 ];
