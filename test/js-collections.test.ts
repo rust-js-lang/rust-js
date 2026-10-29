@@ -310,7 +310,7 @@ pub fn removed_props(server_props: &Unknown) -> String {
     for prop_name in js::keys_in(server_props) {
         server_prop_names.set(&prop_name.to_lowercase(), prop_name);
     }
-    server_prop_names.for_each(|prop_name, _| {
+    server_prop_names.for_each(|prop_name, _, _| {
         if prop_name == "children" {
             // Handled below.
             return;
@@ -322,8 +322,19 @@ pub fn removed_props(server_props: &Unknown) -> String {
 
 pub fn keyed(map: &Map<str, u32>) -> Vec<String> {
     let mut out = Vec::new();
-    map.for_each(|value, key| out.push(format!("{key}:{value}")));
+    map.for_each(|value, key, _| out.push(format!("{key}:{value}")));
     out
+}
+
+fn attempt_in_map(queued: u32, key: &str, map: &Map<str, u32>) {
+    if queued > 1 {
+        map.delete(key);
+    }
+}
+
+pub fn attempted(queued: &Map<str, u32>) -> u32 {
+    queued.for_each(attempt_in_map);
+    queued.size()
 }
 
 pub fn listed(map: &Map<str, u32>) -> Vec<String> {
@@ -339,13 +350,16 @@ pub fn listed(map: &Map<str, u32>) -> Vec<String> {
     '  serverPropNames.forEach((propName) => {\n    if (propName === "children") {\n      // Handled below.\n      return;\n    }\n',
   );
   expect(js).toContain("  map.forEach((value, key) => {\n");
+  // A function of the value, its key and the map, TypeScript's
+  // `(value, key, map) => void`, given as it is (React port gap rd102).
+  expect(js).toContain("  queued.forEach(attemptInMap);\n");
   expect(js).toContain("  for (const [key, value] of map.entries()) {\n");
   expect(dts).toContain("export function listed(map: Map<string, number>): string[];");
   const out = ran(dir, `const lib = await import("./lib.js");
 const map = new Map([["a", 1], ["bc", 2]]);
-console.log(JSON.stringify([lib.removedProps({ children: 1, className: "x", ID: 2 }), lib.keyed(map), lib.listed(map)]));
+console.log(JSON.stringify([lib.removedProps({ children: 1, className: "x", ID: 2 }), lib.keyed(map), lib.listed(map), lib.attempted(new Map([["a", 1], ["b", 2], ["c", 3]]))]));
 `);
-  expect(out).toBe('["- className\\n- ID\\n",["a:1","bc:2"],["A","BC","a=1","bc=2","1","2"]]\n');
+  expect(out).toBe('["- className\\n- ID\\n",["a:1","bc:2"],["A","BC","a=1","bc=2","1","2"],1]\n');
 });
 
 // The user's decision (bw8): what JS's own iteration of a `Set` or a `Map`

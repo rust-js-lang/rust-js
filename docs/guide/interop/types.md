@@ -360,7 +360,7 @@ pub fn listed(set: &Set<str>) -> Vec<&'static str> {
 
 pub fn named(map: &Map<str, String>) -> Vec<String> {
     let mut names = Vec::new();
-    map.for_each(|name, _| names.push(name));
+    map.for_each(|name, _, _| names.push(name));
     names.extend(map.keys().map(str::to_owned));
     names
 }

@@ -156,12 +156,14 @@ impl<K: ?Sized, V> Map<K, V> {
 /// them, `&'static`, and each value, as [`get`](Map::get) gives it.
 impl<K: ?Sized + 'static, V> Map<K, V> {
     /// [`map.forEach(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/forEach):
-    /// `f` of each value and its key, in the order they were set. JS runs
+    /// `f` of each value, its key and the map, in the order they were set,
+    /// as TypeScript's `(value, key, map) => void`, so a function of the
+    /// three is given as it is, `queuedPointers.forEach(attempt)`. JS runs
     /// `f` before `forEach` returns and keeps nothing of it, so it may borrow
     /// what's around it, as a [`Set`]'s `for_each` may (ADR 0875, amended):
-    /// `map.for_each(|value, _| names.push(value))`.
+    /// `map.for_each(|value, _, _| names.push(value))`.
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
-    pub fn for_each(&self, f: impl FnMut(V, &'static K)) {
+    pub fn for_each(&self, f: impl FnMut(V, &'static K, &Self)) {
         unreachable!()
     }
 

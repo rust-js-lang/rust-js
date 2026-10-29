@@ -1,6 +1,6 @@
 # 0875. A `js::Set` holds any value, and a `Set` and a `Map` are made of what they start with
 
-Status: Accepted. Extends [0849](0849-a-map-takes-any-key.md), whose
+Status: Accepted. Amended below (rd102): a map's `for_each` gives the map too. Extends [0849](0849-a-map-takes-any-key.md), whose
 `js::Map` keys any value, to a set of them; amends its `map::new()`,
 which now takes what the map starts with, `None` of nothing. Amended by
 [0884](0884-a-maps-value-is-any-value.md): a `Map`'s value is any value,
@@ -232,3 +232,27 @@ steps any iterable the same way.
 Held by `test/js-collections.test.ts`' "a set and a map are made of any
 iterable, given as it is", which runs the JS against copies, a `Vec` and
 boxed iterators; rustc holds the signatures.
+
+## Amendment: a map's `for_each` gives the map too (rd102, 2026-10-29)
+
+Case N: JS's own `Map.prototype.forEach`, which calls its callback with
+the value, the key and the map.
+
+React's ReactDOMEventReplaying gives a function of the three as it is,
+`queuedPointers.forEach(attemptReplayContinuousQueuedEventInMap)`.
+`Map::for_each` took `impl FnMut(V, &'static K)`, narrower than
+TypeScript's `(value: V, key: K, map: Map<K, V>) => void`, so the port
+wrapped it in an arrow, `(queuedEvent, key) => attempt(queuedEvent, key,
+queuedPointers)`.
+
+**`Map::for_each` takes `impl FnMut(V, &'static K, &Self)`**, as
+TypeScript types it: a function of the three is given as it is,
+`queued.for_each(attempt_in_map)` `queued.forEach(attemptInMap)`, and a
+closure of fewer writes `_` for the rest, `|value, key, _|`, which its
+arrow leaves out, `(value, key) => ..`. A `Set`'s `for_each` stays of its
+value alone until a port gives one a function of more; TypeScript's
+`(value, value2, set)` repeats the value.
+
+Held by `test/js-collections.test.ts`'s "a Map's forEach and iterators",
+run: a function of the three given as it is, deleting what it's given.
+React's port writes `|v, k, _|` where it wrote `|v, k|`.
