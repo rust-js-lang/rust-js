@@ -646,13 +646,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             subpattern: None, var, ..
                         } = arm.pattern.kind
                             && let Some(guard) = guard
-                            && self.compares_a_read(guard, var)
+                            && let Some(reads) = self.reads_compared(guard, var)
                         {
                             return Some(SwitchArm {
                                 span: self.js_span(arm.span),
                                 pattern: self.js_span(self.frame.thir[guard].span),
                                 guard: None,
-                                constants: vec![Constant::Read],
+                                constants: vec![Constant::Read; reads],
                                 falls: false,
                             });
                         }
@@ -743,15 +743,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Whether `guard` compares what's matched with a value it reads with no
-    /// call of the program's, a thread-local's, `END.with(|e| e == name)`,
-    /// `END.with_borrow(..)`, `LIMIT.get() == n`, or a `static`'s, `name ==
-    /// FIXED` (rd113, the user's decision): its arm is a case of that value,
-    /// which a JS `switch` reads where Rust tries the guard, each case's in
-    /// order until one matches. Which value, and that it's a read, its test
-    /// says (`Constant::Read`).
-    fn compares_a_read(&self, guard: thir::ExprId, name: thir::LocalVarId) -> bool {
+    /// How many values `guard` compares what's matched with, each read with
+    /// no call of the program's, a thread-local's, `END.with(|e| e ==
+    /// name)`, `END.with_borrow(..)`, `LIMIT.get() == n`, or a `static`'s,
+    /// `name == FIXED`, `||` joining them (rd113, the user's decision): its
+    /// arm is a case of each, which a JS `switch` reads where Rust tries the
+    /// guard, each case's in order until one matches. Which value, and that
+    /// it's a read, its test says (`Constant::Read`).
+    fn reads_compared(&self, guard: thir::ExprId, name: thir::LocalVarId) -> Option<usize> {
         let thir = self.frame.thir;
+        if let thir::ExprKind::LogicalOp {
+            op: thir::LogicalOp::Or,
+            lhs,
+            rhs,
+        } = thir[body_queries::strip(thir, guard)].kind
+        {
+            return Some(self.reads_compared(lhs, name)? + self.reads_compared(rhs, name)?);
+        }
         // What a call is, of the standard library's.
         let called = |e: &thir::Expr<'tcx>| match e.kind {
             thir::ExprKind::Call { fun, .. } => {
@@ -789,7 +797,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let compared = |lhs, rhs| (named(lhs) && read(rhs)) || (read(lhs) && named(rhs));
         let e = &thir[body_queries::strip(thir, guard)];
-        match e.kind {
+        let read = match e.kind {
             thir::ExprKind::Binary {
                 op: rustc_middle::mir::BinOp::Eq,
                 lhs,
@@ -810,7 +818,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A thread-local's value, given to a closure that compares it.
             _ => matches!(called(e), Some(Std::LocalWith | Std::LocalBorrow { mutable: false })),
-        }
+        };
+        read.then_some(1)
     }
 
     /// Whether an arm of `pattern` whose guard fails may fall to the case of

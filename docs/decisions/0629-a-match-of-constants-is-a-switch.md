@@ -684,7 +684,7 @@ plain thread-local or `static` read, with no call, is a `case` of that
 value; guards with calls stay guards. `hints::written_switches` makes such
 an arm, a name alone whose guard is `X.with(|x| x == name)`,
 `X.with_borrow(..)`, `X.get() == name` or `name == STATIC`
-(`compares_a_read`), one case of `Constant::Read`, written where its guard
+(`reads_compared`), one case of `Constant::Read`, written where its guard
 is. tidy's chain takes its test's value where it's a read, a name or a
 thread-local cell's `X.value`, calling nothing, compared by `===` with
 what the tests before it compare: `switch (name) { .. case ANIMATION_END:

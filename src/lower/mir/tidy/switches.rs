@@ -837,10 +837,32 @@ fn chain(
             return Some((cases, i + taken));
         };
         let (arm, from) = left[k];
+        // The arm written next, which a guarded arm falls to (ADR 0905).
+        let next = left.get(k + 1).map(|&(next, _)| next);
         // Its test negated, the branch of the arms after it: its own the
-        // `else`, or what's after where that leaves.
-        let mut negated = discriminant.clone();
-        if let Some(values) = values_of(test, &arm.constants[from..], true, &mut negated) {
+        // `else`, or what's after where that leaves. Of a guard of `||`
+        // MIR tests in parts, `if (A !== name) { if (B !== name) { .. } }`,
+        // each part's, one test (rd118).
+        let mut parts = vec![(test.clone(), then)];
+        while otherwise.is_none()
+            && let Some((
+                joined,
+                [
+                    Stmt {
+                        kind: StmtKind::If(part, inner, None),
+                        ..
+                    },
+                ],
+            )) = parts.last().map(|(t, then)| (t, &then[..]))
+        {
+            parts.push((Expr::bin(Op::And, joined.clone(), part.clone()), inner));
+        }
+        let negations = parts.into_iter().find_map(|(test, then)| {
+            let mut negated = discriminant.clone();
+            let values = values_of(&test, &arm.constants[from..], true, &mut negated)?;
+            Some((values, negated, then))
+        });
+        if let Some((values, negated, then)) = negations {
             left.remove(k);
             if left.is_empty() || left.iter().any(|&(_, from)| from > 0) {
                 return None;
@@ -911,8 +933,33 @@ fn chain(
                         case.1.push(jump.clone());
                     }
                 }
+                // Of a guarded arm that falls to the next in a branch of
+                // the chain, what follows it there that's written in the
+                // arm it falls to: each case's that goes on to it, its own
+                // and the falling one's, as a `match`'s list's end is
+                // (`switch_at`), a second fall-through's, React DOM's
+                // SimpleEventPlugin's `"click"` (rd118).
+                let mut taken = i;
+                if whole
+                    && arm.falls
+                    && let Some(next) = next
+                {
+                    let n = self::rest(&stmts[i..], next, false);
+                    let falling = cases.len() - 1;
+                    cases.extend(rest);
+                    if n > 0 {
+                        for (c, case) in cases.iter_mut().enumerate().skip(falling) {
+                            let goes = c == falling || (case.3 == next.span && !case.1.last().is_some_and(js::ends));
+                            if goes {
+                                case.1.extend(stmts[i..i + n].iter().cloned());
+                            }
+                        }
+                        taken += n;
+                    }
+                    return Some((cases, taken));
+                }
                 cases.extend(rest);
-                return Some((cases, i));
+                return Some((cases, taken));
             }
             // The next, where this one leaves.
             None if held.last().is_some_and(js::ends) => {}

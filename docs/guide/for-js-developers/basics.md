@@ -1813,7 +1813,8 @@ export function frame(tag, viewTransitions) {
 A name compared, in its guard, with a thread-local or a `static` read
 with no call, `name if ANIMATION_END.with(|e| e == name)`, `n if
 LIMIT.get() == n`, `name if name == FIXED`, is a case of that value,
-`case ANIMATION_END:`, as React's SimpleEventPlugin writes it: a JS
+`case ANIMATION_END:`, and one of reads joined by `||` a case of each,
+stacked, as React's SimpleEventPlugin writes them: a JS
 `switch` reads each case's value in order until one matches, as Rust tries
 each guard, so a thread-local that changes is read where Rust reads it. A
 guard that calls something, `e.trim() == name`, or compares a local, `n
@@ -1824,13 +1825,18 @@ amended, rd113):
 ```rust
 thread_local! {
     static ANIMATION_END: String = String::from("animationend");
+    static ANIMATION_START: String = String::from("animationstart");
 }
 
 pub fn event_kind(name: &str) -> u32 {
     match name {
         "click" | "auxclick" => 1,
         "focusin" => 2,
-        name if ANIMATION_END.with(|event_name| event_name == name) => 3,
+        name if ANIMATION_END.with(|event_name| event_name == name)
+            || ANIMATION_START.with(|event_name| event_name == name) =>
+        {
+            3
+        }
         _ => 0,
     }
 }
@@ -1838,6 +1844,7 @@ pub fn event_kind(name: &str) -> u32 {
 
 ```js
 const ANIMATION_END = "animationend";
+const ANIMATION_START = "animationstart";
 
 export function eventKind(name) {
   switch (name) {
@@ -1847,6 +1854,7 @@ export function eventKind(name) {
     case "focusin":
       return 2;
     case ANIMATION_END:
+    case ANIMATION_START:
       return 3;
     default:
       return 0;

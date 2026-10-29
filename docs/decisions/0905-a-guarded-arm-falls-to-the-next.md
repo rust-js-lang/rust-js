@@ -624,3 +624,32 @@ the same order.
 
 Held by `test/corpus/switch_text_guard_falls.rs` against native Rust and
 the mutation `text-pattern-untold` (`body_queries/constants.ts`).
+
+## Amendment: a second fall-through, and a guard of reads joined by `||` (rd118)
+
+React DOM's SimpleEventPlugin has two guarded arms that fall to the next,
+`"keypress" if .. => return` and `"click" if .. => return`, and an arm of
+the animation events, `name if ANIMATION_END.with(..) ||
+ANIMATION_START.with(..) => ..`. Its `match` was `bb180: { .. }`: MIR
+tests the arms after the first fall-through in that guard's `else`, so the
+second's fallen-to statements, `ctor = 5; break bb33;`, follow its `if`
+inside that branch, where only a `match`'s list's end took them
+(`switch_at`); and it tests a guard of `||` in parts, `if (A !== name) {
+if (B !== name) { .. } } ctor = 6;`, which no negated test read.
+
+Now, in a branch of the chain, what follows a guarded arm that falls,
+written in the arm it falls to, is each case's that goes on to it, the
+falling one's and its own, as at the list's end; and nested `if`s of no
+`else` are tried as one test, `A !== name && B !== name`, where their
+parts are the arm's constants, each of an arm a guard compares with reads
+(ADR 0629, amended), `case ANIMATION_END: case ANIMATION_START:`. Upstream's
+`switch`, both guarded cases falling through.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in the
+same order: each guard runs once its constant matched, and the reads of
+`||` in order until one matches, as a `switch` evaluates stacked cases.
+
+Held by `test/corpus/switch_guards_fall_twice.rs` (a thread-local changed
+to a value an earlier arm names) against native Rust and the mutations
+`second-fall-unabsorbed`, `or-guard-parts-untried` (`mir/tidy/switches.ts`)
+and `or-guard-of-reads-no-case` (`mir/hints.ts`).
