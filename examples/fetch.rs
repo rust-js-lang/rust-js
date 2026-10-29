@@ -6,7 +6,7 @@ use js::spawn;
 use webapi::{document, window};
 use webapi::events::Click;
 use webapi::tags::{Button, Output};
-use webapi::{EventTargetExt, Element};
+use webapi::{Element, EventTargetExt, PointerEvent};
 
 const URL: &str = "data:text/plain,Hello from a fetch!";
 
@@ -23,7 +23,7 @@ pub fn main() {
     let button = document.create_element(Button);
     button.set_text_content("Fetch");
     let output = document.create_element(Output);
-    button.add_event_listener(Click, move |_| {
+    button.add_event_listener(Click, move |_: &PointerEvent| {
         spawn(Box::new(load(URL, output)));
     }, None);
     app.append((button, output));

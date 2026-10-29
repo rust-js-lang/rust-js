@@ -10,7 +10,7 @@ pub fn forms() -> String {
     let app = document.get_element_by_id("app").expect("the page has an #app");
     app.append((input, "!"));
     let ping: &Event = event::new("ping", None);
-    app.add_event_listener_named("ping", |e| e.prevent_default(), None);
+    app.add_event_listener_named("ping", |e: &Event| e.prevent_default(), None);
     let _ = window.dispatch_event(ping);
     app.text_content().unwrap() + &input.value()
 }

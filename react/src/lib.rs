@@ -1381,7 +1381,7 @@ impl FragmentInstance {
     pub fn add_event_listener(
         &self,
         name: &str,
-        listener: impl FnMut(&webapi::Event) + 'static,
+        listener: impl webapi::IntoEventListener<webapi::Event>,
         options: Option<&dyn webapi::IntoAddEventListenerOptionsOrBool>,
     ) {
         unreachable!()
@@ -1391,7 +1391,7 @@ impl FragmentInstance {
     pub fn remove_event_listener(
         &self,
         name: &str,
-        listener: &'static dyn Fn(&webapi::Event),
+        listener: impl webapi::IntoAddedEventListener<webapi::Event>,
         options: Option<&dyn webapi::IntoEventListenerOptionsOrBool>,
     ) {
         unreachable!()

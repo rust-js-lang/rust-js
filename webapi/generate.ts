@@ -1541,10 +1541,14 @@ for (const names of [eventNames, tagNames, svgTagNames]) {
 // whose JS is the operation's, not extern ones.
 const typed = (doc: string[], js: string, signature: string, visibility = "pub ") =>
   [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
-const listener = "impl FnMut(&<Self as Listen<E>>::Event) + 'static";
-// Removal finds the function added, so it takes a shared one, `listener(..)`'s:
-// a closure made for the call is a new function, which removes nothing.
-const shared = "&'static dyn Fn(&<Self as Listen<E>>::Event)";
+// A listener is TypeScript's `EventListenerOrEventListenerObject`, each
+// member as it is (ADRs 0229, 1021): a closure, or a listener JS gave, a
+// function or an object JS calls `handleEvent` of, kept by identity.
+const listener = "impl IntoEventListener<<Self as Listen<E>>::Event>";
+// Removal finds the listener added, so it takes a shared one, `listener(..)`'s,
+// or one JS gave: a closure made for the call is a new function, which
+// removes nothing.
+const shared = "impl IntoAddedEventListener<<Self as Listen<E>>::Event>";
 // A window's timers, gone (ADR 1020): a timer is the js crate's global,
 // which takes a function as it is, where these took text alone. Each takes
 // what it did, of a type that's never a `TimerGone`, so a call is the error
@@ -1578,7 +1582,7 @@ line(`//! wherever an \`&Element\` or \`&Node\` is expected. See ADRs 0024 and 0
 line(`//! The JS language's own types, \`Promise\` and \`ArrayBuffer\` say, are the js crate's (ADR 0102).`);
 line(`//! Each event's name and each tag is a type too (ADR 0223), from \`@webref/events\` ${eventsPackage.version}`);
 line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`, whose value is \`"click"\`.`);
-line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e| ..)\` (ADR 0282).`);
+line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e: &PointerEvent| ..)\` (ADR 0282).`);
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::{Deref, Index};`);
@@ -1911,8 +1915,8 @@ for (const [name, js, callback, extra] of [
   line();
 }
 for (const [name, js, callback, extra] of [
-  ["add", "addEventListener", "impl FnMut(&Event) + 'static", addOptions],
-  ["remove", "removeEventListener", "&'static dyn Fn(&Event)", removeOptions],
+  ["add", "addEventListener", "impl IntoEventListener<Event>", addOptions],
+  ["remove", "removeEventListener", "impl IntoAddedEventListener<Event>", removeOptions],
 ]) {
   line(typed(["A custom name, with the base Event."], js,
     `${name}_event_listener_named(&self, name: &str, listener: ${callback}${extra})`, ""));
@@ -1926,6 +1930,90 @@ line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove
   "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
   "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..)."], "this",
   "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));
+line();
+line(`/// [\`EventListenerObject\`](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener#the_event_listener_callback):
+/// an object a listener is, which JS calls \`handleEvent\` of. No global
+/// names it: an object, as a value of the union it's in is told by
+/// \`typeof\` (ADR 1021).
+#[cfg_attr(rust_js, rust_js::types = "EventListenerObject")]
+pub struct EventListenerObject(PhantomData<JsObject>);
+
+/// \`a === b\`: the same object.
+impl PartialEq for EventListenerObject {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EventListenerObject {}
+
+/// An object is never nullish.
+unsafe impl Defined for EventListenerObject {}
+
+impl EventListenerObject {
+${typed(["[MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener#the_event_listener_callback): what JS calls of it, given the event."], "handleEvent", "handle_event(&self, object: &Event)")}
+}
+
+/// TypeScript's \`EventListenerOrEventListenerObject\`: a listener JS gave,
+/// each variant's value the member itself (ADR 0215), \`typeof listener ===
+/// "function"\` of a function's (ADR 1021). An event is a JS object, which a
+/// listener may keep, so a function's is \`&'static\`.
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum EventListenerOrEventListenerObject {
+    EventListener(&'static dyn Fn(&'static Event)),
+    EventListenerObject(&'static EventListenerObject),
+}
+
+/// \`a === b\`: the same function or object, as removal finds a listener.
+impl PartialEq for EventListenerOrEventListenerObject {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::EventListener(a), Self::EventListener(b)) => core::ptr::addr_eq(*a, *b),
+            (Self::EventListenerObject(a), Self::EventListenerObject(b)) => core::ptr::eq(*a, *b),
+            _ => false,
+        }
+    }
+}
+
+impl Eq for EventListenerOrEventListenerObject {}
+
+/// What a listener parameter of \`add_event_listener\` takes, TypeScript's
+/// \`EventListenerOrEventListenerObject\`, each member as it is (ADR 0229): a
+/// closure of the event, \`listener(..)\`'s shared one, or a listener JS gave,
+/// \`EventListenerOrEventListenerObject\` or an \`&EventListenerObject\`
+/// (ADR 1021). Being a union, it gives rustc no closure's signature, so a
+/// closure's parameter says its event, \`|e: &PointerEvent| ..\`; an event
+/// is a JS object, which a listener may keep, so a function given
+/// \`&'static\` events is one too, \`function::with_this\`'s.
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not an \`EventListenerOrEventListenerObject\`", note = "a listener is a closure of the event, \`listener(..)\`'s, or one JS gave, an \`EventListenerOrEventListenerObject\`")]
+#[cfg_attr(rust_js, rust_js::types = "EventListenerOrEventListenerObject")]
+pub trait IntoEventListener<E>: listeners::Sealed<E> {}
+impl<E: 'static, F: FnMut(&'static E) + 'static> IntoEventListener<E> for F {}
+impl<E> IntoEventListener<E> for EventListenerOrEventListenerObject {}
+impl<E> IntoEventListener<E> for &'static EventListenerObject {}
+
+/// What a listener parameter of \`remove_event_listener\` takes: one added
+/// before, as it was, \`listener(..)\`'s shared function, or a listener JS
+/// gave (ADR 1021). A closure made for the call is a new function, which
+/// removes nothing.
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a listener added before", note = "removal finds the listener added: a shared one, \`listener(..)\`'s, or one JS gave, an \`EventListenerOrEventListenerObject\`")]
+#[cfg_attr(rust_js, rust_js::types = "EventListenerOrEventListenerObject")]
+pub trait IntoAddedEventListener<E>: listeners::Sealed<E> {}
+impl<E> IntoAddedEventListener<E> for &'static dyn Fn(&E) {}
+impl<E> IntoAddedEventListener<E> for EventListenerOrEventListenerObject {}
+impl<E> IntoAddedEventListener<E> for &'static EventListenerObject {}
+
+mod listeners {
+    use super::*;
+
+    pub trait Sealed<E> {}
+    impl<E: 'static, F: FnMut(&'static E) + 'static> Sealed<E> for F {}
+    impl<E> Sealed<E> for EventListenerOrEventListenerObject {}
+    impl<E> Sealed<E> for &'static EventListenerObject {}
+}`);
 
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).
 for (const [name, fields] of usedDictionaries) {

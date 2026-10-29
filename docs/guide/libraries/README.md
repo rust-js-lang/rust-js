@@ -219,13 +219,13 @@ The web platform, **generated from W3C's WebIDL**, the source TypeScript's
 ```rust
 use webapi::events::Click;
 use webapi::tags::Button;
-use webapi::{EventTargetExt, document, window};
+use webapi::{EventTargetExt, PointerEvent, document, window};
 
 pub fn mount() {
     let app = document.get_element_by_id("app").expect("the page has an #app");
     let button = document.create_element(Button);
     button.set_text_content("Save");
-    button.add_event_listener(Click, |event| {
+    button.add_event_listener(Click, |event: &PointerEvent| {
         let x = event.client_x();
         if let Ok(storage) = window.local_storage() {
             let _ = storage.set_item("clicked-at", &x.to_string());
@@ -340,6 +340,13 @@ How WebIDL maps to Rust, one rule for each:
   ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)).
   `EventTargetExt` gives every target `add_event_listener` and
   `remove_event_listener` ([ADR 0282](../../decisions/0282-event-listener-methods.md)).
+  A listener is TypeScript's `EventListenerOrEventListenerObject`: a
+  closure, whose parameter says its event, `|event: &PointerEvent|`, a
+  shared one, `listener(..)`'s, or one JS gave, an
+  `EventListenerOrEventListenerObject`, passed as it is, so removal finds
+  it; `match` it to call it as JS would,
+  `function::call(f, this, (event,))` or `object.handle_event(event)`
+  ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md)).
 - **A union is each of its members as it is:** `window.fetch(url, None)`
   and `window.fetch(request, None)`; a union a JS API gives is an enum of
   its members ([ADR 0215](../../decisions/0215-webapi-unions.md)).

@@ -131,4 +131,29 @@ export function namedCaptureRemoved(button) {
   button.addEventListener("custom", callback, true);
   button.removeEventListener("custom", callback, { capture: true });
 }
+
+// A listener JS gave, a function or an object JS calls `handleEvent` of, is
+// passed as it is, so removal finds it.
+export function given(button, given) {
+  button.addEventListener("custom", given);
+}
+
+export function givenRemoved(button, given) {
+  button.addEventListener("custom", given);
+  button.removeEventListener("custom", given);
+}
+
+// As upstream React's fragment-scoped `once` calls what it wraps: a function
+// with the wrapper's `this`, the target, or an object's `handleEvent`.
+export function givenWrapped(button, given) {
+  function attached(event) {
+    globalThis.record(10);
+    if (typeof given === "function") {
+      given.call(this, event);
+    } else {
+      given.handleEvent(event);
+    }
+  }
+  button.addEventListener("custom", attached);
+}
 //# sourceMappingURL=webapi-events.js.map

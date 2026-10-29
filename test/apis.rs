@@ -249,7 +249,7 @@ pub fn Misc() -> JSX::Element {
                 {vec![1, 2].into_iter().map(|n| jsx! {
                     <Fragment key={n} ref={move |fragment: Option<&'static FragmentInstance>| {
                         if let Some(fragment) = fragment {
-                            fragment.add_event_listener("click", move |_| log(&format!("fragment {n} clicked")), None);
+                            fragment.add_event_listener("click", move |_: &webapi::Event| log(&format!("fragment {n} clicked")), None);
                         }
                     }}>
                         <li>{n}</li>

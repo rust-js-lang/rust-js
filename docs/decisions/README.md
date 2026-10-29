@@ -301,7 +301,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md) *(amended: a function of rest arguments keeps its arrow)*
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md) *(amended: a field that holds a cell keeps its key, `destroy: undefined`)*
 - [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md) *(extended by 0891: a window's constructors; amended: a dictionary's partial members, rd160)*
-- [0282 One method API for event listeners](0282-event-listener-methods.md)
+- [0282 One method API for event listeners](0282-event-listener-methods.md) *(amended by 1021: a listener is a closure or one JS gave, a closure's parameter annotated)*
 - [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to; extended by 0887: `Math` is std's items as values too; amended: an `Error`'s options, rd173)*
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)
 - [0285 `std::ptr::eq` of JS objects is whether they're one](0285-ptr-eq.md) *(amended: an item that's an object and an object, `items[i] === r`, its index checked)*
@@ -805,6 +805,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
+- [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

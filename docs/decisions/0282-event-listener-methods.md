@@ -1,6 +1,6 @@
 # 0282. One method API for event listeners
 
-Status: Accepted. Amends [0024](0024-web-crate.md),
+Status: Accepted; amended by [1021](1021-a-listener-is-a-closure-or-one-js-gave.md) (a listener is a closure, whose parameter says its event, or one JS gave). Amends [0024](0024-web-crate.md),
 [0223](0223-webapi-event-and-tag-maps.md) and [0260](0260-webapi-callbacks.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).

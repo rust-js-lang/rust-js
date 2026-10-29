@@ -807,6 +807,13 @@ released any more: `rust-js build` is the one way to build an app.
 
 ### Changed
 
+- **A listener is a closure or one JS gave, each as it is** (ADR 1021):
+  `add_event_listener` and `remove_event_listener` take TypeScript's
+  `EventListenerOrEventListenerObject`, so a function or a `handleEvent`
+  object JS gave is added and removed by identity, `match`ed to call it as
+  JS would. A closure's parameter says its event,
+  `button.add_event_listener(Click, |e: &PointerEvent| ..)`, as a union
+  gives rustc no closure signature.
 - **A blank line is where the Rust has one between the code of the JS, and
   nowhere else** (ADR 0865): React's `const emptyObject = {};` and the
   `if (__DEV__)` of the `js::on_load!` right below its `static` are one
@@ -1277,7 +1284,10 @@ names it:
    `use_effect(f, Some(&[n]))` for `use_effect(f, [n])`, and a `None` for
    each one you leave out, `fetch(url, None)`. rustc names each call, and
    the argument it misses.
-8. From now on, run `rust-js build` after each change to your Rust, beside
+8. Say the event of each closure you give `add_event_listener`,
+   `|e: &PointerEvent|`, `|_: &Event|` of a `_named` one: rustc's "type
+   annotations needed" names each.
+9. From now on, run `rust-js build` after each change to your Rust, beside
    `bun run dev`.
 
 ### Roll back to 0.0.3

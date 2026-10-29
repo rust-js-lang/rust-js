@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use webapi::{document};
 use webapi::events::Keydown;
-use webapi::{Element, EventTargetExt, html_element, html_input_element};
+use webapi::{Element, Event, EventTargetExt, KeyboardEvent, html_element, html_input_element};
 
 #[derive(Clone, Copy, PartialEq)]
 enum Filter {
@@ -52,7 +52,7 @@ fn text(tag: &str, s: &str) -> &'static Element {
 /// When `event` fires on `target`, apply `change` to the state and draw it again.
 fn on(target: &'static Element, event: &str, state: &Shared, view: View, change: Box<dyn Fn(&mut State)>) {
     let state = state.clone();
-    target.add_event_listener_named(event, move |_| {
+    target.add_event_listener_named(event, move |_: &Event| {
         change(&mut state.borrow_mut());
         render(&state, view);
     }, None);
@@ -126,7 +126,7 @@ pub fn main() {
     let input = html_input_element::unchecked_from(create("input"));
     input.set_placeholder("What needs to be done?");
     let adding = state.clone();
-    input.add_event_listener(Keydown, move |e| {
+    input.add_event_listener(Keydown, move |e: &KeyboardEvent| {
         let title = input.value();
         let title = title.trim();
         if e.key() == "Enter" && !title.is_empty() {

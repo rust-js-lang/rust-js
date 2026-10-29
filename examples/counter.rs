@@ -12,7 +12,7 @@ use std::rc::Rc;
 use webapi::document;
 use webapi::events::Click;
 use webapi::tags::{Button, Output};
-use webapi::{EventTargetExt, HTMLButtonElement, HTMLOutputElement};
+use webapi::{EventTargetExt, HTMLButtonElement, HTMLOutputElement, PointerEvent};
 
 fn button(label: &str) -> &'static HTMLButtonElement {
     let b = document.create_element(Button);
@@ -24,7 +24,7 @@ fn button(label: &str) -> &'static HTMLButtonElement {
 fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HTMLOutputElement) -> &'static HTMLButtonElement {
     let b = button(label);
     let count = count.clone();
-    b.add_event_listener(Click, move |_| {
+    b.add_event_listener(Click, move |_: &PointerEvent| {
         count.set(count.get() + by);
         output.set_text_content(count.get().to_string().as_str());
     }, None);

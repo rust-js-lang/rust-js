@@ -3,7 +3,7 @@
 use react::{use_effect, use_state};
 use webapi::events::Hashchange;
 use webapi::window;
-use webapi::{AddEventListenerOptions, EventTargetExt, abort_controller};
+use webapi::{AddEventListenerOptions, EventTargetExt, HashChangeEvent, abort_controller};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Route {
@@ -44,7 +44,11 @@ pub fn use_route() -> Route {
                 signal: Some(controller.signal()),
                 ..Default::default()
             };
-            window.add_event_listener(Hashchange, move |_| set_current.set(hash()), Some(&options));
+            window.add_event_listener(
+                Hashchange,
+                move |_: &HashChangeEvent| set_current.set(hash()),
+                Some(&options),
+            );
             move || controller.abort(None)
         },
         Some(&()),

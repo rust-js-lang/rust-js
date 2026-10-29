@@ -7,7 +7,7 @@ use std::pin::{Pin, pin};
 use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
-use webapi::{AddEventListenerOptions, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
+use webapi::{AddEventListenerOptions, Event, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
 
 /// Resolves with `value` after `ms` milliseconds.
 #[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
@@ -144,7 +144,7 @@ pub fn listen_until_aborted() -> u32 {
     let controller = abort_controller::new();
     let counted = Rc::clone(&count);
     let options = AddEventListenerOptions { signal: Some(controller.signal()), ..Default::default() };
-    target.add_event_listener_named("ping", move |_| *counted.borrow_mut() += 1, Some(&options));
+    target.add_event_listener_named("ping", move |_: &Event| *counted.borrow_mut() += 1, Some(&options));
     let _ = target.dispatch_event(event::new("ping", None));
     controller.abort(None);
     let _ = target.dispatch_event(event::new("ping", None));

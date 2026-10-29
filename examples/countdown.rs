@@ -8,7 +8,7 @@ use js::{Promise, set_timeout, spawn};
 use webapi::document;
 use webapi::events::Click;
 use webapi::tags::{Button, Output};
-use webapi::{EventTargetExt, Element};
+use webapi::{Element, EventTargetExt, PointerEvent};
 
 /// A promise that resolves after `ms` milliseconds.
 fn sleep(ms: u32) -> Promise<()> {
@@ -34,7 +34,7 @@ pub fn main() {
     let output = document.create_element(Output);
     // One countdown at a time.
     let running = Rc::new(Cell::new(false));
-    start.add_event_listener(Click, move |_| {
+    start.add_event_listener(Click, move |_: &PointerEvent| {
         if running.get() {
             return;
         }

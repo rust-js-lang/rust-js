@@ -17,14 +17,14 @@ test("a listener holding a value with a destructor is refused", () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("webapi-listener-drop");
   const source = `use webapi::events::Click;
-use webapi::{EventTargetExt, document};
+use webapi::{EventTargetExt, PointerEvent, document};
 pub struct Guard;
 impl Drop for Guard {
     fn drop(&mut self) {}
 }
 pub fn wire() {
     let guard = Guard;
-    document.add_event_listener(Click, move |_| {
+    document.add_event_listener(Click, move |_: &PointerEvent| {
         let _g = &guard;
     }, None);
 }
