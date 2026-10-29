@@ -749,7 +749,8 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
   // Its optimized MIR's drop flags settled as rust-js's own: none of `t`
   // after `vec![t]` took it, nor a `try` of a `catch` it emptied (#381).
   const copied = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(copied).toContain("  const result = v.length;\n  for (const item of v) {\n    dropT?.(item);\n  }\n  return result;\n}");
+  // Each item dropped, the rest too after one that panics (a1a886ee4).
+  expect(copied).toContain("  const result = v.length;\n  $dropItems(v, (item) => {\n    dropT?.(item);\n  });\n  return result;\n}");
   expect(copied).toContain("  if (keep) {\n    return held;\n  }\n  try {\n    check();\n  } finally {\n    dropT?.(held);\n  }\n}");
   const dir = fixture("library-boxed-refused");
   writeFileSync(join(dir, "dep.rs"), "pub fn unboxed<T>(t: T) -> T {\n    let boxed = Box::new(t);\n    *boxed\n}\n");
