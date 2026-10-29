@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/drop_params.rs",
     find: "    library || drop_trait.is_some_and(",
     replace: "    drop_trait.is_some_and(",
-    tests: ["test/crates.test.ts", "-t", "two crates: assoc_drop"],
+    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type"],
   },
   {
     name: "copy-param-given-a-drop",

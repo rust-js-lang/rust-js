@@ -660,13 +660,10 @@ impl Expr {
     }
 
     pub fn unary(op: UnaryOp, arg: Expr) -> Expr {
-        // `!false` is `true`, and so is `!null`, of any falsy constant: an
-        // `Option`'s `!o` of `None` (ADR 0298).
+        // `!false` is `true` (ADR 0298). An `Option`'s `!o` of `None` is
+        // tested as `o == null` now, so no `!null` is made (#382).
         if let (UnaryOp::Not, ExprKind::Bool(b)) = (op, &arg.kind) {
             return Expr::bool(!b);
-        }
-        if op == UnaryOp::Not && arg.is_falsy_constant() {
-            return Expr::bool(true);
         }
         // `!!!a` is `!a`, for every `a`: the inner two make a `bool` of it.
         if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)

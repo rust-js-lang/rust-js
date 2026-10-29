@@ -499,7 +499,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "            || self.recognition().is_path_like(ty)\n            || Num::of(ty).is_some()\n",
     replace: "            || self.recognition().is_path_like(ty)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(clock|duration_by_mut)\\.rs$"],
   },
   {
     name: "mut-ref-to-object-uncelled",
@@ -571,7 +572,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "        if self.always_holds(ty).is_some() {\n            let held",
     replace: "        if false {\n            let held",
-    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(catch_unwind_assert_drops|refused_drops_and_displays)\\.rs$"],
   },
   {
     name: "transparent-const-an-array",

@@ -25,7 +25,8 @@ export const mutations: Mutation[] = [
     file: "src/js/walk.rs",
     find: "                            $slotted(b, Slot::Else, f);",
     replace: "                            $slotted(b, Slot::Block, f);",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|interpreter)\\.rs$"],
   },
   {
     name: "assigned-target-unwalked",

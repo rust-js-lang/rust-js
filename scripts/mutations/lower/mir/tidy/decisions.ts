@@ -58,7 +58,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !loop_breaks(body, label) {\n",
     replace: "                    if true {\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "arm that ends in a loop"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(else_break_ends_loop|signed_counter)\\.rs$"],
   },
   {
     name: "default-value-of-a-call",

@@ -556,7 +556,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && !link\n",
     replace: "",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|switch_fallthrough)\\.rs$"],
   },
   {
     name: "else-if-links-unheld",
@@ -564,7 +565,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    let link = slot == js::Slot::Else\n",
     replace: "    let link = slot == js::Slot::Block\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an else-if chain keeps its else"],
+    tests: ["test/lowering-written-branches.test.ts", "-t", "an if the program wrote before a return keeps its body inside"],
   },
   {
     name: "handle-setter-stores-as-given",

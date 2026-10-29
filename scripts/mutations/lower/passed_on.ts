@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     breaks: "an arrow MIR made no fact of, one calling a binding, `xs.map((x) => parseFloat(x))`, is the function, `xs.map(parseFloat)`, which reads the index",
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
-    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true });\n",
+    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false });\n",
     tests: callback,
   },
   {

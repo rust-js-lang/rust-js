@@ -139,3 +139,28 @@ at all, a wrong answer. So the duplicate is kept as the safe one of the
 two ways, and the rule's owner is still the consumer. A change that makes
 a consumer rely on one of these must add a case that shows it, with a
 mutation.
+
+## Amendment: the nightly's survivors outside the iterators
+
+Of the 23 left in nightly 40752714381, I took eleven, and m6's agent the
+twelve in tidy. Each was probed by the corpus with its snapshots
+compared, its own test file whole, and, where those pass, every
+lowering, port, React and JSX test.
+- Snapshots catch `else-slot-unsaid`, `decisions-loop-exit-kept`,
+  `else-if-unelsed` and `never-falsy-duration`, which now check them.
+- A test elsewhere catches each of these, now named by it:
+  - `else-if-links-unheld`: lowering-written-branches' "an if the program
+    wrote before a return keeps its body inside".
+  - `flattened-made-spread-literal`: jsx-props' "JSX gives a flattened
+    struct's fields as a component's own props".
+  - `transparent-field-projected`: `catch_unwind_assert_drops`, where the
+    compiler crashes under it.
+  - `library-params-never-drop`: crates' "two crates: rc_per_type".
+- `passed-on-without-fact` didn't build, as `Forwarding` gained fields; its
+  replacement gives them.
+- Two go with the code they guarded, as nothing reaches it:
+  - `applied.rs`'s inlining of a closure that only throws, of a
+    thread-local's `with(|e| js::throw(e))`, which no form makes since
+    ADR 1006. `applied-throw-after-return` goes with it.
+  - `Expr::unary`'s `!null` as `true`, as an `Option`'s test is `== null`
+    now (4b30cd7cd), so no `!null` is made.

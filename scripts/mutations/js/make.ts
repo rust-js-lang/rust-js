@@ -426,15 +426,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
-    name: "not-falsy-constant-kept",
-    breaks: "`!null`, a `None` tested by its truth, is kept, not `true`: `NonNull::new(null).is_none()` prints `${!null}`",
-    file: "src/js/make.rs",
-    find: "        if op == UnaryOp::Not && arg.is_falsy_constant() {\n",
-    replace: "        if op == UnaryOp::Not && arg.is_falsy_constant() && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
-    snapshots: true,
-  },
-  {
     name: "item-not-fixed",
     breaks: "one of the program's functions isn't the same wherever it's read, so a guard's scope returns it inside its `try`, not after the `finally`",
     file: "src/js/make.rs",

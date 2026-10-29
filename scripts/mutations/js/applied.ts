@@ -3,22 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "applied-throw-kept-called",
-    breaks: "a thread-local's `with(|e| js::throw(e))` returned is `return ((e) => { throw e; })(e);`, not `throw e;` (ADR 0840, amended)",
-    file: "src/js/applied.rs",
-    find: "    let throws = matches!(last.kind, StmtKind::Throw(_)) && !returns(body).0;\n",
-    replace: "    let throws = false;\n",
-    tests: ["test/lowering-throws.test.ts", "-t", "closure throws"],
-  },
-  {
-    name: "applied-throw-after-return",
-    breaks: "a closure that returns a value before it throws is its body in a statement's place, the value it returns lost",
-    file: "src/js/applied.rs",
-    find: "    let throws = matches!(last.kind, StmtKind::Throw(_)) && !returns(body).0;\n",
-    replace: "    let throws = matches!(last.kind, StmtKind::Throw(_));\n",
-    tests: ["test/lowering-throws.test.ts", "-t", "closure throws"],
-  },
-  {
     name: "applied-return-not-broken",
     breaks: "a closure's `return;` in its loop isn't that loop's `break`, so one called before the function's end stays a closure",
     file: "src/js/applied.rs",
@@ -130,8 +114,8 @@ export const mutations: Mutation[] = [
     name: "applied-value-early-return",
     breaks: "a closure that returns before its end is its body in place, its `return` the function's, which gives what the closure gave",
     file: "src/js/applied.rs",
-    find: "    if !throws && (!matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0) {\n",
-    replace: "    if !throws && !matches!(last.kind, StmtKind::Return(Some(_))) {\n",
+    find: "    if !matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0 {\n",
+    replace: "    if !matches!(last.kind, StmtKind::Return(Some(_))) {\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_with_in_place"],
   },
   {

@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                    js::ExprKind::Object(inner, ..) => flat.extend(inner),\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
+    tests: ["test/jsx-props.test.ts", "-t", "JSX gives a flattened struct's fields as a component's own props"],
   },
   {
     name: "adt-value-ordering-tag",
