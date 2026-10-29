@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "exit-after-held-unwritten",
+    breaks: "a block MIR made, no span of its own, at an inner loop's way out isn't taken as written after the loop, though what it holds is: `while (true) { .. if (!found) { .. } break bb31; }` stays, not `while ((c = xs[k]) != null) { .. }` and the `if` after it (rd141c)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "(list[k..].iter()).any(|s| (!at(s).is_none() && at(s).lo >= end) || held(s).iter().any(|t| t.lo >= end));",
+    replace: "(list[k..].iter()).any(|s| !at(s).is_none() && at(s).lo >= end);",
+    tests: ["test/corpus.test.ts", "-t", "^nested_loop_tails.rs$"],
+    snapshots: true,
+  },
+  {
     name: "exit-after-of-leaving-if-unmoved",
     breaks: "an inner loop's way out of an `if` each branch of which leaves, `i = j; if (total > 10) { break bb18; } else { continue bb1; }`, stays inside it, with a `bb1:` label, not after it as written (ADR 0702, amended)",
     file: "src/lower/mir/tidy/jumps/labels.rs",

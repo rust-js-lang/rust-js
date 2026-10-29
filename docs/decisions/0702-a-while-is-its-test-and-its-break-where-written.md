@@ -6,7 +6,8 @@ as written, which left a loop's test in its body.
 Amended: a `while` that ends an `if`'s branch with code after the `if`
 is its test too; and an `if` of a `break` the program wrote first in a
 `while`'s body is that `if`, not the loop's test (#298); and what's written
-after a loop that `break`s is after it.
+after a loop that `break`s is after it; and an inner loop's tail moves out
+before `decisions` (rd141c).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -617,3 +618,43 @@ before the break", now the `while let`'s), the scheduler's snapshot, and
 the mutations `guard-of-written-break-implied` (`mir/tidy/branches.ts`),
 `early-break-somes-joined` (`mir/tidy/jumps.ts`) and
 `negation-span-dropped` (`js/make.ts`).
+
+## Amendment: an inner loop's tail moves out before `decisions` (rd141c, 2026-10-29)
+
+React DOM's estimateBandwidth writes `while (i < n) { let j = i + 1; while
+(j < n) { if (..) { break; } .. } i = j; count++; if (count > 10) { break;
+} }`. MIR puts the outer turn's tail in the inner loop's way out, `i = j;
+count++; if (count > 10) { break bb18; } continue bb1;`, a `break` of the
+block that ends the outer turn. `exits after` ran after `decisions`, which
+writes such a `break` as the innermost loop's, since that loop's end
+reaches the block's: so the tail's `if (count > 10) { break; }` was a
+`break` of the inner loop, the inner loop had a `break` of its own, and
+the tail, which ends in `continue bb1`, wasn't its way out. It stayed
+inside, `bb1: while (..) { while (true) { .. continue bb1; } break; }`, a
+label the Rust lacks.
+
+**`exits after` runs before `decisions`**, where each way out is still
+the jump MIR made: the tail follows the inner loop, `while (j < n) { .. }
+i = j; count++; if (count > 10) { break; }`, as written. And a block MIR
+made, which has no span of its own, is where what it holds is written:
+after the loop where all of it is, and showing the way out written after
+the loop where some of it is. Without that, React's
+findCurrentFiberUsingSlowPath, a `while let` of `break`s an `if
+(!didFindChild) { .. }` follows, in an arm of the outer loop's `if`,
+reached `exits after` as a block MIR made, `bb30: { if (!did) { .. } }
+break bb31;`, which no longer had `decisions` to unwrap it first.
+
+React's reconcileChildrenArray and reconcileChildrenIterator, `while let
+Some(old) = &old_fiber && new_idx < len { .. let Some(new_fiber) = ..
+else { ..; break; }; .. }` and the function's tail after it, read as
+upstream's loop does too, `while (oldFiber != null && newIdx < len) { ..
+if (newFiber == null) { ..; break; } .. }` then `if (newIdx === len) {
+.. }` after it, where they were a `while (true)` holding that tail. No
+corpus case changed otherwise.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each way out is the
+same jump either way.
+
+Held by `test/corpus/nested_loop_tails.rs` against native Rust;
+mutations `exits-after-past-decisions` (`mir/tidy/stages.ts`) and
+`exit-after-held-unwritten` (`mir/tidy/jumps/labels.ts`).

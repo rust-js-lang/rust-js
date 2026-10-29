@@ -105,11 +105,15 @@ pub(super) const STAGES: &[Stage] = &[
                 bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers));
                 loop_bound_lets(b);
             }),
+            // What the program wrote after a loop, MIR moved into its way out.
+            // Before `decisions`, which makes a `break` of a block the loop
+            // ends a `break` of the loop: an inner loop's tail that leaves
+            // the outer, `if (count > 10) { break bb18; } continue bb1;`, is
+            // no way out of its own then, and stays in it (rd141c).
+            pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
             // A match's tree of tests, its arms reached through a block MIR
             // made: the chain of its arms, now that the loops are made.
             pass("decisions", |b, _| bottom_up(b, &mut decisions::decisions)),
-            // What the program wrote after a loop, MIR moved into its way out.
-            pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
             pass("early returns", |b, h| {
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),

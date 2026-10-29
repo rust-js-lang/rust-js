@@ -4,6 +4,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "exits-after-past-decisions",
+    breaks: "an inner loop's tail that leaves the outer, `if (count > 10) { break; } continue bb1;`, stays in it once `decisions` makes its block's `break` the loop's, `bb1: while (..) { while (true) { .. continue bb1; } break; }` (rd141c)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"exits after\", |b, _| js::statement_lists(b, &mut exits_after)),\n            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, _| bottom_up(b, &mut decisions::decisions)),\n",
+    replace: "            // A match's tree of tests, its arms reached through a block MIR\n            // made: the chain of its arms, now that the loops are made.\n            pass(\"decisions\", |b, _| bottom_up(b, &mut decisions::decisions)),\n            pass(\"exits after\", |b, _| js::statement_lists(b, &mut exits_after)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_loop_tails.rs$"],
+    snapshots: true,
+  },
+  {
     name: "let-else-first-unit-end-unseen",
     breaks: "a unit function that goes on to its end has no `return;` there for its `let … else`s and `if`s that return, each nested in an `else` (ADR 0879, amended)",
     file: "src/lower/mir/tidy/stages.rs",

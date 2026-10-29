@@ -38,7 +38,21 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         }
     });
     let end = span.hi;
-    let after = |s: &Stmt| s.span.is_none() || s.span.lo >= end;
+    // The spans of what a block MIR made holds, which has none of its own:
+    // where it's written is where they are.
+    let held = |s: &Stmt| {
+        let mut spans = Vec::new();
+        if s.span.is_none() && matches!(s.kind, StmtKind::Labeled(..)) {
+            js::each_list(std::slice::from_ref(s), &mut |list| {
+                spans.extend(list.iter().map(|t| t.span).filter(|t| !t.is_none()))
+            });
+        }
+        spans
+    };
+    let after = |s: &Stmt| match s.span.is_none() {
+        true => held(s).iter().all(|t| t.lo >= end),
+        false => s.span.lo >= end,
+    };
     // What goes on where it's put: no jump to the loop, nor to a label
     // inside it, but one of its own.
     let stays = |s: &Stmt| {
@@ -145,7 +159,8 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
             }
             _ => s.span,
         };
-        let written = list[k..].iter().any(|s| !at(s).is_none() && at(s).lo >= end);
+        let written =
+            (list[k..].iter()).any(|s| (!at(s).is_none() && at(s).lo >= end) || held(s).iter().any(|t| t.lo >= end));
         (written && after(last)).then_some(k)
     };
     let mut found = Vec::new();
