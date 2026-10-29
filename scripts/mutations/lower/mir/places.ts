@@ -147,4 +147,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,
   },
+  {
+    name: "cut-of-the-second-variant",
+    breaks: "a `try_from`'s `Ok`, its first variant, isn't read as its cut, so its number is undeclared (#366)",
+    file: "src/lower/mir/places.rs",
+    find: "            && variant == of\n",
+    replace: "            && variant.as_u32() == 1\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+  },
 ];

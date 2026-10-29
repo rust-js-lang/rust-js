@@ -115,4 +115,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_generic_closure_drops|rc_fn_ptr_eq|self_handle).rs$"],
     snapshots: true,
   },
+  {
+    name: "tried-int-never",
+    breaks: "an integer's `try_from` only tested is `$tryFromInt(..)` and `value.TAG !== \"Ok\"`, not its range test, `if (stairsNum < 0)` (#366)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "        self.tried_ints.contains(&block)\n",
+    replace: "        false && self.tried_ints.contains(&block)\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+    snapshots: true,
+  },
 ];

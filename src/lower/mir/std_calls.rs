@@ -464,7 +464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     let [s, p]: [Expr; 2] = parts.try_into().ok().expect("a string and a pattern");
                     let (test, cut) = crate::lower::std_types::text::cut(s, p, units, known == Std::StripPrefix);
-                    Ok(Value::Cut(test, cut))
+                    Ok(Value::Cut(test, cut, VariantIdx::from_u32(1)))
                 })
             }
             // A part of a string as a `&mut str` (ADR 0334), of the cell its
@@ -1330,7 +1330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// equality (ADRs 0064, 0077).
     pub(super) fn mir_value_call<'c>(
         &self,
-        _state: &State<'_, 'tcx>,
+        state: &State<'_, 'tcx>,
         call: StdCall<'c, 'tcx>,
     ) -> Option<StdLowering<'c, 'a, 'tcx>> {
         let StdCall {
@@ -1342,6 +1342,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ..
         } = call;
         Some(match known {
+            // An integer's `try_from` whose `Result` is only tested and its
+            // `Ok` taken: its range test and the number (#366).
+            Std::TryFromInt { into } if state.facts.tried_int(state.at) => {
+                let (from, to) = self.tried_int_types(generic_args.type_at(usize::from(into)), arg_tys[0])?;
+                lower(move |this, state, values, out| this.tried_int(state, values, (from, to), span, out))
+            }
             // `serde_json::to_string(&v)` and `from_str(s)` (ADR 0081).
             Std::ToJson(pretty) => lower(move |this, _, values, _| {
                 Ok(Value::Expr({

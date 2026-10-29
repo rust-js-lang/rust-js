@@ -36,6 +36,7 @@ mod std_calls;
 mod structure;
 mod temporaries;
 mod tidy;
+mod tried_ints;
 pub(super) use tidy::pass_names as tidy_pass_names;
 mod writer;
 
@@ -317,9 +318,11 @@ enum Value<'tcx> {
     /// An `Option`'s variant, read to choose a branch, where the test that
     /// it's `Some` is known: a place found, `at !== -1`, or a strip's, `s.startsWith(p)` (ADR 0642).
     Tested(Expr),
-    /// What a strip whose `Option` is only tested and taken apart makes: its
-    /// test and what it gives where it holds (ADR 0642).
-    Cut(Expr, Expr),
+    /// What a strip whose `Option`, or an integer's `try_from` whose
+    /// `Result`, is only tested and taken apart makes: its test, that it's
+    /// the second variant, and what it gives where it's the variant given,
+    /// `Some`, or `Ok` (ADR 0642, #366).
+    Cut(Expr, Expr, VariantIdx),
 }
 
 /// A parameter taken apart: its index, THIR's pattern, and the local MIR
@@ -565,8 +568,9 @@ struct State<'m, 'tcx> {
     at: BasicBlock,
     statement: usize,
     /// Each strip whose `Option` is read as a test and a cut (ADR 0642):
-    /// its test, `s.startsWith(p)`, and what it gives, `s.slice(1)`.
-    cuts: HashMap<Local, (Expr, Expr)>,
+    /// its test, `s.startsWith(p)`, what it gives, `s.slice(1)`, and of
+    /// which variant; and an integer's `try_from` so read (#366).
+    cuts: HashMap<Local, (Expr, Expr, VariantIdx)>,
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
     writer: Option<(Vec<Local>, String)>,

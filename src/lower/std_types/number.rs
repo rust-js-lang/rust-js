@@ -9,6 +9,7 @@ pub(in crate::lower) mod math;
 mod operators;
 
 use self::generic::*;
+pub(in crate::lower) use self::generic::{int_as, int_out_of};
 pub(in crate::lower) use self::operators::*;
 
 use crate::js::StmtKind;

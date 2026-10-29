@@ -190,3 +190,43 @@ says which a program writes when (`for-js-developers/collections.md`).
   each rule and each soundness condition, caught.
 - `test/architecture.test.ts` holds `offsets.rs` a question, which emits
   nothing, and which state of MIR's lowering its askers read.
+
+## Amendment: an integer's `try_from` only tested is its range test
+
+javascript-algorithms' `recursiveStaircaseDP` writes `if (stairsNum < 0)
+return 0;`, and the idiomatic Rust is `let Ok(stairs_num) =
+usize::try_from(stairs_num) else { return 0.0; };`, which printed `const
+value = $tryFromInt(stairsNum, 0, 4294967295); if (value.TAG !== "Ok")
+..` and `value._0` after (#366). **An integer's `try_from` whose `Result`
+is only tested and its `Ok` taken is a cut too**: its test is the range
+test, of each bound its type can pass, `stairsNum < 0` of an `i32` into a
+`usize`, `n < 0n || n > 255n` of an `i64` into a `u8`, `false` of one
+that can't fail; its `Ok`'s number is the number, a BigInt or a number
+where the two types' differ, as `$tryFromInt` makes it.
+
+- **Which `Result`s** (`mir/tried_ints.rs`, kept as `LocalFacts::tried_int`): one written once, by
+  the call, never the return place, read only by its discriminant, a
+  `let`'s mention of it, and its `Ok`'s field: never its error, `Err(e)`,
+  nor whole, which keep `$tryFromInt`. Not a `NonZero`'s, whose `0` is its
+  error too (ADR 0177).
+- **A cut says which variant it's the value of**: `Value::Cut` and
+  `State::cuts` keep it, a strip's `Some`, a `try_from`'s `Ok`, the
+  first. Its test is still that it's the second, an `Err` here, as
+  `switch_test` reads a `Tested`.
+- **What may change, `counter.at`, is held once**, `const value =
+  counter.at;`, as a strip's string is; a local nothing assigns is read
+  where it is.
+- **A comparison of integers is negated by its converse** (`js::Known::Integers`,
+  `Expr::negated_test`): an `Ok` arm's test, `n >= 0n && n <= 255n`, not
+  `!(n < 0n) && !(n > 255n)`. An `f64`'s isn't, as `!(x < y)` holds of a
+  NaN where `x >= y` doesn't.
+
+Case N: the test and the number are what `$tryFromInt` made; its error
+was never read. Held by `test/corpus/try_from_int_tested.rs` against
+native Rust: a `let`-`else`, an `if let`, a `match` of `Err(_)`, one into
+a wider type that can't fail, each bound of `i64`, `u64` and `i128`, an
+error read, a `Result` given back whole, and a variable or a field
+changed before its `Ok` is read. Mutations `tried-int-*`
+(`mir/local_facts.ts`, `mir/tried_ints.ts`, `std_types/number/generic.ts`), `cut-of-the-second-variant`
+(`mir/places.ts`) and `integers-negated-by-not` (`js/make.ts`). The guide's
+numbers section, in `for-js-developers/basics.md`, shows it.

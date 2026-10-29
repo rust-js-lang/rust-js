@@ -575,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Rvalue::Discriminant(place)
                 if place.projection.is_empty()
-                    && let Some((test, _)) = state.cuts.get(&place.local) =>
+                    && let Some((test, ..)) = state.cuts.get(&place.local) =>
             {
                 return Ok(Value::Tested(test.clone()));
             }

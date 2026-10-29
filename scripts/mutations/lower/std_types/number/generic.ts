@@ -161,4 +161,28 @@ export const mutations: Mutation[] = [
       "^std_flatten.rs$"
     ]
   },
+  {
+    name: "tried-int-below-unchecked",
+    breaks: "`usize::try_from(-1)` only tested is `Ok`, as the bound below wasn't tested (#366)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "    let below = (from_lo < lo).then(|| compared(Op::Lt, lo));\n",
+    replace: "    let below = (from_lo < lo && false).then(|| compared(Op::Lt, lo));\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+  },
+  {
+    name: "tried-int-above-unchecked",
+    breaks: "`u8::try_from(256)` only tested is `Ok`, as the bound above wasn't tested (#366)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "    let above = (from_hi > hi).then(|| compared(Op::Gt, hi as i128));\n",
+    replace: "    let above = (from_hi > hi && false).then(|| compared(Op::Gt, hi as i128));\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+  },
+  {
+    name: "tried-int-not-made-big",
+    breaks: "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "        (false, true) => Expr::call(Expr::var(\"BigInt\"), vec![n]),\n",
+    replace: "        (false, true) => n,\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+  },
 ];

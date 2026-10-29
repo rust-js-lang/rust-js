@@ -105,7 +105,7 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
             e.reads_only_vars() && stable
         }
         Value::List(items) => items.iter().all(|item| movable(state, item)),
-        Value::Cut(test, cut) => {
+        Value::Cut(test, cut, _) => {
             movable(state, &Value::Expr(test.clone())) && movable(state, &Value::Expr(cut.clone()))
         }
         // A place shared, or shown, is read where it's used, as Rust reads

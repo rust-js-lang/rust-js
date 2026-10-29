@@ -551,4 +551,13 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a once-callback that passes its call on"],
   },
+  {
+    name: "integers-negated-by-not",
+    breaks: "a range test of integers negated is `!(n < 0n) && !(n > 255n)`, not its converse, `n >= 0n && n <= 255n` (#366)",
+    file: "src/js/make.rs",
+    find: "if self.facts.has(Known::Integers) => {",
+    replace: "if false && self.facts.has(Known::Integers) => {",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+    snapshots: true,
+  },
 ];

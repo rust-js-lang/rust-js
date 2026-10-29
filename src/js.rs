@@ -760,6 +760,9 @@ pub enum Known {
     /// `+` of it makes text of what's joined to it, as `"" +` would
     /// (`Expr::text_joined`, ADR 0639, amended).
     Text,
+    /// A comparison of integers, `n < 0`, never of a NaN: its negation is
+    /// its converse, `n >= 0` (`Expr::negated_test`, #366).
+    Integers,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

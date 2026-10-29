@@ -648,6 +648,20 @@ impl Expr {
                 Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)
             }
             ExprKind::Unary(UnaryOp::Not, inner) => *inner,
+            // Of integers, the converse: `!(n < 0)` is `n >= 0`.
+            ExprKind::Binary(op @ (Op::Lt | Op::Le | Op::Gt | Op::Ge), a, b) if self.facts.has(Known::Integers) => {
+                let converse = match op {
+                    Op::Lt => Op::Ge,
+                    Op::Le => Op::Gt,
+                    Op::Gt => Op::Le,
+                    _ => Op::Lt,
+                };
+                Expr {
+                    kind: ExprKind::Binary(converse, a, b),
+                    span: self.span,
+                    facts: self.facts,
+                }
+            }
             kind => Expr::unary(
                 UnaryOp::Not,
                 Expr {

@@ -73,6 +73,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each local the program's own `Rc::new`, `Arc::new` or `Box::new`
     /// gives, through the casts and moves MIR makes (`mir_made_pointers`).
     made_pointers: HashSet<Local>,
+    /// Each block whose call is an integer's `try_from` whose `Result` is
+    /// only tested and its `Ok` taken (`mir_tried_ints`).
+    tried_ints: HashSet<BasicBlock>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -135,6 +138,13 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 
     pub(super) fn offsets(&self) -> &offsets::Offsets {
         &self.offsets
+    }
+
+    /// Whether the call that ends `block` is an integer's `try_from` whose
+    /// `Result` is only tested and its `Ok` taken, never its error read nor
+    /// it whole: its range test and the number, `if (n < 0)` (#366).
+    pub(super) fn tried_int(&self, block: BasicBlock) -> bool {
+        self.tried_ints.contains(&block)
     }
 
     pub(super) fn let_spans(&self) -> &HashMap<Local, js::Span> {
@@ -285,6 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             own,
             wholes: self.mir_wholes(body, locals),
             made_pointers: self.mir_made_pointers(body),
+            tried_ints: self.mir_tried_ints(body),
         };
         (facts, bindings)
     }

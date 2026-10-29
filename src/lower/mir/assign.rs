@@ -508,9 +508,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What a strip made, read as its test and its cut where it's read
         // (ADR 0642).
         if place.projection.is_empty()
-            && let Value::Cut(test, cut) = value
+            && let Value::Cut(test, cut, variant) = value
         {
-            state.cuts.insert(place.local, (test, cut));
+            state.cuts.insert(place.local, (test, cut, variant));
             return Ok(());
         }
         // A strip's cut given to a local read once: read there, `stack =

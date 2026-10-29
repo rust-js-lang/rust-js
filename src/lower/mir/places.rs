@@ -45,10 +45,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(defaults[field.as_usize()].clone());
         }
         // A strip's `Option` read as a test and a cut: its `Some`'s, the cut
-        // (ADR 0642).
-        if let Some((_, cut)) = state.cuts.get(&place.local)
+        // (ADR 0642); an integer's `try_from`, its `Ok`'s (#366).
+        if let Some((_, cut, of)) = state.cuts.get(&place.local)
             && let [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] = place.projection.as_slice()
-            && variant.as_u32() == 1
+            && variant == of
         {
             return Ok(cut.clone());
         }

@@ -285,6 +285,13 @@ pub fn to_byte(f: f64) -> u8 {
 pub fn parse_age(s: &str) -> Result<u8, std::num::ParseIntError> {
     s.trim().parse()
 }
+
+pub fn ways(stairs: i32) -> usize {
+    let Ok(stairs) = usize::try_from(stairs) else {
+        return 0;
+    };
+    stairs * 2
+}
 ```
 
 ```js
@@ -305,11 +312,22 @@ export function toByte(f) {
 export function parseAge(s) {
   return $parseInt($trim(s), 0, 255);
 }
+
+export function ways(stairs) {
+  if (stairs < 0) {
+    return 0;
+  }
+  return (stairs * 2) >>> 0;
+}
 ```
 
 - **Casts are Rust's:** `300.7 as u8` is `255`, `NaN as u8` is `0`.
 - **`parse` is Rust's grammar,** not `Number()`'s: `"42"` parses, `" 42"`
   is an `Err`, so trim first.
+- **A `try_from` you only test is its range test,** of the bounds its
+  type can pass: `let Ok(stairs) = usize::try_from(stairs) else { .. }`
+  of an `i32` is `if (stairs < 0)`, and the number after
+  ([ADR 0642](../../decisions/0642-a-place-found-in-a-string-is-js-units.md), amended).
 - **Dividing an integer by zero panics,** with Rust's message. An `f64`
   divided by zero is `Infinity`, as in JS.
 - **A step of one is `++`:** a statement `n += 1` is `n++`, and `n -= 1`

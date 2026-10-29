@@ -432,3 +432,32 @@ pub(super) fn ilog(x: Expr, base: u32, checked: bool) -> Expr {
     }
     Expr::call_helper("$ilog", given)
 }
+
+/// Whether `n`, a `from`, is out of `to`'s range: of each bound `from` can
+/// pass, `n < 0` of an `i32` into a `usize`; `false` of none.
+pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
+    let ((from_lo, from_hi), (lo, hi)) = (from.range(), to.range());
+    let compared = |op, bound| {
+        let mut test = Expr::bin(op, n.clone(), from.literal(bound));
+        test.facts = test.facts.with(js::Known::Integers);
+        test
+    };
+    let below = (from_lo < lo).then(|| compared(Op::Lt, lo));
+    let above = (from_hi > hi).then(|| compared(Op::Gt, hi as i128));
+    match (below, above) {
+        (Some(below), Some(above)) => Expr::bin(Op::Or, below, above),
+        (Some(test), None) | (None, Some(test)) => test,
+        (None, None) => Expr::bool(false),
+    }
+}
+
+/// `n`, a `from` in `to`'s range, as a `to`: a BigInt or a number where
+/// they differ, as `$tryFromInt` makes it: an integer's `try_from` only
+/// tested, its `Ok`'s (#366, `mir::std_calls`).
+pub(in crate::lower) fn int_as(n: Expr, from: Num, to: Num) -> Expr {
+    match (from.big(), to.big()) {
+        (false, true) => Expr::call(Expr::var("BigInt"), vec![n]),
+        (true, false) => Expr::call(Expr::var("Number"), vec![n]),
+        _ => n,
+    }
+}
