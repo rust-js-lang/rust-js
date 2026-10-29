@@ -21,9 +21,9 @@ function fnv1a(text) {
 function leadingNumber(line) {
   const bytes = iterator_peekable($iter(Array.from(new TextEncoder().encode(line))));
   let value;
-  while (true) {
-    const b = $peek(bytes);
-    if (b == null || 48 > b || b > 57) {
+  let b;
+  while ((b = $peek(bytes)) != null) {
+    if (48 > b || b > 57) {
       break;
     }
     value = ((((value ?? 0) * 10) >>> 0) + ((b - 48) & 255)) >>> 0;

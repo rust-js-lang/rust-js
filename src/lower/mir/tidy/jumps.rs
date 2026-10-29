@@ -15,8 +15,10 @@ use crate::js::result;
 /// or none, or any jump, or, where `nested`, an `if` that's of this shape
 /// too: `if (!c) { break; } a`, as a person writes an early exit; and
 /// of `if (b) { if (c) { a; continue l; } } break;`, a `while let`'s test
-/// then its own, `if (!(b && c)) { break; } a`.
-pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool) {
+/// then its own, `if (!(b && c)) { break; } a`; but of a `c` of an `if`
+/// the program wrote of a `break`, `breaks`', each its own, `if (!b) {
+/// break; } if (!c) { break; } a`, as written (#301).
+pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span, js::Span)]) {
     for stmt in stmts.iter_mut() {
         let (label, body) = match &mut stmt.kind {
             StmtKind::While { label, body, .. }
@@ -41,11 +43,11 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool) {
         while let [
             Stmt {
                 kind: StmtKind::If(test, inner, None),
-                ..
+                span,
             },
         ] = then
         {
-            tests.push(test.clone());
+            tests.push((test.clone(), *span));
             then = inner;
         }
         // An `if` it ends in, once its tests are read in place.
@@ -58,14 +60,30 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool) {
         }
         // What it puts in the body is named apart from what's there, each
         // of its scopes inside the body's.
-        if tests.len() > 1 {
-            let then = then.to_vec();
-            let test = (tests.into_iter())
-                .reduce(|a, b| Expr::bin(Op::And, a, b))
-                .expect("a test");
+        // Each run of them of one `if` the program wrote of a `break`, or
+        // of none, one test, nested in the one before: the program's `if`
+        // apart from a `while let`'s `Some`, which a test of its truth,
+        // `!word` of `word.is_empty()`, would join, `while ((word = ..))`
+        // (#301), each where it was.
+        let of = |t: &Expr| jump_tested(breaks, written_at(t));
+        let mut groups: Vec<Vec<(Expr, js::Span)>> = Vec::new();
+        for test in tests {
+            match groups.last_mut() {
+                Some(group) if of(&group[0].0) == of(&test.0) => group.push(test),
+                _ => groups.push(vec![test]),
+            }
+        }
+        if groups.iter().any(|group| group.len() > 1) || groups.len() > 1 {
             let at = body.len() - 2;
-            let span = body[at].span;
-            body[at] = StmtKind::If(test, then, None).at(span);
+            let nested = (groups.into_iter().rev()).fold(then.to_vec(), |then, group| {
+                // Each `if` where its first test's was.
+                let at = group[0].1;
+                let test = (group.into_iter().map(|(t, _)| t))
+                    .reduce(|a, b| Expr::bin(Op::And, a, b))
+                    .expect("a test");
+                vec![StmtKind::If(test, then, None).at(at)]
+            });
+            body[at] = nested.into_iter().next().expect("one");
         }
         body.pop();
         let Some(Stmt {

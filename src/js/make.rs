@@ -647,7 +647,9 @@ impl Expr {
                 let flipped = if op == Op::And { Op::Or } else { Op::And };
                 Expr::bin(flipped, a.negated_test(), b.negated_test()).or_at(self.span)
             }
-            ExprKind::Unary(UnaryOp::Not, inner) => *inner,
+            // Where the `!` was written, what it tests is, a test made of
+            // a method's call, `!word` of `word.is_empty()` (#301).
+            ExprKind::Unary(UnaryOp::Not, inner) => inner.or_at(self.span),
             // Of integers, the converse: `!(n < 0)` is `n >= 0`.
             ExprKind::Binary(op @ (Op::Lt | Op::Le | Op::Gt | Op::Ge), a, b) if self.facts.has(Known::Integers) => {
                 let converse = match op {

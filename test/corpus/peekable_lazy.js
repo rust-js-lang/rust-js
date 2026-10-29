@@ -35,9 +35,9 @@ function tokens(src) {
   while ((c = $next(chars)) != null) {
     if (/^[0-9]$/.test(c)) {
       let number = c;
-      while (true) {
-        const d = $peek(chars);
-        if (d == null || !/^[0-9]$/.test(d)) {
+      let d;
+      while ((d = $peek(chars)) != null) {
+        if (!/^[0-9]$/.test(d)) {
           break;
         }
         number += d;

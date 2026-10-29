@@ -348,7 +348,7 @@ pub(super) fn branch_values(
         true
     });
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
-    guarded_chains(stmts);
+    guarded_chains(stmts, &program.breaks);
     returned_branches(stmts, returns, booleans, program);
 }
 
@@ -780,11 +780,15 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
 /// `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`,
 /// and `if (typeof x === "string") { .. }` of the same chain, which no
 /// string literal's `===` needs: the chains alone, which say it (ADR 0755).
-pub(super) fn guarded_chains(stmts: &mut Vec<Stmt>) {
+/// Not of a chain of an `if` the program wrote of a `break`, `breaks`',
+/// and a guard of another, a `while let`'s `Some` (#301).
+pub(super) fn guarded_chains(stmts: &mut Vec<Stmt>, breaks: &[(js::Span, js::Span)]) {
     let mut i = 0;
     while i < stmts.len() {
         match &stmts[i].kind {
-            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {
+            StmtKind::If(test, then, None)
+                if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test, breaks)) =>
+            {
                 let StmtKind::If(_, then, _) = stmts.remove(i).kind else {
                     unreachable!("matched")
                 };
@@ -798,12 +802,15 @@ pub(super) fn guarded_chains(stmts: &mut Vec<Stmt>) {
 }
 
 /// Whether each test of the `else if` chain `stmt` says `guard`, and it has
-/// no last `else`: where `guard` fails, it does nothing.
-pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
+/// no last `else`: where `guard` fails, it does nothing; each of the `if`
+/// the program wrote of a `break` that `guard` is (`breaks`, #301).
+pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr, breaks: &[(js::Span, js::Span)]) -> bool {
     match &stmt.kind {
         StmtKind::If(test, _, otherwise) => {
             implies(test, guard)
-                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))
+                && !super::jumps::apart_from_written_break(breaks, test, guard)
+                && (otherwise.as_deref())
+                    .is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard, breaks)))
         }
         _ => false,
     }

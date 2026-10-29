@@ -1301,7 +1301,7 @@ pub fn whiled(n: u32, c: bool) -> u32 {
     i
 }
 `);
-  expect(js).toContain("    if (x == null || (stop && x > 3)) {\n      // Reached the deadline.\n      break;\n    }\n");
+  expect(js).toContain("  while ((x = xs[i]) != null) {\n    if (stop && x > 3) {\n      // Reached the deadline.\n      break;\n    }\n");
   expect(js).toContain("    if (c && i > 2) {\n      // Stop here.\n      break;\n    }\n");
   expect(js).toContain("    if (i > n) {\n      // Past the end.\n      break;\n    }\n");
   expect(js).toContain("  while (i < n) {\n    if (c && i === 3) {\n      // Found it.\n      break;\n    }\n    i++;\n  }\n");

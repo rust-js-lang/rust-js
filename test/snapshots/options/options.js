@@ -34,9 +34,9 @@ export function halfOrZero(n) {
 /** `while let`. */
 export function halvings(n) {
   let count = 0;
-  while (true) {
-    const h = half(n);
-    if (h == null || h === 0) {
+  let h;
+  while ((h = half(n)) != null) {
+    if (h === 0) {
       break;
     }
     n = h;

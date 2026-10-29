@@ -2298,7 +2298,9 @@ export function lastNamed(names) {
 - A `while`'s test is the loop's own: an `if` of a `break` first in its
   body is the `if` the program wrote, not joined to the test, and a
   comment before a `break` or a `continue` is before it, inside its `if`,
-  of a `while let`'s too, whose test the loop's joins ([ADR
+  of a `while let`'s too, whose `Some` is the loop's test, `while ((word =
+  words[i]) != null)`, even where the `if` tests the value's truth, `if
+  (!word)` of `word.is_empty()` (#301) ([ADR
   0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md),
   [ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md)):
 
@@ -2343,9 +2345,9 @@ export function sentence(words, limit) {
 
 export function untilTag(words) {
   let i = 0;
-  while (true) {
-    const word = words[i];
-    if (word == null || word.startsWith("#")) {
+  let word;
+  while ((word = words[i]) != null) {
+    if (word.startsWith("#")) {
       // A tag ends it.
       break;
     }

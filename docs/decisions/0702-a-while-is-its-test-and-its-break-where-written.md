@@ -560,3 +560,60 @@ wherever reached, survived the corpus with its snapshots and
 the lowering, snapshot, JSX, port, compiler and tidy-stage suites. The arm
 goes with its mutation: a `rest` whose first jump of the loop isn't its
 `break` leaves the `while (true)` as it is, which is right either way.
+
+## Amendment: a `while let`'s `Some` is its test, apart from the program's `if` (#301)
+
+```rust
+while let Some(word) = words.get(i) {
+    if word.is_empty() {
+        // A blank ends it.
+        break;
+    }
+    i += 1;
+}
+```
+
+was `// A blank ends it.` above `let word; while ((word = words[i])) { i++;
+}`: MIR tests the `Some`, then the program's test, each going on to the
+next turn, `if (word != null) { if (word) { i++; continue; } } break;`;
+`guarded_chains` took the outer `if` away as the inner said it (`word`'s
+truth says `word != null`, ADR 0870), and `early_breaks` joined the two
+into one exit, `if (word == null || !word)`, so the loop's test took both.
+With any other test, `word.starts_with('#')`, the `if` stayed, but joined:
+`while (true) { const word = words[i]; if (word == null ||
+word.startsWith("#")) { .. break; } .. }`.
+
+Now each test of an `if` the program wrote of a `break` (`Written::breaks`)
+is apart from those of none (`jumps::apart_from_written_break`):
+`guarded_chains` keeps a guard beside such an `if`, and `early_breaks`
+makes an exit of each run of tests of one `if`, or of none, where it's
+written. So a `while let`'s `Some` is the loop's test, as a `while`'s own
+is, and the program's `if` the first in its body:
+
+```js
+let word;
+while ((word = words[i]) != null) {
+  if (!word) {
+    // A blank ends it.
+    break;
+  }
+  i++;
+}
+```
+
+A `!` negated, `word` of `!word`, is where the `!` was written (`negated_test`),
+so a test made of a method's call, `word.is_empty()`, is told the program's.
+React's Scheduler's `workLoop` is `while (currentTask != null) { .. }`, as
+upstream writes it, where it was `while (true) { .. if (currentTask$1 ==
+null || ..) { break; } }`; five `while (true)` of the corpus are a `while`
+of their `Some` (the readability ratchet's `while (true)` 10.3 to 9.9 in 10,000 lines).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests in
+the same order, each leaving the loop where it did.
+
+Held by `test/corpus/while_let_written_break.rs` against native Rust,
+`test/lowering-comments.test.ts` ("a comment before a loop's break is
+before the break", now the `while let`'s), the scheduler's snapshot, and
+the mutations `guard-of-written-break-implied` (`mir/tidy/branches.ts`),
+`early-break-somes-joined` (`mir/tidy/jumps.ts`) and
+`negation-span-dropped` (`js/make.ts`).

@@ -37,9 +37,9 @@ function number(it) {
 
 function word(it) {
   let s = "";
-  while (true) {
-    const c = $next(it);
-    if (c == null || c === " ") {
+  let c;
+  while ((c = $next(it)) != null) {
+    if (c === " ") {
       break;
     }
     s += c;

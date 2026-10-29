@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "early-breaks-nested-tests-kept",
     breaks: "a `while let`'s `if (d != null) { if (c) { a; continue; } } break;` stays, not `if (d == null || !c) { break; } a`",
     file: "src/lower/mir/tidy/jumps.rs",
-    find: "        if tests.len() > 1 {\n",
+    find: "        if groups.iter().any(|group| group.len() > 1) || groups.len() > 1 {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
     snapshots: true,
@@ -170,4 +170,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
 
+  {
+    name: "early-break-somes-joined",
+    breaks: "a `while let`'s `Some` test and the program's `if` of a `break` are joined, `if (word == null || word.startsWith(\"#\")) { break; }`, not `while ((word = words[i]) != null) { if (word.startsWith(\"#\")) { .. } }` (#301, ADR 0702 amended)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "                Some(group) if of(&group[0].0) == of(&test.0) => group.push(test),\n",
+    replace: "                Some(group) => group.push(test),\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
+    snapshots: true,
+  },
 ];
