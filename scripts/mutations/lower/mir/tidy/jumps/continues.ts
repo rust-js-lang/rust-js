@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "blocks-breaking-loops-inner-loop",
-    breaks: "a `break` of the block inside a loop of its own becomes `break;`, leaving that inner loop, not the one around the block: a wrong answer",
+    breaks: "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        if js::names_break(&broken, &label) {\n",
     replace: "        if false {\n",

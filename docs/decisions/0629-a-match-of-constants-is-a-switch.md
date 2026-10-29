@@ -772,3 +772,36 @@ Held by `test/corpus/match_breaks_its_loop.rs` (`rows_until`) against
 native Rust and the mutation `tested-exit-kept-in-loop`
 (`mir/tidy/jumps/tails.ts`). This closes #389: no label the program didn't
 write is left in its cases.
+
+## Amendment: the guard of a block whose `break` is in a loop of its own is held (2026-10-29)
+
+`blocks_breaking_loops` (#389c) leaves a block MIR made in place where a
+`break` of it is in a loop of its own, since a `break;` there would leave
+that loop. No case reached the guard, so its mutation survived. An arm
+whose inner `loop` breaks only itself, then the arm breaks the outer,
+
+```rust
+b'b' => {
+    loop {
+        n += 1;
+        if n > limit {
+            break;
+        }
+        ..
+    }
+    break;
+}
+```
+
+has MIR leave the inner loop by the outer's way out, a `break` of the
+block from inside the inner loop. Without the guard the block's statements
+were spliced in with that `break bb19` left naming no block, which tidy's
+"each jump lands" refuses in a debug build, and JS refuses as a syntax
+error. With it, `case 98: while (true) { .. break; } break;` and the
+`break;` after the `switch`, each leaving its own loop, as in Rust.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by `test/corpus/match_breaks_its_loop.rs`'s `counted` against native
+Rust and the mutation `blocks-breaking-loops-inner-loop`
+(`mir/tidy/jumps/continues.ts`), now caught.

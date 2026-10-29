@@ -121,6 +121,37 @@ fn labeled(rows: &[&[u8]]) -> u32 {
     n
 }
 
+// An arm whose inner `loop` breaks only itself, then the arm breaks the
+// outer: the inner's `break` MIR gives the outer's way out, a `break` of
+// its block from inside the inner loop, which a `break;` there would leave
+// only the inner by. The block kept for it (`blocks_breaking_loops`), so
+// each leaves its own loop, `switch`'s case `while (true) { .. break; }
+// break;`, as in Rust.
+fn counted(codes: &[u8], limit: u32) -> u32 {
+    let mut i = 0;
+    let mut n = 0;
+    while i < codes.len() {
+        match codes[i] {
+            b'a' => break,
+            b'b' => {
+                loop {
+                    n += 1;
+                    if n > limit {
+                        break;
+                    }
+                    if n == 7 {
+                        i += 5;
+                    }
+                }
+                break;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    n + i as u32
+}
+
 fn main() {
     for s in ["", " .", ".", "a", "ab c.d", "xyz"] {
         println!("{:?} {} {}", s, first_stop(s.as_bytes()), framed(s.as_bytes()));
@@ -133,4 +164,7 @@ fn main() {
     println!("{} {} {}", rows_until(&rows), rows_until(&rows[..2]), rows_until(&[&[1], &[]]));
     println!("{} {} {}", shadowed(b"xbyb"), shadowed(b"cab"), shadowed(b""));
     println!("{} {}", labeled(&[&[1, 2], &[0, 1]]), labeled(&[&[2]]));
+    for s in ["", "a", "xxb", "b", "xyz", "xab"] {
+        println!("{:?} {} {}", s, counted(s.as_bytes(), 3), counted(s.as_bytes(), 9));
+    }
 }

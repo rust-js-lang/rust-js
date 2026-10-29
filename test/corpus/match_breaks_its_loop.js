@@ -133,6 +133,40 @@ function labeled(rows) {
   return n;
 }
 
+// An arm whose inner `loop` breaks only itself, then the arm breaks the
+// outer: the inner's `break` MIR gives the outer's way out, a `break` of
+// its block from inside the inner loop, which a `break;` there would leave
+// only the inner by. The block kept for it (`blocks_breaking_loops`), so
+// each leaves its own loop, `switch`'s case `while (true) { .. break; }
+// break;`, as in Rust.
+function counted(codes, limit) {
+  let i = 0;
+  let n = 0;
+  while (i < codes.length) {
+    const value = i;
+    switch (codes[value]) {
+      case 97:
+        break;
+      case 98:
+        while (true) {
+          n++;
+          if (n > limit) {
+            break;
+          }
+          if (n === 7) {
+            i = (i + 5) >>> 0;
+          }
+        }
+        break;
+      default:
+        i++;
+        continue;
+    }
+    break;
+  }
+  return (n + i) >>> 0;
+}
+
 function main() {
   for (const s of ["", " .", ".", "a", "ab c.d", "xyz"]) {
     console.log(
@@ -153,5 +187,10 @@ function main() {
       [0, 1],
     ])} ${labeled([[2]])}`,
   );
+  for (const s of ["", "a", "xxb", "b", "xyz", "xab"]) {
+    console.log(
+      `${$debugStr(s)} ${counted(Array.from(new TextEncoder().encode(s)), 3)} ${counted(Array.from(new TextEncoder().encode(s)), 9)}`,
+    );
+  }
 }
 //# sourceMappingURL=case.js.map
