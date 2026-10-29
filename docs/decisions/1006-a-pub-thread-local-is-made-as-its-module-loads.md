@@ -264,7 +264,12 @@ that only keeps what it's given is marked `#[rust_js::runs_nothing]` now:
   fallback or a component, rendered later, as `memo` does;
 - React's `createContext`, which keeps its default, a function too, never
   calling nor reading it, and `cache`, which makes a function of one,
-  called later.
+  called later;
+- the js crate's `finalization_registry::new`, which keeps its `cleanup`
+  for JS to call as targets are collected, so React's ReactTaint's
+  registry is made as its module loads, `const finalizationRegistry =
+  typeof FinalizationRegistry !== "undefined" ? new
+  FinalizationRegistry(cleanup) : undefined`, not `$local(..)`.
 
 A binding that calls what it's given, `startTransition`, `act`,
 `flushSync`, or a hook's, isn't: those run as they're called.
@@ -274,4 +279,5 @@ as its module loads, as React's and Next.js's own `export const` are.
 
 Held by `test/next.test.ts`'s app (`catchError`, `withRouter`) and
 `test/react.test.ts`'s "React's createContext and cache keep what they're
-given, made at load".
+given, made at load", and `test/js-collections.test.ts`'s "whether the host
+has a FinalizationRegistry is is_defined of its constructor".

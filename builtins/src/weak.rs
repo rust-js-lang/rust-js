@@ -412,6 +412,8 @@ pub mod finalization_registry {
     /// the host has one is `is_defined(finalization_registry::new::<T>)`,
     /// all its types named (ADR 0597).
     #[cfg_attr(rust_js, rust_js::link_name = "new FinalizationRegistry")]
+    // It keeps `cleanup` for JS to call as targets are collected, later.
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new<T>(cleanup: Box<dyn Fn(T)>) -> &'static FinalizationRegistry<T> {
         unreachable!()
     }
