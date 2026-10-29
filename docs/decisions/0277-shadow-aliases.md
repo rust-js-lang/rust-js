@@ -238,3 +238,27 @@ call that may set `n`, or set and never stored, keeps its local.
   call that sets it and one never stored; mutations `written-back-off`,
   `written-back-past-code`, `written-back-unsynced` and
   `written-back-unpaired` (`prepare/shadows.ts`).
+
+## Amendment: a property's object is read before its getter (rd146)
+
+React DOM's ChangeEventPlugin, ported, writes `let Some(active_element) =
+ACTIVE_ELEMENT.get() else { return; }; detach_event(active_element, ..);
+ACTIVE_ELEMENT.set(js::null());`, and it printed `const activeElement$1 =
+activeElement;` and read the copy, where upstream reads `activeElement`
+itself. The binding's call is a method's, `activeElement$1.detachEvent(..)`,
+whose property read may run a getter (`Known::Getter`), and the rule took
+the whole callee for code that runs before the copy is read.
+
+**A property's object is read before its getter may run**
+(`read_first`): `activeElement.detachEvent(..)` reads `activeElement`,
+then the getter, then calls what it gave with that object as `this`, as
+the copy would. A read again after the getter, `name(active_element)`
+then `detach_event(active_element, ..)`, keeps its copy, which holds what
+Rust read where the getter set the variable.
+
+Case "results change" ([0262](0262-when-rust-and-js-disagree.md)): Rust's
+answer, preserved: what each getter sets never changes the receiver.
+Held by `test/lowering-shadows.test.ts`, "a copy of a module's variable
+read as a property's object is the variable", run with getters that set
+the variable; the mutations `shadow-receiver-read-after-getter` and
+`shadow-getter-runs-nothing`.

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-receiver-read-after-getter",
+    breaks: "a copy of a module's variable read as a property's object is taken to be read after the property's getter, so `activeElement.detachEvent(..)` keeps `const activeElement$1 = activeElement;` (rd146)",
+    file: "src/prepare/shadows.rs",
+    find: "        ExprKind::Member(object, _) => {\n            let ok = read_first(object, alias, ran);\n",
+    replace: "        ExprKind::Member(object, _) if false => {\n            let ok = read_first(object, alias, ran);\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "read as a property's object"],
+  },
+  {
+    name: "shadow-getter-runs-nothing",
+    breaks: "a property's getter is taken to run nothing once its object is read, so a copy read again after it is the variable, which the getter set",
+    file: "src/prepare/shadows.rs",
+    find: "            let ok = read_first(object, alias, ran);\n            *ran = true;\n",
+    replace: "            let ok = read_first(object, alias, ran);\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "read as a property's object"],
+  },
+  {
     name: "outer-shadow-read-past-a-call",
     breaks: "a copy of a module's variable read after a call in its statement, `bump() < count$1`, is the variable, which the call changed (ADR 0277, amended)",
     file: "src/prepare/shadows.rs",

@@ -258,7 +258,7 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
 
 /// Whether each read of `alias` in `e`, in JS's order, is before anything
 /// in it that may run code (`read_before_code`): a call's callee and
-/// arguments before it runs.
+/// arguments before it runs, a property's object before its getter.
 fn read_first(e: &Expr, alias: &str, ran: &mut bool) -> bool {
     let one = [StmtKind::Expr(e.clone()).at(js::Span::NONE)];
     let read = js::mentions_in(&one, alias) > 0;
@@ -268,6 +268,13 @@ fn read_first(e: &Expr, alias: &str, ran: &mut bool) -> bool {
     match &e.kind {
         ExprKind::Call(callee, args) | ExprKind::New(callee, args) | ExprKind::OptionalCall(callee, args) => {
             let ok = read_first(callee, alias, ran) && args.iter().all(|arg| read_first(arg, alias, ran));
+            *ran = true;
+            ok
+        }
+        // A property's object is read before its getter may run:
+        // `activeElement.detachEvent(..)`'s receiver (rd146).
+        ExprKind::Member(object, _) => {
+            let ok = read_first(object, alias, ran);
             *ran = true;
             ok
         }

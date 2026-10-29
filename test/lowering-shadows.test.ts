@@ -786,3 +786,73 @@ pub fn current() -> Option<String> {
   expect([lib.getData("xab"), lib.current(), lib.getData("xcd"), lib.kept("q"), lib.current(), lib.kept("r"), lib.current()])
     .toEqual(["ab", "ab", "ab", "ab", undefined, "r", "r"]);
 });
+
+// A copy of a module's variable read as a property's object, the receiver
+// of a binding's method, is the variable: the object is read before its
+// getter may run, as React DOM's ChangeEventPlugin's
+// stopWatchingForValueChange writes `activeElement.detachEvent(..);
+// activeElement = null;` (ADR 0277, amended, rd146). One read again after
+// the getter keeps its copy, which holds what Rust read: a getter that sets
+// the variable doesn't change what `this` is.
+test("a copy of a module's variable read as a property's object is the variable", async () => {
+  buildReact();
+  const dir = fixture("shadow-read-as-receiver");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static ACTIVE_ELEMENT: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "detachEvent")]
+fn detach_event(this: &Unknown, r#type: &str) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get name")]
+fn name(this: &Unknown) -> String {
+    unreachable!()
+}
+
+pub fn start(target: &'static Unknown) {
+    ACTIVE_ELEMENT.set(Some(target));
+}
+
+pub fn stop() {
+    let Some(active_element) = ACTIVE_ELEMENT.get() else {
+        return;
+    };
+    detach_event(active_element, "onpropertychange");
+    ACTIVE_ELEMENT.set(js::null());
+}
+
+pub fn named_then_stopped() -> String {
+    let Some(active_element) = ACTIVE_ELEMENT.get() else {
+        return String::new();
+    };
+    let named = name(active_element);
+    detach_event(active_element, "onpropertychange");
+    named
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (activeElement == null) {\n    return;\n  }\n  activeElement.detachEvent("onpropertychange");\n  activeElement = null;\n');
+  expect(js).toContain("  const activeElement$1 = activeElement;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const detached: string[] = [];
+  const other = { name: "other", detachEvent() { detached.push("other"); } };
+  // Each getter sets the variable to another element as it's read.
+  const element = {
+    get name() { lib.start(other); return "element"; },
+    get detachEvent() { lib.start(other); return function (this: { label: string }) { detached.push(this.label); }; },
+    label: "element",
+  };
+  lib.start(element);
+  lib.stop();
+  lib.start(element);
+  const named = lib.namedThenStopped();
+  expect([detached, named]).toEqual([["element", "element"], "element"]);
+});
