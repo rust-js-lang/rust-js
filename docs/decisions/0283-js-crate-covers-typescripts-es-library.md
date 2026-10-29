@@ -199,3 +199,16 @@ Held by `test/js-builtins.test.ts`, "an Error object is declared Error,
 and what's thrown any", whose declarations say `value: Error`, `Error`,
 `AggregateError` and, of a `&JsError`, `any`, and whose `Error` is a weak
 key, its `message()` read, run in Bun.
+
+## Amendment: an `Error` is made of its options too (rd173)
+
+`js::error::new(message, options)`: `new Error(message, { cause })`, as
+React DOM's customizeViewTransitionError wraps what the browser threw.
+`options` is an `Option<&ErrorOptions>`, left out where it's `None`, as
+an optional argument is (ADR 0443), one function for both, and `cause` of
+any value, a `&dyn IntoUnknown`, given as it is (ADR 0654). Every
+`error::new(message)` reads `error::new(message, None)`.
+
+Held by `test/js-constructors.test.ts`'s "an Error is made of its message
+and options, its cause".
+

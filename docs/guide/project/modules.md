@@ -1160,7 +1160,7 @@ pub fn coerced(value: f64) -> String {
 pub fn unknown_owner() -> &'static js::Error {
     #[inline(never)]
     fn react_stack_top_frame() -> &'static js::Error {
-        js::error::new("react-stack-top-frame")
+        js::error::new("react-stack-top-frame", None)
     }
     react_stack_top_frame()
 }

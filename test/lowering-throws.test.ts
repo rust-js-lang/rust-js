@@ -152,7 +152,7 @@ test("a with whose closure throws, a match arm's value, is its throw", () => {
 use std::cell::Cell;
 
 thread_local! {
-    pub static EXCEPTION: &'static Error = js::error::new("suspended");
+    pub static EXCEPTION: &'static Error = js::error::new("suspended", None);
     static SEEN: Cell<bool> = const { Cell::new(false) };
 }
 

@@ -30,7 +30,7 @@ pub fn attach(fiber: &Fiber, wakeable: &'static Unknown) {
 }
 
 pub fn each(fiber: &Fiber, map: &'static js::Map<str, u32>, promise: &'static js::Promise<u32>) -> Vec<&'static Unknown> {
-    let error = js::error::new("e");
+    let error = js::error::new("e", None);
     let pattern = js::reg_exp::new("a+", "g");
     let held = vec![js::unknown(map), js::unknown(promise), js::unknown(error), js::unknown(pattern)];
     fiber.update_queue.set(held.first().copied());

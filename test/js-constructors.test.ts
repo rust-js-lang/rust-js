@@ -504,3 +504,26 @@ pub fn set(made: &Made, inst: Option<Rc<Fiber>>) {
   lib.set(made, null);
   expect(made.inst).toBe(null);
 });
+
+// rd173: `new Error(message, { cause })`, as React DOM's
+// customizeViewTransitionError wraps what the browser threw: the options
+// are an `Option`, left out where they're `None` (ADR 0443), and `cause` of
+// any value, a `&dyn IntoUnknown`, given as it is (ADR 0654).
+test("an Error is made of its message and options, its cause", async () => {
+  const { js, lib } = await compiled("error-cause", `use js::{Error, ErrorOptions, Unknown};
+
+pub fn wrapped(message: &str, error: &Unknown) -> &'static Error {
+    js::error::new(message, Some(&ErrorOptions { cause: Some(error) }))
+}
+
+pub fn plain(message: &str) -> &'static Error {
+    js::error::new(message, None)
+}
+`);
+  expect(js).toContain("  return new Error(message, { cause: error });\n");
+  expect(js).toContain("  return new Error(message);\n");
+  const thrown = new TypeError("no");
+  const error = lib.wrapped("view transition", thrown);
+  expect([error.message, error.cause]).toEqual(["view transition", thrown]);
+  expect("cause" in lib.plain("plain")).toBe(false);
+});

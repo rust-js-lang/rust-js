@@ -2224,12 +2224,21 @@ impl core::ops::Deref for Error {
 pub mod error {
     use super::*;
 
-    /// [`new Error(message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
-    /// an `Error` of `message`, to reject a promise with, or to throw.
+    /// [`new Error(message, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
+    /// an `Error` of `message`, to reject a promise with, or to throw; of
+    /// `options`, its `cause`, what it was made of, or `None`, left out.
     #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
-    pub fn new(message: &str) -> &'static Error {
+    pub fn new(message: &str, options: Option<&ErrorOptions<'_>>) -> &'static Error {
         unreachable!()
     }
+}
+
+/// What [`error::new`] is given, TypeScript's `ErrorOptions`.
+/// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
+#[derive(Default)]
+pub struct ErrorOptions<'a> {
+    /// What the error was made of, of any value, its `cause`.
+    pub cause: Option<&'a dyn IntoUnknown>,
 }
 
 /// An [`AggregateError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError):
