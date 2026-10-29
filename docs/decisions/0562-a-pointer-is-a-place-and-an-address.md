@@ -521,3 +521,34 @@ Held by `test/corpus/rc_as_ptr.rs`, against native Rust, and the mutations
 React writes it, `a != b` of two `Option<Rc<Update>>` whose `PartialEq` is
 `ptr::eq` is `a != b`, as of any `Option` of what `===` compares (ADR 0864,
 amended).
+
+## Amendment: a function's pointer is the function
+
+A pointer to a value of no size was its dangling address, `$ptrFrom(1, 0)`,
+whose value is `undefined`, a unit's. A fn item, `noop`, and a closure that
+captures nothing are of no size too, but each is a JS function, by its
+identity, so its pointer had lost what it points at:
+`std::ptr::eq(handler, &noop)`, rustc's `&raw const *&noop` made a `*const
+dyn Fn`, was `handler === undefined`, false of `noop` itself, and a `*const
+dyn Fn` of `&noop` was `$ptrTo(undefined)`, which panicked where it was made.
+A wrong answer, met as React's ReactDOMComponent compares `node.onclick ===
+noop` (rd128).
+
+- **A pointer to a function of no size is `$ptrTo` of the function**
+  (`pointers::is_function_of_no_size`), as a `dyn Fn`'s is: no address, but
+  the function, so `std::ptr::eq(handler, &noop)` is `handler === noop`, and
+  `std::ptr::eq(handler, &quiet)` of a closure `handler === quiet`.
+- **`has_no_place` is the one answer** of whether a pointer to a type has
+  no place, but its address: a value of no size, not a function. A pointer
+  made (`dangling_pointer`) and one made a `dyn` (`rvalues`) ask it, so
+  neither reads `undefined` for a function.
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+the function's identity is kept, as Rust's pointer and its `dyn`'s vtable
+keep it.
+
+Held by `test/corpus/fn_compared_by_its_pointer.rs`, against native Rust:
+a fn item, two closures that capture nothing and one that does, compared
+through a `&dyn Fn` parameter, a thread-local's `Option<&'static dyn Fn>`
+and a `*const dyn Fn`; and the mutations `function-pointer-an-address`,
+`function-pointer-made-dyn-undefined` and `closure-pointer-an-address`.

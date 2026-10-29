@@ -406,8 +406,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // Trait` is the pair itself (ADR 0562).
                         if self.is_handle_pointer(from) {
                             // A pointer to a value of no size has no place;
-                            // the value is `undefined`.
-                            let place = match self.has_one_value(self.pointee(from)) {
+                            // the value is `undefined`, but a function's,
+                            // which is the function (`has_no_place`).
+                            let place = match self.has_no_place(self.pointee(from)) {
                                 true => Expr::undefined(),
                                 false => self.pointee_place(value),
                             };

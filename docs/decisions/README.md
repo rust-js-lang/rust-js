@@ -943,7 +943,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0559 `{:x?}` of an integer is its hex](0559-debug-hex-of-an-integer.md)
 - [0560 A copied default resolves a call with its own bounds](0560-a-copied-default-resolves-with-its-own-bounds.md)
 - [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](0561-std-bodies.md)
-- [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md) *(extended by 0864: a hash of an address; amended: `Rc::as_ptr`, and two pointers to one field)*
+- [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md) *(extended by 0864: a hash of an address; amended: `Rc::as_ptr`, and two pointers to one field; a function's pointer is the function)*
 - [0563 What's found once of a crate is keyed by the crate's own files](0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
 - [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides; amended: an `if` the program wrote stays; amended by 0879: a `let … else`'s exit stays)*
 - [0565 How the generated JS reads is a gate, as what it computes is](0565-readability-is-a-gate.md) *(amended: a share that shrank asks a bless by one in 10,000 lines or more)*

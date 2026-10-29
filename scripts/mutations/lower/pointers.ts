@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "function-pointer-an-address",
+    breaks: "a pointer to a fn item, `&raw const *&noop`, is an address, not the function, so `std::ptr::eq(handler, &noop)` is `handler === undefined`",
+    file: "src/lower/pointers.rs",
+    find: "        if self.is_function_of_no_size(pointee) {\n            return Ok(Expr::call(Expr::helper(\"$ptrTo\"), vec![place]));",
+    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$ptrTo\"), vec![place]));",
+    tests: ["test/corpus.test.ts", "-t", "^fn_compared_by_its_pointer.rs$"],
+  },
+  {
+    name: "function-pointer-made-dyn-undefined",
+    breaks: "a fn item's pointer made a `*const dyn Fn` is `undefined`, as a unit's is, not the function",
+    file: "src/lower/pointers.rs",
+    find: "        self.has_one_value(pointee) && !self.is_function_of_no_size(pointee)\n",
+    replace: "        self.has_one_value(pointee)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_compared_by_its_pointer.rs$"],
+  },
+  {
+    name: "closure-pointer-an-address",
+    breaks: "a pointer to a closure that captures nothing is an address, so `std::ptr::eq(handler, &quiet)` is `handler === undefined`",
+    file: "src/lower/pointers.rs",
+    find: "        matches!(pointee.kind(), ty::FnDef(..) | ty::Closure(..)) && self.has_one_value(pointee)\n",
+    replace: "        matches!(pointee.kind(), ty::FnDef(..)) && self.has_one_value(pointee)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_compared_by_its_pointer.rs$"],
+  },
+  {
     name: "pointer-pointee-object-by-place",
     breaks: "an object's pointer is its place's, `$ptr(a, \"value\")`, not the object's: two to it differ",
     file: "src/lower/pointers.rs",
@@ -434,7 +458,7 @@ export const mutations: Mutation[] = [
     name: "zst-pointer-placed",
     breaks: "a pointer to a zero-sized value is a place of its own, not the dangling address",
     file: "src/lower/pointers.rs",
-    find: "        if !self.has_one_value(pointee) {\n            return Ok(None);\n        }",
+    find: "        if !self.has_no_place(pointee) {\n            return Ok(None);\n        }",
     replace: "        if true {\n            return Ok(None);\n        }",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },

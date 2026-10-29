@@ -668,6 +668,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.pointee_is_itself(pointee) {
             return Ok(place);
         }
+        // A function's of no size, a fn item's or a closure's that captures
+        // nothing: by the JS function it is, as a `dyn Fn`'s is, never an
+        // address, so `std::ptr::eq(handler, &noop)` is `handler === noop`
+        // (ADR 0562, amended).
+        if self.is_function_of_no_size(pointee) {
+            return Ok(Expr::call(Expr::helper("$ptrTo"), vec![place]));
+        }
         if let Some(dangling) = self.dangling_pointer(pointee, span)? {
             return Ok(dangling);
         }
@@ -721,12 +728,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a pointer to a `{pointee}`, aligned past 4096");
             return Err(refuse(self.tcx, span, Refused::Memory(&what)));
         }
-        if !self.has_one_value(pointee) {
+        if !self.has_no_place(pointee) {
             return Ok(None);
         }
         let align = Expr::int(i128::from(align));
         let given = self.sized_at_address(vec![align], Expr::int(0), pointee);
         Ok(Some(Expr::call(Expr::helper("$ptrFrom"), given)))
+    }
+
+    /// Whether a pointer to a `pointee` has no place, as one of no size
+    /// has none, but its address: not a function's, a fn item's or a
+    /// closure's that captures nothing, whose JS value is the function, its
+    /// pointer `$ptrTo` of it (ADR 0562, amended). The one answer a pointer
+    /// made and one made a `dyn` ask.
+    pub(super) fn has_no_place(&self, pointee: Ty<'tcx>) -> bool {
+        self.has_one_value(pointee) && !self.is_function_of_no_size(pointee)
+    }
+
+    /// A fn item or a closure that captures nothing: of no size, but a JS
+    /// function, by its identity.
+    fn is_function_of_no_size(&self, pointee: Ty<'tcx>) -> bool {
+        matches!(pointee.kind(), ty::FnDef(..) | ty::Closure(..)) && self.has_one_value(pointee)
     }
 
     /// `a == b` of two raw pointers to a `pointee` (ADR 0562): the same
