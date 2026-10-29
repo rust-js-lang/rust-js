@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations/written.rs",
     find: "            if let Some(why) = why {",
     replace: "            if let Some(why) = why.filter(|_| false) {",
-    tests: ["test/declarations.test.ts", "-t", "can't read"],
+    tests: ["test/declarations-written.test.ts", "-t", "can't read"],
   },
   {
     name: "written-object-unclosed",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations/written.rs",
     find: "                self.expect(\"}\")?;\n                break;",
     replace: "                break;",
-    tests: ["test/declarations.test.ts", "-t", "can't read"],
+    tests: ["test/declarations-written.test.ts", "-t", "can't read"],
   },
   {
     name: "written-empty-parameters-grouped",
