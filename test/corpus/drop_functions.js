@@ -50,14 +50,6 @@ function sevenMake_size(seven) {
 }
 
 function main() {
-  let tmp;
-  try {
-    tmp = many(10);
-  } catch (error) {
-    throw error;
-  }
-  const _two = [undefined, tmp];
-  console.log("two made");
   function dropMany(many) {
     console.log(`drop ${many.a[0]}`);
     console.log(`drop ${many.b[0]}`);
@@ -77,48 +69,29 @@ function main() {
       dropMany(two[1]);
     }
   }
-  dropTwo(_two);
-  const _first = [many(20), undefined];
-  function dropMany$1(many) {
-    console.log(`drop ${many.a[0]}`);
-    console.log(`drop ${many.b[0]}`);
-    console.log(`drop ${many.c[0]}`);
-    console.log(`drop ${many.d[0]}`);
-    console.log(`drop ${many.e[0]}`);
-    console.log(`drop ${many.f[0]}`);
-    console.log(`drop ${many.g[0]}`);
-    console.log(`drop ${many.h[0]}`);
-    console.log(`drop ${many.i[0]}`);
-  }
-  function dropTwo$1(two) {
-    if (two[0] != null) {
-      dropMany$1(two[0]);
-    }
-    if (two[1] != null) {
-      dropMany$1(two[1]);
-    }
-  }
-  dropTwo$1(_first);
-  const _list = list(3);
-  try {
-    console.log(`made ${sevenMake.make(undefined)}`);
-  } catch (error) {
-    function dropList(list) {
-      if (list.TAG === "Cons") {
-        console.log(`drop ${list._0[0]}`);
-        dropList(list._1);
-      }
-    }
-    dropList(_list);
-    throw error;
-  }
-  console.log("end");
   function dropList(list) {
     if (list.TAG === "Cons") {
       console.log(`drop ${list._0[0]}`);
       dropList(list._1);
     }
   }
-  dropList(_list);
+  let tmp;
+  try {
+    tmp = many(10);
+  } catch (error) {
+    throw error;
+  }
+  const _two = [undefined, tmp];
+  console.log("two made");
+  dropTwo(_two);
+  const _first = [many(20), undefined];
+  dropTwo(_first);
+  const _list = list(3);
+  try {
+    console.log(`made ${sevenMake.make(undefined)}`);
+    console.log("end");
+  } finally {
+    dropList(_list);
+  }
 }
 //# sourceMappingURL=case.js.map

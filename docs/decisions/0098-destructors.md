@@ -470,6 +470,14 @@ the function or closure that drops one, and every drop there calls it.
 - Tested: the `drop_functions` corpus case; mutations lose the
   declarations, declare one again for each drop, and declare it where it's
   first needed.
+- (Amended, #306.) **A function lowered from its MIR hoists its drop
+  functions too** (`mir_signature`), which it hadn't: `trie_of_counted_rcs`'s
+  `insert` declared `dropNode` again in each of five `catch`es, and with
+  those gone its steps join one `try` and one `finally`, 721 lines fewer
+  there. One a drop tidy took out calls is left out (`drops_read`), and a
+  function's names are its one scope's, `dropS0` to `dropS0$13` of
+  fourteen instantiations. Mutations `mir-drops-not-hoisted` and
+  `mir-drops-unread-kept` (`mir.ts`).
 
 ## Amendment: what's made only to be dropped
 

@@ -714,7 +714,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, bool)> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
-        let (mut params, mut out) = self.lowered_from_mir(mir, None, (None, None))?;
+        // Its drop functions, each declared once at its top, as a nested
+        // body's are (ADR 0098, amended, #306).
+        let enclosing = self.begin_hoisting();
+        let lowered = self.lowered_from_mir(mir, None, (None, None));
+        let hoisted = self.end_hoisting(enclosing);
+        let (mut params, mut out) = lowered?;
+        out.splice(0..0, drops_read(hoisted, &out));
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
         // An `on_load!` body is its module's top, where JS has no `return`:
@@ -1274,4 +1280,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         plain
     }
+}
+
+/// Of a body's drop functions, `hoisted`, those its statements, `body`,
+/// call, or another called does: a drop tidy took out calls none.
+fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
+    let name = |def: &Stmt| match &def.kind {
+        StmtKind::Const(name, _) => Some(name.clone()),
+        _ => None,
+    };
+    let mut read: std::collections::HashSet<String> = std::collections::HashSet::new();
+    js::visit_stmts(body, &mut |v| _ = read.insert(v.to_string()));
+    loop {
+        let before = read.len();
+        let called: Vec<&Stmt> = (hoisted.iter())
+            .filter(|def| name(def).is_some_and(|n| read.contains(&n)))
+            .collect();
+        for def in called {
+            js::visit_stmts(std::slice::from_ref(def), &mut |v| _ = read.insert(v.to_string()));
+        }
+        if read.len() == before {
+            break;
+        }
+    }
+    (hoisted.into_iter())
+        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))
+        .collect()
 }

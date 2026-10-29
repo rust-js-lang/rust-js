@@ -5,19 +5,19 @@ export function entry() {
 }
 
 function step(next) {
+  function dropStep(step) {
+    if (step.next != null) {
+      dropTask(step.next);
+    }
+  }
+  function dropTask(task) {
+    console.log(`drop ${task.name}`);
+    dropStep(task.step);
+  }
   let tmp;
   try {
     tmp = new Set();
   } catch (error) {
-    function dropStep(step) {
-      if (step.next != null) {
-        dropTask(step.next);
-      }
-    }
-    function dropTask(task) {
-      console.log(`drop ${task.name}`);
-      dropStep(task.step);
-    }
     if (next != null) {
       dropTask(next);
     }
@@ -27,15 +27,6 @@ function step(next) {
   try {
     seen = new Set();
   } catch (error) {
-    function dropStep(step) {
-      if (step.next != null) {
-        dropTask(step.next);
-      }
-    }
-    function dropTask(task) {
-      console.log(`drop ${task.name}`);
-      dropStep(task.step);
-    }
     if (next != null) {
       dropTask(next);
     }
@@ -49,80 +40,29 @@ function step(next) {
 }
 
 function main() {
-  const first = {
-    name: "first",
-    step: step(undefined),
-  };
-  let step$1;
-  try {
-    step$1 = step(undefined);
-  } catch (error) {
-    function dropStep(step) {
-      if (step.next != null) {
-        dropTask(step.next);
-      }
-    }
-    function dropTask(task) {
-      console.log(`drop ${task.name}`);
-      dropStep(task.step);
-    }
-    dropTask(first);
-    throw error;
-  }
-  let held;
-  try {
-    held = step({
-      name: "inner",
-      step: step$1,
-    });
-  } catch (error) {
-    function dropStep(step) {
-      if (step.next != null) {
-        dropTask(step.next);
-      }
-    }
-    function dropTask(task) {
-      console.log(`drop ${task.name}`);
-      dropStep(task.step);
-    }
-    dropTask(first);
-    throw error;
-  }
-  console.log(`${first.step.tags.size} ${held.seen.size} ${held.next != null}`);
-  function dropTask(task) {
-    console.log(`drop ${task.name}`);
-    dropStep(task.step);
-  }
   function dropStep(step) {
     if (step.next != null) {
       dropTask(step.next);
     }
   }
-  try {
-    dropStep(held);
-  } catch (error) {
-    function dropStep(step) {
-      if (step.next != null) {
-        dropTask(step.next);
-      }
-    }
-    function dropTask(task) {
-      console.log(`drop ${task.name}`);
-      dropStep(task.step);
-    }
-    dropTask(first);
-    throw error;
-  }
-  console.log("held dropped");
-  function dropStep$1(step) {
-    if (step.next != null) {
-      dropTask$1(step.next);
-    }
-  }
-  function dropTask$1(task) {
+  function dropTask(task) {
     console.log(`drop ${task.name}`);
-    dropStep$1(task.step);
+    dropStep(task.step);
   }
-  dropTask$1(first);
+  const first = {
+    name: "first",
+    step: step(undefined),
+  };
+  try {
+    const held = step({
+      name: "inner",
+      step: step(undefined),
+    });
+    console.log(`${first.step.tags.size} ${held.seen.size} ${held.next != null}`);
+    dropStep(held);
+    console.log("held dropped");
+  } finally {
+    dropTask(first);
+  }
 }
 //# sourceMappingURL=case.js.map

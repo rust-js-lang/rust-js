@@ -348,4 +348,22 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/lowering-parts.test.ts", "-t", "a private function's last unnamed parameters"]
   },
+  {
+    name: "mir-drops-not-hoisted",
+    breaks: "a function lowered from its MIR declares a drop function at each drop, `dropNode` once in each `catch`, not once at its top (#306)",
+    file: "src/lower/mir.rs",
+    find: "        out.splice(0..0, drops_read(hoisted, &out));\n",
+    replace: "        let _ = hoisted;\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-drops-unread-kept",
+    breaks: "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
+    file: "src/lower/mir.rs",
+    find: "        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
+    snapshots: true,
+  },
 ];
