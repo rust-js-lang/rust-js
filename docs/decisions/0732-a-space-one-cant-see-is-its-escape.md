@@ -70,3 +70,17 @@ a control and U+2028 among them; mutations `escape-hex-uppercase`,
 (`to_oxc/expressions.ts`). The corpus' and the snapshots' strings are
 re-blessed: their escapes in lowercase, a tab written `\t` where a string
 has another escape, and controls seen, `"\x7f\x9f"`.
+
+## Amendment: what no font draws (#176)
+
+A noncharacter, U+FDD0 to U+FDEF and each plane's last two, U+FFFE and
+U+10FFFF among them, and a private use code point, U+E000 to U+F8FF and
+planes 15 and 16, were written as they are: a reader sees nothing, or a
+box, where the program has `"\u{10ffff}"`. **Each is its escape too, as
+is an interlinear annotation's, U+FFF9 to U+FFFB; one past U+FFFF is
+`\u{10ffff}`, its code point braced, as JS reads it** (`unseen`,
+`escape`). A flag's tags, U+E0020 to U+E007F, vary what an emoji shows,
+so they're as they are. Case A: the same string. Held by
+`test/lowering-strings.test.ts` ("a space one can't tell from ' ' is
+written as its escape"), each read back as its code points, and the
+mutations `unseen-*` (`to_oxc/expressions.ts`).

@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function main() {
-  const words = ["b😀", "b｡", "a", "b", "", "b𐀀", "ab", "B", "b￿", "ca"];
+  const words = ["b😀", "b｡", "a", "b\ue000", "", "b𐀀", "ab", "B", "b\uffff", "ca"];
 
   const byPoints = words.slice();
   byPoints.sort($cmp);

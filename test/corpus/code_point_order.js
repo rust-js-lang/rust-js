@@ -23,7 +23,7 @@ export function entry() {
 function main() {
   const crab = "🦀";
   const bang = "！";
-  const words = ["b", bang, crab, "�", "a", "x", "🦀🦀"];
+  const words = ["b", bang, crab, "�", "a", "\ue000x", "🦀🦀"];
   const value = $cmp(crab, bang) < 0;
   const value$1 = $cmp(crab, bang) > 0;
   const cmp = $cmp(crab, bang);
@@ -85,12 +85,12 @@ function main() {
   console.log(
     `${value$4} ${
       ["Less", "Equal", "Greater"][value$5 + 1]
-    } ${$cmp("", c) <= 0 && $cmp(c, "￿") <= 0}`,
+    } ${$cmp("\ue000", c) <= 0 && $cmp(c, "\uffff") <= 0}`,
   );
-  console.log(`${"a" <= c && $cmp(c, "￿") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);
-  const private$ = $cmp(c, "") >= 0 && $cmp(c, "") <= 0;
+  console.log(`${"a" <= c && $cmp(c, "\uffff") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);
+  const private$ = $cmp(c, "\ue000") >= 0 && $cmp(c, "\uf8ff") <= 0;
   const ascii = c >= "a" && c <= "z";
-  const wide = c >= "a" && $cmp(c, "￿") <= 0;
+  const wide = c >= "a" && $cmp(c, "\uffff") <= 0;
   console.log(`${private$} ${ascii} ${wide} ${"q" >= "a" && "q" <= "z"}`);
   const chars = Array.from("b！🦀�a");
   chars.sort($cmp);

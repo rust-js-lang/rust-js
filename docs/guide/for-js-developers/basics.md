@@ -678,10 +678,11 @@ export function formatProdErrorMessage(code, url) {
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
 - A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, a mark one
-  can't see, `\u{200b}`, and a control, `\u{1}`, are written as their
-  escapes, their hex in lowercase, `"\u2007\xa0"`, `"\x01"`, in a string
-  and a template; what joins or varies an emoji, `\u{200d}` and
-  `\u{fe0f}`, is as it is ([ADR
+  can't see, `\u{200b}`, a control, `\u{1}`, and what no font draws, a
+  noncharacter or a private use one, `\u{10ffff}`, are written as their
+  escapes, their hex in lowercase, `"\u2007\xa0"`, `"\x01"`,
+  `"\u{10ffff}"`, in a string and a template; what joins or varies an
+  emoji, `\u{200d}`, `\u{fe0f}` and a flag's tags, is as it is ([ADR
   0732](../../decisions/0732-a-space-one-cant-see-is-its-escape.md),
   amended).
 - A `concat!` of another macro, `concat!("v", env!("VERSION"))`, is the

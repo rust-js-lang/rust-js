@@ -931,8 +931,10 @@ fn js_number(n: f64) -> String {
 /// Whether `c` is written as its escape in a string's or a template's JS,
 /// `"\u2007\xA0"`, as a reader can't tell it from a space or see it at all
 /// (ADR 0732): a space but `' '` and a line's end, which are written as
-/// they are, and a mark that takes no room. Not one that joins or varies
-/// what's seen, an emoji's U+200D or U+FE0F.
+/// they are, and a mark that takes no room; and what no font draws, a
+/// noncharacter, U+FDD0 to U+FDEF and each plane's last two, U+10FFFF,
+/// or a private use one (#176). Not one that joins or varies what's seen,
+/// an emoji's U+200D or U+FE0F, or its tags.
 fn unseen(c: char) -> bool {
     (c.is_whitespace() && !matches!(c, ' ' | '\n' | '\r' | '\u{2028}' | '\u{2029}'))
         || matches!(
@@ -947,7 +949,12 @@ fn unseen(c: char) -> bool {
                 | '\u{2060}'..='\u{2064}'
                 | '\u{2066}'..='\u{2069}'
                 | '\u{FEFF}'
+                | '\u{FFF9}'..='\u{FFFB}'
+                | '\u{FDD0}'..='\u{FDEF}'
+                | '\u{E000}'..='\u{F8FF}'
+                | '\u{F0000}'..='\u{10FFFF}'
         )
+        || (c as u32) & 0xFFFE == 0xFFFE
 }
 
 /// `text` as a template literal writes it: what would end the text or start
@@ -1002,7 +1009,8 @@ fn escape(c: char, raw: &mut String) {
         c if c.is_control() => raw.push_str(&format!("\\x{:02x}", c as u32)),
         c if unseen(c) => raw.push_str(&match c as u32 {
             n @ ..=0xFF => format!("\\x{n:02x}"),
-            n => format!("\\u{n:04x}"),
+            n @ ..=0xFFFF => format!("\\u{n:04x}"),
+            n => format!("\\u{{{n:x}}}"),
         }),
         c => raw.push(c),
     }

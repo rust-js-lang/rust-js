@@ -191,9 +191,9 @@ function main() {
 
   // `char`s step past the surrogates, which no `char` is.
   letters = Array.from($iterator({ start: "a", end: "e" }, $rangeNext)).join("");
-  const around = Array.from($iterator({ start: "퟾", end: "" }, $rangeInclusiveNext));
+  const around = Array.from($iterator({ start: "퟾", end: "\ue001" }, $rangeInclusiveNext));
   const kept = new $BTreeSet();
-  $extendMap(kept, $iterator({ start: "퟾", end: "" }, $rangeInclusiveNext), true);
+  $extendMap(kept, $iterator({ start: "퟾", end: "\ue001" }, $rangeInclusiveNext), true);
   iter = { start: "x", end: "z" };
   let c;
   while ((c = $rangeInclusiveNext(iter)) != null) {

@@ -18,11 +18,11 @@ function main() {
   const last = $rangeNextBack(r);
   const rest = Array.from($iterator(r, $rangeNext));
   const around = Array.from(
-    $iterator({ start: "퟾", end: "" }, $rangeNext).map((c) => c.codePointAt(0)),
+    $iterator({ start: "퟾", end: "\ue001" }, $rangeNext).map((c) => c.codePointAt(0)),
   );
   const down = Array.from($iterator({ start: "p", end: "s" }, $rangeInclusiveNextBack));
   const back = Array.from(
-    $iterator({ start: "퟿", end: "" }, $rangeNextBack).map((c) => c.codePointAt(0)),
+    $iterator({ start: "퟿", end: "\ue001" }, $rangeNextBack).map((c) => c.codePointAt(0)),
   );
   console.log(
     `${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`} [${rest.map((item) => $debugStr(item, "'")).join(", ")}] [${around.join(", ")}] [${down.map((item) => $debugStr(item, "'")).join(", ")}] [${back.join(", ")}]`,

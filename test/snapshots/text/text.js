@@ -97,7 +97,7 @@ export function slicePanics(start, end) {
   return $slice(v, start, end);
 }
 export function escapes() {
-  return `${$debugStr('a"b\\c\n\t\r\x00\x1b\x7fé\u3000\xa0\u200b\u2028́x􏿿')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
+  return `${$debugStr('a"b\\c\n\t\r\x00\x1b\x7fé\u3000\xa0\u200b\u2028\ue000́x\u{10ffff}')} ${$debugStr("a", "'")} ${$debugStr("'", "'")} ${$debugStr('"', "'")} ${$debugStr("it's")}`;
 }
 // A template literal's own characters, in the text around the values.
 export function templates(n) {

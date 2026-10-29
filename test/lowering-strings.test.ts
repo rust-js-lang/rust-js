@@ -82,6 +82,14 @@ test("a space one can't tell from ' ' is written as its escape", async () => {
 pub const MARKS: &str = "a\\u{200b}b\\u{feff}c\\u{fffd}d\\u{ad}";
 pub const FAMILY: &str = "👨\\u{200d}👩 ❤\\u{fe0f}";
 pub const QUOTED: &str = "\\u{200b}\\"q\\" \\\\ \\t\\n\\r\\u{1}\\u{2028}";
+// What no font draws, a noncharacter or a private use one, past U+FFFF too,
+// is its escape; an emoji's tags, a flag's, are as they are (#176).
+pub const UNDRAWN: &str = "\\u{e000}\\u{fdd0}\\u{fffe}\\u{fff9}\\u{1fffe}\\u{10ffff}";
+pub const FLAG: &str = "\\u{1f3f4}\\u{e0067}\\u{e0062}\\u{e0073}\\u{e0063}\\u{e0074}\\u{e007f}";
+
+pub fn private(key: &str) -> String {
+    format!("{key}\\u{f0000}")
+}
 
 pub fn line(indent: usize, key: &str) -> String {
     format!("{UNCHANGED}{}{key}\\u{2007}\\u{3000}\\u{ad}", "\\u{a0}".repeat(indent))
@@ -94,7 +102,15 @@ pub fn line(indent: usize, key: &str) -> String {
   expect(js).toContain('export const FAMILY = "👨‍👩 ❤️";');
   expect(js).toContain("${key}\\u2007\\u3000\\xad`;");
   expect(js).toContain(`export const QUOTED = '\\u200b"q" \\\\ \\t\\n\\r\\x01\\u2028';`);
+  expect(js).toContain('export const UNDRAWN = "\\ue000\\ufdd0\\ufffe\\ufff9\\u{1fffe}\\u{10ffff}";');
+  expect(js).toContain('export const FLAG = "\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}\u{e0063}\u{e0074}\u{e007f}";');
+  expect(js).toContain("return `${key}\\u{f0000}`;");
   const lib = await import(join(dir, "lib.js"));
+  expect([lib.UNDRAWN, lib.FLAG, lib.private("k")]).toEqual([
+    "\ue000\ufdd0\ufffe\ufff9\u{1fffe}\u{10ffff}",
+    "\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}\u{e0063}\u{e0074}\u{e007f}",
+    "k\u{f0000}",
+  ]);
   expect([lib.UNCHANGED, lib.MARKS, lib.FAMILY, lib.line(1, "k"), lib.QUOTED]).toEqual([
     " \xa0",
     "a​b﻿c�d\xad",
