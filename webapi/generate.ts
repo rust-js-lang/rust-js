@@ -895,6 +895,10 @@ type Fn = {
   whole?: string;
   typeParams?: string[];
   variadic?: boolean;
+  /** It runs no code but its own, not even what it's given,
+   * `#[rust_js::runs_nothing]` (ADR 0867): an event handler's setter, which
+   * keeps the function it's given (ADR 1006, amended). */
+  runsNothing?: boolean;
 };
 
 /** The interfaces a rest parameter's arguments are, `...streams:
@@ -1285,6 +1289,7 @@ function functionsOf(declared: Interface): Fn[] {
           result: "()",
           doc,
           nullable: ["value"],
+          runsNothing: true,
         });
         continue;
       }
@@ -1581,6 +1586,7 @@ function generic(f: Fn): string {
     // The whole numbers it gives, a WebIDL integer's (`wholeOf`).
     ...(f.whole ? [`    #[cfg_attr(rust_js, rust_js::whole = ${JSON.stringify(f.whole)})]`] : []),
     ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),
+    ...(f.runsNothing ? ["    #[cfg_attr(rust_js, rust_js::runs_nothing)]"] : []),
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose
     // assignment's value is what it's given.

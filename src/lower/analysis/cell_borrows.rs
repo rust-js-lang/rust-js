@@ -523,6 +523,16 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
         ) || runs_nothing(tcx, id))
 }
 
+/// Whether a call of `id` runs no code of anyone's but its own, not even
+/// what it's given: a binding's that runs nothing (`binding_runs_nothing`),
+/// or a JS object type's `Deref` to the class it extends, which is the
+/// object itself, `AggregateError`'s to `Error`. The one answer a borrow
+/// held across it and a thread-local made as its module loads ask
+/// (`lazy_locals::loaded_by`, ADR 1006, amended).
+pub(in crate::lower) fn call_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id))
+}
+
 /// Whether `def_id`, a binding that runs no code but its own and what it's
 /// given, `#[rust_js::runs_only_given]` (ADR 0898), is given, of `args`,
 /// only what runs nothing as JS reads it: numbers, `bool`s, `char`s, text,
@@ -655,9 +665,7 @@ fn called<'tcx>(
         };
         return Called::Cell(Borrow { cell, mutable });
     }
-    // A JS object type's `Deref` to the class it extends is the object
-    // itself, `AggregateError`'s to `Error`.
-    if binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id)) {
+    if call_runs_nothing(tcx, id) {
         return Called::Nothing;
     }
     // A method std derives, `Clone::clone` of `#[derive(Clone)]`, runs what

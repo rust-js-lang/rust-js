@@ -30,8 +30,11 @@ thread_local! {
         let made: fn(u32) -> u32 = noisy;
         made(9)
     };
-    // Another module's `const`, read by its name, as written.
-    static FROM_LIMITS: u32 = noisy(limits::LIMIT);
+    // Another module's function, of `limits`, in an import cycle with this
+    // module. Its `const`, read by the initializer itself, is read as its
+    // value, as `load_cycle_values`' is, so it alone would be made as the
+    // module loads (ADR 1006, amended).
+    static FROM_LIMITS: u32 = noisy(limits::limit_plus_one() - 1);
     // What it drops runs the crate's code too.
     static GUARDED: u32 = {
         let _guard = Guard;
@@ -48,7 +51,7 @@ thread_local! {
         if n == 1 {
             panic!("first try");
         }
-        n * 10 + limits::LIMIT
+        n * 10 + limits::limit_plus_one() - 1
     };
 }
 

@@ -76,7 +76,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md)
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
 - [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`)*
-- [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads, then every one its module's load can make, rd120)*
+- [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads, then every one its module's load can make, rd120; what a binding's call runs is `loaded_by`'s)*
 - [0028 Imports from JS modules: `#[link_name = "module#path"]`](0028-js-module-imports.md)
 - [0029 `async`/`.await` are JS's `async`/`await`; a future is a promise](0029-async-await.md)
 - [0030 `Option`: `Some(x)` is `x`, `None` is `undefined`](0030-option.md)
@@ -790,7 +790,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1003 A compiler's build is part of its identity](1003-a-compilers-build-is-its-identity.md)
 - [1004 The mutations surviving at main's head](1004-survivors-at-mains-head.md)
 - [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision; amended: one another module's JS imports keeps its JS)*
-- [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision; amended: a private one too, made where it's first used where its module's load can't make it, rd120)*
+- [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision; amended: a private one too, made where it's first used where its module's load can't make it, rd120; one rule of what a binding's call runs there)*
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
 - [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*

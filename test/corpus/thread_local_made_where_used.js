@@ -26,8 +26,11 @@ const POINTED = (() => {
   return made(9);
 })();
 
-// Another module's `const`, read by its name, as written.
-const FROM_LIMITS = $local(() => noisy(Limits.LIMIT));
+// Another module's function, of `limits`, in an import cycle with this
+// module. Its `const`, read by the initializer itself, is read as its
+// value, as `load_cycle_values`' is, so it alone would be made as the
+// module loads (ADR 1006, amended).
+const FROM_LIMITS = $local(() => noisy((Limits.limitPlusOne() - 1) >>> 0));
 // What it drops runs the crate's code too.
 const GUARDED = (() => {
   const _guard = undefined;
@@ -44,7 +47,7 @@ const FLAKY = $local(() => {
   if (n === 1) {
     throw new Error("first try");
   }
-  return (((n * 10) >>> 0) + Limits.LIMIT) >>> 0;
+  return (((((n * 10) >>> 0) + Limits.limitPlusOne()) >>> 0) - 1) >>> 0;
 });
 
 // Of this module, which `limits` calls back into, so it may load after

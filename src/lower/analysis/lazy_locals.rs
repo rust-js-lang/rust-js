@@ -20,18 +20,14 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use super::fn_pointers::FnPointers;
 
 use crate::lower::Body;
-use crate::lower::recognition::{StdItem, is_std_def};
 
 /// The thread-locals made where they're first used, and each other one,
 /// made as its module loads, by its key.
 pub(in crate::lower) struct LazyLocals {
     pub(in crate::lower) lazy: HashSet<LocalDefId>,
     /// Each made as its module loads, as JS's `const x = f();` is, and what
-    /// its initializer may run and read there: of one that runs none of the
-    /// crate's code (`Initializer::runs_the_crates`), the thread-locals and
-    /// `static`s it reads, and what a thread-local among them reaches; else all
-    /// `loaded_by` finds; `None`
-    /// where it may run what rust-js can't follow. The pipeline asks, of the
+    /// its initializer may run and read there, all `loaded_by` finds, the
+    /// one rule; `None` where it may run what rust-js can't follow. The pipeline asks, of the
     /// modules' imports, where its module's load can't make it
     /// (`load_cycles::out_of_order`, ADR 1006, amended).
     pub(in crate::lower) at_load: HashMap<LocalDefId, Option<Vec<DefId>>>,
@@ -59,193 +55,19 @@ pub(super) fn lazy_locals<'tcx>(
         .map(|(&init, &key)| (key.to_def_id(), init.to_def_id()))
         .collect();
     let impls = Impls::of_crate(tcx);
-    // What each initializer runs and reads, those made where they're first
-    // used too, whose initializers reading them may run: of one that runs
-    // none of the crate's code, the thread-locals and `static`s it reads,
-    // and what those thread-locals reach, asked after; else all it
-    // may run (`loaded_by`), which asks them itself.
-    let mut direct: HashMap<LocalDefId, (Option<Vec<DefId>>, Vec<DefId>)> = HashMap::new();
+    // What each initializer may run and read as its module loads, all
+    // `loaded_by` finds, which follows each thread-local it reads to its
+    // own initializer: the one rule (the user's decision, rd120).
     for body in bodies {
         let Some(init) = body.def_id.as_local() else { continue };
         let Some(&key) = inits.get(&init) else { continue };
-        let mut initializer = Initializer {
-            tcx,
-            bodies: &by_id,
-            read: Vec::new(),
-            named: Vec::new(),
-        };
-        let runs = match initializer.runs_the_crates(body) {
-            false => (Some(initializer.named), initializer.read),
-            true => (
-                loaded_by(tcx, (&by_id, &made_of, &impls), (pointers, std_runs), body.def_id),
-                Vec::new(),
-            ),
-        };
-        direct.insert(key, runs);
-    }
-    // Each made as its module loads reaches what it reads reaches: reading
-    // one there may make it then.
-    for (&key, (reached, read)) in &direct {
         if made_where_used.contains(&key) {
             continue;
         }
-        let mut reached = reached.clone();
-        let mut work = read.clone();
-        let mut asked = HashSet::new();
-        while let Some(read) = work.pop() {
-            let (Some(so_far), true) = (&mut reached, asked.insert(read)) else {
-                continue;
-            };
-            let Some((more, reads)) = read.as_local().and_then(|read| direct.get(&read)) else {
-                continue;
-            };
-            let Some(more) = more else {
-                reached = None;
-                continue;
-            };
-            for &id in more {
-                if !so_far.contains(&id) {
-                    so_far.push(id);
-                }
-            }
-            work.extend(reads.iter().copied());
-        }
+        let reached = loaded_by(tcx, (&by_id, &made_of, &impls), (pointers, std_runs), body.def_id);
         found.at_load.insert(key, reached);
     }
     found
-}
-
-/// What a thread-local's initializer is asked of what it runs: the
-/// thread-locals it reads, by their keys, `read`, and those and each
-/// `static` of the crate's it reads, `named`. Not a `const`, which a body
-/// run where its module loads reads as its value where its module may load
-/// after (`load_cycles::load_cycles`, ADR 0031, amended).
-struct Initializer<'b, 'tcx> {
-    tcx: TyCtxt<'tcx>,
-    bodies: &'b HashMap<DefId, &'b Body<'tcx>>,
-    read: Vec<DefId>,
-    named: Vec<DefId>,
-}
-
-impl<'tcx> Initializer<'_, 'tcx> {
-    /// Whether `body`, an initializer's or a closure's it gives std, runs
-    /// code of the crate's, which `loaded_by` follows: a call of a body of
-    /// the crate's, a function, a method of its impl or a closure, or of
-    /// what rust-js can't see the body of; std's print, which may run the
-    /// crate's `Display`; std's call given the crate's function or closure,
-    /// which it may call (`given_run`); a fn pointer's, a closure's or a
-    /// `dyn`'s call; or a drop of a value of the crate's with a destructor.
-    /// A binding's call runs nothing of the crate's (ADR 0037, amended).
-    /// What it reads is kept, `read` and `named`.
-    fn runs_the_crates(&mut self, body: &Body<'tcx>) -> bool {
-        let tcx = self.tcx;
-        let keys = local_keys(tcx, body);
-        self.named.extend(keys.iter().copied().chain(static_reads(body)));
-        self.read.extend(keys);
-        let Some(mir) = &body.mir else { return true };
-        let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
-        let body = &mir.body;
-        body.basic_blocks.iter().any(|data| match &data.terminator().kind {
-            TerminatorKind::Call { func, .. } => match crate::lower::fn_def(func.ty(&body.local_decls, tcx)) {
-                Some((def_id, args)) => self.runs(typing_env, def_id, args),
-                // A fn pointer's, a closure's or a `dyn Fn`'s, which may be
-                // the crate's.
-                None => true,
-            },
-            // A drop of a value of the crate's that has a destructor runs it.
-            TerminatorKind::Drop { place, .. } => drops_the_crates(tcx, place.ty(&body.local_decls, tcx).ty),
-            _ => false,
-        })
-    }
-
-    /// Whether calling `def_id`, of `args`, runs the crate's code.
-    fn runs(&mut self, typing_env: ty::TypingEnv<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        let tcx = self.tcx;
-        if tcx.is_closure_like(def_id) {
-            return def_id.is_local();
-        }
-        if crate::lower::bindings::is_binding(tcx, def_id) {
-            return false;
-        }
-        match crate::lower::items::resolve_instance_in(tcx, typing_env, def_id, args) {
-            Ok(Some(instance)) => match instance.def {
-                ty::InstanceKind::Item(id) if id.is_local() => true,
-                ty::InstanceKind::Item(id) => {
-                    crate::lower::recognition::print_of(tcx, id).is_some()
-                        || (!std_makes_only(tcx, id) && self.given_run(instance.args))
-                }
-                // A shim of std's, a clone's or a drop's, runs what it's
-                // of: the crate's where that is.
-                _ => (instance.args.types()).any(|ty| ty.ty_adt_def().is_some_and(|adt| adt.did().is_local())),
-            },
-            _ => true,
-        }
-    }
-
-    /// Whether what std's call is given of the crate's, a closure or a
-    /// function among its type's `args`, runs the crate's code where std
-    /// calls it, as a call of it there would: `Some(2).map(|n| { .. })`'s
-    /// closure that calls the crate's, not `TRIES.with(|t| *t)`'s, which
-    /// only reads what it's lent.
-    fn given_run(&mut self, args: ty::GenericArgsRef<'tcx>) -> bool {
-        let tcx = self.tcx;
-        let given: Vec<DefId> = (args.types())
-            .flat_map(|ty| ty.walk())
-            .filter_map(|part| part.as_type())
-            .filter_map(|ty| match *ty.kind() {
-                ty::Closure(id, _) | ty::FnDef(id, _) if id.is_local() => Some(id),
-                _ => None,
-            })
-            .collect();
-        given.into_iter().any(|id| match tcx.is_closure_like(id) {
-            true => (self.bodies.get(&id).copied()).is_none_or(|body| self.runs_the_crates(body)),
-            false => true,
-        })
-    }
-}
-
-/// Each thread-local `body` reads, by its key, `TRIES` of `TRIES.get()`.
-/// Its closures are bodies of their own.
-fn local_keys<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<DefId> {
-    (body.thir.exprs.iter())
-        .filter_map(|expr| match expr.kind {
-            ExprKind::NamedConst { def_id, .. } if matches!(expr.ty.kind(), ty::Adt(key, _) if is_std_def(tcx, key.did(), StdItem::LocalKey)) => {
-                Some(def_id)
-            }
-            _ => None,
-        })
-        .collect()
-}
-
-/// Whether `id`, std's, only makes a value of what it's given: a `const
-/// fn` of no trait, asking nothing of its type parameters but their size,
-/// `RefCell::new`, `Vec::new`; not a `const` trait's method, `Iterator`'s,
-/// nor one bound by a trait, whose impl may be the crate's, or a closure.
-fn std_makes_only(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    // `Box::new(x)`, which is `x` (ADR 0069), React's
-    // `createChildReconciler(true)`'s boxed closure.
-    if crate::lower::recognition::pure_std(tcx, id) == Some(crate::lower::recognition::PureStd::BoxNew) {
-        return true;
-    }
-    let sized = tcx.lang_items().sized_trait();
-    tcx.is_const_fn(id)
-        && tcx.trait_of_assoc(id).is_none()
-        && (tcx.clauses_of(id).instantiate_identity(tcx).into_iter()).all(|(clause, _)| {
-            match clause.skip_normalization().kind().skip_binder() {
-                ty::ClauseKind::Trait(predicate) => Some(predicate.def_id()) == sized,
-                _ => true,
-            }
-        })
-}
-
-/// Whether a value of `ty` holds one of the crate's with a destructor,
-/// whose drop runs it.
-fn drops_the_crates<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
-    ty.walk().any(|part| {
-        part.as_type()
-            .and_then(|ty| ty.ty_adt_def())
-            .is_some_and(|adt| adt.did().is_local() && adt.has_dtor(tcx))
-    })
 }
 
 /// What std's `id`, called of `args`, may run of the crate's bodies
@@ -288,7 +110,11 @@ impl Impls {
 }
 
 /// What `init`, a thread-local's initializer, made as its module loads, may
-/// run and read of the crate's there (ADR 1006, amended): the
+/// run and read of the crate's there (ADR 1006, amended), the one rule of
+/// it: a binding's call runs what it's given but where it says it runs
+/// nothing, `#[rust_js::runs_nothing]`, as React's `memo` and an event
+/// handler's setter do, and a JS object's `Deref`, which is the object
+/// (`cell_borrows::call_runs_nothing`). The
 /// crate's bodies it calls, of the arguments each call gives, a closure
 /// or a function it makes or gives std or a binding, the impls of a type of
 /// the crate's std is given or a drop runs, each impl of a trait a call
@@ -318,6 +144,16 @@ fn loaded_by<'tcx>(
         }
         let Some(&body) = bodies.get(&id) else { continue };
         for read in named_reads(body) {
+            // A `const` the initializer reads itself, not a thread-local's
+            // key, is read as its value where its module may load after
+            // (`load_cycles::load_cycles`, ADR 0031, amended); one a body it
+            // calls reads, or a closure it makes, by its name.
+            if id == init
+                && !made_of.contains_key(&read)
+                && matches!(tcx.def_kind(read), DefKind::Const { .. } | DefKind::AssocConst { .. })
+            {
+                continue;
+            }
             if !reached.contains(&read) {
                 reached.push(read);
             }
@@ -404,7 +240,7 @@ fn loaded_by<'tcx>(
         // body runs of the crate's: std's, by the bounds it's called under;
         // a binding's that runs nothing, none; another's, what it's given.
         let runs_given = |callee: DefId, callee_args: ty::GenericArgsRef<'tcx>, work: &mut Vec<_>| {
-            if super::cell_borrows::binding_runs_nothing(tcx, callee) {
+            if super::cell_borrows::call_runs_nothing(tcx, callee) {
                 return true;
             }
             match std_runs(callee, callee_args) {
@@ -495,17 +331,6 @@ fn loaded_by<'tcx>(
     }
     reached.retain(|&id| id != init);
     Some(reached)
-}
-
-/// Each `static` of the crate's `body` reads. Its closures are bodies of
-/// their own.
-fn static_reads(body: &Body<'_>) -> Vec<DefId> {
-    (body.thir.exprs.iter())
-        .filter_map(|expr| match expr.kind {
-            ExprKind::StaticRef { def_id, .. } if def_id.is_local() => Some(def_id),
-            _ => None,
-        })
-        .collect()
 }
 
 /// What `body` reads by its name of the crate's: each thread-local, by its

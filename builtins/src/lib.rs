@@ -462,6 +462,8 @@ pub mod function {
     /// `function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue))`.
     #[cfg_attr(rust_js, rust_js::link_name = "bind")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    // It makes a function of what it's given, run only where it's called.
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn bind<'l, F, M, L>(this: F, this_arg: Option<&dyn super::IntoUnknown>, args: L) -> <(F, M) as Bound<'l, L>>::Rest
     where
         F: AnyFunction<M> + 'l,

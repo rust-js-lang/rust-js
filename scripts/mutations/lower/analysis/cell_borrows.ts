@@ -187,9 +187,9 @@ export const mutations: Mutation[] = [
     name: "js-object-deref-runs-code",
     breaks: "an `&AggregateError`'s `Deref` to `&JsError` may run anything, so `thrownErrors` is a counted cell (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "    if binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id)) {\n",
-    replace: "    if binding_runs_nothing(tcx, id) {\n",
-    tests: ["test/js-builtins.test.ts", "-t", "AggregateError"],
+    find: "    binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id))\n",
+    replace: "    binding_runs_nothing(tcx, id)\n",
+    tests: ["test/js-builtins.test.ts", "-t", "AggregateError|a Map is a WeakMap"],
   },
   {
     name: "std-impls-walk-every-part",

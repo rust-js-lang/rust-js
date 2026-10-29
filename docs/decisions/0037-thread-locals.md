@@ -488,3 +488,14 @@ where its initializer's effects are seen, which only the user decides
   no longer `pub`.
 - Mutations `exported-lazy-local-unrefused` and `lazy-local-refused-unexported`
   (`analysis.rs`).
+
+## Amendment: what a binding's call runs is `loaded_by`'s (rd120)
+
+The amendment that made one "that only makes a value, or calls std's or a
+binding's functions" at its module's load took a binding's call to run
+nothing of the crate's, whatever it's given. That assumption is gone (the
+user's decision, ADR 1006, amended): what an initializer runs as its
+module loads has one owner, `lazy_locals::loaded_by`, which follows what
+a binding is given unless it runs nothing, `#[rust_js::runs_nothing]`
+(`cell_borrows::call_runs_nothing`).
+

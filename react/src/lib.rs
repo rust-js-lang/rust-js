@@ -1657,6 +1657,8 @@ pub struct MemoExoticComponent<P>(PhantomData<JsObject>, PhantomData<P>);
 /// Props are the same when each field is (`Object.is`), or when
 /// `are_equal`, given, says so: `memo(component, arePropsEqual)`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#memo")]
+// It makes a component of what it's given, run only when React renders it.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn memo<P, M>(component: impl ComponentType<P, M>, are_equal: Option<Box<dyn Fn(&P, &P) -> bool>>) -> MemoExoticComponent<P> {
     unreachable!()
 }
@@ -1690,6 +1692,8 @@ impl<P> Module<P> {
 /// `lazy(|| import_module("./Chart.jsx"))`. It suspends while it loads, so
 /// render it inside `<Suspense fallback={...}>...</Suspense>`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#lazy")]
+// It makes a component of what it's given, run only when React renders it.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn lazy<P>(load: impl Fn() -> Promise<Module<P>> + 'static) -> LazyExoticComponent<P> {
     unreachable!()
 }
@@ -1715,6 +1719,8 @@ pub struct ForwardRefExoticComponent<P, H>(PhantomData<JsObject>, PhantomData<(P
 /// `thread_local!`: `render` gets the props and the parent's ref. From React
 /// 19 a component can take `ref` as a prop instead.
 #[cfg_attr(rust_js, rust_js::link_name = "react#forwardRef")]
+// It makes a component of what it's given, run only when React renders it.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn forward_ref<P, H>(render: impl Fn(P, ForwardedRef<H>) -> Element + 'static) -> ForwardRefExoticComponent<P, H> {
     unreachable!()
 }

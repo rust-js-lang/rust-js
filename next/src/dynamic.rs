@@ -10,6 +10,8 @@ use react::{ComponentValue, JSX, Module};
 /// `dynamic(|| import_module("./hello.jsx"), None)`; `options`, given, say
 /// what it shows while it loads, and whether the server renders it.
 #[cfg_attr(rust_js, rust_js::link_name = "next/dynamic#default")]
+// It makes a component of what it's given, loaded only when it renders.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn dynamic<P>(
     loader: impl Fn() -> LoaderComponent<P> + 'static,
     options: Option<DynamicOptions<P>>,
@@ -19,6 +21,8 @@ pub fn dynamic<P>(
 
 /// [`dynamic`] of `options` alone, its `loader` among them.
 #[cfg_attr(rust_js, rust_js::link_name = "next/dynamic#default")]
+// It makes a component of what it's given, loaded only when it renders.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn dynamic_of_options<P>(options: DynamicOptions<P>) -> ComponentValue<P> {
     unreachable!()
 }
@@ -26,6 +30,8 @@ pub fn dynamic_of_options<P>(options: DynamicOptions<P>) -> ComponentValue<P> {
 /// `noSSR(LoadableInitializer, loadableOptions)`: what [`dynamic`] makes of
 /// `{ ssr: false }`, rendered only in the browser.
 #[cfg_attr(rust_js, rust_js::link_name = "next/dynamic#noSSR")]
+// It makes a component of what it's given, loaded only when it renders.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn no_ssr<P>(loadable_initializer: LoadableFn<P>, loadable_options: DynamicOptions<P>) -> ComponentValue<P> {
     unreachable!()
 }

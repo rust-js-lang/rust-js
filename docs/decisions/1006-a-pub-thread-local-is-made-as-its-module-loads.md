@@ -201,3 +201,53 @@ loads, where Rust does it at its first use, or never, of one never used or
 - Mutations `at-load-*` and `out-of-order-*` (`lazy_locals.rs`,
   `load_cycles.rs`); 0037's that held what made one lazy, gone with it.
 
+## Amendment: one rule of what a binding's call runs there (rd120)
+
+The user's decision (2026-10-29). The amendment above left two rules of
+what an initializer runs as its module loads: one that ran none of the
+crate's code took a binding's call to run nothing, whatever it was given
+(`Initializer::runs_the_crates`, 0037's assumption); any other was
+followed by `loaded_by`, which follows what a binding is given. Two
+answers to one question, which disagreed of a binding given a closure.
+
+**What an initializer runs and reads as its module loads is
+`loaded_by`'s alone** (`analysis/lazy_locals.rs`): `runs_the_crates`,
+its `Initializer` and its helpers are gone. A binding's call runs what
+it's given, a closure, a function or a `dyn Fn`, which `loaded_by`
+follows or, of a `dyn Fn`, can't, but where it runs nothing,
+`cell_borrows::call_runs_nothing`, the one answer a borrow held across a
+call asks too: a binding marked `#[rust_js::runs_nothing]` (ADR 0867), and
+a JS object type's `Deref`, which is the object. So a binding that makes a
+value of a function, run later, says so:
+
+- webapi's event handler setters, generated so, `port1.onmessage = ..`,
+  which keep the function they're given;
+- React's `memo`, `lazy` and `forwardRef`, and Next.js's `dynamic`, its
+  options' and `noSSR`, which make a component rendered later:
+  `memo(Badge, Some(Box::new(|a, b| ..)))` in `test/components.rs` is made
+  as its module loads, `const LooseBadge = memo(Badge, (a, b) => ..)`;
+- the js crate's `function::bind`, which makes a function called later:
+  React's `callDestroyInDEV`, a bound fn pointer.
+
+A `const` the initializer reads itself is read as its value where its
+module may load after (`load_cycles::load_cycles`, ADR 0031, amended), so
+it isn't what the initializer reaches, as of one that ran none of the
+crate's code before; one a body it calls or a closure it makes reads by
+its name is, as before. So `thread_local_made_where_used`'s `FROM_LIMITS`
+and `FLAKY`, which read `limits::LIMIT` and were made where they're first
+used for it, call `limits::limit_plus_one()` now, a function of the
+module in an import cycle with theirs, to stay so, as native Rust's
+output of them needs.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): as the amendment above,
+B: each made as its module loads where it was.
+
+Held by `test/react.test.ts`'s components and APIs (`memo`, `lazy`), the
+scheduler's port and `test/lowering-names.test.ts`'s `onmessage`,
+`test/lowering-module-variables.test.ts`'s `callDestroyInDEV`,
+`test/js-builtins.test.ts`'s `WeakMap` of a `Map`'s `Deref`,
+`docs/guide/react/nextjs.md`'s `dynamic`, corpus `load_cycle_values`;
+the mutations `at-load-binding-runs-nothing-followed` and
+`js-object-deref-runs-code`, `at-load-own-const-reached` and `at-load-key-read-as-const`. The fast path's mutations, `at-load-*` of
+what `runs_the_crates` asked, are gone with it.
+
