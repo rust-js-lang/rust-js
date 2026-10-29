@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -208,3 +208,32 @@ error now** (`analysis/naming.rs`, `refuse_two_names`), saying to write a
 - Case ([0262](0262-when-rust-and-js-disagree.md)): none, a name.
 - Held by `test/modules.test.ts`, "a use of one name is imported by its
   rust_js::name", and the mutation `use-group-named-each-the-same`.
+
+## Amendment: a glob's names, each (rd153)
+
+React DOM's ReactFiberConfigDOM writes `export * from
+'react-reconciler/src/ReactFiberConfigWithNoPersistence'`, whose Rust is
+`pub use react_reconciler::react_fiber_config_with_no_persistence::*;`,
+which was refused. **A `pub use m::*;` re-exports each name it gives the
+module, as rustc resolves it** (`globbed`): the module's children whose
+re-export chain starts at that glob, which leaves out what the module's
+own items and single `use`s shadow, and what another glob of it gives. A
+function, constant or thread-local is re-exported as a single `pub use`
+of it would be, the crate's from its module, a library's from its file,
+by what each exports it as: `export { SUPPORTS_PERSISTENCE, cloneInstance,
+.. } from "../dep/no_persistence.js";`. A type, a trait or a macro is
+nothing; a module or a class among them, whose namespace or constructor
+it would be, is refused, never left out.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change: JS's
+`export *` re-exports every export of the module's file, which may be
+more than the names its Rust makes public (a `pub(crate)` item another
+module imports), and what the re-exporting module shadows it leaves to
+JS's rule. The names rustc resolves are the glob's, listed: upstream's
+`export *` would read so only where the two sets are one, which the
+listed form doesn't tell yet (a port difference to accept, or a later
+change of the output). Held by `test/cross-crate-items.test.ts`'s "a pub
+use of every name of a module re-exports each it gives", the diagnostics'
+"a pub use of every name of a module, of a module", rustc's
+`imports/issue-4865-2.rs` (off the known failures), and the `glob-*`
+mutations in `scripts/mutations/lower/reexports.ts`.

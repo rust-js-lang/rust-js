@@ -87,19 +87,16 @@ pub(super) fn reexports(
             false => item.vis_span.to(item.span),
         };
         let hir::UseKind::Single(ident) = kind else {
-            // `pub use m::*;` of what has JS: each of its names, one by one.
-            let has_js = |glob: DefId| match glob.as_local() {
-                Some(local) => paths.contains_key(&LocalModId::new_unchecked(local)),
-                None => foreign.is_library(glob.krate),
-            };
-            if matches!(kind, hir::UseKind::Glob)
-                && let Some(Res::Def(DefKind::Mod, glob)) = path.res.type_ns
-                && has_js(glob)
-            {
-                refuse(
-                    statement,
-                    "a `pub use` of every name of a module",
-                    "`pub use` each by its name",
+            // `pub use m::*;` of what has JS: each name it gives the module,
+            // as rustc resolves it, past what the module's own items and
+            // single `use`s shadow, one `export { .. } from` (rd153).
+            if matches!(kind, hir::UseKind::Glob) {
+                globbed(
+                    tcx,
+                    (module, item.owner_id.to_def_id(), statement),
+                    (fns, foreign),
+                    paths,
+                    &mut found,
                 );
             }
             continue;
@@ -303,6 +300,72 @@ fn only_attributes(between: &str) -> bool {
             return false;
         };
         rest = &attribute[end + 1..];
+    }
+}
+
+/// The names a module's `pub use m::*;`, `glob`, gives it, each where
+/// rustc resolves it there, past what the module's own items and single
+/// `use`s shadow (rd153): a function, constant or thread-local of the
+/// crate's, from its module, or a library's, from its file, by what it's
+/// exported as; a type, a trait or a macro, nothing. What has JS but can't
+/// be said, a binding, a class or a module, is refused, never left out.
+fn globbed(
+    tcx: TyCtxt<'_>,
+    (module, glob, statement): (LocalModId, DefId, rustc_span::Span),
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &HashMap<LocalModId, Vec<String>>,
+    found: &mut Vec<(rustc_span::Span, js::ImportFrom, (String, String))>,
+) {
+    use rustc_middle::metadata::Reexport as Via;
+    let refuse = |what: String, why: &str| {
+        super::refusal::refuse(tcx, statement, super::refusal::Refused::Because(&what, why));
+    };
+    for child in tcx.module_children_local(module.to_local_def_id()) {
+        if !matches!(child.reexport_chain.first(), Some(Via::Glob(used)) if *used == glob) {
+            continue;
+        }
+        let Res::Def(kind, id) = child.res else { continue };
+        let name = child.ident.to_string();
+        match kind {
+            DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. } => {
+                if let Some(info) = fns
+                    .get(&id)
+                    .filter(|info| info.owner.is_none() && info.module != module)
+                    && let Some(from) = paths.get(&info.module)
+                {
+                    let export = super::default_exports::exported_as(tcx, id, info.exported());
+                    let alias = match child.ident.name == tcx.item_name(id) {
+                        true => info.exported().to_string(),
+                        false => super::bindings::alias_name(tcx, glob, child.ident.name),
+                    };
+                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                } else if let Some(imported) = foreign.item(id)
+                    && imported.member.is_none()
+                    && let Some((from, export)) = foreign.import_key(id, module)
+                {
+                    found.push((
+                        statement,
+                        js::ImportFrom::Specifier(from),
+                        (export, imported.name.clone()),
+                    ));
+                } else if fns.get(&id).is_some_and(|info| info.module == module) {
+                    // Its own, through a module that re-exports it: written already.
+                } else {
+                    refuse(
+                        format!("a `pub use` of every name of a module, of `{name}`"),
+                        "`pub use` it by its name, or each of the others",
+                    );
+                }
+            }
+            DefKind::Mod | DefKind::Struct if matches!(kind, DefKind::Mod) || super::classes::is_class(tcx, id) => {
+                refuse(
+                    format!("a `pub use` of every name of a module, of its module or class `{name}`"),
+                    "`pub use` each of its names that has JS by its name",
+                );
+            }
+            // A type, a trait or a macro: no JS (ADR 0240).
+            _ => {}
+        }
     }
 }
 

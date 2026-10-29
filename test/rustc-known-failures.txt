@@ -40,7 +40,6 @@ enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support addressab
 enum/enum-clike-ffi-as-int.rs	error: rust-js does not support addressable memory yet: a `transmute` of `extern "C" fn(usize) -> Foo` as `extern "C" fn(usize) -> u32`, which aren't numbers alone
 enum/enum-univariant-repr.rs	error: rust-js does not support addressable memory yet: a `transmute` of `&[Univariant]` as `&[i32]`, which aren't numbers alone
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
-imports/issue-4865-2.rs	error: rust-js does not support a `pub use` of every name of a module yet: `pub use` each by its name
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 match/match-ref-mut-stability.rs	error: rust-js does not support addressable memory yet: a raw pointer to what a `&mut` refers to
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support values of type `&mut &mut [u8]` yet

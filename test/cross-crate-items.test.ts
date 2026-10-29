@@ -377,6 +377,63 @@ pub use dep::assign::assign;
   expect(module.assign).toBe(Object.assign);
 });
 
+// React DOM's ReactFiberConfigDOM, `export * from
+// 'react-reconciler/src/ReactFiberConfigWithNoPersistence'`: a `pub use
+// m::*;` re-exports each name it gives the module, as rustc resolves it,
+// from where it's declared, past what the module's own items shadow, its
+// types nothing, a private item not at all (rd153).
+test("a pub use of every name of a module re-exports each it gives", async () => {
+  const dir = fixture("cross-crate-glob-reexports");
+  compiled(dir, `pub fn version() -> u32 {
+    1
+}
+
+pub mod no_persistence {
+    pub const SUPPORTS_PERSISTENCE: bool = false;
+
+    fn shim() -> u32 {
+        7
+    }
+
+    pub fn clone_instance() -> u32 {
+        shim()
+    }
+
+    pub fn replace_container_children() -> u32 {
+        shim() + 1
+    }
+
+    pub struct ChildSet;
+}
+`, `mod own {
+    pub fn helper() -> u32 {
+        2
+    }
+
+    pub fn shadowed() -> u32 {
+        3
+    }
+}
+
+pub use dep::no_persistence::*;
+pub use own::*;
+
+pub fn shadowed() -> u32 {
+    4
+}
+
+pub fn persists(_: Option<ChildSet>) -> bool {
+    SUPPORTS_PERSISTENCE
+}
+`);
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).toContain('export {\n  SUPPORTS_PERSISTENCE,\n  cloneInstance,\n  replaceContainerChildren,\n} from "../dep/no_persistence.js";\n');
+  expect(app).toContain('export { helper } from "./own.js";\n');
+  const module = await import(join(dir, "app", "lib.js"));
+  expect([module.SUPPORTS_PERSISTENCE, module.cloneInstance(), module.replaceContainerChildren(), module.helper(), module.shadowed()]).toEqual([false, 7, 8, 2, 4]);
+  expect(Object.keys(module).sort()).toEqual(["SUPPORTS_PERSISTENCE", "cloneInstance", "helper", "persists", "replaceContainerChildren", "shadowed"]);
+});
+
 // React's ReactAct imports shared's `enqueueTask` as `queueMacrotask`, the
 // name its Rust `use` gives it: a library's item is named as the module's
 // `use` renames it, its default and its name alike (ADR 0202, amended).

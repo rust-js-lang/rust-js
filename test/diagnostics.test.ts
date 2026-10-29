@@ -32,7 +32,9 @@ for (const [name, source, message, crate] of [
   // A `pub use` of what has JS but no module of rust-js's to be re-exported
   // from, and of a module's every name, refused, not left out (ADR 0240, amended).
   ["a pub use of std's function", "pub use std::cmp::max;\npub fn f() -> u32 { 1 }", "does not support a `pub use` of `std::cmp::max` yet"],
-  ["a pub use of every name of a module", "mod m {\n    pub fn g() -> u32 { 1 }\n}\npub use m::*;\npub fn f() -> u32 { m::g() }", "does not support a `pub use` of every name of a module yet: `pub use` each by its name"],
+  // Each of a glob's names is re-exported (rd153); a module among them,
+  // whose namespace it would be, refused.
+  ["a pub use of every name of a module, of a module", "mod m {\n    pub mod n {\n        pub fn g() -> u32 { 1 }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::n::g() }", "does not support a `pub use` of every name of a module, of its module or class `n` yet: `pub use` each of its names that has JS by its name"],
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
