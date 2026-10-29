@@ -590,4 +590,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^returns_joined_keep_comments.rs$"],
     snapshots: true,
   },
+  {
+    name: "tested-exit-kept-in-loop",
+    breaks: "an inner loop's way out MIR shares with the outer's, `if (k === 0) { break bb25; } else { break; }` of `while k < n { .. } if k == 0 { break; }`, stays in it, so the outer keeps `bb25:` and the inner is `while (true)` (#389, ADR 0629 amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        if let Some(after) = tested_exit_after(stmts, i) {\n",
+    replace: "        if let Some(after) = tested_exit_after(stmts, i).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
+    snapshots: true,
+  },
 ];

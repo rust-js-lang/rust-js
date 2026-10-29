@@ -74,36 +74,26 @@ function skipped(codes) {
 
 function rowsUntil(rows) {
   let n = 0;
-  let r = 0;
-  while (r < rows.length) {
-    const row = rows[r];
-    bb25: {
-      switch (row.length) {
-        case 0:
-          break bb25;
-        case 2: {
-          let k = 0;
-          while (true) {
-            if (k < row.length) {
-              if (row[k] !== 7) {
-                k++;
-                continue;
-              }
-            }
-            if (k) {
-              break;
-            }
-            break bb25;
-          }
-          n = (n + k) >>> 0;
-        }
-      }
-      const row$1 = r * 2;
-      n = (n + row$1) >>> 0;
-      r++;
-      continue;
+  for (let r = 0; r < rows.length; r++) {
+    let row = rows[r];
+    if (row.length === 0) {
+      break;
     }
-    break;
+    if (row.length === 2) {
+      let k = 0;
+      while (k < row.length) {
+        if (row[k] === 7) {
+          break;
+        }
+        k++;
+      }
+      if (k === 0) {
+        break;
+      }
+      n = (n + k) >>> 0;
+    }
+    row = r * 2;
+    n = (n + row) >>> 0;
   }
   return n;
 }

@@ -3,10 +3,11 @@
 // loop's turn ends at it, each case that goes on `continue;`; an `if` chain
 // where the turn goes on past it; the program's own label kept. So too
 // where MIR leaves the loop through a block of its own, an arm's `break`
-// and a nested `match`'s (`skipped`, #389c): `break;`, no `bb22:`. Not
-// where the block's `break` is in a loop of its own (`rows_until`); and a
-// name the turn declares again after the `match` is told apart
-// (`shadowed`).
+// and a nested `match`'s (`skipped`, #389c): `break;`, no `bb22:`; and
+// where the block's `break` is in a loop of its own, whose way out MIR
+// shares with the outer's (`rows_until`): the inner's `if k == 0 {
+// break; }` after it, as written, no `bb25:`; and a name the turn
+// declares again after the `match` is told apart (`shadowed`).
 fn first_stop(codes: &[u8]) -> usize {
     let mut i = 0;
     while i < codes.len() {

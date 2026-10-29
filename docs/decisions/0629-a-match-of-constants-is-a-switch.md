@@ -708,3 +708,65 @@ one's `get()`, a `static`, a guard of a call and one of a parameter)
 against native Rust, and the mutations `guard-read-not-a-case`,
 `guard-read-of-a-local`, `guard-read-of-any-cell` (`mir/hints.ts`), `case-read-of-a-call` and
 `case-read-of-a-cell-unread` (`mir/tidy/switches.ts`).
+
+## Amendment: an inner loop's way out MIR shares with the outer's (#389, `rows_until`)
+
+```rust
+while r < rows.len() {
+    match rows[r].len() {
+        0 => break,
+        2 => {
+            let mut k = 0;
+            while k < row.len() { if row[k] == 7 { break; } k += 1; }
+            if k == 0 { break; }
+            n += k as u32;
+        }
+        _ => {}
+    }
+    ..
+}
+```
+
+was `bb25: { switch (row.length) { case 0: break bb25; case 2: { ..
+while (true) { .. if (k) { break; } break bb25; } .. } } .. continue; }
+break;`: MIR shares the outer loop's way out with the `if k == 0 {
+break; }` after the inner loop, so `exits_after` moved what's after it
+out, `n += k`, but left that `if` in the inner loop, `if (k === 0) { break
+bb25; } else { break; }`, a jump past its own, and the outer loop's way out
+a block of MIR's, which a `switch`'s `break` couldn't name.
+
+Now `exits_after` moves a loop's last `if` the program wrote after it, of
+a jump past it, before the loop's own `break`, out after the loop too
+(`tested_exit_after`), where it's written: the inner loop is `while (k <
+row.length) { if (row[k] === 7) { break; } k++; }`, `if (k === 0) {
+break; }` after it, a `break` of the outer loop, and the `match` the `if`
+chain #389 writes where the turn goes on past it:
+
+```js
+for (let r = 0; r < rows.length; r++) {
+  let row = rows[r];
+  if (row.length === 0) {
+    break;
+  }
+  if (row.length === 2) {
+    let k = 0;
+    while (k < row.length) { if (row[k] === 7) { break; } k++; }
+    if (k === 0) {
+      break;
+    }
+    n = (n + k) >>> 0;
+  }
+  ..
+}
+```
+
+Not where the `if` reads what the loop declares, jumps to the loop, or
+the loop `break`s elsewhere, whose way past the `if` it would change.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The `if` runs once
+the inner loop's way out is taken, as it did, with the same values.
+
+Held by `test/corpus/match_breaks_its_loop.rs` (`rows_until`) against
+native Rust and the mutation `tested-exit-kept-in-loop`
+(`mir/tidy/jumps/tails.ts`). This closes #389: no label the program didn't
+write is left in its cases.
