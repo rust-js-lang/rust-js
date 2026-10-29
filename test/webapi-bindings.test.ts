@@ -737,6 +737,39 @@ pub fn normalized(element: &Element, html: &str) -> String {
   expect(lib.normalized(element, " <b>x</b> ")).toBe("<b>x</b>");
 });
 
+// React port gaps rd124 and rd126: a getter gives what TypeScript types it
+// as. A style's `length` is its declaration's, a number, TypeScript's
+// `CSSStyleDeclarationBase.length`, not a CSS property's text, which no
+// property `length` is; an element's `ownerDocument` is a `Document`,
+// TypeScript's `Element` override, where a node's may be `null`.
+test("a getter gives what TypeScript types it as, style.length and element.ownerDocument", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-getter-types");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Document, Element, HTMLElement, Node};
+
+pub fn declared(element: &HTMLElement) -> f64 {
+    element.style().length()
+}
+
+pub fn document_of(element: &Element) -> &Document {
+    element.owner_document()
+}
+
+pub fn node_document(node: &Node) -> Option<&Document> {
+    node.owner_document()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return element.style.length;\n");
+  expect(js).toContain("  return element.ownerDocument;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const document = {};
+  expect(lib.declared({ style: { length: 2 } })).toBe(2);
+  expect(lib.documentOf({ ownerDocument: document })).toBe(document);
+  expect(lib.nodeDocument({ ownerDocument: null })).toBe(null);
+});
+
 // React port gap rd68: TypeScript's index signature, `[index: number]:
 // HTMLOptionElement`, is std's `Index`, so ReactDOMSelect's
 // `options[i].value` and ReactDOMInput's `group[i]` read as JS reads them,

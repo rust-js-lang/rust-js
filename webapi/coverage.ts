@@ -19,6 +19,12 @@ export type Members = {
   lists: Map<string, string>;
   /** Its properties TypeScript types as a function, `onclick`'s `((ev) => any) | null`. */
   functions: Set<string>;
+  /** Its own properties TypeScript types as never `null` that a parent
+   * class's type may be `null`, `Element`'s `ownerDocument: Document` of
+   * `Node`'s `Document | null`. */
+  narrowed: Set<string>;
+  /** Its own properties whose type may be `null`, `Node`'s `ownerDocument`. */
+  nullable: Set<string>;
   /** The class its index signature's items are, `[index: number]: T`, its
    * own or its parent's of the type it's given, `HTMLOptionsCollection`'s
    * `HTMLOptionElement` of `HTMLCollectionOf<HTMLOptionElement>`. */
@@ -67,7 +73,8 @@ export async function typescript(): Promise<Map<string, Members>> {
   await session.close();
   const interfaces = new Map<string, Members>();
   const of = (name: string) => {
-    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map(), functions: new Set() });
+    if (!interfaces.has(name))
+      interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map(), functions: new Set(), narrowed: new Set(), nullable: new Set() });
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
@@ -104,6 +111,10 @@ export async function typescript(): Promise<Map<string, Members>> {
       for (const member of d.members) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
       for (const member of d.members) if (member.kind === "method") m.methods.add(member.name);
       for (const member of d.members) if (member.kind === "property" && isFunction(member.type)) m.functions.add(member.name);
+      // What may be `null`, `T | null` or `null`, and what can't, of its own.
+      const isNull = (t: any) => t?.kind === "keyword" && t.keyword === "null";
+      const mayBeNull = (t: any) => isNull(t) || (t?.kind === "union" && t.types.some(isNull));
+      for (const member of d.members) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(member.name);
       for (const member of d.members) {
         const item = listed(member);
         if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
@@ -143,7 +154,12 @@ export async function typescript(): Promise<Map<string, Members>> {
       for (const e of of(n).extends) add(e, seen);
     };
     add(name, new Set());
-    out.set(name, { ...m, members, methods, lists, functions, indexed: indexed(name, new Set()) });
+    // Of what it declares never `null`, what a parent class's may be.
+    const ancestors = (n: string, seen: Set<string>): string[] =>
+      of(n).extends.flatMap((e) => (seen.has(e) ? [] : (seen.add(e), [e, ...ancestors(e, seen)])));
+    const parentNullable = new Set(ancestors(name, new Set()).filter((e) => classes.has(e)).flatMap((e) => [...of(e).nullable]));
+    const narrowed = new Set([...m.narrowed].filter((x) => parentNullable.has(x)));
+    out.set(name, { ...m, members, methods, lists, functions, narrowed, indexed: indexed(name, new Set()) });
   }
   return out;
 }

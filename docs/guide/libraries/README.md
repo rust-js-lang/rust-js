@@ -319,7 +319,10 @@ How WebIDL maps to Rust, one rule for each:
   An options object is a struct of `Option`s, `RequestInit { method:
   Some("POST"), ..Default::default() }`.
 - **A result that may be `null` is an `Option`;** one that may be
-  `undefined` too.
+  `undefined` too. Of a class TypeScript says always has one, it's the
+  value: `element.owner_document()` is a `&Document`, a node's an
+  `Option<&Document>`
+  ([ADR 0024](../../decisions/0024-web-crate.md), amended).
 - **An API that throws for what a program can't check first returns a
   `Result`,** as `window.local_storage()` and `storage.set_item` do; one
   that throws only when misused, an invalid selector, panics

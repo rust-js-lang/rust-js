@@ -1598,14 +1598,42 @@ function cssProperties(have: Fn[]): Fn[] {
   const names = new Set(have.map((f) => f.name));
   const fns: Fn[] = [];
   const style = typescriptDom.get("CSSStyleProperties");
+  // What its parent, CSSStyleDeclaration, has, which TypeScript lists
+  // there of `CSSStyleDeclarationBase`, `length` and `cssText`: the
+  // declaration's, which a style reaches through `Deref`, no property.
+  const declared = new Set((interfaces.get("CSSStyleDeclaration")?.members ?? []).map(({ member }) => member.name));
   for (const js of [...(style?.members ?? [])].sort()) {
     // Its properties: not a method TypeScript lists there, `setProperty`, a declaration's.
-    if (!/^[a-z]\w*$/i.test(js) || names.has(snake(js)) || style?.methods.has(js)) continue;
+    if (!/^[a-z]\w*$/i.test(js) || names.has(snake(js)) || style?.methods.has(js) || declared.has(js)) continue;
     // Its CSS name: `backgroundColor` is `background-color`, `webkitLineClamp` `-webkit-line-clamp`.
     const css = js.replace(/^webkit(?=[A-Z])/, "-webkit").replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
     const doc = [`[\`${css}\`](https://developer.mozilla.org/docs/Web/CSS/${css})`];
     fns.push({ name: snake(js), jsName: `get ${js}`, params: ["this: &CSSStyleProperties"], result: "String", doc });
     fns.push({ name: `set_${snakeWords(js)}`, jsName: `set ${js}`, params: ["this: &CSSStyleProperties", "value: &str"], result: "()", doc });
+  }
+  return fns;
+}
+
+/**
+ * Each attribute of a parent class that TypeScript declares again on `i`,
+ * never `null`, where WebIDL's may be: `Element`'s `ownerDocument:
+ * Document` of `Node`'s `Document?`, which an element always has. A getter
+ * of its own, of that type, which a method call finds before the
+ * parent's, reached through `Deref`.
+ */
+function narrowedAttributes(i: Interface, have: Fn[]): Fn[] {
+  const names = new Set(have.map((f) => f.name));
+  const narrowed = typescriptDom.get(i.name)?.narrowed ?? new Set<string>();
+  const fns: Fn[] = [];
+  for (let p = i.parent && interfaces.get(i.parent); p; p = p.parent && interfaces.get(p.parent)) {
+    for (const { member: m } of p.members) {
+      if (m.type !== "attribute" || !m.idlType?.nullable || !narrowed.has(m.name!) || names.has(snake(m.name!))) continue;
+      // Its type, of no `Option`, which `orNull` makes of a nullable one.
+      const result = rustType(m.idlType, "result");
+      if (typeof result !== "string") continue;
+      names.add(snake(m.name!));
+      fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: [`this: &${typeName(i.name)}`], result, doc: [`[MDN](${mdn(i.name, m.name)})`] });
+    }
   }
   return fns;
 }
@@ -1717,6 +1745,7 @@ for (const name of INTERFACES) {
     name !== "EventTarget" || !["addEventListener", "removeEventListener"].includes(f.jsName),
   );
   if (name === "CSSStyleProperties") fns.push(...cssProperties(fns));
+  fns.push(...narrowedAttributes(i, fns));
   // Each member is a method, `el.append(..)`, `e.client_x()`, and what a
   // type extends its parent's through `Deref`: one spelling per operation
   // (ADR 0282). Only constructors, statics, constants and casts, which no

@@ -277,3 +277,36 @@ cell`** (`traits/dictionaries.rs`), as of any JS object (ADR 0454):
   extends is no JS", run: mutations `js-object-deref-dictionary-unmade`
   (`lower/traits/dictionaries.ts`) and `js-object-deref-lowered`, which
   the `fn` form now catches again.
+
+## Amendment: a getter gives what TypeScript types it as (rd124, rd126)
+
+React port gaps rd124 and rd126 (2026-10-29). Two getters gave what JS
+doesn't:
+
+- **A style's CSS properties are only TypeScript's `CSSStyleProperties`'s
+  own.** TypeScript lists a declaration's own members, `length`, `cssText`
+  and `parentRule`, in `CSSStyleDeclarationBase`, which `coverage.ts` reads
+  as a mixin of `CSSStyleProperties`, so `cssProperties` bound each as a
+  CSS property's text: `CSSStyleProperties::length() -> String`, which
+  hid `CSSStyleDeclaration::length() -> f64` through `Deref`, so
+  `el.style().length()` was a `String` in Rust and a number in JS, and a
+  program comparing it as text compiled and was always false;
+  `parent_rule() -> String`, a `CSSRule` or `null` in JS; and a setter of
+  `length`, which is read-only. A name WebIDL's `CSSStyleDeclaration`
+  has is the declaration's, which a style reaches through `Deref`, and no
+  property's. Case ([0262](0262-when-rust-and-js-disagree.md)): results
+  change, so the host's type, a number.
+- **An attribute TypeScript narrows on a subclass is that type there.**
+  WebIDL has `Node`'s `Document? ownerDocument`; TypeScript's `Element`
+  declares `ownerDocument: Document` again, as an element always has
+  one, and so do `Attr`, `CharacterData`, `DocumentFragment` and
+  `DocumentType` (`Document`'s is `null`). Each of those classes binds a
+  getter of its own, `owner_document() -> &'static Document`, which a
+  method call finds before `Node`'s `Option<&Document>`
+  (`narrowedAttributes`, of `coverage.ts`'s `narrowed`: a property a
+  class declares never `null` that a parent class's may be). Case: none,
+  the host's value; React's `ownerDocument.createElementNS(..)` without
+  an unwrap.
+
+Held by `test/webapi-bindings.test.ts`'s "a getter gives what TypeScript
+types it as" and the generator's output test.

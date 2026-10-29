@@ -798,6 +798,14 @@ impl CharacterData {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/ownerDocument)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_document(&self) -> &'static Document {
+        unreachable!()
+    }
+
 }
 
 /// [`Text`](https://developer.mozilla.org/docs/Web/API/Text)
@@ -2769,6 +2777,14 @@ impl Element {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_animations(&self, options: Option<GetAnimationsOptions<'_>>) -> Vec<&'static Animation> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ownerDocument)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_document(&self) -> &'static Document {
         unreachable!()
     }
 
@@ -6006,6 +6022,14 @@ impl DocumentFragment {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/ownerDocument)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_document(&self) -> &'static Document {
         unreachable!()
     }
 
@@ -27385,22 +27409,6 @@ impl CSSStyleProperties {
         unreachable!()
     }
 
-    /// [`css-text`](https://developer.mozilla.org/docs/Web/CSS/css-text)
-    #[cfg_attr(rust_js, rust_js::link_name = "get cssText")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn css_text(&self) -> String {
-        unreachable!()
-    }
-
-    /// [`css-text`](https://developer.mozilla.org/docs/Web/CSS/css-text)
-    #[cfg_attr(rust_js, rust_js::link_name = "set cssText")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_css_text(&self, value: &str) {
-        unreachable!()
-    }
-
     /// [`cursor`](https://developer.mozilla.org/docs/Web/CSS/cursor)
     #[cfg_attr(rust_js, rust_js::link_name = "get cursor")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -28806,22 +28814,6 @@ impl CSSStyleProperties {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_left(&self, value: &str) {
-        unreachable!()
-    }
-
-    /// [`length`](https://developer.mozilla.org/docs/Web/CSS/length)
-    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn length(&self) -> String {
-        unreachable!()
-    }
-
-    /// [`length`](https://developer.mozilla.org/docs/Web/CSS/length)
-    #[cfg_attr(rust_js, rust_js::link_name = "set length")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_length(&self, value: &str) {
         unreachable!()
     }
 
@@ -30262,22 +30254,6 @@ impl CSSStyleProperties {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_paint_order(&self, value: &str) {
-        unreachable!()
-    }
-
-    /// [`parent-rule`](https://developer.mozilla.org/docs/Web/CSS/parent-rule)
-    #[cfg_attr(rust_js, rust_js::link_name = "get parentRule")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn parent_rule(&self) -> String {
-        unreachable!()
-    }
-
-    /// [`parent-rule`](https://developer.mozilla.org/docs/Web/CSS/parent-rule)
-    #[cfg_attr(rust_js, rust_js::link_name = "set parentRule")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_parent_rule(&self, value: &str) {
         unreachable!()
     }
 
@@ -45635,6 +45611,14 @@ impl Attr {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Attr/ownerDocument)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_document(&self) -> &'static Document {
+        unreachable!()
+    }
+
 }
 
 /// [`AudioBuffer`](https://developer.mozilla.org/docs/Web/API/AudioBuffer)
@@ -57333,6 +57317,14 @@ impl DocumentType {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn remove(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentType/ownerDocument)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ownerDocument")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn owner_document(&self) -> &'static Document {
         unreachable!()
     }
 
