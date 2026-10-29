@@ -1272,7 +1272,8 @@ pub fn editing(element: &HTMLElement) -> bool {
 
 // A call of a function that gives a `bool`, `isItem(item)`, is one, so
 // it's no `!!isItem(item)` in a test, as react.dev's CodeDiagram keeps its
-// images.
+// images; of a `dyn Fn` or a fn pointer that gives one too, `keep(item)`,
+// which no function item says it is.
 test("a call giving a bool is one in a test", async () => {
   const dir = fixture("bool-call");
   writeFileSync(join(dir, "lib.rs"), `pub struct Item {
@@ -1286,13 +1287,23 @@ fn is_item(x: &Item) -> bool {
 pub fn images(items: Vec<&Item>) -> Vec<&Item> {
     items.into_iter().filter(|item| is_item(item) && item.kind == "img").collect()
 }
+pub fn kept<'a>(items: Vec<&'a Item>, keep: &dyn Fn(&Item) -> bool) -> Vec<&'a Item> {
+    items.into_iter().filter(|item| keep(item) && item.kind == "img").collect()
+}
+pub fn picked<'a>(items: Vec<&'a Item>, pick: fn(&Item) -> bool) -> Vec<&'a Item> {
+    items.into_iter().filter(|item| pick(item) && item.kind == "img").collect()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
+  expect(js).toContain('items.filter((item) => keep(item) && item.kind === "img")');
+  expect(js).toContain('items.filter((item) => pick(item) && item.kind === "img")');
   const lib = await import(join(dir, "mir.js"));
   (globalThis as any).isItem = (x: { kind: string }) => x.kind !== "";
-  expect(lib.images([{ kind: "img" }, { kind: "p" }, { kind: "" }])).toEqual([{ kind: "img" }]);
+  const items = [{ kind: "img" }, { kind: "p" }, { kind: "" }];
+  expect(lib.images(items)).toEqual([{ kind: "img" }]);
+  expect([lib.kept(items, (x: { kind: string }) => x.kind !== ""), lib.picked(items, () => false)]).toEqual([[{ kind: "img" }], []]);
 });
 
 // A value the program wrote with `&&`, `s != "en" && (if t { .. } else {

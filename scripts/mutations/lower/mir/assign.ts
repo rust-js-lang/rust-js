@@ -142,15 +142,15 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-stored-paths-unknown",
-    "breaks": "a getter's `bool` stored in a local isn't known as one, `!!(element.isContentEditable || ..)`",
+    "breaks": "a `bool` a call of a `dyn Fn` gives, stored in a local, isn't known as one, `!!keep(item) && ..` (a binding's getter's is, by its function item, ADR 0953, amended)",
     "file": "src/lower/mir/assign.rs",
     "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        // Of a binding",
     "replace": "        }\n        // Of a binding",
-    "tests": ["test/lowering-branches.test.ts", "-t", "or chain of a getter's bool"]
+    "tests": ["test/lowering-branches.test.ts", "-t", "call giving a bool is one in a test"]
   },
   {
     "name": "mir-call-paths-unrecorded",
-    "breaks": "what a call gives isn't recorded a `bool`, `!!isItem(item) && ..`",
+    "breaks": "what a call of a `dyn Fn` or a fn pointer gives isn't recorded a `bool`, `!!keep(item) && ..` (a function item's is, ADR 0953, amended)",
     "file": "src/lower/mir/assign.rs",
     "find": ".or_else(|| tidy::call_path(e))",
     "replace": "",

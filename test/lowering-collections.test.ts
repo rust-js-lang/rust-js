@@ -982,6 +982,28 @@ pub fn each(width: usize, height: usize) -> f64 {
   }
 });
 
+// An item's place lent, then read and written after what runs between,
+// `let slot = &mut v[i]`: of a parameter's index, which reads the same
+// wherever it's read, the item at it, `v[i]`, checked once, not a copy of
+// the index and a handle on the item.
+test("an item lent at a parameter's index is read and written there", async () => {
+  const dir = fixture("item-lent-at-parameter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn set(v: &mut Vec<u32>, i: usize, log: &mut Vec<u32>) {
+    let slot = &mut v[i];
+    log.push(*slot);
+    *slot = 7;
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  $index(v, i);\n  log.push(v[i]);\n  v[i] = 7;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const [v, log] = [[1, 2], [] as number[]];
+  lib.set(v, 1, log);
+  expect([v, log]).toEqual([[1, 7], [2]]);
+  expect(() => lib.set(v, 2, log)).toThrow("index out of bounds: the len is 2 but the index is 2");
+});
+
 // ADR 0950: React's getCacheForType, `cache.data.get(resourceType)`: a JS
 // map's value of an `Option`, flattened, is the map's own `get`, its
 // `undefined` where the key isn't there, what's there as it is.
