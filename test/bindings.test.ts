@@ -64,10 +64,17 @@ fn base_name(_b: &Base) -> String {
 pub fn named(d: &Derived) -> String {
     base_name(d)
 }
+
+pub fn as_fn(d: &Derived) -> &Base {
+    let f: fn(&Derived) -> &Base = Deref::deref;
+    f(d)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return name(d);");
+  // Its `deref` as a value is the object itself, not a function of its own.
+  expect(js).toContain("const f = (x) => x;");
   expect(js).not.toContain("Deref_deref");
 });
 
