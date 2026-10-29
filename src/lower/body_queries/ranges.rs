@@ -838,7 +838,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         match asked {
             // Its indexes where it's called, the length as it was.
-            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove, items)) => {
+            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {
                 for index in ranges.into_iter().skip(1) {
                     self.judge_index(fun, items, index, &before);
                 }
@@ -851,6 +851,11 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             }
             Some((SliceLength::Range | SliceLength::Drain, items)) => {
                 self.judge_range(fun, items, args[1], &before);
+                None
+            }
+            // Its index where it's called, at most the length as it was.
+            Some((SliceLength::Insert, items)) => {
+                self.judge_up_to(fun, items, ranges.into_iter().nth(1).flatten(), &before);
                 None
             }
             Some((SliceLength::Len, items)) => self.slice(items).map(|slice| {
@@ -1449,6 +1454,18 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
 
     /// `items[index]` at `site`: in bounds where the index is below the
     /// slice's length each time it's reached.
+    /// Whether `index`, where `site` is called, is at most the length of
+    /// `items`, where an item may be put, `v.insert(i, x)`'s.
+    fn judge_up_to(&mut self, site: ExprId, items: ExprId, index: Option<Range>, known: &Option<Known>) {
+        let Some(k) = known else { return };
+        let ok = self.slice(items).zip(index).is_some_and(|(slice, index)| {
+            index.lo >= 0
+                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.up_to())
+                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least))
+        });
+        *self.indexes.entry(site).or_insert(true) &= ok;
+    }
+
     fn judge_index(&mut self, site: ExprId, items: ExprId, index: Option<Range>, known: &Option<Known>) {
         let Some(k) = known else { return };
         let slice = self.slice(items).or_else(|| self.row_of(items));

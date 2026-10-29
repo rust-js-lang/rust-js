@@ -922,6 +922,10 @@ pub(in crate::lower) enum SliceLength {
     Drain,
     Swap,
     SwapRemove,
+    /// A `Vec`'s `remove(i)`, of an index below its length.
+    Remove,
+    /// A `Vec`'s `insert(i, v)`, of an index at most its length.
+    Insert,
     Push,
     Pop,
 }
@@ -963,12 +967,16 @@ pub(in crate::lower) fn slice_length<'tcx>(
     if !vec(owner) && !owner.is_slice() {
         return None;
     }
+    let is_vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did()));
     match tcx.item_name(def_id).as_str() {
         "len" => Some(SliceLength::Len),
         "is_empty" => Some(SliceLength::IsEmpty),
         "swap" => Some(SliceLength::Swap),
         "swap_remove" => Some(SliceLength::SwapRemove),
         "push" if vec(owner) => Some(SliceLength::Push),
+        // A `Vec`'s, which panics past its length, not a `VecDeque`'s.
+        "remove" if is_vec(owner) => Some(SliceLength::Remove),
+        "insert" if is_vec(owner) => Some(SliceLength::Insert),
         "drain" if vec(owner) => Some(SliceLength::Drain),
         "pop" if vec(owner) => Some(SliceLength::Pop),
         _ => None,

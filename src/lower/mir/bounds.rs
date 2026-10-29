@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> bool {
         let indexed = match known {
             Std::Index => matches!(values, [Value::Expr(_) | Value::Place(_), Value::Expr(_)]),
-            Std::Comb(Comb::Swap | Comb::SwapRemove) => true,
+            Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,
             _ => false,
         };
         indexed && self.indexes_in_bounds(def_id, span)
@@ -60,7 +60,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An index's call: unchecked where `call_in_bounds` knows it,
     /// `items[index]`; `[v[i], v[j]] = [v[j], v[i]]`, JS's own swap; and of
-    /// `v.swap_remove(i)`, the last swapped in, then popped. Of
+    /// `v.swap_remove(i)`, the last swapped in, then popped; `v.remove(i)`,
+    /// `v.splice(i, 1)[0]`, `v.shift()` of the first, and `v.insert(i, x)`,
+    /// `v.splice(i, 0, x)`, `v.unshift(x)` at the front (rd103). Of
     /// `index_mut_place`'s, the item's place, checked first as `$index`
     /// checks it where it isn't known.
     pub(super) fn index_call(
@@ -110,15 +112,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (value, name) in values.into_iter().zip(["items", "i", "j"]) {
             let e = self.value_expr(value, span)?;
             exprs.push(match known {
-                Std::Index => e,
+                // Each read once, in order.
+                Std::Index | Std::Comb(Comb::Remove | Comb::Insert) => e,
                 _ if e.reads_same() => e,
                 _ => self.spill(name, e, out),
             });
         }
         let items = exprs.remove(0);
         let at = |index: &Expr| Expr::index(items.clone(), index.clone());
+        let first = |index: &Expr| index.as_int() == Some(0);
         let (i, j) = match known {
             Std::Index => return Ok(Value::Expr(at(&exprs[0]))),
+            Std::Comb(Comb::Remove) => {
+                let i = exprs.remove(0);
+                // What it removed, where it's read.
+                let read = !matches!(&state.body[state.at].terminator().kind,
+                    mir::TerminatorKind::Call { destination, .. }
+                        if destination.projection.is_empty() && self.unread(state, destination.local));
+                let spliced = |i| Expr::call(Expr::member(items.clone(), "splice"), vec![i, Expr::int(1)]);
+                return Ok(Value::Expr(match (first(&i), read) {
+                    (true, _) => Expr::call(Expr::member(items.clone(), "shift"), Vec::new()),
+                    (false, true) => Expr::index(spliced(i), Expr::int(0)),
+                    (false, false) => spliced(i),
+                }));
+            }
+            Std::Comb(Comb::Insert) => {
+                let (i, value) = (exprs.remove(0), exprs.remove(0));
+                let call = match first(&i) {
+                    true => Expr::call(Expr::member(items, "unshift"), vec![value]),
+                    false => Expr::call(Expr::member(items, "splice"), vec![i, Expr::int(0), value]),
+                };
+                out.push(StmtKind::Expr(call).at(self.js_span(span)));
+                return Ok(Value::Expr(Expr::undefined()));
+            }
             Std::Comb(Comb::Swap) => (exprs.remove(0), exprs.remove(0)),
             _ => {
                 let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "vec-remove-length-unasked",
+    breaks: "a `Vec`'s `remove(0)` its test shows in bounds is `$removeAt(targets, 0)`, not `targets.shift()` (rd103)",
+    file: "src/lower/recognition/types.rs",
+    find: "        \"remove\" if is_vec(owner) => Some(SliceLength::Remove),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
     name: "class-key-unpeeled",
     breaks: "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
     file: "src/lower/recognition/types.rs",

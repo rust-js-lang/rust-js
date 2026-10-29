@@ -350,6 +350,11 @@ export function at(v, i) {
   A `drain` of one in bounds is JS's `splice`, `queue.drain(0..i)`
   nothing steps `queue.splice(0, i)`; any other `$drain`
   ([ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)).
+  A `remove(i)` of an index the code before it shows below the length is
+  JS's own, `targets.shift()` of the first while `!targets.is_empty()`,
+  `v.splice(i, 1)[0]` of another, and an `insert(i, x)` of one at most the
+  length, `v.splice(i, 0, x)`; any other `$removeAt` and `$insertAt`
+  ([ADR 0576](../../decisions/0576-what-a-bodys-integers-can-be.md#amendment-a-vecs-remove-and-insert-in-bounds-are-jss-own)).
 
 ## Sorting
 

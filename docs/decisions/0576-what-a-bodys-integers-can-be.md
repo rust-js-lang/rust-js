@@ -1,6 +1,6 @@
 # 0576. What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own
 
-Status: Accepted; extended by [0720](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md),
+Status: Accepted; amended below (rd103): a `Vec`'s `remove` and `insert` in bounds are JS's own; extended by [0720](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md),
 which follows a labeled block's `break` and reads a named constant's value; by [0577](0577-a-function-only-calls-reach.md),
 whose functions are given what their calls give them, and by
 [0632](0632-a-js-strings-length-is-below-u32-max.md), a JS string's
@@ -293,3 +293,37 @@ count", `test/corpus/table_rows.rs`, and the mutations
 `table-rows-unmade`, `table-rows-unjudged`, `row-assigned-kept`,
 `row-borrowed-kept`, `row-lent-kept`, `rows-lent-kept` and
 `rows-least-kept`.
+
+## Amendment: a `Vec`'s `remove` and `insert` in bounds are JS's own
+
+React port gap rd103, 2026-10-29. Case N: the same items, the same
+result, where the index is in bounds, which is where JS's `splice` and
+Rust's `remove` agree; past it the helper panics as before.
+
+React's ReactDOMEventReplaying drains its targets, `while
+(targetContainers.length > 0) { .. targetContainers.shift(); }`, and puts
+one in place, `queuedExplicitHydrationTargets.splice(i, 0, queuedTarget)`.
+Its port's `target_containers.remove(0)` under `!is_empty()` was
+`$removeAt(targetContainers, 0)`, the bounds checked again.
+
+**A `Vec`'s `remove(i)` whose index the body's ranges show below its
+length is `v.splice(i, 1)[0]`, `v.splice(i, 1)` where nothing reads what it removed, `v.shift()` of `0`; an `insert(i, x)`
+whose index they show at most its length is `v.splice(i, 0, x)`,
+`v.unshift(x)` of `0`.** `slice_length` names them (`Remove`,
+`Insert`, a `Vec`'s, not a `VecDeque`'s, whose `remove` gives an
+`Option`); `remove` is judged as an index is, `insert` by `judge_up_to`,
+of a length's bound or what a test shows of it; `mir/bounds.rs` writes
+them. One not shown in bounds is `$removeAt` or `$insertAt`, as before.
+A walk that finds the place, `while let Some(&q) = v.get(i) { .. i += 1; }`,
+doesn't show it: what a loop's ends say of its counter is a range's
+analysis this doesn't add.
+
+Held by `test/corpus/vec_remove_insert_in_bounds.rs`, with native Rust:
+a drain by `shift()`, an `insert` at the length, at a test's least length,
+past it (checked, it panics), and at an index nothing shows (checked, it
+panics); mutations `vec-remove-length-unasked` (`recognition/types.ts`),
+`insert-index-below-length`, `insert-index-past-least`
+(`body_queries/ranges.ts`), `removed-first-spliced`, `removed-item-dropped`,
+`removed-item-unread-indexed` and `remove-insert-in-bounds-checked`
+(`mir/bounds.ts`). `loop_ending_branch_loop`'s and two lowering-loops
+tests' removes are JS's own now.

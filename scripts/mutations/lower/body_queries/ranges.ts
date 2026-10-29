@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "insert-index-below-length",
+    breaks: "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.up_to())\n",
+    replace: "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "insert-index-past-least",
+    breaks: "an `insert` past what the test shows of the length is taken in bounds, `splice` where `$insertAt` panics as Rust's does",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least))\n",
+    replace: "                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least + 9))\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
     name: "rev-for-unranged",
     breaks: "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
     file: "src/lower/body_queries/ranges.rs",
@@ -271,8 +289,8 @@ export const mutations: Mutation[] = [
     name: "ranges-vec-index-unknown",
     breaks: "a `Vec`'s `v[i]` is never known in bounds, so `items[1]` of a `&Vec` is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove, items)) => {",
-    replace: "            Some((SliceLength::Swap | SliceLength::SwapRemove, items)) => {",
+    find: "            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {",
+    replace: "            Some((SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {",
     tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
   },
   {

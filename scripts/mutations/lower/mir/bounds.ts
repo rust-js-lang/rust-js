@@ -3,6 +3,41 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "removed-item-dropped",
+    breaks: "a `remove(i)` in bounds whose item is read gives the array it spliced, `[3]`, not the item, `3`",
+    file: "src/lower/mir/bounds.rs",
+    find: "                    (false, true) => Expr::index(spliced(i), Expr::int(0)),\n",
+    replace: "                    (false, true) => spliced(i),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+  },
+  {
+    name: "removed-item-unread-indexed",
+    breaks: "a `remove(i)` in bounds whose item nothing reads is `v.splice(i, 1)[0];`, reading what it removed for nothing",
+    file: "src/lower/mir/bounds.rs",
+    find: "                    (false, false) => spliced(i),\n",
+    replace: "                    (false, false) => Expr::index(spliced(i), Expr::int(0)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "removed-first-spliced",
+    breaks: "`remove(0)` shown in bounds is `targets.splice(0, 1)[0]`, not `targets.shift()` (rd103)",
+    file: "src/lower/mir/bounds.rs",
+    find: "        let first = |index: &Expr| index.as_int() == Some(0);\n",
+    replace: "        let first = |_: &Expr| false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "remove-insert-in-bounds-checked",
+    breaks: "a `remove` or an `insert` the body's ranges show in bounds is checked, `$removeAt`, `$insertAt` (rd103)",
+    file: "src/lower/mir/bounds.rs",
+    find: "            Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,\n",
+    replace: "            Std::Comb(Comb::Swap | Comb::SwapRemove) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
+    snapshots: true,
+  },
+  {
     name: "vec-item-written-in-place",
     breaks: "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
     file: "src/lower/mir/bounds.rs",
