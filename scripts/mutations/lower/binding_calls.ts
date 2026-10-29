@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     name: "dynamic-import-default-named",
     breaks: "a module's default export is imported by its function's name, so `import_module!` refuses it",
     file: "src/lower/binding_calls.rs",
-    find: "            let export = super::default_exports::exported_as(tcx, id, &info.name);\n",
+    find: "            let export = super::default_exports::exported_as(tcx, id, info.exported());\n",
     replace: "            let export = info.name.clone();\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },

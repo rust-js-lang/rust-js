@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "library-default-listed-by-name",
     breaks: "a library's manifest lists a module's default by its name, which a consumer imports and the module doesn't export",
     file: "src/lower/library.rs",
-    find: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
-    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n                .filter(|exported| exported != \"default\")\n",
+    find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
+    replace: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported != \"default\")\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {
@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
     name: "library-alias-listed-by-name",
     breaks: "a library's manifest lists an item its module exports as `unstable_now` alone by its name, which a consumer imports and the module doesn't export (ADR 0596, amended)",
     file: "src/lower/library.rs",
-    find: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
-    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n                .filter(|exported| exported == \"default\")\n",
+    find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
+    replace: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported == \"default\")\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a library's item its module exports by another name is imported by that"],
   },
   {
@@ -329,5 +329,13 @@ export const mutations: Mutation[] = [
     find: "            let mut keys: Vec<String> = (eq_by_address.iter())\n",
     replace: "            let mut keys: Vec<String> = (eq_by_address.iter().take(0))\n",
     tests: ["test/crates.test.ts", "-t", "never \\$eq"],
+  },
+  {
+    name: "export-named-apart-contract-apart",
+    breaks: "another crate imports an export named apart by its module's name for it, `delete$`, which its JS doesn't export (#338)",
+    file: "src/lower/library.rs",
+    find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
+    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
 ];

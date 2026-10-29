@@ -955,6 +955,75 @@ export const read = [typeof emptyContextObject, emptyContextObject === getContex
   expect(empty()).toBe(true);
 });
 
+// ADR 0922, amended: an export its module names apart, a word JS keeps,
+// `delete`, or a global its module reads, `console`, is exported by its own
+// name, `export { delete$ as delete }`, which JS's importers, its crate's
+// other modules and another crate import it by (#338); one whose module
+// reads no global of its name is declared by it, `export function
+// console()`.
+test("an export its module names apart is exported by its own name", async () => {
+  const dir = fixture("export-named-apart");
+  const manifest = join(dir, "dep", "lib.manifest.json"), metadata = join(dir, "libdep.rmeta");
+  writeFileSync(join(dir, "lib.rs"), `pub mod quiet;
+pub mod twice;
+
+pub fn delete() -> u32 {
+    1
+}
+
+pub fn console() -> u32 {
+    2
+}
+
+pub fn say() -> u32 {
+    println!("said {}", console());
+    3
+}
+`);
+  writeFileSync(join(dir, "quiet.rs"), `pub use crate::delete;
+
+pub fn console() -> u32 {
+    4
+}
+
+pub fn read() -> u32 {
+    delete() + console() + crate::delete()
+}
+`);
+  writeFileSync(join(dir, "twice.rs"), "pub fn twice() -> u32 {\n    crate::quiet::console() * 2\n}\n");
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", manifest,
+    "--", "--crate-name", "dep", `--emit=metadata=${metadata}`, ...js]);
+  const libJs = readFileSync(join(dir, "dep", "lib.js"), "utf8");
+  expect(libJs).toContain("\nfunction delete$() {\n");
+  expect(libJs).toContain("\nfunction console$() {\n");
+  expect(libJs).toContain("export { delete$ as delete, console$ as console };\n");
+  const libDts = readFileSync(join(dir, "dep", "lib.d.ts"), "utf8");
+  expect(libDts).toContain("\ndeclare function delete$(): number;\n");
+  expect(libDts).toContain("\nexport function console(): number;\n");
+  expect(libDts).toContain("export { delete$ as delete };\n");
+  const quietJs = readFileSync(join(dir, "dep", "quiet.js"), "utf8");
+  expect(quietJs).toContain("\nexport function console() {\n");
+  expect(quietJs).toContain('import { delete as delete$ } from "./lib.js";');
+  expect(quietJs).toContain('export { delete } from "./lib.js";');
+  expect(readFileSync(join(dir, "dep", "quiet.d.ts"), "utf8")).toContain("\nexport function console(): number;\n");
+  // JS's importer, written by hand.
+  writeFileSync(join(dir, "dep", "importer.js"), `import { delete as del, console as c, say } from "./lib.js";
+import { console as quiet, delete as again, read } from "./quiet.js";
+import { twice } from "./twice.js";
+
+export const read_ = [del(), c(), say(), quiet(), read(), again(), twice()];
+`);
+  const { read_ } = await import(join(dir, "dep", "importer.js"));
+  expect(read_).toEqual([1, 2, 3, 4, 1 + 4 + 1, 1, 8]);
+  // Another crate imports them by those names.
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "app", "lib.rs"), "pub fn both() -> u32 {\n    dep::delete() * 10 + dep::console()\n}\n");
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", manifest,
+    "--", "--crate-name", "app", "--extern", `dep=${metadata}`, "-L", dir, ...js]);
+  const { both } = await import(join(dir, "app", "lib.js"));
+  expect(both()).toBe(12);
+});
+
 // ADR 0922: two exports of one module with one JS name are refused, naming
 // both: an importer reads one export by a name, and either named apart
 // would be another than its importers read.

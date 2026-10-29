@@ -278,4 +278,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
     snapshots: true,
   },
+  {
+    name: "export-named-apart-read-apart",
+    breaks: "another module reads an export named apart through its module's namespace by the name its module gives it, `Keys.delete$()`, which isn't exported (#338)",
+    file: "src/lower/items.rs",
+    find: "            false => super::default_exports::exported_as(self.tcx, def_id, target.exported()),\n",
+    replace: "            false => super::default_exports::exported_as(self.tcx, def_id, &name),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+  },
 ];

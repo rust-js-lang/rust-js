@@ -203,7 +203,7 @@ pub(super) fn exports<'tcx>(
             member: info.owner.as_ref().map(|_| info.name.clone()),
             // As its own crate imports it (ADRs 0596, 0611, 0773).
             exported_as: (info.owner.is_none())
-                .then(|| super::default_exports::exported_as(tcx, id, &info.name))
+                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))
                 .filter(|exported| *exported != info.name),
             calling: crate::library::Calling {
                 params: type_params(tcx, id, contracts),

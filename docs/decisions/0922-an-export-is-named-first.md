@@ -108,3 +108,35 @@ name from the same place (`FnInfo`), so they agree.
   crate; and "two exports of one JS name are refused".
 - Mutations: exports not named first, a thread-local's name asked of a
   private item, the refusal left out.
+
+## Amendment: an export its module names apart is exported by its name (#338)
+
+An export whose name its module names apart, a word JS keeps from its
+variables, `pub fn delete()`'s `delete$`, or a global its module reads,
+`pub fn console()`'s `console$` beside a `println!`, was exported by that,
+`export function delete$()`: a JS module's `import { delete }` read
+`undefined`, a wrong answer at the boundary. **It's exported by its own
+name, as its alias**: `function delete$() {..}` and `export { delete$ as
+delete };`, as a `pub use` by another name is (ADR 0596). `name_items`
+keeps that name, `FnInfo::export`, and `default_exports::exported_as`,
+which every importer asks, is given it, so the crate's other modules
+import `{ delete as delete$ }` and read `Keys.delete()`, its re-exports
+are `export { delete } from`, and another crate's contract says `delete`.
+
+- **One its module reads no global of its name, reclaimed** (ADR 0352),
+  `console` again, is exported where it's declared, `export function
+  console()`, as one never named apart is: reclaiming folds an alias of
+  the name it has back into its item.
+- **Its `.d.ts` declares it by its own name**, `export function
+  console(): number;`, which reads no global, but a word JS keeps, which no
+  declaration may be named: `declare function delete$(): number;` and its
+  alias.
+
+Case R: JS's importers read what Rust exports. Held by
+`test/lowering-module-variables.test.ts`, "an export its module names apart
+is exported by its own name": its JS and `.d.ts`, a hand-written JS
+importer of `delete` and `console`, the crate's other modules by `use`, a
+`pub use` and a module path, and another crate. Mutations
+`export-named-apart-*` (`analysis/naming.ts`, `pipeline.ts`, `items.ts`,
+`library.ts`, `reexports.ts`, `declarations.ts`), `kept-word-declared-by-its-name`
+(`declarations.ts`) and `own-name-alias-kept` (`prepare/reclaim.ts`).

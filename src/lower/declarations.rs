@@ -122,9 +122,14 @@ pub(super) fn module<'tcx>(
             // What it exports by another name, by that alone, `declare
             // function getCurrentTime(): number;`, as its JS (ADR 0596,
             // amended).
-            if !held && aliases.iter().any(|&(item, _)| item == def_id) {
-                declared["exported"] = json!(false);
-                declared["declare"] = json!(true);
+            if !held && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {
+                match by_own_name(fns, def_id, export) {
+                    true => declared["name"] = json!(export),
+                    false => {
+                        declared["exported"] = json!(false);
+                        declared["declare"] = json!(true);
+                    }
+                }
             }
             if held {
                 let function = tcx.def_kind(def_id) == DefKind::Fn;
@@ -188,11 +193,23 @@ pub(super) fn module<'tcx>(
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
     // function by another name, after it, as its JS has it (ADR 0596).
-    if !aliases.is_empty() {
-        let names: Vec<&(String, String)> = aliases.iter().map(|(_, names)| names).collect();
+    let names: Vec<&(String, String)> = (aliases.iter())
+        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))
+        .map(|(_, names)| names)
+        .collect();
+    if !names.is_empty() {
         declarations.push(json!({ "kind": "export", "names": names }));
     }
     Some(json!({ "declarations": declarations }))
+}
+
+/// Whether an export its module names apart, `console$` of a global its
+/// JS reads, is declared by its own name, `export function console():
+/// number;`, which a `.d.ts`, reading no global, may: but a word JS keeps,
+/// `delete`, which no declaration may be named, exported by its alias
+/// (#338).
+fn by_own_name(fns: &HashMap<DefId, super::FnInfo>, item: DefId, export: &str) -> bool {
+    fns.get(&item).and_then(|info| info.export.as_deref()) == Some(export) && !crate::names::kept_word(export)
 }
 
 /// Whether the declarations of `did`'s module declare it, a struct, an

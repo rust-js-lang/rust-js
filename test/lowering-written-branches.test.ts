@@ -1439,7 +1439,7 @@ pub fn pick(x: i32) -> String {
   expect(js).toContain('  if (k === "Note") {\n    counted = (n + 1) | 0;\n  } else if (k.TAG === "Warn") {\n    counted = 0;\n  } else {\n    counted = n;\n  }\n');
   expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
+  expect([lib.class("Note"), lib.class({ TAG: "Warn", level: 1 }), lib.class({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
   expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
   expect([lib.count("Note", 3), lib.count({ TAG: "Warn", level: 1 }, 3), lib.count({ TAG: "Tip", _0: "x" }, 3)]).toEqual([5, 1, 4]);
   expect([lib.named(undefined), lib.named("Note"), lib.named({ TAG: "Tip", _0: "x" })]).toEqual(["none.", "note.", "other."]);

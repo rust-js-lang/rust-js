@@ -779,6 +779,7 @@ pub(super) fn name_items(
         // An object's method, a function of its module (ADR 0943).
         let owner_type = owner_type
             .filter(|_| crate::lower::classes::member(tcx, def_id) != Some(crate::lower::classes::Member::Own));
+        let own_name = js_name.clone();
         let (name, owner) = match owner_type {
             Some(ty) => {
                 // A class is its constructor function, named as its struct's
@@ -794,7 +795,18 @@ pub(super) fn name_items(
             None if named_expressions.contains(&def_id) => (js_name, None),
             None => (fresh_in(names, &js_name), None),
         };
-        fns.insert(def_id, FnInfo { module, name, owner });
+        // An export its module names apart, `delete$` of `delete`, is
+        // exported by its own name (#338).
+        let export = (exported(def_id) && owner.is_none() && name != own_name).then_some(own_name);
+        fns.insert(
+            def_id,
+            FnInfo {
+                module,
+                name,
+                owner,
+                export,
+            },
+        );
     }
     (taken, fns, failed)
 }

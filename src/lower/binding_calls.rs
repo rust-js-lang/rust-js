@@ -343,7 +343,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && info.owner.is_none()
             && tcx.visibility(id).is_public()
         {
-            let export = super::default_exports::exported_as(tcx, id, &info.name);
+            let export = super::default_exports::exported_as(tcx, id, info.exported());
             (js::ImportFrom::Module(super::module_path(tcx, info.module)), export)
         } else {
             return Err(self.unsupported(

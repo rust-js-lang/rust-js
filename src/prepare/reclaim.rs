@@ -175,6 +175,27 @@ fn own_items(module: &mut js::Module) {
         }
         mentioned.insert(base);
     }
+    // One exported by an alias of the name it has now, `fetch` of `export {
+    // fetch$1 as fetch }` (#338): exported where it's declared, `export
+    // function fetch()`, as one never named apart is.
+    // Not a module variable's, `let getTime`, which `export { getTime }`
+    // exports.
+    let own_name = |(local, exported): &(String, String)| local == exported;
+    let mut folded = HashSet::new();
+    for item in &mut module.items {
+        let (name, export) = match item {
+            js::Item::Function(function) => (&function.name, &mut function.export),
+            js::Item::Const(constant) => (&constant.name, &mut constant.export),
+            _ => continue,
+        };
+        if module.aliases.iter().any(|alias| own_name(alias) && alias.0 == *name) {
+            *export = true;
+            folded.insert(name.clone());
+        }
+    }
+    module
+        .aliases
+        .retain(|alias| !(own_name(alias) && folded.contains(&alias.0)));
 }
 
 /// Each local of `item`'s, of a name where each read is still of what it

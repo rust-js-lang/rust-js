@@ -100,7 +100,7 @@ export function toRpn(tokens) {
   return out;
 }
 
-export function eval$(src) {
+function eval$(src) {
   const result = tokenize(src);
   if (result.TAG === "Err") {
     return result;
@@ -208,4 +208,6 @@ export function report() {
   out += `${length} [${collect.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
   return out;
 }
+
+export { eval$ as eval };
 //# sourceMappingURL=calc.js.map

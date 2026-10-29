@@ -501,4 +501,12 @@ export const mutations: Mutation[] = [
     replace: "            [Some(name)] if false && *name == namespace_default(tcx, &uses, &export) => {\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as its link_name"],
   },
+  {
+    name: "export-named-apart-exported-apart",
+    breaks: "`pub fn delete()` is exported as its module names it, `export function delete$()`, which a JS importer of `delete` reads as `undefined` (#338)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        let export = (exported(def_id) && owner.is_none() && name != own_name).then_some(own_name);\n",
+    replace: "        let export = (false && exported(def_id) && owner.is_none() && name != own_name).then_some(own_name);\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+  },
 ];

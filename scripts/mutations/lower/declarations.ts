@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "alias-undeclared",
     breaks: "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
     file: "src/lower/declarations.rs",
-    find: "    if !aliases.is_empty() {\n",
-    replace: "    if false && !aliases.is_empty() {\n",
+    find: "    if !names.is_empty() {\n",
+    replace: "    if false && !names.is_empty() {\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
@@ -674,8 +674,8 @@ export const mutations: Mutation[] = [
     name: "own-alias-declared-exported",
     breaks: "a `.d.ts` exports `getCurrentTime` by its name too, where its JS exports it as `unstable_now` alone (ADR 0596, amended)",
     file: "src/lower/declarations.rs",
-    find: "            if !held && aliases.iter().any(|&(item, _)| item == def_id) {\n",
-    replace: "            if false && aliases.iter().any(|&(item, _)| item == def_id) {\n",
+    find: "            if !held && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
+    replace: "            if false && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
     tests: ["test/modules.test.ts", "-t", "a pub use by another name of the module's own function exports it by that"],
   },
   {
@@ -773,5 +773,21 @@ export const mutations: Mutation[] = [
     find: "                    constructor[\"construct\"] = json!(true);\n",
     replace: "",
     tests: ["test/js-constructors.test.ts", "-t", "a typed class is declared as its constructor's type"],
+  },
+  {
+    name: "export-named-apart-declared-apart",
+    breaks: "the `.d.ts` of an export named apart of a global, `console`, is `declare function console$()` and its alias, not `export function console()` (#338)",
+    file: "src/lower/declarations.rs",
+    find: "                    true => declared[\"name\"] = json!(export),\n",
+    replace: "                    true if false => declared[\"name\"] = json!(export),\n                    true => {\n                        declared[\"exported\"] = json!(false);\n                        declared[\"declare\"] = json!(true);\n                    }\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+  },
+  {
+    name: "kept-word-declared-by-its-name",
+    breaks: "the `.d.ts` of `pub fn delete()` is `export function delete(): number;`, a declaration no `.d.ts` may name (#338)",
+    file: "src/lower/declarations.rs",
+    find: " == Some(export) && !crate::names::kept_word(export)\n",
+    replace: " == Some(export)\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
 ];

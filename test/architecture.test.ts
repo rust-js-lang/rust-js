@@ -1075,7 +1075,7 @@ test("what a module exports an item as is exported_as's alone", () => {
   expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs"]);
   const made = lowering.filter((file) => /default_exports::module_default\(/.test(read(file)));
   expect(made).toEqual(["src/lower/pipeline.rs"]);
-  expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, &info.name))");
+  expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, info.exported()))");
   // A module's `pub use`s of its own items by other names are found
   // there alone; the module's JS lists them, and exports them by no other.
   const aliasing = lowering.filter((file) => /default_exports::own_aliases\(/.test(read(file)));

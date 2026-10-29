@@ -2874,13 +2874,17 @@ export function firstWord(text) {
   return text.split(" ")[0] ?? "";
 }
 
-export function delete$(tasks, at) {
+function delete$(tasks, at) {
   $removeAt(tasks, at);
 }
+
+export { delete$ as delete };
 ```
 
 - **A name JS reserves gets a `$`**: `delete$`
-  ([ADR 0038](../../decisions/0038-js-names-and-destructuring.md)).
+  ([ADR 0038](../../decisions/0038-js-names-and-destructuring.md)), exported
+  by its own name, `export { delete$ as delete }`
+  ([ADR 0922](../../decisions/0922-an-export-is-named-first.md), amended).
 - **A parameter's leading `_`**, Rust's mark of one unused, isn't in its
   JS name, nor its declaration's: `_ref` is `ref`. Where what's left is a
   word JS keeps, `_new`, or another binding's of the function, `_x` beside

@@ -101,4 +101,12 @@ export const mutations: Mutation[] = [
     replace: "                        if matches!(&value.kind, ExprKind::Var(v) if *v == local))\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
   },
+  {
+    name: "own-name-alias-kept",
+    breaks: "an export named apart whose module reads no global of its name, reclaimed, is `function console() {}` and `export { console }`, not `export function console()` (#338)",
+    file: "src/prepare/reclaim.rs",
+    find: "        if module.aliases.iter().any(|alias| own_name(alias) && alias.0 == *name) {\n",
+    replace: "        if false && module.aliases.iter().any(|alias| own_name(alias) && alias.0 == *name) {\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+  },
 ];

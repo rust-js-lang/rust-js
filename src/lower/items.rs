@@ -190,7 +190,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // by its name (ADR 0051, amended).
         let exported = match copied {
             true => name.clone(),
-            false => super::default_exports::exported_as(self.tcx, def_id, &name),
+            false => super::default_exports::exported_as(self.tcx, def_id, target.exported()),
         };
         let namespaced = through && target.module != self.module && exported != "default";
         let reference = if namespaced {

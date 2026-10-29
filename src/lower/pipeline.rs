@@ -995,7 +995,7 @@ pub fn lower_crate<'tcx>(
             ),
             Some(_) => (name.clone(), name.clone()),
             None => (
-                super::default_exports::exported_as(tcx, id, &name),
+                super::default_exports::exported_as(tcx, id, info.exported()),
                 renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
             ),
         };
@@ -1465,12 +1465,23 @@ pub fn lower_crate<'tcx>(
 /// its `pub use`s are written: by those alone, not by its own name (ADR
 /// 0596, amended; `default_exports::own_aliases`).
 fn aliases(tcx: TyCtxt<'_>, module: LocalModId, fns: &HashMap<DefId, FnInfo>) -> Vec<(DefId, (String, String))> {
-    (super::default_exports::own_aliases(tcx, module).into_iter())
+    let own = super::default_exports::own_aliases(tcx, module);
+    let mut aliases: Vec<_> = (own.iter())
         .filter_map(|alias| {
             let info = fns.get(&alias.item).filter(|info| info.owner.is_none())?;
-            Some((alias.item, (info.name.clone(), alias.exported)))
+            Some((alias.item, (info.name.clone(), alias.exported.clone())))
         })
-        .collect()
+        .collect();
+    // And each it names apart, `delete$`, by its own name, `export {
+    // delete$ as delete }`, where no `pub use` exports it (#338), in the
+    // order they're written.
+    let mut apart: Vec<_> = (fns.iter())
+        .filter(|(id, info)| info.module == module && !own.iter().any(|alias| alias.item == **id))
+        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))
+        .collect();
+    apart.sort_by_key(|&(id, _)| tcx.def_span(id));
+    aliases.extend(apart);
+    aliases
 }
 
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.

@@ -242,6 +242,13 @@ export function welcome(name: string): string;
 - **Names are JavaScript's**: `total_area` is `totalArea`. See
   [JavaScript types](../interop/types.md) and
   [Export Rust APIs to JavaScript](../interop/export-to-javascript.md).
+- **An export keeps its name**: `pub fn delete()`, a word JS keeps from
+  its variables, is `function delete$() {..}` and `export { delete$ as
+  delete };`, which a JS module imports by `delete`, as your crate's other
+  modules and another crate do; so is `pub fn console()` in a module that
+  prints, `console$`, which reads JS's `console`. Its `.d.ts` declares
+  `console` by its name, `export function console(): number;`
+  ([ADR 0922](../../decisions/0922-an-export-is-named-first.md), amended).
 
 ## Re-exports
 

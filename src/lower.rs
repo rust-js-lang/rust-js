@@ -136,6 +136,19 @@ struct FnInfo {
     name: String,
     /// A method's type's object of methods (ADR 0047): `Counter` for `Counter.tick`.
     owner: Option<String>,
+    /// What its module exports it by where its module names it apart: its
+    /// own name, `delete` of `delete$`, a word JS keeps, or `fetch` of
+    /// `fetch$1`, a global its module may read, `export { delete$ as
+    /// delete }` (#338, ADR 0922, amended).
+    export: Option<String>,
+}
+
+impl FnInfo {
+    /// The name its module exports it by, where it exports it by its own
+    /// (`default_exports::exported_as` asks it of an alias first).
+    fn exported(&self) -> &str {
+        self.export.as_deref().unwrap_or(&self.name)
+    }
 }
 
 /// The module `def_id`'s JS is written into: the crate's own item's, the

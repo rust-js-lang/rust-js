@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "reexported-default-by-name",
     breaks: "a `pub use` of another module's default re-exports it by its name, which that module doesn't export",
     file: "src/lower/reexports.rs",
-    find: "                        super::default_exports::exported_as(tcx, def_id, &info.name),\n                        alias(&info.name),\n",
-    replace: "                        info.name.clone(),\n                        alias(&info.name),\n",
+    find: "                        super::default_exports::exported_as(tcx, def_id, info.exported()),\n                        alias(info.exported()),\n",
+    replace: "                        info.name.clone(),\n                        alias(info.exported()),\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
   },
   {
@@ -145,5 +145,13 @@ export const mutations: Mutation[] = [
     find: "            _ => super::analysis::is_reexport(tcx, item),\n",
     replace: "            _ => true,\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
+  {
+    name: "export-named-apart-reexported-apart",
+    breaks: "`pub use crate::delete;` re-exports it as `export { delete as delete$ }`, not by its own name (#338)",
+    file: "src/lower/reexports.rs",
+    find: "                        alias(info.exported()),\n",
+    replace: "                        alias(&info.name),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
 ];

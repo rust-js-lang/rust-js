@@ -65,7 +65,7 @@ pub(super) fn reexports(
         && let Some(info) = fns.get(&function)
         && let Some(from) = paths.get(&info.module)
     {
-        let export = super::default_exports::exported_as(tcx, function, &info.name);
+        let export = super::default_exports::exported_as(tcx, function, info.exported());
         found.push((
             span,
             js::ImportFrom::Module(from.clone()),
@@ -137,11 +137,11 @@ pub(super) fn reexports(
                     .and_then(|through| Some((through, exported_in(tcx, fns, through, last_name(path)?, def_id)?)));
                 let (from, export, alias) = match through {
                     Some((through, export)) if Some(ident.name) == last_name(path) => (through, export.clone(), export),
-                    Some((through, export)) => (through, export, alias(&info.name)),
+                    Some((through, export)) => (through, export, alias(info.exported())),
                     None => (
                         info.module,
-                        super::default_exports::exported_as(tcx, def_id, &info.name),
-                        alias(&info.name),
+                        super::default_exports::exported_as(tcx, def_id, info.exported()),
+                        alias(info.exported()),
                     ),
                 };
                 let Some(from) = paths.get(&from) else { continue };
@@ -346,7 +346,7 @@ fn exported_in(
     let info = fns.get(&item)?;
     if info.module == module {
         return match name == tcx.item_name(item) {
-            true => Some(super::default_exports::exported_as(tcx, item, &info.name)),
+            true => Some(super::default_exports::exported_as(tcx, item, info.exported())),
             false => super::default_exports::alias_named(tcx, item, name),
         };
     }

@@ -65,7 +65,7 @@ export function greet(name, greeting) {
   return `${greeting ?? "Hello"}, ${shout(name)}!`;
 }
 
-export function delete$(id) {
+function delete$(id) {
   return id > 0n;
 }
 
@@ -76,6 +76,8 @@ export function parseURL(url) {
 function shout(name) {
   return name.toUpperCase();
 }
+
+export { delete$ as delete };
 ```
 
 - A `pub fn` is an `export function`. A private `fn` is a function of its
@@ -114,7 +116,10 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   can't spell: `#[cfg_attr(rust_js, rust_js::name = "$$typeof")] let
   typeof_ = ..` is `const $$typeof = ..` (ADR 0855, amended).
 - **A name JS reserves gets a `$`**: `delete` is `delete$`, `new` is
-  `new$`. A method keeps its name, since it's a property: `Counter.new`.
+  `new$`. It's exported by its own name, `export { delete$ as delete };`,
+  which a JS module imports, `import { delete as remove }`
+  ([ADR 0922](../../decisions/0922-an-export-is-named-first.md), amended).
+  A method keeps its name, since it's a property: `Counter.new`.
 - **A `const` is named as written**, `MAX_RESULTS`: JS's own convention
   for a constant ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
 - **A `thread_local!` is named as a module's variable**: `CLICK_COUNT` is
@@ -1196,9 +1201,11 @@ export function firstWord(text: string): string;
 
 export function greet(name: string, greeting?: string | null | undefined): string;
 
-export function delete$(id: bigint): boolean;
+declare function delete$(id: bigint): boolean;
 
 export function parseURL(url: string): number | null | undefined;
+
+export { delete$ as delete };
 ```
 
 | Rust | TypeScript |
