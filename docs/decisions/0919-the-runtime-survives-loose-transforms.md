@@ -101,3 +101,15 @@ already joins with `concat`, which has no bound.
   native Rust.
 - The mutations are `extend-from-within-spread` and
   `builder-entries-spread`.
+
+## Amendment: no private method (#237's follow-up)
+
+#237's B-tree classes reordered themselves by a private method, `#order()
+{..}`. React's Jest Babel parses a class's private fields, the runtime's
+`#items`, but rejects a private method, "Class private methods are not
+enabled", so every react-in-rust suite failed to load. **The runtime's
+syntax floor: no class private method; a private field, an arrow one
+included, `#order = () => {..}`, which calls `Base.prototype`'s methods
+where `super`'s were.** Held by `test/runtime-transpiled.test.ts` ("the
+runtime declares no private method"), which parses each helper's source,
+and the mutation `btree-order-private-method` (`runtime/btree.ts`).

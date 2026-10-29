@@ -26,16 +26,18 @@ function $btreeMap(cmp, Base = Map) {
       }
       return super.set(key, value);
     }
-    #order() {
+    // A field's arrow, not a private method, which React's Babel can't
+    // parse (ADR 0919, amended); of `Base`'s own methods, as `super` is.
+    #order = () => {
       if (this.#sorted) return;
-      const entries = Array.from(super.entries()).sort((a, b) => cmp(a[0], b[0]));
-      super.clear();
+      const entries = Array.from(Base.prototype.entries.call(this)).sort((a, b) => cmp(a[0], b[0]));
+      Base.prototype.clear.call(this);
       for (const [key, value] of entries) {
-        super.set(key, value);
+        Base.prototype.set.call(this, key, value);
       }
       this.#last = entries.at(-1)?.[0];
       this.#sorted = true;
-    }
+    };
     entries() {
       this.#order();
       return super.entries();
@@ -82,16 +84,16 @@ function $btreeSet(cmp, Base = Set) {
       }
       return super.add(item);
     }
-    #order() {
+    #order = () => {
       if (this.#sorted) return;
-      const items = $sort(Array.from(super.values()), cmp);
-      super.clear();
+      const items = $sort(Array.from(Base.prototype.values.call(this)), cmp);
+      Base.prototype.clear.call(this);
       for (const item of items) {
-        super.add(item);
+        Base.prototype.add.call(this, item);
       }
       this.#last = items.at(-1);
       this.#sorted = true;
-    }
+    };
     entries() {
       this.#order();
       return super.entries();

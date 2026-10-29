@@ -133,3 +133,19 @@ function evidentlyArray(path: NodePath<t.Node>): boolean {
   }
   return false;
 }
+
+// What React's Babel parses: a class's private fields, `#items`, but no
+// private method, `#order() {..}`, which it rejects, "Class private
+// methods are not enabled", so a module of one fails to load (ADR 0919,
+// amended).
+test("the runtime declares no private method", () => {
+  const runtime = run([compiler, "--runtime-module"]);
+  const ast = parseSync(runtime, { babelrc: false, configFile: false, sourceType: "module" });
+  const found: string[] = [];
+  traverse(ast!, {
+    ClassPrivateMethod(path: NodePath<t.ClassPrivateMethod>) {
+      found.push(`${runtime.split("\n")[path.node.loc!.start.line - 1].trim()}`);
+    },
+  });
+  expect(found).toEqual([]);
+});

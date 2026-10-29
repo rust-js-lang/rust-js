@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "      this.#last = entries[entries.length - 1][0];",
     tests: ["test/runtime-package.test.ts", "-t", "reads as a Map"],
   },
+  {
+    name: "btree-order-private-method",
+    breaks: "a B-tree's reordering is a private method, `#order() {..}`, which React's Babel rejects, \"Class private methods are not enabled\", so no React suite loads (ADR 0919, amended)",
+    file: "src/runtime/btree.js",
+    find: "    #order = () => {\n      if (this.#sorted) return;\n      const entries",
+    replace: "    #order() {\n      if (this.#sorted) return;\n      const entries",
+    tests: ["test/runtime-transpiled.test.ts", "-t", "no private method"],
+  },
 ];
