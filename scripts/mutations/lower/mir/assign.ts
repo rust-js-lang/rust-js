@@ -125,11 +125,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-payload-place-of-temporary",
-    breaks: "`Some(n)` of a temporary holding a reference is read as the temporary, losing its name, `next` for `n`",
+    breaks: "what a pattern binds of a temporary is read as the temporary, losing its name, match_call_once's `n` of `note(1, id(x))` its `value`, binding_read_before_set's `held` its `current`",
     file: "src/lower/mir/assign.rs",
     find: "            && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
     replace: "            && (!state.locals.user[local] || state.facts.payloads().contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
-    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "^(match_call_once|binding_read_before_set)\\.rs$"],
     snapshots: true,
   },
   {
