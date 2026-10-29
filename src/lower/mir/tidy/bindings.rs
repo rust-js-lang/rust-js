@@ -701,6 +701,27 @@ pub(super) fn aliases(
                 });
                 continue;
             }
+            // And of a field of one, `const fragmentFiber =
+            // this.fragmentFiber;`, an `Rc`'s clone out of a cell's borrow,
+            // read once, as the next statement's call's argument before
+            // anything there that may write it: read there, in its place,
+            // `traverse(this.fragmentFiber, (..) => ..)`, as upstream (rd189).
+            if let StmtKind::Const(b, value) = &stmts[i].kind
+                && clones.contains(b)
+                && field_of(value).is_some_and(|root| root.is_none_or(|root| fixed.contains(root)))
+                && js::mentions_in(&stmts[i + 1..], b) == 1
+                && let Some(next) = stmts.get(i + 1)
+                && first_read_as_argument(next, b)
+            {
+                let (value, b) = (value.clone(), b.clone());
+                stmts.remove(i);
+                js::each_expr_mut(&mut stmts[i..=i], &mut |e| {
+                    if matches!(&e.kind, ExprKind::Var(v) if *v == b) {
+                        *e = value.clone();
+                    }
+                });
+                continue;
+            }
             i += 1;
         }
     });
@@ -744,6 +765,38 @@ pub(super) fn aliases(
             i += 1;
         }
     });
+}
+
+/// Of a field read, `a.b.c`, its root's name; of one of `this`, which
+/// nothing assigns, `this.fragmentFiber`, none.
+fn field_of(e: &Expr) -> Option<Option<&str>> {
+    match &e.kind {
+        ExprKind::Member(of, _) => match &of.kind {
+            ExprKind::Var(root) => Some(Some(root)),
+            ExprKind::This => Some(None),
+            _ => field_of(of),
+        },
+        _ => None,
+    }
+}
+
+/// Whether `stmt` is a call, given or its value returned or held, whose
+/// argument `name` is, read before anything that may do something: its
+/// callee and the arguments before it do nothing.
+fn first_read_as_argument(stmt: &Stmt, name: &str) -> bool {
+    let (StmtKind::Expr(call) | StmtKind::Return(Some(call)) | StmtKind::Const(_, call)) = &stmt.kind else {
+        return false;
+    };
+    let ExprKind::Call(callee, args) = &call.kind else {
+        return false;
+    };
+    let Some(at) = args
+        .iter()
+        .position(|arg| matches!(&arg.kind, ExprKind::Var(v) if v == name))
+    else {
+        return false;
+    };
+    !callee.has_effects() && args[..at].iter().all(|arg| !arg.has_effects())
 }
 
 /// A `let x;` MIR declares first, where it's first named: before the first

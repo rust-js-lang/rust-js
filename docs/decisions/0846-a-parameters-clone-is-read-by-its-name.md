@@ -80,3 +80,23 @@ or assigns `b` again after.**
   (`clone-names-unfound`) and `scripts/mutations/lower/mir/tidy/bindings.ts`
   (`clone-alias-kept`, `clone-alias-of-a-reassigned-parameter`,
   `clone-alias-of-any-const`).
+
+## Amendment: a clone out of a cell's borrow, read once next (rd189)
+
+React's FragmentInstance clones its fiber out of its cell before another
+crate's call, as idiomatic Rust does, so no borrow is held across it:
+`let fragment_fiber = Rc::clone(&self.fragment_fiber.borrow());
+traverse_fragment_instance(&fragment_fiber, ..)`, which printed `const
+fragmentFiber = this.fragmentFiber; traverseFragmentInstance(fragmentFiber,
+..)`, where upstream reads `this._fragmentFiber` there. **A `const` a
+`clone()` made of a field read, of `this` or of a parameter nothing
+assigns, read once, as an argument of the next statement's call before
+anything there that may do something, is that read in its place** (tidy's
+`aliases`, `field_of`, `first_read_as_argument`): the field is read where
+it was, before the call. One the cell's written before, a statement
+between, or read after an argument that does something, is held as
+before. A `js::cast` struct's field (rd204) is read once either way. Case
+A: the same read, at the same time. Held by
+`test/corpus/cell_clone_read_in_place.rs` against native Rust and the
+mutations `cell-clone-held`, `cell-clone-after-an-effect` and
+`cell-clone-not-next` (`mir/tidy/bindings.ts`).
