@@ -1002,6 +1002,22 @@ impl Expr {
         }
     }
 
+    /// Whether this names what it reads by a name alone, as a function
+    /// called or given is named: a variable, another module's item, or one
+    /// read through its module's namespace, `Plugin.extractEvents` (rd114,
+    /// ADR 1018), the crate's module's or a library's, which is that
+    /// module's binding of it, as live as an import of it: the one member
+    /// read that's an item (`Known::Item`).
+    pub fn is_named(&self) -> bool {
+        match &self.kind {
+            ExprKind::Var(_) | ExprKind::Symbol(_) => true,
+            ExprKind::Member(of, _) => {
+                self.facts.has(Known::Item) && matches!(&of.kind, ExprKind::Var(_) | ExprKind::Symbol(_))
+            }
+            _ => false,
+        }
+    }
+
     /// Whether this is the same value wherever and whenever it's read,
     /// whatever runs between: a constant, or one of the program's
     /// functions (`Known::Item`), which nothing assigns.

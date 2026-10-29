@@ -378,6 +378,10 @@ struct CrateFacts<'a, 'tcx> {
     /// Where a path reads a binding through the module that holds it, by
     /// the path's span (ADR 0633).
     held_reads: &'a HashMap<Span, bindings::HeldRead>,
+    /// Where a path names a function through the module that has it, by
+    /// the path's span and its call's: read through that module's
+    /// namespace, `Plugin.extractEvents(..)` (rd114, ADR 1018).
+    module_paths: &'a HashMap<Span, analysis::Through>,
     /// What the crate's libraries export (ADR 0100).
     foreign: &'a library::Foreign<'a, 'tcx>,
     /// Whether the crate asked its panics to abort, `-C panic=abort`, which
@@ -888,10 +892,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Of the lowering that takes what it's given as it's given it, as
             // its call is (ADR 0051, amended).
-            let callee = match self.called_copy((def_id, args), span)? {
-                Some(copy) => self.own_fn_ref(def_id, Some(copy)),
-                None => self.fn_ref(def_id),
-            };
+            // As its path names it, through its module's namespace where it's
+            // written so (rd114, ADR 1018).
+            let copy = self.called_copy((def_id, args), span)?;
+            let callee = self.named_fn_ref(def_id, copy, span);
             // One given its caller's location is called where it's defined,
             // as rustc's shim of it calls it (ADR 0427).
             let location = self.location_at(self.tcx.def_span(def_id));
@@ -1113,6 +1117,14 @@ fn camel_case(name: &str) -> String {
         return name.to_string();
     }
     words_joined(name, |word| word.to_string())
+}
+
+/// A module's namespace as JS names it where it's imported whole,
+/// `EnterLeaveEventPlugin` of `enter_leave_event_plugin`'s `import * as`
+/// (rd114, ADR 1018): its Rust name camelCase, its first letter a capital,
+/// as JS names a module's namespace after the module.
+fn namespace_name(name: &str) -> String {
+    upper_first(&camel_case(name))
 }
 
 /// A parameter's name as JS writes it: its `#[rust_js::name = ".."]`,

@@ -58,6 +58,21 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         }
     }
     for import in &module.imports {
+        let relative = crate::program::is_relative_specifier(&import.from);
+        // The module itself, its own line after what's named, as a
+        // package's (rd114, ADR 1018).
+        let namespace = (import.namespace.iter()).map(|namespace| {
+            (
+                relative,
+                import.from.as_str(),
+                import_line(&format!("* as {namespace}"), &import.from),
+                import.span,
+            )
+        });
+        if import.named.is_empty() {
+            named.extend(namespace);
+            continue;
+        }
         let default = (import.named.iter())
             .find(|(export, _)| export == "default")
             .map(|(_, local)| local);
@@ -68,12 +83,8 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
             (None, _) => format!("{{ {} }}", names.join(", ")),
         };
         let line = import_line(&clause, &import.from);
-        named.push((
-            crate::program::is_relative_specifier(&import.from),
-            &import.from,
-            line,
-            import.span,
-        ));
+        named.push((relative, &import.from, line, import.span));
+        named.extend(namespace);
     }
     named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
     // Each after the comments of its `use`, on lines of their own, once: of

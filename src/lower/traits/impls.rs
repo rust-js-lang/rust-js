@@ -14,7 +14,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         });
         let value = value.ok_or_else(|| self.unsupported(span, &format!("a dictionary without its `{method}`")))?;
-        if matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)) {
+        if value.is_named() {
             return Ok(value);
         }
         let name = self.fresh(method);

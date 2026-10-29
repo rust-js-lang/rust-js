@@ -150,7 +150,7 @@ pub fn f() -> u32 {
 `);
   writeFileSync(join(dir, "data.js"), "export default 1;\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { f } from "./x/[y].js";');
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import * as Y from "./x/[y].js";');
   const y = readFileSync(join(dir, "x/[y].js"), "utf8");
   expect([y.includes('import { base } from "../lib.js";'), y.includes('import data from "../data.js";')]).toEqual([true, true]);
   const { top } = await import(join(dir, "lib.js"));
@@ -185,7 +185,7 @@ pub fn base() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { f } from "./sandpack-rsc/bridge.js";');
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import * as Bridge from "./sandpack-rsc/bridge.js";');
   expect(readFileSync(join(dir, "sandpack-rsc/bridge.js"), "utf8")).toContain('import { base } from "../lib.js";');
   const { top } = await import(join(dir, "lib.js"));
   expect(top()).toBe(42);
@@ -348,6 +348,8 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   expect(statements(top)[0]).toBe('"use client";');
   expect(statements(about)[0]).not.toBe('"use client";');
   expect(top).toContain("export default page;");
+  // Its default called through its module, its default import (ADR 1018).
+  expect(top).toContain('import about from "./about.js";\n');
   expect(top).not.toContain("const _");
   const [lib, sub] = [await import(join(dir, "lib.js")), await import(join(dir, "about.js"))];
   // The default alone, `pub` as it is (ADR 0611, amended).
@@ -655,7 +657,7 @@ pub fn twice() -> f64 {
 // A module that exports its own item by another name alone is imported by
 // that by every other module of its crate (`default_exports::exported_as`,
 // ADR 0596, amended): one that names it by its own path, as the Rust names
-// it, `import { unstable_now as getCurrentTime }`; one whose `use` names it
+// it, through its namespace, `Scheduler.unstable_now()` (ADR 1018); one whose `use` names it
 // by the alias, by the name it's exported as; a `pub use` of it, from it.
 test("a module's own item a pub use renames is imported by that name", async () => {
   const dir = fixture("aliases-imported");
@@ -695,10 +697,13 @@ pub fn to_array() -> f64 {
   expect(read("scheduler.js")).toContain("export { getCurrentTime as unstable_now, LIMIT as MAX };");
   // A path through a re-export is to the item, read by its alias where the
   // module's `use` names it so, else by its own name.
-  expect(read("lib.js")).toContain('import { MAX as LIMIT, toArray, unstable_now } from "./scheduler.js";\n');
-  expect(read("lib.js")).toContain("return unstable_now() + toArray();");
-  expect(read("report.js")).toContain('import { MAX as LIMIT, unstable_now as getCurrentTime } from "./scheduler.js";');
-  expect(read("report.js")).toContain("return getCurrentTime() * 10 + LIMIT;");
+  // A function called through its module, its namespace's, by what it
+  // exports it as (ADR 1018).
+  expect(read("lib.js")).toContain('import { MAX as LIMIT, unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
+  expect(read("lib.js")).toContain("return unstable_now() + Scheduler.toArray();");
+  expect(read("lib.js")).toContain("return Report.report() + unstable_now() + LIMIT;");
+  expect(read("report.js")).toContain('import { MAX as LIMIT } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";');
+  expect(read("report.js")).toContain("return Scheduler.unstable_now() * 10 + LIMIT;");
   expect(read("index.js")).toContain('export { unstable_now as getCurrentTime } from "./scheduler.js";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.byAlias(), lib.byPath()]).toEqual([13, 266]);
@@ -1006,8 +1011,8 @@ test("a module's default is called with whatever JS gives it", async () => {
   writeFileSync(join(dir, "declared.rs"), "js::export_default! {\n    fn seven(n: u32) -> u32 {\n        n * 7\n    }\n}\n\npub fn fourteen() -> u32 {\n    seven(2)\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   expect(readFileSync(join(dir, "helpers.js"), "utf8")).toContain("export function twice(n) {\n  return (n * 2) >>> 0;\n}");
-  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain('import { thrice } from "./helpers.js";\n');
-  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain("  return thrice(3);\n");
+  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain('import * as Helpers from "./helpers.js";\n');
+  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain("  return Helpers.thrice(3);\n");
   // u32's product wraps, as Rust's without overflow checks does.
   const big = 4_000_000_000;
   const at = async (file: string) => (await import(join(dir, file))).default(big);
@@ -1211,7 +1216,7 @@ pub fn all(items: &[u32], i: usize) -> u32 {
   const imports = top.split("\n").filter((line) => line.startsWith("import") || line === "").slice(1, 8).join("\n");
   expect(imports).toBe(`import { alpha } from "@scope/alpha";
 import { zeta } from "zeta";
-import { h } from "./helper.js";
+import * as Helper from "./helper.js";
 import { local } from "./local";
 import "./app.css";
 import { $index } from "@rust-js/runtime";
@@ -1412,4 +1417,45 @@ pub fn reset() -> Option<&'static Unknown> {
     writeFileSync(join(dir, "lib.rs"), source(name, path));
     expect(compile).toThrow(error);
   }
+});
+
+// rd114 (ADR 1018): a function called through its module's path is read
+// through that module's namespace, from a module below too; a path
+// through `super` alone names its own module's function by its name, and
+// one through a module that re-exports another's is that one's import.
+test("a function called through its module is read through its namespace", async () => {
+  const dir = fixture("module-namespace");
+  writeFileSync(join(dir, "lib.rs"), `pub mod plugin;
+pub mod plugins;
+pub mod shared;
+
+pub fn base() -> u32 {
+    1
+}
+
+pub fn run() -> u32 {
+    plugin::nested::depth() + plugins::doubled(2)
+}
+`);
+  writeFileSync(join(dir, "plugin.rs"), `pub fn extract_events(n: u32) -> u32 {
+    n * 2
+}
+
+pub mod nested {
+    pub fn depth() -> u32 {
+        super::extract_events(1) + super::super::plugin::extract_events(2) + crate::base()
+    }
+}
+`);
+  writeFileSync(join(dir, "plugins.rs"), "pub use crate::shared::doubled;\n");
+  writeFileSync(join(dir, "shared.rs"), "pub fn doubled(n: u32) -> u32 {\n    n * 2\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js")]);
+  const nested = readFileSync(join(dir, "out", "plugin", "nested.js"), "utf8");
+  expect(nested).toContain('import { base } from "../lib.js";\nimport { extractEvents } from "../plugin.js";\nimport * as Plugin from "../plugin.js";\n');
+  expect(nested).toContain("return (((extractEvents(1) + Plugin.extractEvents(2)) >>> 0) + base()) >>> 0;");
+  const lib = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  expect(lib).toContain('import * as Nested from "./plugin/nested.js";\nimport { doubled } from "./shared.js";\n');
+  expect(lib).toContain("return (Nested.depth() + doubled(2)) >>> 0;");
+  const { run: ran } = await import(join(dir, "out", "lib.js"));
+  expect(ran()).toBe(11);
 });

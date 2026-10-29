@@ -254,7 +254,7 @@ pub fn named() -> String {
 }
 `);
   expect(tree.js).toContain(`// Of a module.
-import { flag } from "./common/flags.js";
+import * as Flags from "./common/flags.js";
 // Both.
 import { ownerName } from "./fiber.js";
 import { lane } from "./lanes.js";

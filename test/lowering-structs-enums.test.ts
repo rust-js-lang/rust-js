@@ -1363,8 +1363,9 @@ pub fn pace(fast: bool) -> &'static str {
   expect(readFileSync(join(dir, "theme.js"), "utf8")).toContain("export const Light = 1;\nexport const Dark = 2;\n");
   // Another module's not `pub`, exported as it's read there; the last
   // arm's, whose test an exhaustive `match` needn't write, not imported.
-  expect(js).toContain('import { Slow, speed } from "./motion.js";');
-  expect(js).toContain('  return speed(fast) === Slow ? "slow" : "fast";\n');
+  // Its function called through its module, its namespace's (ADR 1018).
+  expect(js).toContain('import { Slow } from "./motion.js";\nimport * as Motion from "./motion.js";');
+  expect(js).toContain('  return Motion.speed(fast) === Slow ? "slow" : "fast";\n');
   expect(readFileSync(join(dir, "motion.js"), "utf8")).toContain("export const Slow = 1;\nexport const Fast = 2;\n");
   const lib = await import(join(dir, "lib.js"));
   const [first, second] = [lib.lazy(), lib.lazy()];

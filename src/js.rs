@@ -58,6 +58,12 @@ pub enum Storage {
     NullForNone,
 }
 
+/// What a `Symbol` of a module's namespace exports, the module itself,
+/// `import * as Plugin` (rd114, ADR 1018), as a `Reexport`'s `*` is of an
+/// `export * as ns from`: one of its items is a member of it,
+/// `Plugin.extractEvents`.
+pub const NAMESPACE: &str = "*";
+
 /// The field a `dyn` value's pair holds its dictionary in, `d.impl` (ADR
 /// 0049), beside its `value`.
 pub const DICTIONARY: &str = "impl";
@@ -215,11 +221,26 @@ pub struct Const {
 pub struct Import {
     /// Exports as `(export, local)`, aliased only for name collisions.
     pub named: Vec<(String, String)>,
+    /// The module itself, `import * as Plugin` (rd114, ADR 1018), as
+    /// `Package::namespace` is: its own `import`, beside a named one.
+    pub namespace: Option<String>,
     /// A relative specifier, like `./math.js` or `../lib.js`.
     pub from: String,
     /// The `use` that makes it, the first of the module's naming what it
     /// imports, which its comments are before; `Span::NONE` of none.
     pub span: Span,
+}
+
+impl Import {
+    /// Each name it binds in its module, its namespace's too.
+    pub fn locals(&self) -> impl Iterator<Item = &String> {
+        self.named.iter().map(|(_, local)| local).chain(&self.namespace)
+    }
+
+    /// Each name it binds in its module, to rename.
+    pub fn locals_mut(&mut self) -> impl Iterator<Item = &mut String> {
+        self.named.iter_mut().map(|(_, local)| local).chain(&mut self.namespace)
+    }
 }
 
 /// One `pub use` statement's `export { a, b as c } from "./m.js";` (ADR

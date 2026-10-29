@@ -134,17 +134,21 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &HashMap<Nam
             }
         }
         // A method's, of its type's object, by its own module's name or
-        // another's symbol.
+        // another's symbol; or a function's, through its module's
+        // namespace, `Plugin.extractEvents` (rd114, ADR 1018).
         ExprKind::Member(object, name) => {
             let owner = match &object.kind {
-                ExprKind::Var(owner) => Some((module, owner.clone())),
+                ExprKind::Var(owner) => Some((module, Some(owner.clone()))),
                 ExprKind::Symbol(symbol) => (renamed.keys())
                     .find(|(of, _, _)| of.to_def_id().index.as_u32() == symbol.module)
-                    .map(|(of, _, _)| (*of, symbol.export.clone())),
+                    .map(|(of, _, _)| {
+                        let owner = (symbol.export != js::NAMESPACE).then(|| symbol.export.clone());
+                        (*of, owner)
+                    }),
                 _ => None,
             };
             if let Some((of, owner)) = owner
-                && let Some(to) = renamed.get(&(of, Some(owner), name.clone()))
+                && let Some(to) = renamed.get(&(of, owner, name.clone()))
             {
                 *name = to.clone();
             }

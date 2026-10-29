@@ -8,13 +8,13 @@
 //   geometry/area.rs  ──► geometry/area.js
 //   mod util { .. }   ──► util.js   (inline modules get a file too)
 
-import { mixed as mixed$1, shadowed as shadowed$1, square } from "./geometry/area.js";
-import { mean } from "./stats.js";
-import { double } from "./util.js";
+import * as Area from "./geometry/area.js";
+import * as Stats from "./stats.js";
+import * as Util from "./util.js";
 
 /** Calls into two other files. */
 export function summary(a, b) {
-  return (mean(a, b) + square(a)) >>> 0;
+  return (Stats.mean(a, b) + Area.square(a)) >>> 0;
 }
 
 /** A private `const` that a child module uses: exported too (ADR 0031). */
@@ -26,15 +26,15 @@ export function clamp(x) {
 }
 
 export function doubledMean(a, b) {
-  return double(mean(a, b));
+  return Util.double(Stats.mean(a, b));
 }
 
 /** Reaches two levels down, where both `util` modules are used. */
 export function mixed(x) {
-  return mixed$1(x);
+  return Area.mixed(x);
 }
 
 export function shadowed(x) {
-  return shadowed$1(x);
+  return Area.shadowed(x);
 }
 //# sourceMappingURL=lib.js.map

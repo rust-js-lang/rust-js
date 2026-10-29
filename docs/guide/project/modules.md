@@ -92,13 +92,13 @@ pub fn page() -> String {
 
 ```js
 // src/lib.js
-import { shout } from "./format.js";
+import * as Format from "./format.js";
 import { hello } from "./greet.js";
 
 export { hello } from "./greet.js";
 
 export function welcome(name) {
-  return shout(hello(name));
+  return Format.shout(hello(name));
 }
 ```
 
@@ -110,6 +110,17 @@ export function page() {
   return welcome("slug");
 }
 ```
+
+A function called through its module's path, with no `use` of the
+function, is read through the module's namespace, `import * as Format`
+and `Format.shout(..)`, as JS names a module it calls into; one the
+module `use`s, `hello` above, is its named import. The namespace is the
+module's name camelCase with a capital first letter, given apart where
+the file has that name already; a library's module's alike, its root's
+by its crate's name. `crate::f()`, `self::f()` and `super::f()` name no
+module of their own, and a thread-local, `static` or `const` read
+through a module is imported by its name
+([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
 
 Imports are one block, in the order a person writes them: packages, then
 the crate's own modules, then imports for their effect, then
@@ -188,10 +199,10 @@ pub(crate) fn shout(text: &str) -> String {
 
 ```js
 // src/lib.js
-import { shout } from "./format.js";
+import * as Format from "./format.js";
 
 export function welcome(name) {
-  return shout(greeting(name));
+  return Format.shout(greeting(name));
 }
 
 function greeting(name) {

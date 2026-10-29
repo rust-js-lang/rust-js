@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|_| !span.is_none())\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
+  {
+    name: "namespace-import-unwritten",
+    breaks: "a module read through its namespace, `Plugin.extractEvents(..)`, imports none, so `Plugin` is undefined (rd114, ADR 1018)",
+    file: "src/to_oxc/header.rs",
+    find: "        named.extend(namespace);\n    }\n",
+    replace: "    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
+  },
 ];

@@ -543,4 +543,12 @@ export const mutations: Mutation[] = [
     replace: "    if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {\n",
     tests: ["test/lowering-nested-options.test.ts"],
   },
+  {
+    name: "namespace-read-unnamed",
+    breaks: "a function read through its module's namespace, `Plugin.extractEvents`, is no name a forwarding arrow passes on to, so `(n) => Plugin.f(n)` stays an arrow where `f` would be (rd114, ADR 1018)",
+    file: "src/js/make.rs",
+    find: "                self.facts.has(Known::Item) && matches!(&of.kind, ExprKind::Var(_) | ExprKind::Symbol(_))\n",
+    replace: "                false\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a once-callback that passes its call on"],
+  },
 ];

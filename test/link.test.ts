@@ -7,26 +7,31 @@ beforeAll(buildCompiler, 600_000);
 
 test("late import aliases avoid locals, nested parameters and generated bindings", async () => {
   const dir = fixture("link-names");
+  // `super::add` is a named import, `add`, which the local and the
+  // closure's parameter keep apart; `super::util::add` is `Util`'s.
   const source = `
     pub mod util { pub fn add(n: i32) -> i32 { n + 1 } }
-    pub mod value { pub fn add(n: i32) -> i32 { super::util::add(n) + 1 } }
-    pub fn run() -> i32 {
-      let add = 10;
-      let value = 20;
-      let f = |add: i32| self::util::add(add) + self::value::add(value);
-      f(add)
+    pub fn add(n: i32) -> i32 { util::add(n) + 1 }
+    pub mod app {
+      pub fn run() -> i32 {
+        let add = 10;
+        let value = 20;
+        let f = |add: i32| super::util::add(add) + super::add(value);
+        f(add)
+      }
+      pub fn text() -> String { format!("answer={}", super::add(1)) }
     }
-    pub fn text() -> String { format!("answer={}", util::add(1)) }
   `;
   writeFileSync(join(dir, "lib.rs"), source);
-  writeFileSync(join(dir, "native.rs"), 'mod lib; fn main() { println!("{}", lib::run()); println!("{}", lib::text()); }');
+  writeFileSync(join(dir, "native.rs"), 'mod lib; fn main() { println!("{}", lib::app::run()); println!("{}", lib::app::text()); }');
   run(["rustc", "--edition=2024", "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = await import(join(dir, "lib.js"));
+  const js = await import(join(dir, "app.js"));
   expect([String(js.run()), js.text()]).toEqual(run([join(dir, "native")]).trim().split("\n"));
-  const code = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(code).toContain('import { add as add$1 } from "./util.js";');
-  expect(code).toContain('import { add as add$2 } from "./value.js";');
+  const code = readFileSync(join(dir, "app.js"), "utf8");
+  expect(code).toContain('import { add as add$1 } from "./lib.js";');
+  expect(code).toContain('import * as Util from "./util.js";');
+  expect(code).toContain("const f = (add) => (Util.add(add) + add$1(value)) | 0;");
   expect(code).not.toContain("\0");
 });
 
@@ -119,8 +124,11 @@ test("a string that spells a helper's name doesn't import it", () => {
 test("module-load statements resolve imports around their local bindings", async () => {
   buildReact();
   const dir = fixture("link-on-load");
+  // `super::value` is a named import, `value`, which the module's own
+  // `value` keeps apart.
   writeFileSync(join(dir, "lib.rs"), `
-    mod util { pub fn value(n: u32) -> u32 { n + 1 } }
+    pub fn value(n: u32) -> u32 { n + 1 }
+    pub mod load {
       #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditSeed")]
       fn seed() -> u32 {
           unreachable!()
@@ -131,20 +139,21 @@ test("module-load statements resolve imports around their local bindings", async
       fn loaded(n: u32) {
           unreachable!()
       }
-    js::on_load! {
-      let value = seed();
-      loaded(value);
-      let read = |value: u32| util::value(value);
-      loaded(read(value));
-      let next = |ready: u32| ready + 1;
-      loaded(next(value));
+      js::on_load! {
+        let value = seed();
+        loaded(value);
+        let read = |value: u32| super::value(value);
+        loaded(read(value));
+        let next = |ready: u32| ready + 1;
+        loaded(next(value));
+      }
+      pub fn ready() -> u32 { super::value(1) }
     }
-    pub fn ready() -> u32 { util::value(1) }
   `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"),
     "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const code = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(code).toContain('import { value as value$1 } from "./util.js";');
+  const code = readFileSync(join(dir, "load.js"), "utf8");
+  expect(code).toContain('import { value as value$1 } from "./mir.js";');
   expect(code).toContain("const read = (value) => value$1(value);");
   // Not a name of the module's, which a closure keeps apart.
   expect(code).toContain("const next = (ready) => (ready + 1) >>> 0;");
@@ -154,7 +163,7 @@ test("module-load statements resolve imports around their local bindings", async
   globals.auditSeed = () => 3;
   globals.auditLoaded = n => seen.push(n);
   try {
-    const generated = await import(join(dir, "mir.js"));
+    const generated = await import(join(dir, "load.js"));
     expect(seen).toEqual([3, 4, 4]);
     expect(generated.ready()).toBe(2);
   } finally {

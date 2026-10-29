@@ -338,7 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The copy of it, where JS calls it too, that takes what this call
         // gives as it gives it (ADR 0051, amended).
         let copy = self.called_copy((def_id, generic_args), span)?;
-        let called = self.crate_called_copy((def_id, copy), exprs);
+        let called = self.crate_called_copy((def_id, copy, Some(span)), exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
@@ -352,19 +352,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// method, its own property's, `scope.containsNode(..)` (ADR 0943); of
     /// any other, `f(..)`.
     pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, args: Vec<Expr>) -> Expr {
-        self.crate_called_copy((def_id, None), args)
+        self.crate_called_copy((def_id, None, None), args)
     }
 
     /// `crate_called`'s, of its own JS or of a copy its callers need (ADR
-    /// 0051, amended).
+    /// 0051, amended), as the path at `named`, the call's, names it, which
+    /// may be through the module that has it (rd114, ADR 1018).
     fn crate_called_copy(
         &self,
-        (def_id, copy): (rustc_span::def_id::DefId, Option<usize>),
+        (def_id, copy, named): (rustc_span::def_id::DefId, Option<usize>, Option<Span>),
         mut args: Vec<Expr>,
     ) -> Expr {
-        let callee = match copy {
-            Some(_) => self.own_fn_ref(def_id, copy),
-            None => self.fn_ref(def_id),
+        let callee = match (copy, named) {
+            (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
+            (Some(_), None) => self.own_fn_ref(def_id, copy),
+            (None, None) => self.fn_ref(def_id),
         };
         match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
             (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {

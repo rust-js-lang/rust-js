@@ -775,7 +775,7 @@ pub fn guarded() -> u32 {
   // Made readable as a module's is: a `let mut` nothing sets again, a `const`.
   expect(js).toContain("  function listOf(n) {\n    const list = [];\n    list.push(n);");
   // Called before a destructor's `try`, it's written before it.
-  expect(js).toContain("  const result = (first + later()) >>> 0;\n  function later() {\n    return (three() + 4) >>> 0;\n  }\n  three();\n  return result;");
+  expect(js).toContain("  const result = (first + later()) >>> 0;\n  function later() {\n    return (Util.three() + 4) >>> 0;\n  }\n  Util.three();\n  return result;");
   // One in another's body is a declaration there too.
   expect(js).toContain("  function outer() {\n    function inner() {");
   expect([lib.kept([1, undefined, 3]), lib.started(), lib.guarded(), lib.nested()]).toEqual([[[1, 3], 2], 10, 14, 4]);

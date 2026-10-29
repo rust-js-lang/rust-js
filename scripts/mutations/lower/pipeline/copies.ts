@@ -20,4 +20,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
     snapshots: true,
   },
+  {
+    name: "namespace-copy-unrenamed",
+    breaks: "a copy of a function read through its module's namespace, `Helpers.wrappedUnboxed`, keeps the name of the copy it was alike, so it calls a copy the module doesn't export (rd114, ADR 1018)",
+    file: "src/lower/pipeline/copies.rs",
+    find: "                        let owner = (symbol.export != js::NAMESPACE).then(|| symbol.export.clone());\n",
+    replace: "                        let owner = Some(symbol.export.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^js_given_copies.rs$"],
+    snapshots: true,
+  },
 ];

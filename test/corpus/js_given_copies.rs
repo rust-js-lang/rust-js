@@ -9,6 +9,16 @@ mod helpers {
     pub(crate) fn wrapped<T>(x: T) -> Option<T> {
         Some(x)
     }
+
+    /// Given `()` by the crate's Rust too, through its module's namespace,
+    /// whose copy alike it is it, called by its name (ADR 1018).
+    pub(crate) fn same<T>(x: T) -> T {
+        x
+    }
+}
+
+pub fn pass<T>(x: T) -> T {
+    helpers::same(x)
 }
 
 pub fn relay<T>(x: T) -> Option<T> {
@@ -70,6 +80,7 @@ fn main() {
     println!("{} {}", relay(()).is_some(), relay(None::<i32>).is_some());
     println!("{:?} {:?}", relay(5), relay("five"));
     println!("{}", helpers::wrapped(()).is_some());
+    println!("{:?} {:?}", helpers::same(()), pass(4));
     println!("{} {}", count_some(vec![(), ()]), count_some(vec![1, 2, 3]));
     let mut units = Stack::new();
     units.push(());

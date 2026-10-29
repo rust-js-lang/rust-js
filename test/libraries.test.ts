@@ -85,7 +85,7 @@ test("a rust-js app compiles a library from npm into its package, and imports it
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
-  expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
+  expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
   expect(js).not.toContain("node_modules");
   expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toBe(readFileSync(join(lib, "src", "lib.js"), "utf8"));
   expect(welcome(dir)).toBe("Hello, Ada!");
@@ -113,7 +113,7 @@ test("a library from pnpm's store is compiled into its package without changing 
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
-  expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
+  expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
   expect(js).not.toContain(".pnpm");
   expect(welcome(dir)).toBe("Hello, Ada!");
   // The store's file is as it was: the package's was replaced, not written through.
@@ -149,8 +149,8 @@ test("a library whose exports hide its JS is refused, and one exporting it is im
     if (ok) {
       expect(built.stderr).toBe("");
       const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
-      expect(js).toContain('import { Greeting, greet } from "@acme/greet";\n');
-      expect(js).toContain('import { shout } from "@acme/greet/src/loud.js";\n');
+      expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
+      expect(js).toContain('import * as Loud from "@acme/greet/src/loud.js";\n');
       expect(welcome(dir)).toBe("Hello, ADA!");
     } else {
       expect(built.code).not.toBe(0);
@@ -206,7 +206,7 @@ test("a library packed by npm is built into an app by each package manager's ins
     linkSync(installedJs, join(work, `${manager}-witness.js`));
     const built = build(dir);
     expect({ manager, code: built.code, stderr: built.stderr }).toEqual({ manager, code: 0, stderr: "" });
-    expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).toContain('import { Greeting, greet } from "@acme/greet";\n');
+    expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
     expect(welcome(dir)).toBe("Hello, Ada!");
     expect(readFileSync(installedJs, "utf8")).not.toContain("an older rust-js's");
     expect({ manager, witness: readFileSync(join(work, `${manager}-witness.js`), "utf8") }).toEqual({ manager, witness: shipped });
@@ -272,9 +272,10 @@ pub fn count() -> u32 {
   expect(nativeRun).toBe("27");
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
-  expect(js()).toContain('import { other } from "../../kids/src/hooks.js";\n');
+  // One its module's path names, its namespace's, by its file (ADR 1018).
+  expect(js()).toContain('import * as Hooks from "../../kids/src/hooks.js";\n');
   // Each module as its own `use` names it: this one by the module's path.
-  expect(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8")).toContain('import { bump, count } from "../../kids/src/client.js";\n');
+  expect(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8")).toContain('import * as Client from "../../kids/src/client.js";\n');
   expect(ran()).toBe(nativeRun);
   // Its root re-exports what the entry does, each from the same module,
   // and nothing else: no JS of its own, the entry's already (ADR 1008,
@@ -292,7 +293,7 @@ pub fn count() -> u32 {
   // An entry that runs more than its re-exports as it loads, which the
   // Rust doesn't, and a package Node finds no copy of from the crate's JS,
   // or another: each by its file, as the Rust has it.
-  const byFiles = 'import { bump } from "../../kids/src/client.js";\nimport { hook, other } from "../../kids/src/hooks.js";\n';
+  const byFiles = 'import { bump } from "../../kids/src/client.js";\nimport { hook } from "../../kids/src/hooks.js";\nimport * as Hooks from "../../kids/src/hooks.js";\n';
   manifest();
   writeFileSync(join(kids, "index.js"), `${entry}console.log("loaded");\n`);
   expect(built().stderr).toBe("");

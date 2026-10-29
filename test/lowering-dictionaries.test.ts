@@ -348,7 +348,7 @@ pub mod hidden {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const queue = readFileSync(join(dir, "queue.js"), "utf8");
   expect(queue).toContain("return a != b;");
-  expect(queue).toContain("return a === b && has([a], b, { eq: (a, b) => a === b });");
+  expect(queue).toContain("return a === b && Hidden.has([a], b, { eq: (a, b) => a === b });");
   expect(queue).toContain("export function values(a, b) {\n  return a === b;\n}");
   expect(queue).not.toContain("PartialEq");
   expect(queue).toContain("export const updateDisplay = { fmt: updateDisplay_fmt };");

@@ -255,11 +255,7 @@ fn in_place(
         }
         ExprKind::Symbol(_) => (None, false),
         ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
-        ExprKind::Call(callee, called)
-            if hold && called.is_empty() && matches!(callee.kind, ExprKind::Var(_) | ExprKind::Symbol(_)) =>
-        {
-            (None, true)
-        }
+        ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => (None, true),
         // What a body that never reads its parameter is given, of no
         // effects: nothing, `finishDrop({ value: _finish })` of a unit
         // struct's `Drop`, which reads no `self` (ADR 0608, amended).

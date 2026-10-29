@@ -769,7 +769,7 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(dir, "mir.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--extern", `counted=${join(dir, "libcounted.rmeta")}`]);
   const app = readFileSync(join(dir, "app.js"), "utf8");
-  expect(app).toContain('import { count } from "./mir.js";');
+  expect(app).toContain('import * as Counted from "./mir.js";');
   // `first`'s `unwrap_unchecked` can't panic either: what its consumer
   // compiles of it drops nothing where it would.
   expect(app).toContain("function first(value, given) {\n  const n = given;\n  return [n, value];\n}");

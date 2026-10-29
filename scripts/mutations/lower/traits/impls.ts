@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "writer-entry-repeated",
     breaks: "a writer's dictionary repeats its `write_str` arrow for `write_char` and `write_fmt`: right, but not the JS a person writes",
     file: "src/lower/traits/impls.rs",
-    find: "        if matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)) {",
+    find: "        if value.is_named() {",
     replace: "        if true {",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
     snapshots: true,

@@ -80,6 +80,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         },
     );
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    let mut namespaces: HashMap<Vec<String>, String> = HashMap::new();
     let mut at: HashMap<Vec<String>, crate::js::Span> = HashMap::new();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
@@ -89,10 +90,12 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         .filter(|request| read.contains(&request.symbol))
         .map(|request| {
             let alias = fresh_in(&mut names, &request.local);
-            grouped
-                .entry(request.path.clone())
-                .or_default()
-                .push((request.export.clone(), alias.clone()));
+            let named = grouped.entry(request.path.clone()).or_default();
+            // The module itself, its own `import * as` (rd114, ADR 1018).
+            match request.export == crate::js::NAMESPACE {
+                true => _ = namespaces.insert(request.path.clone(), alias.clone()),
+                false => named.push((request.export.clone(), alias.clone())),
+            }
             at.entry(request.path.clone()).or_insert(request.at);
             (request.symbol.clone(), alias)
         })
@@ -101,7 +104,13 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         .into_iter()
         .map(|(path, named)| {
             let span = at.remove(&path).unwrap_or(crate::js::Span::NONE);
-            LoweredImport { path, named, span }
+            let namespace = namespaces.remove(&path);
+            LoweredImport {
+                path,
+                named,
+                namespace,
+                span,
+            }
         })
         .collect();
     visit(

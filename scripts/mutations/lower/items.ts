@@ -253,4 +253,20 @@ export const mutations: Mutation[] = [
     replace: "            && foreign.compiles(def_id)\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
+  {
+    name: "namespace-read-of-a-default",
+    breaks: "a module's default called through its path, `about::about()`, is read as its namespace's `About.default()`, where it's the module's default import (rd114, ADR 1018)",
+    file: "src/lower/items.rs",
+    find: "        let namespaced = through && target.module != self.module && exported != \"default\";\n",
+    replace: "        let namespaced = through && target.module != self.module;\n",
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
+  },
+  {
+    name: "namespace-read-of-a-library-dropped",
+    breaks: "a library's function called through its module, `dep::events::extract_events(2)`, is its named import, not its module's namespace's (rd114, ADR 1018)",
+    file: "src/lower/items.rs",
+    find: "        if through\n            && copy.is_none()\n",
+    replace: "        if false\n            && copy.is_none()\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "read through its namespace"],
+  },
 ];

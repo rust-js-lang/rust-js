@@ -28,12 +28,7 @@ pub(super) fn module(module: &mut js::Module) {
 fn aliased_imports(module: &mut js::Module) {
     let locals: Vec<String> = (module.packages.iter())
         .flat_map(|p| p.default.iter().chain(p.named.iter().map(|(_, local)| local)))
-        .chain(
-            module
-                .imports
-                .iter()
-                .flat_map(|i| i.named.iter().map(|(_, local)| local)),
-        )
+        .chain(module.imports.iter().flat_map(js::Import::locals))
         .cloned()
         .collect();
     for local in locals {
@@ -74,7 +69,7 @@ fn aliased_imports(module: &mut js::Module) {
                     .chain(p.named.iter().map(|(_, l)| l))
                     .chain(&p.namespace)
             })
-            .chain(module.imports.iter().flat_map(|i| i.named.iter().map(|(_, l)| l)))
+            .chain(module.imports.iter().flat_map(js::Import::locals))
             .any(|l| *l == alias);
         if declared != 1 || imported {
             continue;
@@ -100,7 +95,7 @@ fn aliased_imports(module: &mut js::Module) {
                 .for_each(rename);
         }
         for import in &mut module.imports {
-            import.named.iter_mut().map(|(_, l)| l).for_each(rename);
+            import.locals_mut().for_each(rename);
         }
     }
 }
@@ -114,12 +109,7 @@ fn imports(module: &mut js::Module) {
                 .chain(p.named.iter().map(|(_, local)| local))
                 .chain(&p.namespace)
         })
-        .chain(
-            module
-                .imports
-                .iter()
-                .flat_map(|i| i.named.iter().map(|(_, local)| local)),
-        )
+        .chain(module.imports.iter().flat_map(js::Import::locals))
         .cloned()
         .collect();
     // What the module mentions, read once: a name reclaimed is one more
@@ -142,7 +132,7 @@ fn imports(module: &mut js::Module) {
                 .for_each(&mut rename);
         }
         for import in &mut module.imports {
-            import.named.iter_mut().map(|(_, l)| l).for_each(&mut rename);
+            import.locals_mut().for_each(&mut rename);
         }
         module.default_export.iter_mut().for_each(&mut rename);
         for item in &mut module.items {
@@ -272,12 +262,7 @@ pub(super) fn mentions(module: &mut js::Module) -> HashSet<String> {
                 .cloned(),
         );
     }
-    names.extend(
-        module
-            .imports
-            .iter()
-            .flat_map(|i| i.named.iter().map(|(_, l)| l.clone())),
-    );
+    names.extend(module.imports.iter().flat_map(|i| i.locals().cloned()));
     names.extend(module.default_export.iter().cloned());
     names.extend(module.aliases.iter().map(|(local, _)| local.clone()));
     names

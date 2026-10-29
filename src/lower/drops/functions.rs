@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, args) = &call.kind
             && let [arg] = args.as_slice()
             && matches!(&arg.kind, js::ExprKind::Var(name) if *name == param)
-            && matches!(&callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_))
+            && callee.is_named()
         {
             return Ok(Some((**callee).clone()));
         }
@@ -97,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, args) = &call.kind
             && let [arg] = args.as_slice()
             && matches!(&arg.kind, js::ExprKind::Var(name) if name == item)
-            && matches!(&callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_))
+            && callee.is_named()
         {
             return Ok(Some(Expr::call_helper("$dropEach", vec![(**callee).clone()])));
         }

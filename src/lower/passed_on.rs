@@ -176,7 +176,7 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
         }
     };
     let (callee, arity) = passed_to(f, statement)?;
-    let named = matches!(callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_));
+    let named = callee.is_named();
     let takes = match taker {
         Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer => named,
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
@@ -246,7 +246,7 @@ fn bound_parts(f: &Expr) -> Option<(&Expr, &[Expr])> {
     let js::ExprKind::Call(callee, args) = &call.kind else {
         return None;
     };
-    let named = matches!(callee.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_));
+    let named = callee.is_named();
     let leading = (args.len().checked_sub(params.len())).filter(|&k| k > 0 && named && !params.is_empty())?;
     let (bound, given) = args.split_at(leading);
     let mut names = Vec::new();

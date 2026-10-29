@@ -213,13 +213,15 @@ test("a crate split across files becomes one JS file per module", async () => {
   expect(Object.keys(modules.stats)).toEqual(["mean"]);
 
   const area = await Bun.file(join(out, "geometry/area.js")).text();
-  // Specifiers are relative, and aliases are unique within the file.
+  // Specifiers are relative, and aliases are unique within the file:
+  // both modules are called `util`, so one namespace is `Util$1`.
   expect(area).toContain('import { clamp } from "../lib.js";');
-  expect(area).toContain('import { triple } from "./util.js";');
-  expect(area).toContain('import { double } from "../util.js";');
+  expect(area).toContain('import * as Util from "./util.js";');
+  expect(area).toContain('import * as Util$1 from "../util.js";');
+  expect(area).toContain("return (Util$1.double(x) + Util.triple(x)) >>> 0;");
   // Imports are named after locals are known, so locals keep their names.
   expect(area).toContain("const util = (x + 1) >>> 0;");
-  expect(area).toContain("return double(util);");
+  expect(area).toContain("return Util$1.double(util);");
   // lib ↔ stats import each other: a cycle, which Rust and ES modules allow.
   const stats = await Bun.file(join(out, "stats.js")).text();
   expect(stats).toContain('import { HALVES, clamp } from "./lib.js";');

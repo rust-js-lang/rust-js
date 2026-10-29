@@ -63,15 +63,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // isn't kept of (ADR 0914, amended). Not a derived serde codec's,
         // which its library writes of attributes only it sees, and which
         // makes its values anew from JSON, sharing none (#341).
-        let foreign = self.krate.foreign;
-        let derived_codec = (self.tcx.trait_impl_of_assoc(def_id)).is_some_and(|imp| {
-            super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()
-                && super::recognition::serde_derived(self.tcx, imp)
-        });
-        if !self.krate.fns.contains_key(&def_id)
-            && !derived_codec
-            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
-        {
+        if self.asked_of_library(def_id) {
             self.krate.asked.borrow_mut().push((def_id, self.module));
             return Expr::undefined();
         }
@@ -100,10 +92,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.own_fn_ref(def_id, None)
     }
 
+    /// Whether `def_id` is a library's the crate compiles itself where it
+    /// uses it (`fn_ref`'s, ADR 0914, amended).
+    fn asked_of_library(&self, def_id: DefId) -> bool {
+        let foreign = self.krate.foreign;
+        let derived_codec = (self.tcx.trait_impl_of_assoc(def_id)).is_some_and(|imp| {
+            super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()
+                && super::recognition::serde_derived(self.tcx, imp)
+        });
+        !self.krate.fns.contains_key(&def_id)
+            && !derived_codec
+            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
+    }
+
+    /// The crate's function `def_id` where the path at `named` names it, a
+    /// call's or the path's own, as `fn_ref` names it, or by its index a
+    /// copy, as `own_fn_ref` does; but through the module that has it where
+    /// the path names it so, `plugin::extract_events(..)`, read through its
+    /// namespace, `Plugin.extractEvents` (rd114, ADR 1018).
+    pub(super) fn named_fn_ref(&self, def_id: DefId, copy: Option<usize>, named: Span) -> Expr {
+        let through = (self.krate.module_paths.get(&named)).is_some_and(|through| through.function == def_id);
+        // A library's, its module's namespace's, imported from where the
+        // module imports the function from, `Scheduler.unstable_now`; not
+        // one the crate compiles itself, nor its module's default.
+        if through
+            && copy.is_none()
+            && !self.asked_of_library(def_id)
+            && let Some(item) = self.krate.foreign.item(def_id)
+            && item.member.is_none()
+            && let Some((from, export)) = self.krate.foreign.import_key(def_id, self.module)
+            && export != "default"
+        {
+            let namespace = (from, js::NAMESPACE.to_string());
+            if let Some(local) = self.krate.imports[&self.module].get(&namespace) {
+                let local = local.clone();
+                (self.dependencies.borrow_mut().package_uses).insert((self.module, namespace));
+                return Expr::member(Expr::var(&local), export).item();
+            }
+        }
+        match copy {
+            None if !through
+                || !self.krate.fns.contains_key(&def_id)
+                || self.krate.named_expressions.contains(&def_id) =>
+            {
+                self.fn_ref(def_id)
+            }
+            None => {
+                self.dependencies.borrow_mut().uses.push((self.item, def_id));
+                self.own_fn_ref_through(def_id, None, true)
+            }
+            Some(_) => self.own_fn_ref_through(def_id, copy, through),
+        }
+    }
+
     /// The crate's function `def_id`, its own JS or, by its index, a copy
     /// its callers need besides (`called_copy`, ADR 0051, amended), named
     /// in this module.
     pub(super) fn own_fn_ref(&self, def_id: DefId, copy: Option<usize>) -> Expr {
+        self.own_fn_ref_through(def_id, copy, false)
+    }
+
+    /// `own_fn_ref`'s, `through` the namespace of the module that has it,
+    /// where a path names it so (`named_fn_ref`): of another module's
+    /// function, `Plugin.extractEvents`, by what that module exports it
+    /// as; not its default, which is what the module is, imported by its
+    /// name.
+    fn own_fn_ref_through(&self, def_id: DefId, copy: Option<usize>, through: bool) -> Expr {
         let target = &self.krate.fns[&def_id];
         let copy = copy.map(|at| {
             let name = self.krate.given.js_given.name(def_id, at).to_owned();
@@ -121,19 +175,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => _ = self.dependencies.borrow_mut().references.insert((self.module, def_id)),
             }
         }
+        let copied = copy.is_some();
         let name = copy.map_or_else(|| target.name.clone(), |(_, name)| name);
         let export = target.owner.as_ref().unwrap_or(&name);
-        let reference = if target.module != self.module {
-            Expr {
-                facts: js::Facts::NONE,
-                kind: js::ExprKind::Symbol(super::module_symbol(target.module, export)),
-                span: js::Span::NONE,
-            }
+        let symbol = |export: &str| Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::Symbol(super::module_symbol(target.module, export)),
+            span: js::Span::NONE,
+        };
+        // Through its namespace, by what its module exports it as, a copy
+        // by its name (ADR 0051, amended).
+        let exported = match copied {
+            true => name.clone(),
+            false => super::default_exports::exported_as(self.tcx, def_id, &name),
+        };
+        let namespaced = through && target.module != self.module && exported != "default";
+        let reference = if namespaced {
+            Expr::member(symbol(js::NAMESPACE), exported)
+        } else if target.module != self.module {
+            symbol(export)
         } else {
             Expr::var(export)
         };
         // A class's constant, its prototype's (ADR 0761).
-        let reference = if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
+        let reference = if namespaced {
+            reference.item()
+        } else if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) {
             Expr::member(Expr::member(reference, "prototype"), target.name.clone())
         } else if target.owner.is_some() {
             Expr::member(reference, name)

@@ -20,6 +20,8 @@ mod js_given;
 pub(super) use js_given::{JsGiven, Params, js_facing};
 mod lazy_locals;
 mod mutation;
+mod namespaces;
+pub(super) use namespaces::{Through, module_paths, namespace_of};
 mod naming;
 mod only_called;
 mod plain_locals;
@@ -605,6 +607,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// What each module holds of a binding, and where a path reads one
     /// through it (ADR 0633).
     pub held: bindings::Held,
+    /// Where a path names a function through the module that has it,
+    /// read through its namespace (rd114, ADR 1018).
+    pub module_paths: HashMap<rustc_span::Span, Through>,
     /// The fields a `js::null()` is written to, whose `.d.ts` says `| null`
     /// (ADR 0935, amended).
     pub null_fields: HashSet<DefId>,
@@ -746,6 +751,20 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             uses.bound_to.entry(export.clone()).or_default();
             uses.imported.entry(export.clone()).or_default();
             uses.named.insert(export, imported.name.clone());
+        }
+    }
+    // A library's module a path names a function through, imported whole,
+    // `import * as Scheduler from "scheduler"` (rd114, ADR 1018): from where
+    // the module the path is in imports the function, by its name.
+    let module_paths = module_paths(tcx, &foreign);
+    for through in module_paths.values().filter(|through| !through.function.is_local()) {
+        if let Some((from, export)) = foreign.import_key(through.function, through.scope)
+            && export != "default"
+        {
+            let export = (from, crate::js::NAMESPACE.to_string());
+            uses.bound_to.entry(export.clone()).or_default();
+            uses.imported.entry(export.clone()).or_default();
+            uses.named.insert(export, through.namespace.clone());
         }
     }
     // A binding a library's module holds, named after its `const` there.
@@ -1285,6 +1304,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         local_functions,
         local_consts,
         held,
+        module_paths,
         null_fields,
     })
 }

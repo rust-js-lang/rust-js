@@ -91,9 +91,10 @@ pub mod report {
 `);
   expect(dep).toContain("export const Uninitialized = -1;\nexport const Pending = 0;\nexport const Resolved = 1;\n");
   expect(dep).toContain("return status !== Uninitialized;");
-  expect(app).toContain('import { Pending, Resolved, Uninitialized, started } from "../dep/lib.js";\n');
+  // Its function called through its root, its namespace's (ADR 1018).
+  expect(app).toContain('import { Pending, Resolved, Uninitialized } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
   expect(app).toContain("  return status === Uninitialized ? Pending : Resolved;\n");
-  expect(app).toContain("return started(status) && status === Resolved;");
+  expect(app).toContain("return Dep.started(status) && status === Resolved;");
   // Of the variants a `match` tests, those whose test it writes: its last
   // arm's, the rest, is no import.
   const report = readFileSync(join(dir, "app", "report.js"), "utf8");
@@ -175,7 +176,7 @@ pub fn local() -> (u32, u32, &'static str, u32) {
   expect(read("version.js")).toContain('\nconst VERSION = "19.3.0";\n\nexport default VERSION;\n\nexport { VERSION as RELEASE };\n');
   // Another module's default is what that one exports: its default, or
   // its name, where it isn't its own module's.
-  expect(dep).toContain('import { twice } from "./helpers.js";\nimport noop from "./noop.js";\nimport page from "./page.js";\nimport VERSION from "./version.js";\n');
+  expect(dep).toContain('import * as Helpers from "./helpers.js";\nimport noop from "./noop.js";\nimport page from "./page.js";\nimport VERSION from "./version.js";\n');
   expect(read("reexported.js")).toContain('export { default as noop } from "./noop.js";\nexport { default as VERSION } from "./version.js";\n');
   expect(read("again.js")).toContain('export { default } from "./noop.js";\n');
   expect(read("twice.js")).toContain('export { twice as default } from "./helpers.js";\n');
@@ -309,12 +310,14 @@ pub fn local() -> f64 {
 `);
   const scheduler = readFileSync(join(dir, "dep", "scheduler.js"), "utf8");
   expect(scheduler).toContain("\nconst LIMIT = 100;\n\nfunction getCurrentTime() {\n  return 6;\n}\n\nexport { getCurrentTime as unstable_now, LIMIT as MAX };\n");
-  expect(dep).toContain('import { unstable_now as getCurrentTime } from "./scheduler.js";\n');
+  // Called through its module, by what it exports it as there (ADR 1018).
+  expect(dep).toContain('import * as Scheduler from "./scheduler.js";\n');
+  expect(dep).toContain("  return Scheduler.unstable_now();\n");
   const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library;
   const aliased = manifest.items.filter((item: any) => item.exported_as).map((item: any) => [item.export, item.exported_as]);
   expect(aliased.sort()).toEqual([["LIMIT", "MAX"], ["getCurrentTime", "unstable_now"]]);
-  expect(app).toContain('import { MAX as LIMIT, unstable_now as getCurrentTime } from "../dep/scheduler.js";\n');
-  expect(app).toContain("  return getCurrentTime() + getCurrentTime() + LIMIT;\n");
+  expect(app).toContain('import { MAX as LIMIT } from "../dep/scheduler.js";\nimport * as Scheduler from "../dep/scheduler.js";\n');
+  expect(app).toContain("  return Scheduler.unstable_now() + Scheduler.unstable_now() + LIMIT;\n");
   const { called } = await import(join(dir, "app", "lib.js"));
   expect(called()).toBe(112);
 });
@@ -404,6 +407,38 @@ pub fn run() -> u32 {
   expect(app).toContain("  return (queueMacrotask(helpOut) + helpOut()) >>> 0;\n");
   const { run } = await import(join(dir, "app", "lib.js"));
   expect(run()).toBe(7);
+});
+
+// rd114: a library's function called through its module's path, with no
+// `use` of it, is read through that module's namespace, as the crate's
+// own module's is, `Events.extractEvents(..)`, and its root's by its
+// crate's name, `Dep.helper()`; one the crate `use`s is its named import.
+test("a library's function called through its module is read through its namespace", async () => {
+  const dir = fixture("cross-crate-namespace");
+  const { app } = compiled(dir, `pub mod events {
+    pub fn extract_events(n: u32) -> u32 {
+        n * 2
+    }
+
+    pub fn name() -> &'static str {
+        "events"
+    }
+}
+
+pub fn helper() -> u32 {
+    3
+}
+`, `use dep::events::name;
+
+pub fn run() -> String {
+    format!("{} {}", dep::events::extract_events(2) + dep::helper(), name())
+}
+`);
+  expect(app).toContain('import { name } from "../dep/events.js";\nimport * as Events from "../dep/events.js";\n');
+  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
+  expect(app).toContain("Events.extractEvents(2) + Dep.helper()");
+  const { run } = await import(join(dir, "app", "lib.js"));
+  expect(run()).toBe("7 events");
 });
 
 // React's ReactFiberNewContext could `use shared::object_is::OBJECT_IS as
@@ -623,9 +658,10 @@ pub fn run() -> u32 {
     dep::count()
 }
 `);
-  expect(app).toContain("  noop.call(undefined, 1, 2);\n");
-  expect(app).toContain("  bump.call(undefined, 3, 4);\n");
-  expect(app).toContain("  ((x) => {\n    many(x);\n  }).call(undefined, 5, 6);\n");
+  // Through its root's namespace, a name too (ADR 1018).
+  expect(app).toContain("  Dep.noop.call(undefined, 1, 2);\n");
+  expect(app).toContain("  Dep.bump.call(undefined, 3, 4);\n");
+  expect(app).toContain("  ((x) => {\n    Dep.many(x);\n  }).call(undefined, 5, 6);\n");
   const { run: ran } = await import(join(dir, "app", "lib.js"));
   expect(ran()).toBe(131);
 });
@@ -1028,7 +1064,7 @@ pub fn names(props: &Unknown) -> Vec<String> {
     names
 }
 `);
-  expect(app).toContain('import { keyCount } from "../dep/lib.js";\n');
+  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
   expect(app).not.toContain("function keyCount");
   const { names } = await import(join(dir, "app", "lib.js"));
   expect(names({ a: 1, b: 2 })).toEqual(["2"]);
@@ -1069,7 +1105,7 @@ pub fn pushed(x: &[Vec<u32>], y: &[Vec<u32>]) -> usize {
     x[0].len()
 }
 `);
-  expect(app).toContain('import { truncated } from "../dep/lib.js";\n');
+  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
   expect(app).not.toContain("function truncated");
   expect(app).toContain("function joined");
   const lib = await import(join(dir, "app", "lib.js"));

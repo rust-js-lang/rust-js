@@ -883,10 +883,11 @@ pub fn set_lines(lines: usize) {
 
 ```js
 // src/lib.js
-import { LINES, setLines } from "./counter.js";
+import { LINES } from "./counter.js";
+import * as Counter from "./counter.js";
 
 export function restart() {
-  setLines(10);
+  Counter.setLines(10);
   return LINES;
 }
 ```

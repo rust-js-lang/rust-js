@@ -86,6 +86,7 @@ impl OutputPlan {
                     .iter()
                     .map(|import| js::Import {
                         named: import.named.clone(),
+                        namespace: import.namespace.clone(),
                         from: self.specifier(&module.path, &import.path),
                         span: import.span,
                     })

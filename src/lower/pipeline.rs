@@ -152,6 +152,7 @@ pub fn lower_crate<'tcx>(
         local_functions,
         local_consts,
         held,
+        module_paths,
         null_fields,
     } = match analyze_crate(
         tcx,
@@ -438,6 +439,7 @@ pub fn lower_crate<'tcx>(
         imports: &import_names,
         required: &required,
         held_reads: &held.reads,
+        module_paths: &module_paths,
         trait_impls: &trait_impls,
         serde_attrs,
         pretty_debug,
@@ -1345,8 +1347,18 @@ pub fn lower_crate<'tcx>(
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             // By what each imports, `import { MAX as LIMIT, unstable_now as getCurrentTime }`.
             imports.sort_by(|(a, an, ae, _), (b, bn, be, _)| (&paths[a], ae, an).cmp(&(&paths[b], be, bn)));
-            let candidates: Vec<_> = imports
-                .into_iter()
+            // And each module it imports of, itself, which it reads where a
+            // path names a function through it, `Plugin.extractEvents` (rd114,
+            // ADR 1018): after what it imports by name, which keeps its name.
+            let through: BTreeMap<&Vec<String>, LocalModId> =
+                imports.iter().map(|&(target, ..)| (&paths[&target], target)).collect();
+            let namespaces: Vec<_> = (through.into_values())
+                .map(|target| {
+                    let name = super::analysis::namespace_of(tcx, target.to_def_id());
+                    (target, js::NAMESPACE.to_string(), js::NAMESPACE.to_string(), name)
+                })
+                .collect();
+            let candidates: Vec<_> = (imports.into_iter().chain(namespaces))
                 .map(|(target, name, export, local)| ImportRequest {
                     symbol: module_symbol(target, &name),
                     export,
