@@ -81,7 +81,7 @@ or assigns `b` again after.**
   (`clone-alias-kept`, `clone-alias-of-a-reassigned-parameter`,
   `clone-alias-of-any-const`).
 
-## Amendment: a clone out of a cell's borrow, read once next (rd189)
+## Amendment: a clone out of a cell's borrow, read once next (rd189; superseded below)
 
 React's FragmentInstance clones its fiber out of its cell before another
 crate's call, as idiomatic Rust does, so no borrow is held across it:
@@ -100,3 +100,20 @@ A: the same read, at the same time. Held by
 `test/corpus/cell_clone_read_in_place.rs` against native Rust and the
 mutations `cell-clone-held`, `cell-clone-after-an-effect` and
 `cell-clone-not-next` (`mir/tidy/bindings.ts`).
+
+## Amendment: the program's `let` of such a clone stays (rd213)
+
+The rd189 amendment read a clone-made `const` of a field in its place,
+`traverseFragmentInstance(this.fragmentFiber, ..)`, as React's
+FragmentInstance upstream does; but React names the same shape elsewhere,
+SuspenseContext's `const handlerOnStack = suspenseHandlerStackCursor.current;
+push(..)` and updateContainerSync's `const current = container.current;`,
+each a `let` the Rust writes too, `let handler_on_stack =
+cursor.current.borrow().clone();`, so the rule removed a name the program
+gave, and, inside a thread-local's `with`, the comments before it. Nothing
+in the Rust tells the two apart: each clones out of a borrow so as not to
+hold it across a call. **So a `let` the program wrote of a field's clone
+stays, named as written; the rd189 rule is gone.** FragmentInstance's
+`const fragmentFiber = this.fragmentFiber;` is a port difference, the
+user's to accept. Held by `test/corpus/cell_clone_read_in_place.rs`, its
+`const fiber = holder.fiber;`.

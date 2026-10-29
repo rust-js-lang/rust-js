@@ -1,9 +1,9 @@
 // An `Rc`'s clone out of a cell's borrow, `let fiber =
-// Rc::clone(&self.fiber.borrow());`, read once as the next call's argument
-// before anything that may write the cell, is that field read in place,
-// `visit(holder.fiber, ..)` (rd189); one the cell's written before, or
-// read after an argument that does something, is held first, as Rust
-// reads it.
+// Rc::clone(&self.fiber.borrow());`, is the `let` the program wrote, named
+// as it named it, `const fiber = holder.fiber;`, whatever reads it after,
+// as upstream React names its own (rd213, which rd189's reading in place
+// broke); and it reads the value the cell held when it was made, though the
+// cell's written before it's read.
 
 use std::cell::RefCell;
 use std::rc::Rc;

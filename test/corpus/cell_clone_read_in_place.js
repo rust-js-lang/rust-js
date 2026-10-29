@@ -16,7 +16,8 @@ function swap(holder, tag) {
 
 const Holder = {
   hasTag(holder, tag) {
-    return visit(holder.fiber, (fiber) => fiber.tag === tag);
+    const fiber = holder.fiber;
+    return visit(fiber, (fiber) => fiber.tag === tag);
   },
 
   tagThenSwap(holder) {
