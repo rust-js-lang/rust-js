@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "range-inclusive-nth-back-start-excluded",
     breaks: "a reversed `a..=b`'s `nth(n)` that lands on its start `a` gives none",
     file: "src/runtime/range_len.js",
-    find: "  const at = big ? range.end - BigInt(n) : range.end - n;\n  if (at >= range.start) {\n",
-    replace: "  const at = big ? range.end - BigInt(n) : range.end - n;\n  if (at > range.start) {\n",
+    find: "  return at >= range.start ? at : undefined;\n",
+    replace: "  return at > range.start ? at : undefined;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
   {
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "  const last = $rangeInclusiveLast(range);\n  if (range.start <= range.end) range.start = typeof range.end === \"bigint\" ? range.end + 1n : range.end + 1;\n",
     replace: "  const last = $rangeInclusiveLast(range);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
+  },
+  {
+    name: "range-inclusive-nth-past-end-clamped",
+    breaks: "`nth(n)` past an inclusive range's end leaves its start one past its end, `6..=5`, where std's is the one after the number `n` on, `11..=5` (#414)",
+    file: "src/runtime/range_len.js",
+    find: "  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at <= range.end ? at : undefined;\n",
+    replace: "  if (at > range.end) {\n    range.start = typeof at === \"bigint\" ? range.end + 1n : range.end + 1;\n    return undefined;\n  }\n  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

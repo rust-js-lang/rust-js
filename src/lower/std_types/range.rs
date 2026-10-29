@@ -246,6 +246,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(i, _)| i),
             _ => None,
         };
+        // An inclusive one's, as std's: its start, Rust's, included, and its
+        // end, or of one exhausted, its start excluded, so it holds nothing
+        // (#414).
+        if self.range_kind(ty).is_some()
+            && let (parts, Some(exhausted)) = self.range_state(range.clone(), ty, out)
+            && let [start, _] = parts.as_slice()
+        {
+            let (Some(included), Some(excluded)) = (variant("Included"), variant("Excluded")) else {
+                return Err(self.unsupported(span, "this range's bounds"));
+            };
+            let from = self.adt_value(bound, included, vec![start.clone()], &[], None, span)?;
+            let to = self.adt_value(
+                bound,
+                included,
+                vec![Expr::member(range.clone(), "end")],
+                &[],
+                None,
+                span,
+            )?;
+            let before = self.adt_value(bound, excluded, vec![start.clone()], &[], None, span)?;
+            return Ok(Some([from, Expr::cond(exhausted, before, to)]));
+        }
         let value = |this: &mut Self, part: RangeBound| -> R<Expr> {
             Ok(match part {
                 RangeBound::Item(i) => Expr::index(range.clone(), Expr::int(i as i128)),
@@ -313,11 +335,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`.
+    /// A range's own state, as Rust's: its bounds, and of `a..=b` of
+    /// integers, whether it's exhausted. Its steps leave it unwrapped,
+    /// `next` past its type's last, `next_back` before its first, `nth` past
+    /// either (#414): a bound past its type's is that, exhausted, and each
+    /// bound wrapped is Rust's, `r.start & 255`. Of `{ start: 1, end: 3 }`,
+    /// constants, never stepped, its parts and `None`, as of another range;
+    /// a clone made in place, `{ start: r.start, end: r.end }`, is what it
+    /// copies.
+    pub(in crate::lower) fn range_state(
+        &mut self,
+        range: Expr,
+        ty: Ty<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> (Vec<Expr>, Option<Expr>) {
+        let kind = self.range_kind(ty).expect("a range");
+        if let Some(parts) = self.range_literal_parts(&range, kind)
+            && parts.iter().all(Expr::is_constant)
+        {
+            return (parts, None);
+        }
+        let parts = self.range_parts(range, kind, out);
+        let num = self.range_index(ty).and_then(Num::of).filter(|num| !num.float());
+        let (Some(num), RangeKind::Inclusive, [start, end]) = (num, kind, parts.as_slice()) else {
+            return (parts, None);
+        };
+        let (lo, hi) = num.range();
+        let past = Expr::bin(Op::Gt, start.clone(), num.literal(hi as i128));
+        let before = Expr::bin(Op::Lt, end.clone(), num.literal(lo));
+        let exhausted = Expr::bin(Op::Or, past, before);
+        (vec![num.wrap(start.clone()), num.wrap(end.clone())], Some(exhausted))
+    }
+
+    /// `a == b` of two ranges of type `ty` (ADR 0129): `a.start === b.start
+    /// && a.end === b.end`, Rust's, and whether each is exhausted, as std's
+    /// derive compares it (#414).
+    pub(in crate::lower) fn range_eq(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let index = self.range_index(ty).expect("a bound's type");
+        let (a, a_exhausted) = self.range_state(a, ty, out);
+        let (b, b_exhausted) = self.range_state(b, ty, out);
+        let mut parts = Vec::new();
+        for (x, y) in a.into_iter().zip(b) {
+            parts.push(self.eq_value(x, y, index, span, out)?);
+        }
+        parts.extend(match (a_exhausted, b_exhausted) {
+            (Some(x), Some(y)) => Some(Expr::bin(Op::Eq, x, y)),
+            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),
+            (None, None) => None,
+        });
+        Ok((parts.into_iter())
+            .reduce(|all, part| Expr::bin(Op::And, all, part))
+            .unwrap_or_else(|| Expr::bool(true)))
+    }
+
+    /// `{:?}` of a range: its bounds', around its dots, `1..4` or `..=4`,
+    /// and of one exhausted, ` (exhausted)` after, as std's (#414).
     pub(in crate::lower) fn range_debug(&mut self, range: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let kind = self.range_kind(ty).expect("a range");
         let index = self.range_index(ty);
-        let shown = |this: &mut Self, parts: Vec<Expr>| -> R<Expr> {
+        let shown = |this: &mut Self, (parts, exhausted): (Vec<Expr>, Option<Expr>)| -> R<Expr> {
             let mut parts = parts.into_iter();
             let mut pieces = Vec::new();
             if matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive | RangeKind::From) {
@@ -328,17 +411,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(end) = parts.next() {
                 pieces.push(this.debug_string_with(end, index.expect("a bound's type"), span, pretty)?);
             }
+            if let Some(exhausted) = exhausted {
+                pieces.push(Expr::cond(exhausted, Expr::str(" (exhausted)"), Expr::str("")));
+            }
             Ok(join(pieces))
         };
-        if let Some(parts) = self.range_literal_parts(&range, kind) {
-            return shown(self, parts);
+        if let Some(parts) = self.range_literal_parts(&range, kind)
+            && (kind != RangeKind::Inclusive || parts.iter().all(Expr::is_constant))
+        {
+            return shown(self, (parts, None));
         }
-        let parts = kind
-            .bounds()
-            .iter()
-            .map(|name| Expr::member(Expr::var("range"), *name))
-            .collect();
-        let body = shown(self, parts)?;
+        let state = self.range_state(Expr::var("range"), ty, &mut Vec::new());
+        let body = shown(self, state)?;
         let f = Expr::arrow(
             vec!["range".into()],
             vec![StmtKind::Return(Some(body)).at(js::Span::NONE)],
@@ -417,16 +501,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper(name), vec![range]));
         }
         let range = values.into_iter().next().expect("the range");
+        // Its own bounds, Rust's, as `range_state` reads them (#414).
+        if let RangeOp::Bound(_) | RangeOp::IntoInner = op {
+            let (parts, _) = self.range_state(range, range_ty, out);
+            return Ok(match (op, parts.as_slice()) {
+                (RangeOp::Bound("start"), [start, _]) => start.clone(),
+                (RangeOp::Bound(_), [_, end]) => end.clone(),
+                (_, [start, end]) => Expr::array(vec![start.clone(), end.clone()]),
+                _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
+            });
+        }
         let parts = self.range_parts(range, kind, out);
         Ok(match (op, parts.as_slice()) {
-            (RangeOp::Bound(name), [start, end]) => {
-                if name == "start" {
-                    start.clone()
-                } else {
-                    end.clone()
-                }
-            }
-            (RangeOp::IntoInner, [start, end]) => Expr::array(vec![start.clone(), end.clone()]),
             (RangeOp::IsEmpty, [start, end]) => {
                 let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };
                 Expr::unary(UnaryOp::Not, Expr::bin(op, start.clone(), end.clone()))

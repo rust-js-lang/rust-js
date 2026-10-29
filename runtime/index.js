@@ -3012,29 +3012,26 @@ export function $rangeNthBack(range, n) {
   return undefined;
 }
 
-// `r.nth(n)` of `a..=b`: as `$rangeNth`'s, its end the last number, and its
-// start past its end once it's given all.
+// `r.nth(n)` of `a..=b`: as std's `RangeInclusive::nth`, its end the last
+// number, its start the one after the number `n` on, whether it's past its
+// end or not.
 export function $rangeInclusiveNth(range, n) {
-  const big = typeof range.start === "bigint";
-  const at = big ? range.start + BigInt(n) : range.start + n;
-  if (at <= range.end) {
-    range.start = big ? at + 1n : at + 1;
-    return at;
-  }
-  range.start = big ? range.end + 1n : range.end + 1;
-  return undefined;
+  // Of one left empty, nothing, as it was; else its start moved past the
+  // number `n` on, unwrapped, which past its type's last is std's wrapped
+  // start, exhausted, as its readers read it (#414).
+  if (!(range.start <= range.end)) return undefined;
+  const at = typeof range.start === "bigint" ? range.start + BigInt(n) : range.start + n;
+  range.start = typeof at === "bigint" ? at + 1n : at + 1;
+  return at <= range.end ? at : undefined;
 }
 
-// `r.nth_back(n)` of `a..=b`, which `r.rev().nth(n)` is.
+// `r.nth_back(n)` of `a..=b`, which `r.rev().nth(n)` is: its end moved
+// before the number `n` back, as `$rangeInclusiveNth`'s start.
 export function $rangeInclusiveNthBack(range, n) {
-  const big = typeof range.end === "bigint";
-  const at = big ? range.end - BigInt(n) : range.end - n;
-  if (at >= range.start) {
-    range.end = big ? at - 1n : at - 1;
-    return at;
-  }
-  range.end = big ? range.start - 1n : range.start - 1;
-  return undefined;
+  if (!(range.start <= range.end)) return undefined;
+  const at = typeof range.end === "bigint" ? range.end - BigInt(n) : range.end - n;
+  range.end = typeof at === "bigint" ? at - 1n : at - 1;
+  return at >= range.start ? at : undefined;
 }
 
 // `r.last()` of `a..=b`: its end, or none.

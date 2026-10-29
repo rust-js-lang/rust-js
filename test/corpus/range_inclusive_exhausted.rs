@@ -1,0 +1,52 @@
+// A `RangeInclusive` stepped past its type's last integer, `127i8..=127`,
+// or before its first: release Rust wraps that bound and marks it
+// exhausted, which its `start()`, `end()`, `{:?}`, `==`, `contains`,
+// `is_empty()` and bounds read (#414).
+
+use std::collections::BTreeMap;
+use std::ops::RangeInclusive;
+
+fn show(r: &RangeInclusive<i8>) {
+    println!(
+        "{:?} {:?} {:?} {} {} {}",
+        r,
+        r.start(),
+        r.end(),
+        r.is_empty(),
+        r.contains(&0),
+        r == &(-128..=127)
+    );
+}
+
+fn main() {
+    let mut r = 127i8..=127;
+    println!("{:?}", r.next());
+    show(&r);
+    println!("{:?} {:?}", r.next(), r.clone().into_inner());
+
+    let mut back = -128i8..=-128;
+    println!("{:?}", back.next_back());
+    show(&back);
+
+    let mut u = 250u8..=255;
+    println!("{:?} {:?}", u.nth(10), u);
+    let mut v = 1u8..=5;
+    println!("{:?} {:?} {}", v.nth(9), v, v.is_empty());
+    let mut w = 1u8..=5;
+    println!("{:?} {:?}", w.nth_back(1), w);
+
+    let mut wide = u32::MAX - 1..=u32::MAX;
+    println!("{:?} {:?} {:?}", wide.next(), wide.next(), wide);
+    let mut big = i64::MAX..=i64::MAX;
+    println!("{:?} {:?} {:?}", big.next(), big, big.start());
+
+    let map: BTreeMap<i8, &str> = [(-128, "min"), (0, "zero"), (127, "max")].into_iter().collect();
+    println!("{:?}", map.range(r.clone()).collect::<Vec<_>>());
+    let fresh = -128i8..=127;
+    println!("{:?} {}", map.range(fresh.clone()).count(), fresh == r);
+
+    // Stepped to its end below its type's last: no wrap, not exhausted.
+    let mut s = 1u8..=3;
+    while s.next().is_some() {}
+    println!("{:?} {} {:?}", s, s.is_empty(), s.start());
+}

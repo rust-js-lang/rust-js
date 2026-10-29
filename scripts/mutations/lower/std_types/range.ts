@@ -257,4 +257,28 @@ export const mutations: Mutation[] = [
     replace: "        let lent = false && reversed.is_none();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
   },
+  {
+    name: "range-state-unwrapped",
+    breaks: "an inclusive range stepped past its type's last reads its bounds unwrapped, `128..=127`, not std's exhausted `-128..=127 (exhausted)` (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "        let (Some(num), RangeKind::Inclusive, [start, end]) = (num, kind, parts.as_slice()) else {\n",
+    replace: "        let (Some(num), RangeKind::Exclusive, [start, end]) = (num, kind, parts.as_slice()) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
+  {
+    name: "range-bounds-exhausted-included",
+    breaks: "an exhausted inclusive range's `RangeBounds` end is its end, included, which a `BTreeMap::range` panics of, where std's excludes its start (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "            return Ok(Some([from, Expr::cond(exhausted, before, to)]));\n",
+    replace: "            let _ = (exhausted, before);\n            return Ok(Some([from, to]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
+  {
+    name: "range-eq-exhausted-ignored",
+    breaks: "`==` of an exhausted inclusive range and a fresh one of the same bounds is true, where std's derive compares `exhausted` too (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),\n",
+    replace: "            (Some(_), None) | (None, Some(_)) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
 ];

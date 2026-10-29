@@ -1219,20 +1219,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 });
             }
         }
-        // Its bounds' (ADR 0129): `a.start === b.start && a.end === b.end`.
-        if let Some(kind) = self.range_kind(ty) {
-            let index = self.range_index(ty);
-            let a = self.range_parts(a, kind, out);
-            let b = self.range_parts(b, kind, out);
-            let mut all: Option<Expr> = None;
-            for (x, y) in a.into_iter().zip(b) {
-                let part = self.eq_value(x, y, index.expect("a bound's type"), span, out)?;
-                all = Some(match all {
-                    Some(all) => Expr::bin(Op::And, all, part),
-                    None => part,
-                });
-            }
-            return Ok(all.unwrap_or_else(|| Expr::bool(true)));
+        if self.range_kind(ty).is_some() {
+            return self.range_eq(a, b, ty, span, out);
         }
         // Two maps, or two sets (ADR 0059): as many of each, and each key of
         // one the other's, of an equal value: `$mapEq(a, b, (x, y) => ..)`,

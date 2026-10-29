@@ -103,8 +103,8 @@ export const mutations: Mutation[] = [
     name: "range-eq-unknown",
     breaks: "`(1..4) == (1..4)` is refused",
     file: "src/lower/std_impls.rs",
-    find: "        if let Some(kind) = self.range_kind(ty) {\n            let index = self.range_index(ty);\n            let a = self.range_parts(a, kind, out);",
-    replace: "        if false && let Some(kind) = self.range_kind(ty) {\n            let index = self.range_index(ty);\n            let a = self.range_parts(a, kind, out);",
+    find: "        if self.range_kind(ty).is_some() {\n            return self.range_eq(a, b, ty, span, out);\n",
+    replace: "        if false && self.range_kind(ty).is_some() {\n            return self.range_eq(a, b, ty, span, out);\n",
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {

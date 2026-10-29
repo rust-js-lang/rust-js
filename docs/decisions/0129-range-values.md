@@ -125,3 +125,33 @@ and move its start to its end, past it of `a..=b`.** Held by
 `range-count-out-kept` and `range-inclusive-last-out-kept`
 (`runtime/range_len.ts`). An inclusive one's `{:?}` after it, `3..=3
 (exhausted)` where JS has `4..=3`, is #414's other half.
+
+## Amendment: an inclusive range stepped past its type's bounds is exhausted (2026-10-29, #414)
+
+Std 1.99's `RangeInclusive::next` steps by `forward_overflowing`: past its
+type's last, `127i8..=127`, its start wraps, `-128`, and it's marked
+exhausted, which its `start()`, `end()`, `into_inner()`, `{:?}` (`-128..=127
+(exhausted)`), `==` and `RangeBounds` (its start excluded, so it holds
+nothing) read; `next_back` before its first wraps its end alike, and `nth`
+leaves its start the one after the number it's asked, `(1..=5).nth(9)`
+leaving `11..=5`, wrapped past the type's last. JS gave `128..=127`, and
+`nth` past the end `6..=5`. Results change, so Rust's behavior is kept
+(ADR 0262), staged as the user decided: **its steps leave the bound
+unwrapped, `$rangeInclusiveNext`'s `start++`, `$rangeInclusiveNth`'s
+`at + 1`, so a bound past its type's is that exhausted state, and every
+reader of whether it's empty, `is_empty`, `contains`, `len()`, a loop, a
+slice, stays as it is; what reads its own state wraps each bound,
+`r.start & 255`, and reads it exhausted, `r.start > 255 || r.end < 0`:
+`range_state`, the one answer, which `start()`, `end()`, `into_inner()`,
+`{:?}`, `==` and its bounds ask.** Of one made of constants, never stepped,
+its parts as they are; a clone made in place, `{ start: r.start, end:
+r.end }`, is what it copies. Held by `range_inclusive_exhausted.rs`
+against native Rust and the mutations `range-state-unwrapped`,
+`range-bounds-exhausted-included` (`lower/std_types/range.ts`),
+`range-eq-exhausted-ignored` (`lower/std_types/range.ts`, `range_eq`) and
+`range-inclusive-nth-past-end-clamped` (`runtime/range_len.ts`). Four
+corpus cases read a held range's bounds wrapped now, `inclusive.start |
+0`, a local never stepped too: knowing one never lent is a fact still to
+make. Still to come: a `fold`'s end state, `3..=3 (exhausted)`, and a
+`char` range's at `char::MAX` (stage 2), and the JS protocol's consumers
+of a lent range (stage 3).

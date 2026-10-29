@@ -39,8 +39,11 @@ function shown(b) {
 function main() {
   const tupleRangeBounds = { startBound: (range) => range[0], endBound: (range) => range[1] };
   const rangeInclusiveRangeBounds = {
-    startBound: (range) => ({ TAG: "Included", _0: range.start }),
-    endBound: (range) => ({ TAG: "Included", _0: range.end }),
+    startBound: (range) => ({ TAG: "Included", _0: range.start >>> 0 }),
+    endBound: (range) =>
+      range.start > 4294967295 || range.end < 0
+        ? { TAG: "Excluded", _0: range.start >>> 0 }
+        : { TAG: "Included", _0: range.end },
   };
   console.log(
     `${start(
