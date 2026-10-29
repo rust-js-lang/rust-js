@@ -43,14 +43,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which never count their arguments, is called as they are,
         // `dispatcher.useState()` (ADR 0907); one that may be a binding's,
         // or come from JS, is given what JS is (ADR 0330, amended).
+        // A with_this function, a `Box<dyn Fn>`, is never one, so it's
+        // called through what holds it, `t.g()`, as JS calls it (#404).
         let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
-        if self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
-            return Ok(Value::Expr(Expr::call(callee, exprs)));
+        if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
+            crate::lower::calls::given_to_js(&mut exprs);
         }
-        crate::lower::calls::given_to_js(&mut exprs);
-        let sig = self.tcx.instantiate_bound_regions_with_erased(*sig);
-        let signature = (Ty::new_tup(self.tcx, sig.inputs()), sig.output());
-        self.called_unbound(state, (Value::Expr(Expr::call(callee, exprs)), signature), out)
+        Ok(Value::Expr(Expr::call(callee, exprs)))
     }
 
     pub(super) fn mir_call(

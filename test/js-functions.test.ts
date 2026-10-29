@@ -424,12 +424,13 @@ pub fn orphan(value: Option<&Unknown>) -> bool {
 });
 
 // #402: a call of what may be a with_this function the crate makes, a
-// `dyn Fn`, a generic `F` or a fn pointer of its signature a field or an
+// `dyn Fn` or a generic `F` of its signature a field or an
 // item holds, `(s.f)()`, gives it none, as Rust gives a with_this function
 // `None` (ADR 0972): its callee held first, `const f = s.f; f()`, not
 // `s.f()`, whose `this` is `s`. One of another signature, JS's own, is
 // called through its object, `o.g(1)`, as JS calls it (#404, the user's
-// decision); a closure of the crate's too.
+// decision); a closure of the crate's too, and a fn pointer, which no
+// with_this function can be, `t.g()`.
 test("a dyn Fn a field or an item holds is called with no this", async () => {
   const { js, lib } = await compiled("dyn-fn-field-this", `use js::Unknown;
 
@@ -474,7 +475,7 @@ pub fn other(o: &Other) -> u32 {
   expect(js).toContain("  const f = s.f;\n  return f();\n");
   expect(js).toContain("const f = fs[0];\n");
   expect(js).toContain("  const f = p[0];\n  return f();\n");
-  expect(js).toContain("  const g = t.g;\n  return g();\n");
+  expect(js).toContain("return t.g();");
   expect(js).toContain("return !!p[0]() && p[1] > 1;");
   expect(js).toContain("return o.g(1);");
   const reads = function (this: unknown) {
@@ -484,7 +485,7 @@ pub fn other(o: &Other) -> u32 {
     false,
     false,
     false,
-    false,
+    true,
     true,
     6,
   ]);

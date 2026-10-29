@@ -219,3 +219,10 @@ in generic code; and a crate's closure and a Rust fn pointer of the
 with_this function's signature, called as they are. Mutations
 `with-this-unrecorded`, `with-this-generic-unrecorded` and
 `with-this-any-signature` (`analysis/fn_pointers.ts`).
+
+**A fn pointer's call is never held** (amended again, #404): a with_this
+function is a `Box<dyn Fn>`, which no fn pointer can be, so
+`ReactStrictModeWarnings.discardPendingWarnings()` and
+`dispatcher.useHostTransitionStatus()` are called through what holds
+them, though the crate makes a with_this function of their signature.
+`test/js-functions.test.ts`'s `t.g()` holds it.
