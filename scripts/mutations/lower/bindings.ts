@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bound-methods-private-declared",
+    breaks: "a private binding of a struct's impl is declared its interface's method, a JS caller's to call",
+    file: "src/lower/bindings.rs",
+    find: "        .filter(|&item| tcx.visibility(item).is_public() && is_binding(tcx, item))\n",
+    replace: "        .filter(|&item| is_binding(tcx, item))\n",
+    tests: ["test/declarations-bound-methods.test.ts"],
+  },
+  {
     name: "instance-of-given-unknown",
     breaks: "a binding's `link_name = \"instanceof\"`, `js::instance_of`'s, is a call of a method named so, `value.instanceof(constructor)` (ADR 0878)",
     file: "src/lower/bindings.rs",

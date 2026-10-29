@@ -1216,7 +1216,7 @@ export { delete$ as delete };
 | a `#[rust_js::rest]` slice `&[T]` | a rest parameter, `...args: T[]` |
 | `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
 | `HashMap<K, V>`, `BTreeMap<K, V>`; `HashSet<T>`, `BTreeSet<T>` | `Map<K, V>`; `Set<T>` ([ADR 0876](../../decisions/0876-a-maps-declaration-is-map.md)) |
-| a struct with named fields | an `interface` of its fields |
+| a struct with named fields | an `interface` of its fields, and of each `pub` method of `self` its impl binds of the JS object, `#[rust_js::link_name = "isPersistent"] pub fn is_persistent(&self) -> bool`'s `isPersistent(): boolean` ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |
 | `impl Fn(u32) -> u32`, taken or given | `(value: number) => number` |

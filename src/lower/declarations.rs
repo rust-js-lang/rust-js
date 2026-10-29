@@ -959,6 +959,24 @@ impl<'tcx> Declarations<'_, 'tcx> {
             });
             members.push(documented(declared, self.tcx, method));
         }
+        // A method its impls bind of the JS object it is, `isPersistent():
+        // boolean`, where no field has its name (rd144).
+        for (method, name) in super::bindings::bound_methods(self.tcx, def_id) {
+            if members.iter().any(|m| m["name"].as_str() == Some(name.as_str())) {
+                continue;
+            }
+            let function = self.function(method);
+            let params: Vec<Value> = (function["params"].as_array().into_iter().flatten().skip(1).cloned()).collect();
+            let declared = json!({
+                "kind": "method",
+                "name": name,
+                "optional": false,
+                "typeParameters": function["typeParameters"],
+                "params": params,
+                "returns": function["returns"],
+            });
+            members.push(documented(declared, self.tcx, method));
+        }
         Some(json!({
             "kind": "interface",
             "name": self.tcx.item_name(def_id).as_str(),

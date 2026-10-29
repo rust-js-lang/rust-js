@@ -182,3 +182,24 @@ nothing but comments before it, the file's, a license's, which the
 `.d.ts` starts with already (ADR 0383); nor one a macro made. Case N:
 nothing runs a declaration. Held by `test/declarations-comments.test.ts`
 and the mutations in `scripts/mutations/lower/declarations/comments.ts`.
+
+## Amendment: a struct's bound methods are its interface's (rd144)
+
+React's SyntheticEvent, ported, binds its prototype's functions as
+methods of the event's struct, `#[rust_js::link_name = "isPersistent"]
+pub fn is_persistent(&self) -> bool { unreachable!() }`, called
+`event.isPersistent()`. Its interface listed only its fields, so its
+declaration lost `isPersistent(): boolean`, which upstream's
+BaseSyntheticEvent type declares: a type narrower than upstream's.
+
+**A struct's interface declares each method its impls bind of the JS
+object it is**, `pub`, of `self`, called `this.name(..)`
+(`bindings::bound_methods`): by its JS name, of its parameters after
+`self`, with its JSDoc, after its fields, `preventDefault(): void;
+isPersistent(): boolean;`. Not a private one, nor one of another form, a
+getter's `get name`, nor one named as a field, which the field's
+property declares. Case N: nothing runs a declaration.
+
+Held by `test/declarations-bound-methods.test.ts` and the mutations
+`bound-methods-undeclared` and `bound-methods-private-declared`.
+

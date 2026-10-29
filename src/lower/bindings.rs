@@ -463,6 +463,27 @@ pub(super) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
     JsForm::Call(name)
 }
 
+/// Each method of the JS object a crate's type `adt` is that its impls bind,
+/// `pub`, of `self`, and called `this.name(..)`: by its JS name, as
+/// `#[rust_js::link_name = "isPersistent"] pub fn is_persistent(&self)` is
+/// `event.isPersistent()`, in the order its impls write them (rd144).
+pub(super) fn bound_methods(tcx: TyCtxt<'_>, adt: DefId) -> Vec<(DefId, String)> {
+    let is_name = |name: &str| {
+        let mut chars = name.chars();
+        chars.next().is_some_and(|c| c.is_alphabetic() || c == '_' || c == '$')
+            && chars.all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+    };
+    (tcx.inherent_impls(adt).iter())
+        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .filter(|&item| tcx.def_kind(item) == DefKind::AssocFn && tcx.associated_item(item).is_method())
+        .filter(|&item| tcx.visibility(item).is_public() && is_binding(tcx, item))
+        .filter_map(|item| match js_form(tcx, item) {
+            JsForm::Call(name) if is_name(&name) => Some((item, name)),
+            _ => None,
+        })
+        .collect()
+}
+
 /// A binding a module holds as a value of its own, its default or a `pub
 /// use`: its `const`, the JS its path reads, `const assign =
 /// Object.assign;` (ADRs 0622, 0633).

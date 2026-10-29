@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "bound-methods-undeclared",
+    breaks: "a struct's methods its impl binds of the JS object, `isPersistent()`, aren't in its interface, narrower than upstream's type (rd144)",
+    file: "src/lower/declarations.rs",
+    find: "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id) {\n",
+    replace: "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id).into_iter().take(0) {\n",
+    tests: ["test/declarations-bound-methods.test.ts"],
+  },
+  {
     name: "default-class-declared-const",
     breaks: "a default class is declared `declare const Complex: Complex;`, not a class",
     file: "src/lower/declarations.rs",
