@@ -29,7 +29,7 @@ mod unwinding;
 
 pub(super) use throwing::call_throws;
 
-pub(super) use naming::renamed_in;
+pub(super) use naming::{UsesWritten, renamed_in};
 mod caller_locations;
 mod type_facts;
 mod validation;

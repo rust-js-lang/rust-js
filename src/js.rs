@@ -217,6 +217,9 @@ pub struct Import {
     pub named: Vec<(String, String)>,
     /// A relative specifier, like `./math.js` or `../lib.js`.
     pub from: String,
+    /// The `use` that makes it, the first of the module's naming what it
+    /// imports, which its comments are before; `Span::NONE` of none.
+    pub span: Span,
 }
 
 /// One `pub use` statement's `export { a, b as c } from "./m.js";` (ADR
@@ -243,6 +246,8 @@ pub struct Package {
     pub default: Option<String>,
     pub named: Vec<(String, String)>,
     pub namespace: Option<String>,
+    /// The `use` that makes it, as `Import::span` is.
+    pub span: Span,
 }
 
 #[derive(Clone, PartialEq)]

@@ -6,6 +6,11 @@
 
 import { $unwrap } from "@rust-js/runtime";
 
+// Each DOM interface is a type whose members are its methods, and each tag
+// and event's name a type whose value is its string (ADR 0223):
+// `document.create_element(Button)` is `document.createElement("button")`,
+// an `HTMLButtonElement`.
+
 function button(label) {
   const b = document.createElement("button");
   b.textContent = label;

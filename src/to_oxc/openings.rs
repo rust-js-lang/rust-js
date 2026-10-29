@@ -31,19 +31,32 @@ pub(super) fn leading_statements(code: &str) -> (Vec<&str>, &str) {
 /// JS, so what's before it is before the next item that has (ADR 0444,
 /// amended).
 pub(super) fn type_alias(statement: &str) -> bool {
+    item_after_visibility(statement).starts_with("type ")
+}
+
+/// Whether `statement`, one of `leading_statements`, is a `use`, `use
+/// std::rc::Rc`, its attributes first: one that makes an import starts
+/// where it's written, so this is one that makes none, a type's, whose
+/// comments are before the next import or item (rd92).
+pub(super) fn use_item(statement: &str) -> bool {
+    item_after_visibility(statement).starts_with("use ")
+}
+
+/// `statement` past its attributes and its `pub`, `pub(crate)`'s too.
+fn item_after_visibility(statement: &str) -> &str {
     let mut rest = statement.trim_start();
     while let Some(attribute) = rest.strip_prefix("#[") {
-        let Some(end) = attribute.find(']') else { return false };
+        let Some(end) = attribute.find(']') else { return "" };
         rest = attribute[end + 1..].trim_start();
     }
     if let Some(public) = rest.strip_prefix("pub") {
         rest = public.trim_start();
         if let Some(scoped) = rest.strip_prefix('(') {
-            let Some(end) = scoped.find(')') else { return false };
+            let Some(end) = scoped.find(')') else { return "" };
             rest = scoped[end + 1..].trim_start();
         }
     }
-    rest.starts_with("type ")
+    rest
 }
 
 /// Whether `head`, the code before a `{`, ends in `unsafe`, the keyword,

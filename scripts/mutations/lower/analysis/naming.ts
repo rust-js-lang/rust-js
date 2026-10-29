@@ -461,4 +461,28 @@ export const mutations: Mutation[] = [
     replace: ".filter(|&(def_id, ..)| !own(def_id) || true)",
     tests: ["test/corpus.test.ts", "-t", "^use_renames_own_item.rs$"],
   },
+  {
+    name: "use-tree-at-its-leaf",
+    breaks: "a comment above a `use` tree, `use crate::{a::x, b::y};`, is lost: each import it makes is where its leaf's path is (rd92)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                Some((statement(item.span), named))\n",
+    replace: "                Some((item.span, named))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
+  },
+  {
+    name: "binding-use-makes-no-import",
+    breaks: "a comment above the `use` of a binding is lost, not above its JS file's import (rd92)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            export.is_some_and(|(of, _)| of == from)\n",
+    replace: "            export.is_some_and(|(of, _)| of == from && false)\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
+  },
+  {
+    name: "module-use-makes-no-import",
+    breaks: "a comment above the `use` of a module is above the next item, not above the import of what's read through it (rd92)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),\n",
+    replace: "            DefKind::Mod => false,\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
+  },
 ];

@@ -756,6 +756,12 @@ amended). A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
+A comment above a `use` is above the import it makes, `// TODO: ..` above
+`import { getCurrentFiberOwnerNameInDevOrNull } from
+"react-reconciler/src/ReactCurrentFiber";`, wherever the imports' order
+puts it; one above a `use` that makes none, a type's, is above the next
+import, or with none the module's first statement
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended).
 
 A doc comment's JSDoc keeps its lines: `///` lines are `/** one */`, or
 `/**\n * a\n * b\n */` of more, and a `/** */` block is as written, so

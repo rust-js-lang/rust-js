@@ -472,6 +472,92 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
     renamed
 }
 
+/// Each `use` of a module that isn't a re-export, where it's written, and
+/// what it names, in each namespace: which import a `use` makes, which its
+/// comments are before (rd92), the first of those naming what it imports.
+pub(in crate::lower) struct UsesWritten {
+    module: LocalModId,
+    uses: Vec<(rustc_span::Span, Vec<DefId>)>,
+}
+
+impl UsesWritten {
+    /// `module`'s, in the order written, each a whole statement, which each
+    /// of a tree's leaves shares.
+    pub(in crate::lower) fn of(tcx: TyCtxt<'_>, module: LocalModId) -> Self {
+        let items = || tcx.hir_module_items(module).free_items().map(|id| tcx.hir_item(id));
+        // A tree's, `use crate::{a::x, b::y};`: its leaves' spans are their
+        // paths', the statement its list's, the outermost.
+        let lists: Vec<rustc_span::Span> = (items())
+            .filter(|item| matches!(item.kind, ItemKind::Use(_, UseKind::ListStem)))
+            .map(|item| item.span)
+            .collect();
+        let statement = |span: rustc_span::Span| {
+            (lists.iter().filter(|list| list.contains(span))).fold(span, |outer, &list| outer.to(list))
+        };
+        let mut uses: Vec<(rustc_span::Span, Vec<DefId>)> = (items())
+            .filter_map(|item| {
+                let ItemKind::Use(path, UseKind::Single(_)) = item.kind else {
+                    return None;
+                };
+                if super::is_reexport(tcx, item) {
+                    return None;
+                }
+                let named = (path.res.present_items())
+                    .filter_map(|res| match res {
+                        Res::Def(_, def_id) => Some(def_id),
+                        _ => None,
+                    })
+                    .collect();
+                Some((statement(item.span), named))
+            })
+            .collect();
+        uses.sort_by_key(|(span, _)| span.lo());
+        UsesWritten { module, uses }
+    }
+
+    /// The first naming what `makes` says is of the import.
+    fn first(&self, makes: impl Fn(DefId) -> bool) -> Option<rustc_span::Span> {
+        (self.uses.iter().find(|(_, named)| named.iter().any(|&id| makes(id)))).map(|&(span, _)| span)
+    }
+
+    /// The `use` of the import from the JS file `from`: of a library's item
+    /// a consumer imports from it (ADR 0100), or a binding's.
+    pub(in crate::lower) fn package_at(
+        &self,
+        tcx: TyCtxt<'_>,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        from: &str,
+    ) -> Option<rustc_span::Span> {
+        self.first(|id| {
+            let export = foreign.import_key(id, self.module).or_else(|| {
+                (is_binding(tcx, id))
+                    .then(|| js_path(tcx, id))
+                    .flatten()
+                    .and_then(|path| js_import(&path).map(|(export, _)| export))
+            });
+            export.is_some_and(|(of, _)| of == from)
+        })
+    }
+
+    /// The `use` of the import from the crate's module `target`: of its
+    /// item, or of it or a module it's in.
+    pub(in crate::lower) fn module_at(
+        &self,
+        tcx: TyCtxt<'_>,
+        fns: &HashMap<DefId, FnInfo>,
+        target: LocalModId,
+    ) -> Option<rustc_span::Span> {
+        self.first(|id| match tcx.def_kind(id) {
+            DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),
+            _ => {
+                (fns.get(&id).map(|f| f.module))
+                    .or_else(|| id.as_local().map(|local| tcx.parent_module_from_def_id(local)))
+                    == Some(target)
+            }
+        })
+    }
+}
+
 /// Each `use` of the module that renames an item, in the order written:
 /// what it names, the import's name, and where it's written.
 fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc_span::Span)> {

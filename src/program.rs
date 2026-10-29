@@ -109,6 +109,8 @@ pub struct Reexport {
 pub struct LoweredImport {
     pub path: Vec<String>,
     pub named: Vec<(String, String)>,
+    /// The `use` that makes it (`js::Import::span`).
+    pub span: js::Span,
 }
 
 /// A `#[test]` function (ADR 0026).
@@ -154,6 +156,9 @@ pub struct ImportRequest {
     /// The name it's imported by, as the importer's `use .. as` names it.
     pub local: String,
     pub path: Vec<String>,
+    /// The first `use` of the importer's naming what the module it's from
+    /// has, or that module, which the import is where it's written.
+    pub at: js::Span,
 }
 
 /// Symbolic module output. Imports and the helpers it asks for are filled

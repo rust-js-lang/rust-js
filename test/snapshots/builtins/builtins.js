@@ -12,6 +12,9 @@ import {
   $unwrapErr,
 } from "@rust-js/runtime";
 
+//! The builtins crate (ADR 0102) as a program calls it: each function is the
+//! JS global or method it names. For the test in compiler.test.ts.
+
 /**
  * JSON's value, each property a reviver gives none of left out, as
  * react.dev's errors page revives its elements.

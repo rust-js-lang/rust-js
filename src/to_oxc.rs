@@ -24,6 +24,7 @@ mod arms;
 mod cases;
 mod closing;
 mod expressions;
+mod header;
 mod loads;
 mod openings;
 mod statements;
@@ -34,8 +35,10 @@ use self::trailing::{Inside, Trailing, own_line_after_value, own_line_before_val
 use self::arms::{Arm, arm_starts, else_if_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
 pub(crate) use self::expressions::*;
+use self::header::header;
+pub use self::header::import_line;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
-use self::openings::{leading_statements, macro_opening, match_opening, type_alias, unsafe_opening};
+use self::openings::{leading_statements, macro_opening, match_opening, type_alias, unsafe_opening, use_item};
 
 use std::path::PathBuf;
 
@@ -105,6 +108,7 @@ pub fn emit(
         tops,
         closing,
         reexport_starts,
+        imports,
     } = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
@@ -168,7 +172,7 @@ pub fn emit(
 
     // The header, imports and runtime helpers, plain text above the
     // generated code, none of which maps to Rust.
-    let mut code = header(module);
+    let mut code = header(module, &imports);
 
     // The generated code, each line after the header: where each ends up,
     // to fix the map.
@@ -400,6 +404,9 @@ struct Commented {
     /// Where each re-export is printed, before every other node and comment
     /// of the module, its own comments there.
     reexport_starts: Vec<u32>,
+    /// The comments before each import's `use`, by where it's written: in
+    /// the header, above its line (rd92).
+    imports: std::collections::HashMap<u32, Vec<String>>,
 }
 
 fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
@@ -409,6 +416,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // The cases whose comments the program wrote say they're fallen to.
     let mut said_fallen = std::collections::HashSet::new();
     let mut tops = std::collections::HashMap::new();
+    let mut imports: std::collections::HashMap<u32, Vec<String>> = std::collections::HashMap::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let (spans, comment_ends) = statement_spans(module);
@@ -443,6 +451,14 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     statement_starts.sort_unstable();
     starts.extend(parts.keys().copied());
     starts.extend(case_starts.iter().copied());
+    // Each import's `use`, which the comments before it are above the
+    // import of, in the header (rd92).
+    let import_starts: std::collections::HashSet<u32> = (module.imports.iter().map(|i| i.span))
+        .chain(module.packages.iter().map(|p| p.span))
+        .filter(|span| !span.is_none())
+        .map(|span| span.lo)
+        .collect();
+    starts.extend(import_starts.iter().copied());
     starts.sort_unstable();
     starts.dedup();
     // What's before the Rust statement at `start` is before the first JS
@@ -717,8 +733,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                                 || match_opening(head) && rest[i + 1..].trim().is_empty()
                         }) || default;
                         // And a type alias's, an item with no JS, `pub type
-                        // ActivityInstance = Unknown;` (ADR 0444, amended).
-                        lets.iter().all(|s| s.starts_with("let ") || type_alias(s))
+                        // ActivityInstance = Unknown;` (ADR 0444, amended);
+                        // and a `use` that makes no import, a type's (rd92).
+                        lets.iter()
+                            .all(|s| s.starts_with("let ") || type_alias(s) || use_item(s))
                             && !rest.contains([';', '}'])
                             && opens
                     });
@@ -821,6 +839,14 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // The constructors a class's struct's comments are before.
         let mut documented = std::collections::HashSet::new();
         for (at, mut own) in starts_and_end {
+            // An import's, in the header, above its line.
+            if import_starts.contains(&at) {
+                let texts = own
+                    .iter()
+                    .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                imports.entry(at).or_default().extend(texts);
+                continue;
+            }
             // Where its Rust starts, what a blank line is before: an `if`'s
             // keyword, before the comments its test's are (ADR 0883).
             let mut written = at;
@@ -1028,6 +1054,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         tops,
         closing,
         reexport_starts,
+        imports,
     }
 }
 
@@ -1328,87 +1355,6 @@ fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> {
     let class = n.class.as_ref().filter(|class| !class.declared.is_none())?;
     let constructor = n.methods.iter().find(|f| f.name == class.constructor)?;
     Some((class.declared, constructor.span))
-}
-
-/// `import clause from "from";`, an import's line, the one way it's written:
-/// a module's, and the `#[test]` runner's (`output.rs`).
-pub fn import_line(clause: &str, from: &str) -> String {
-    format!("import {clause} from {from:?};\n")
-}
-
-/// What's above a module's code: its header, directives, imports, one block
-/// as a person orders it (ADR 0295), and re-exports. Layout, as
-/// `format::spaced`'s blank lines are, of what the module says.
-fn header(module: &Module) -> String {
-    let mut code = format!("{}\n", module.header);
-    for directive in &module.directives {
-        code.push_str(&format!("\n{directive:?};\n"));
-    }
-    let packages = &module.packages;
-    // Sorted already, and each once, as the artifact planner chose them.
-    let helpers = &module.helpers;
-    // One block, as a person orders it (ADR 0295): packages, then the
-    // module's own relative ones, bindings and the crate's alike, each by
-    // path; then what it imports for its effect, as written, its CSS after
-    // what it styles; then the runtime's helpers.
-    let mut named: Vec<(bool, &str, String)> = Vec::new();
-    let mut effects = Vec::new();
-    let clause_of = |pairs: &mut dyn Iterator<Item = &(String, String)>| -> Vec<String> {
-        pairs
-            .map(|(export, local)| {
-                if export == local {
-                    export.clone()
-                } else {
-                    format!("{export} as {local}")
-                }
-            })
-            .collect()
-    };
-    for package in packages {
-        let names = clause_of(&mut package.named.iter());
-        let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
-        let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
-        let relative = crate::program::is_relative_specifier(&package.from);
-        if !clause.is_empty() {
-            let line = import_line(&clause.join(", "), &package.from);
-            named.push((relative, &package.from, line));
-        }
-        if let Some(namespace) = &package.namespace {
-            let line = import_line(&format!("* as {namespace}"), &package.from);
-            named.push((relative, &package.from, line));
-        }
-        if clause.is_empty() && package.namespace.is_none() {
-            effects.push(format!("import {:?};\n", package.from));
-        }
-    }
-    for import in &module.imports {
-        let default = (import.named.iter())
-            .find(|(export, _)| export == "default")
-            .map(|(_, local)| local);
-        let names = clause_of(&mut import.named.iter().filter(|(export, _)| export != "default"));
-        let clause = match (default, names.is_empty()) {
-            (Some(default), true) => default.clone(),
-            (Some(default), false) => format!("{default}, {{ {} }}", names.join(", ")),
-            (None, _) => format!("{{ {} }}", names.join(", ")),
-        };
-        let line = import_line(&clause, &import.from);
-        named.push((crate::program::is_relative_specifier(&import.from), &import.from, line));
-    }
-    named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
-    let runtime =
-        (!helpers.is_empty()).then(|| import_line(&format!("{{ {} }}", helpers.join(", ")), crate::runtime::PACKAGE));
-    let lines: Vec<String> = named
-        .into_iter()
-        .map(|(_, _, line)| line)
-        .chain(effects)
-        .chain(runtime)
-        .collect();
-    if !lines.is_empty() {
-        code.push('\n');
-        code.push_str(&lines.concat());
-    }
-    code.push('\n');
-    code
 }
 
 struct Cx<'a> {

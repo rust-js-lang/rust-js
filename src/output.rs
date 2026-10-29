@@ -87,6 +87,7 @@ impl OutputPlan {
                     .map(|import| js::Import {
                         named: import.named.clone(),
                         from: self.specifier(&module.path, &import.path),
+                        span: import.span,
                     })
                     .collect::<Vec<_>>()
             };

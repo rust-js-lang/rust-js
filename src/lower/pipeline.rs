@@ -1014,6 +1014,9 @@ pub fn lower_crate<'tcx>(
     let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
         .map(|module| {
+            // Where each import's `use` is, which its comments are before.
+            let uses = super::analysis::UsesWritten::of(tcx, module);
+            let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
             // One `import` per JS module, of what this file uses from it.
             let mut packages: BTreeMap<&str, js::Package> = BTreeMap::new();
             for export in imported
@@ -1029,6 +1032,7 @@ pub fn lower_crate<'tcx>(
                     default: None,
                     named: Vec::new(),
                     namespace: None,
+                    span: written(uses.package_at(tcx, &foreign, from)),
                 });
                 let local = import_names[&module][export].clone();
                 match name.as_str() {
@@ -1054,6 +1058,7 @@ pub fn lower_crate<'tcx>(
                         default: None,
                         named: Vec::new(),
                         namespace: None,
+                        span: js::Span::NONE,
                     });
                 }
             }
@@ -1365,6 +1370,7 @@ pub fn lower_crate<'tcx>(
                     export,
                     local,
                     path: paths[&target].clone(),
+                    at: written(uses.module_at(tcx, &fns, target)),
                 })
                 .collect();
             UnlinkedModule {

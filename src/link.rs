@@ -80,6 +80,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
         },
     );
     let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
+    let mut at: HashMap<Vec<String>, crate::js::Span> = HashMap::new();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
@@ -92,12 +93,16 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
                 .entry(request.path.clone())
                 .or_default()
                 .push((request.export.clone(), alias.clone()));
+            at.entry(request.path.clone()).or_insert(request.at);
             (request.symbol.clone(), alias)
         })
         .collect();
     module.imports = grouped
         .into_iter()
-        .map(|(path, named)| LoweredImport { path, named })
+        .map(|(path, named)| {
+            let span = at.remove(&path).unwrap_or(crate::js::Span::NONE);
+            LoweredImport { path, named, span }
+        })
         .collect();
     visit(
         module,

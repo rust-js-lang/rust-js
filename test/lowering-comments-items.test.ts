@@ -148,3 +148,116 @@ pub fn last() -> Lanes {
   expect(js).toContain("// Hydration (when unsupported)\n\nexport function last() {");
   expect([(lib.run as () => number)(), (lib.last as () => number)()]).toEqual([2, 3]);
 });
+
+// React's ReactDOMInput heads an import with a TODO, `// TODO: direct
+// imports like some-package/src/* are bad. Fix me.`, above `import
+// {getCurrentFiberOwnerNameInDevOrNull} from
+// 'react-reconciler/src/ReactCurrentFiber';`. Each import is where the `use`
+// that makes it is, so a comment between two `use`s is above the import
+// the second makes, wherever the imports' order puts it; one above a `use`
+// that makes none, a type's, is above the next import, or with none the
+// first statement, the blank line after the `use`s between, as before
+// a type alias. It was lost.
+test("a comment above a use is above the import it makes", async () => {
+  const { js, lib } = await compiled("comment-above-a-use", `pub mod fiber {
+    pub fn owner_name() -> String {
+        "App".to_string()
+    }
+}
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+use std::cell::Cell;
+// TODO: direct imports like some-package/src/* are bad. Fix me.
+use crate::lanes::lane;
+// A type's, which makes no import.
+use std::rc::Rc;
+use crate::fiber::owner_name;
+
+pub fn named() -> String {
+    let count = Cell::new(lane());
+    format!("{} {}", owner_name(), Rc::new(count.get()))
+}
+`);
+  expect(js).toContain(`// A type's, which makes no import.
+import { ownerName } from "./fiber.js";
+// TODO: direct imports like some-package/src/* are bad. Fix me.
+import { lane } from "./lanes.js";
+`);
+  expect((lib.named as () => string)()).toBe("App 1");
+  const alone = await compiled("comment-above-a-type-use", `use std::cell::Cell;
+// TODO: direct imports like some-package/src/* are bad. Fix me.
+use std::rc::Rc;
+
+pub fn tag(value: &Cell<u32>) -> Rc<u32> {
+    Rc::new(value.get())
+}
+`);
+  expect(alone.js).toContain("// TODO: direct imports like some-package/src/* are bad. Fix me.\n\nexport function tag(value) {");
+  // A binding's, imported from its JS file.
+  const dir = fixture("comment-above-a-binding-use");
+  writeFileSync(join(dir, "math.js"), "export const twice = (n) => n * 2;\n");
+  writeFileSync(join(dir, "lib.rs"), `pub mod math {
+    #[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
+    #[allow(unused_variables)]
+    pub fn twice(n: f64) -> f64 {
+        unreachable!()
+    }
+}
+
+use std::cell::Cell;
+// Doubled by JS.
+use crate::math::twice;
+
+pub fn doubled(n: &Cell<f64>) -> f64 {
+    twice(n.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const bound = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(bound).toContain('// Doubled by JS.\nimport { twice } from "./math.js";\n');
+  // One \`use\` of two, above the first printed; one of a module, above
+  // what's imported of a module in it.
+  const tree = await compiled("comment-above-a-use-tree", `pub mod fiber {
+    pub fn owner_name() -> String {
+        "App".to_string()
+    }
+}
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub mod common {
+    pub mod flags {
+        pub fn flag() -> u32 {
+            2
+        }
+    }
+}
+
+use std::cell::Cell;
+// Both.
+use crate::{fiber::owner_name, lanes::lane};
+// Of a module.
+use crate::common as shared;
+
+pub fn named() -> String {
+    let count = Cell::new(lane() + shared::flags::flag());
+    format!("{} {}", owner_name(), count.get())
+}
+`);
+  expect(tree.js).toContain(`// Of a module.
+import { flag } from "./common/flags.js";
+// Both.
+import { ownerName } from "./fiber.js";
+import { lane } from "./lanes.js";
+`);
+  expect((tree.lib.named as () => string)()).toBe("App 3");
+});

@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-10-29): a comment above a `use` is above the import it makes. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -596,3 +596,44 @@ two, a blank line before a field, a `//` before a `let`), and
 `start` and `end` undocumented); mutations `field-docs-of-any-literal`,
 `field-docs-of-std`, `field-docs-left-out` (`lower/aggregates.ts`) and
 `field-doc-after-blank-line` (`to_oxc.ts`); the guide's `prototype`.
+
+## Amendment: a comment above a `use` is above its import (2026-10-29)
+
+React's ReactDOMInput heads an import with a TODO, `// TODO: direct
+imports like some-package/src/* are bad. Fix me.`, above `import
+{getCurrentFiberOwnerNameInDevOrNull} from
+'react-reconciler/src/ReactCurrentFiber';`. Its port's comment, between
+two `use`s, was lost (the port's gap rd92): the rule above takes a comment
+to the next statement only across code with no JS of its own, and a `use`
+was none of it; and an import, plain text above the code (ADR 0295), had
+no place in the Rust a comment could be before.
+
+**Each import is where the `use` that makes it is written**, the first of
+the module's `use`s naming what it imports: a library's item, a binding of
+its JS file, or of a module of the crate's, its item or the module or one
+it's in (`analysis/naming.rs`'s `UsesWritten`, `js::Import::span` and
+`js::Package::span`). A `use` tree's leaves are where its statement is. A
+comment above a `use` is above the import it makes, in the header,
+wherever the imports' order puts it, and once, of two imports one `use`
+makes, above the first printed (`to_oxc/header.rs`). A `use` that makes
+no import, a type's, is code with no JS, as a type alias is: a comment
+above it is above the next import, or with none the module's first
+statement, as written, the blank line after the `use`s too. The
+coordinator chose this of two designs, with every comment among the
+`use`s above the imports, in order, the other, which isn't where upstream
+writes its TODO.
+
+So a module's `//!` before its `use`s, a plain comment (rule 3 above),
+is above its first import, or its code, as one before its first item was:
+the examples' `builtins`, `counter`, `todomvc`'s `item` and `web_forms`
+now keep theirs.
+
+- Held by `test/lowering-comments-items.test.ts`, "a comment above a use
+  is above the import it makes", run: of a crate module's import, a
+  binding's JS file's, a `use` tree's, a module's `use`, and a type's
+  `use` before an import and before the first statement. Mutations
+  `use-comment-dropped`, `use-comment-in-the-code`
+  (`to_oxc.ts`), `use-comment-twice` (`to_oxc/header.ts`),
+  `type-use-is-code` (`to_oxc/openings.ts`), `use-tree-at-its-leaf`,
+  `binding-use-makes-no-import` and `module-use-makes-no-import`
+  (`lower/analysis/naming.ts`).
