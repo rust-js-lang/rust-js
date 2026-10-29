@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "size-hint-in-place-uncounted",
+    breaks: "`size_hint()` of a slice's `skip(1)` made in place is a JS iterator helper's `(0, None)`, where Rust gives `(4, Some(4))` (#156)",
+    file: "src/lower/mir/iter.rs",
+    find: "            && let Some(len) = self.len_in_place(&receiver, iter_ty, made)\n",
+    replace: "            && let Some(len) = None::<Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hints_made_in_place.rs$"],
+  },
+  {
     name: "next-back-enumeration-refused",
     breaks: "`next_back()` of an enumeration of an array's items made in place is refused, not stepped from its back by `$enumerate` (#395)",
     file: "src/lower/mir/iter.rs",

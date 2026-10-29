@@ -97,7 +97,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(None)
     }
 
-    fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+        // Of one made here that `$sizeHint` can't ask, a JS helper's, a
+        // slice's `skip(1)` say, counted where it's made, `len_in_place`'s:
+        // that both ways, `(n, Some(n))`, as Rust's `ExactSizeIterator`
+        // hints it (#156). Not an array's items, or a map of them, whose
+        // `$iter` knows it.
+        let mut source = &receiver;
+        while let js::ExprKind::Call(callee, _) = &source.kind
+            && let js::ExprKind::Member(of, method) = &callee.kind
+            && method == "map"
+        {
+            source = of;
+        }
+        if !crate::lower::iterators::is_stepped_items(source)
+            && let Some(len) = self.len_in_place(&receiver, iter_ty, made)
+        {
+            let n = self.spill("n", len, made);
+            return Ok(Expr::array(vec![n.clone(), n]));
+        }
         let mut it = receiver;
         // A `map`'s is its source's, as Rust's `Map` passes it on; its
         // closure, unrun, is made for nothing. Its source's type, peeled
@@ -542,7 +560,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.range_kind(iter_ty.peel_refs()).is_none()
         {
             let receiver = values.into_iter().next().expect("the receiver");
-            return self.size_hint_of(receiver, iter_ty, span).map(Some);
+            return self.size_hint_of(receiver, iter_ty, span, made).map(Some);
         }
         // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
         // `&mut I`, which is `I`'s own, of what the `&mut` is to.

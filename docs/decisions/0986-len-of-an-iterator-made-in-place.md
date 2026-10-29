@@ -79,3 +79,14 @@ including a map whose function counts its calls. The mutations are
 `len-in-place-*` and `exact-size-rev-unread`,
 `exact-size-reversed-items-unread` and `exact-size-reversed-map-unread`.
 The case also catches #382's `rev-length-unknown`.
+
+## Amendment: `size_hint()` of one counted in place (#156)
+
+`v.iter().skip(1).size_hint()` gave `(0, None)`, a JS helper's
+`$sizeHint`, where Rust gives `(4, Some(4))`. What `len_in_place` counts
+is an `ExactSizeIterator`'s length, so its hint is that both ways, `const
+n = Math.max(v.length - 1, 0); [n, n]`. Not an array's items, or a map of
+them, whose `$iter` knows its hint already, so `size_hint.js` reads as it
+did. `test/corpus/size_hints_made_in_place.rs` checks `skip`, `take`,
+both, and a map against native Rust. The mutation is
+`size-hint-in-place-uncounted`.
