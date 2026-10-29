@@ -1854,9 +1854,68 @@ export function count(s) {
 }
 ```
 
-Not yet: of a subject that does something, `match next() { .. }`, the
-`switch` of guarded arms that fall through keeps a `loop:` label, since
-its `if` chain would call it again for each test.
+Of a subject that does something, `match codes.next_code() { .. }`, the
+`if` chain of guarded arms that fall through reads it held in one `const`,
+named as what it holds, called once a turn as Rust calls it; an arm of no
+statements is the next link's test ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md),
+amended, #389c):
+
+```rust
+pub struct Codes {
+    at: usize,
+    codes: Vec<u32>,
+}
+
+impl Codes {
+    pub fn next_code(&mut self) -> u32 {
+        self.at += 1;
+        self.codes.get(self.at - 1).copied().unwrap_or(0)
+    }
+}
+
+pub fn count(codes: &mut Codes, limit: u32) -> u32 {
+    let mut n = 0;
+    loop {
+        n += 1;
+        match codes.next_code() {
+            0 => break,
+            1 if n > limit => break,
+            1 | 2 => {}
+            _ => n += 300,
+        }
+        n += 1;
+    }
+    n
+}
+```
+
+```js
+export const Codes = {
+  nextCode(codes) {
+    codes.at = (codes.at + 1) >>> 0;
+    return codes.codes[(codes.at - 1) >>> 0] ?? 0;
+  },
+};
+
+export function count(codes, limit) {
+  let n = 0;
+  while (true) {
+    n = (n + 1) >>> 0;
+    const nextCode = Codes.nextCode(codes);
+    if (nextCode === 0) {
+      break;
+    }
+    if (nextCode === 1 && n > limit) {
+      break;
+    }
+    if (nextCode !== 1 && nextCode !== 2) {
+      n = (n + 300) >>> 0;
+    }
+    n = (n + 1) >>> 0;
+  }
+  return n;
+}
+```
 
 A block the program labeled around a `match` is the `switch`'s label,
 camelCase as every name, where an arm's inner `switch` leaves it, which a

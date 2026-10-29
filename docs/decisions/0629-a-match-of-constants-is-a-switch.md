@@ -442,7 +442,7 @@ N, the same tests and jumps in the same order.
 - **Not taken apart**: a `switch` whose subject does something, `match
   next() { .. }`, which the chain would call again for each test; it keeps
   `loop:` until the subject can be held in a `const` the names owner
-  names (written up for the user). A case that leaves the `switch` from
+  names (written up for the user; since: the amendment below). A case that leaves the `switch` from
   inside, `break;` before its end, would leave the loop in the chain, so
   that `switch` stays too; Rust gives no such case here, since only a
   label leaves a `match` early and a labeled block inside a loop needs the
@@ -456,3 +456,71 @@ N, the same tests and jumps in the same order.
 break their loop are an if chain", and mutations `guarded-loops-kept`,
 `guarded-chain-forgets-fallen`, `guarded-chain-guard-dropped` and
 `guarded-chain-of-a-read-that-runs`.
+
+## Amendment: a subject held once, and MIR's shared ways out (#389c)
+
+What the amendment above left with a label the Rust has none of. Case
+([0262](0262-when-rust-and-js-disagree.md)): N each, the same tests,
+calls and jumps in the same order.
+
+- **A subject that does something is held in one `const`** (the
+  coordinator's decision, applying the user's #389 rule: the #389 write-up's
+  question 2). `match c.next_code() { .. }` of guarded arms that fall
+  through in a tidy-labeled loop keeps the temporary MIR made of its
+  subject (`loop_labels::held_subject`, which `switches`'
+  `discriminant_in_place` asks before reading it in place), so the chain
+  reads `const nextCode = Codes.nextCode(c);`, named by the names owner as
+  every temporary is (`readable_temporaries`: what rust-analyzer suggests,
+  else `value`), once a turn, as the `switch` called it. A subject MIR's
+  tests read again, a place such as `codes[i]`, is read again by the chain
+  too (`reads_same`, which excludes a getter): no guard can change the
+  place a `match` tests, Rust's borrow of the scrutinee during its guards
+  forbids it. `reads_only_vars` was the test before; its mutation goes, as
+  no subject that isn't a held temporary or such a place reaches the chain.
+  A subject held where no chain reads it again is read in place by the
+  passes after, so `held_subject` holding one of every `switch` writes the
+  same JS: it has no mutation of its own.
+- **MIR's shared way out after the chain is each case's** (`switch_at`):
+  of guarded arms that fall through, a `break` after their chain, the
+  list's last, which each case that goes on goes on to, MIR's one way out
+  of the loop or of a block, `bb42: { .. } break;`, is pushed to each such
+  case, as `chain` already does for a jump after an `else`'s chain. The
+  `switch` then ends where its cases do, a `break;` of the loop is `break
+  loop;` and the chain the amendment above makes, with no block. Of
+  `test/corpus/guarded_arms_nested_break.rs`, an arm that is a nested
+  `match n { 0 => break, 1..10 => .., _ => {} }`.
+- **A link's `break;` before what follows it is an `else`**
+  (`elses_of_breaks`): `if (c) { a; break; } b` in a case, which an `if`
+  chain's link can't write, is `if (c) { a } else { b }`; and a `break;`
+  ending a branch of the `if` the case ends with goes, `switches`'
+  `ending_breaks`, the rule `breaks past switches` applies to a case.
+- **An arm of no statements is the next link's test**: `1 | 2 => {}` is
+  `else if (t !== 1 && t !== 2) { .. }`, not an empty `then`; a last one,
+  where its test does nothing, is nothing, and one whose test calls keeps
+  the `switch`.
+- **A tuple returned after a loop is after it** ([ADR
+  0433](0433-whats-written-after-a-loop-is-after-it.md)): `exits_after`
+  asks where a `return` MIR made is written by its value's span; a tuple's,
+  `(i, n)`, which MIR builds of its parts, has none, so `while i <
+  codes.len() { .. } (i, n)` printed `while (true) { if (i < codes.length)
+  { ..; continue; } return [i, n]; }`. Its parts' spans say where it's
+  written: `while (i < codes.length) { .. } return [i, n];`, as written,
+  everywhere, not only after a `match`
+  (`test/corpus/loop_exit_tuple.rs`).
+
+Not yet: an arm whose statements MIR places after the chain's labeled
+block, `1 | 2 => { let m = if n > 4 { 1 } else { return 0 }; .. }`
+(`bb26: { bb12: { if (t === 1) { .. } if (t !== 2) { .. } } .. }`, which no
+`switch` is made of); and a `match` of no guards whose arm breaks a loop
+through MIR's block, `bb22: { switch (..) { case 97: break bb22; .. } ..;
+continue; } break;`. Both written up for the next run.
+
+Held by `test/corpus/guarded_arms_leave_their_loop.rs` (`polled`,
+`stepped`), `guarded_arms_nested_break.rs` and `loop_exit_tuple.rs` against
+native Rust, `test/lowering-switch-ends.test.ts`' "guarded arms of a subject
+that runs are an if chain of it held once" and "an empty arm of guarded arms
+that fall through is the next link's test", the guide's `count` of
+`next_code`, and mutations `guarded-subject-not-held`, `guarded-shared-break-left-after`,
+`guarded-shared-break-of-some-cases`, `guarded-chain-break-not-an-else`,
+`guarded-chain-else-of-a-going-branch`, `guarded-chain-ending-breaks-kept`,
+`guarded-chain-empty-link-kept` and `exits-after-tuple-unplaced`.

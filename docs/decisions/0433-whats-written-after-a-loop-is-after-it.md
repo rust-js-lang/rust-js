@@ -100,3 +100,13 @@ while (p.at % 3 !== 2) {
 - Code that moves out of a loop beside many of a function's own temporaries
   takes the next free name, `value$16`, where inside the loop it reused
   `value`.
+
+## Amendment: a tuple's `return` is where its parts are (#389c)
+
+A `return` MIR made of the value written after the loop is placed by that
+value's span; a tuple, `(i, n)`, which MIR builds of its parts, has none,
+so `while i < codes.len() { .. } (i, n)` stayed `while (true) { if (i <
+codes.length) { ..; continue; } return [i, n]; }`. Its parts' spans say
+where it's written: `while (i < codes.length) { .. } return [i, n];`
+(`test/corpus/loop_exit_tuple.rs`, mutation `exits-after-tuple-unplaced`;
+ADR 0629's #389c amendment).

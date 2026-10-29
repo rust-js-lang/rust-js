@@ -115,6 +115,31 @@ pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
     });
 }
 
+/// Whether `stmt` is a `switch` of guarded arms that fall through, which
+/// leaves a loop by tidy's label, whose subject its `if` chain will read
+/// for each test (`guarded_chain`): held in the temporary MIR made, `const
+/// nextCode = c.nextCode();`, read once, named as what it holds (#389c,
+/// the user's decision).
+pub(super) fn held_subject(stmt: &Stmt) -> bool {
+    let StmtKind::Switch { cases, default, .. } = &stmt.kind else {
+        return false;
+    };
+    let mut labels = HashSet::new();
+    js::case_lists(cases, default).for_each(|body| jumped_labels(body, &mut labels));
+    cases.iter().any(|case| case.falls) && labels.iter().any(|l| tidy_made(l))
+}
+
+/// Each label a `break` or `continue` of `stmts` names.
+fn jumped_labels(stmts: &[Stmt], labels: &mut HashSet<String>) {
+    js::each_list(stmts, &mut |list| {
+        for stmt in list {
+            if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &stmt.kind {
+                labels.insert(l.clone());
+            }
+        }
+    });
+}
+
 /// Whether `label` is tidy's `loop` or `loop$1`.
 fn tidy_made(label: &str) -> bool {
     label.strip_prefix(LOOP_LABEL).is_some_and(|n| {
@@ -125,7 +150,12 @@ fn tidy_made(label: &str) -> bool {
 }
 
 /// Each `switch` of `stmts`, not in a loop or a `switch` of its own, whose
-/// cases leave the loop `label` names: its `if` chain, where it is one.
+/// cases leave the loop `label` names: its `if` chain, where it is one,
+/// which reads its subject as many times as it tests it, as MIR's tests
+/// did: a place, `codes[i]`, which no guard can change, Rust's borrow of
+/// what's matched forbids it, or a temporary that holds what does
+/// something, `const nextCode = c.nextCode();`; and a `switch` that stays,
+/// held still where the `switch` stays one.
 fn chained_in(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
@@ -135,7 +165,7 @@ fn chained_in(stmts: &mut [Stmt], label: &str) {
                 cases,
                 default,
             } if js::case_lists(cases, default).any(|body| js::names_jump(body, label))
-                && discriminant.reads_only_vars() =>
+                && discriminant.reads_same() =>
             {
                 if let Some(chain) = guarded_chain(discriminant, cases, default.as_deref(), label, span) {
                     *stmt = chain;
@@ -194,7 +224,8 @@ fn guarded_chain(
         if falls {
             fallen = tested.clone();
         }
-        // The `break;` that left the `switch`, at its end alone.
+        // The `break;` that left the `switch`, at its end, and each that
+        // ends a branch of the `if` it ends with, which goes there anyway.
         if matches!(
             body.last(),
             Some(Stmt {
@@ -204,6 +235,8 @@ fn guarded_chain(
         ) {
             body.pop();
         }
+        elses_of_breaks(&mut body);
+        super::switches::ending_breaks(&mut body);
         own_jumps(&mut body, label)?;
         let test = match values {
             None => None,
@@ -216,11 +249,21 @@ fn guarded_chain(
         };
         links.push((test, body));
     }
+    // A link of no statements, `b' ' => {}`'s: the rest's test, `else if
+    // (code !== 32) { .. }`; the last, where its test does nothing, none.
     let mut rest: Option<Vec<Stmt>> = None;
     for (test, body) in links.into_iter().rev() {
-        rest = Some(match test {
-            None => body,
-            Some(test) => vec![StmtKind::If(test, body, rest.filter(|r| !r.is_empty())).at(span)],
+        let after = rest.take().filter(|r| !r.is_empty());
+        rest = Some(match (test, after) {
+            (None, _) => body,
+            (Some(test), Some(after)) if body.is_empty() => {
+                vec![StmtKind::If(test.negated_test(), after, None).at(span)]
+            }
+            (Some(test), None) if body.is_empty() => match test.has_effects() {
+                true => return None,
+                false => Vec::new(),
+            },
+            (Some(test), after) => vec![StmtKind::If(test, body, after).at(span)],
         });
     }
     match &rest?[..] {
@@ -230,6 +273,31 @@ fn guarded_chain(
             },
         ] => Some(chain.clone()),
         _ => None,
+    }
+}
+
+/// Of a case's statements, an `if` whose branch leaves the `switch`, `if
+/// (c) { a; break; } b`, which an `if` chain's link can't: its `else` what
+/// follows it, `if (c) { a; break; } else { b }`, so that `break;` ends a
+/// branch of the `if` the statements end with, which `ending_breaks`
+/// takes away; and so in each branch.
+fn elses_of_breaks(stmts: &mut Vec<Stmt>) {
+    let leaves = |branch: &[Stmt]| matches!(branch.last().map(|s| &s.kind), Some(StmtKind::Break(None)));
+    if let Some(k) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(then)))
+        && k + 1 < stmts.len()
+    {
+        let rest = stmts.split_off(k + 1);
+        if let StmtKind::If(_, _, otherwise) = &mut stmts[k].kind {
+            *otherwise = Some(rest);
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::If(_, then, otherwise) = &mut stmt.kind {
+            elses_of_breaks(then);
+            if let Some(otherwise) = otherwise {
+                elses_of_breaks(otherwise);
+            }
+        }
     }
 }
 

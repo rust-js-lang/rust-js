@@ -131,9 +131,18 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
             k -= 1;
         }
         // Of what the program wrote after the loop, MIR's own beside it: a
-        // `return` MIR made where its value is written.
+        // `return` MIR made where its value is written, a tuple's, `(i,
+        // n)`, which MIR made of its parts, where they are.
         let at = |s: &Stmt| match &s.kind {
-            StmtKind::Return(Some(value)) if s.span.is_none() => value.span,
+            StmtKind::Return(Some(value)) if s.span.is_none() => {
+                let mut at = value.span;
+                value.each(&mut |e: &Expr| {
+                    if at.is_none() {
+                        at = e.span;
+                    }
+                });
+                at
+            }
             _ => s.span,
         };
         let written = list[k..].iter().any(|s| !at(s).is_none() && at(s).lo >= end);

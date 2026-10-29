@@ -421,4 +421,21 @@ export const mutations: Mutation[] = [
     replace: "        if !around.written && before.is_empty() {\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "no label"],
   },
+  {
+    name: "guarded-shared-break-left-after",
+    breaks: "guarded arms that fall through, whose cases go on to MIR's shared `break` of the loop or a block after them, keep it after the `switch`, so the loop keeps MIR's labeled block, `bb42: { switch (..) { .. } break; }` (#389c)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    if falling\n        && let [\n            jump @ Stmt {\n",
+    replace: "    if false\n        && let [\n            jump @ Stmt {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(guarded_arms_nested_break|loop_exit_tuple).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guarded-shared-break-of-some-cases",
+    breaks: "of guarded arms that fall through, the shared `break` after them is given to none of the cases that go on to it, so those go on to what follows the loop's turn instead of leaving it (#389c)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        for (_, body, ..) in cases.iter_mut().filter(|case| !case.1.last().is_some_and(js::ends)) {\n            body.push(jump.clone());\n",
+    replace: "        for (_, body, ..) in cases.iter_mut().filter(|_| false) {\n            body.push(jump.clone());\n",
+    tests: ["test/corpus.test.ts", "-t", "^(guarded_arms_nested_break|loop_exit_tuple).rs$"],
+  },
 ];

@@ -290,3 +290,71 @@ test("guarded arms that fall through and break their loop are an if chain", asyn
   const lib = await import(join(dir, "lib.js"));
   expect([lib.guarded([1, 2, 4, 3], 0), lib.guarded([1, 2, 4, 3], 1000), lib.guarded([5, 2], 0)]).toEqual([2, 905, 1]);
 });
+
+// #389c: of a subject that does something, `match c.next_code()`, the `if`
+// chain reads it held in one `const`, named as what it holds, called once
+// a turn as the `switch` called it, no label.
+test("guarded arms of a subject that runs are an if chain of it held once", async () => {
+  const dir = fixture("switch-guarded-loop-held");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Codes {
+    at: usize,
+    codes: Vec<u32>,
+}
+impl Codes {
+    pub fn next_code(&mut self) -> u32 {
+        self.at += 1;
+        self.codes.get(self.at - 1).copied().unwrap_or(0)
+    }
+}
+pub fn count(codes: Vec<u32>, limit: u32) -> u32 {
+    let mut c = Codes { at: 0, codes };
+    let mut n = 0;
+    loop {
+        n += 1;
+        match c.next_code() {
+            0 => break,
+            1 if n > limit => break,
+            1 | 2 => n += 20,
+            _ => n += 300,
+        }
+        n += 1;
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("loop:");
+  expect(js).toContain(
+    "    const nextCode = Codes.nextCode(c);\n    if (nextCode === 0) {\n      break;\n    }\n    if (nextCode === 1 && n > limit) {\n      break;\n    }\n    if (nextCode === 1 || nextCode === 2) {\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.count([1, 2, 5, 1], 1000), lib.count([1, 2, 1], 30)]).toEqual([369, 45]);
+});
+
+// #389c: of those, an arm of no statements, `1 | 2 => {}`: the next
+// link's test, `t !== 1 && t !== 2`, not an empty `then`.
+test("an empty arm of guarded arms that fall through is the next link's test", async () => {
+  const dir = fixture("switch-guarded-loop-empty");
+  writeFileSync(join(dir, "lib.rs"), `pub fn skips(tags: &[u32], g: bool) -> u32 {
+    let mut n = 0;
+    for &t in tags {
+        match t {
+            0 => break,
+            1 if g => break,
+            1 | 2 => {}
+            _ => n += 10,
+        }
+        n += 1;
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("loop:");
+  expect(js).not.toContain("{\n    }");
+  expect(js).toContain("    if (t !== 1 && t !== 2) {\n      n = (n + 10) >>> 0;\n    }\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.skips([1, 2, 5, 0, 5], false), lib.skips([2, 1, 5], true)]).toEqual([13, 1]);
+});

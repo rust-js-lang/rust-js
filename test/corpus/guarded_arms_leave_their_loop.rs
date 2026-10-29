@@ -1,7 +1,8 @@
 // Guarded arms that fall through (ADR 0905), in a loop whose turn goes on
 // past the `match`, an arm of which breaks or continues the loop: the `if`
 // chain the arms are, as Rust tries them, no label (#389b),
-// each guard run only where Rust runs it.
+// each guard run only where Rust runs it; of a subject that does
+// something, held in one `const`, run once a turn (#389c).
 use std::cell::RefCell;
 
 fn on(log: &RefCell<Vec<String>>, name: &str, holds: bool) -> bool {
@@ -61,6 +62,36 @@ fn polled(codes: &[u8], log: &RefCell<Vec<String>>) -> u32 {
     n
 }
 
+struct Codes<'a> {
+    at: usize,
+    codes: &'a [u8],
+    log: &'a RefCell<Vec<String>>,
+}
+
+impl Codes<'_> {
+    fn next_code(&mut self) -> u8 {
+        self.at += 1;
+        self.log.borrow_mut().push(format!("next:{}", self.at));
+        self.codes.get(self.at - 1).copied().unwrap_or(0)
+    }
+}
+
+fn stepped(codes: &[u8], log: &RefCell<Vec<String>>) -> u32 {
+    let mut c = Codes { at: 0, codes, log };
+    let mut n = 0;
+    loop {
+        n += 1;
+        match c.next_code() {
+            0 => break,
+            1 if on(log, "one", n > 30) => break,
+            1 | 2 => n += 20,
+            _ => n += 300,
+        }
+        n += 1;
+    }
+    n
+}
+
 fn main() {
     let log = RefCell::new(Vec::new());
     for text in ["", "a", "aab", "bbbbbbc", "cccccccca", "d!a", "dxd", "abcdabcd", "ccccabcd!"] {
@@ -72,5 +103,9 @@ fn main() {
     for codes in [&[1u8, 1, 1, 1, 1][..], &[2, 2, 2, 2, 2, 1, 3], &[3, 2, 1, 1, 0]] {
         let polled = polled(codes, &log);
         println!("{codes:?}: {polled} {:?}", log.take());
+    }
+    for codes in [&[1u8, 2, 5, 1][..], &[1, 1, 1, 1, 1, 1], &[7, 2, 0, 1]] {
+        let total = stepped(codes, &log);
+        println!("{codes:?}: {total} {:?}", log.take());
     }
 }

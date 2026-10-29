@@ -46,24 +46,49 @@ function polled(codes, log) {
     at = (at + 1) >>> 0;
     return codes[(at - 1) >>> 0] ?? 0;
   }
-  loop: while (true) {
-    switch (next()) {
-      case 0:
-        break loop;
-      case 1:
-        if (on(log, "one", n > 2)) {
-          break loop;
-        }
-      // Fallthrough
-      case 2:
-        if (n === 7) {
-          n += 5;
-          continue;
-        }
-        n = (n + 1) >>> 0;
-        break;
-      default:
-        n = (n + 10) >>> 0;
+  let value;
+  while ((value = next()) !== 0) {
+    if (value === 1 && on(log, "one", n > 2)) {
+      break;
+    }
+    if (value === 1 || value === 2) {
+      if (n === 7) {
+        n += 5;
+        continue;
+      }
+      n = (n + 1) >>> 0;
+    } else {
+      n = (n + 10) >>> 0;
+    }
+    n = (n + 1) >>> 0;
+  }
+  return n;
+}
+
+const Codes = {
+  nextCode(codes) {
+    codes.at = (codes.at + 1) >>> 0;
+    codes.log.push(`next:${codes.at}`);
+    return codes.codes[(codes.at - 1) >>> 0] ?? 0;
+  },
+};
+
+function stepped(codes, log) {
+  const c = { at: 0, codes, log };
+  let n = 0;
+  while (true) {
+    n = (n + 1) >>> 0;
+    const nextCode = Codes.nextCode(c);
+    if (nextCode === 0) {
+      break;
+    }
+    if (nextCode === 1 && on(log, "one", n > 30)) {
+      break;
+    }
+    if (nextCode === 1 || nextCode === 2) {
+      n = (n + 20) >>> 0;
+    } else {
+      n = (n + 300) >>> 0;
     }
     n = (n + 1) >>> 0;
   }
@@ -101,6 +126,17 @@ function main() {
     const arg = $take(log, []);
     console.log(
       `[${codes.join(", ")}]: ${polled$1} [${arg.map((item) => $debugStr(item)).join(", ")}]`,
+    );
+  }
+  for (const codes of [
+    [1, 2, 5, 1],
+    [1, 1, 1, 1, 1, 1],
+    [7, 2, 0, 1],
+  ]) {
+    const total = stepped(codes, log);
+    const arg = $take(log, []);
+    console.log(
+      `[${codes.join(", ")}]: ${total} [${arg.map((item) => $debugStr(item)).join(", ")}]`,
     );
   }
 }

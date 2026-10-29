@@ -10,7 +10,7 @@ use crate::lower::mir::hints::{Constant, SUBJECT, Switch, SwitchArm};
 use crate::lower::untagged::TypeofCase;
 
 use super::bindings::declared;
-use super::loop_labels::{LOOP_LABEL, continued, labeled_breaks, labels_in};
+use super::loop_labels::{LOOP_LABEL, continued, held_subject, labeled_breaks, labels_in};
 use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 
 /// Each chain of `body` that tests the arms of a `match` of `switches`, in
@@ -162,9 +162,13 @@ fn written_after(list: &mut Vec<Stmt>, i: usize, switches: &[Switch]) {
 
 /// A temporary only the test of the `switch` at `list[i]` reads, `const _5
 /// = s.charCodeAt(i);` just before, but for what's declared, unset, `let
-/// v;`: its value, read in place, `switch (s.charCodeAt(i))`. Whether it
-/// was, the `switch` then at `list[i - 1]`.
+/// v;`: its value, read in place, `switch (s.charCodeAt(i))`; not one
+/// whose `if` chain will read it again (`loop_labels::held_subject`).
+/// Whether it was, the `switch` then at `list[i - 1]`.
 fn discriminant_in_place(list: &mut Vec<Stmt>, i: usize) -> bool {
+    if held_subject(&list[i]) {
+        return false;
+    }
     let declared = (list[..i].iter().rev())
         .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
         .count();
@@ -343,6 +347,23 @@ fn switch_at(
             absorbed = n;
             taken += n;
         }
+    }
+    // Of guarded arms that fall through, a `break` after them, the list's
+    // last, which each case that goes on goes on to, MIR's shared way out
+    // of the loop or of a block: each such case's, as a jump after an
+    // `else`'s chain is (`chain`), so the `switch` ends where its cases do.
+    if falling
+        && let [
+            jump @ Stmt {
+                kind: StmtKind::Break(_),
+                ..
+            },
+        ] = &stmts[at + taken..]
+    {
+        for (_, body, ..) in cases.iter_mut().filter(|case| !case.1.last().is_some_and(js::ends)) {
+            body.push(jump.clone());
+        }
+        taken += 1;
     }
     // Each arm of `null`, which `typeof` says is an object, an `if` of its
     // test in `case "object"`; and each of an array, an `if` of its test
@@ -1307,7 +1328,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
 /// Of `stmts`, a case's, each `break;` that ends a branch of the `if` they
 /// end with, however deep, gone, which goes where that branch's end does;
 /// a branch then empty, as `emptied_branch` writes it.
-fn ending_breaks(stmts: &mut Vec<Stmt>) {
+pub(super) fn ending_breaks(stmts: &mut Vec<Stmt>) {
     let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) else {
         return;
     };
