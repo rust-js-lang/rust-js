@@ -480,11 +480,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-jump-branch-left-empty",
-    breaks: "a branch a tail jump was all of stays, `if (!on) {} else { .. }`, so a guarded arm's `match` is no `switch`",
+    breaks: "a branch a tail jump was all of stays, `if (!on) {} else { .. }`, so loop_branch_emptied's `chains` stage leaves an `if` of no statements, which tidy's contract refuses",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))",
     replace: "    } else if let Some(StmtKind::Try(body, _))",
-    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied\\.rs$"],
   },
   {
     name: "returned-call-not-one-value",
