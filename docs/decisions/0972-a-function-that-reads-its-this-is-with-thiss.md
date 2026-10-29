@@ -192,3 +192,30 @@ closure's called as they are, and a program whose one such function is
 `js-fn-pointer-call-bound` and `rust-fn-pointer-call-unbound`
 (`mir/dispatch.ts`), and `binding-functions-read-no-this` and
 `given-functions-read-no-this` (`analysis/fn_pointers.ts`).
+
+## Amendment: only where a with_this function of its signature is made (#404)
+
+The user's decision, "By with_this made": #402's holding was decided for
+the whole crate, so a crate that called any binding held every call
+through a field, React's `const enqueueForceUpdate =
+this.updater.enqueueForceUpdate; enqueueForceUpdate(this, ..)`. **A call
+through a field is held only where a function `js::function::with_this`
+makes in the crate's code may be its callee, one of its signature**: what
+it's called with and gives, `A` and `R` of `with_this::<F, A, R>`, their
+lifetimes erased, the args tuple and the output of a `dyn Fn`'s, a generic
+`F`'s or a fn pointer's call (`FnPointers::may_read_this`, which keeps the
+with_this functions the crate makes by their signatures; one made in
+generic code may be any). Only such a function can show Rust a `this`,
+and Rust says `None`. **Another, a JS function, is called through its
+object, `this.updater.enqueueForceUpdate(this, ..)`, `handle.play()`, as
+JS calls it**: that object is its `this`, as upstream's JS gives it. This
+replaces #402's crate-wide answer (a binding's call, a function value JS
+gives).
+
+Held by `test/js-functions.test.ts`, "a dyn Fn a field or an item holds is
+called with no this": a field of another signature than the with_this
+function's, `o.g(1)`, its JS function reading `o` as its `this`; one made
+in generic code; and a crate's closure and a Rust fn pointer of the
+with_this function's signature, called as they are. Mutations
+`with-this-unrecorded`, `with-this-generic-unrecorded` and
+`with-this-any-signature` (`analysis/fn_pointers.ts`).

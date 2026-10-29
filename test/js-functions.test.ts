@@ -423,12 +423,13 @@ pub fn orphan(value: Option<&Unknown>) -> bool {
   expect(() => lib.namesOf(undefined)).toThrow(TypeError);
 });
 
-// #402: a call of what may read its `this`, a `dyn Fn` a field or an item
-// holds, `(s.f)()`, gives it none, as Rust gives a with_this function
+// #402: a call of what may be a with_this function the crate makes, a
+// `dyn Fn`, a generic `F` or a fn pointer of its signature a field or an
+// item holds, `(s.f)()`, gives it none, as Rust gives a with_this function
 // `None` (ADR 0972): its callee held first, `const f = s.f; f()`, not
-// `s.f()`, whose `this` is `s`. A fn pointer that may be JS's is called so
-// too; a closure of the crate's and one that may only be a Rust function,
-// `dispatcher.useState()`, are called as they are.
+// `s.f()`, whose `this` is `s`. One of another signature, JS's own, is
+// called through its object, `o.g(1)`, as JS calls it (#404, the user's
+// decision); a closure of the crate's too.
 test("a dyn Fn a field or an item holds is called with no this", async () => {
   const { js, lib } = await compiled("dyn-fn-field-this", `use js::Unknown;
 
@@ -457,40 +458,35 @@ pub fn pointer(t: &Table) -> bool {
     (t.g)()
 }
 
-struct Rust {
-    h: fn() -> u32,
+pub fn closure(n: u32) -> bool {
+    let p = (move || n > 0, 2u32);
+    (p.0)() && p.1 > 1
 }
 
-fn one() -> u32 {
-    1
+pub struct Other {
+    pub g: Box<dyn Fn(u32) -> u32>,
 }
 
-pub fn rust() -> u32 {
-    let r = Rust { h: one };
-    (r.h)()
-}
-
-pub fn closure(n: u32) -> u32 {
-    let p = (move || n + 1, 2u32);
-    (p.0)() + p.1
+pub fn other(o: &Other) -> u32 {
+    (o.g)(1)
 }
 `);
   expect(js).toContain("  const f = s.f;\n  return f();\n");
   expect(js).toContain("const f = fs[0];\n");
   expect(js).toContain("  const f = p[0];\n  return f();\n");
   expect(js).toContain("  const g = t.g;\n  return g();\n");
-  expect(js).toContain("return r.h();");
-  expect(js).toContain("return (p[0]() + p[1]) >>> 0;");
+  expect(js).toContain("return !!p[0]() && p[1] > 1;");
+  expect(js).toContain("return o.g(1);");
   const reads = function (this: unknown) {
     return this !== undefined;
   };
-  expect([lib.field(), lib.first([reads]), lib.pair([reads, 1]), lib.pointer({ g: reads }), lib.rust(), lib.closure(1)]).toEqual([
+  expect([lib.field(), lib.first([reads]), lib.pair([reads, 1]), lib.pointer({ g: reads }), lib.closure(1), lib.other({ k: 5, g(this: { k: number }, n: number) { return this.k + n; } })]).toEqual([
     false,
     false,
     false,
     false,
-    1,
-    4,
+    true,
+    6,
   ]);
   // A program whose one such function is with_this's, given JS nothing.
   const alone = await compiled("dyn-fn-field-this-alone", `use js::Unknown;
@@ -503,7 +499,41 @@ pub fn field() -> bool {
     let s = S { f: js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some()) };
     (s.f)()
 }
+
+struct Rust {
+    h: fn() -> bool,
+}
+
+fn yes() -> bool {
+    true
+}
+
+pub fn rust() -> bool {
+    let r = Rust { h: yes };
+    (r.h)()
+}
 `);
   expect(alone.js).toContain("  const f = s.f;\n  return f();\n");
-  expect(alone.lib.field()).toBe(false);
+  expect(alone.js).toContain("return r.h();");
+  expect([alone.lib.field(), alone.lib.rust()]).toEqual([false, true]);
+  // One generic code makes, of what its callers give, may be any.
+  const generic = await compiled("dyn-fn-field-this-generic", `use js::Unknown;
+
+fn reader<T: Copy + 'static>(t: T) -> Box<dyn Fn() -> T> {
+    js::function::with_this(move |_: Option<&'static Unknown>, ()| t)
+}
+
+pub struct S {
+    pub f: Box<dyn Fn() -> u32>,
+}
+
+pub fn call(s: &S) -> u32 {
+    (s.f)()
+}
+
+pub fn read() -> u32 {
+    reader(2u8)() as u32
+}
+`);
+  expect(generic.js).toContain("  const f = s.f;\n  return f();\n");
 });

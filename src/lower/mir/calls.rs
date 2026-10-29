@@ -14,7 +14,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn called_unbound(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        call: Value<'tcx>,
+        (call, signature): (Value<'tcx>, (Ty<'tcx>, Ty<'tcx>)),
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let Value::Expr(Expr {
@@ -24,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(call);
         };
-        if !self.krate.cell_borrows.pointers().may_read_this() {
+        if !self.krate.cell_borrows.pointers().may_read_this(self.tcx, signature) {
             return Ok(Value::Expr(Expr::call(*callee, args)));
         }
         let name = match &callee.kind {
@@ -44,7 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         writes: Option<usize>,
         span: Span,
-        unbound: Option<(&mut State<'_, 'tcx>, &mut Vec<Stmt>)>,
+        unbound: Option<(&mut State<'_, 'tcx>, &mut Vec<Stmt>, Ty<'tcx>)>,
     ) -> R<Value<'tcx>> {
         let mut values = values.into_iter();
         let callee = match values.next().expect("the closure") {
@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let call = Value::Expr(Expr::call(callee, exprs));
         match unbound {
-            Some((state, out)) if !own => self.called_unbound(state, call, out),
+            Some((state, out, output)) if !own => self.called_unbound(state, (call, (arg_tys[1], output)), out),
             _ => Ok(call),
         }
     }

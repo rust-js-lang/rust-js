@@ -2435,9 +2435,11 @@ export function logMeasure(task, name, start, end) {
   `callback.apply(this, args)`
   ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md),
   amended). Rust's call of one a field or an item holds, `(s.f)()`,
-  gives it none: `const f = s.f; f()`, not `s.f()`, whose `this` is `s`;
-  so is a `dyn Fn`'s or a generic `F`'s there, and a fn pointer's that may
-  be JS's. React's error boundary callback, called on the instance:
+  gives it none: `const f = s.f; f()`, not `s.f()`, whose `this` is `s`,
+  where a `with_this` function the crate makes, of that call's signature,
+  may be it. A JS function of another is called through its object,
+  `handle.play()`, which is its `this`, as JS calls it. React's error
+  boundary callback, called on the instance:
 
 ```rust
 use std::cell::Cell;

@@ -746,8 +746,7 @@ Component.prototype.isReactComponent = true;
 
 /** Forces an update. */
 Component.prototype.forceUpdate = function () {
-  const enqueueForceUpdate = this.updater.enqueueForceUpdate;
-  enqueueForceUpdate(this, "forceUpdate");
+  this.updater.enqueueForceUpdate(this, "forceUpdate");
 };
 
 function ComponentDummy() {}

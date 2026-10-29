@@ -30,8 +30,7 @@ function genIterator_next(gen) {
 function makeIterator_next(make, dropT) {
   make.n = (make.n + 1) & 255;
   if (make.n < 4) {
-    const make$1 = make.make;
-    return $some(make$1(make.n));
+    return $some(make.make(make.n));
   }
 }
 

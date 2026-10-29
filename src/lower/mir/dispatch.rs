@@ -48,7 +48,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(Expr::call(callee, exprs)));
         }
         crate::lower::calls::given_to_js(&mut exprs);
-        self.called_unbound(state, Value::Expr(Expr::call(callee, exprs)), out)
+        let sig = self.tcx.instantiate_bound_regions_with_erased(*sig);
+        let signature = (Ty::new_tup(self.tcx, sig.inputs()), sig.output());
+        self.called_unbound(state, (Value::Expr(Expr::call(callee, exprs)), signature), out)
     }
 
     pub(super) fn mir_call(
@@ -897,7 +899,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
                 || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
-            return self.mir_closure_call(values, &arg_tys, None, span, Some((state, out)));
+            return self.mir_closure_call(values, &arg_tys, None, span, Some((state, out, output)));
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.
