@@ -60,3 +60,14 @@ class $KeyMap extends Map {
     }
   }
 }
+
+// A map keyed by value whose key holds a type equal only to itself (ADR
+// 1015, amended): each entry kept under `$key` of `parts(key)`, the key
+// with each such part its `$id`, as its derived `Hash` and `Eq` find it.
+function $keyMap(parts) {
+  return class extends $KeyMap {
+    keyOf(key) {
+      return $key(parts(key));
+    }
+  };
+}

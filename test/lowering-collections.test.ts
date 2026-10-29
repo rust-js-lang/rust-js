@@ -517,6 +517,14 @@ pub fn equal_fibers(a: &Fiber, b: &Fiber) -> bool {
     .toThrow("values of type");
   expect(() => compile("identity-set-other", "std::ptr::eq(self, self) && self.tag == other.tag")).toThrow("values of type");
   expect(() => compile("identity-set-self", "std::ptr::eq(self, self)")).toThrow("values of type");
+  // A `Cow` of a slice of them, which `$cowKey` would find by what's in
+  // each fiber, is refused (ADR 1015, amended).
+  expect(() => compile("identity-set-cow", "std::ptr::eq(self, other)", "", `
+pub fn cows(fibers: &'static [Fiber]) -> usize {
+    let set: HashSet<std::borrow::Cow<'static, [&'static Fiber]>> = HashSet::new();
+    set.len() + fibers.len()
+}
+`)).toThrow("values of type `std::borrow::Cow<'_, [&Fiber]>`");
 });
 
 // ADR 0033: a `&mut` of an `Option` is a handle on its place, `Some(x)`

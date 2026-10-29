@@ -45,4 +45,12 @@ export const mutations: Mutation[] = [
     replace: "      f.call(that, key, value, this);\n",
     tests: ["test/runtime-package.test.ts", "-t", "reads as a Map"],
   },
+  {
+    name: "key-map-parts-unread",
+    breaks: "a map whose key holds a fiber keys it by `$key` of the key, the fiber's fields (#398)",
+    file: "src/runtime/key_map.js",
+    find: "      return $key(parts(key));\n",
+    replace: "      return $key(key);\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
+  },
 ];

@@ -914,7 +914,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// in it: a value of any shape (ADR 0612, amended), one equal only to
     /// itself, a library's too, and an `Rc` of one (ADR 0864), and an
     /// untagged enum with a payload of one, which is its value (ADR 0214).
-    fn eq_of_objects(&self, ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn eq_of_objects(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         let of_one = |(adt, args): (ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>)| {
             (adt.variants().iter().flat_map(|variant| variant.fields.iter()))

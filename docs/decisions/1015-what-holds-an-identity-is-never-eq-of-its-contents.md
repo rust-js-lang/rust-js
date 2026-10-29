@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0053](0053-partial-eq.md) (when `==` is one
 `$eq`), [0864](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)
 (a type equal only to itself) and [0612](0612-unknown-equality-is-strict.md)
-(a value of any shape). Fixes #397 (rd104).
+(a value of any shape). Fixes #397 (rd104). Amended: a key that holds one
+finds it by itself too, which amends [0121](0121-value-keys.md) (#398).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's behavior is preserved. It was a wrong answer.
@@ -126,7 +127,7 @@ function sameListener(a, b) {
   outer `None` is `undefined`, a representation decision of its own; open.
 - A `HashMap` keyed by a derived struct holding a type equal only to
   itself is a `$KeyMap` keyed by its fields: a separate wrong answer,
-  #398.
+  #398, fixed by the amendment below.
 
 ## What holds it
 
@@ -142,3 +143,112 @@ function sameListener(a, b) {
 - Mutations `identity-inside-compared-by-contents`,
   `identity-inside-unseen`, `identity-inside-untagged-unseen` and
   `unknown-compared-by-contents` (`scripts/mutations/lower/std_impls.ts`).
+
+## Amendment: a key that holds one finds it by itself too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's behavior is preserved. It was a wrong answer (#398).
+
+A set's or a map's key found by its value, a derived struct, a tuple, an
+`Option`, a `Vec` or an enum, is a `$KeyMap` or a `$KeySet` (ADR 0121),
+which keeps each entry under `$key` of the key, a string of what's in
+it. A key holding a type equal only to itself was one too:
+
+```rust
+#[derive(PartialEq, Eq, Hash)]
+struct Key {
+    fiber: Rc<Fiber>,
+    lane: u32,
+}
+..
+m.insert(Key { fiber: Rc::clone(&a), lane: 1 }, "a");
+m.insert(Key { fiber: Rc::clone(&b), lane: 1 }, "b");
+```
+
+The key's derived `Hash` and `Eq` find the fiber by its address, its
+own `ptr::hash` and `ptr::eq`, so two fibers alike are two keys. `$key`
+wrote the fiber's fields: `a` and `b` were one key, `len()` 1 where
+Rust's is 2, and a cycle of fibers, a fiber's `alternate`, overflowed the
+stack. It's the same question `==` asked of what holds one, of a map's
+key.
+
+**A key found by its value that holds a part `===` finds by itself, one
+equal only to itself, a library's too, or an `Rc` of one, is kept under
+`$key` of its parts, each such part its `$id`, the number that object
+is known by; and the rest of it as it is.**
+
+```js
+const m = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
+m.set({ fiber: a, lane: 1 }, "a");
+m.set({ fiber: b, lane: 1 }, "b");
+```
+
+- **One answer.** Which parts are found by themselves is `eq_of_objects`'s,
+  `==`'s question above; `std_types/map.rs`'s `holds_identity` asks it
+  through the key's parts, and `key_parts` writes the function of them:
+  a struct `{ ...key, fiber: $id(key.fiber) }`, a tuple `[$id(key[0]),
+  key[1]]`, a `Vec` `key.map($id)`, an `Option` its `None` or its
+  `Some`'s, `$id` itself of an `Option` of one, and an enum each variant's
+  that holds one. Everything that makes a map of a key, `new`, `collect`,
+  `clone`, `From`, a set read from JSON and generic code's map class
+  given by its caller (ADR 0466), asks `map_class`, which makes it.
+- **`$id(object)`** is a number from a `WeakMap` of the objects it's
+  given, the same of one object each time and another of each other, and
+  `None` of `None`; `$keyMap(parts)` and `$keySet(parts)` are a
+  `$KeyMap` and a `$KeySet` whose key is `$key(parts(key))`, as
+  `$ordMap(cmp)` is an `$OrdMap` of its `cmp`. A key holding none is a
+  `$KeyMap` as before.
+- **Across crates as in one.** A consumer's key holding a library's type
+  equal only to itself asks the library's contract, as `==` does, and
+  the library's own map of it is made the same: the consumer reads it and
+  adds to it.
+- **What can't be found by itself is refused**, never keyed by what's in
+  it: a key's untagged enum with a payload of one, whose number `$id`
+  could be another payload's; an `Option` whose `Some` is boxed (ADR
+  0051); and a `Cow` of a slice of them, which `$cowKey` finds by what it
+  borrows, "values of type `Cow<'_, [&Fiber]>`".
+- **A B-tree finds its keys by their `Ord`**, not their `Hash`: one whose
+  `Ord` is its own is an `$OrdMap` of its `cmp` (ADR 0404), and one whose
+  `Ord` is derived all through, a fiber's too, which std's `Ord` contract
+  requires to agree with its `Eq`, is kept by its parts as above.
+
+### Why
+
+- **It's what the key's own impls say**, one fiber, one key, as a JS
+  `Map` keys an object.
+- **Only a key that holds one pays**: a function for its parts and a
+  `WeakMap` lookup a part. Every other key is what it was.
+
+### Alternatives
+
+- **A hash table in the runtime by the key's `Hash`**, as ADR 0121
+  considered: `ptr::hash` writes an address (ADR 0562), whose ranges a
+  `$KeyMap` of many fibers would use up, and every key would pay for it.
+- **Refuse such a key**: Rust's map of it is ordinary, React's keyed by
+  a fiber and a lane, and has a correct JS form. Rejected.
+- **`$key` telling an identity apart by itself**: a fiber is a plain
+  object as a struct of values is, so nothing at run time says which.
+
+### What holds it
+
+- Corpus `identity_inside_keys`: a `HashMap` and a `HashSet` of a derived
+  struct holding an `Rc<Fiber>`, `entry`, `remove`, `contains_key` and
+  `clone`, a tuple key, an `Option` of a fiber and of the struct, a
+  `Vec` of fibers, a struct of the struct, an enum's tuple and struct
+  variants, and generic code given the set's class, of a cycle of
+  fibers, against native Rust.
+- `test/crates/pairs/identity_inside_keys`: a consumer's map of a
+  library's key and its own tuple set, and the library's map of its key
+  read and added to, against native Rust; "a key holding a library's type
+  equal only to itself finds it by itself" holds both crates' JS.
+- `test/lowering-collections.test.ts`, "a type equal only to itself keys
+  a JS Set by itself": a `Cow` of them refused.
+- Mutations `identity-in-key-by-contents`,
+  `identity-in-key-library-by-contents`, `identity-in-key-fields-unseen`,
+  `identity-in-key-option-by-contents`, `identity-in-key-option-none-read`,
+  `identity-in-key-variant-skipped`, `identity-in-key-items-unmapped`,
+  `identity-in-key-tuple-part-kept`, `identity-in-key-nested-struct-kept`
+  and `identity-in-cow-key-by-contents` (`lower/std_types/map.ts`);
+  `id-of-each-object-one` and `id-of-one-object-new` (`runtime/id.ts`),
+  `key-map-parts-unread` (`runtime/key_map.ts`) and
+  `key-set-parts-unread` (`runtime/key_set.ts`).

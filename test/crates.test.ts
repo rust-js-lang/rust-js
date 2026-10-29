@@ -487,6 +487,20 @@ test("a consumer's == of what holds a library's type equal only to itself is nev
   expect(app.match(/\$eq\([^)]*\)/g)).toEqual(["$eq(p, q)", "$eq(p, r)", "$eq(p, q)"]);
 }, 300_000);
 
+// #398: a key holding a library's type equal only to itself, a derived
+// struct of the library's or the consumer's tuple, keeps each fiber by its
+// `$id`, the library's map as its consumer's, never by what's in it.
+test("a key holding a library's type equal only to itself finds it by itself", () => {
+  const out = chain(pairs, "identity_inside_keys", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const parts = "$keyMap((key) => ({ ...key, fiber: $id(key.fiber) }))";
+  expect(dep).toContain(`new (${parts})()`);
+  expect(app).toContain(`new (${parts})()`);
+  expect(app).toContain("new ($keySet((key) => [$id(key[0]), key[1]]))(");
+  expect(dep + app).not.toContain("$KeyMap");
+}, 300_000);
+
 // ADR 0863: a library's `RefCell`s, as React's `Transition` holds its
 // types: a plain field the value it holds, an `Rc`'s `RefCell<Vec<String>>`
 // the array, an `Option`'s `RefCell<HashSet<u32>>` the `Set`, none of whose

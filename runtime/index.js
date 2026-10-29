@@ -960,6 +960,17 @@ export class $KeyMap extends Map {
   }
 }
 
+// A map keyed by value whose key holds a type equal only to itself (ADR
+// 1015, amended): each entry kept under `$key` of `parts(key)`, the key
+// with each such part its `$id`, as its derived `Hash` and `Eq` find it.
+export function $keyMap(parts) {
+  return class extends $KeyMap {
+    keyOf(key) {
+      return $key(parts(key));
+    }
+  };
+}
+
 export class $KeySet extends Set {
   #items = new Map();
   constructor(items) {
@@ -1016,6 +1027,30 @@ export class $KeySet extends Set {
       f.call(that, item, item, this);
     }
   }
+}
+
+// A set of items found by value that hold a type equal only to itself
+// (ADR 1015, amended): each kept under `$key` of `parts(item)`.
+export function $keySet(parts) {
+  return class extends $KeySet {
+    keyOf(item) {
+      return $key(parts(item));
+    }
+  };
+}
+
+// The number an object is known by in a key that holds it, as its derived
+// `Hash` and `Eq` find a type equal only to itself, by itself (ADR 1015,
+// amended): the same of one object each time, and another of each other
+// object. `None`, `null` or `undefined`, is itself.
+export const $ids = new WeakMap();
+export let $lastId = 0;
+
+export function $id(object) {
+  if (object == null) return object;
+  let id = $ids.get(object);
+  if (id === undefined) $ids.set(object, (id = ++$lastId));
+  return id;
 }
 
 // A B-tree of keys it finds by their own `Ord` (ADR 0404): its entries

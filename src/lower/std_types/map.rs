@@ -355,6 +355,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cmp = self.cmp_fn(key, false, span)?;
                 return Ok(Expr::call_helper(["$ordMap", "$ordSet"][usize::from(set)], vec![cmp]));
             }
+            // One holding a part found by itself, each kept under its key's
+            // parts, that one's `$id` (ADR 1015, amended).
+            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) => {
+                let parts = self.key_parts_fn("key", key, span)?;
+                return Ok(Expr::call_helper(["$keyMap", "$keySet"][usize::from(set)], vec![parts]));
+            }
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
             _ => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
         };
@@ -904,7 +910,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .cow_parts(ty.peel_refs())
             .is_some_and(|(borrowed, _)| match borrowed.kind() {
                 ty::Str => true,
-                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),
+                // Not of what holds a part found by itself, which `$cowKey`
+                // would find by what's in it (ADR 1015, amended).
+                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()) && !self.holds_identity(*item),
                 _ => false,
             })
     }
@@ -947,6 +955,152 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `()`.
     pub(in crate::lower) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
         !ty.is_unit() && self.js_eq(ty).is_some()
+    }
+
+    /// Of a key found by its value, whether it holds a part `===` finds by
+    /// itself, an object equal only to itself or an `Rc` of one (ADR 1015,
+    /// amended), as its derived `Hash` and `Eq` find it, where `$key` would
+    /// find it by what's in it: `std_impls`' `eq_of_objects`, its one answer.
+    pub(in crate::lower) fn holds_identity(&self, ty: Ty<'tcx>) -> bool {
+        self.holds_identity_in(ty, &mut Vec::new())
+    }
+
+    fn holds_identity_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+        let ty = ty.peel_refs();
+        if seen.contains(&ty) {
+            return false;
+        }
+        seen.push(ty);
+        let holds = match ty.kind() {
+            _ if self.js_eq(ty).is_some() => self.eq_of_objects(ty),
+            ty::Tuple(parts) => parts.iter().any(|t| self.holds_identity_in(t, seen)),
+            ty::Array(item, _) | ty::Slice(item) => self.holds_identity_in(*item, seen),
+            ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
+                self.holds_identity_in(args.type_at(0), seen)
+            }
+            ty::Adt(adt, args) => (adt.variants().iter().flat_map(|variant| variant.fields.iter()))
+                .any(|field| self.holds_identity_in(self.field_ty(field, args), seen)),
+            _ => false,
+        };
+        seen.pop();
+        holds
+    }
+
+    /// What `$key` finds `key`, of `ty`, by, where it holds a part found by
+    /// itself (`holds_identity`): each such part its `$id`, the number that
+    /// object is known by, and the rest as it is (ADR 1015, amended). A
+    /// struct `{ ...key, fiber: $id(key.fiber) }`, a tuple `[$id(key[0]),
+    /// key[1]]`, a `Vec` `key.map($id)`, an `Option` its `None` or its
+    /// `Some`'s, an enum each variant's that holds one.
+    fn key_parts(&mut self, key: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let ty = ty.peel_refs();
+        if !self.holds_identity(ty) {
+            return Ok(key);
+        }
+        let refused = |cx: &Self| {
+            cx.unsupported(
+                span,
+                &format!(
+                    "a map or a set keyed by `{ty}`, whose part equal only to itself rust-js can't find by itself there"
+                ),
+            )
+        };
+        match ty.kind() {
+            // An untagged enum's payload, which may be a number an `$id` is too.
+            _ if self.js_eq(ty).is_some() => match self.untagged(ty) {
+                Some(_) => Err(refused(self)),
+                None => Ok(Expr::call_helper("$id", vec![key])),
+            },
+            ty::Tuple(parts) => {
+                let parts = parts
+                    .iter()
+                    .enumerate()
+                    .map(|(i, t)| self.key_parts(Expr::index(key.clone(), Expr::int(i as i128)), t, span))
+                    .collect::<R<Vec<_>>>()?;
+                Ok(Expr::array(parts))
+            }
+            ty::Array(item, _) | ty::Slice(item) => self.items_key_parts(key, *item, span),
+            ty::Adt(_, args) if self.is_vec_like(ty) => self.items_key_parts(key, args.type_at(0), span),
+            ty::Adt(_, args) if ty.is_box() => self.key_parts(key, args.type_at(0), span),
+            ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) => {
+                let inner = args.type_at(0);
+                // A `Some` boxed, `$some(..)`, isn't what it holds.
+                if self.boxed_payload(inner) {
+                    return Err(refused(self));
+                }
+                // `$id` of `None` is `None`.
+                if self.js_eq(inner.peel_refs()).is_some() {
+                    return self.key_parts(key, inner, span);
+                }
+                let some = self.key_parts(key.clone(), inner, span)?;
+                Ok(Expr::cond(Expr::presence(key.clone(), false), key, some))
+            }
+            ty::Adt(adt, args) if adt.is_enum() => {
+                let mut value = key.clone();
+                for (index, variant) in adt.variants().iter_enumerated().rev() {
+                    let fields = self.variant_fields(variant, args);
+                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) {
+                        continue;
+                    }
+                    let mut props = vec![js::Prop::Spread(key.clone())];
+                    for (name, t) in fields {
+                        if self.holds_identity(t) {
+                            let part = self.key_parts(Expr::member(key.clone(), &name), t, span)?;
+                            props.push(js::Prop::Field(name, part));
+                        }
+                    }
+                    let test = self.variant_test(key.clone(), ty, *adt, index, false);
+                    value = Expr::cond(test, Expr::object(props), value);
+                }
+                Ok(value)
+            }
+            _ => match self.shape(ty) {
+                crate::lower::Shape::Object(fields) => {
+                    let mut props = vec![js::Prop::Spread(key.clone())];
+                    for (i, (name, t)) in fields.into_iter().enumerate() {
+                        if self.holds_identity(t) {
+                            let part = self.key_parts(self.project(key.clone(), ty, i), t, span)?;
+                            props.push(js::Prop::Field(name, part));
+                        }
+                    }
+                    Ok(Expr::object(props))
+                }
+                crate::lower::Shape::Array(tys) => {
+                    let parts = tys
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, t)| self.key_parts(self.project(key.clone(), ty, i), t, span))
+                        .collect::<R<Vec<_>>>()?;
+                    Ok(Expr::array(parts))
+                }
+                crate::lower::Shape::Other => Err(refused(self)),
+            },
+        }
+    }
+
+    /// `items.map((item) => <item's parts>)`, `items.map($id)` of objects
+    /// found by themselves: `key_parts` of an array's items.
+    fn items_key_parts(&mut self, items: Expr, item: Ty<'tcx>, span: Span) -> R<Expr> {
+        let each = self.key_parts_fn("item", item, span)?;
+        Ok(Expr::call(Expr::member(items, "map"), vec![each]))
+    }
+
+    /// `(name) => <name's parts>`, the function of a `ty`'s `key_parts`, or
+    /// `$id` itself, of an object found by itself.
+    fn key_parts_fn(&mut self, name: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let parts = self.key_parts(Expr::var(name), ty, span)?;
+        Ok(match &parts.kind {
+            js::ExprKind::Call(callee, args)
+                if callee.helper_name() == Some("$id")
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v == name)) =>
+            {
+                (**callee).clone()
+            }
+            _ => Expr::arrow(
+                vec![name.into()],
+                vec![StmtKind::Return(Some(parts)).at(js::Span::NONE)],
+            ),
+        })
     }
 
     pub(in crate::lower) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {

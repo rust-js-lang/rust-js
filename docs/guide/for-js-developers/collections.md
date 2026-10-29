@@ -811,6 +811,65 @@ export function sameListener(a, b) {
 }
 ```
 
+- **A key that holds one finds it by itself too.** A derived struct, a
+  tuple, an `Option`, a `Vec` or an enum holding a fiber is keyed by its
+  value, as any key found by value is, but for the fiber, which is its
+  `$id`, the number that object is known by: two fibers alike are two
+  keys, and one fiber twice is one, as the key's derived `Hash` and `Eq`
+  find them
+  ([ADR 1015, amended](../../decisions/1015-what-holds-an-identity-is-never-eq-of-its-contents.md)):
+
+```rust
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub lanes: u32,
+}
+
+impl PartialEq for Fiber {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Fiber {}
+
+impl Hash for Fiber {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(self, state);
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct Key {
+    pub fiber: Rc<Fiber>,
+    pub lane: u32,
+}
+
+pub fn pending(keys: Vec<Key>) -> usize {
+    let mut pending = HashMap::new();
+    for key in keys {
+        *pending.entry(key).or_insert(0) += 1;
+    }
+    pending.len()
+}
+```
+
+```js
+import { $id, $keyMap, $orInsert } from "@rust-js/runtime";
+
+export function pending(keys) {
+  const pending = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
+  for (const key of keys) {
+    const current = $orInsert(pending, key, 0);
+    pending.set(key, (current + 1) | 0);
+  }
+  return pending.size;
+}
+```
+
 A map you want in key order is a `BTreeMap`, a set a `BTreeSet`. It's a JS
 `Map` too, and Rust code iterates it in key order:
 

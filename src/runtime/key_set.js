@@ -56,3 +56,13 @@ class $KeySet extends Set {
     }
   }
 }
+
+// A set of items found by value that hold a type equal only to itself
+// (ADR 1015, amended): each kept under `$key` of `parts(item)`.
+function $keySet(parts) {
+  return class extends $KeySet {
+    keyOf(item) {
+      return $key(parts(item));
+    }
+  };
+}

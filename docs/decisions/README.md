@@ -140,7 +140,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0118 Bindings on npm only, as ReScript's are](0118-bindings-on-npm-only.md)
 - [0119 Bindings the community maintains, in one repository](0119-community-bindings.md)
 - [0120 The first npm release: 0.0.1, for macOS on Apple silicon](0120-first-npm-release.md)
-- [0121 A map keyed by a struct is a `Map` keyed by its value](0121-value-keys.md)
+- [0121 A map keyed by a struct is a `Map` keyed by its value](0121-value-keys.md) *(by 1015: a key holding a type equal only to itself finds it by itself)*
 - [0122 An `f32` is a JS number, each result rounded with `Math.fround`](0122-f32.md)
 - [0123 A slice's pattern tests its length and its items](0123-slice-patterns.md)
 - [0124 A `|` pattern binds each name where its alternative has it](0124-or-pattern-bindings.md)
@@ -801,6 +801,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
+- [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
+- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)

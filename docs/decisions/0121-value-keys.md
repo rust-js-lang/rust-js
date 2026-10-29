@@ -1,7 +1,9 @@
 # 0121. A map keyed by a struct is a `Map` keyed by its value
 
 Status: Accepted. Extends [0059](0059-hashmap.md). Amended: an `Option`
-key is found by its value.
+key is found by its value. Amended by
+[1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md): a
+key holding a type equal only to itself finds it by itself, `$id`.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
