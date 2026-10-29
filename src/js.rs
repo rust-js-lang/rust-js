@@ -1090,6 +1090,7 @@ mod tests {
     fn module_of(value: Expr) -> Module {
         Module {
             header: String::new(),
+            header_on_code: false,
             directives: Vec::new(),
             packages: Vec::new(),
             imports: Vec::new(),
