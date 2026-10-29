@@ -1,8 +1,11 @@
 // A module's exported cells, which only it sets, read by another as they
 // are now: each its `export let`, the reader's import of it read live, ES's
 // binding, and a read kept before the module sets it again what it was then
-// (ADR 0270, amended). A `RefCell` of an array is the array, which the
-// reader changes in place.
+// (ADR 0270, amended), its import by name too, `use fiber::IS_RENDERING`,
+// whose `const rendering = isRendering;` is no import named `rendering`. A
+// `RefCell` of an array is the array, which the reader changes in place.
+
+use fiber::IS_RENDERING;
 
 mod fiber {
     use std::cell::{Cell, RefCell};
@@ -25,7 +28,7 @@ mod fiber {
 }
 
 fn told() -> String {
-    let rendering = fiber::IS_RENDERING.get();
+    let rendering = IS_RENDERING.get();
     let current = fiber::CURRENT.get();
     let name = fiber::NAME.with_borrow(|name| name.clone());
     fiber::LOG.with_borrow_mut(|log| log.push(current.unwrap_or(0)));

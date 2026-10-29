@@ -51,10 +51,21 @@ fn polite(name: &str) -> String {
     unreachable!()
 }
 
+// Another module's export named as an import of this one, `greet` beside
+// `./greet.js`'s default, is imported apart from it.
+#[cfg_attr(rust_js, rust_js::link_name = "./inner/wave.js#greet")]
+fn wave(name: &str) -> String {
+    unreachable!()
+}
+
 pub fn paths() -> String {
     // A local named like an import doesn't hide it.
     let join = "c.txt";
     path_join(&path_join("a", "b"), join)
+}
+
+pub fn waved() -> String {
+    wave("root")
 }
 
 pub fn file_name() -> String {

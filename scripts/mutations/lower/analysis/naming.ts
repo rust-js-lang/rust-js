@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "imports-named-alike",
-    breaks: "a module's imports aren't named around each other: `./greet.js`'s default and namespace are both `greet`",
+    breaks: "a module's imports aren't named around each other: `./greet.js`'s default and `./inner/wave.js`'s `greet` are both `greet`",
     file: "src/lower/analysis/naming.rs",
     find: "fresh_in(&mut reserved, alias.as_ref().unwrap_or(base)),",
     replace: "fresh_in(&mut reserved.clone(), alias.as_ref().unwrap_or(base)),",

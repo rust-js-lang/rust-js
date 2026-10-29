@@ -245,6 +245,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(imports.lib.fileName()).toBe("y.txt");
   expect(imports.lib.urls()).toEqual(["https://example.com/a", "https://example.com/b"]);
   expect(imports.lib.greetings()).toEqual(["Hello, world!", "Good day, world.", "!?"]);
+  expect(imports.lib.waved()).toBe("Hi, root!");
   expect(imports.leaf.hello()).toBe("Hello, leaf!");
   expect(imports.leaf.bye()).toBe("Bye, leaf!");
   expect(imports.leaf.joined()).toBe("a/leaf");

@@ -1082,7 +1082,9 @@ pub fn stringed(n: u32) -> String {
 // module never reads is the global's name, as react.dev's MDXComponents
 // writes `function Math({children})` (ADR 0352). One in a module that
 // reads the global stays apart, and so does one another module imports by
-// its name.
+// its name. An export is named as it's exported, its `#[rust_js::name]`'s
+// `query$` too, which reclaimed would be `query`, an export JS importing
+// `query$` finds none of.
 test("a module's own function named as a global it never reads is the name", async () => {
   const dir = fixture("reclaimed-own-item");
   writeFileSync(join(dir, "lib.rs"), `#[allow(non_snake_case)]
@@ -1096,6 +1098,11 @@ pub fn twice(x: u32) -> u32 {
 
 pub fn shared(x: u32) -> u32 {
     exported::Math(x)
+}
+
+#[cfg_attr(rust_js, rust_js::name = "query$")]
+pub fn query(x: u32) -> u32 {
+    x + 3
 }
 
 pub mod exported {
@@ -1120,8 +1127,9 @@ pub mod rounded {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   const rounded = readFileSync(join(dir, "rounded.js"), "utf8");
   expect([js.includes("function Math(x) {"), rounded.includes("function Math$(x) {")]).toEqual([true, true]);
+  expect(js).toContain("export function query$(x) {");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.twice(1), lib.shared(2)]).toEqual([3, 4]);
+  expect([lib.twice(1), lib.shared(2), lib.query$(1)]).toEqual([3, 4, 4]);
 });
 
 test("a `let` from MIR is declared where it's first named", async () => {

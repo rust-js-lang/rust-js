@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "own-item-exported-reclaimed",
-    "breaks": "an exported function named as a global is renamed, and a module that imports it by its name finds nothing",
+    "breaks": "an exported function named apart by its `#[rust_js::name]`, `query$`, is reclaimed, `export function query`, and JS importing `query$` finds nothing",
     "file": "src/prepare/reclaim.rs",
     "find": "            js::Item::Function(function) if !function.export => Some(function.name.clone()),",
     "replace": "            js::Item::Function(function) => Some(function.name.clone()),",

@@ -4,11 +4,16 @@ import { join, posix } from "node:path";
 import { URL as URL$1 } from "node:url";
 import greet, { punctuation } from "./greet.js";
 import * as Greet from "./greet.js";
+import { greet as greet$1 } from "./inner/wave.js";
 
 export function paths() {
   // A local named like an import doesn't hide it.
   const join$1 = "c.txt";
   return join(join("a", "b"), join$1);
+}
+
+export function waved() {
+  return greet$1("root");
 }
 
 export function fileName() {
