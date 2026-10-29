@@ -133,6 +133,7 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
     stmts: &mut Vec<Stmt>,
     written: &[LabeledBlock],
     returns: &[js::Span],
+    starts: &[u32],
 ) {
     // Whether a `break label` is in a loop of `stmts` a written `return` is
     // in.
@@ -172,7 +173,7 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
         }
         // The returns the program wrote that MIR joined, where it did.
         let joins = (joined.is_none())
-            .then(|| joined_returns(body, label, returns))
+            .then(|| joined_returns(body, label, returns, starts))
             .flatten();
         if joins.is_none() && !left_by_a_return(body, label, returns, false) {
             i += 1;
@@ -199,8 +200,12 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
 /// `return` for each `break`. Not a `return` the program wrote once, which
 /// the block's ways go on to, a last arm's `_ => { // .. return; }`, whose
 /// place it has; nor a block more of whose ways go on to the function's end
-/// than the program wrote `return`s in it.
-fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span]) -> Option<Vec<js::Span>> {
+/// than the program wrote `return`s in it. A `return` written after the
+/// last of the block's statements is the block's too, up to where the
+/// next statement of the function, of `starts`, is written: a comment
+/// before it, `target.blocked_on.set(Some(n)); // We don't .. return;`, is
+/// then its own (rd108).
+fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u32]) -> Option<Vec<js::Span>> {
     let (mut lo, mut hi, mut breaks) = (u32::MAX, 0, 0);
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
@@ -210,6 +215,10 @@ fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span]) -> Option<Ve
             breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label));
         }
     });
+    let hi = (starts.iter().copied())
+        .filter(|&at| at >= hi)
+        .min()
+        .unwrap_or(u32::MAX);
     let written: Vec<_> = (returns.iter()).filter(|r| lo <= r.lo && r.hi <= hi).copied().collect();
     (breaks > 0 && written.len() >= breaks).then_some(written)
 }

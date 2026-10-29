@@ -154,3 +154,36 @@ and the mutations `returns-past-blocks-joined-unseen`,
 `returns-past-blocks-joined-anywhere`, `returns-past-blocks-unplaced`,
 `branch-ends-returning-if-not-an-exit` (`mir/tidy/jumps/tails.ts`) and
 `ended-returns-kept` (`mir/tidy/jumps.ts`).
+
+## Amendment: a joined return keeps what's written before it (rd108)
+
+`joined_returns` counted as a block's the `return`s the program wrote
+within its statements' places, up to the last one's end. A branch's last
+`return;`, after its last statement, `target.blocked_on.set(Some(n)); //
+We don't .. return;`, was past that: the block had fewer written returns
+than `break`s, so the `return;` that branch got was MIR's, of no place, and
+the comment or the blank line written before it was lost, in React DOM's
+attemptExplicitHydrationTarget. A block's written returns now reach up to
+where the function's next statement is written past its own
+(`statement_starts`): each `return;` has its place, and its comment.
+
+```js
+} else if (tag === 3) {
+  if (n > 5) {
+    target.blockedOn = n;
+    // We don't currently have a way to increase the priority of
+    // a root other than sync.
+    return;
+  }
+}
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same `return`.
+
+The readability ratchet's `return;` share is blessed (10.6 to 10.7 in
+10,000 lines): the two are the new case's, each a `return;` its program
+writes, which no other case changed.
+
+Held by `test/corpus/returns_joined_keep_comments.rs` against native Rust
+and the mutation `joined-returns-end-at-last-statement`
+(`mir/tidy/jumps/tails.ts`).

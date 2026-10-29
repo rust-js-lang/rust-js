@@ -580,4 +580,13 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::If(_, then, Some(otherwise)) if false => {\n                then.last().is_some_and(exits) && otherwise.last().is_some_and(exits)\n",
     tests: ["test/port-performance-track.test.ts", "-t", "addValueToProperties"],
   },
+  {
+    name: "joined-returns-end-at-last-statement",
+    breaks: "a written `return` after the last of a block's statements isn't the block's, so its `break` becomes a `return;` of no place and the comment or blank line before it is lost (rd108)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    let hi = (starts.iter().copied()).filter(|&at| at >= hi).min().unwrap_or(u32::MAX);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returns_joined_keep_comments.rs$"],
+    snapshots: true,
+  },
 ];

@@ -880,7 +880,10 @@ const JUMPS: &[Pass] = &[
     // leaves by: each such `break` that `return;`, an early return as
     // written (ADR 0742, amended).
     pass("returns past blocks", |b, h| {
-        js::statement_lists(b, &mut |s| returns_past_blocks(s, &h.written.blocks, h.returns))
+        let starts = statement_starts(b);
+        js::statement_lists(b, &mut |s| {
+            returns_past_blocks(s, &h.written.blocks, h.returns, &starts)
+        })
     }),
     // A `return` of an `if` the program wrote, `return if c { a } else { b
     // };`: its value, `return c ? a : b;`, before a shared tail takes its
@@ -974,4 +977,14 @@ mod tests {
         let unique: std::collections::HashSet<_> = names.iter().collect();
         assert_eq!(unique.len(), names.len());
     }
+}
+
+/// Where each statement of `body` that has a place is written, however
+/// deep: what `returns_past_blocks` reads a block's end by.
+fn statement_starts(body: &[Stmt]) -> Vec<u32> {
+    let mut starts = Vec::new();
+    js::each_list(body, &mut |list| {
+        starts.extend((list.iter()).filter(|s| !s.span.is_none()).map(|s| s.span.lo));
+    });
+    starts
 }
