@@ -243,4 +243,12 @@ export const mutations: Mutation[] = [
     replace: "ty::Tuple(items) => !items.is_empty(),",
     tests: restCallee,
   },
+  {
+    name: "namespace-fn-value-arrowed",
+    breaks: "a library's function given as a value through its module's namespace, `&dep::noop` as a `&dyn Fn`, is `() => Dep.noop()`, not `Dep.noop` as its named import was (ADR 1018, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            js::ExprKind::Member(..) => callee.is_named(),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "returned past a guard's drop is returned after its finally"],
+  },
 ];

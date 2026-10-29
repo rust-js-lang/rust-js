@@ -1,6 +1,8 @@
 # 1018. A function called through its module is read through its namespace
 
-Status: Accepted (the user's decision, rd114). Extends
+Status: Accepted (the user's decision, rd114). Amended (2026-10-29): a
+function given as a value through its namespace is the namespace's
+member, `Dep.noop`, not an arrow of its call. Extends
 [0202](0202-imports-named-around-importers.md) (an import is named in
 each file that imports it) and [0100](0100-separate-crates.md) (a
 library's items imported by their module's file); beside
@@ -125,3 +127,25 @@ function run() {
   imports fall with them.
 - Bindings keep their own forms: a binding's `link_name` says its JS,
   `#*` its namespace (ADR 0256), which this doesn't touch.
+
+## Amendment: a function as a value through its namespace is the member (2026-10-29)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as the decision
+says: the member is the binding the named import was.
+
+A library's function given as a value through its module's path,
+`&dep::noop` as a `&'static dyn Fn() -> u32`, was `return noop;` while
+it was imported by its name, and became `return () => Dep.noop();`: the
+arrow rust-js makes of a function as a value (`passed_on::Taker::FnValue`)
+was its call's function only where that was a variable. **One read through
+its module's namespace, `Dep.noop`, an item's member (`Expr::is_named`),
+is taken as the variable is:** `return Dep.noop;`.
+
+Main's tests of a library's function called by its path, in
+`test/crates.test.ts`, `test/rest-parameters.test.ts` and
+`test/react.test.ts`, read it through its namespace now, `Dep.createContext(1)`
+and `import * as People from "./people.js"`, as the decision makes it.
+
+- Held by `test/crates.test.ts`, "a library's function returned past a
+  guard's drop is returned after its finally", run: mutation
+  `namespace-fn-value-arrowed` (`lower/passed_on.ts`).

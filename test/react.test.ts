@@ -296,8 +296,8 @@ pub fn full_name(person: &Person) -> String {
   const lib = await Bun.file(join(dir, "lib.jsx")).text();
   const people = await Bun.file(join(dir, "people.js")).text();
   // Rust's own: functions, across modules, and fields, of a struct and a variant.
-  expect(lib).toContain('import { fullName, makePerson } from "./people.js";');
-  expect(lib).toContain("export function greet(firstName) {\n  return fullName(makePerson(firstName));");
+  expect(lib).toContain('import * as People from "./people.js";');
+  expect(lib).toContain("export function greet(firstName) {\n  return People.fullName(People.makePerson(firstName));");
   expect(people).toContain('return { firstName, lastName: "Doe" };');
   expect(lib).toContain("export function rectWidth(shape) {\n  return (shape.bottomRight - shape.topLeft");
   // React's: a hook React finds by its name, props as React code names them,

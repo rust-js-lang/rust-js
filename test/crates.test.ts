@@ -184,14 +184,14 @@ for (const name of readdirSync(triples).sort()) {
 // consumer changes, and isn't compiled again.
 test("a consumer that grows a library's boxed tree calls the library's method", () => {
   const out = chain(pairs, "tree", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain('import { Tree, sample } from "../dep/lib.js";\n');
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain('import { Tree } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
 }, 300_000);
 
 // ADR 0693, amended: a library's function, which nothing assigns, returned
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {
   const out = chain(pairs, "returned_item", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("    depth = previous;\n  }\n  return noop;\n}");
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("    depth = previous;\n  }\n  return Dep.noop;\n}");
 }, 300_000);
 
 // ADR 0844: a library that reads no count of its `Rc`s counts none, and its
@@ -234,7 +234,7 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
   expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
   expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  const context = createContext(1);\n  console.log(`${useContext(context)} ${useContext(context)}`);\n  const again = context;\n");
+  expect(app).toContain("  const context = Dep.createContext(1);\n  console.log(`${Dep.useContext(context)} ${Dep.useContext(context)}`);\n  const again = context;\n");
   expect(app).toContain("  again.value = 2;\n");
   expect(app).toContain("console.log(`${a.value.value[0]} ${a.strong}`);");
   expect(contract(out).counted_rcs).toEqual([{ of: expect.any(String), args: [{}] }]);
@@ -339,7 +339,7 @@ test("a library's generic function is its program's, alone or a dependency, and 
   expect(app).toContain("\nfunction pairOf(value, dropped, dropD) {\n");
   // One that takes the copy its consumer gives, as its own crate's calls give
   // one, is the library's.
-  expect(app).toContain('import {\n  digitDoubled,\n  digitPartialEq,\n  hashOf,\n  hourDisplay,\n  marks,\n  same,\n  shown,\n  twice,\n} from "../dep/lib.js";');
+  expect(app).toContain('import { digitDoubled, digitPartialEq, hourDisplay } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
   // A writer of its it compiles, which calls what may fail, may fail; and an
   // impl's method its JS doesn't export by name is its dictionary's entry.
   expect(app).toContain("$writeTry(() => written([8], [7], loudDrop_drop))");
@@ -448,11 +448,11 @@ test("a library's generic function given what may look like None is its export w
   const out = chain(pairs, "generic_given_unit", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain(
-    "import { own, ownInDev, runWithFiber, runWithFiberInDev, tagNow, wrappedOwn } from \"../dep/lib.js\";\n",
+    "import * as Dep from \"../dep/lib.js\";\n",
   );
   expect(app).not.toContain("function runWithFiber(");
   expect(app).not.toContain("function runWithFiberInDev(");
-  expect(app).toContain("runWithFiberInDev(fiber, executeDispatch, \"click\", \"onClick\", \"button\")");
+  expect(app).toContain("Dep.runWithFiberInDev(fiber, executeDispatch, \"click\", \"onClick\", \"button\")");
   expect(app).toContain("function wrapped(");
 }, 300_000);
 
@@ -533,7 +533,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // What it changes, a `Vec` through a `Ref` a library's function borrows
   // for a moment, is no `Vec` that function holds: it imports the library's
   // `add_type`, not a copy compiled of its own (ADR 0914, amended).
-  expect(app).toContain('import { addType, enqueue, finish, shareTypes, start, types, visit } from "../dep/lib.js";\n');
+  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
   expect(app).toContain("  const queue = [\"q\"];\n");
   expect(app).toContain("  queue.push(\"s\");\n");
   expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");
@@ -679,7 +679,7 @@ test("a library's generic function takes the drops its body uses", () => {
   // The consumer's own of those that drop what it gives, and the library's
   // of those that drop none.
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain('import { apply, keep, keepBy, relay } from "../dep/lib.js";');
+  expect(app).toContain('import * as Dep from "../dep/lib.js";');
   expect(app).toContain("\nfunction pick(a, b, dropB) {\n  dropB?.(b);\n  return a;\n}");
   expect(app).toContain("\nfunction discard(value, dropT) {\n  pick(undefined, value, dropT);\n}");
 }, 300_000);
@@ -724,7 +724,7 @@ pub fn main() {
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
   const app = readFileSync(join(dir, "app.js"), "utf8");
-  expect(app).toContain('import { second } from "./dep/lib.js";');
+  expect(app).toContain('import * as Dep from "./dep/lib.js";');
   expect(app).not.toContain("function second(");
   expect(printed(join(dir, "app.js"))).toBe("second\ndropped 2\n3\ndropped 3\nafter\n");
 }, 300_000);

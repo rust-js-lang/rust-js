@@ -182,6 +182,9 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
         Taker::FnValue => match &callee.kind {
             js::ExprKind::Var(_) => callee.helper_name().is_none(),
+            // One read through its module's namespace, `Dep.noop`, which is
+            // the binding its named import is (ADR 1018, amended).
+            js::ExprKind::Member(..) => callee.is_named(),
             js::ExprKind::Arrow(taken, _) => {
                 taken.len() == arity && taken.iter().all(|p| matches!(p, js::Pattern::Name(_)))
             }

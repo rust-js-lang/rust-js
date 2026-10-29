@@ -144,7 +144,7 @@ test("a library's rest function is called with the slice spread", async () => {
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir]);
   const out = readFileSync(join(dir, "app", "lib.js"), "utf8");
-  expect(out).toContain("total(1, 2), total(...v)");
+  expect(out).toContain("Dep.total(1, 2), Dep.total(...v)");
   const { sums } = await import(join(dir, "app", "lib.js"));
   expect(sums([4, 5])).toEqual([3, 9, 9]);
 });
