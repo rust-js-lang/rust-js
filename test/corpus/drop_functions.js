@@ -40,7 +40,7 @@ const sevenMake = {
       _0: [sevenMake_size(self)],
       _1: { TAG: "Cons", _0: [2], _1: "Nil" },
     };
-    const result = made.TAG !== "Cons" ? 0 : made._1.TAG === "Cons" ? 1 : 0;
+    const result = made.TAG === "Cons" ? (made._1.TAG === "Cons" ? 1 : 0) : 0;
     dropList(made);
     return result;
   },

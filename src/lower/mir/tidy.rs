@@ -593,7 +593,7 @@ mod tests {
         use super::branches::one_assignment;
         let none = js::Span::NONE;
         let one = |then: Vec<Stmt>, otherwise: Vec<Stmt>, test: &Expr| {
-            one_assignment(test, (&then, &otherwise), none, ("_0", &[])).map(|one| one.target)
+            one_assignment(test, (&then, &otherwise), none, ("_0", &[]), &[]).map(|one| one.target)
         };
         let c = Expr::var("c");
         // Accepted: one variable, each arm a value.
@@ -659,8 +659,8 @@ mod tests {
         }];
         let then = [assign("x", Expr::num(1))];
         let otherwise = [assign("x", Expr::num(2))];
-        assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches)).is_none());
-        assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches)).is_some());
+        assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches), &[]).is_none());
+        assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches), &[]).is_some());
     }
 
     /// `if (!c) { return 1; } a(); return 2;` of `if c { a(); return 2; }

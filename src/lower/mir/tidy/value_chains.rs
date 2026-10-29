@@ -46,13 +46,20 @@ pub(super) fn plain_chain(value: &Expr) -> Option<Expr> {
 /// other the rest of a chain of plain values, folded (`plain_chain`): the
 /// one conditional, the plain value first, `t ? yes : b ? q : r`, and of
 /// the chain in `yes`, `!t ? no : ..`, as `match o { None => .., Some(A)
-/// => .., .. }` is `o == null ? .. : o === "A" ? .. : ..`. `None` where
-/// neither arm or both are conditionals, a tree and no chain.
-pub(super) fn plain_chain_of(test: &Expr, yes: Expr, no: Expr) -> Option<Expr> {
+/// => .., .. }` is `o == null ? .. : o === "A" ? .. : ..`. Of an `if` the
+/// program wrote with an `else`, `turned` saying whether MIR turned its
+/// branches (`written_order`), each where it's written: `t ? (b ? q : r) :
+/// no` of a chain written in its `then`, React DOM's `blockedReason`. `None`
+/// where neither arm or both are conditionals, a tree and no chain.
+pub(super) fn plain_chain_of(test: &Expr, yes: Expr, no: Expr, turned: Option<bool>) -> Option<Expr> {
     let chain = |e: &Expr| matches!(e.kind, ExprKind::Cond(..));
-    match (chain(&yes), chain(&no)) {
-        (false, true) if plain(&yes) => Some(Expr::cond(test.clone(), yes, plain_chain(&no)?)),
-        (true, false) if plain(&no) => Some(Expr::cond(test.clone().negated_test(), no, plain_chain(&yes)?)),
+    match (chain(&yes), chain(&no), turned) {
+        (true, false, Some(false)) if plain(&no) => Some(Expr::cond(test.clone(), plain_chain(&yes)?, no)),
+        (false, true, Some(true)) if plain(&yes) => {
+            Some(Expr::cond(test.clone().negated_test(), plain_chain(&no)?, yes))
+        }
+        (false, true, _) if plain(&yes) => Some(Expr::cond(test.clone(), yes, plain_chain(&no)?)),
+        (true, false, _) if plain(&no) => Some(Expr::cond(test.clone().negated_test(), no, plain_chain(&yes)?)),
         _ => None,
     }
 }

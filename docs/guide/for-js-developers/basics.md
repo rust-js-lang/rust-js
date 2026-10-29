@@ -1094,7 +1094,10 @@ more, a call, an object, a conditional of its own, is given it by the
 chain, each arm its own, and a function's value of one returns it from
 each arm, never half a chain and half a conditional; after an `else if
 let`'s binding, `const s = ..; if (s != null)`, the rest is a chain of its
-own, read so
+own, read so; a conditional you wrote in an `if`'s `then` stays there,
+`snapshot > 0 ? (more ? "fonts" : ..) : "images"`, its test as written,
+and an `if` you wrote as a statement, of a `let` declared before it,
+stays that `if`
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended):
 
 ```rust
@@ -1121,6 +1124,15 @@ pub fn shade(duration: f64, hydrated: bool) -> String {
     };
     format!("{shade}!")
 }
+
+pub fn reason(blocking: &[u32], snapshot: usize) -> String {
+    let reason = if snapshot > 0 {
+        if blocking.len() > snapshot { "fonts and images" } else { "fonts" }
+    } else {
+        "images"
+    };
+    format!("waiting on {reason}")
+}
 ```
 
 ```js
@@ -1140,6 +1152,12 @@ export function shade(duration, hydrated) {
     shade = "error";
   }
   return `${shade}!`;
+}
+
+export function reason(blocking, snapshot) {
+  const reason =
+    snapshot > 0 ? (blocking.length > snapshot ? "fonts and images" : "fonts") : "images";
+  return `waiting on ${reason}`;
 }
 ```
 

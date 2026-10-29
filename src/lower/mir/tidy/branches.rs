@@ -270,8 +270,13 @@ pub(super) fn branch_values(
                     && x == y
                     && !(x == result && written_returns((then, otherwise), returns, span))
                     && !switched(test, span, switches)
-                    && let Some(value) =
-                        plain_chain_of(test, spanned(yes, then[0].span), spanned(no, otherwise[0].span)) =>
+                    && !written_as_statement(test, span, program)
+                    && let Some(value) = plain_chain_of(
+                        test,
+                        spanned(yes, then[0].span),
+                        spanned(no, otherwise[0].span),
+                        written_order(span, then, otherwise, elses),
+                    ) =>
             {
                 StmtKind::Assign(Expr::var(x), value)
             }
@@ -295,7 +300,7 @@ pub(super) fn branch_values(
                 StmtKind::If(test.clone(), then.clone(), Some(chained))
             }
             StmtKind::If(test, ref then, Some(ref otherwise))
-                if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches))
+                if let Some(one) = one_assignment(&test, (then, otherwise), span, (result, switches), elses)
                     // Not the function's value each branch gives by a
                     // `return` the program wrote, `if c { return a; }
                     // return b;`, MIR's one `return`: an `if` of `return`s
@@ -304,10 +309,7 @@ pub(super) fn branch_values(
                     // Not an `if` the program wrote as a statement, of a late
                     // `let`, `let error; if c { error = a; } else { error =
                     // b; }`, which stays as it's written (rd187).
-                    && (is_temporary(&one.target) || !program.statement_elses.iter().any(|c| {
-                        let within = |s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-                        within(test.span) || within(span)
-                    })) =>
+                    && (is_temporary(&one.target) || !written_as_statement(&test, span, program)) =>
             {
                 // A value the program wrote with an `if`, not `&&` or `||`.
                 let written_if = written_branches(span, then, otherwise, elses);
@@ -357,6 +359,17 @@ pub(super) fn branch_values(
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
     guarded_chains(stmts);
     returned_branches(stmts, returns, booleans, program);
+}
+
+/// Whether the `if` of `test`, at `span`, is one with an `else` the
+/// program wrote as a statement, of a late `let`, `let error; if c { error
+/// = a; } else { error = b; }`, which stays as it's written, its branches
+/// no conditional (rd187, ADR 0969, amended).
+fn written_as_statement(test: &Expr, span: js::Span, program: &crate::lower::mir::hints::Written) -> bool {
+    program.statement_elses.iter().any(|c| {
+        let within = |s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+        within(test.span) || within(span)
+    })
 }
 
 /// `value`, which a branch of a conditional is, where its statement was,
@@ -444,13 +457,16 @@ pub(super) struct OneAssignment {
 /// into its `return` (`returned_values`); not one adding to it, `out +=
 /// a`, as written (ADR 0657, amended); nor a `switch`'s arms (ADR 0629). The value the program
 /// wrote first comes first: `a || b ? x : y` of `if a || b { x } else { y }`
-/// MIR tests `!a && !b` of, and a chain's next test in the `else`
-/// whichever comes first, as a match's arms are written.
+/// MIR tests `!a && !b` of; each branch of an `if` written with an
+/// `else` where it's written (`elses`), a conditional in its `then` too;
+/// and otherwise a chain's next test in the `else` whichever comes first,
+/// as a match's arms are written.
 pub(super) fn one_assignment(
     test: &Expr,
     (then, otherwise): (&[Stmt], &[Stmt]),
     span: js::Span,
     (result, switches): (&str, &[Switch]),
+    elses: &[(js::Span, js::Span, js::Span)],
 ) -> Option<OneAssignment> {
     let (x, yes) = assigned_only(then)?;
     let (y, no) = assigned_only(otherwise)?;
@@ -462,12 +478,17 @@ pub(super) fn one_assignment(
     if !one {
         return None;
     }
+    // Of an `if` the program wrote with an `else`, each branch where it's
+    // written (`written_order`); of a `match`'s, a chain in the `else`, as
+    // its arms are written.
     let no_first = match (
+        written_order(span, then, otherwise, elses),
         matches!(yes.kind, ExprKind::Cond(..)),
         matches!(no.kind, ExprKind::Cond(..)),
     ) {
-        (true, false) => true,
-        (false, true) => false,
+        (Some(turned), ..) => turned,
+        (None, true, false) => true,
+        (None, false, true) => false,
         _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
     };
     Some(OneAssignment {

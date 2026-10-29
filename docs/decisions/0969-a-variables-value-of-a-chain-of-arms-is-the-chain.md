@@ -4,7 +4,8 @@ Status: Accepted. Records and extends the rule fd6e76df1 made (MIR keeps a
 variable's value of three arms a chain) to chains of any length. Amended
 below: a chain whose every arm is a plain value is one nested conditional
 (the user's decision of 2026-10-27), and a function's value of a chain is
-the chain's too (the user's decision of 2026-10-28, rd23).
+the chain's too (the user's decision of 2026-10-28, rd23); and a
+conditional in a written `then` stays there (rd217).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -208,3 +209,51 @@ const"), `test/corpus/bindings_before_branch.rs`, the guide's `describe`,
 the mutations `statement-if-made-a-conditional` and
 `statement-if-of-a-temporary-kept` (`mir/tidy/branches.ts`), and
 `closure-own-assignment-does` (`lower/iterators/in_place.ts`).
+
+## Amendment: a conditional in a written `then` stays there (rd217)
+
+React DOM's suspensey commit writes
+
+```js
+const blockedReason =
+  blockingIndexSnapshot > 0
+    ? blockingPromises.length > blockingIndexSnapshot
+      ? 'Waiting on Fonts and Images'
+      : 'Waiting on Fonts'
+    : 'Waiting on Images';
+```
+
+and its port the same `if blocking_index_snapshot > 0 { if .. { .. } else
+{ .. } } else { "Waiting on Images" }`, which printed
+`blockingIndexSnapshot <= 0 ? "Waiting on Images" : .. ? .. : ..`, its
+test turned and its branches swapped (rd217): `plain_chain_of` put the
+plain value first and the chain in the second value whichever way the
+program wrote them, a rule made for a `match` whose `None` MIR tests
+after its `Some`s (above), and `one_assignment` did the same of a
+temporary's, a pair's part, React's addValueToProperties'
+`objectName !== "Object" ? objectName : ..` of `objectName === 'Object'
+? .. : objectName`.
+
+**Of an `if` the program wrote with an `else`, each branch is where it's
+written** (`jumps/tails.rs`'s `written_order`, which both now ask): `t ?
+(d ? a : b) : e` of a conditional written in the `then`, and of one MIR
+turned, an `||`'s `!a && !b`, the written order back, `a === 0 || b ? (c
+? 1 : 2) : 3`. A `match`'s arms, of no written `else`, keep the rule
+above, the chain in the second value. And **an `if` the program wrote as a
+statement, of a late `let`, stays that `if`** in `plain_chain_of`'s arm
+too, as the rd187 amendment says of `one_assignment`'s
+(`branches::written_as_statement`, now the one test both ask): `let
+level; if (count > 0) { level = more ? 3 : 2; } else { level = 1; }`, not
+`const level = ..`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order, the same value. Held by corpus case
+`nested_value_in_then` against native Rust (React DOM's reason, a late
+`let`'s, an `||`'s, a pair's part, a `match`'s); the guide's `reason`;
+`test/lowering-moves.test.ts`' pair, now upstream's `objectName ===
+"Object" ? (..) : objectName`; and mutations
+`plain-chain-written-order-ignored`, `plain-chain-turned-then-last`
+(`mir/tidy/value_chains.ts`), `one-assignment-written-order-ignored`,
+`plain-chain-statement-folded` (`mir/tidy/branches.ts`). The corpus'
+`drop_functions` re-blessed: its `match` of a `Cons` first, `made.TAG ===
+"Cons" ? (made._1.TAG === "Cons" ? 1 : 0) : 0`, as its arms are written.
