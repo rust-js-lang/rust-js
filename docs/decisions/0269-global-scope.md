@@ -40,3 +40,43 @@ A window's own operations are called bare too, from
 NavigationBar calls it. They're apart from `webapi::global`, which keeps to
 what every scope has: Node has no `confirm`. `window.confirm(..)` is still
 the method, as TopNav's `window.matchMedia(..)` is written.
+
+## Amendment: a global scope's attributes are its module's functions (rd195)
+
+React DOM's `estimateImageBytes` reads the window's `devicePixelRatio`
+where there may be no window, `typeof devicePixelRatio === 'number' ?
+devicePixelRatio : 1`; webapi had it only as `window.device_pixel_ratio()`,
+which throws where no `window` is. **A global scope's attributes are
+functions of its module, read bare at each call**, as TypeScript declares
+them, `declare var devicePixelRatio: number`: `webapi::window_global::
+device_pixel_ratio()` is `devicePixelRatio`, and `webapi::global::
+is_secure_context()` `isSecureContext`, beside its operations. Not an
+event handler property, nor one a global value names already, `document`,
+`window`, `performance` and the rest of `GLOBALS`: one way to read each.
+Getters only; a setter of a global is `globalThis`'s, as above.
+
+```rust
+pub fn pixel_ratio() -> f64 {
+    if js::is_defined(webapi::window_global::device_pixel_ratio) {
+        webapi::window_global::device_pixel_ratio()
+    } else {
+        1.0
+    }
+}
+```
+
+```js
+export function pixelRatio() {
+  return typeof devicePixelRatio !== "undefined" ? devicePixelRatio : 1;
+}
+```
+
+Its test is ADR 0597's, `typeof X !== "undefined"`, where upstream tests
+`=== 'number'`: the same wherever the binding's type holds, a window's
+`devicePixelRatio` being a number; a script that replaces it, as
+`[Replaceable]` lets one, with what isn't, breaks the type either way.
+That difference is the port's to accept (a decision to confirm).
+
+Held by `test/compiler.test.ts`, "the webapi crate's bindings become plain
+JS" (web_forms' `pixel_ratio`, its JS, run with and without the global),
+and `test/webapi-coverage.test.ts`. No mutation: the generator's.

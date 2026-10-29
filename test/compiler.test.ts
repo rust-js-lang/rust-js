@@ -970,6 +970,13 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("  return hoisted(document);\n");
   const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined, hoisted } = await import(join(target, "web_forms.js"));
   expect(hoisted({ querySelectorAll: () => ({ length: 2 }), nodeType: 11 })).toEqual([2, false]);
+  // A window's attribute is a global, tested where there's no window (rd195).
+  expect(js).toContain('  return typeof devicePixelRatio !== "undefined" ? devicePixelRatio : 1;\n');
+  const { pixelRatio } = await import(join(target, "web_forms.js"));
+  expect(pixelRatio()).toBe(1);
+  (globalThis as any).devicePixelRatio = 2;
+  expect(pixelRatio()).toBe(2);
+  delete (globalThis as any).devicePixelRatio;
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();

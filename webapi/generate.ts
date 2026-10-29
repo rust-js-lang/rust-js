@@ -457,10 +457,39 @@ for (const [union, includers] of Object.entries(UNIONS)) {
 // are `window.fetch` (ADR 0269). Not its timers, whose handler here is
 // text to run, which the builtins crate's take as closures (ADR 0102).
 const TIMERS = ["setTimeout", "setInterval", "clearTimeout", "clearInterval"];
+/** A window's `onerror`'s parameters, TypeScript's `OnErrorEventHandlerNonNull`'s. */
+const ERROR_HANDLER = "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>)";
+/** What an event handler property holds, by its type, given its event:
+ * `onclick`'s function takes it; `onbeforeunload`'s gives the text that
+ * asks whether to leave, or none; `onerror`'s, on a global object, a
+ * window, is given an error's message, where it was, and what was thrown,
+ * and gives whether the error is handled, `true` not reported, while an
+ * element's, whose `onerror` JS calls with the event alone, as the spec
+ * says, is an `EventHandler` (rd192). Its getter gives the function JS
+ * holds, a `&'static dyn Fn` (ADR 0653); of `onclick`'s, TypeScript's
+ * `any` result is nothing a caller reads, and of `onerror`'s it's any
+ * value, an `Unknown`, as one a JS program set may give none. Its setter
+ * takes the union its trait, `into`, is: a Rust function or closure, the
+ * function the getter gave, or any JS function value, each as it is, so a
+ * handler read back is compared with the function set by `std::ptr::eq`,
+ * `node.onclick === noop` (ADR 0653, amended), and a promise's `resolve`
+ * is one, `link.onload = resolve` (ADR 1021, amended). */
+const HANDLERS: Record<string, { into: (event: string) => string; get: (event: string) => string }> = {
+  EventHandler: { into: (event) => `IntoEventHandler<${event}>`, get: (event) => `Fn(&${event})` },
+  OnBeforeUnloadEventHandler: {
+    into: (event) => `IntoOnBeforeUnloadEventHandler<${event}>`,
+    get: (event) => `Fn(&${event}) -> Option<String>`,
+  },
+  OnErrorEventHandler: {
+    into: () => "IntoOnErrorEventHandler",
+    get: () => `${ERROR_HANDLER} -> Option<&'static Unknown>`,
+  },
+};
+
 const globalScope: Interface = {
   name: "WindowOrWorkerGlobalScope",
   members: (mixins.get("WindowOrWorkerGlobalScope") ?? [])
-    .filter((member) => member.type === "operation" && !TIMERS.includes(member.name ?? ""))
+    .filter((member) => (member.type === "operation" || (member.type === "attribute" && !GLOBALS.some(([global]) => global === member.name))) && !TIMERS.includes(member.name ?? ""))
     .map((member) => ({ member, from: "WindowOrWorkerGlobalScope" })),
   constructible: false,
   isNamespace: true,
@@ -469,11 +498,19 @@ const globalScope: Interface = {
 // And a window's own, called bare too, as TypeScript's DOM declares them
 // globals, `confirm(message)`: what a page's code calls, where
 // `window.confirm(message)` is the method still (ADR 0269).
+// So are its attributes, as TypeScript declares them, `declare var
+// devicePixelRatio: number`, read bare, `devicePixelRatio`, which a
+// program tests as upstream React does, `typeof devicePixelRatio ===
+// "number"`, where a window may not be (rd195); not the globals the crate
+// names (`GLOBALS`), nor an event handler.
 const windowScope: Interface = {
   name: "Window",
   members: (interfaces.get("Window")?.members ?? []).filter(
     ({ member }) =>
-      member.type === "operation" &&
+      (member.type === "operation" ||
+        (member.type === "attribute" &&
+          !GLOBALS.some(([global]) => global === member.name) &&
+          !((member.idlType?.idlType as string) in HANDLERS))) &&
       !TIMERS.includes(member.name ?? "") &&
       !globalScope.members.some((own) => own.member === member),
   ),
@@ -1032,34 +1069,6 @@ const NAMED: Record<string, string> = {
   "Document.createElementNS": "create_element_ns_named",
 };
 
-/** A window's `onerror`'s parameters, TypeScript's `OnErrorEventHandlerNonNull`'s. */
-const ERROR_HANDLER = "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>)";
-/** What an event handler property holds, by its type, given its event:
- * `onclick`'s function takes it; `onbeforeunload`'s gives the text that
- * asks whether to leave, or none; `onerror`'s, on a global object, a
- * window, is given an error's message, where it was, and what was thrown,
- * and gives whether the error is handled, `true` not reported, while an
- * element's, whose `onerror` JS calls with the event alone, as the spec
- * says, is an `EventHandler` (rd192). Its getter gives the function JS
- * holds, a `&'static dyn Fn` (ADR 0653); of `onclick`'s, TypeScript's
- * `any` result is nothing a caller reads, and of `onerror`'s it's any
- * value, an `Unknown`, as one a JS program set may give none. Its setter
- * takes the union its trait, `into`, is: a Rust function or closure, the
- * function the getter gave, or any JS function value, each as it is, so a
- * handler read back is compared with the function set by `std::ptr::eq`,
- * `node.onclick === noop` (ADR 0653, amended), and a promise's `resolve`
- * is one, `link.onload = resolve` (ADR 1021, amended). */
-const HANDLERS: Record<string, { into: (event: string) => string; get: (event: string) => string }> = {
-  EventHandler: { into: (event) => `IntoEventHandler<${event}>`, get: (event) => `Fn(&${event})` },
-  OnBeforeUnloadEventHandler: {
-    into: (event) => `IntoOnBeforeUnloadEventHandler<${event}>`,
-    get: (event) => `Fn(&${event}) -> Option<String>`,
-  },
-  OnErrorEventHandler: {
-    into: () => "IntoOnErrorEventHandler",
-    get: () => `${ERROR_HANDLER} -> Option<&'static Unknown>`,
-  },
-};
 /** `onerror`'s first argument, TypeScript's `Event | string`. */
 const ERROR_ARG: Union = {
   name: "EventOrStr",
@@ -1344,6 +1353,18 @@ function functionsOf(declared: Interface): Fn[] {
         if (typeof result === "string") {
           const given = orNull(result, m.idlType!);
           fns.push({ name: snake(m.name!), jsName: `get ${jsName(i)}.${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
+        } else {
+          skip(result.skip);
+        }
+        continue;
+      }
+      // A global scope's, a function of its module read at each call, bare:
+      // `window_global::device_pixel_ratio()`, `devicePixelRatio` (rd195).
+      if (i.isNamespace && i.isGlobal) {
+        const result = rustType(m.idlType!, "result");
+        if (typeof result === "string") {
+          const given = orNull(result, m.idlType!);
+          fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
         } else {
           skip(result.skip);
         }

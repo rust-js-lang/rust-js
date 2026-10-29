@@ -277,4 +277,12 @@ export function hoistedOf(node) {
   // Safety: the node is a document or a shadow root.
   return hoisted(node);
 }
+
+/**
+ * A window's attribute is a global, read bare, as estimateImageBytes
+ * tests it where a window may not be (rd195).
+ */
+export function pixelRatio() {
+  return typeof devicePixelRatio !== "undefined" ? devicePixelRatio : 1;
+}
 //# sourceMappingURL=web_forms.js.map

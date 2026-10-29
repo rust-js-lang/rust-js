@@ -233,3 +233,13 @@ pub fn hoisted_of(node: &webapi::Node) -> (f64, bool) {
     // Safety: the node is a document or a shadow root.
     hoisted(webapi::document_or_shadow_root::unchecked_from(node))
 }
+
+/// A window's attribute is a global, read bare, as estimateImageBytes
+/// tests it where a window may not be (rd195).
+pub fn pixel_ratio() -> f64 {
+    if js::is_defined(webapi::window_global::device_pixel_ratio) {
+        webapi::window_global::device_pixel_ratio()
+    } else {
+        1.0
+    }
+}

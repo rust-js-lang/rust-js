@@ -101035,11 +101035,43 @@ pub mod css {
 pub mod global {
     use super::*;
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/indexedDB)
+    #[cfg_attr(rust_js, rust_js::link_name = "get indexedDB")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn indexed_db() -> &'static IDBFactory {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch)
     #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn fetch(input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> Promise<&'static Response> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/origin)
+    #[cfg_attr(rust_js, rust_js::link_name = "get origin")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn origin() -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/isSecureContext)
+    #[cfg_attr(rust_js, rust_js::link_name = "get isSecureContext")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn is_secure_context() -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/crossOriginIsolated)
+    #[cfg_attr(rust_js, rust_js::link_name = "get crossOriginIsolated")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cross_origin_isolated() -> bool {
         unreachable!()
     }
 
@@ -101100,12 +101132,53 @@ pub mod global {
     pub fn structured_clone<V: StructuredClone>(value: V, options: Option<StructuredSerializeOptions<'_>>) -> Option<&'static Unknown> {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/scheduler)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scheduler")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scheduler() -> &'static Scheduler {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/caches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get caches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn caches() -> &'static CacheStorage {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/crypto)
+    #[cfg_attr(rust_js, rust_js::link_name = "get crypto")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn crypto() -> &'static Crypto {
+        unreachable!()
+    }
 }
 
 /// What a window's global scope has besides, called bare: `confirm(message)`.
 
 pub mod window_global {
     use super::*;
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/orientation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
+    #[cfg_attr(rust_js, rust_js::whole = "-32768..=32767")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn orientation() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/cookieStore)
+    #[cfg_attr(rust_js, rust_js::link_name = "get cookieStore")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cookie_store() -> &'static CookieStore {
+        unreachable!()
+    }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
@@ -101120,6 +101193,23 @@ pub mod window_global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn match_media(query: &str) -> &'static MediaQueryList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screen)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screen")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen() -> &'static Screen {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/visualViewport)
+    #[cfg_attr(rust_js, rust_js::link_name = "get visualViewport")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn visual_viewport() -> Option<&'static VisualViewport> {
         unreachable!()
     }
 
@@ -101156,6 +101246,56 @@ pub mod window_global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn resize_by(x: impl Into<f64>, y: impl Into<f64>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_width() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_height() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_x() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageXOffset)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageXOffset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_x_offset() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_y() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageYOffset)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageYOffset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_y_offset() -> f64 {
         unreachable!()
     }
 
@@ -101207,12 +101347,195 @@ pub mod window_global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_x() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenLeft")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_left() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_y() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenTop")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_top() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outerWidth")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn outer_width() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outerHeight")]
+    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn outer_height() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/devicePixelRatio)
+    #[cfg_attr(rust_js, rust_js::link_name = "get devicePixelRatio")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn device_pixel_ratio() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/documentPictureInPicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get documentPictureInPicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn document_picture_in_picture() -> &'static DocumentPictureInPicture {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/event)
+    #[cfg_attr(rust_js, rust_js::link_name = "get event")]
+    #[cfg_attr(rust_js, rust_js::optional)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn event() -> Option<&'static Event> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/self)
+    #[cfg_attr(rust_js, rust_js::link_name = "get self")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn self_() -> &'static Window {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/name)
+    #[cfg_attr(rust_js, rust_js::link_name = "get name")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn name() -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/location)
+    #[cfg_attr(rust_js, rust_js::link_name = "get location")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn location() -> &'static Location {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/navigation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get navigation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn navigation() -> &'static Navigation {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/customElements)
+    #[cfg_attr(rust_js, rust_js::link_name = "get customElements")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn custom_elements() -> &'static CustomElementRegistry {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/locationbar)
+    #[cfg_attr(rust_js, rust_js::link_name = "get locationbar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn locationbar() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/menubar)
+    #[cfg_attr(rust_js, rust_js::link_name = "get menubar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn menubar() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/personalbar)
+    #[cfg_attr(rust_js, rust_js::link_name = "get personalbar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn personalbar() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollbars)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollbars")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scrollbars() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/statusbar)
+    #[cfg_attr(rust_js, rust_js::link_name = "get statusbar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn statusbar() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/toolbar)
+    #[cfg_attr(rust_js, rust_js::link_name = "get toolbar")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn toolbar() -> &'static BarProp {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/status)
+    #[cfg_attr(rust_js, rust_js::link_name = "get status")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn status() -> String {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn close() {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/closed)
+    #[cfg_attr(rust_js, rust_js::link_name = "get closed")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn closed() -> bool {
         unreachable!()
     }
 
@@ -101243,12 +101566,80 @@ pub mod window_global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/frames)
+    #[cfg_attr(rust_js, rust_js::link_name = "get frames")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn frames() -> &'static Window {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/length)
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn length() -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/top)
+    #[cfg_attr(rust_js, rust_js::link_name = "get top")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn top() -> Option<&'static Window> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/opener)
+    #[cfg_attr(rust_js, rust_js::link_name = "get opener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn opener() -> Option<&'static Unknown> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/parent)
+    #[cfg_attr(rust_js, rust_js::link_name = "get parent")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn parent() -> Option<&'static Window> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/frameElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get frameElement")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn frame_element() -> Option<&'static Element> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn open(url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/clientInformation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientInformation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_information() -> &'static Navigator {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/originAgentCluster)
+    #[cfg_attr(rust_js, rust_js::link_name = "get originAgentCluster")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn origin_agent_cluster() -> bool {
         unreachable!()
     }
 
@@ -101314,6 +101705,14 @@ pub mod window_global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/external)
+    #[cfg_attr(rust_js, rust_js::link_name = "get external")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn external() -> &'static External {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
@@ -101341,6 +101740,14 @@ pub mod window_global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/speechSynthesis)
+    #[cfg_attr(rust_js, rust_js::link_name = "get speechSynthesis")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn speech_synthesis() -> &'static SpeechSynthesis {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestAnimationFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "requestAnimationFrame")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
@@ -101356,6 +101763,32 @@ pub mod window_global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn cancel_animation_frame(handle: impl Into<f64>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/sessionStorage)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
+    #[cfg_attr(rust_js, rust_js::link_name = "get sessionStorage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn session_storage() -> Result<&'static Storage, &'static JsError> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/localStorage)
+    /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
+    #[cfg_attr(rust_js, rust_js::link_name = "get localStorage")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn local_storage() -> Result<&'static Storage, &'static JsError> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pushManager)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pushManager")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn push_manager() -> &'static PushManager {
         unreachable!()
     }
 }

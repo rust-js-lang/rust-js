@@ -145,8 +145,13 @@ The crates bind the standard ones, called bare:
   where it's `None`, as JS's is optional
   ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
 - `webapi::global`: what every global scope has, a window's and a worker's,
-  `fetch`, `queue_microtask`, `atob`, `report_error`.
-- `webapi::window_global`: a window's own, `confirm`, `alert`.
+  `fetch`, `queue_microtask`, `atob`, `report_error`, and its attributes,
+  each read when it's called, `is_secure_context()`, `isSecureContext`.
+- `webapi::window_global`: a window's own, `confirm`, `alert`, and its
+  attributes, `device_pixel_ratio()`, `devicePixelRatio`, which a program
+  tests where there may be no window, `js::is_defined(device_pixel_ratio)`
+  ([ADR 0269](../../decisions/0269-global-scope.md), amended). Not those a
+  value names already, `webapi::document` and `webapi::window`.
 - `webapi::console`, `webapi::css` and `webapi::web_assembly`: a namespace's
   functions, `console.log`, `CSS.escape(name)`.
 
