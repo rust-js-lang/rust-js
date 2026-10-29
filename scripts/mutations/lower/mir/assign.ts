@@ -671,4 +671,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && matches!(place.projection.last(), Some(PlaceElem::Deref))\n",
     tests: ["test/js-constructors.test.ts", "-t", "stored through a borrow as given"],
   },
+  {
+    name: "nested-option-none-null",
+    breaks: "a held `Option` of an `Option`'s `None` is `null`, its `Some(None)`'s, so the two are equal (ADR 1017)",
+    file: "src/lower/mir/assign.rs",
+    find: "                None => Expr::undefined(),\n",
+    replace: "                None => Expr::null(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+  },
+  {
+    name: "nested-option-some-none-undefined",
+    breaks: "a held `Option` of an `Option` made of an `Option` whose `None` is `undefined` keeps it, so its `Some(None)` is its `None` (ADR 1017)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    js::Storage::NullForNone.written(held, nulled)\n",
+    replace: "                    { let _ = nulled; held }\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+  },
 ];

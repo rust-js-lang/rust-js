@@ -1063,6 +1063,48 @@ export function ratio(a, b) {
   closure the function makes and gives std holds none of the values its
   type parameters are given unless it captures, takes or returns one
   ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md#amendment-a--given-is-the-exports-where-nothing-boxes-it), amended).
+- **A variable's `Option` of an `Option`, made and read only where it's
+  held, is never boxed**: of an `Option<Option<T>>` or an
+  `Option<&Option<T>>` whose `T` never looks like `None`, its `None` is
+  `undefined`, its `Some(None)` `null` and its `Some(Some(v))` `v`, as
+  React's `previousInstance` keeps the listener's fiber, `Fiber | null`,
+  or none yet. Its writes are `None`, `Some(..)` or another such, and its
+  reads `match`, `if let`, `==` of another such, or what its `Some` holds;
+  one given to a function, returned or captured keeps its box
+  ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md)):
+
+```rust
+pub struct Listener {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub instance: Option<Box<u32>>,
+}
+
+pub fn changes(listeners: &[Listener]) -> usize {
+    let mut previous_instance = None;
+    let mut count = 0;
+    for Listener { instance } in listeners {
+        if Some(instance) != previous_instance {
+            count += 1;
+        }
+        previous_instance = Some(instance);
+    }
+    count
+}
+```
+
+```js
+export function changes(listeners) {
+  let previousInstance;
+  let count = 0;
+  for (const { instance } of listeners) {
+    if (instance !== previousInstance) {
+      count = (count + 1) >>> 0;
+    }
+    previousInstance = instance;
+  }
+  return count;
+}
+```
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see

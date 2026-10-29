@@ -35,6 +35,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)
     }
 
+    /// Of an `Option<Option<T>>`, or an `Option<&Option<T>>`, whose `Some`
+    /// is boxed (`boxed_payload`) and whose `T` never looks like `None`, so
+    /// a `Some` of `T` is `T` itself: its `T`. A local MIR makes and reads
+    /// only where it's held is its payload then (`OptionWrites::nested`):
+    /// its `None` `undefined`, its `Some(None)` `null` and its
+    /// `Some(Some(v))` `v` (ADR 1017).
+    pub(in crate::lower) fn nested_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let some = self.option_of(ty)?;
+        if self.is_cell(some) || !self.boxed_payload(some) {
+            return None;
+        }
+        let held = match some.kind() {
+            ty::Ref(_, held, ty::Mutability::Not) => *held,
+            _ => some,
+        };
+        let payload = self.option_of(held)?;
+        (!self.boxed_payload(payload)).then_some(payload)
+    }
+
     /// Is `ty` a type parameter JS gives, of a function JS calls, or of a
     /// copy of one its values reach: any JS value, `undefined` too, whose
     /// `Some` is the value, as TypeScript's `T | undefined` says (ADR 0051,

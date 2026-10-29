@@ -57,6 +57,12 @@ pub struct Point {
     pub label: String,
 }
 
+/// A listener of a fiber or none, `Fiber | null` to JS.
+pub struct Listener {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub instance: Option<Rc<Fiber>>,
+}
+
 /// A derived `PartialEq` of a part equal only to itself.
 #[derive(PartialEq)]
 pub struct Dispatch {

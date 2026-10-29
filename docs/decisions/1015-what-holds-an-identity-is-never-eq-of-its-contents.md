@@ -126,7 +126,8 @@ function sameListener(a, b) {
   upstream writes `instance !== previousInstance`: a nested `Option`'s
   inner `None` is boxed (ADR 0051). Printing upstream's form needs a
   nested `Option` whose inner `None` is the field's `null` and whose
-  outer `None` is `undefined`, a representation decision of its own; open.
+  outer `None` is `undefined`, a representation decision of its own: ADR
+  1017, `previousInstance !== instance`.
 - A `HashMap` keyed by a derived struct holding a type equal only to
   itself is a `$KeyMap` keyed by its fields: a separate wrong answer,
   #398, fixed by the amendment below.

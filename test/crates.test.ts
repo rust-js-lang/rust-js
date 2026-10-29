@@ -483,7 +483,12 @@ test("a consumer's == of what holds a library's type equal only to itself is nev
   const out = chain(pairs, "library_eq", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("function sameInstance(previous, instance) {\n  const right = $some(instance);\n  return previous == null || right == null\n    ? previous == right\n    : $someValue(previous) == $someValue(right);\n}");
-  expect(app).toContain("dispatch.instance == right$5.instance && dispatch.name === right$5.name");
+  expect(app).toMatch(/dispatch\.instance == (right\$\d+)\.instance && dispatch\.name === \1\.name/);
+  // A local `Option<&Option<Rc<Fiber>>>` made and compared where it's held
+  // is its payload, the library's nullable field's `None` `null`, as
+  // upstream's `previousInstance = instance` (ADR 1017).
+  expect(app).toContain("    if (previousInstance !== instance && stopped) {\n");
+  expect(app).toContain("    previousInstance = instance;\n");
   expect(app.match(/\$eq\([^)]*\)/g)).toEqual(["$eq(p, q)", "$eq(p, r)", "$eq(p, q)"]);
   // The library's `Update`, whose `PartialEq` alone is `ptr::eq`, its
   // contract's `eq_by_address`: `===`, never its `eq` compiled again.

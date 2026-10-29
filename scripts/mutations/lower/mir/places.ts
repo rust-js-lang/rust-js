@@ -138,4 +138,13 @@ export const mutations: Mutation[] = [
     replace: "                        0 => Expr::undefined(),\n                        _ => Expr::member(base, \"_0\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
+  {
+    name: "nested-option-payload-unboxed",
+    breaks: "what a held `Option` of an `Option`'s `Some` holds is read through `$someValue`, a box it never is (ADR 1017)",
+    file: "src/lower/mir/places.rs",
+    find: "            if at == 1\n",
+    replace: "            if at == usize::MAX\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+    snapshots: true,
+  },
 ];

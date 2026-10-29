@@ -438,6 +438,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
             return Ok(given);
         }
+        if let Some(equal) = self.nested_equality(state, callee.0, operands, span, out)? {
+            return Ok(Value::Expr(equal));
+        }
         // A map that's the option itself, `lane.map(EventPriority::from)`:
         // the option alone, its function never named, so one only it names
         // is written nowhere (ADR 0584, amended).
@@ -522,6 +525,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = self.call_with(f, vec![error], "then", out);
         let boxed = known == Std::OptionMap && self.option_of(output).is_some_and(|item| self.boxed_payload(item));
         Ok(Some(Value::Expr(if boxed { self.some(given) } else { given })))
+    }
+
+    /// `a == b` and `a != b` of two `Option`s of `Option`s each held as its
+    /// payload (`OptionWrites::nested`, ADR 1017), whose three kinds of
+    /// value, `undefined`, `null` and the payload's, are each one of them:
+    /// `a === b` of a payload `===` compares as its `==` does, `instance
+    /// !== previousInstance`; else `a === undefined || b === undefined ? a
+    /// === b : <a == b of their payloads' `Option`s>`. `None` of any other
+    /// call.
+    fn nested_equality(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        operands: &[&Operand<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let negate = match self
+            .tcx
+            .trait_of_assoc(def_id)
+            .and_then(|t| self.recognition().trait_call(def_id, t))
+        {
+            Some(TraitCall::Equality { negate }) => negate,
+            _ => return Ok(None),
+        };
+        let nested = |operand: &Operand<'tcx>| {
+            operand
+                .place()
+                .and_then(|place| place.as_local())
+                .is_some_and(|local| state.facts.options().nested.contains(&local))
+        };
+        let [a, b] = operands else { return Ok(None) };
+        if !nested(a) || !nested(b) {
+            return Ok(None);
+        }
+        let ty = a.ty(state.body, self.tcx).peel_refs();
+        let payload = self.nested_payload(ty).expect("an `Option` of an `Option`");
+        let mut values = self.take_operands(state, operands, out)?.into_iter();
+        let mut next = |cx: &mut Self, out: &mut Vec<Stmt>| -> R<Expr> {
+            let value = cx.value_expr(values.next().expect("two operands"), span)?;
+            Ok(if value.reads_same() {
+                value
+            } else {
+                cx.spill("option", value, out)
+            })
+        };
+        let (a, b) = (next(self, out)?, next(self, out)?);
+        // A `Box` and an uncounted `Rc` are what they point at, as `==`
+        // compares them (ADR 0023).
+        let mut held = payload;
+        while let ty::Adt(_, args) = held.kind()
+            && (held.is_box() || self.is_rc(held) && self.counted_rc(held).is_none())
+        {
+            held = args.type_at(0);
+        }
+        let equal = if self.js_eq(held).is_some() || self.eq_by_address(held) {
+            Expr::bin(Op::Eq, a, b)
+        } else {
+            let held = Ty::new_option(self.tcx, payload);
+            let none = Expr::bin(
+                Op::Or,
+                Expr::bin(Op::Eq, a.clone(), Expr::undefined()),
+                Expr::bin(Op::Eq, b.clone(), Expr::undefined()),
+            );
+            let both = self.eq_value(a.clone(), b.clone(), held, span, out)?;
+            Expr::cond(none, Expr::bin(Op::Eq, a, b), both)
+        };
+        Ok(Some(match negate {
+            true => equal.negated_test(),
+            false => equal,
+        }))
     }
 
     /// Whether an `==` of an `Option` is `===`: of one side only ever

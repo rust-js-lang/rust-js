@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 

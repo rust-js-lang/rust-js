@@ -587,6 +587,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Expr::int(1)
             }
+            // An `Option` of an `Option` held as its payload: a `Some` where
+            // it isn't `undefined`, its `Some(None)` `null` (ADR 1017).
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty() && state.facts.options().nested.contains(&place.local) =>
+            {
+                let held = self.mir_place(state, *place, span, out)?;
+                return Ok(Value::Tested(Expr::bin(Op::Ne, held, Expr::undefined())));
+            }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
                 let present = place.projection.is_empty() && state.facts.options().present.contains(&place.local);
@@ -1134,6 +1142,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Given::Unknown,
             };
         }
+        // What a shared reference refers to, `&*instance`'s: the reference's.
+        if let [PlaceElem::Deref] = place.projection.as_slice()
+            && let ty::Ref(_, _, ty::Mutability::Not) = state.body.local_decls[place.local].ty.kind()
+        {
+            return self.stored_given(state, &Operand::Copy(Place::from(place.local)));
+        }
         if !place.projection.is_empty() {
             return Given::Unknown;
         }
@@ -1221,6 +1235,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match assigned {
             Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),
+            // A shared reference, what it refers to, a nullable field's
+            // `instance` a pattern binds by reference (ADR 1017).
+            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_given(state, &Operand::Copy(*of)),
             Some(Rvalue::Aggregate(kind, fields))
                 if fields.len() == 1
                     && matches!(**kind, AggregateKind::Adt(did, variant, ..)

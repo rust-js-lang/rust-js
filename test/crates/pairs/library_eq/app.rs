@@ -4,14 +4,10 @@
 //! its listeners' fibers.
 use std::rc::Rc;
 
-use dep::{Dispatch, Fiber, Point, Update, Version, make, update};
+use dep::{Dispatch, Fiber, Listener, Point, Update, Version, make, update};
 
 fn same_instance(previous: Option<&Option<Rc<Fiber>>>, instance: &Option<Rc<Fiber>>) -> bool {
     previous == Some(instance)
-}
-
-struct Listener {
-    instance: Option<Rc<Fiber>>,
 }
 
 fn dispatched(listeners: &[Listener], stopped: bool) -> u32 {

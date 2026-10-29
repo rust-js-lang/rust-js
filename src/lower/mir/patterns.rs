@@ -439,6 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             null_nones: self.mir_null_nones(body, locals),
             nones: self.mir_nones(body, locals),
             made_some: self.mir_made_some(body, promoted, locals),
+            nested: self.mir_nested(body, locals),
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
@@ -710,6 +711,160 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect()
+    }
+
+    /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
+    /// of an `Option` whose payload never looks like `None`
+    /// (`nested_payload`), of no drop, neither a parameter nor the result,
+    /// and each shared reference to one an `==` is given. Each written only
+    /// `None`, `Some(..)` or another such, and read only by another such,
+    /// by its discriminant, by its `Some`'s payload, `(x as Some).0`, or,
+    /// through a reference, by an `==` of two such: so each read knows
+    /// what its writes made. One read any other way, given to a function,
+    /// returned, captured or borrowed `&mut`, isn't, nor what it's copied
+    /// to or from, or compared with.
+    fn mir_nested(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+        let decls = &body.local_decls;
+        let mut nested: std::collections::HashSet<Local> = (decls.indices())
+            .filter(|&local| local.as_usize() > body.arg_count)
+            .filter(|&local| {
+                let ty = decls[local].ty;
+                self.nested_payload(ty).is_some() && !ty.needs_drop(self.tcx, self.typing_env)
+            })
+            .collect();
+        if nested.is_empty() {
+            return nested;
+        }
+        // Each shared reference to one, made once.
+        let mut refs: HashMap<Local, Local> = HashMap::new();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && let Some(reference) = assign.0.as_local()
+                && let Rvalue::Ref(_, BorrowKind::Shared, of) = &assign.1
+                && let Some(of) = of.as_local()
+                && nested.contains(&of)
+                && locals.writes[reference] == 1
+            {
+                refs.insert(reference, of);
+            }
+        }
+        // A read of what its `Some` holds, and through it.
+        let payload = |place: &Place<'tcx>| {
+            matches!(place.projection.as_slice(), [PlaceElem::Downcast(_, some), PlaceElem::Field(field, _), ..]
+                if some.as_u32() == 1 && field.as_u32() == 0)
+        };
+        // Where each is mentioned as it may be, and which must agree.
+        let mut allowed: std::collections::HashSet<(mir::Location, Local)> = Default::default();
+        let mut links: Vec<(Local, Local)> = Vec::new();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            for (statement_index, statement) in data.statements.iter().enumerate() {
+                let at = mir::Location { block, statement_index };
+                let mir::StatementKind::Assign(assign) = &statement.kind else {
+                    continue;
+                };
+                let (to, rvalue) = (&assign.0, &assign.1);
+                let whole = to.as_local().filter(|local| nested.contains(local));
+                match rvalue {
+                    Rvalue::Aggregate(kind, _)
+                        if let Some(to) = whole
+                            && matches!(**kind, AggregateKind::Adt(..)) =>
+                    {
+                        allowed.insert((at, to));
+                    }
+                    Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
+                        if let Some(to) = whole
+                            && let Some(from) = from.as_local()
+                            && nested.contains(&from) =>
+                    {
+                        allowed.extend([(at, to), (at, from)]);
+                        links.push((to, from));
+                    }
+                    Rvalue::Ref(_, BorrowKind::Shared, of)
+                        if let Some(reference) = to.as_local()
+                            && let Some(of) = of.as_local()
+                            && refs.get(&reference) == Some(&of) =>
+                    {
+                        allowed.extend([(at, reference), (at, of)]);
+                    }
+                    Rvalue::Discriminant(of)
+                        if nested.contains(&of.local) && (of.projection.is_empty() || payload(of)) =>
+                    {
+                        allowed.insert((at, of.local));
+                    }
+                    Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)
+                    | Rvalue::Ref(_, BorrowKind::Shared, of)
+                    | Rvalue::CopyForDeref(of)
+                        if whole.is_none() && nested.contains(&of.local) && payload(of) =>
+                    {
+                        allowed.insert((at, of.local));
+                    }
+                    _ => {}
+                }
+            }
+            // An `==` of two of them, each through a reference.
+            if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((def_id, _)) = func.const_fn_def()
+                && (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_id| {
+                    matches!(
+                        self.recognition().trait_call(def_id, trait_id),
+                        Some(TraitCall::Equality { .. })
+                    )
+                })
+                && let [a, b] = &args[..]
+                && let (Some(a), Some(b)) = (a.node.place(), b.node.place())
+                && let (Some(a), Some(b)) = (a.as_local(), b.as_local())
+                && let (Some(&x), Some(&y)) = (refs.get(&a), refs.get(&b))
+            {
+                let at = body.terminator_loc(block);
+                allowed.extend([(at, a), (at, b)]);
+                links.push((x, y));
+            }
+        }
+        // Every other mention, but where it lives and dies.
+        struct Mentions(Vec<(mir::Location, Local)>);
+        impl<'tcx> Visitor<'tcx> for Mentions {
+            fn visit_statement(&mut self, statement: &mir::Statement<'tcx>, location: mir::Location) {
+                if !matches!(
+                    statement.kind,
+                    mir::StatementKind::StorageLive(_)
+                        | mir::StatementKind::StorageDead(_)
+                        | mir::StatementKind::FakeRead(..)
+                        | mir::StatementKind::PlaceMention(..)
+                        | mir::StatementKind::AscribeUserType(..)
+                        | mir::StatementKind::Nop
+                ) {
+                    self.super_statement(statement, location);
+                }
+            }
+            // A variable's name, which reads nothing.
+            fn visit_var_debug_info(&mut self, _: &mir::VarDebugInfo<'tcx>) {}
+            fn visit_local(&mut self, local: Local, _: PlaceContext, location: mir::Location) {
+                self.0.push((location, local));
+            }
+        }
+        let mut mentions = Mentions(Vec::new());
+        mentions.visit_body(body);
+        let mut out: std::collections::HashSet<Local> = (mentions.0.into_iter())
+            .filter(|&(at, local)| {
+                (nested.contains(&local) || refs.contains_key(&local)) && !allowed.contains(&(at, local))
+            })
+            .map(|(_, local)| local)
+            .collect();
+        links.extend(refs.iter().map(|(&reference, &of)| (reference, of)));
+        loop {
+            let before = out.len();
+            for &(x, y) in &links {
+                if out.contains(&x) || out.contains(&y) {
+                    out.extend([x, y]);
+                }
+            }
+            if out.len() == before {
+                break;
+            }
+        }
+        nested.extend(refs.keys());
+        nested.retain(|local| !out.contains(local));
+        nested
     }
 
     /// The locals `OptionWrites::made_some` says: each write a `Some(..)`, or a

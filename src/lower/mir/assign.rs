@@ -135,6 +135,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.mir_store(state, *place, Value::Expr(Expr::null()), span, out);
         }
+        // An `Option` of an `Option` held as its payload (ADR 1017): `None`
+        // `undefined`, and a `Some` what it holds, its `None` `null`, as a
+        // nullable field's is already, `previousInstance = instance`.
+        if place.projection.is_empty()
+            && state.facts.options().nested.contains(&place.local)
+            && let Rvalue::Aggregate(_, operands) = rvalue
+        {
+            let made = match operands.iter().next() {
+                None => Expr::undefined(),
+                Some(operand) => {
+                    let nulled = matches!(
+                        self.stored_given(state, operand),
+                        crate::lower::aggregates::Given::Nulled
+                    );
+                    let held = self.mir_expr(state, operand, out)?;
+                    js::Storage::NullForNone.written(held, nulled)
+                }
+            };
+            return self.mir_store(state, *place, Value::Expr(made), span, out);
+        }
         // One with a flattened field, made outside JSX, an object of its
         // fields and the flattened one's (ADR 0204).
         if let Rvalue::Aggregate(kind, _) = rvalue

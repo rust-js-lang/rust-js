@@ -135,6 +135,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty = ty.projection_ty(self.tcx, elem);
                 continue;
             }
+            // What the `Some` of an `Option` of an `Option` held as its
+            // payload holds: the payload itself, its `None` `null` (ADR 1017).
+            if at == 1
+                && matches!(place.projection[0], PlaceElem::Downcast(_, some) if some.as_u32() == 1)
+                && state.facts.options().nested.contains(&place.local)
+            {
+                placed = false;
+                ty = ty.projection_ty(self.tcx, elem);
+                continue;
+            }
             placed = false;
             value = match (ty.ty.peel_refs().kind(), elem) {
                 // Of a closure's environment, `(*_1).0`: what it captured.
