@@ -2,6 +2,8 @@
 
 import {
   $BTreeMap,
+  $KeyMap,
+  $btreeMap,
   $catchUnwind,
   $channel,
   $closing,
@@ -18,6 +20,7 @@ import {
   $next,
   $nthBack,
   $retain,
+  $retainMap,
   $retainMut,
   $send,
   $sortedEntries,
@@ -47,6 +50,13 @@ const Item = {
 function caught(name, f) {
   const result = $catchUnwind(f);
   console.log(`${name} caught ${result.TAG === "Err"}`);
+}
+
+function keyDrop_drop(key) {
+  console.log(`key ${key[0]}`);
+  if (key[0] === 2) {
+    throw new Error("key");
+  }
 }
 
 function main() {
@@ -445,6 +455,43 @@ function main() {
           boomDrop_drop(item._0);
         }
       });
+    }
+  });
+  caught("map retain", () => {
+    const m = new ($btreeMap((a, b) => $cmp(a[0], b[0]), $KeyMap))();
+    try {
+      const insert = $insert(m, [1], [46], keyDrop_drop);
+      if (insert != null) {
+        loudDrop_drop(insert);
+      }
+      const loud = $insert(m, [2], [47], keyDrop_drop);
+      if (loud != null) {
+        loudDrop_drop(loud);
+      }
+      const value = $insert(m, [3], [48], keyDrop_drop);
+      if (value != null) {
+        loudDrop_drop(value);
+      }
+      $retainMap(
+        m,
+        (k) => k[0] !== 2,
+        $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+        false,
+        loudDrop_drop,
+        keyDrop_drop,
+      );
+      console.log(`map ${m.size}`);
+    } finally {
+      $dropItems(
+        $sortedEntries(m, (a, b) => $cmp(a[0], b[0])),
+        ([key, value]) => {
+          try {
+            keyDrop_drop(key);
+          } finally {
+            loudDrop_drop(value);
+          }
+        },
+      );
     }
   });
   caught("heap retain", () => {

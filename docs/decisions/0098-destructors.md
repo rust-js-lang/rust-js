@@ -699,3 +699,6 @@ guard puts them back, so the vector's own drop drops each once: `$retain`,
 Held by `drop_parts_past_a_panic.rs`'s `retain`, `retain_mut`, `retain
 test`, `dedup` and `heap retain`, and the mutation `retain-left-as-thrown`
 (`runtime/retain.ts`).
+A map's `retain` drops an entry it doesn't keep as std drops the pair:
+its value though its key's drop panics, `$retainMap`'s `finally`; held by
+`map retain` and `map-retain-value-after-key-panic` (`runtime/map_ops.ts`).

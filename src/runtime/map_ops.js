@@ -16,8 +16,13 @@ function $retainMap(m, f, entries, handles, drop, dropKey) {
   for (const [key, value] of handles ? $mutEntries(m, entries) : Array.from(entries)) {
     if (!f(key, value)) {
       m.delete(key);
-      dropKey?.(key);
-      drop?.(value);
+      // Its value dropped though its key's drop panics, as std's of the
+      // pair goes on (#416).
+      try {
+        dropKey?.(key);
+      } finally {
+        drop?.(value);
+      }
     }
   }
 }

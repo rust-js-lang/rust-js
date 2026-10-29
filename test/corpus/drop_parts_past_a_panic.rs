@@ -137,6 +137,24 @@ fn main() {
         let mut v = vec![Item::Quiet(Loud(43)), Item::Loud(Boom(44)), Item::Quiet(Loud(45))];
         v.dedup_by(|a, b| matches!((a, b), (Item::Loud(_), Item::Quiet(_))));
     });
+    caught("map retain", || {
+        #[derive(PartialEq, Eq, PartialOrd, Ord)]
+        struct Key(u32);
+        impl Drop for Key {
+            fn drop(&mut self) {
+                println!("key {}", self.0);
+                if self.0 == 2 {
+                    panic!("key");
+                }
+            }
+        }
+        let mut m = BTreeMap::new();
+        m.insert(Key(1), Loud(46));
+        m.insert(Key(2), Loud(47));
+        m.insert(Key(3), Loud(48));
+        m.retain(|k, _| k.0 != 2);
+        println!("map {}", m.len());
+    });
     caught("heap retain", || {
         let mut heap = std::collections::BinaryHeap::new();
         for n in [40u32, 42, 41] {
