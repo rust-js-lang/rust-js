@@ -352,4 +352,22 @@ export const mutations: Mutation[] = [
     replace: "                if out.contains(&x) && out.contains(&y) {\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
+  {
+    name: "nested-option-is-some-boxed",
+    breaks: "`last.is_some()` of an `Option` of an `Option` held where it's made keeps its box, `$some(item)`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                        through(&a.node)\n",
+    replace: "                        None\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "nested-option-some-none-eq-boxed",
+    breaks: "`last == Some(None)` of an `Option` of an `Option` held where it's made keeps its box, `$eq(last, { $someNone: 0 })`",
+    file: "src/lower/mir/patterns.rs",
+    find: "                            (Some(a), None) if self.nested_some_none(body, &b.node) => Some(a),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+    snapshots: true,
+  },
 ];

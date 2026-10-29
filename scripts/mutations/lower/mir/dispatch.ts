@@ -715,4 +715,20 @@ export const mutations: Mutation[] = [
     replace: "        if false && self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {\n",
     tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
   },
+  {
+    name: "nested-option-is-some-flipped",
+    breaks: "`is_some()` of an `Option` of an `Option` held as its payload is `last === undefined`, a wrong answer",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            let op = if known == Std::IsSome { Op::Ne } else { Op::Eq };\n",
+    replace: "            let op = if known == Std::IsSome { Op::Eq } else { Op::Ne };\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+  },
+  {
+    name: "nested-option-eq-some-none-undefined",
+    breaks: "`last == Some(None)` of an `Option` of an `Option` held as its payload is `last === undefined`, its `None`'s test, a wrong answer",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            return Ok(Some(Expr::bin(op, x, Expr::null())));\n",
+    replace: "            return Ok(Some(Expr::bin(op, x, Expr::undefined())));\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+  },
 ];

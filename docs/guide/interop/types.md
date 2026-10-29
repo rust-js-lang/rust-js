@@ -1076,8 +1076,10 @@ export function ratio(a, b) {
   React's `previousInstance` keeps the listener's fiber, `Fiber | null`,
   or none yet. Its writes are `None`, `Some(..)` or another such, and its
   reads `match`, `if let`, `==` of another such, or what its `Some` holds;
-  one given to a function, returned or captured keeps its box
-  ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md)):
+  `is_some()` is `last !== undefined`, `is_none()` `last === undefined`
+  and `== Some(None)` `last === null`; one given to a function, returned or
+  captured keeps its box
+  ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md), amended):
 
 ```rust
 pub struct Listener {

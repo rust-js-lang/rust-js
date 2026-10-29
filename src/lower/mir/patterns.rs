@@ -801,6 +801,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => {}
                 }
             }
+            // `is_some()` or `is_none()` of one, through a reference; and an
+            // `==` of one with a constant `Some(None)`, `last == Some(None)`
+            // (ADR 1017, amended).
+            if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((def_id, generic_args)) = func.const_fn_def()
+            {
+                let through = |operand: &Operand<'tcx>| {
+                    (operand.place())
+                        .and_then(|place| place.as_local())
+                        .filter(|local| refs.contains_key(local))
+                };
+                let tested = match &args[..] {
+                    [a] if matches!(
+                        self.recognition().classify(def_id, generic_args),
+                        Some(Std::IsSome | Std::IsNone)
+                    ) =>
+                    {
+                        through(&a.node)
+                    }
+                    [a, b]
+                        if (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_id| {
+                            matches!(
+                                self.recognition().trait_call(def_id, trait_id),
+                                Some(TraitCall::Equality { .. })
+                            )
+                        }) =>
+                    {
+                        match (through(&a.node), through(&b.node)) {
+                            (Some(a), None) if self.nested_some_none(body, &b.node) => Some(a),
+                            (None, Some(b)) if self.nested_some_none(body, &a.node) => Some(b),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
+                if let Some(reference) = tested {
+                    allowed.insert((body.terminator_loc(block), reference));
+                }
+            }
             // An `==` of two of them, each through a reference.
             if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some((def_id, _)) = func.const_fn_def()

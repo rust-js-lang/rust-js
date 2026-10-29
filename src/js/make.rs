@@ -1191,7 +1191,9 @@ fn is_text(e: &Expr) -> bool {
 }
 
 /// `x === null` of `x !== undefined && x == null`, `x !== null` of `x ===
-/// undefined || x != null`, of a place `x` (`Expr::bin`).
+/// undefined || x != null`, and `x != null` of `x !== undefined && x !=
+/// null`, `x == null` of `x === undefined || x == null`, of a place `x`
+/// (`Expr::bin`).
 fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
     use super::stmt_walk::{null_test, same_path, taken_place};
     let present = match op {
@@ -1206,8 +1208,19 @@ fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
         ExprKind::Binary(o, x, u) if *o == strict && matches!(u.kind, ExprKind::Undefined) => &**x,
         _ => null_test(lhs, !present).filter(|_| lhs.facts.of_presence() == Facts::of(Known::NoneUndefined))?,
     };
+    if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {
+        return None;
+    }
+    // `x !== undefined && x != null` is `x != null`, and `x === undefined ||
+    // x == null` is `x == null`: the second says the first, `if let
+    // Some(Some(v)) = last`'s test (ADR 1017, amended).
+    if let Some(inner) = null_test(rhs, !present)
+        && same_path(x, inner)
+    {
+        return Some(rhs.clone());
+    }
     let inner = null_test(rhs, present)?;
-    if !taken_place(x) || !same_path(x, inner) || rhs.facts.of_presence() != Facts::default() {
+    if !same_path(x, inner) {
         return None;
     }
     let strict = if present { Op::Ne } else { Op::Eq };

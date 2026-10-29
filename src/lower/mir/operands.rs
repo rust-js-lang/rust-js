@@ -447,6 +447,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `operand` is a constant `Some(None)` of an `Option<Option<T>>`
+    /// whose local is its payload (`nested_payload`), or a reference to one,
+    /// `last == Some(None)`'s, or a local of `body` it's given to once, as MIR
+    /// gives a promoted one, through a reborrow, `&(*_21)` (ADR 1017,
+    /// amended).
+    pub(super) fn nested_some_none(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> bool {
+        self.nested_some_none_of(body, operand).is_some()
+    }
+
+    fn nested_some_none_of(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<()> {
+        let mut operand = operand.clone();
+        let c = loop {
+            let local = match &operand {
+                Operand::Constant(c) => break c.clone(),
+                _ => operand.place()?.as_local()?,
+            };
+            let mut given = (body.basic_blocks.iter().flat_map(|b| &b.statements)).filter_map(|s| match &s.kind {
+                mir::StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+                _ => None,
+            });
+            operand = match (given.next(), given.next()) {
+                (Some(Rvalue::Use(given, _)), None) => given.clone(),
+                (Some(Rvalue::Ref(_, BorrowKind::Shared, of)), None) if of.projection[..] == [PlaceElem::Deref] => {
+                    Operand::Copy(Place::from(of.local))
+                }
+                _ => return None,
+            };
+        };
+        self.nested_payload(c.ty().peel_refs())?;
+        let value = self.mir_const_value(c.const_, c.ty(), c.span)?;
+
+        // A variant's index, then its fields.
+        let variant = |tree: ty::ValTree<'tcx>| -> Option<(u128, Option<ty::ValTree<'tcx>>)> {
+            let ty::ValTreeKind::Branch(items) = &*tree else {
+                return None;
+            };
+            let (index, fields) = items.split_first()?;
+            let index = index.try_to_value()?.try_to_leaf()?.to_bits_unchecked();
+            let field = match fields.first() {
+                Some(f) => Some(f.try_to_value()?.valtree),
+                None => None,
+            };
+            Some((index, field))
+        };
+        let (1, Some(inner)) = variant(value.valtree)? else {
+            return None;
+        };
+        matches!(variant(inner)?, (0, None)).then_some(())
+    }
+
     fn mir_const_value(&self, c: Const<'tcx>, ty: Ty<'tcx>, span: Span) -> Option<ty::Value<'tcx>> {
         match c {
             Const::Ty(_, ct) => ct.try_to_value(),

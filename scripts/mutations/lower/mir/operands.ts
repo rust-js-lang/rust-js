@@ -179,4 +179,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
     snapshots: true,
   },
+  {
+    name: "nested-constant-any-some",
+    breaks: "a constant `Some(Some(2))` is read as `Some(None)`, `last === null`, a wrong answer",
+    file: "src/lower/mir/operands.rs",
+    find: "        matches!(variant(inner)?, (0, None)).then_some(())\n",
+    replace: "        variant(inner).map(|_| ())\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+  },
 ];

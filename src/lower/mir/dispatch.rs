@@ -441,7 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
             return Ok(given);
         }
-        if let Some(equal) = self.nested_equality(state, callee.0, operands, span, out)? {
+        if let Some(equal) = self.nested_equality(state, callee, operands, span, out)? {
             return Ok(Value::Expr(equal));
         }
         // A map that's the option itself, `lane.map(EventPriority::from)`:
@@ -540,11 +540,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn nested_equality(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         operands: &[&Operand<'tcx>],
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
+        let nested = |operand: &Operand<'tcx>| {
+            operand
+                .place()
+                .and_then(|place| place.as_local())
+                .is_some_and(|local| state.facts.options().nested.contains(&local))
+        };
+        // `is_some()` and `is_none()` of one, through a reference: a test of
+        // its `None`, `last !== undefined` (ADR 1017, amended).
+        if let [x] = operands
+            && nested(x)
+            && let Some(known @ (Std::IsSome | Std::IsNone)) = self.recognition().classify(def_id, generic_args)
+        {
+            let x = self.nested_operand(state, x, span, out)?;
+            let op = if known == Std::IsSome { Op::Ne } else { Op::Eq };
+            return Ok(Some(Expr::bin(op, x, Expr::undefined())));
+        }
         let negate = match self
             .tcx
             .trait_of_assoc(def_id)
@@ -553,13 +569,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(TraitCall::Equality { negate }) => negate,
             _ => return Ok(None),
         };
-        let nested = |operand: &Operand<'tcx>| {
-            operand
-                .place()
-                .and_then(|place| place.as_local())
-                .is_some_and(|local| state.facts.options().nested.contains(&local))
-        };
         let [a, b] = operands else { return Ok(None) };
+        // Of one with a constant `Some(None)`, `null`: `last === null` (ADR
+        // 1017, amended).
+        let constant = match (nested(a), nested(b)) {
+            (true, false) if self.nested_some_none(state.body, b) => Some(0),
+            (false, true) if self.nested_some_none(state.body, a) => Some(1),
+            _ => None,
+        };
+        if let Some(at) = constant {
+            let value = (self.take_operands(state, operands, out)?.into_iter().nth(at)).expect("two operands");
+            let x = self.value_expr(value, span)?;
+            let op = if negate { Op::Ne } else { Op::Eq };
+            return Ok(Some(Expr::bin(op, x, Expr::null())));
+        }
         if !nested(a) || !nested(b) {
             return Ok(None);
         }
@@ -599,6 +622,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => equal.negated_test(),
             false => equal,
         }))
+    }
+
+    /// The payload `operand` holds, through a reference, read once.
+    fn nested_operand(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        operand: &Operand<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let value = (self.take_operands(state, &[operand], out)?.into_iter().next()).expect("one operand");
+        self.value_expr(value, span)
     }
 
     /// Whether an `==` of an `Option` is `===`: of one side only ever

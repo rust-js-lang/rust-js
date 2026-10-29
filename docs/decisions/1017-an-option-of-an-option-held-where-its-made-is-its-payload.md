@@ -124,7 +124,7 @@ let previousInstance;
   operand order, `instance !== previousInstance`.
 - `matches!(last, Some(None))` reads `last !== undefined && last == null`.
 - `last == Some(None)`, a constant MIR promotes, keeps the box: the
-  constant isn't a local made here.
+  constant isn't a local made here. (Amended below: it's `last === null`.)
 
 ## What holds it
 
@@ -169,3 +169,50 @@ representation's to extend.
 Held by `test/corpus/nested_option_held_as_payload.rs` against native
 Rust, `test/lowering-nested-options.test.ts`, and the mutations
 `null-apart-unfolded` and `null-apart-of-two-places` (`js/make.ts`).
+
+## Amendment: `is_some()`, `is_none()` and `== Some(None)` are its tests (2026-10-29)
+
+The amendment above left `last.is_some()` and `last == Some(None)` keeping
+the box: each gives `&last` to a function, `Option::is_some(&self)` and
+`PartialEq::eq`, so `mir_nested` took it out, and the whole local with it:
+
+```js
+last = $some(item);
+..
+if (last !== undefined) { .. }
+if ($eq(last, { $someNone: 0 })) { .. }
+```
+
+**A call of `Option::is_some` or `Option::is_none` of one through a shared
+reference, and an `==` or `!=` of one with a constant `Some(None)`, are
+reads of it too** (`mir_nested`): `last !== undefined`, `last ===
+undefined`, `last === null` and `last !== null` (`dispatch.rs`'s
+`nested_equality`). The constant is told by its value tree
+(`operands.rs`'s `nested_some_none`), of the promoted `&Some(None)` MIR
+gives a local, through its reborrow; another constant, `Some(Some(2))`,
+keeps the box, compared as it was. And `Expr::bin` folds `x !== undefined
+&& x != null`, `if let Some(Some(v)) = last`'s test, to `x != null`, and
+`x === undefined || x == null` to `x == null`, the second test saying the
+first:
+
+```js
+last = item ?? null;
+..
+if (last !== undefined) { .. }
+if (last === null) { .. }
+if (last != null) {
+  out += String(last);
+}
+```
+
+`== None` isn't one: clippy's `partialeq_to_none` asks for `is_none()`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Each of the three
+values is its own JS value, so each test is Rust's answer.
+
+Held by `test/corpus/nested_option_tests.rs` against native Rust, and the
+mutations `nested-option-is-some-boxed`, `nested-option-some-none-eq-boxed`
+(`lower/mir/patterns.ts`), `nested-option-is-some-flipped`,
+`nested-option-eq-some-none-undefined` (`lower/mir/dispatch.ts`),
+`nested-constant-any-some` (`lower/mir/operands.ts`) and `null-said-twice`
+(`js/make.ts`).
