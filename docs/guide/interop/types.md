@@ -912,7 +912,9 @@ export function ratio(a, b) {
   naming its bindings, `#[cfg_attr(rust_js, rust_js::nullable(react_name,
   target_inst))] (react_name, react_event_type, target_inst): (..)`, each
   stored as it's given, `this._reactName = reactName;`, through a
-  `RefCell`'s `borrow_mut()` too; a function's own
+  `RefCell`'s `borrow_mut()` too, and so is its map by what's its argument
+  in JS, `this.target.set(native_event_target.map(js::unknown))`'s
+  `this.target = nativeEventTarget;`; a function's own
   parameter says so on the function, an error on the parameter (ADR 0861,
   amended).
   A nullable thread-local's whole value cloned,

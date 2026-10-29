@@ -604,4 +604,12 @@ export const mutations: Mutation[] = [
     replace: "                (None, [PlaceElem::Deref]) if false => match reborrowed(Place::from(item.local)) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
+  {
+    name: "identity-map-stored-unknown",
+    breaks: "a nullable parameter's `map(js::unknown)`, its own value, is stored `?? null`, not as given, `this.target = nativeEventTarget;` (rd94)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap)\n",
+    replace: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap) && false\n",
+    tests: ["test/js-constructors.test.ts", "-t", "identity map"],
+  },
 ];

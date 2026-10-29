@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-10-29): its map by what's its argument in JS is stored as given. Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -247,3 +247,26 @@ mutations `closure-nullable-binding-coalesced`,
 `borrowed-nullable-store-coalesced` (`mir/assign.ts`),
 `closure-nullable-not-an-option-allowed` and `fn-param-nullable-allowed`
 (`bindings/nullable.ts`).
+
+## Amendment: its map by what's its argument is as it's given (2026-10-29)
+
+React's SyntheticBaseEvent stores its target as any value,
+`this.target.set(native_event_target.map(js::unknown))`, of a nullable
+`Option<&EventTarget>` binding: `this.target = nativeEventTarget ?? null;`
+where upstream writes `this.target = nativeEventTarget;` (the port's gap
+rd94). `js::unknown` is its argument in JS, so the map is the option itself,
+`null` or a value already.
+
+**An `Option::map` that's the option itself in JS is what it maps, to what a
+nullable place stores**: by a function each call of which is what it's given
+(ADRs 0264, 0584), or by a binding that's its argument, `js::unknown`'s
+(`JsForm::This`), neither payload boxed. One question answers both, the
+map's lowering and what's stored as given (`std_types/option.rs`'s
+`maps_to_itself`, asked by `mir/rvalues.rs`'s `stored_given`). A map by
+another function is stored as its branches are, `x != null ? given(x) :
+null`. Case A: the same value, `null` or the object.
+
+- Held by `test/js-constructors.test.ts`, "an identity map of a nullable
+  parameter is stored as it's given", run; mutations
+  `identity-map-stored-unknown` (`lower/mir/rvalues.ts`) and
+  `this-binding-map-not-itself` (`lower/std_types/option.ts`).

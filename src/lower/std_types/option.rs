@@ -13,6 +13,27 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether an `Option::map` by the function of type `f`, of what's
+    /// `(from, to)`, is the option itself in JS: by a function each call of
+    /// which is what it's given, `section.map(Section::as_str)` (ADR 0264),
+    /// `lane.map(EventPriority::from)` (ADR 0584, amended), or a binding
+    /// that's its argument, `map(js::unknown)` (`JsForm::This`); of neither
+    /// boxed. The one answer, of the map's lowering and of what a nullable
+    /// place stores of it as given (the port's gap rd94).
+    pub(in crate::lower) fn maps_to_itself(&self, f: Ty<'tcx>, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> bool {
+        let Some((function, args)) = crate::lower::fn_def(f) else {
+            return false;
+        };
+        let itself = super::super::bindings::is_binding(self.tcx, function)
+            && matches!(
+                super::super::bindings::js_form(self.tcx, function),
+                super::super::bindings::JsForm::This
+            );
+        (itself || self.gives_its_argument(self.callee(function, args).0))
+            && !self.boxed_payload(from)
+            && !self.boxed_payload(to)
+    }
+
     /// An `Option`'s or a `Result`'s method, and `bool::then` (ADRs 0030, 0062): `None` if `known` is another.
     pub(in crate::lower) fn option_call(
         &mut self,
@@ -170,15 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A function, or a closure of statements, is called with it.
             Std::OptionMap => {
                 let (option, f) = (arg(), arg());
-                // By a function each call of which is what it's given, the
-                // option itself: `section.map(Section::as_str)` is `section`
-                // (ADR 0264), `lane.map(EventPriority::from)` `lane` (ADR
-                // 0584, amended).
-                if let Some((function, args)) = crate::lower::fn_def(tys[1])
-                    && self.gives_its_argument(self.callee(function, args).0)
-                    && !self.boxed_payload(generic_args.type_at(0))
-                    && !self.boxed_payload(generic_args.type_at(1))
-                {
+                if self.maps_to_itself(tys[1], (generic_args.type_at(0), generic_args.type_at(1))) {
                     return Ok(Some(option));
                 }
                 // By what gives it as it is, `map(String::as_str)`, or a binding

@@ -1174,6 +1174,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Given::Nulled;
         }
+        // An `Option::map` that's the option itself in JS is what it maps:
+        // `native_event_target.map(js::unknown)` (the port's gap rd94).
+        if let Some((func, args)) = call
+            && let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx))
+            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap)
+            && let [option, f] = &args[..]
+            && self.maps_to_itself(
+                f.node.ty(state.body, self.tcx),
+                (generic_args.type_at(0), generic_args.type_at(1)),
+            )
+        {
+            return self.stored_given(state, &option.node);
+        }
         // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
         // field's, is what it's made of (ADR 0841, amended).
         if let Some((func, args)) = call

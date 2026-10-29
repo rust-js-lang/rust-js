@@ -365,6 +365,53 @@ thread_local! {
   expect([named._reactName, named.target, named.currentTarget]).toEqual(["onClick", 1, 2]);
 });
 
+// React's SyntheticBaseEvent stores its target as any value, `this.target.
+// set(native_event_target.map(js::unknown))` of a nullable `Option<&
+// EventTarget>`: `js::unknown` is its argument in JS, so the map is what it
+// maps, `null` or a value already, stored as given, `this.target =
+// nativeEventTarget;`, where it was `?? null` (the port's gap rd94). A map
+// of another function is stored as its branches are, `: null`.
+test("an identity map of a nullable parameter is stored as it's given", async () => {
+  const { js, lib } = await compiled(
+    "constructor-nullable-identity-map",
+    `use std::cell::Cell;
+
+use js::{Class, Unknown, function};
+
+pub struct Event {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub target: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub other: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Event {}
+
+fn given(target: &'static str) -> &'static Unknown {
+    js::unknown(target)
+}
+
+thread_local! {
+    pub static SYNTHETIC_EVENT: &'static Class<fn(Option<&'static str>) -> Event> = Class::of(function::with_this(
+        |this, #[cfg_attr(rust_js, rust_js::nullable(native_event_target))] (native_event_target,): (Option<&'static str>,)| {
+            // Safety: \`new\` gives its constructor the event it makes.
+            let this: &'static Event = unsafe { js::cast(this) };
+            this.target.set(native_event_target.map(js::unknown));
+            this.other.set(native_event_target.map(given));
+            this
+        },
+    ));
+}
+`,
+  );
+  expect(js).toContain("  this.target = nativeEventTarget;\n");
+  expect(js).toContain("  this.other = nativeEventTarget != null ? given(nativeEventTarget) : null;\n");
+  const event = new lib.syntheticEvent(null);
+  expect([event.target, event.other]).toEqual([null, null]);
+  const named = new lib.syntheticEvent("div");
+  expect([named.target, named.other]).toEqual(["div", "div"]);
+});
+
 // What a closure's `#[rust_js::nullable(..)]` names is a binding of its own
 // parameter that's an `Option`; on a function's parameter it's the
 // function's, `#[rust_js::nullable(name)]` on the function.

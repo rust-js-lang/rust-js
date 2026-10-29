@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "own-name-map-called",
     breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/std_types/option.rs",
-    find: "                    && self.gives_its_argument(self.callee(function, args).0)\n",
-    replace: "                    && false && self.gives_its_argument(self.callee(function, args).0)\n",
+    find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
+    replace: "        (itself || false && self.gives_its_argument(self.callee(function, args).0))\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
@@ -325,5 +325,13 @@ export const mutations: Mutation[] = [
     find: "        return Expr::cond((**test).clone(), (**value).clone(), fallback);\n",
     replace: "        return Expr::bin(Op::Coalesce, option, fallback);\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "map of a literal"],
+  },
+  {
+    name: "this-binding-map-not-itself",
+    breaks: "a map by a binding that's its argument, `map(js::unknown)`, isn't the option to what a nullable place stores, which is `?? null` (rd94)",
+    file: "src/lower/std_types/option.rs",
+    find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
+    replace: "        (self.gives_its_argument(self.callee(function, args).0))\n",
+    tests: ["test/js-constructors.test.ts", "-t", "identity map"],
   },
 ];
