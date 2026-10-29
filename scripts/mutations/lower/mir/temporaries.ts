@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flushed-mut-ref-a-handle",
+    breaks: "a `&mut lanes[index]` held before an argument that changes `index` is a handle, which the call boxes as an object: `$assign(handle, ..)` throws a `TypeError` (#280)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                    if !named && matches!(place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)) =>\n",
+    replace: "                    if false && !named && matches!(place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_arg_before_its_index_changes.rs$"],
+  },
+  {
+    name: "flushed-mut-ref-unfixed",
+    breaks: "a `&mut ps[i].x` held before an argument that changes `i` keeps its object unnamed, `$handleOn($index(ps, i), \"x\")`, which the call boxes as an object (#280)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                    let place = self.fixed_place_of(place, &mut made);\n",
+    replace: "                    let place = place;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_arg_before_its_index_changes.rs$"],
+  },
+  {
     name: "or-pattern-macro-arm-unfound",
     breaks: "`matches!`'s or-pattern isn't found where its call is, so its variants are tested in the enum's order (ADR 0780)",
     file: "src/lower/mir/temporaries.rs",

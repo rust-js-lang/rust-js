@@ -442,3 +442,24 @@ The `&mut` nothing reads, `let _ = &mut p.y` through `deref_mut`, would
 now be made too, `$handleOn(derefMut(p).value, "y")`, where only
 `derefMut(p)` is needed; that it isn't is how it reads, so its mutation,
 `mir-unread-ref-handled`, is checked by `unread_mut_through_deref`'s JS.
+
+## Amendment: a `&mut` held before a later argument (#280)
+
+`add_to(&mut lanes[index], { index += 1; 10 })` holds its first argument
+before the second changes `index`. The held `&mut` became a handle,
+`const value = { get value() { .. }, set value(v) { .. } }`, and the call
+boxed that handle as if it were the element's object: `$apart(value)`,
+then `$assign(value, place.value)`. That threw `TypeError: Cannot use 'in'
+operator`, where Rust gives `[0, 10, 0, 0] 2`. A wrong answer, so ADR
+0262's "results change" case: Rust's behavior is kept.
+
+A held `&mut` to an item or a field is now its place, fixed where it's
+borrowed. The object it's reached through is named once (`fixed_place_of`),
+and the place is kept as a reference is, so the call boxes it and writes it
+back: `const item = $index(ps, i); i++; const place = { value: item.x };
+addTo(place, 5); item.x = place.value;`.
+
+- `test/corpus/mut_arg_before_its_index_changes.rs` checks a `Vec`'s, an
+  array's and a field's against native Rust.
+- The mutations are `flushed-mut-ref-a-handle` and
+  `flushed-mut-ref-unfixed`.

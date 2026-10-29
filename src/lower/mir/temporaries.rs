@@ -79,8 +79,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 kept.push((local, value));
                 continue;
             }
-            let mut expr = self.value_expr(value, Span::default())?;
             let named = state.named.contains(&local);
+            // A `&mut` to a place, a call's argument held before another that
+            // changes what it reads, `&mut lanes[index]` before `{ index += 1;
+            // 10 }`: the place, fixed here, `$index(ps, i).x`'s object named
+            // (`fixed_place_of`), as `refs` keeps one, so the call boxes it and
+            // writes it back, not a handle on it, which it would take for the
+            // object (#280).
+            let value = match value {
+                Value::Ref(place)
+                    if !named && matches!(place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)) =>
+                {
+                    let place = self.fixed_place_of(place, &mut made);
+                    if fixed_place(&place) {
+                        state.refs.insert(local, place);
+                        continue;
+                    }
+                    Value::Ref(place)
+                }
+                value => value,
+            };
+            let mut expr = self.value_expr(value, Span::default())?;
             if self.reads_same_anywhere(&expr, state.body.local_decls[local].ty) && !named {
                 state.in_place.insert(local, expr);
                 continue;
