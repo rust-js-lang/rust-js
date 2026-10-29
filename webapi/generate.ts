@@ -1640,6 +1640,20 @@ for (const name of INTERFACES) {
   // What it is to TypeScript: its DOM lib's interface of the same name.
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : jsName(i))})]`);
   line(listOf ? `pub struct ${type}<T = Node>(PhantomData<JsObject>, PhantomData<T>);` : `pub struct ${type}(PhantomData<JsObject>);`);
+  // Equal only to itself, as JS's `===` has an object: `ptr::eq`, the
+  // binding of `===`, `a == b` and `v.contains(&a)` its `includes(a)`
+  // (ADR 1016).
+  const generics = listOf ? "<T>" : "";
+  line();
+  line(`/// \`a === b\`: the same object.`);
+  line(`impl${generics} PartialEq for ${type}${generics} {`);
+  line(`    #[cfg_attr(rust_js, rust_js::link_name = "===")]`);
+  line(`    fn eq(&self, other: &Self) -> bool {`);
+  line(`        core::ptr::eq(self, other)`);
+  line(`    }`);
+  line(`}`);
+  line();
+  line(`impl${generics} Eq for ${type}${generics} {}`);
   if (i.parent && known.has(i.parent)) {
     const parent = typeName(i.parent);
     line();

@@ -38,6 +38,16 @@ unsafe extern "Rust" {
 #[cfg_attr(rust_js, rust_js::types = "EventTarget")]
 pub struct EventTarget(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for EventTarget {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EventTarget {}
+
 pub mod event_target {
     use super::*;
 
@@ -64,6 +74,16 @@ impl EventTarget {
 /// [`Event`](https://developer.mozilla.org/docs/Web/API/Event)
 #[cfg_attr(rust_js, rust_js::types = "Event")]
 pub struct Event(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Event {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Event {}
 
 pub mod event {
     use super::*;
@@ -263,6 +283,16 @@ impl Event {
 /// [`Node`](https://developer.mozilla.org/docs/Web/API/Node)
 #[cfg_attr(rust_js, rust_js::types = "Node")]
 pub struct Node(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Node {}
 
 impl Deref for Node {
     type Target = EventTarget;
@@ -610,6 +640,16 @@ impl Node {
 #[cfg_attr(rust_js, rust_js::types = "CharacterData")]
 pub struct CharacterData(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CharacterData {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CharacterData {}
+
 impl Deref for CharacterData {
     type Target = Node;
 
@@ -764,6 +804,16 @@ impl CharacterData {
 #[cfg_attr(rust_js, rust_js::types = "Text")]
 pub struct Text(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Text {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Text {}
+
 impl Deref for Text {
     type Target = CharacterData;
 
@@ -857,6 +907,16 @@ impl Text {
 #[cfg_attr(rust_js, rust_js::types = "Comment")]
 pub struct Comment(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Comment {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Comment {}
+
 impl Deref for Comment {
     type Target = CharacterData;
 
@@ -889,6 +949,16 @@ pub mod comment {
 /// [`Element`](https://developer.mozilla.org/docs/Web/API/Element)
 #[cfg_attr(rust_js, rust_js::types = "Element")]
 pub struct Element(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Element {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Element {}
 
 impl Deref for Element {
     type Target = Node;
@@ -2691,6 +2761,16 @@ impl Element {
 /// [`Document`](https://developer.mozilla.org/docs/Web/API/Document)
 #[cfg_attr(rust_js, rust_js::types = "Document")]
 pub struct Document(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Document {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Document {}
 
 impl Deref for Document {
     type Target = Node;
@@ -5773,6 +5853,16 @@ impl Document {
 #[cfg_attr(rust_js, rust_js::types = "DocumentFragment")]
 pub struct DocumentFragment(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DocumentFragment {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentFragment {}
+
 impl Deref for DocumentFragment {
     type Target = Node;
 
@@ -5908,6 +5998,16 @@ impl DocumentFragment {
 /// [`DOMTokenList`](https://developer.mozilla.org/docs/Web/API/DOMTokenList)
 #[cfg_attr(rust_js, rust_js::types = "DOMTokenList")]
 pub struct DOMTokenList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMTokenList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMTokenList {}
 
 pub mod dom_token_list {
     use super::*;
@@ -6055,6 +6155,16 @@ impl DOMTokenList {
 #[cfg_attr(rust_js, rust_js::types = "NodeListOf<T>")]
 pub struct NodeList<T = Node>(PhantomData<JsObject>, PhantomData<T>);
 
+/// `a === b`: the same object.
+impl<T> PartialEq for NodeList<T> {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl<T> Eq for NodeList<T> {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl<T> Index<usize> for NodeList<T> {
     type Output = T;
@@ -6137,6 +6247,16 @@ impl<T> NodeList<T> {
 #[cfg_attr(rust_js, rust_js::types = "HTMLCollection")]
 pub struct HTMLCollection(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLCollection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLCollection {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for HTMLCollection {
     type Output = Element;
@@ -6195,6 +6315,16 @@ impl HTMLCollection {
 #[cfg_attr(rust_js, rust_js::types = "AbortController")]
 pub struct AbortController(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AbortController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AbortController {}
+
 pub mod abort_controller {
     use super::*;
 
@@ -6230,6 +6360,16 @@ impl AbortController {
 /// [`AbortSignal`](https://developer.mozilla.org/docs/Web/API/AbortSignal)
 #[cfg_attr(rust_js, rust_js::types = "AbortSignal")]
 pub struct AbortSignal(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AbortSignal {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AbortSignal {}
 
 impl Deref for AbortSignal {
     type Target = EventTarget;
@@ -6325,6 +6465,16 @@ impl AbortSignal {
 /// [`HTMLElement`](https://developer.mozilla.org/docs/Web/API/HTMLElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLElement")]
 pub struct HTMLElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLElement {}
 
 impl Deref for HTMLElement {
     type Target = Element;
@@ -8700,6 +8850,16 @@ impl HTMLElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLAnchorElement")]
 pub struct HTMLAnchorElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLAnchorElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLAnchorElement {}
+
 impl Deref for HTMLAnchorElement {
     type Target = HTMLElement;
 
@@ -9120,6 +9280,16 @@ impl HTMLAnchorElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLButtonElement")]
 pub struct HTMLButtonElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLButtonElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLButtonElement {}
+
 impl Deref for HTMLButtonElement {
     type Target = HTMLElement;
 
@@ -9426,6 +9596,16 @@ impl HTMLButtonElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLDivElement")]
 pub struct HTMLDivElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLDivElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDivElement {}
+
 impl Deref for HTMLDivElement {
     type Target = HTMLElement;
 
@@ -9469,6 +9649,16 @@ impl HTMLDivElement {
 /// [`HTMLFormElement`](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFormElement")]
 pub struct HTMLFormElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLFormElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFormElement {}
 
 impl Deref for HTMLFormElement {
     type Target = HTMLElement;
@@ -9746,6 +9936,16 @@ impl HTMLFormElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLHeadingElement")]
 pub struct HTMLHeadingElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLHeadingElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLHeadingElement {}
+
 impl Deref for HTMLHeadingElement {
     type Target = HTMLElement;
 
@@ -9789,6 +9989,16 @@ impl HTMLHeadingElement {
 /// [`HTMLImageElement`](https://developer.mozilla.org/docs/Web/API/HTMLImageElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLImageElement")]
 pub struct HTMLImageElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLImageElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLImageElement {}
 
 impl Deref for HTMLImageElement {
     type Target = HTMLElement;
@@ -10219,6 +10429,16 @@ impl HTMLImageElement {
 /// [`HTMLInputElement`](https://developer.mozilla.org/docs/Web/API/HTMLInputElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLInputElement")]
 pub struct HTMLInputElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLInputElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLInputElement {}
 
 impl Deref for HTMLInputElement {
     type Target = HTMLElement;
@@ -11123,6 +11343,16 @@ impl HTMLInputElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLLabelElement")]
 pub struct HTMLLabelElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLLabelElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLLabelElement {}
+
 impl Deref for HTMLLabelElement {
     type Target = HTMLElement;
 
@@ -11185,6 +11415,16 @@ impl HTMLLabelElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLLIElement")]
 pub struct HTMLLIElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLLIElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLLIElement {}
+
 impl Deref for HTMLLIElement {
     type Target = HTMLElement;
 
@@ -11245,6 +11485,16 @@ impl HTMLLIElement {
 /// [`HTMLOListElement`](https://developer.mozilla.org/docs/Web/API/HTMLOListElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOListElement")]
 pub struct HTMLOListElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLOListElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLOListElement {}
 
 impl Deref for HTMLOListElement {
     type Target = HTMLElement;
@@ -11338,6 +11588,16 @@ impl HTMLOListElement {
 /// [`HTMLOptionElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptionElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptionElement")]
 pub struct HTMLOptionElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLOptionElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLOptionElement {}
 
 impl Deref for HTMLOptionElement {
     type Target = HTMLElement;
@@ -11480,6 +11740,16 @@ impl HTMLOptionElement {
 /// [`HTMLOutputElement`](https://developer.mozilla.org/docs/Web/API/HTMLOutputElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOutputElement")]
 pub struct HTMLOutputElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLOutputElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLOutputElement {}
 
 impl Deref for HTMLOutputElement {
     type Target = HTMLElement;
@@ -11639,6 +11909,16 @@ impl HTMLOutputElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLParagraphElement")]
 pub struct HTMLParagraphElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLParagraphElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLParagraphElement {}
+
 impl Deref for HTMLParagraphElement {
     type Target = HTMLElement;
 
@@ -11682,6 +11962,16 @@ impl HTMLParagraphElement {
 /// [`HTMLSelectElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSelectElement")]
 pub struct HTMLSelectElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLSelectElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLSelectElement {}
 
 impl Deref for HTMLSelectElement {
     type Target = HTMLElement;
@@ -12001,6 +12291,16 @@ impl HTMLSelectElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLSpanElement")]
 pub struct HTMLSpanElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLSpanElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLSpanElement {}
+
 impl Deref for HTMLSpanElement {
     type Target = HTMLElement;
 
@@ -12025,6 +12325,16 @@ pub mod html_span_element {
 /// [`HTMLTextAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTextAreaElement")]
 pub struct HTMLTextAreaElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTextAreaElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTextAreaElement {}
 
 impl Deref for HTMLTextAreaElement {
     type Target = HTMLElement;
@@ -12442,6 +12752,16 @@ impl HTMLTextAreaElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLUListElement")]
 pub struct HTMLUListElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLUListElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLUListElement {}
+
 impl Deref for HTMLUListElement {
     type Target = HTMLElement;
 
@@ -12501,6 +12821,16 @@ impl HTMLUListElement {
 /// [`HTMLTableElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableElement")]
 pub struct HTMLTableElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableElement {}
 
 impl Deref for HTMLTableElement {
     type Target = HTMLElement;
@@ -12820,6 +13150,16 @@ impl HTMLTableElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableSectionElement")]
 pub struct HTMLTableSectionElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableSectionElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableSectionElement {}
+
 impl Deref for HTMLTableSectionElement {
     type Target = HTMLElement;
 
@@ -12936,6 +13276,16 @@ impl HTMLTableSectionElement {
 /// [`HTMLTableRowElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableRowElement")]
 pub struct HTMLTableRowElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableRowElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableRowElement {}
 
 impl Deref for HTMLTableRowElement {
     type Target = HTMLElement;
@@ -13087,6 +13437,16 @@ impl HTMLTableRowElement {
 /// [`HTMLTableCellElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableCellElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableCellElement")]
 pub struct HTMLTableCellElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableCellElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableCellElement {}
 
 impl Deref for HTMLTableCellElement {
     type Target = HTMLElement;
@@ -13350,6 +13710,16 @@ impl HTMLTableCellElement {
 /// [`HTMLIFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLIFrameElement")]
 pub struct HTMLIFrameElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLIFrameElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLIFrameElement {}
 
 impl Deref for HTMLIFrameElement {
     type Target = HTMLElement;
@@ -13646,6 +14016,16 @@ impl HTMLIFrameElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLCanvasElement")]
 pub struct HTMLCanvasElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLCanvasElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLCanvasElement {}
+
 impl Deref for HTMLCanvasElement {
     type Target = HTMLElement;
 
@@ -13751,6 +14131,16 @@ impl HTMLCanvasElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLDetailsElement")]
 pub struct HTMLDetailsElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLDetailsElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDetailsElement {}
+
 impl Deref for HTMLDetailsElement {
     type Target = HTMLElement;
 
@@ -13811,6 +14201,16 @@ impl HTMLDetailsElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLHtmlElement")]
 pub struct HTMLHtmlElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLHtmlElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLHtmlElement {}
+
 impl Deref for HTMLHtmlElement {
     type Target = HTMLElement;
 
@@ -13855,6 +14255,16 @@ impl HTMLHtmlElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLHeadElement")]
 pub struct HTMLHeadElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLHeadElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLHeadElement {}
+
 impl Deref for HTMLHeadElement {
     type Target = HTMLElement;
 
@@ -13879,6 +14289,16 @@ pub mod html_head_element {
 /// [`HTMLTitleElement`](https://developer.mozilla.org/docs/Web/API/HTMLTitleElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTitleElement")]
 pub struct HTMLTitleElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTitleElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTitleElement {}
 
 impl Deref for HTMLTitleElement {
     type Target = HTMLElement;
@@ -13923,6 +14343,16 @@ impl HTMLTitleElement {
 /// [`HTMLBaseElement`](https://developer.mozilla.org/docs/Web/API/HTMLBaseElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLBaseElement")]
 pub struct HTMLBaseElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLBaseElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLBaseElement {}
 
 impl Deref for HTMLBaseElement {
     type Target = HTMLElement;
@@ -13983,6 +14413,16 @@ impl HTMLBaseElement {
 /// [`HTMLLinkElement`](https://developer.mozilla.org/docs/Web/API/HTMLLinkElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLLinkElement")]
 pub struct HTMLLinkElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLLinkElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLLinkElement {}
 
 impl Deref for HTMLLinkElement {
     type Target = HTMLElement;
@@ -14303,6 +14743,16 @@ impl HTMLLinkElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLMetaElement")]
 pub struct HTMLMetaElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLMetaElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMetaElement {}
+
 impl Deref for HTMLMetaElement {
     type Target = HTMLElement;
 
@@ -14411,6 +14861,16 @@ impl HTMLMetaElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLStyleElement")]
 pub struct HTMLStyleElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLStyleElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLStyleElement {}
+
 impl Deref for HTMLStyleElement {
     type Target = HTMLElement;
 
@@ -14503,6 +14963,16 @@ impl HTMLStyleElement {
 /// [`HTMLBodyElement`](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLBodyElement")]
 pub struct HTMLBodyElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLBodyElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLBodyElement {}
 
 impl Deref for HTMLBodyElement {
     type Target = HTMLElement;
@@ -14988,6 +15458,16 @@ impl HTMLBodyElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLHRElement")]
 pub struct HTMLHRElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLHRElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLHRElement {}
+
 impl Deref for HTMLHRElement {
     type Target = HTMLElement;
 
@@ -15096,6 +15576,16 @@ impl HTMLHRElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLPreElement")]
 pub struct HTMLPreElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLPreElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLPreElement {}
+
 impl Deref for HTMLPreElement {
     type Target = HTMLElement;
 
@@ -15141,6 +15631,16 @@ impl HTMLPreElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLQuoteElement")]
 pub struct HTMLQuoteElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLQuoteElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLQuoteElement {}
+
 impl Deref for HTMLQuoteElement {
     type Target = HTMLElement;
 
@@ -15184,6 +15684,16 @@ impl HTMLQuoteElement {
 /// [`HTMLMenuElement`](https://developer.mozilla.org/docs/Web/API/HTMLMenuElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMenuElement")]
 pub struct HTMLMenuElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLMenuElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMenuElement {}
 
 impl Deref for HTMLMenuElement {
     type Target = HTMLElement;
@@ -15229,6 +15739,16 @@ impl HTMLMenuElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLDListElement")]
 pub struct HTMLDListElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLDListElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDListElement {}
+
 impl Deref for HTMLDListElement {
     type Target = HTMLElement;
 
@@ -15272,6 +15792,16 @@ impl HTMLDListElement {
 /// [`HTMLDataElement`](https://developer.mozilla.org/docs/Web/API/HTMLDataElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDataElement")]
 pub struct HTMLDataElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLDataElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDataElement {}
 
 impl Deref for HTMLDataElement {
     type Target = HTMLElement;
@@ -15317,6 +15847,16 @@ impl HTMLDataElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLTimeElement")]
 pub struct HTMLTimeElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLTimeElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTimeElement {}
+
 impl Deref for HTMLTimeElement {
     type Target = HTMLElement;
 
@@ -15361,6 +15901,16 @@ impl HTMLTimeElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLBRElement")]
 pub struct HTMLBRElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLBRElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLBRElement {}
+
 impl Deref for HTMLBRElement {
     type Target = HTMLElement;
 
@@ -15404,6 +15954,16 @@ impl HTMLBRElement {
 /// [`HTMLModElement`](https://developer.mozilla.org/docs/Web/API/HTMLModElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLModElement")]
 pub struct HTMLModElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLModElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLModElement {}
 
 impl Deref for HTMLModElement {
     type Target = HTMLElement;
@@ -15465,6 +16025,16 @@ impl HTMLModElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLPictureElement")]
 pub struct HTMLPictureElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLPictureElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLPictureElement {}
+
 impl Deref for HTMLPictureElement {
     type Target = HTMLElement;
 
@@ -15489,6 +16059,16 @@ pub mod html_picture_element {
 /// [`HTMLSourceElement`](https://developer.mozilla.org/docs/Web/API/HTMLSourceElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSourceElement")]
 pub struct HTMLSourceElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLSourceElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLSourceElement {}
 
 impl Deref for HTMLSourceElement {
     type Target = HTMLElement;
@@ -15632,6 +16212,16 @@ impl HTMLSourceElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLEmbedElement")]
 pub struct HTMLEmbedElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLEmbedElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLEmbedElement {}
+
 impl Deref for HTMLEmbedElement {
     type Target = HTMLElement;
 
@@ -15764,6 +16354,16 @@ impl HTMLEmbedElement {
 /// [`HTMLObjectElement`](https://developer.mozilla.org/docs/Web/API/HTMLObjectElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLObjectElement")]
 pub struct HTMLObjectElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLObjectElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLObjectElement {}
 
 impl Deref for HTMLObjectElement {
     type Target = HTMLElement;
@@ -16136,6 +16736,16 @@ impl HTMLObjectElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLVideoElement")]
 pub struct HTMLVideoElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLVideoElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLVideoElement {}
+
 impl Deref for HTMLVideoElement {
     type Target = HTMLMediaElement;
 
@@ -16334,6 +16944,16 @@ impl HTMLVideoElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLAudioElement")]
 pub struct HTMLAudioElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLAudioElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLAudioElement {}
+
 impl Deref for HTMLAudioElement {
     type Target = HTMLMediaElement;
 
@@ -16358,6 +16978,16 @@ pub mod html_audio_element {
 /// [`HTMLTrackElement`](https://developer.mozilla.org/docs/Web/API/HTMLTrackElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTrackElement")]
 pub struct HTMLTrackElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTrackElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTrackElement {}
 
 impl Deref for HTMLTrackElement {
     type Target = HTMLElement;
@@ -16495,6 +17125,16 @@ impl HTMLTrackElement {
 /// [`HTMLMediaElement`](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMediaElement")]
 pub struct HTMLMediaElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLMediaElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMediaElement {}
 
 impl Deref for HTMLMediaElement {
     type Target = HTMLElement;
@@ -17053,6 +17693,16 @@ impl HTMLMediaElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLMapElement")]
 pub struct HTMLMapElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLMapElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMapElement {}
+
 impl Deref for HTMLMapElement {
     type Target = HTMLElement;
 
@@ -17104,6 +17754,16 @@ impl HTMLMapElement {
 /// [`HTMLAreaElement`](https://developer.mozilla.org/docs/Web/API/HTMLAreaElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAreaElement")]
 pub struct HTMLAreaElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLAreaElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLAreaElement {}
 
 impl Deref for HTMLAreaElement {
     type Target = HTMLElement;
@@ -17493,6 +18153,16 @@ impl HTMLAreaElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableCaptionElement")]
 pub struct HTMLTableCaptionElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableCaptionElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableCaptionElement {}
+
 impl Deref for HTMLTableCaptionElement {
     type Target = HTMLElement;
 
@@ -17536,6 +18206,16 @@ impl HTMLTableCaptionElement {
 /// [`HTMLTableColElement`](https://developer.mozilla.org/docs/Web/API/HTMLTableColElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLTableColElement")]
 pub struct HTMLTableColElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLTableColElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTableColElement {}
 
 impl Deref for HTMLTableColElement {
     type Target = HTMLElement;
@@ -17662,6 +18342,16 @@ impl HTMLTableColElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLDataListElement")]
 pub struct HTMLDataListElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLDataListElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDataListElement {}
+
 impl Deref for HTMLDataListElement {
     type Target = HTMLElement;
 
@@ -17697,6 +18387,16 @@ impl HTMLDataListElement {
 /// [`HTMLOptGroupElement`](https://developer.mozilla.org/docs/Web/API/HTMLOptGroupElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptGroupElement")]
 pub struct HTMLOptGroupElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLOptGroupElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLOptGroupElement {}
 
 impl Deref for HTMLOptGroupElement {
     type Target = HTMLElement;
@@ -17757,6 +18457,16 @@ impl HTMLOptGroupElement {
 /// [`HTMLProgressElement`](https://developer.mozilla.org/docs/Web/API/HTMLProgressElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLProgressElement")]
 pub struct HTMLProgressElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLProgressElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLProgressElement {}
 
 impl Deref for HTMLProgressElement {
     type Target = HTMLElement;
@@ -17833,6 +18543,16 @@ impl HTMLProgressElement {
 /// [`HTMLMeterElement`](https://developer.mozilla.org/docs/Web/API/HTMLMeterElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLMeterElement")]
 pub struct HTMLMeterElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLMeterElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMeterElement {}
 
 impl Deref for HTMLMeterElement {
     type Target = HTMLElement;
@@ -17965,6 +18685,16 @@ impl HTMLMeterElement {
 /// [`HTMLFieldSetElement`](https://developer.mozilla.org/docs/Web/API/HTMLFieldSetElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFieldSetElement")]
 pub struct HTMLFieldSetElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLFieldSetElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFieldSetElement {}
 
 impl Deref for HTMLFieldSetElement {
     type Target = HTMLElement;
@@ -18100,6 +18830,16 @@ impl HTMLFieldSetElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLLegendElement")]
 pub struct HTMLLegendElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLLegendElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLLegendElement {}
+
 impl Deref for HTMLLegendElement {
     type Target = HTMLElement;
 
@@ -18153,6 +18893,16 @@ impl HTMLLegendElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLSelectedContentElement")]
 pub struct HTMLSelectedContentElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLSelectedContentElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLSelectedContentElement {}
+
 impl Deref for HTMLSelectedContentElement {
     type Target = HTMLElement;
 
@@ -18177,6 +18927,16 @@ pub mod html_selected_content_element {
 /// [`HTMLDialogElement`](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLDialogElement")]
 pub struct HTMLDialogElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLDialogElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDialogElement {}
 
 impl Deref for HTMLDialogElement {
     type Target = HTMLElement;
@@ -18289,6 +19049,16 @@ impl HTMLDialogElement {
 /// [`HTMLScriptElement`](https://developer.mozilla.org/docs/Web/API/HTMLScriptElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLScriptElement")]
 pub struct HTMLScriptElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLScriptElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLScriptElement {}
 
 impl Deref for HTMLScriptElement {
     type Target = HTMLElement;
@@ -18544,6 +19314,16 @@ impl HTMLScriptElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLTemplateElement")]
 pub struct HTMLTemplateElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLTemplateElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLTemplateElement {}
+
 impl Deref for HTMLTemplateElement {
     type Target = HTMLElement;
 
@@ -18692,6 +19472,16 @@ impl HTMLTemplateElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLSlotElement")]
 pub struct HTMLSlotElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLSlotElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLSlotElement {}
+
 impl Deref for HTMLSlotElement {
     type Target = HTMLElement;
 
@@ -18761,6 +19551,16 @@ impl HTMLSlotElement {
 /// [`Window`](https://developer.mozilla.org/docs/Web/API/Window)
 #[cfg_attr(rust_js, rust_js::types = "Window")]
 pub struct Window(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Window {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Window {}
 
 impl Deref for Window {
     type Target = EventTarget;
@@ -21905,6 +22705,16 @@ impl Window {
 #[cfg_attr(rust_js, rust_js::types = "Location")]
 pub struct Location(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Location {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Location {}
+
 impl Location {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Location/toString)
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
@@ -22091,6 +22901,16 @@ impl Location {
 #[cfg_attr(rust_js, rust_js::types = "History")]
 pub struct History(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for History {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for History {}
+
 impl History {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -22176,6 +22996,16 @@ impl History {
 #[cfg_attr(rust_js, rust_js::types = "Storage")]
 pub struct Storage(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Storage {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Storage {}
+
 impl Storage {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Storage/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -22236,6 +23066,16 @@ impl Storage {
 /// [`DataTransfer`](https://developer.mozilla.org/docs/Web/API/DataTransfer)
 #[cfg_attr(rust_js, rust_js::types = "DataTransfer")]
 pub struct DataTransfer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DataTransfer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DataTransfer {}
 
 pub mod data_transfer {
     use super::*;
@@ -22347,6 +23187,16 @@ impl DataTransfer {
 #[cfg_attr(rust_js, rust_js::types = "DragEvent")]
 pub struct DragEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DragEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DragEvent {}
+
 impl Deref for DragEvent {
     type Target = MouseEvent;
 
@@ -22391,6 +23241,16 @@ impl DragEvent {
 /// [`ToggleEvent`](https://developer.mozilla.org/docs/Web/API/ToggleEvent)
 #[cfg_attr(rust_js, rust_js::types = "ToggleEvent")]
 pub struct ToggleEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ToggleEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ToggleEvent {}
 
 impl Deref for ToggleEvent {
     type Target = Event;
@@ -22452,6 +23312,16 @@ impl ToggleEvent {
 /// [`MessageEvent`](https://developer.mozilla.org/docs/Web/API/MessageEvent)
 #[cfg_attr(rust_js, rust_js::types = "MessageEvent")]
 pub struct MessageEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MessageEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MessageEvent {}
 
 impl Deref for MessageEvent {
     type Target = Event;
@@ -22539,6 +23409,16 @@ impl MessageEvent {
 #[cfg_attr(rust_js, rust_js::types = "SubmitEvent")]
 pub struct SubmitEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SubmitEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SubmitEvent {}
+
 impl Deref for SubmitEvent {
     type Target = Event;
 
@@ -22583,6 +23463,16 @@ impl SubmitEvent {
 /// [`Performance`](https://developer.mozilla.org/docs/Web/API/Performance)
 #[cfg_attr(rust_js, rust_js::types = "Performance")]
 pub struct Performance(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Performance {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Performance {}
 
 impl Deref for Performance {
     type Target = EventTarget;
@@ -22763,6 +23653,16 @@ impl Performance {
 #[cfg_attr(rust_js, rust_js::types = "UIEvent")]
 pub struct UIEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for UIEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for UIEvent {}
+
 impl Deref for UIEvent {
     type Target = Event;
 
@@ -22835,6 +23735,16 @@ impl UIEvent {
 #[cfg_attr(rust_js, rust_js::types = "FocusEvent")]
 pub struct FocusEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FocusEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FocusEvent {}
+
 impl Deref for FocusEvent {
     type Target = UIEvent;
 
@@ -22879,6 +23789,16 @@ impl FocusEvent {
 /// [`MouseEvent`](https://developer.mozilla.org/docs/Web/API/MouseEvent)
 #[cfg_attr(rust_js, rust_js::types = "MouseEvent")]
 pub struct MouseEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MouseEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MouseEvent {}
 
 impl Deref for MouseEvent {
     type Target = UIEvent;
@@ -23110,6 +24030,16 @@ impl MouseEvent {
 #[cfg_attr(rust_js, rust_js::types = "KeyboardEvent")]
 pub struct KeyboardEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for KeyboardEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for KeyboardEvent {}
+
 impl Deref for KeyboardEvent {
     type Target = UIEvent;
 
@@ -23266,6 +24196,16 @@ impl KeyboardEvent {
 #[cfg_attr(rust_js, rust_js::types = "InputEvent")]
 pub struct InputEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for InputEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for InputEvent {}
+
 impl Deref for InputEvent {
     type Target = UIEvent;
 
@@ -23343,6 +24283,16 @@ impl InputEvent {
 /// [`WheelEvent`](https://developer.mozilla.org/docs/Web/API/WheelEvent)
 #[cfg_attr(rust_js, rust_js::types = "WheelEvent")]
 pub struct WheelEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WheelEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WheelEvent {}
 
 impl Deref for WheelEvent {
     type Target = MouseEvent;
@@ -23430,6 +24380,16 @@ impl WheelEvent {
 #[cfg_attr(rust_js, rust_js::types = "CompositionEvent")]
 pub struct CompositionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CompositionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CompositionEvent {}
+
 impl Deref for CompositionEvent {
     type Target = UIEvent;
 
@@ -23482,6 +24442,16 @@ impl CompositionEvent {
 /// [`TouchEvent`](https://developer.mozilla.org/docs/Web/API/TouchEvent)
 #[cfg_attr(rust_js, rust_js::types = "TouchEvent")]
 pub struct TouchEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TouchEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TouchEvent {}
 
 impl Deref for TouchEvent {
     type Target = UIEvent;
@@ -23583,6 +24553,16 @@ impl TouchEvent {
 #[cfg_attr(rust_js, rust_js::types = "AnimationEvent")]
 pub struct AnimationEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AnimationEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AnimationEvent {}
+
 impl Deref for AnimationEvent {
     type Target = Event;
 
@@ -23642,6 +24622,16 @@ impl AnimationEvent {
 /// [`TransitionEvent`](https://developer.mozilla.org/docs/Web/API/TransitionEvent)
 #[cfg_attr(rust_js, rust_js::types = "TransitionEvent")]
 pub struct TransitionEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TransitionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TransitionEvent {}
 
 impl Deref for TransitionEvent {
     type Target = Event;
@@ -23703,6 +24693,16 @@ impl TransitionEvent {
 #[cfg_attr(rust_js, rust_js::types = "ClipboardEvent")]
 pub struct ClipboardEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ClipboardEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ClipboardEvent {}
+
 impl Deref for ClipboardEvent {
     type Target = Event;
 
@@ -23747,6 +24747,16 @@ impl ClipboardEvent {
 /// [`PointerEvent`](https://developer.mozilla.org/docs/Web/API/PointerEvent)
 #[cfg_attr(rust_js, rust_js::types = "PointerEvent")]
 pub struct PointerEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PointerEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PointerEvent {}
 
 impl Deref for PointerEvent {
     type Target = MouseEvent;
@@ -23909,6 +24919,16 @@ impl PointerEvent {
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleDeclaration")]
 pub struct CSSStyleDeclaration(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSStyleDeclaration {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStyleDeclaration {}
+
 pub mod css_style_declaration {
     use super::*;
 
@@ -24002,6 +25022,16 @@ impl CSSStyleDeclaration {
 /// [`CSSStyleProperties`](https://developer.mozilla.org/docs/Web/API/CSSStyleProperties)
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleProperties")]
 pub struct CSSStyleProperties(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSStyleProperties {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStyleProperties {}
 
 impl Deref for CSSStyleProperties {
     type Target = CSSStyleDeclaration;
@@ -32607,6 +33637,16 @@ impl CSSStyleProperties {
 #[cfg_attr(rust_js, rust_js::types = "DOMRectReadOnly")]
 pub struct DOMRectReadOnly(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMRectReadOnly {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMRectReadOnly {}
+
 pub mod dom_rect_read_only {
     use super::*;
 
@@ -32705,6 +33745,16 @@ impl DOMRectReadOnly {
 /// [`DOMRect`](https://developer.mozilla.org/docs/Web/API/DOMRect)
 #[cfg_attr(rust_js, rust_js::types = "DOMRect")]
 pub struct DOMRect(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMRect {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMRect {}
 
 impl Deref for DOMRect {
     type Target = DOMRectReadOnly;
@@ -32814,6 +33864,16 @@ impl DOMRect {
 #[cfg_attr(rust_js, rust_js::types = "MediaQueryList")]
 pub struct MediaQueryList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaQueryList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaQueryList {}
+
 impl Deref for MediaQueryList {
     type Target = EventTarget;
 
@@ -32894,6 +33954,16 @@ impl MediaQueryList {
 #[cfg_attr(rust_js, rust_js::types = "MediaQueryListEvent")]
 pub struct MediaQueryListEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaQueryListEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaQueryListEvent {}
+
 impl Deref for MediaQueryListEvent {
     type Target = Event;
 
@@ -32945,6 +34015,16 @@ impl MediaQueryListEvent {
 /// [`IntersectionObserver`](https://developer.mozilla.org/docs/Web/API/IntersectionObserver)
 #[cfg_attr(rust_js, rust_js::types = "IntersectionObserver")]
 pub struct IntersectionObserver(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IntersectionObserver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IntersectionObserver {}
 
 pub mod intersection_observer {
     use super::*;
@@ -33050,6 +34130,16 @@ impl IntersectionObserver {
 #[cfg_attr(rust_js, rust_js::types = "IntersectionObserverEntry")]
 pub struct IntersectionObserverEntry(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IntersectionObserverEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IntersectionObserverEntry {}
+
 pub mod intersection_observer_entry {
     use super::*;
 
@@ -33133,6 +34223,16 @@ impl IntersectionObserverEntry {
 /// [`Headers`](https://developer.mozilla.org/docs/Web/API/Headers)
 #[cfg_attr(rust_js, rust_js::types = "Headers")]
 pub struct Headers(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Headers {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Headers {}
 
 pub mod headers {
     use super::*;
@@ -33245,6 +34345,16 @@ impl Headers {
 /// [`Request`](https://developer.mozilla.org/docs/Web/API/Request)
 #[cfg_attr(rust_js, rust_js::types = "Request")]
 pub struct Request(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Request {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Request {}
 
 pub mod request {
     use super::*;
@@ -33474,6 +34584,16 @@ impl Request {
 #[cfg_attr(rust_js, rust_js::types = "Response")]
 pub struct Response(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Response {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Response {}
+
 pub mod response {
     use super::*;
 
@@ -33655,6 +34775,16 @@ impl Response {
 #[cfg_attr(rust_js, rust_js::types = "FormData")]
 pub struct FormData(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FormData {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FormData {}
+
 pub mod form_data {
     use super::*;
 
@@ -33785,6 +34915,16 @@ impl FormData {
 #[cfg_attr(rust_js, rust_js::types = "ReadableStream")]
 pub struct ReadableStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ReadableStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStream {}
+
 pub mod readable_stream {
     use super::*;
 
@@ -33851,6 +34991,16 @@ impl ReadableStream {
 /// [`Touch`](https://developer.mozilla.org/docs/Web/API/Touch)
 #[cfg_attr(rust_js, rust_js::types = "Touch")]
 pub struct Touch(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Touch {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Touch {}
 
 pub mod touch {
     use super::*;
@@ -33992,6 +35142,16 @@ impl Touch {
 #[cfg_attr(rust_js, rust_js::types = "TouchList")]
 pub struct TouchList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TouchList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TouchList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for TouchList {
     type Output = Touch;
@@ -34041,6 +35201,16 @@ impl TouchList {
 #[cfg_attr(rust_js, rust_js::types = "TextEncoder")]
 pub struct TextEncoder(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TextEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextEncoder {}
+
 pub mod text_encoder {
     use super::*;
 
@@ -34083,6 +35253,16 @@ impl TextEncoder {
 /// [`TextDecoder`](https://developer.mozilla.org/docs/Web/API/TextDecoder)
 #[cfg_attr(rust_js, rust_js::types = "TextDecoder")]
 pub struct TextDecoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TextDecoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextDecoder {}
 
 pub mod text_decoder {
     use super::*;
@@ -34136,6 +35316,16 @@ impl TextDecoder {
 #[cfg_attr(rust_js, rust_js::types = "WebAssembly.Module")]
 pub struct WebAssemblyModule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebAssemblyModule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebAssemblyModule {}
+
 pub mod web_assembly_module {
     use super::*;
 
@@ -34177,6 +35367,16 @@ pub mod web_assembly_module {
 #[cfg_attr(rust_js, rust_js::types = "WebAssembly.Instance")]
 pub struct WebAssemblyInstance(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebAssemblyInstance {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebAssemblyInstance {}
+
 pub mod web_assembly_instance {
     use super::*;
 
@@ -34204,6 +35404,16 @@ impl WebAssemblyInstance {
 #[cfg_attr(rust_js, rust_js::name = "WebAssembly.Memory")]
 #[cfg_attr(rust_js, rust_js::types = "WebAssembly.Memory")]
 pub struct WebAssemblyMemory(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebAssemblyMemory {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebAssemblyMemory {}
 
 pub mod web_assembly_memory {
     use super::*;
@@ -34255,6 +35465,16 @@ impl WebAssemblyMemory {
 /// [`Blob`](https://developer.mozilla.org/docs/Web/API/Blob)
 #[cfg_attr(rust_js, rust_js::types = "Blob")]
 pub struct Blob(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Blob {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Blob {}
 
 pub mod blob {
     use super::*;
@@ -34340,6 +35560,16 @@ impl Blob {
 #[cfg_attr(rust_js, rust_js::types = "File")]
 pub struct File(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for File {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for File {}
+
 impl Deref for File {
     type Target = Blob;
 
@@ -34400,6 +35630,16 @@ impl File {
 /// [`URL`](https://developer.mozilla.org/docs/Web/API/URL)
 #[cfg_attr(rust_js, rust_js::types = "URL")]
 pub struct URL(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for URL {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for URL {}
 
 pub mod url {
     use super::*;
@@ -34645,6 +35885,16 @@ impl URL {
 /// [`Navigator`](https://developer.mozilla.org/docs/Web/API/Navigator)
 #[cfg_attr(rust_js, rust_js::types = "Navigator")]
 pub struct Navigator(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Navigator {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Navigator {}
 
 impl Navigator {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/sendBeacon)
@@ -35041,6 +36291,16 @@ impl Navigator {
 #[cfg_attr(rust_js, rust_js::types = "Clipboard")]
 pub struct Clipboard(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Clipboard {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Clipboard {}
+
 impl Deref for Clipboard {
     type Target = EventTarget;
 
@@ -35101,6 +36361,16 @@ impl Clipboard {
 #[cfg_attr(rust_js, rust_js::types = "ClipboardItem")]
 pub struct ClipboardItem(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ClipboardItem {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ClipboardItem {}
+
 pub mod clipboard_item {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/supports)
@@ -35142,6 +36412,16 @@ impl ClipboardItem {
 /// [`SVGElement`](https://developer.mozilla.org/docs/Web/API/SVGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGElement")]
 pub struct SVGElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGElement {}
 
 impl Deref for SVGElement {
     type Target = Element;
@@ -37106,6 +38386,16 @@ impl SVGElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGGraphicsElement")]
 pub struct SVGGraphicsElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGGraphicsElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGGraphicsElement {}
+
 impl Deref for SVGGraphicsElement {
     type Target = SVGElement;
 
@@ -37184,6 +38474,16 @@ impl SVGGraphicsElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGGeometryElement")]
 pub struct SVGGeometryElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGGeometryElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGGeometryElement {}
+
 impl Deref for SVGGeometryElement {
     type Target = SVGGraphicsElement;
 
@@ -37251,6 +38551,16 @@ impl SVGGeometryElement {
 /// [`SVGSVGElement`](https://developer.mozilla.org/docs/Web/API/SVGSVGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSVGElement")]
 pub struct SVGSVGElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGSVGElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGSVGElement {}
 
 impl Deref for SVGSVGElement {
     type Target = SVGGraphicsElement;
@@ -37905,6 +39215,16 @@ impl SVGSVGElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGGElement")]
 pub struct SVGGElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGGElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGGElement {}
+
 impl Deref for SVGGElement {
     type Target = SVGGraphicsElement;
 
@@ -37930,6 +39250,16 @@ pub mod svgg_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGDefsElement")]
 pub struct SVGDefsElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGDefsElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGDefsElement {}
+
 impl Deref for SVGDefsElement {
     type Target = SVGGraphicsElement;
 
@@ -37954,6 +39284,16 @@ pub mod svg_defs_element {
 /// [`SVGSymbolElement`](https://developer.mozilla.org/docs/Web/API/SVGSymbolElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSymbolElement")]
 pub struct SVGSymbolElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGSymbolElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGSymbolElement {}
 
 impl Deref for SVGSymbolElement {
     type Target = SVGGraphicsElement;
@@ -37998,6 +39338,16 @@ impl SVGSymbolElement {
 /// [`SVGUseElement`](https://developer.mozilla.org/docs/Web/API/SVGUseElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGUseElement")]
 pub struct SVGUseElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGUseElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGUseElement {}
 
 impl Deref for SVGUseElement {
     type Target = SVGGraphicsElement;
@@ -38067,6 +39417,16 @@ impl SVGUseElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGSwitchElement")]
 pub struct SVGSwitchElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGSwitchElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGSwitchElement {}
+
 impl Deref for SVGSwitchElement {
     type Target = SVGGraphicsElement;
 
@@ -38091,6 +39451,16 @@ pub mod svg_switch_element {
 /// [`SVGTitleElement`](https://developer.mozilla.org/docs/Web/API/SVGTitleElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTitleElement")]
 pub struct SVGTitleElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGTitleElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTitleElement {}
 
 impl Deref for SVGTitleElement {
     type Target = SVGElement;
@@ -38117,6 +39487,16 @@ pub mod svg_title_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGDescElement")]
 pub struct SVGDescElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGDescElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGDescElement {}
+
 impl Deref for SVGDescElement {
     type Target = SVGElement;
 
@@ -38142,6 +39522,16 @@ pub mod svg_desc_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGMetadataElement")]
 pub struct SVGMetadataElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGMetadataElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGMetadataElement {}
+
 impl Deref for SVGMetadataElement {
     type Target = SVGElement;
 
@@ -38166,6 +39556,16 @@ pub mod svg_metadata_element {
 /// [`SVGStyleElement`](https://developer.mozilla.org/docs/Web/API/SVGStyleElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGStyleElement")]
 pub struct SVGStyleElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGStyleElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGStyleElement {}
 
 impl Deref for SVGStyleElement {
     type Target = SVGElement;
@@ -38268,6 +39668,16 @@ impl SVGStyleElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGScriptElement")]
 pub struct SVGScriptElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGScriptElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGScriptElement {}
+
 impl Deref for SVGScriptElement {
     type Target = SVGElement;
 
@@ -38338,6 +39748,16 @@ impl SVGScriptElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGPathElement")]
 pub struct SVGPathElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGPathElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPathElement {}
+
 impl Deref for SVGPathElement {
     type Target = SVGGeometryElement;
 
@@ -38389,6 +39809,16 @@ impl SVGPathElement {
 /// [`SVGRectElement`](https://developer.mozilla.org/docs/Web/API/SVGRectElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGRectElement")]
 pub struct SVGRectElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGRectElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGRectElement {}
 
 impl Deref for SVGRectElement {
     type Target = SVGGeometryElement;
@@ -38466,6 +39896,16 @@ impl SVGRectElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGCircleElement")]
 pub struct SVGCircleElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGCircleElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGCircleElement {}
+
 impl Deref for SVGCircleElement {
     type Target = SVGGeometryElement;
 
@@ -38517,6 +39957,16 @@ impl SVGCircleElement {
 /// [`SVGEllipseElement`](https://developer.mozilla.org/docs/Web/API/SVGEllipseElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGEllipseElement")]
 pub struct SVGEllipseElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGEllipseElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGEllipseElement {}
 
 impl Deref for SVGEllipseElement {
     type Target = SVGGeometryElement;
@@ -38578,6 +40028,16 @@ impl SVGEllipseElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGLineElement")]
 pub struct SVGLineElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGLineElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGLineElement {}
+
 impl Deref for SVGLineElement {
     type Target = SVGGeometryElement;
 
@@ -38638,6 +40098,16 @@ impl SVGLineElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGPolylineElement")]
 pub struct SVGPolylineElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGPolylineElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPolylineElement {}
+
 impl Deref for SVGPolylineElement {
     type Target = SVGGeometryElement;
 
@@ -38682,6 +40152,16 @@ impl SVGPolylineElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGPolygonElement")]
 pub struct SVGPolygonElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGPolygonElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPolygonElement {}
+
 impl Deref for SVGPolygonElement {
     type Target = SVGGeometryElement;
 
@@ -38725,6 +40205,16 @@ impl SVGPolygonElement {
 /// [`SVGTextContentElement`](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextContentElement")]
 pub struct SVGTextContentElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGTextContentElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTextContentElement {}
 
 impl Deref for SVGTextContentElement {
     type Target = SVGGraphicsElement;
@@ -38854,6 +40344,16 @@ impl SVGTextContentElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGTextPositioningElement")]
 pub struct SVGTextPositioningElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGTextPositioningElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTextPositioningElement {}
+
 impl Deref for SVGTextPositioningElement {
     type Target = SVGTextContentElement;
 
@@ -38922,6 +40422,16 @@ impl SVGTextPositioningElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGTextElement")]
 pub struct SVGTextElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGTextElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTextElement {}
+
 impl Deref for SVGTextElement {
     type Target = SVGTextPositioningElement;
 
@@ -38947,6 +40457,16 @@ pub mod svg_text_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGTSpanElement")]
 pub struct SVGTSpanElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGTSpanElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTSpanElement {}
+
 impl Deref for SVGTSpanElement {
     type Target = SVGTextPositioningElement;
 
@@ -38971,6 +40491,16 @@ pub mod svgt_span_element {
 /// [`SVGTextPathElement`](https://developer.mozilla.org/docs/Web/API/SVGTextPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGTextPathElement")]
 pub struct SVGTextPathElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGTextPathElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTextPathElement {}
 
 impl Deref for SVGTextPathElement {
     type Target = SVGTextContentElement;
@@ -39049,6 +40579,16 @@ impl SVGTextPathElement {
 /// [`SVGImageElement`](https://developer.mozilla.org/docs/Web/API/SVGImageElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGImageElement")]
 pub struct SVGImageElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGImageElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGImageElement {}
 
 impl Deref for SVGImageElement {
     type Target = SVGGraphicsElement;
@@ -39144,6 +40684,16 @@ impl SVGImageElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGForeignObjectElement")]
 pub struct SVGForeignObjectElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGForeignObjectElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGForeignObjectElement {}
+
 impl Deref for SVGForeignObjectElement {
     type Target = SVGGraphicsElement;
 
@@ -39203,6 +40753,16 @@ impl SVGForeignObjectElement {
 /// [`SVGMarkerElement`](https://developer.mozilla.org/docs/Web/API/SVGMarkerElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMarkerElement")]
 pub struct SVGMarkerElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGMarkerElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGMarkerElement {}
 
 impl Deref for SVGMarkerElement {
     type Target = SVGElement;
@@ -39359,6 +40919,16 @@ impl SVGMarkerElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGGradientElement")]
 pub struct SVGGradientElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGGradientElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGGradientElement {}
+
 impl Deref for SVGGradientElement {
     type Target = SVGElement;
 
@@ -39431,6 +41001,16 @@ impl SVGGradientElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGLinearGradientElement")]
 pub struct SVGLinearGradientElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGLinearGradientElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGLinearGradientElement {}
+
 impl Deref for SVGLinearGradientElement {
     type Target = SVGGradientElement;
 
@@ -39490,6 +41070,16 @@ impl SVGLinearGradientElement {
 /// [`SVGRadialGradientElement`](https://developer.mozilla.org/docs/Web/API/SVGRadialGradientElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGRadialGradientElement")]
 pub struct SVGRadialGradientElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGRadialGradientElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGRadialGradientElement {}
 
 impl Deref for SVGRadialGradientElement {
     type Target = SVGGradientElement;
@@ -39567,6 +41157,16 @@ impl SVGRadialGradientElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGStopElement")]
 pub struct SVGStopElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGStopElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGStopElement {}
+
 impl Deref for SVGStopElement {
     type Target = SVGElement;
 
@@ -39602,6 +41202,16 @@ impl SVGStopElement {
 /// [`SVGPatternElement`](https://developer.mozilla.org/docs/Web/API/SVGPatternElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGPatternElement")]
 pub struct SVGPatternElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGPatternElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPatternElement {}
 
 impl Deref for SVGPatternElement {
     type Target = SVGElement;
@@ -39710,6 +41320,16 @@ impl SVGPatternElement {
 /// [`SVGAElement`](https://developer.mozilla.org/docs/Web/API/SVGAElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAElement")]
 pub struct SVGAElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAElement {}
 
 impl Deref for SVGAElement {
     type Target = SVGGraphicsElement;
@@ -40011,6 +41631,16 @@ impl SVGAElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGViewElement")]
 pub struct SVGViewElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGViewElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGViewElement {}
+
 impl Deref for SVGViewElement {
     type Target = SVGElement;
 
@@ -40054,6 +41684,16 @@ impl SVGViewElement {
 /// [`SVGAnimationElement`](https://developer.mozilla.org/docs/Web/API/SVGAnimationElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimationElement")]
 pub struct SVGAnimationElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimationElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimationElement {}
 
 impl Deref for SVGAnimationElement {
     type Target = SVGElement;
@@ -40222,6 +41862,16 @@ impl SVGAnimationElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateElement")]
 pub struct SVGAnimateElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimateElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimateElement {}
+
 impl Deref for SVGAnimateElement {
     type Target = SVGAnimationElement;
 
@@ -40246,6 +41896,16 @@ pub mod svg_animate_element {
 /// [`SVGSetElement`](https://developer.mozilla.org/docs/Web/API/SVGSetElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGSetElement")]
 pub struct SVGSetElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGSetElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGSetElement {}
 
 impl Deref for SVGSetElement {
     type Target = SVGAnimationElement;
@@ -40272,6 +41932,16 @@ pub mod svg_set_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateMotionElement")]
 pub struct SVGAnimateMotionElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimateMotionElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimateMotionElement {}
+
 impl Deref for SVGAnimateMotionElement {
     type Target = SVGAnimationElement;
 
@@ -40296,6 +41966,16 @@ pub mod svg_animate_motion_element {
 /// [`SVGMPathElement`](https://developer.mozilla.org/docs/Web/API/SVGMPathElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMPathElement")]
 pub struct SVGMPathElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGMPathElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGMPathElement {}
 
 impl Deref for SVGMPathElement {
     type Target = SVGElement;
@@ -40333,6 +42013,16 @@ impl SVGMPathElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimateTransformElement")]
 pub struct SVGAnimateTransformElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimateTransformElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimateTransformElement {}
+
 impl Deref for SVGAnimateTransformElement {
     type Target = SVGAnimationElement;
 
@@ -40357,6 +42047,16 @@ pub mod svg_animate_transform_element {
 /// [`SVGFilterElement`](https://developer.mozilla.org/docs/Web/API/SVGFilterElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFilterElement")]
 pub struct SVGFilterElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFilterElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFilterElement {}
 
 impl Deref for SVGFilterElement {
     type Target = SVGElement;
@@ -40433,6 +42133,16 @@ impl SVGFilterElement {
 /// [`SVGFEBlendElement`](https://developer.mozilla.org/docs/Web/API/SVGFEBlendElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEBlendElement")]
 pub struct SVGFEBlendElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEBlendElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEBlendElement {}
 
 impl Deref for SVGFEBlendElement {
     type Target = SVGElement;
@@ -40577,6 +42287,16 @@ impl SVGFEBlendElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEColorMatrixElement")]
 pub struct SVGFEColorMatrixElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEColorMatrixElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEColorMatrixElement {}
+
 impl Deref for SVGFEColorMatrixElement {
     type Target = SVGElement;
 
@@ -40684,6 +42404,16 @@ impl SVGFEColorMatrixElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEComponentTransferElement")]
 pub struct SVGFEComponentTransferElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEComponentTransferElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEComponentTransferElement {}
+
 impl Deref for SVGFEComponentTransferElement {
     type Target = SVGElement;
 
@@ -40759,6 +42489,16 @@ impl SVGFEComponentTransferElement {
 /// [`SVGComponentTransferFunctionElement`](https://developer.mozilla.org/docs/Web/API/SVGComponentTransferFunctionElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGComponentTransferFunctionElement")]
 pub struct SVGComponentTransferFunctionElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGComponentTransferFunctionElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGComponentTransferFunctionElement {}
 
 impl Deref for SVGComponentTransferFunctionElement {
     type Target = SVGElement;
@@ -40862,6 +42602,16 @@ impl SVGComponentTransferFunctionElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncRElement")]
 pub struct SVGFEFuncRElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEFuncRElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEFuncRElement {}
+
 impl Deref for SVGFEFuncRElement {
     type Target = SVGComponentTransferFunctionElement;
 
@@ -40886,6 +42636,16 @@ pub mod svgfe_func_r_element {
 /// [`SVGFEFuncGElement`](https://developer.mozilla.org/docs/Web/API/SVGFEFuncGElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncGElement")]
 pub struct SVGFEFuncGElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEFuncGElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEFuncGElement {}
 
 impl Deref for SVGFEFuncGElement {
     type Target = SVGComponentTransferFunctionElement;
@@ -40912,6 +42672,16 @@ pub mod svgfe_func_g_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncBElement")]
 pub struct SVGFEFuncBElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEFuncBElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEFuncBElement {}
+
 impl Deref for SVGFEFuncBElement {
     type Target = SVGComponentTransferFunctionElement;
 
@@ -40937,6 +42707,16 @@ pub mod svgfe_func_b_element {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFuncAElement")]
 pub struct SVGFEFuncAElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEFuncAElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEFuncAElement {}
+
 impl Deref for SVGFEFuncAElement {
     type Target = SVGComponentTransferFunctionElement;
 
@@ -40961,6 +42741,16 @@ pub mod svgfe_func_a_element {
 /// [`SVGFECompositeElement`](https://developer.mozilla.org/docs/Web/API/SVGFECompositeElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFECompositeElement")]
 pub struct SVGFECompositeElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFECompositeElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFECompositeElement {}
 
 impl Deref for SVGFECompositeElement {
     type Target = SVGElement;
@@ -41106,6 +42896,16 @@ impl SVGFECompositeElement {
 /// [`SVGFEConvolveMatrixElement`](https://developer.mozilla.org/docs/Web/API/SVGFEConvolveMatrixElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEConvolveMatrixElement")]
 pub struct SVGFEConvolveMatrixElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEConvolveMatrixElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEConvolveMatrixElement {}
 
 impl Deref for SVGFEConvolveMatrixElement {
     type Target = SVGElement;
@@ -41283,6 +43083,16 @@ impl SVGFEConvolveMatrixElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDiffuseLightingElement")]
 pub struct SVGFEDiffuseLightingElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEDiffuseLightingElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEDiffuseLightingElement {}
+
 impl Deref for SVGFEDiffuseLightingElement {
     type Target = SVGElement;
 
@@ -41390,6 +43200,16 @@ impl SVGFEDiffuseLightingElement {
 /// [`SVGFEDisplacementMapElement`](https://developer.mozilla.org/docs/Web/API/SVGFEDisplacementMapElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDisplacementMapElement")]
 pub struct SVGFEDisplacementMapElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEDisplacementMapElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEDisplacementMapElement {}
 
 impl Deref for SVGFEDisplacementMapElement {
     type Target = SVGElement;
@@ -41514,6 +43334,16 @@ impl SVGFEDisplacementMapElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDropShadowElement")]
 pub struct SVGFEDropShadowElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEDropShadowElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEDropShadowElement {}
+
 impl Deref for SVGFEDropShadowElement {
     type Target = SVGElement;
 
@@ -41631,6 +43461,16 @@ impl SVGFEDropShadowElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEFloodElement")]
 pub struct SVGFEFloodElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEFloodElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEFloodElement {}
+
 impl Deref for SVGFEFloodElement {
     type Target = SVGElement;
 
@@ -41698,6 +43538,16 @@ impl SVGFEFloodElement {
 /// [`SVGFEGaussianBlurElement`](https://developer.mozilla.org/docs/Web/API/SVGFEGaussianBlurElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEGaussianBlurElement")]
 pub struct SVGFEGaussianBlurElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEGaussianBlurElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEGaussianBlurElement {}
 
 impl Deref for SVGFEGaussianBlurElement {
     type Target = SVGElement;
@@ -41820,6 +43670,16 @@ impl SVGFEGaussianBlurElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEImageElement")]
 pub struct SVGFEImageElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEImageElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEImageElement {}
+
 impl Deref for SVGFEImageElement {
     type Target = SVGElement;
 
@@ -41912,6 +43772,16 @@ impl SVGFEImageElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMergeElement")]
 pub struct SVGFEMergeElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEMergeElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEMergeElement {}
+
 impl Deref for SVGFEMergeElement {
     type Target = SVGElement;
 
@@ -41980,6 +43850,16 @@ impl SVGFEMergeElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMergeNodeElement")]
 pub struct SVGFEMergeNodeElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEMergeNodeElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEMergeNodeElement {}
+
 impl Deref for SVGFEMergeNodeElement {
     type Target = SVGElement;
 
@@ -42015,6 +43895,16 @@ impl SVGFEMergeNodeElement {
 /// [`SVGFEMorphologyElement`](https://developer.mozilla.org/docs/Web/API/SVGFEMorphologyElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEMorphologyElement")]
 pub struct SVGFEMorphologyElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEMorphologyElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEMorphologyElement {}
 
 impl Deref for SVGFEMorphologyElement {
     type Target = SVGElement;
@@ -42125,6 +44015,16 @@ impl SVGFEMorphologyElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEOffsetElement")]
 pub struct SVGFEOffsetElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEOffsetElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEOffsetElement {}
+
 impl Deref for SVGFEOffsetElement {
     type Target = SVGElement;
 
@@ -42216,6 +44116,16 @@ impl SVGFEOffsetElement {
 /// [`SVGFESpecularLightingElement`](https://developer.mozilla.org/docs/Web/API/SVGFESpecularLightingElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFESpecularLightingElement")]
 pub struct SVGFESpecularLightingElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFESpecularLightingElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFESpecularLightingElement {}
 
 impl Deref for SVGFESpecularLightingElement {
     type Target = SVGElement;
@@ -42333,6 +44243,16 @@ impl SVGFESpecularLightingElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFETileElement")]
 pub struct SVGFETileElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFETileElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFETileElement {}
+
 impl Deref for SVGFETileElement {
     type Target = SVGElement;
 
@@ -42408,6 +44328,16 @@ impl SVGFETileElement {
 /// [`SVGFETurbulenceElement`](https://developer.mozilla.org/docs/Web/API/SVGFETurbulenceElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFETurbulenceElement")]
 pub struct SVGFETurbulenceElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFETurbulenceElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFETurbulenceElement {}
 
 impl Deref for SVGFETurbulenceElement {
     type Target = SVGElement;
@@ -42543,6 +44473,16 @@ impl SVGFETurbulenceElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGFEDistantLightElement")]
 pub struct SVGFEDistantLightElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGFEDistantLightElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEDistantLightElement {}
+
 impl Deref for SVGFEDistantLightElement {
     type Target = SVGElement;
 
@@ -42586,6 +44526,16 @@ impl SVGFEDistantLightElement {
 /// [`SVGFEPointLightElement`](https://developer.mozilla.org/docs/Web/API/SVGFEPointLightElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFEPointLightElement")]
 pub struct SVGFEPointLightElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFEPointLightElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFEPointLightElement {}
 
 impl Deref for SVGFEPointLightElement {
     type Target = SVGElement;
@@ -42638,6 +44588,16 @@ impl SVGFEPointLightElement {
 /// [`SVGFESpotLightElement`](https://developer.mozilla.org/docs/Web/API/SVGFESpotLightElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGFESpotLightElement")]
 pub struct SVGFESpotLightElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGFESpotLightElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGFESpotLightElement {}
 
 impl Deref for SVGFESpotLightElement {
     type Target = SVGElement;
@@ -42731,6 +44691,16 @@ impl SVGFESpotLightElement {
 #[cfg_attr(rust_js, rust_js::types = "SVGClipPathElement")]
 pub struct SVGClipPathElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGClipPathElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGClipPathElement {}
+
 impl Deref for SVGClipPathElement {
     type Target = SVGElement;
 
@@ -42774,6 +44744,16 @@ impl SVGClipPathElement {
 /// [`SVGMaskElement`](https://developer.mozilla.org/docs/Web/API/SVGMaskElement)
 #[cfg_attr(rust_js, rust_js::types = "SVGMaskElement")]
 pub struct SVGMaskElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGMaskElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGMaskElement {}
 
 impl Deref for SVGMaskElement {
     type Target = SVGElement;
@@ -42851,6 +44831,16 @@ impl SVGMaskElement {
 #[cfg_attr(rust_js, rust_js::types = "AbstractRange")]
 pub struct AbstractRange(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AbstractRange {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AbstractRange {}
+
 impl AbstractRange {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbstractRange/startContainer)
     #[cfg_attr(rust_js, rust_js::link_name = "get startContainer")]
@@ -42899,6 +44889,16 @@ impl AbstractRange {
 /// [`AnalyserNode`](https://developer.mozilla.org/docs/Web/API/AnalyserNode)
 #[cfg_attr(rust_js, rust_js::types = "AnalyserNode")]
 pub struct AnalyserNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AnalyserNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AnalyserNode {}
 
 impl Deref for AnalyserNode {
     type Target = AudioNode;
@@ -43045,6 +45045,16 @@ impl AnalyserNode {
 /// [`Animation`](https://developer.mozilla.org/docs/Web/API/Animation)
 #[cfg_attr(rust_js, rust_js::types = "Animation")]
 pub struct Animation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Animation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Animation {}
 
 impl Deref for Animation {
     type Target = EventTarget;
@@ -43359,6 +45369,16 @@ impl Animation {
 #[cfg_attr(rust_js, rust_js::types = "AnimationEffect")]
 pub struct AnimationEffect(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AnimationEffect {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AnimationEffect {}
+
 impl AnimationEffect {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/getTiming)
     #[cfg_attr(rust_js, rust_js::link_name = "getTiming")]
@@ -43390,6 +45410,16 @@ impl AnimationEffect {
 /// [`AnimationPlaybackEvent`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent)
 #[cfg_attr(rust_js, rust_js::types = "AnimationPlaybackEvent")]
 pub struct AnimationPlaybackEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AnimationPlaybackEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AnimationPlaybackEvent {}
 
 impl Deref for AnimationPlaybackEvent {
     type Target = Event;
@@ -43445,6 +45475,16 @@ impl AnimationPlaybackEvent {
 #[cfg_attr(rust_js, rust_js::types = "AnimationTimeline")]
 pub struct AnimationTimeline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AnimationTimeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AnimationTimeline {}
+
 impl AnimationTimeline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationTimeline/currentTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
@@ -43469,6 +45509,16 @@ impl AnimationTimeline {
 /// [`Attr`](https://developer.mozilla.org/docs/Web/API/Attr)
 #[cfg_attr(rust_js, rust_js::types = "Attr")]
 pub struct Attr(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Attr {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Attr {}
 
 impl Deref for Attr {
     type Target = Node;
@@ -43565,6 +45615,16 @@ impl Attr {
 #[cfg_attr(rust_js, rust_js::types = "AudioBuffer")]
 pub struct AudioBuffer(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioBuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioBuffer {}
+
 pub mod audio_buffer {
     use super::*;
 
@@ -43643,6 +45703,16 @@ impl AudioBuffer {
 /// [`AudioBufferSourceNode`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode)
 #[cfg_attr(rust_js, rust_js::types = "AudioBufferSourceNode")]
 pub struct AudioBufferSourceNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioBufferSourceNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioBufferSourceNode {}
 
 impl Deref for AudioBufferSourceNode {
     type Target = AudioScheduledSourceNode;
@@ -43762,6 +45832,16 @@ impl AudioBufferSourceNode {
 #[cfg_attr(rust_js, rust_js::types = "AudioContext")]
 pub struct AudioContext(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioContext {}
+
 impl Deref for AudioContext {
     type Target = BaseAudioContext;
 
@@ -43870,6 +45950,16 @@ impl AudioContext {
 #[cfg_attr(rust_js, rust_js::types = "AudioData")]
 pub struct AudioData(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioData {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioData {}
+
 pub mod audio_data {
     use super::*;
 
@@ -43976,6 +46066,16 @@ impl AudioData {
 /// [`AudioDecoder`](https://developer.mozilla.org/docs/Web/API/AudioDecoder)
 #[cfg_attr(rust_js, rust_js::types = "AudioDecoder")]
 pub struct AudioDecoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioDecoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioDecoder {}
 
 impl Deref for AudioDecoder {
     type Target = EventTarget;
@@ -44100,6 +46200,16 @@ impl AudioDecoder {
 #[cfg_attr(rust_js, rust_js::types = "AudioDestinationNode")]
 pub struct AudioDestinationNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioDestinationNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioDestinationNode {}
+
 impl Deref for AudioDestinationNode {
     type Target = AudioNode;
 
@@ -44136,6 +46246,16 @@ impl AudioDestinationNode {
 /// [`AudioEncoder`](https://developer.mozilla.org/docs/Web/API/AudioEncoder)
 #[cfg_attr(rust_js, rust_js::types = "AudioEncoder")]
 pub struct AudioEncoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioEncoder {}
 
 impl Deref for AudioEncoder {
     type Target = EventTarget;
@@ -44260,6 +46380,16 @@ impl AudioEncoder {
 #[cfg_attr(rust_js, rust_js::types = "AudioListener")]
 pub struct AudioListener(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioListener {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioListener {}
+
 impl AudioListener {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioListener/positionX)
     #[cfg_attr(rust_js, rust_js::link_name = "get positionX")]
@@ -44356,6 +46486,16 @@ impl AudioListener {
 /// [`AudioNode`](https://developer.mozilla.org/docs/Web/API/AudioNode)
 #[cfg_attr(rust_js, rust_js::types = "AudioNode")]
 pub struct AudioNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioNode {}
 
 impl Deref for AudioNode {
     type Target = EventTarget;
@@ -44504,6 +46644,16 @@ impl AudioNode {
 #[cfg_attr(rust_js, rust_js::types = "AudioParam")]
 pub struct AudioParam(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioParam {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioParam {}
+
 impl AudioParam {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParam/value)
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
@@ -44623,6 +46773,16 @@ impl AudioParam {
 #[cfg_attr(rust_js, rust_js::types = "AudioParamMap")]
 pub struct AudioParamMap(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioParamMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioParamMap {}
+
 impl AudioParamMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -44687,6 +46847,16 @@ impl AudioParamMap {
 #[cfg_attr(rust_js, rust_js::types = "AudioProcessingEvent")]
 pub struct AudioProcessingEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioProcessingEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioProcessingEvent {}
+
 impl Deref for AudioProcessingEvent {
     type Target = Event;
 
@@ -44746,6 +46916,16 @@ impl AudioProcessingEvent {
 /// [`AudioScheduledSourceNode`](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode)
 #[cfg_attr(rust_js, rust_js::types = "AudioScheduledSourceNode")]
 pub struct AudioScheduledSourceNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioScheduledSourceNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioScheduledSourceNode {}
 
 impl Deref for AudioScheduledSourceNode {
     type Target = AudioNode;
@@ -44811,6 +46991,16 @@ impl AudioScheduledSourceNode {
 #[cfg_attr(rust_js, rust_js::types = "AudioWorklet")]
 pub struct AudioWorklet(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AudioWorklet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioWorklet {}
+
 impl Deref for AudioWorklet {
     type Target = Worklet;
 
@@ -44835,6 +47025,16 @@ pub mod audio_worklet {
 /// [`AudioWorkletNode`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode)
 #[cfg_attr(rust_js, rust_js::types = "AudioWorkletNode")]
 pub struct AudioWorkletNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AudioWorkletNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AudioWorkletNode {}
 
 impl Deref for AudioWorkletNode {
     type Target = AudioNode;
@@ -44906,6 +47106,16 @@ impl AudioWorkletNode {
 #[cfg_attr(rust_js, rust_js::types = "AuthenticatorAssertionResponse")]
 pub struct AuthenticatorAssertionResponse(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AuthenticatorAssertionResponse {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AuthenticatorAssertionResponse {}
+
 impl Deref for AuthenticatorAssertionResponse {
     type Target = AuthenticatorResponse;
 
@@ -44958,6 +47168,16 @@ impl AuthenticatorAssertionResponse {
 /// [`AuthenticatorAttestationResponse`](https://developer.mozilla.org/docs/Web/API/AuthenticatorAttestationResponse)
 #[cfg_attr(rust_js, rust_js::types = "AuthenticatorAttestationResponse")]
 pub struct AuthenticatorAttestationResponse(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for AuthenticatorAttestationResponse {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AuthenticatorAttestationResponse {}
 
 impl Deref for AuthenticatorAttestationResponse {
     type Target = AuthenticatorResponse;
@@ -45029,6 +47249,16 @@ impl AuthenticatorAttestationResponse {
 #[cfg_attr(rust_js, rust_js::types = "AuthenticatorResponse")]
 pub struct AuthenticatorResponse(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for AuthenticatorResponse {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for AuthenticatorResponse {}
+
 impl AuthenticatorResponse {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AuthenticatorResponse/clientDataJSON)
     #[cfg_attr(rust_js, rust_js::link_name = "get clientDataJSON")]
@@ -45044,6 +47274,16 @@ impl AuthenticatorResponse {
 #[cfg_attr(rust_js, rust_js::types = "BarProp")]
 pub struct BarProp(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for BarProp {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BarProp {}
+
 impl BarProp {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BarProp/visible)
     #[cfg_attr(rust_js, rust_js::link_name = "get visible")]
@@ -45058,6 +47298,16 @@ impl BarProp {
 /// [`BaseAudioContext`](https://developer.mozilla.org/docs/Web/API/BaseAudioContext)
 #[cfg_attr(rust_js, rust_js::types = "BaseAudioContext")]
 pub struct BaseAudioContext(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for BaseAudioContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BaseAudioContext {}
 
 impl Deref for BaseAudioContext {
     type Target = EventTarget;
@@ -45305,6 +47555,16 @@ impl BaseAudioContext {
 #[cfg_attr(rust_js, rust_js::types = "BeforeUnloadEvent")]
 pub struct BeforeUnloadEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for BeforeUnloadEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BeforeUnloadEvent {}
+
 impl Deref for BeforeUnloadEvent {
     type Target = Event;
 
@@ -45348,6 +47608,16 @@ impl BeforeUnloadEvent {
 /// [`BiquadFilterNode`](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode)
 #[cfg_attr(rust_js, rust_js::types = "BiquadFilterNode")]
 pub struct BiquadFilterNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for BiquadFilterNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BiquadFilterNode {}
 
 impl Deref for BiquadFilterNode {
     type Target = AudioNode;
@@ -45442,6 +47712,16 @@ impl BiquadFilterNode {
 #[cfg_attr(rust_js, rust_js::types = "BlobEvent")]
 pub struct BlobEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for BlobEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BlobEvent {}
+
 impl Deref for BlobEvent {
     type Target = Event;
 
@@ -45493,6 +47773,16 @@ impl BlobEvent {
 /// [`BroadcastChannel`](https://developer.mozilla.org/docs/Web/API/BroadcastChannel)
 #[cfg_attr(rust_js, rust_js::types = "BroadcastChannel")]
 pub struct BroadcastChannel(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for BroadcastChannel {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for BroadcastChannel {}
 
 impl Deref for BroadcastChannel {
     type Target = EventTarget;
@@ -45592,6 +47882,16 @@ impl BroadcastChannel {
 #[cfg_attr(rust_js, rust_js::types = "ByteLengthQueuingStrategy")]
 pub struct ByteLengthQueuingStrategy(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ByteLengthQueuingStrategy {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ByteLengthQueuingStrategy {}
+
 pub mod byte_length_queuing_strategy {
     use super::*;
 
@@ -45627,6 +47927,16 @@ impl ByteLengthQueuingStrategy {
 #[cfg_attr(rust_js, rust_js::types = "CDATASection")]
 pub struct CDATASection(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CDATASection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CDATASection {}
+
 impl Deref for CDATASection {
     type Target = Text;
 
@@ -45651,6 +47961,16 @@ pub mod cdata_section {
 /// [`CSSAnimation`](https://developer.mozilla.org/docs/Web/API/CSSAnimation)
 #[cfg_attr(rust_js, rust_js::types = "CSSAnimation")]
 pub struct CSSAnimation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSAnimation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSAnimation {}
 
 impl Deref for CSSAnimation {
     type Target = Animation;
@@ -45688,6 +48008,16 @@ impl CSSAnimation {
 #[cfg_attr(rust_js, rust_js::types = "CSSConditionRule")]
 pub struct CSSConditionRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSConditionRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSConditionRule {}
+
 impl Deref for CSSConditionRule {
     type Target = CSSGroupingRule;
 
@@ -45723,6 +48053,16 @@ impl CSSConditionRule {
 /// [`CSSContainerRule`](https://developer.mozilla.org/docs/Web/API/CSSContainerRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSContainerRule")]
 pub struct CSSContainerRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSContainerRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSContainerRule {}
 
 impl Deref for CSSContainerRule {
     type Target = CSSConditionRule;
@@ -45775,6 +48115,16 @@ impl CSSContainerRule {
 /// [`CSSCounterStyleRule`](https://developer.mozilla.org/docs/Web/API/CSSCounterStyleRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSCounterStyleRule")]
 pub struct CSSCounterStyleRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSCounterStyleRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSCounterStyleRule {}
 
 impl Deref for CSSCounterStyleRule {
     type Target = CSSRule;
@@ -45980,6 +48330,16 @@ impl CSSCounterStyleRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSFontFaceDescriptors")]
 pub struct CSSFontFaceDescriptors(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSFontFaceDescriptors {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSFontFaceDescriptors {}
+
 impl Deref for CSSFontFaceDescriptors {
     type Target = CSSStyleDeclaration;
 
@@ -46152,6 +48512,16 @@ impl CSSFontFaceDescriptors {
 #[cfg_attr(rust_js, rust_js::types = "CSSFontFaceRule")]
 pub struct CSSFontFaceRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSFontFaceRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSFontFaceRule {}
+
 impl Deref for CSSFontFaceRule {
     type Target = CSSRule;
 
@@ -46176,6 +48546,16 @@ pub mod css_font_face_rule {
 /// [`CSSFontFeatureValuesRule`](https://developer.mozilla.org/docs/Web/API/CSSFontFeatureValuesRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSFontFeatureValuesRule")]
 pub struct CSSFontFeatureValuesRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSFontFeatureValuesRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSFontFeatureValuesRule {}
 
 impl Deref for CSSFontFeatureValuesRule {
     type Target = CSSRule;
@@ -46220,6 +48600,16 @@ impl CSSFontFeatureValuesRule {
 /// [`CSSFontPaletteValuesRule`](https://developer.mozilla.org/docs/Web/API/CSSFontPaletteValuesRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSFontPaletteValuesRule")]
 pub struct CSSFontPaletteValuesRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSFontPaletteValuesRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSFontPaletteValuesRule {}
 
 impl Deref for CSSFontPaletteValuesRule {
     type Target = CSSRule;
@@ -46281,6 +48671,16 @@ impl CSSFontPaletteValuesRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSGroupingRule")]
 pub struct CSSGroupingRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSGroupingRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSGroupingRule {}
+
 impl Deref for CSSGroupingRule {
     type Target = CSSRule;
 
@@ -46335,6 +48735,16 @@ impl CSSGroupingRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSImageValue")]
 pub struct CSSImageValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSImageValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSImageValue {}
+
 impl Deref for CSSImageValue {
     type Target = CSSStyleValue;
 
@@ -46359,6 +48769,16 @@ pub mod css_image_value {
 /// [`CSSImportRule`](https://developer.mozilla.org/docs/Web/API/CSSImportRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSImportRule")]
 pub struct CSSImportRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSImportRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSImportRule {}
 
 impl Deref for CSSImportRule {
     type Target = CSSRule;
@@ -46431,6 +48851,16 @@ impl CSSImportRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSKeyframeRule")]
 pub struct CSSKeyframeRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSKeyframeRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSKeyframeRule {}
+
 impl Deref for CSSKeyframeRule {
     type Target = CSSRule;
 
@@ -46482,6 +48912,16 @@ impl CSSKeyframeRule {
 /// [`CSSKeyframesRule`](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSKeyframesRule")]
 pub struct CSSKeyframesRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSKeyframesRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSKeyframesRule {}
 
 impl Deref for CSSKeyframesRule {
     type Target = CSSRule;
@@ -46591,6 +49031,16 @@ impl CSSKeyframesRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSKeywordValue")]
 pub struct CSSKeywordValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSKeywordValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSKeywordValue {}
+
 impl Deref for CSSKeywordValue {
     type Target = CSSStyleValue;
 
@@ -46643,6 +49093,16 @@ impl CSSKeywordValue {
 #[cfg_attr(rust_js, rust_js::types = "CSSLayerBlockRule")]
 pub struct CSSLayerBlockRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSLayerBlockRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSLayerBlockRule {}
+
 impl Deref for CSSLayerBlockRule {
     type Target = CSSGroupingRule;
 
@@ -46679,6 +49139,16 @@ impl CSSLayerBlockRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSLayerStatementRule")]
 pub struct CSSLayerStatementRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSLayerStatementRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSLayerStatementRule {}
+
 impl Deref for CSSLayerStatementRule {
     type Target = CSSRule;
 
@@ -46714,6 +49184,16 @@ impl CSSLayerStatementRule {
 /// [`CSSMathClamp`](https://developer.mozilla.org/docs/Web/API/CSSMathClamp)
 #[cfg_attr(rust_js, rust_js::types = "CSSMathClamp")]
 pub struct CSSMathClamp(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSMathClamp {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathClamp {}
 
 impl Deref for CSSMathClamp {
     type Target = CSSMathValue;
@@ -46775,6 +49255,16 @@ impl CSSMathClamp {
 #[cfg_attr(rust_js, rust_js::types = "CSSMathInvert")]
 pub struct CSSMathInvert(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMathInvert {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathInvert {}
+
 impl Deref for CSSMathInvert {
     type Target = CSSMathValue;
 
@@ -46818,6 +49308,16 @@ impl CSSMathInvert {
 /// [`CSSMathMax`](https://developer.mozilla.org/docs/Web/API/CSSMathMax)
 #[cfg_attr(rust_js, rust_js::types = "CSSMathMax")]
 pub struct CSSMathMax(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSMathMax {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathMax {}
 
 impl Deref for CSSMathMax {
     type Target = CSSMathValue;
@@ -46864,6 +49364,16 @@ impl CSSMathMax {
 #[cfg_attr(rust_js, rust_js::types = "CSSMathMin")]
 pub struct CSSMathMin(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMathMin {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathMin {}
+
 impl Deref for CSSMathMin {
     type Target = CSSMathValue;
 
@@ -46909,6 +49419,16 @@ impl CSSMathMin {
 #[cfg_attr(rust_js, rust_js::types = "CSSMathNegate")]
 pub struct CSSMathNegate(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMathNegate {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathNegate {}
+
 impl Deref for CSSMathNegate {
     type Target = CSSMathValue;
 
@@ -46952,6 +49472,16 @@ impl CSSMathNegate {
 /// [`CSSMathProduct`](https://developer.mozilla.org/docs/Web/API/CSSMathProduct)
 #[cfg_attr(rust_js, rust_js::types = "CSSMathProduct")]
 pub struct CSSMathProduct(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSMathProduct {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathProduct {}
 
 impl Deref for CSSMathProduct {
     type Target = CSSMathValue;
@@ -46998,6 +49528,16 @@ impl CSSMathProduct {
 #[cfg_attr(rust_js, rust_js::types = "CSSMathSum")]
 pub struct CSSMathSum(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMathSum {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathSum {}
+
 impl Deref for CSSMathSum {
     type Target = CSSMathValue;
 
@@ -47043,6 +49583,16 @@ impl CSSMathSum {
 #[cfg_attr(rust_js, rust_js::types = "CSSMathValue")]
 pub struct CSSMathValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMathValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMathValue {}
+
 impl Deref for CSSMathValue {
     type Target = CSSNumericValue;
 
@@ -47078,6 +49628,16 @@ impl CSSMathValue {
 /// [`CSSMatrixComponent`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent)
 #[cfg_attr(rust_js, rust_js::types = "CSSMatrixComponent")]
 pub struct CSSMatrixComponent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSMatrixComponent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMatrixComponent {}
 
 impl Deref for CSSMatrixComponent {
     type Target = CSSTransformComponent;
@@ -47131,6 +49691,16 @@ impl CSSMatrixComponent {
 #[cfg_attr(rust_js, rust_js::types = "CSSMediaRule")]
 pub struct CSSMediaRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSMediaRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSMediaRule {}
+
 impl Deref for CSSMediaRule {
     type Target = CSSConditionRule;
 
@@ -47155,6 +49725,16 @@ pub mod css_media_rule {
 /// [`CSSNamespaceRule`](https://developer.mozilla.org/docs/Web/API/CSSNamespaceRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSNamespaceRule")]
 pub struct CSSNamespaceRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSNamespaceRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSNamespaceRule {}
 
 impl Deref for CSSNamespaceRule {
     type Target = CSSRule;
@@ -47200,6 +49780,16 @@ impl CSSNamespaceRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSNestedDeclarations")]
 pub struct CSSNestedDeclarations(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSNestedDeclarations {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSNestedDeclarations {}
+
 impl Deref for CSSNestedDeclarations {
     type Target = CSSRule;
 
@@ -47224,6 +49814,16 @@ pub mod css_nested_declarations {
 /// [`CSSNumericArray`](https://developer.mozilla.org/docs/Web/API/CSSNumericArray)
 #[cfg_attr(rust_js, rust_js::types = "CSSNumericArray")]
 pub struct CSSNumericArray(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSNumericArray {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSNumericArray {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for CSSNumericArray {
@@ -47297,6 +49897,16 @@ impl CSSNumericArray {
 /// [`CSSNumericValue`](https://developer.mozilla.org/docs/Web/API/CSSNumericValue)
 #[cfg_attr(rust_js, rust_js::types = "CSSNumericValue")]
 pub struct CSSNumericValue(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSNumericValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSNumericValue {}
 
 impl Deref for CSSNumericValue {
     type Target = CSSStyleValue;
@@ -47421,6 +50031,16 @@ impl CSSNumericValue {
 /// [`CSSPageDescriptors`](https://developer.mozilla.org/docs/Web/API/CSSPageDescriptors)
 #[cfg_attr(rust_js, rust_js::types = "CSSPageDescriptors")]
 pub struct CSSPageDescriptors(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSPageDescriptors {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPageDescriptors {}
 
 impl Deref for CSSPageDescriptors {
     type Target = CSSStyleDeclaration;
@@ -47594,6 +50214,16 @@ impl CSSPageDescriptors {
 #[cfg_attr(rust_js, rust_js::types = "CSSPageRule")]
 pub struct CSSPageRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSPageRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPageRule {}
+
 impl Deref for CSSPageRule {
     type Target = CSSGroupingRule;
 
@@ -47646,6 +50276,16 @@ impl CSSPageRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSPerspective")]
 pub struct CSSPerspective(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSPerspective {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPerspective {}
+
 impl Deref for CSSPerspective {
     type Target = CSSTransformComponent;
 
@@ -47697,6 +50337,16 @@ impl CSSPerspective {
 /// [`CSSPositionTryDescriptors`](https://developer.mozilla.org/docs/Web/API/CSSPositionTryDescriptors)
 #[cfg_attr(rust_js, rust_js::types = "CSSPositionTryDescriptors")]
 pub struct CSSPositionTryDescriptors(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSPositionTryDescriptors {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPositionTryDescriptors {}
 
 impl Deref for CSSPositionTryDescriptors {
     type Target = CSSStyleDeclaration;
@@ -48350,6 +51000,16 @@ impl CSSPositionTryDescriptors {
 #[cfg_attr(rust_js, rust_js::types = "CSSPositionTryRule")]
 pub struct CSSPositionTryRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSPositionTryRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPositionTryRule {}
+
 impl Deref for CSSPositionTryRule {
     type Target = CSSRule;
 
@@ -48385,6 +51045,16 @@ impl CSSPositionTryRule {
 /// [`CSSPropertyRule`](https://developer.mozilla.org/docs/Web/API/CSSPropertyRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSPropertyRule")]
 pub struct CSSPropertyRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSPropertyRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSPropertyRule {}
 
 impl Deref for CSSPropertyRule {
     type Target = CSSRule;
@@ -48446,6 +51116,16 @@ impl CSSPropertyRule {
 /// [`CSSRotate`](https://developer.mozilla.org/docs/Web/API/CSSRotate)
 #[cfg_attr(rust_js, rust_js::types = "CSSRotate")]
 pub struct CSSRotate(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSRotate {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSRotate {}
 
 impl Deref for CSSRotate {
     type Target = CSSTransformComponent;
@@ -48547,6 +51227,16 @@ impl CSSRotate {
 #[cfg_attr(rust_js, rust_js::types = "CSSRule")]
 pub struct CSSRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSRule {}
+
 pub mod css_rule {
 
     /// `CSSRule.KEYFRAMES_RULE`
@@ -48639,6 +51329,16 @@ impl CSSRule {
 #[cfg_attr(rust_js, rust_js::types = "CSSRuleList")]
 pub struct CSSRuleList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSRuleList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSRuleList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for CSSRuleList {
     type Output = CSSRule;
@@ -48687,6 +51387,16 @@ impl CSSRuleList {
 /// [`CSSScale`](https://developer.mozilla.org/docs/Web/API/CSSScale)
 #[cfg_attr(rust_js, rust_js::types = "CSSScale")]
 pub struct CSSScale(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSScale {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSScale {}
 
 impl Deref for CSSScale {
     type Target = CSSTransformComponent;
@@ -48772,6 +51482,16 @@ impl CSSScale {
 #[cfg_attr(rust_js, rust_js::types = "CSSScopeRule")]
 pub struct CSSScopeRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSScopeRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSScopeRule {}
+
 impl Deref for CSSScopeRule {
     type Target = CSSGroupingRule;
 
@@ -48817,6 +51537,16 @@ impl CSSScopeRule {
 /// [`CSSSkew`](https://developer.mozilla.org/docs/Web/API/CSSSkew)
 #[cfg_attr(rust_js, rust_js::types = "CSSSkew")]
 pub struct CSSSkew(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSSkew {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSSkew {}
 
 impl Deref for CSSSkew {
     type Target = CSSTransformComponent;
@@ -48886,6 +51616,16 @@ impl CSSSkew {
 #[cfg_attr(rust_js, rust_js::types = "CSSSkewX")]
 pub struct CSSSkewX(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSSkewX {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSSkewX {}
+
 impl Deref for CSSSkewX {
     type Target = CSSTransformComponent;
 
@@ -48937,6 +51677,16 @@ impl CSSSkewX {
 /// [`CSSSkewY`](https://developer.mozilla.org/docs/Web/API/CSSSkewY)
 #[cfg_attr(rust_js, rust_js::types = "CSSSkewY")]
 pub struct CSSSkewY(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSSkewY {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSSkewY {}
 
 impl Deref for CSSSkewY {
     type Target = CSSTransformComponent;
@@ -48990,6 +51740,16 @@ impl CSSSkewY {
 #[cfg_attr(rust_js, rust_js::types = "CSSStartingStyleRule")]
 pub struct CSSStartingStyleRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSStartingStyleRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStartingStyleRule {}
+
 impl Deref for CSSStartingStyleRule {
     type Target = CSSGroupingRule;
 
@@ -49014,6 +51774,16 @@ pub mod css_starting_style_rule {
 /// [`CSSStyleRule`](https://developer.mozilla.org/docs/Web/API/CSSStyleRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleRule")]
 pub struct CSSStyleRule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSStyleRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStyleRule {}
 
 impl Deref for CSSStyleRule {
     type Target = CSSGroupingRule;
@@ -49074,6 +51844,16 @@ impl CSSStyleRule {
 /// [`CSSStyleSheet`](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet)
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleSheet")]
 pub struct CSSStyleSheet(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSStyleSheet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStyleSheet {}
 
 impl Deref for CSSStyleSheet {
     type Target = StyleSheet;
@@ -49193,6 +51973,16 @@ impl CSSStyleSheet {
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleValue")]
 pub struct CSSStyleValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSStyleValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSStyleValue {}
+
 pub mod css_style_value {
     use super::*;
 
@@ -49228,6 +52018,16 @@ impl CSSStyleValue {
 #[cfg_attr(rust_js, rust_js::types = "CSSSupportsRule")]
 pub struct CSSSupportsRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSSupportsRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSSupportsRule {}
+
 impl Deref for CSSSupportsRule {
     type Target = CSSConditionRule;
 
@@ -49252,6 +52052,16 @@ pub mod css_supports_rule {
 /// [`CSSTransformComponent`](https://developer.mozilla.org/docs/Web/API/CSSTransformComponent)
 #[cfg_attr(rust_js, rust_js::types = "CSSTransformComponent")]
 pub struct CSSTransformComponent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSTransformComponent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSTransformComponent {}
 
 impl CSSTransformComponent {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformComponent/toString)
@@ -49291,6 +52101,16 @@ impl CSSTransformComponent {
 /// [`CSSTransformValue`](https://developer.mozilla.org/docs/Web/API/CSSTransformValue)
 #[cfg_attr(rust_js, rust_js::types = "CSSTransformValue")]
 pub struct CSSTransformValue(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSTransformValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSTransformValue {}
 
 impl Deref for CSSTransformValue {
     type Target = CSSStyleValue;
@@ -49406,6 +52226,16 @@ impl CSSTransformValue {
 #[cfg_attr(rust_js, rust_js::types = "CSSTransition")]
 pub struct CSSTransition(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSTransition {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSTransition {}
+
 impl Deref for CSSTransition {
     type Target = Animation;
 
@@ -49441,6 +52271,16 @@ impl CSSTransition {
 /// [`CSSTranslate`](https://developer.mozilla.org/docs/Web/API/CSSTranslate)
 #[cfg_attr(rust_js, rust_js::types = "CSSTranslate")]
 pub struct CSSTranslate(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSTranslate {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSTranslate {}
 
 impl Deref for CSSTranslate {
     type Target = CSSTransformComponent;
@@ -49526,6 +52366,16 @@ impl CSSTranslate {
 #[cfg_attr(rust_js, rust_js::types = "CSSUnitValue")]
 pub struct CSSUnitValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSUnitValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSUnitValue {}
+
 impl Deref for CSSUnitValue {
     type Target = CSSNumericValue;
 
@@ -49585,6 +52435,16 @@ impl CSSUnitValue {
 /// [`CSSUnparsedValue`](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue)
 #[cfg_attr(rust_js, rust_js::types = "CSSUnparsedValue")]
 pub struct CSSUnparsedValue(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CSSUnparsedValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSUnparsedValue {}
 
 impl Deref for CSSUnparsedValue {
     type Target = CSSStyleValue;
@@ -49672,6 +52532,16 @@ impl CSSUnparsedValue {
 #[cfg_attr(rust_js, rust_js::types = "CSSVariableReferenceValue")]
 pub struct CSSVariableReferenceValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSVariableReferenceValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSVariableReferenceValue {}
+
 pub mod css_variable_reference_value {
     use super::*;
 
@@ -49716,6 +52586,16 @@ impl CSSVariableReferenceValue {
 #[cfg_attr(rust_js, rust_js::types = "CSSViewTransitionRule")]
 pub struct CSSViewTransitionRule(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CSSViewTransitionRule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CSSViewTransitionRule {}
+
 impl Deref for CSSViewTransitionRule {
     type Target = CSSRule;
 
@@ -49759,6 +52639,16 @@ impl CSSViewTransitionRule {
 /// [`Cache`](https://developer.mozilla.org/docs/Web/API/Cache)
 #[cfg_attr(rust_js, rust_js::types = "Cache")]
 pub struct Cache(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Cache {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Cache {}
 
 impl Cache {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/match)
@@ -49823,6 +52713,16 @@ impl Cache {
 #[cfg_attr(rust_js, rust_js::types = "CacheStorage")]
 pub struct CacheStorage(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CacheStorage {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CacheStorage {}
+
 impl CacheStorage {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/match)
     #[cfg_attr(rust_js, rust_js::link_name = "match")]
@@ -49870,6 +52770,16 @@ impl CacheStorage {
 #[cfg_attr(rust_js, rust_js::types = "CanvasCaptureMediaStreamTrack")]
 pub struct CanvasCaptureMediaStreamTrack(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CanvasCaptureMediaStreamTrack {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CanvasCaptureMediaStreamTrack {}
+
 impl Deref for CanvasCaptureMediaStreamTrack {
     type Target = MediaStreamTrack;
 
@@ -49915,6 +52825,16 @@ impl CanvasCaptureMediaStreamTrack {
 #[cfg_attr(rust_js, rust_js::types = "CanvasGradient")]
 pub struct CanvasGradient(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CanvasGradient {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CanvasGradient {}
+
 impl CanvasGradient {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasGradient/addColorStop)
     #[cfg_attr(rust_js, rust_js::link_name = "addColorStop")]
@@ -49931,6 +52851,16 @@ impl CanvasGradient {
 #[cfg_attr(rust_js, rust_js::types = "CanvasPattern")]
 pub struct CanvasPattern(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CanvasPattern {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CanvasPattern {}
+
 impl CanvasPattern {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasPattern/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
@@ -49946,6 +52876,16 @@ impl CanvasPattern {
 /// [`CanvasRenderingContext2D`](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D)
 #[cfg_attr(rust_js, rust_js::types = "CanvasRenderingContext2D")]
 pub struct CanvasRenderingContext2D(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CanvasRenderingContext2D {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CanvasRenderingContext2D {}
 
 impl CanvasRenderingContext2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/canvas)
@@ -50848,6 +53788,16 @@ impl CanvasRenderingContext2D {
 #[cfg_attr(rust_js, rust_js::types = "CaretPosition")]
 pub struct CaretPosition(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CaretPosition {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CaretPosition {}
+
 impl CaretPosition {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CaretPosition/offsetNode)
     #[cfg_attr(rust_js, rust_js::link_name = "get offsetNode")]
@@ -50880,6 +53830,16 @@ impl CaretPosition {
 /// [`ChannelMergerNode`](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode)
 #[cfg_attr(rust_js, rust_js::types = "ChannelMergerNode")]
 pub struct ChannelMergerNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ChannelMergerNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ChannelMergerNode {}
 
 impl Deref for ChannelMergerNode {
     type Target = AudioNode;
@@ -50914,6 +53874,16 @@ pub mod channel_merger_node {
 #[cfg_attr(rust_js, rust_js::types = "ChannelSplitterNode")]
 pub struct ChannelSplitterNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ChannelSplitterNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ChannelSplitterNode {}
+
 impl Deref for ChannelSplitterNode {
     type Target = AudioNode;
 
@@ -50946,6 +53916,16 @@ pub mod channel_splitter_node {
 /// [`CloseEvent`](https://developer.mozilla.org/docs/Web/API/CloseEvent)
 #[cfg_attr(rust_js, rust_js::types = "CloseEvent")]
 pub struct CloseEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CloseEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CloseEvent {}
 
 impl Deref for CloseEvent {
     type Target = Event;
@@ -51007,6 +53987,16 @@ impl CloseEvent {
 /// [`CloseWatcher`](https://developer.mozilla.org/docs/Web/API/CloseWatcher)
 #[cfg_attr(rust_js, rust_js::types = "CloseWatcher")]
 pub struct CloseWatcher(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CloseWatcher {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CloseWatcher {}
 
 impl Deref for CloseWatcher {
     type Target = EventTarget;
@@ -51107,6 +54097,16 @@ impl CloseWatcher {
 #[cfg_attr(rust_js, rust_js::types = "CommandEvent")]
 pub struct CommandEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CommandEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CommandEvent {}
+
 impl Deref for CommandEvent {
     type Target = Event;
 
@@ -51160,6 +54160,16 @@ impl CommandEvent {
 #[cfg_attr(rust_js, rust_js::types = "CompressionStream")]
 pub struct CompressionStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CompressionStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CompressionStream {}
+
 pub mod compression_stream {
     use super::*;
 
@@ -51194,6 +54204,16 @@ impl CompressionStream {
 /// [`ConstantSourceNode`](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode)
 #[cfg_attr(rust_js, rust_js::types = "ConstantSourceNode")]
 pub struct ConstantSourceNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ConstantSourceNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ConstantSourceNode {}
 
 impl Deref for ConstantSourceNode {
     type Target = AudioScheduledSourceNode;
@@ -51239,6 +54259,16 @@ impl ConstantSourceNode {
 #[cfg_attr(rust_js, rust_js::types = "ContentVisibilityAutoStateChangeEvent")]
 pub struct ContentVisibilityAutoStateChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ContentVisibilityAutoStateChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ContentVisibilityAutoStateChangeEvent {}
+
 impl Deref for ContentVisibilityAutoStateChangeEvent {
     type Target = Event;
 
@@ -51282,6 +54312,16 @@ impl ContentVisibilityAutoStateChangeEvent {
 /// [`ConvolverNode`](https://developer.mozilla.org/docs/Web/API/ConvolverNode)
 #[cfg_attr(rust_js, rust_js::types = "ConvolverNode")]
 pub struct ConvolverNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ConvolverNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ConvolverNode {}
 
 impl Deref for ConvolverNode {
     type Target = AudioNode;
@@ -51353,6 +54393,16 @@ impl ConvolverNode {
 #[cfg_attr(rust_js, rust_js::types = "CookieChangeEvent")]
 pub struct CookieChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CookieChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CookieChangeEvent {}
+
 impl Deref for CookieChangeEvent {
     type Target = Event;
 
@@ -51404,6 +54454,16 @@ impl CookieChangeEvent {
 /// [`CookieStore`](https://developer.mozilla.org/docs/Web/API/CookieStore)
 #[cfg_attr(rust_js, rust_js::types = "CookieStore")]
 pub struct CookieStore(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CookieStore {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CookieStore {}
 
 impl Deref for CookieStore {
     type Target = EventTarget;
@@ -51499,6 +54559,16 @@ impl CookieStore {
 #[cfg_attr(rust_js, rust_js::types = "CookieStoreManager")]
 pub struct CookieStoreManager(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CookieStoreManager {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CookieStoreManager {}
+
 impl CookieStoreManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStoreManager/subscribe)
     #[cfg_attr(rust_js, rust_js::link_name = "subscribe")]
@@ -51529,6 +54599,16 @@ impl CookieStoreManager {
 /// [`CountQueuingStrategy`](https://developer.mozilla.org/docs/Web/API/CountQueuingStrategy)
 #[cfg_attr(rust_js, rust_js::types = "CountQueuingStrategy")]
 pub struct CountQueuingStrategy(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CountQueuingStrategy {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CountQueuingStrategy {}
 
 pub mod count_queuing_strategy {
     use super::*;
@@ -51565,6 +54645,16 @@ impl CountQueuingStrategy {
 #[cfg_attr(rust_js, rust_js::types = "Credential")]
 pub struct Credential(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Credential {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Credential {}
+
 pub mod credential {
     use super::*;
 
@@ -51599,6 +54689,16 @@ impl Credential {
 /// [`CredentialsContainer`](https://developer.mozilla.org/docs/Web/API/CredentialsContainer)
 #[cfg_attr(rust_js, rust_js::types = "CredentialsContainer")]
 pub struct CredentialsContainer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CredentialsContainer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CredentialsContainer {}
 
 impl CredentialsContainer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CredentialsContainer/get)
@@ -51639,6 +54739,16 @@ impl CredentialsContainer {
 #[cfg_attr(rust_js, rust_js::types = "Crypto")]
 pub struct Crypto(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Crypto {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Crypto {}
+
 impl Crypto {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Crypto/subtle)
     #[cfg_attr(rust_js, rust_js::link_name = "get subtle")]
@@ -51661,6 +54771,16 @@ impl Crypto {
 /// [`CryptoKey`](https://developer.mozilla.org/docs/Web/API/CryptoKey)
 #[cfg_attr(rust_js, rust_js::types = "CryptoKey")]
 pub struct CryptoKey(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CryptoKey {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CryptoKey {}
 
 impl CryptoKey {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CryptoKey/type)
@@ -51700,6 +54820,16 @@ impl CryptoKey {
 /// [`CustomElementRegistry`](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry)
 #[cfg_attr(rust_js, rust_js::types = "CustomElementRegistry")]
 pub struct CustomElementRegistry(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CustomElementRegistry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CustomElementRegistry {}
 
 pub mod custom_element_registry {
     use super::*;
@@ -51773,6 +54903,16 @@ impl CustomElementRegistry {
 #[cfg_attr(rust_js, rust_js::types = "CustomEvent")]
 pub struct CustomEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for CustomEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CustomEvent {}
+
 impl Deref for CustomEvent {
     type Target = Event;
 
@@ -51825,6 +54965,16 @@ impl CustomEvent {
 /// [`CustomStateSet`](https://developer.mozilla.org/docs/Web/API/CustomStateSet)
 #[cfg_attr(rust_js, rust_js::types = "CustomStateSet")]
 pub struct CustomStateSet(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for CustomStateSet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for CustomStateSet {}
 
 impl CustomStateSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/forEach)
@@ -51907,6 +55057,16 @@ impl CustomStateSet {
 /// [`DOMException`](https://developer.mozilla.org/docs/Web/API/DOMException)
 #[cfg_attr(rust_js, rust_js::types = "DOMException")]
 pub struct DOMException(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMException {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMException {}
 
 pub mod dom_exception {
     use super::*;
@@ -52027,6 +55187,16 @@ impl DOMException {
 #[cfg_attr(rust_js, rust_js::types = "DOMImplementation")]
 pub struct DOMImplementation(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMImplementation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMImplementation {}
+
 impl DOMImplementation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMImplementation/createDocumentType)
     #[cfg_attr(rust_js, rust_js::link_name = "createDocumentType")]
@@ -52065,6 +55235,16 @@ impl DOMImplementation {
 /// [`DOMMatrix`](https://developer.mozilla.org/docs/Web/API/DOMMatrix)
 #[cfg_attr(rust_js, rust_js::types = "DOMMatrix")]
 pub struct DOMMatrix(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMMatrix {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMMatrix {}
 
 impl Deref for DOMMatrix {
     type Target = DOMMatrixReadOnly;
@@ -52574,6 +55754,16 @@ impl DOMMatrix {
 #[cfg_attr(rust_js, rust_js::types = "DOMMatrixReadOnly")]
 pub struct DOMMatrixReadOnly(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMMatrixReadOnly {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMMatrixReadOnly {}
+
 pub mod dom_matrix_read_only {
     use super::*;
 
@@ -52953,6 +56143,16 @@ impl DOMMatrixReadOnly {
 #[cfg_attr(rust_js, rust_js::types = "DOMParser")]
 pub struct DOMParser(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMParser {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMParser {}
+
 pub mod dom_parser {
     use super::*;
 
@@ -52979,6 +56179,16 @@ impl DOMParser {
 /// [`DOMPoint`](https://developer.mozilla.org/docs/Web/API/DOMPoint)
 #[cfg_attr(rust_js, rust_js::types = "DOMPoint")]
 pub struct DOMPoint(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMPoint {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMPoint {}
 
 impl Deref for DOMPoint {
     type Target = DOMPointReadOnly;
@@ -53088,6 +56298,16 @@ impl DOMPoint {
 #[cfg_attr(rust_js, rust_js::types = "DOMPointReadOnly")]
 pub struct DOMPointReadOnly(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMPointReadOnly {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMPointReadOnly {}
+
 pub mod dom_point_read_only {
     use super::*;
 
@@ -53162,6 +56382,16 @@ impl DOMPointReadOnly {
 /// [`DOMQuad`](https://developer.mozilla.org/docs/Web/API/DOMQuad)
 #[cfg_attr(rust_js, rust_js::types = "DOMQuad")]
 pub struct DOMQuad(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DOMQuad {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMQuad {}
 
 pub mod dom_quad {
     use super::*;
@@ -53246,6 +56476,16 @@ impl DOMQuad {
 #[cfg_attr(rust_js, rust_js::types = "DOMRectList")]
 pub struct DOMRectList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMRectList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMRectList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for DOMRectList {
     type Output = DOMRect;
@@ -53295,6 +56535,16 @@ impl DOMRectList {
 #[cfg_attr(rust_js, rust_js::types = "DOMStringList")]
 pub struct DOMStringList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMStringList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMStringList {}
+
 pub mod dom_string_list {
     use super::*;
 
@@ -53340,9 +56590,29 @@ impl DOMStringList {
 #[cfg_attr(rust_js, rust_js::types = "DOMStringMap")]
 pub struct DOMStringMap(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DOMStringMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DOMStringMap {}
+
 /// [`DataTransferItem`](https://developer.mozilla.org/docs/Web/API/DataTransferItem)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItem")]
 pub struct DataTransferItem(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DataTransferItem {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DataTransferItem {}
 
 impl DataTransferItem {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItem/webkitGetAsEntry)
@@ -53393,6 +56663,16 @@ impl DataTransferItem {
 /// [`DataTransferItemList`](https://developer.mozilla.org/docs/Web/API/DataTransferItemList)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItemList")]
 pub struct DataTransferItemList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DataTransferItemList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DataTransferItemList {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for DataTransferItemList {
@@ -53470,6 +56750,16 @@ impl DataTransferItemList {
 #[cfg_attr(rust_js, rust_js::types = "DecompressionStream")]
 pub struct DecompressionStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DecompressionStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DecompressionStream {}
+
 pub mod decompression_stream {
     use super::*;
 
@@ -53504,6 +56794,16 @@ impl DecompressionStream {
 /// [`DelayNode`](https://developer.mozilla.org/docs/Web/API/DelayNode)
 #[cfg_attr(rust_js, rust_js::types = "DelayNode")]
 pub struct DelayNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DelayNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DelayNode {}
 
 impl Deref for DelayNode {
     type Target = AudioNode;
@@ -53549,6 +56849,16 @@ impl DelayNode {
 #[cfg_attr(rust_js, rust_js::types = "DeviceMotionEvent")]
 pub struct DeviceMotionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DeviceMotionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DeviceMotionEvent {}
+
 impl Deref for DeviceMotionEvent {
     type Target = Event;
 
@@ -53592,6 +56902,16 @@ impl DeviceMotionEvent {
 /// [`DeviceOrientationEvent`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent)
 #[cfg_attr(rust_js, rust_js::types = "DeviceOrientationEvent")]
 pub struct DeviceOrientationEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DeviceOrientationEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DeviceOrientationEvent {}
 
 impl Deref for DeviceOrientationEvent {
     type Target = Event;
@@ -53664,6 +56984,16 @@ impl DeviceOrientationEvent {
 #[cfg_attr(rust_js, rust_js::types = "DigitalCredential")]
 pub struct DigitalCredential(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DigitalCredential {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DigitalCredential {}
+
 impl Deref for DigitalCredential {
     type Target = Credential;
 
@@ -53715,6 +57045,16 @@ impl DigitalCredential {
 /// [`DocumentPictureInPicture`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPicture)
 #[cfg_attr(rust_js, rust_js::types = "DocumentPictureInPicture")]
 pub struct DocumentPictureInPicture(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DocumentPictureInPicture {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentPictureInPicture {}
 
 impl Deref for DocumentPictureInPicture {
     type Target = EventTarget;
@@ -53778,6 +57118,16 @@ impl DocumentPictureInPicture {
 #[cfg_attr(rust_js, rust_js::types = "DocumentPictureInPictureEvent")]
 pub struct DocumentPictureInPictureEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DocumentPictureInPictureEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentPictureInPictureEvent {}
+
 impl Deref for DocumentPictureInPictureEvent {
     type Target = Event;
 
@@ -53822,6 +57172,16 @@ impl DocumentPictureInPictureEvent {
 #[cfg_attr(rust_js, rust_js::types = "DocumentTimeline")]
 pub struct DocumentTimeline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DocumentTimeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentTimeline {}
+
 impl Deref for DocumentTimeline {
     type Target = AnimationTimeline;
 
@@ -53854,6 +57214,16 @@ pub mod document_timeline {
 /// [`DocumentType`](https://developer.mozilla.org/docs/Web/API/DocumentType)
 #[cfg_attr(rust_js, rust_js::types = "DocumentType")]
 pub struct DocumentType(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for DocumentType {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DocumentType {}
 
 impl Deref for DocumentType {
     type Target = Node;
@@ -53946,6 +57316,16 @@ impl DocumentType {
 #[cfg_attr(rust_js, rust_js::types = "DynamicsCompressorNode")]
 pub struct DynamicsCompressorNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for DynamicsCompressorNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for DynamicsCompressorNode {}
+
 impl Deref for DynamicsCompressorNode {
     type Target = AudioNode;
 
@@ -54029,6 +57409,16 @@ impl DynamicsCompressorNode {
 /// [`ElementInternals`](https://developer.mozilla.org/docs/Web/API/ElementInternals)
 #[cfg_attr(rust_js, rust_js::types = "ElementInternals")]
 pub struct ElementInternals(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ElementInternals {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ElementInternals {}
 
 impl ElementInternals {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/shadowRoot)
@@ -55058,6 +58448,16 @@ impl ElementInternals {
 #[cfg_attr(rust_js, rust_js::types = "EncodedAudioChunk")]
 pub struct EncodedAudioChunk(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for EncodedAudioChunk {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EncodedAudioChunk {}
+
 pub mod encoded_audio_chunk {
     use super::*;
 
@@ -55121,6 +58521,16 @@ impl EncodedAudioChunk {
 #[cfg_attr(rust_js, rust_js::types = "EncodedVideoChunk")]
 pub struct EncodedVideoChunk(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for EncodedVideoChunk {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EncodedVideoChunk {}
+
 pub mod encoded_video_chunk {
     use super::*;
 
@@ -55183,6 +58593,16 @@ impl EncodedVideoChunk {
 /// [`ErrorEvent`](https://developer.mozilla.org/docs/Web/API/ErrorEvent)
 #[cfg_attr(rust_js, rust_js::types = "ErrorEvent")]
 pub struct ErrorEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ErrorEvent {}
 
 impl Deref for ErrorEvent {
     type Target = Event;
@@ -55262,6 +58682,16 @@ impl ErrorEvent {
 #[cfg_attr(rust_js, rust_js::types = "EventCounts")]
 pub struct EventCounts(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for EventCounts {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EventCounts {}
+
 impl EventCounts {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -55325,6 +58755,16 @@ impl EventCounts {
 /// [`EventSource`](https://developer.mozilla.org/docs/Web/API/EventSource)
 #[cfg_attr(rust_js, rust_js::types = "EventSource")]
 pub struct EventSource(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for EventSource {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for EventSource {}
 
 impl Deref for EventSource {
     type Target = EventTarget;
@@ -55459,6 +58899,16 @@ impl EventSource {
 #[cfg_attr(rust_js, rust_js::types = "External")]
 pub struct External(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for External {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for External {}
+
 impl External {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/External/AddSearchProvider)
     #[cfg_attr(rust_js, rust_js::link_name = "AddSearchProvider")]
@@ -55483,6 +58933,16 @@ impl External {
 /// [`FileList`](https://developer.mozilla.org/docs/Web/API/FileList)
 #[cfg_attr(rust_js, rust_js::types = "FileList")]
 pub struct FileList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileList {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for FileList {
@@ -55532,6 +58992,16 @@ impl FileList {
 /// [`FileReader`](https://developer.mozilla.org/docs/Web/API/FileReader)
 #[cfg_attr(rust_js, rust_js::types = "FileReader")]
 pub struct FileReader(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileReader {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileReader {}
 
 impl Deref for FileReader {
     type Target = EventTarget;
@@ -55758,6 +59228,16 @@ impl FileReader {
 #[cfg_attr(rust_js, rust_js::types = "FileSystem")]
 pub struct FileSystem(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FileSystem {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystem {}
+
 impl FileSystem {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystem/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
@@ -55780,6 +59260,16 @@ impl FileSystem {
 /// [`FileSystemDirectoryEntry`](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry)
 #[cfg_attr(rust_js, rust_js::types = "FileSystemDirectoryEntry")]
 pub struct FileSystemDirectoryEntry(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileSystemDirectoryEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemDirectoryEntry {}
 
 impl Deref for FileSystemDirectoryEntry {
     type Target = FileSystemEntry;
@@ -55834,6 +59324,16 @@ impl FileSystemDirectoryEntry {
 /// [`FileSystemDirectoryHandle`](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle)
 #[cfg_attr(rust_js, rust_js::types = "FileSystemDirectoryHandle")]
 pub struct FileSystemDirectoryHandle(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileSystemDirectoryHandle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemDirectoryHandle {}
 
 impl Deref for FileSystemDirectoryHandle {
     type Target = FileSystemHandle;
@@ -55895,6 +59395,16 @@ impl FileSystemDirectoryHandle {
 #[cfg_attr(rust_js, rust_js::types = "FileSystemDirectoryReader")]
 pub struct FileSystemDirectoryReader(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FileSystemDirectoryReader {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemDirectoryReader {}
+
 impl FileSystemDirectoryReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryReader/readEntries)
     #[cfg_attr(rust_js, rust_js::link_name = "readEntries")]
@@ -55910,6 +59420,16 @@ impl FileSystemDirectoryReader {
 /// [`FileSystemEntry`](https://developer.mozilla.org/docs/Web/API/FileSystemEntry)
 #[cfg_attr(rust_js, rust_js::types = "FileSystemEntry")]
 pub struct FileSystemEntry(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileSystemEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemEntry {}
 
 impl FileSystemEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemEntry/isFile)
@@ -55967,6 +59487,16 @@ impl FileSystemEntry {
 #[cfg_attr(rust_js, rust_js::types = "FileSystemFileEntry")]
 pub struct FileSystemFileEntry(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FileSystemFileEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemFileEntry {}
+
 impl Deref for FileSystemFileEntry {
     type Target = FileSystemEntry;
 
@@ -56003,6 +59533,16 @@ impl FileSystemFileEntry {
 /// [`FileSystemFileHandle`](https://developer.mozilla.org/docs/Web/API/FileSystemFileHandle)
 #[cfg_attr(rust_js, rust_js::types = "FileSystemFileHandle")]
 pub struct FileSystemFileHandle(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileSystemFileHandle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemFileHandle {}
 
 impl Deref for FileSystemFileHandle {
     type Target = FileSystemHandle;
@@ -56048,6 +59588,16 @@ impl FileSystemFileHandle {
 #[cfg_attr(rust_js, rust_js::types = "FileSystemHandle")]
 pub struct FileSystemHandle(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FileSystemHandle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemHandle {}
+
 impl FileSystemHandle {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemHandle/kind)
     #[cfg_attr(rust_js, rust_js::link_name = "get kind")]
@@ -56078,6 +59628,16 @@ impl FileSystemHandle {
 /// [`FileSystemWritableFileStream`](https://developer.mozilla.org/docs/Web/API/FileSystemWritableFileStream)
 #[cfg_attr(rust_js, rust_js::types = "FileSystemWritableFileStream")]
 pub struct FileSystemWritableFileStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FileSystemWritableFileStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FileSystemWritableFileStream {}
 
 impl Deref for FileSystemWritableFileStream {
     type Target = WritableStream;
@@ -56130,6 +59690,16 @@ impl FileSystemWritableFileStream {
 /// [`FontFace`](https://developer.mozilla.org/docs/Web/API/FontFace)
 #[cfg_attr(rust_js, rust_js::types = "FontFace")]
 pub struct FontFace(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FontFace {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FontFace {}
 
 pub mod font_face {
     use super::*;
@@ -56350,6 +59920,16 @@ impl FontFace {
 #[cfg_attr(rust_js, rust_js::types = "FontFaceSet")]
 pub struct FontFaceSet(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FontFaceSet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FontFaceSet {}
+
 impl Deref for FontFaceSet {
     type Target = EventTarget;
 
@@ -56539,6 +60119,16 @@ impl FontFaceSet {
 #[cfg_attr(rust_js, rust_js::types = "FontFaceSetLoadEvent")]
 pub struct FontFaceSetLoadEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FontFaceSetLoadEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FontFaceSetLoadEvent {}
+
 impl Deref for FontFaceSetLoadEvent {
     type Target = Event;
 
@@ -56582,6 +60172,16 @@ impl FontFaceSetLoadEvent {
 /// [`FormDataEvent`](https://developer.mozilla.org/docs/Web/API/FormDataEvent)
 #[cfg_attr(rust_js, rust_js::types = "FormDataEvent")]
 pub struct FormDataEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for FormDataEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FormDataEvent {}
 
 impl Deref for FormDataEvent {
     type Target = Event;
@@ -56627,9 +60227,29 @@ impl FormDataEvent {
 #[cfg_attr(rust_js, rust_js::types = "FragmentDirective")]
 pub struct FragmentDirective(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for FragmentDirective {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for FragmentDirective {}
+
 /// [`GPU`](https://developer.mozilla.org/docs/Web/API/GPU)
 #[cfg_attr(rust_js, rust_js::types = "GPU")]
 pub struct GPU(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPU {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPU {}
 
 impl GPU {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPU/requestAdapter)
@@ -56661,6 +60281,16 @@ impl GPU {
 /// [`GPUAdapter`](https://developer.mozilla.org/docs/Web/API/GPUAdapter)
 #[cfg_attr(rust_js, rust_js::types = "GPUAdapter")]
 pub struct GPUAdapter(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUAdapter {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUAdapter {}
 
 impl GPUAdapter {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUAdapter/features)
@@ -56700,6 +60330,16 @@ impl GPUAdapter {
 /// [`GPUAdapterInfo`](https://developer.mozilla.org/docs/Web/API/GPUAdapterInfo)
 #[cfg_attr(rust_js, rust_js::types = "GPUAdapterInfo")]
 pub struct GPUAdapterInfo(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUAdapterInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUAdapterInfo {}
 
 impl GPUAdapterInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUAdapterInfo/vendor)
@@ -56766,6 +60406,16 @@ impl GPUAdapterInfo {
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroup")]
 pub struct GPUBindGroup(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUBindGroup {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUBindGroup {}
+
 impl GPUBindGroup {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBindGroup/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -56789,6 +60439,16 @@ impl GPUBindGroup {
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroupLayout")]
 pub struct GPUBindGroupLayout(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUBindGroupLayout {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUBindGroupLayout {}
+
 impl GPUBindGroupLayout {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayout/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -56811,6 +60471,16 @@ impl GPUBindGroupLayout {
 /// [`GPUBuffer`](https://developer.mozilla.org/docs/Web/API/GPUBuffer)
 #[cfg_attr(rust_js, rust_js::types = "GPUBuffer")]
 pub struct GPUBuffer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUBuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUBuffer {}
 
 impl GPUBuffer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/size)
@@ -56895,6 +60565,16 @@ impl GPUBuffer {
 #[cfg_attr(rust_js, rust_js::types = "GPUCanvasContext")]
 pub struct GPUCanvasContext(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUCanvasContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUCanvasContext {}
+
 impl GPUCanvasContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCanvasContext/canvas)
     #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
@@ -56945,6 +60625,16 @@ impl GPUCanvasContext {
 #[cfg_attr(rust_js, rust_js::types = "GPUCommandBuffer")]
 pub struct GPUCommandBuffer(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUCommandBuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUCommandBuffer {}
+
 impl GPUCommandBuffer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandBuffer/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -56967,6 +60657,16 @@ impl GPUCommandBuffer {
 /// [`GPUCommandEncoder`](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder)
 #[cfg_attr(rust_js, rust_js::types = "GPUCommandEncoder")]
 pub struct GPUCommandEncoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUCommandEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUCommandEncoder {}
 
 impl GPUCommandEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/beginRenderPass)
@@ -57105,6 +60805,16 @@ impl GPUCommandEncoder {
 #[cfg_attr(rust_js, rust_js::types = "GPUCompilationInfo")]
 pub struct GPUCompilationInfo(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUCompilationInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUCompilationInfo {}
+
 impl GPUCompilationInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationInfo/messages)
     #[cfg_attr(rust_js, rust_js::link_name = "get messages")]
@@ -57119,6 +60829,16 @@ impl GPUCompilationInfo {
 /// [`GPUCompilationMessage`](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage)
 #[cfg_attr(rust_js, rust_js::types = "GPUCompilationMessage")]
 pub struct GPUCompilationMessage(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUCompilationMessage {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUCompilationMessage {}
 
 impl GPUCompilationMessage {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCompilationMessage/message)
@@ -57178,6 +60898,16 @@ impl GPUCompilationMessage {
 /// [`GPUComputePassEncoder`](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder)
 #[cfg_attr(rust_js, rust_js::types = "GPUComputePassEncoder")]
 pub struct GPUComputePassEncoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUComputePassEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUComputePassEncoder {}
 
 impl GPUComputePassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setPipeline)
@@ -57283,6 +61013,16 @@ impl GPUComputePassEncoder {
 #[cfg_attr(rust_js, rust_js::types = "GPUComputePipeline")]
 pub struct GPUComputePipeline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUComputePipeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUComputePipeline {}
+
 impl GPUComputePipeline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePipeline/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -57313,6 +61053,16 @@ impl GPUComputePipeline {
 /// [`GPUDevice`](https://developer.mozilla.org/docs/Web/API/GPUDevice)
 #[cfg_attr(rust_js, rust_js::types = "GPUDevice")]
 pub struct GPUDevice(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUDevice {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUDevice {}
 
 impl Deref for GPUDevice {
     type Target = EventTarget;
@@ -57562,6 +61312,16 @@ impl GPUDevice {
 #[cfg_attr(rust_js, rust_js::types = "GPUDeviceLostInfo")]
 pub struct GPUDeviceLostInfo(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUDeviceLostInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUDeviceLostInfo {}
+
 impl GPUDeviceLostInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDeviceLostInfo/reason)
     #[cfg_attr(rust_js, rust_js::link_name = "get reason")]
@@ -57585,6 +61345,16 @@ impl GPUDeviceLostInfo {
 #[cfg_attr(rust_js, rust_js::types = "GPUError")]
 pub struct GPUError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUError {}
+
 impl GPUError {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUError/message)
     #[cfg_attr(rust_js, rust_js::link_name = "get message")]
@@ -57599,6 +61369,16 @@ impl GPUError {
 /// [`GPUExternalTexture`](https://developer.mozilla.org/docs/Web/API/GPUExternalTexture)
 #[cfg_attr(rust_js, rust_js::types = "GPUExternalTexture")]
 pub struct GPUExternalTexture(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUExternalTexture {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUExternalTexture {}
 
 impl GPUExternalTexture {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUExternalTexture/label)
@@ -57622,6 +61402,16 @@ impl GPUExternalTexture {
 /// [`GPUInternalError`](https://developer.mozilla.org/docs/Web/API/GPUInternalError)
 #[cfg_attr(rust_js, rust_js::types = "GPUInternalError")]
 pub struct GPUInternalError(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUInternalError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUInternalError {}
 
 impl Deref for GPUInternalError {
     type Target = GPUError;
@@ -57656,6 +61446,16 @@ pub mod gpu_internal_error {
 #[cfg_attr(rust_js, rust_js::types = "GPUOutOfMemoryError")]
 pub struct GPUOutOfMemoryError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUOutOfMemoryError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUOutOfMemoryError {}
+
 impl Deref for GPUOutOfMemoryError {
     type Target = GPUError;
 
@@ -57688,6 +61488,16 @@ pub mod gpu_out_of_memory_error {
 /// [`GPUPipelineError`](https://developer.mozilla.org/docs/Web/API/GPUPipelineError)
 #[cfg_attr(rust_js, rust_js::types = "GPUPipelineError")]
 pub struct GPUPipelineError(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUPipelineError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUPipelineError {}
 
 impl Deref for GPUPipelineError {
     type Target = DOMException;
@@ -57733,6 +61543,16 @@ impl GPUPipelineError {
 #[cfg_attr(rust_js, rust_js::types = "GPUPipelineLayout")]
 pub struct GPUPipelineLayout(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUPipelineLayout {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUPipelineLayout {}
+
 impl GPUPipelineLayout {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineLayout/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -57755,6 +61575,16 @@ impl GPUPipelineLayout {
 /// [`GPUQuerySet`](https://developer.mozilla.org/docs/Web/API/GPUQuerySet)
 #[cfg_attr(rust_js, rust_js::types = "GPUQuerySet")]
 pub struct GPUQuerySet(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUQuerySet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUQuerySet {}
 
 impl GPUQuerySet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQuerySet/destroy)
@@ -57804,6 +61634,16 @@ impl GPUQuerySet {
 /// [`GPUQueue`](https://developer.mozilla.org/docs/Web/API/GPUQueue)
 #[cfg_attr(rust_js, rust_js::types = "GPUQueue")]
 pub struct GPUQueue(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUQueue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUQueue {}
 
 impl GPUQueue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/submit)
@@ -57872,6 +61712,16 @@ impl GPUQueue {
 #[cfg_attr(rust_js, rust_js::types = "GPURenderBundle")]
 pub struct GPURenderBundle(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPURenderBundle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPURenderBundle {}
+
 impl GPURenderBundle {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundle/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -57894,6 +61744,16 @@ impl GPURenderBundle {
 /// [`GPURenderBundleEncoder`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder)
 #[cfg_attr(rust_js, rust_js::types = "GPURenderBundleEncoder")]
 pub struct GPURenderBundleEncoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPURenderBundleEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPURenderBundleEncoder {}
 
 impl GPURenderBundleEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/finish)
@@ -58033,6 +61893,16 @@ impl GPURenderBundleEncoder {
 /// [`GPURenderPassEncoder`](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder)
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPassEncoder")]
 pub struct GPURenderPassEncoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPURenderPassEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPURenderPassEncoder {}
 
 impl GPURenderPassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setViewport)
@@ -58237,6 +62107,16 @@ impl GPURenderPassEncoder {
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPipeline")]
 pub struct GPURenderPipeline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPURenderPipeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPURenderPipeline {}
+
 impl GPURenderPipeline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPipeline/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -58268,6 +62148,16 @@ impl GPURenderPipeline {
 #[cfg_attr(rust_js, rust_js::types = "GPUSampler")]
 pub struct GPUSampler(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUSampler {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUSampler {}
+
 impl GPUSampler {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSampler/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -58290,6 +62180,16 @@ impl GPUSampler {
 /// [`GPUShaderModule`](https://developer.mozilla.org/docs/Web/API/GPUShaderModule)
 #[cfg_attr(rust_js, rust_js::types = "GPUShaderModule")]
 pub struct GPUShaderModule(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUShaderModule {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUShaderModule {}
 
 impl GPUShaderModule {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUShaderModule/getCompilationInfo)
@@ -58321,6 +62221,16 @@ impl GPUShaderModule {
 /// [`GPUSupportedFeatures`](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures)
 #[cfg_attr(rust_js, rust_js::types = "GPUSupportedFeatures")]
 pub struct GPUSupportedFeatures(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUSupportedFeatures {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUSupportedFeatures {}
 
 impl GPUSupportedFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/forEach)
@@ -58377,6 +62287,16 @@ impl GPUSupportedFeatures {
 /// [`GPUSupportedLimits`](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits)
 #[cfg_attr(rust_js, rust_js::types = "GPUSupportedLimits")]
 pub struct GPUSupportedLimits(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUSupportedLimits {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUSupportedLimits {}
 
 impl GPUSupportedLimits {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedLimits/maxTextureDimension1D)
@@ -58700,6 +62620,16 @@ impl GPUSupportedLimits {
 #[cfg_attr(rust_js, rust_js::types = "GPUTexture")]
 pub struct GPUTexture(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUTexture {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUTexture {}
+
 impl GPUTexture {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/createView)
     #[cfg_attr(rust_js, rust_js::link_name = "createView")]
@@ -58810,6 +62740,16 @@ impl GPUTexture {
 #[cfg_attr(rust_js, rust_js::types = "GPUTextureView")]
 pub struct GPUTextureView(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUTextureView {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUTextureView {}
+
 impl GPUTextureView {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTextureView/label)
     #[cfg_attr(rust_js, rust_js::link_name = "get label")]
@@ -58832,6 +62772,16 @@ impl GPUTextureView {
 /// [`GPUUncapturedErrorEvent`](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEvent)
 #[cfg_attr(rust_js, rust_js::types = "GPUUncapturedErrorEvent")]
 pub struct GPUUncapturedErrorEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GPUUncapturedErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUUncapturedErrorEvent {}
 
 impl Deref for GPUUncapturedErrorEvent {
     type Target = Event;
@@ -58877,6 +62827,16 @@ impl GPUUncapturedErrorEvent {
 #[cfg_attr(rust_js, rust_js::types = "GPUValidationError")]
 pub struct GPUValidationError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GPUValidationError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GPUValidationError {}
+
 impl Deref for GPUValidationError {
     type Target = GPUError;
 
@@ -58909,6 +62869,16 @@ pub mod gpu_validation_error {
 /// [`GainNode`](https://developer.mozilla.org/docs/Web/API/GainNode)
 #[cfg_attr(rust_js, rust_js::types = "GainNode")]
 pub struct GainNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GainNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GainNode {}
 
 impl Deref for GainNode {
     type Target = AudioNode;
@@ -58953,6 +62923,16 @@ impl GainNode {
 /// [`Gamepad`](https://developer.mozilla.org/docs/Web/API/Gamepad)
 #[cfg_attr(rust_js, rust_js::types = "Gamepad")]
 pub struct Gamepad(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Gamepad {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Gamepad {}
 
 impl Gamepad {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Gamepad/id)
@@ -59026,6 +63006,16 @@ impl Gamepad {
 #[cfg_attr(rust_js, rust_js::types = "GamepadButton")]
 pub struct GamepadButton(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GamepadButton {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GamepadButton {}
+
 impl GamepadButton {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadButton/pressed)
     #[cfg_attr(rust_js, rust_js::link_name = "get pressed")]
@@ -59056,6 +63046,16 @@ impl GamepadButton {
 /// [`GamepadEvent`](https://developer.mozilla.org/docs/Web/API/GamepadEvent)
 #[cfg_attr(rust_js, rust_js::types = "GamepadEvent")]
 pub struct GamepadEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GamepadEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GamepadEvent {}
 
 impl Deref for GamepadEvent {
     type Target = Event;
@@ -59101,6 +63101,16 @@ impl GamepadEvent {
 #[cfg_attr(rust_js, rust_js::types = "GamepadHapticActuator")]
 pub struct GamepadHapticActuator(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GamepadHapticActuator {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GamepadHapticActuator {}
+
 impl GamepadHapticActuator {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadHapticActuator/playEffect)
     #[cfg_attr(rust_js, rust_js::link_name = "playEffect")]
@@ -59123,6 +63133,16 @@ impl GamepadHapticActuator {
 /// [`Geolocation`](https://developer.mozilla.org/docs/Web/API/Geolocation)
 #[cfg_attr(rust_js, rust_js::types = "Geolocation")]
 pub struct Geolocation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Geolocation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Geolocation {}
 
 impl Geolocation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/getCurrentPosition)
@@ -59157,6 +63177,16 @@ impl Geolocation {
 /// [`GeolocationCoordinates`](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates)
 #[cfg_attr(rust_js, rust_js::types = "GeolocationCoordinates")]
 pub struct GeolocationCoordinates(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GeolocationCoordinates {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GeolocationCoordinates {}
 
 impl GeolocationCoordinates {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationCoordinates/accuracy)
@@ -59233,6 +63263,16 @@ impl GeolocationCoordinates {
 #[cfg_attr(rust_js, rust_js::types = "GeolocationPosition")]
 pub struct GeolocationPosition(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for GeolocationPosition {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GeolocationPosition {}
+
 impl GeolocationPosition {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GeolocationPosition/coords)
     #[cfg_attr(rust_js, rust_js::link_name = "get coords")]
@@ -59264,6 +63304,16 @@ impl GeolocationPosition {
 /// [`GeolocationPositionError`](https://developer.mozilla.org/docs/Web/API/GeolocationPositionError)
 #[cfg_attr(rust_js, rust_js::types = "GeolocationPositionError")]
 pub struct GeolocationPositionError(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for GeolocationPositionError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for GeolocationPositionError {}
 
 pub mod geolocation_position_error {
 
@@ -59300,6 +63350,16 @@ impl GeolocationPositionError {
 /// [`HTMLAllCollection`](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAllCollection")]
 pub struct HTMLAllCollection(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLAllCollection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLAllCollection {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for HTMLAllCollection {
@@ -59359,6 +63419,16 @@ impl HTMLAllCollection {
 #[cfg_attr(rust_js, rust_js::types = "HTMLDirectoryElement")]
 pub struct HTMLDirectoryElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLDirectoryElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLDirectoryElement {}
+
 impl Deref for HTMLDirectoryElement {
     type Target = HTMLElement;
 
@@ -59402,6 +63472,16 @@ impl HTMLDirectoryElement {
 /// [`HTMLFontElement`](https://developer.mozilla.org/docs/Web/API/HTMLFontElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFontElement")]
 pub struct HTMLFontElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLFontElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFontElement {}
 
 impl Deref for HTMLFontElement {
     type Target = HTMLElement;
@@ -59479,6 +63559,16 @@ impl HTMLFontElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLFormControlsCollection")]
 pub struct HTMLFormControlsCollection(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLFormControlsCollection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFormControlsCollection {}
+
 impl Deref for HTMLFormControlsCollection {
     type Target = HTMLCollection;
 
@@ -59535,6 +63625,16 @@ impl HTMLFormControlsCollection {
 /// [`HTMLFrameElement`](https://developer.mozilla.org/docs/Web/API/HTMLFrameElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFrameElement")]
 pub struct HTMLFrameElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLFrameElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFrameElement {}
 
 impl Deref for HTMLFrameElement {
     type Target = HTMLElement;
@@ -59709,6 +63809,16 @@ impl HTMLFrameElement {
 /// [`HTMLFrameSetElement`](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFrameSetElement")]
 pub struct HTMLFrameSetElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HTMLFrameSetElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLFrameSetElement {}
 
 impl Deref for HTMLFrameSetElement {
     type Target = HTMLElement;
@@ -60130,6 +64240,16 @@ impl HTMLFrameSetElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLMarqueeElement")]
 pub struct HTMLMarqueeElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLMarqueeElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLMarqueeElement {}
+
 impl Deref for HTMLMarqueeElement {
     type Target = HTMLElement;
 
@@ -60357,6 +64477,16 @@ impl HTMLMarqueeElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptionsCollection")]
 pub struct HTMLOptionsCollection(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLOptionsCollection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLOptionsCollection {}
+
 impl Deref for HTMLOptionsCollection {
     type Target = HTMLCollection;
 
@@ -60457,6 +64587,16 @@ impl HTMLOptionsCollection {
 #[cfg_attr(rust_js, rust_js::types = "HTMLParamElement")]
 pub struct HTMLParamElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLParamElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLParamElement {}
+
 impl Deref for HTMLParamElement {
     type Target = HTMLElement;
 
@@ -60549,6 +64689,16 @@ impl HTMLParamElement {
 #[cfg_attr(rust_js, rust_js::types = "HTMLUnknownElement")]
 pub struct HTMLUnknownElement(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HTMLUnknownElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HTMLUnknownElement {}
+
 impl Deref for HTMLUnknownElement {
     type Target = HTMLElement;
 
@@ -60573,6 +64723,16 @@ pub mod html_unknown_element {
 /// [`HashChangeEvent`](https://developer.mozilla.org/docs/Web/API/HashChangeEvent)
 #[cfg_attr(rust_js, rust_js::types = "HashChangeEvent")]
 pub struct HashChangeEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for HashChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HashChangeEvent {}
 
 impl Deref for HashChangeEvent {
     type Target = Event;
@@ -60625,6 +64785,16 @@ impl HashChangeEvent {
 /// [`Highlight`](https://developer.mozilla.org/docs/Web/API/Highlight)
 #[cfg_attr(rust_js, rust_js::types = "Highlight")]
 pub struct Highlight(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Highlight {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Highlight {}
 
 pub mod highlight {
     use super::*;
@@ -60754,6 +64924,16 @@ impl Highlight {
 #[cfg_attr(rust_js, rust_js::types = "HighlightRegistry")]
 pub struct HighlightRegistry(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for HighlightRegistry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for HighlightRegistry {}
+
 impl HighlightRegistry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -60852,6 +65032,16 @@ impl HighlightRegistry {
 #[cfg_attr(rust_js, rust_js::types = "IDBCursor")]
 pub struct IDBCursor(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBCursor {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBCursor {}
+
 impl IDBCursor {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/source)
     #[cfg_attr(rust_js, rust_js::link_name = "get source")]
@@ -60942,6 +65132,16 @@ impl IDBCursor {
 #[cfg_attr(rust_js, rust_js::types = "IDBCursorWithValue")]
 pub struct IDBCursorWithValue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBCursorWithValue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBCursorWithValue {}
+
 impl Deref for IDBCursorWithValue {
     type Target = IDBCursor;
 
@@ -60977,6 +65177,16 @@ impl IDBCursorWithValue {
 /// [`IDBDatabase`](https://developer.mozilla.org/docs/Web/API/IDBDatabase)
 #[cfg_attr(rust_js, rust_js::types = "IDBDatabase")]
 pub struct IDBDatabase(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IDBDatabase {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBDatabase {}
 
 impl Deref for IDBDatabase {
     type Target = EventTarget;
@@ -61137,6 +65347,16 @@ impl IDBDatabase {
 #[cfg_attr(rust_js, rust_js::types = "IDBFactory")]
 pub struct IDBFactory(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBFactory {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBFactory {}
+
 impl IDBFactory {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
     /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
@@ -61178,6 +65398,16 @@ impl IDBFactory {
 /// [`IDBIndex`](https://developer.mozilla.org/docs/Web/API/IDBIndex)
 #[cfg_attr(rust_js, rust_js::types = "IDBIndex")]
 pub struct IDBIndex(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IDBIndex {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBIndex {}
 
 impl IDBIndex {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/name)
@@ -61290,6 +65520,16 @@ impl IDBIndex {
 #[cfg_attr(rust_js, rust_js::types = "IDBKeyRange")]
 pub struct IDBKeyRange(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBKeyRange {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBKeyRange {}
+
 pub mod idb_key_range {
     use super::*;
 
@@ -61372,6 +65612,16 @@ impl IDBKeyRange {
 /// [`IDBObjectStore`](https://developer.mozilla.org/docs/Web/API/IDBObjectStore)
 #[cfg_attr(rust_js, rust_js::types = "IDBObjectStore")]
 pub struct IDBObjectStore(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IDBObjectStore {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBObjectStore {}
 
 impl IDBObjectStore {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/name)
@@ -61541,6 +65791,16 @@ impl IDBObjectStore {
 #[cfg_attr(rust_js, rust_js::types = "IDBOpenDBRequest")]
 pub struct IDBOpenDBRequest(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBOpenDBRequest {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBOpenDBRequest {}
+
 impl Deref for IDBOpenDBRequest {
     type Target = IDBRequest;
 
@@ -61604,6 +65864,16 @@ impl IDBOpenDBRequest {
 /// [`IDBRequest`](https://developer.mozilla.org/docs/Web/API/IDBRequest)
 #[cfg_attr(rust_js, rust_js::types = "IDBRequest")]
 pub struct IDBRequest(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IDBRequest {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBRequest {}
 
 impl Deref for IDBRequest {
     type Target = EventTarget;
@@ -61711,6 +65981,16 @@ impl IDBRequest {
 /// [`IDBTransaction`](https://developer.mozilla.org/docs/Web/API/IDBTransaction)
 #[cfg_attr(rust_js, rust_js::types = "IDBTransaction")]
 pub struct IDBTransaction(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for IDBTransaction {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBTransaction {}
 
 impl Deref for IDBTransaction {
     type Target = EventTarget;
@@ -61861,6 +66141,16 @@ impl IDBTransaction {
 #[cfg_attr(rust_js, rust_js::types = "IDBVersionChangeEvent")]
 pub struct IDBVersionChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IDBVersionChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IDBVersionChangeEvent {}
+
 impl Deref for IDBVersionChangeEvent {
     type Target = Event;
 
@@ -61915,6 +66205,16 @@ impl IDBVersionChangeEvent {
 #[cfg_attr(rust_js, rust_js::types = "IIRFilterNode")]
 pub struct IIRFilterNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IIRFilterNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IIRFilterNode {}
+
 impl Deref for IIRFilterNode {
     type Target = AudioNode;
 
@@ -61960,6 +66260,16 @@ impl IIRFilterNode {
 #[cfg_attr(rust_js, rust_js::types = "IdleDeadline")]
 pub struct IdleDeadline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for IdleDeadline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for IdleDeadline {}
+
 impl IdleDeadline {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IdleDeadline/timeRemaining)
     #[cfg_attr(rust_js, rust_js::link_name = "timeRemaining")]
@@ -61982,6 +66292,16 @@ impl IdleDeadline {
 /// [`ImageBitmap`](https://developer.mozilla.org/docs/Web/API/ImageBitmap)
 #[cfg_attr(rust_js, rust_js::types = "ImageBitmap")]
 pub struct ImageBitmap(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ImageBitmap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageBitmap {}
 
 impl ImageBitmap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmap/width)
@@ -62017,6 +66337,16 @@ impl ImageBitmap {
 #[cfg_attr(rust_js, rust_js::types = "ImageBitmapRenderingContext")]
 pub struct ImageBitmapRenderingContext(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ImageBitmapRenderingContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageBitmapRenderingContext {}
+
 impl ImageBitmapRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmapRenderingContext/canvas)
     #[cfg_attr(rust_js, rust_js::link_name = "get canvas")]
@@ -62040,6 +66370,16 @@ impl ImageBitmapRenderingContext {
 /// [`ImageCapture`](https://developer.mozilla.org/docs/Web/API/ImageCapture)
 #[cfg_attr(rust_js, rust_js::types = "ImageCapture")]
 pub struct ImageCapture(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ImageCapture {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageCapture {}
 
 pub mod image_capture {
     use super::*;
@@ -62100,6 +66440,16 @@ impl ImageCapture {
 #[cfg_attr(rust_js, rust_js::types = "ImageData")]
 pub struct ImageData(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ImageData {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageData {}
+
 pub mod image_data {
     use super::*;
 
@@ -62152,6 +66502,16 @@ impl ImageData {
 /// [`ImageDecoder`](https://developer.mozilla.org/docs/Web/API/ImageDecoder)
 #[cfg_attr(rust_js, rust_js::types = "ImageDecoder")]
 pub struct ImageDecoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ImageDecoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageDecoder {}
 
 pub mod image_decoder {
     use super::*;
@@ -62238,6 +66598,16 @@ impl ImageDecoder {
 #[cfg_attr(rust_js, rust_js::types = "ImageTrack")]
 pub struct ImageTrack(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ImageTrack {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageTrack {}
+
 impl ImageTrack {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageTrack/animated)
     #[cfg_attr(rust_js, rust_js::link_name = "get animated")]
@@ -62285,6 +66655,16 @@ impl ImageTrack {
 /// [`ImageTrackList`](https://developer.mozilla.org/docs/Web/API/ImageTrackList)
 #[cfg_attr(rust_js, rust_js::types = "ImageTrackList")]
 pub struct ImageTrackList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ImageTrackList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ImageTrackList {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for ImageTrackList {
@@ -62340,6 +66720,16 @@ impl ImageTrackList {
 #[cfg_attr(rust_js, rust_js::types = "InputDeviceInfo")]
 pub struct InputDeviceInfo(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for InputDeviceInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for InputDeviceInfo {}
+
 impl Deref for InputDeviceInfo {
     type Target = MediaDeviceInfo;
 
@@ -62375,6 +66765,16 @@ impl InputDeviceInfo {
 /// [`KeyframeEffect`](https://developer.mozilla.org/docs/Web/API/KeyframeEffect)
 #[cfg_attr(rust_js, rust_js::types = "KeyframeEffect")]
 pub struct KeyframeEffect(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for KeyframeEffect {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for KeyframeEffect {}
 
 impl Deref for KeyframeEffect {
     type Target = AnimationEffect;
@@ -62497,6 +66897,16 @@ impl KeyframeEffect {
 #[cfg_attr(rust_js, rust_js::types = "LargestContentfulPaint")]
 pub struct LargestContentfulPaint(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for LargestContentfulPaint {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for LargestContentfulPaint {}
+
 impl Deref for LargestContentfulPaint {
     type Target = PerformanceEntry;
 
@@ -62592,6 +67002,16 @@ impl LargestContentfulPaint {
 #[cfg_attr(rust_js, rust_js::types = "Lock")]
 pub struct Lock(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Lock {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Lock {}
+
 impl Lock {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Lock/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
@@ -62614,6 +67034,16 @@ impl Lock {
 /// [`LockManager`](https://developer.mozilla.org/docs/Web/API/LockManager)
 #[cfg_attr(rust_js, rust_js::types = "LockManager")]
 pub struct LockManager(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for LockManager {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for LockManager {}
 
 impl LockManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/LockManager/request)
@@ -62645,6 +67075,16 @@ impl LockManager {
 /// [`MIDIAccess`](https://developer.mozilla.org/docs/Web/API/MIDIAccess)
 #[cfg_attr(rust_js, rust_js::types = "MIDIAccess")]
 pub struct MIDIAccess(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MIDIAccess {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIAccess {}
 
 impl Deref for MIDIAccess {
     type Target = EventTarget;
@@ -62716,6 +67156,16 @@ impl MIDIAccess {
 #[cfg_attr(rust_js, rust_js::types = "MIDIConnectionEvent")]
 pub struct MIDIConnectionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MIDIConnectionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIConnectionEvent {}
+
 impl Deref for MIDIConnectionEvent {
     type Target = Event;
 
@@ -62760,6 +67210,16 @@ impl MIDIConnectionEvent {
 /// [`MIDIInput`](https://developer.mozilla.org/docs/Web/API/MIDIInput)
 #[cfg_attr(rust_js, rust_js::types = "MIDIInput")]
 pub struct MIDIInput(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MIDIInput {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIInput {}
 
 impl Deref for MIDIInput {
     type Target = MIDIPort;
@@ -62806,6 +67266,16 @@ impl MIDIInput {
 /// [`MIDIInputMap`](https://developer.mozilla.org/docs/Web/API/MIDIInputMap)
 #[cfg_attr(rust_js, rust_js::types = "MIDIInputMap")]
 pub struct MIDIInputMap(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MIDIInputMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIInputMap {}
 
 impl MIDIInputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/forEach)
@@ -62871,6 +67341,16 @@ impl MIDIInputMap {
 #[cfg_attr(rust_js, rust_js::types = "MIDIMessageEvent")]
 pub struct MIDIMessageEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MIDIMessageEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIMessageEvent {}
+
 impl Deref for MIDIMessageEvent {
     type Target = Event;
 
@@ -62916,6 +67396,16 @@ impl MIDIMessageEvent {
 #[cfg_attr(rust_js, rust_js::types = "MIDIOutput")]
 pub struct MIDIOutput(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MIDIOutput {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIOutput {}
+
 impl Deref for MIDIOutput {
     type Target = MIDIPort;
 
@@ -62952,6 +67442,16 @@ impl MIDIOutput {
 /// [`MIDIOutputMap`](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap)
 #[cfg_attr(rust_js, rust_js::types = "MIDIOutputMap")]
 pub struct MIDIOutputMap(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MIDIOutputMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIOutputMap {}
 
 impl MIDIOutputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/forEach)
@@ -63016,6 +67516,16 @@ impl MIDIOutputMap {
 /// [`MIDIPort`](https://developer.mozilla.org/docs/Web/API/MIDIPort)
 #[cfg_attr(rust_js, rust_js::types = "MIDIPort")]
 pub struct MIDIPort(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MIDIPort {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MIDIPort {}
 
 impl Deref for MIDIPort {
     type Target = EventTarget;
@@ -63137,6 +67647,16 @@ impl MIDIPort {
 /// [`MathMLElement`](https://developer.mozilla.org/docs/Web/API/MathMLElement)
 #[cfg_attr(rust_js, rust_js::types = "MathMLElement")]
 pub struct MathMLElement(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MathMLElement {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MathMLElement {}
 
 impl Deref for MathMLElement {
     type Target = Element;
@@ -65075,6 +69595,16 @@ impl MathMLElement {
 #[cfg_attr(rust_js, rust_js::types = "MediaCapabilities")]
 pub struct MediaCapabilities(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaCapabilities {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaCapabilities {}
+
 impl MediaCapabilities {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaCapabilities/decodingInfo)
     #[cfg_attr(rust_js, rust_js::link_name = "decodingInfo")]
@@ -65097,6 +69627,16 @@ impl MediaCapabilities {
 /// [`MediaDeviceInfo`](https://developer.mozilla.org/docs/Web/API/MediaDeviceInfo)
 #[cfg_attr(rust_js, rust_js::types = "MediaDeviceInfo")]
 pub struct MediaDeviceInfo(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaDeviceInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaDeviceInfo {}
 
 impl MediaDeviceInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDeviceInfo/deviceId)
@@ -65144,6 +69684,16 @@ impl MediaDeviceInfo {
 /// [`MediaDevices`](https://developer.mozilla.org/docs/Web/API/MediaDevices)
 #[cfg_attr(rust_js, rust_js::types = "MediaDevices")]
 pub struct MediaDevices(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaDevices {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaDevices {}
 
 impl Deref for MediaDevices {
     type Target = EventTarget;
@@ -65223,6 +69773,16 @@ impl MediaDevices {
 #[cfg_attr(rust_js, rust_js::types = "MediaElementAudioSourceNode")]
 pub struct MediaElementAudioSourceNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaElementAudioSourceNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaElementAudioSourceNode {}
+
 impl Deref for MediaElementAudioSourceNode {
     type Target = AudioNode;
 
@@ -65266,6 +69826,16 @@ impl MediaElementAudioSourceNode {
 /// [`MediaEncryptedEvent`](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent)
 #[cfg_attr(rust_js, rust_js::types = "MediaEncryptedEvent")]
 pub struct MediaEncryptedEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaEncryptedEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaEncryptedEvent {}
 
 impl Deref for MediaEncryptedEvent {
     type Target = Event;
@@ -65320,6 +69890,16 @@ impl MediaEncryptedEvent {
 #[cfg_attr(rust_js, rust_js::types = "MediaError")]
 pub struct MediaError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaError {}
+
 pub mod media_error {
 
     /// `MediaError.MEDIA_ERR_ABORTED`
@@ -65358,6 +69938,16 @@ impl MediaError {
 /// [`MediaKeyMessageEvent`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEvent)
 #[cfg_attr(rust_js, rust_js::types = "MediaKeyMessageEvent")]
 pub struct MediaKeyMessageEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaKeyMessageEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaKeyMessageEvent {}
 
 impl Deref for MediaKeyMessageEvent {
     type Target = Event;
@@ -65410,6 +70000,16 @@ impl MediaKeyMessageEvent {
 /// [`MediaKeySession`](https://developer.mozilla.org/docs/Web/API/MediaKeySession)
 #[cfg_attr(rust_js, rust_js::types = "MediaKeySession")]
 pub struct MediaKeySession(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaKeySession {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaKeySession {}
 
 impl Deref for MediaKeySession {
     type Target = EventTarget;
@@ -65547,6 +70147,16 @@ impl MediaKeySession {
 #[cfg_attr(rust_js, rust_js::types = "MediaKeyStatusMap")]
 pub struct MediaKeyStatusMap(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaKeyStatusMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaKeyStatusMap {}
+
 impl MediaKeyStatusMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -65589,6 +70199,16 @@ impl MediaKeyStatusMap {
 #[cfg_attr(rust_js, rust_js::types = "MediaKeySystemAccess")]
 pub struct MediaKeySystemAccess(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaKeySystemAccess {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaKeySystemAccess {}
+
 impl MediaKeySystemAccess {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeySystemAccess/keySystem)
     #[cfg_attr(rust_js, rust_js::link_name = "get keySystem")]
@@ -65620,6 +70240,16 @@ impl MediaKeySystemAccess {
 #[cfg_attr(rust_js, rust_js::types = "MediaKeys")]
 pub struct MediaKeys(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaKeys {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaKeys {}
+
 impl MediaKeys {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeys/createSession)
     #[cfg_attr(rust_js, rust_js::link_name = "createSession")]
@@ -65650,6 +70280,16 @@ impl MediaKeys {
 /// [`MediaList`](https://developer.mozilla.org/docs/Web/API/MediaList)
 #[cfg_attr(rust_js, rust_js::types = "MediaList")]
 pub struct MediaList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaList {}
 
 pub mod media_list {
     use super::*;
@@ -65729,6 +70369,16 @@ impl MediaList {
 /// [`MediaMetadata`](https://developer.mozilla.org/docs/Web/API/MediaMetadata)
 #[cfg_attr(rust_js, rust_js::types = "MediaMetadata")]
 pub struct MediaMetadata(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaMetadata {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaMetadata {}
 
 pub mod media_metadata {
     use super::*;
@@ -65812,6 +70462,16 @@ impl MediaMetadata {
 /// [`MediaRecorder`](https://developer.mozilla.org/docs/Web/API/MediaRecorder)
 #[cfg_attr(rust_js, rust_js::types = "MediaRecorder")]
 pub struct MediaRecorder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaRecorder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaRecorder {}
 
 impl Deref for MediaRecorder {
     type Target = EventTarget;
@@ -66052,6 +70712,16 @@ impl MediaRecorder {
 #[cfg_attr(rust_js, rust_js::types = "MediaSession")]
 pub struct MediaSession(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaSession {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaSession {}
+
 impl MediaSession {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/metadata)
     #[cfg_attr(rust_js, rust_js::link_name = "get metadata")]
@@ -66126,6 +70796,16 @@ impl MediaSession {
 /// [`MediaSource`](https://developer.mozilla.org/docs/Web/API/MediaSource)
 #[cfg_attr(rust_js, rust_js::types = "MediaSource")]
 pub struct MediaSource(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaSource {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaSource {}
 
 impl Deref for MediaSource {
     type Target = EventTarget;
@@ -66317,9 +70997,29 @@ impl MediaSource {
 #[cfg_attr(rust_js, rust_js::types = "MediaSourceHandle")]
 pub struct MediaSourceHandle(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaSourceHandle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaSourceHandle {}
+
 /// [`MediaStream`](https://developer.mozilla.org/docs/Web/API/MediaStream)
 #[cfg_attr(rust_js, rust_js::types = "MediaStream")]
 pub struct MediaStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaStream {}
 
 impl Deref for MediaStream {
     type Target = EventTarget;
@@ -66468,6 +71168,16 @@ impl MediaStream {
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamAudioDestinationNode")]
 pub struct MediaStreamAudioDestinationNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaStreamAudioDestinationNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaStreamAudioDestinationNode {}
+
 impl Deref for MediaStreamAudioDestinationNode {
     type Target = AudioNode;
 
@@ -66512,6 +71222,16 @@ impl MediaStreamAudioDestinationNode {
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamAudioSourceNode")]
 pub struct MediaStreamAudioSourceNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaStreamAudioSourceNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaStreamAudioSourceNode {}
+
 impl Deref for MediaStreamAudioSourceNode {
     type Target = AudioNode;
 
@@ -66555,6 +71275,16 @@ impl MediaStreamAudioSourceNode {
 /// [`MediaStreamTrack`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack)
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamTrack")]
 pub struct MediaStreamTrack(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MediaStreamTrack {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaStreamTrack {}
 
 impl Deref for MediaStreamTrack {
     type Target = EventTarget;
@@ -66759,6 +71489,16 @@ impl MediaStreamTrack {
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamTrackEvent")]
 pub struct MediaStreamTrackEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MediaStreamTrackEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MediaStreamTrackEvent {}
+
 impl Deref for MediaStreamTrackEvent {
     type Target = Event;
 
@@ -66803,6 +71543,16 @@ impl MediaStreamTrackEvent {
 #[cfg_attr(rust_js, rust_js::types = "MessageChannel")]
 pub struct MessageChannel(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MessageChannel {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MessageChannel {}
+
 pub mod message_channel {
     use super::*;
 
@@ -66837,6 +71587,16 @@ impl MessageChannel {
 /// [`MessagePort`](https://developer.mozilla.org/docs/Web/API/MessagePort)
 #[cfg_attr(rust_js, rust_js::types = "MessagePort")]
 pub struct MessagePort(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MessagePort {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MessagePort {}
 
 impl Deref for MessagePort {
     type Target = EventTarget;
@@ -66947,6 +71707,16 @@ impl MessagePort {
 #[cfg_attr(rust_js, rust_js::types = "MimeType")]
 pub struct MimeType(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MimeType {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MimeType {}
+
 impl MimeType {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MimeType/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
@@ -66985,6 +71755,16 @@ impl MimeType {
 /// [`MimeTypeArray`](https://developer.mozilla.org/docs/Web/API/MimeTypeArray)
 #[cfg_attr(rust_js, rust_js::types = "MimeTypeArray")]
 pub struct MimeTypeArray(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MimeTypeArray {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MimeTypeArray {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for MimeTypeArray {
@@ -67044,6 +71824,16 @@ impl MimeTypeArray {
 #[cfg_attr(rust_js, rust_js::types = "MutationObserver")]
 pub struct MutationObserver(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for MutationObserver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MutationObserver {}
+
 pub mod mutation_observer {
     use super::*;
 
@@ -67088,6 +71878,16 @@ impl MutationObserver {
 /// [`MutationRecord`](https://developer.mozilla.org/docs/Web/API/MutationRecord)
 #[cfg_attr(rust_js, rust_js::types = "MutationRecord")]
 pub struct MutationRecord(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for MutationRecord {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for MutationRecord {}
 
 impl MutationRecord {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationRecord/type)
@@ -67172,6 +71972,16 @@ impl MutationRecord {
 /// [`NamedNodeMap`](https://developer.mozilla.org/docs/Web/API/NamedNodeMap)
 #[cfg_attr(rust_js, rust_js::types = "NamedNodeMap")]
 pub struct NamedNodeMap(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NamedNodeMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NamedNodeMap {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for NamedNodeMap {
@@ -67273,6 +72083,16 @@ impl NamedNodeMap {
 /// [`NavigateEvent`](https://developer.mozilla.org/docs/Web/API/NavigateEvent)
 #[cfg_attr(rust_js, rust_js::types = "NavigateEvent")]
 pub struct NavigateEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigateEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigateEvent {}
 
 impl Deref for NavigateEvent {
     type Target = Event;
@@ -67418,6 +72238,16 @@ impl NavigateEvent {
 /// [`Navigation`](https://developer.mozilla.org/docs/Web/API/Navigation)
 #[cfg_attr(rust_js, rust_js::types = "Navigation")]
 pub struct Navigation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Navigation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Navigation {}
 
 impl Deref for Navigation {
     type Target = EventTarget;
@@ -67619,6 +72449,16 @@ impl Navigation {
 #[cfg_attr(rust_js, rust_js::types = "NavigationActivation")]
 pub struct NavigationActivation(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for NavigationActivation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationActivation {}
+
 impl NavigationActivation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationActivation/from)
     #[cfg_attr(rust_js, rust_js::link_name = "get from")]
@@ -67650,6 +72490,16 @@ impl NavigationActivation {
 /// [`NavigationCurrentEntryChangeEvent`](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEvent)
 #[cfg_attr(rust_js, rust_js::types = "NavigationCurrentEntryChangeEvent")]
 pub struct NavigationCurrentEntryChangeEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigationCurrentEntryChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationCurrentEntryChangeEvent {}
 
 impl Deref for NavigationCurrentEntryChangeEvent {
     type Target = Event;
@@ -67703,6 +72553,16 @@ impl NavigationCurrentEntryChangeEvent {
 /// [`NavigationDestination`](https://developer.mozilla.org/docs/Web/API/NavigationDestination)
 #[cfg_attr(rust_js, rust_js::types = "NavigationDestination")]
 pub struct NavigationDestination(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigationDestination {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationDestination {}
 
 impl NavigationDestination {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationDestination/url)
@@ -67759,6 +72619,16 @@ impl NavigationDestination {
 /// [`NavigationHistoryEntry`](https://developer.mozilla.org/docs/Web/API/NavigationHistoryEntry)
 #[cfg_attr(rust_js, rust_js::types = "NavigationHistoryEntry")]
 pub struct NavigationHistoryEntry(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigationHistoryEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationHistoryEntry {}
 
 impl Deref for NavigationHistoryEntry {
     type Target = EventTarget;
@@ -67856,6 +72726,16 @@ impl NavigationHistoryEntry {
 #[cfg_attr(rust_js, rust_js::types = "NavigationPrecommitController")]
 pub struct NavigationPrecommitController(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for NavigationPrecommitController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationPrecommitController {}
+
 impl NavigationPrecommitController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPrecommitController/redirect)
     #[cfg_attr(rust_js, rust_js::link_name = "redirect")]
@@ -67880,6 +72760,16 @@ impl NavigationPrecommitController {
 /// [`NavigationPreloadManager`](https://developer.mozilla.org/docs/Web/API/NavigationPreloadManager)
 #[cfg_attr(rust_js, rust_js::types = "NavigationPreloadManager")]
 pub struct NavigationPreloadManager(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigationPreloadManager {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationPreloadManager {}
 
 impl NavigationPreloadManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPreloadManager/enable)
@@ -67919,6 +72809,16 @@ impl NavigationPreloadManager {
 /// [`NavigationTransition`](https://developer.mozilla.org/docs/Web/API/NavigationTransition)
 #[cfg_attr(rust_js, rust_js::types = "NavigationTransition")]
 pub struct NavigationTransition(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NavigationTransition {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigationTransition {}
 
 impl NavigationTransition {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationTransition/navigationType)
@@ -67967,6 +72867,16 @@ impl NavigationTransition {
 #[cfg_attr(rust_js, rust_js::types = "NavigatorLogin")]
 pub struct NavigatorLogin(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for NavigatorLogin {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NavigatorLogin {}
+
 impl NavigatorLogin {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigatorLogin/setStatus)
     #[cfg_attr(rust_js, rust_js::link_name = "setStatus")]
@@ -67981,6 +72891,16 @@ impl NavigatorLogin {
 /// [`NodeIterator`](https://developer.mozilla.org/docs/Web/API/NodeIterator)
 #[cfg_attr(rust_js, rust_js::types = "NodeIterator")]
 pub struct NodeIterator(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for NodeIterator {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for NodeIterator {}
 
 impl NodeIterator {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeIterator/root)
@@ -68057,6 +72977,16 @@ impl NodeIterator {
 /// [`Notification`](https://developer.mozilla.org/docs/Web/API/Notification)
 #[cfg_attr(rust_js, rust_js::types = "Notification")]
 pub struct Notification(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Notification {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Notification {}
 
 impl Deref for Notification {
     type Target = EventTarget;
@@ -68281,6 +73211,16 @@ impl Notification {
 #[cfg_attr(rust_js, rust_js::types = "OfflineAudioCompletionEvent")]
 pub struct OfflineAudioCompletionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for OfflineAudioCompletionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OfflineAudioCompletionEvent {}
+
 impl Deref for OfflineAudioCompletionEvent {
     type Target = Event;
 
@@ -68324,6 +73264,16 @@ impl OfflineAudioCompletionEvent {
 /// [`OfflineAudioContext`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext)
 #[cfg_attr(rust_js, rust_js::types = "OfflineAudioContext")]
 pub struct OfflineAudioContext(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for OfflineAudioContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OfflineAudioContext {}
 
 impl Deref for OfflineAudioContext {
     type Target = BaseAudioContext;
@@ -68411,6 +73361,16 @@ impl OfflineAudioContext {
 /// [`OffscreenCanvas`](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas)
 #[cfg_attr(rust_js, rust_js::types = "OffscreenCanvas")]
 pub struct OffscreenCanvas(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for OffscreenCanvas {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OffscreenCanvas {}
 
 impl Deref for OffscreenCanvas {
     type Target = EventTarget;
@@ -68542,6 +73502,16 @@ impl OffscreenCanvas {
 /// [`OffscreenCanvasRenderingContext2D`](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D)
 #[cfg_attr(rust_js, rust_js::types = "OffscreenCanvasRenderingContext2D")]
 pub struct OffscreenCanvasRenderingContext2D(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for OffscreenCanvasRenderingContext2D {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OffscreenCanvasRenderingContext2D {}
 
 impl OffscreenCanvasRenderingContext2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/canvas)
@@ -69426,6 +74396,16 @@ impl OffscreenCanvasRenderingContext2D {
 #[cfg_attr(rust_js, rust_js::types = "Origin")]
 pub struct Origin(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Origin {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Origin {}
+
 pub mod origin {
     use super::*;
 
@@ -69476,6 +74456,16 @@ impl Origin {
 /// [`OscillatorNode`](https://developer.mozilla.org/docs/Web/API/OscillatorNode)
 #[cfg_attr(rust_js, rust_js::types = "OscillatorNode")]
 pub struct OscillatorNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for OscillatorNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OscillatorNode {}
 
 impl Deref for OscillatorNode {
     type Target = AudioScheduledSourceNode;
@@ -69554,6 +74544,16 @@ impl OscillatorNode {
 #[cfg_attr(rust_js, rust_js::types = "OverconstrainedError")]
 pub struct OverconstrainedError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for OverconstrainedError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for OverconstrainedError {}
+
 impl Deref for OverconstrainedError {
     type Target = DOMException;
 
@@ -69597,6 +74597,16 @@ impl OverconstrainedError {
 /// [`PageRevealEvent`](https://developer.mozilla.org/docs/Web/API/PageRevealEvent)
 #[cfg_attr(rust_js, rust_js::types = "PageRevealEvent")]
 pub struct PageRevealEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PageRevealEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PageRevealEvent {}
 
 impl Deref for PageRevealEvent {
     type Target = Event;
@@ -69642,6 +74652,16 @@ impl PageRevealEvent {
 /// [`PageSwapEvent`](https://developer.mozilla.org/docs/Web/API/PageSwapEvent)
 #[cfg_attr(rust_js, rust_js::types = "PageSwapEvent")]
 pub struct PageSwapEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PageSwapEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PageSwapEvent {}
 
 impl Deref for PageSwapEvent {
     type Target = Event;
@@ -69697,6 +74717,16 @@ impl PageSwapEvent {
 #[cfg_attr(rust_js, rust_js::types = "PageTransitionEvent")]
 pub struct PageTransitionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PageTransitionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PageTransitionEvent {}
+
 impl Deref for PageTransitionEvent {
     type Target = Event;
 
@@ -69740,6 +74770,16 @@ impl PageTransitionEvent {
 /// [`PannerNode`](https://developer.mozilla.org/docs/Web/API/PannerNode)
 #[cfg_attr(rust_js, rust_js::types = "PannerNode")]
 pub struct PannerNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PannerNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PannerNode {}
 
 impl Deref for PannerNode {
     type Target = AudioNode;
@@ -69971,6 +75011,16 @@ impl PannerNode {
 #[cfg_attr(rust_js, rust_js::types = "Path2D")]
 pub struct Path2D(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Path2D {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Path2D {}
+
 pub mod path2_d {
     use super::*;
 
@@ -70089,6 +75139,16 @@ impl Path2D {
 #[cfg_attr(rust_js, rust_js::types = "PaymentMethodChangeEvent")]
 pub struct PaymentMethodChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PaymentMethodChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PaymentMethodChangeEvent {}
+
 impl Deref for PaymentMethodChangeEvent {
     type Target = PaymentRequestUpdateEvent;
 
@@ -70141,6 +75201,16 @@ impl PaymentMethodChangeEvent {
 /// [`PaymentRequest`](https://developer.mozilla.org/docs/Web/API/PaymentRequest)
 #[cfg_attr(rust_js, rust_js::types = "PaymentRequest")]
 pub struct PaymentRequest(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PaymentRequest {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PaymentRequest {}
 
 impl Deref for PaymentRequest {
     type Target = EventTarget;
@@ -70282,6 +75352,16 @@ impl PaymentRequest {
 #[cfg_attr(rust_js, rust_js::types = "PaymentRequestUpdateEvent")]
 pub struct PaymentRequestUpdateEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PaymentRequestUpdateEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PaymentRequestUpdateEvent {}
+
 impl Deref for PaymentRequestUpdateEvent {
     type Target = Event;
 
@@ -70326,6 +75406,16 @@ impl PaymentRequestUpdateEvent {
 /// [`PaymentResponse`](https://developer.mozilla.org/docs/Web/API/PaymentResponse)
 #[cfg_attr(rust_js, rust_js::types = "PaymentResponse")]
 pub struct PaymentResponse(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PaymentResponse {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PaymentResponse {}
 
 impl Deref for PaymentResponse {
     type Target = EventTarget;
@@ -70457,6 +75547,16 @@ impl PaymentResponse {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceEntry")]
 pub struct PerformanceEntry(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceEntry {}
+
 impl PerformanceEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceEntry/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
@@ -70503,6 +75603,16 @@ impl PerformanceEntry {
 /// [`PerformanceEventTiming`](https://developer.mozilla.org/docs/Web/API/PerformanceEventTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceEventTiming")]
 pub struct PerformanceEventTiming(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformanceEventTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceEventTiming {}
 
 impl Deref for PerformanceEventTiming {
     type Target = PerformanceEntry;
@@ -70574,6 +75684,16 @@ impl PerformanceEventTiming {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceMark")]
 pub struct PerformanceMark(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceMark {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceMark {}
+
 impl Deref for PerformanceMark {
     type Target = PerformanceEntry;
 
@@ -70618,6 +75738,16 @@ impl PerformanceMark {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceMeasure")]
 pub struct PerformanceMeasure(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceMeasure {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceMeasure {}
+
 impl Deref for PerformanceMeasure {
     type Target = PerformanceEntry;
 
@@ -70653,6 +75783,16 @@ impl PerformanceMeasure {
 /// [`PerformanceNavigation`](https://developer.mozilla.org/docs/Web/API/PerformanceNavigation)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceNavigation")]
 pub struct PerformanceNavigation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformanceNavigation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceNavigation {}
 
 pub mod performance_navigation {
 
@@ -70701,6 +75841,16 @@ impl PerformanceNavigation {
 /// [`PerformanceNavigationTiming`](https://developer.mozilla.org/docs/Web/API/PerformanceNavigationTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceNavigationTiming")]
 pub struct PerformanceNavigationTiming(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformanceNavigationTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceNavigationTiming {}
 
 impl Deref for PerformanceNavigationTiming {
     type Target = PerformanceResourceTiming;
@@ -70811,6 +75961,16 @@ impl PerformanceNavigationTiming {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceObserver")]
 pub struct PerformanceObserver(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceObserver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceObserver {}
+
 pub mod performance_observer {
     use super::*;
 
@@ -70864,6 +76024,16 @@ impl PerformanceObserver {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceObserverEntryList")]
 pub struct PerformanceObserverEntryList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceObserverEntryList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceObserverEntryList {}
+
 impl PerformanceObserverEntryList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntries)
     #[cfg_attr(rust_js, rust_js::link_name = "getEntries")]
@@ -70894,6 +76064,16 @@ impl PerformanceObserverEntryList {
 /// [`PerformancePaintTiming`](https://developer.mozilla.org/docs/Web/API/PerformancePaintTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformancePaintTiming")]
 pub struct PerformancePaintTiming(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformancePaintTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformancePaintTiming {}
 
 impl Deref for PerformancePaintTiming {
     type Target = PerformanceEntry;
@@ -70939,6 +76119,16 @@ impl PerformancePaintTiming {
 /// [`PerformanceResourceTiming`](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceResourceTiming")]
 pub struct PerformanceResourceTiming(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformanceResourceTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceResourceTiming {}
 
 impl Deref for PerformanceResourceTiming {
     type Target = PerformanceEntry;
@@ -71156,6 +76346,16 @@ impl PerformanceResourceTiming {
 #[cfg_attr(rust_js, rust_js::types = "PerformanceServerTiming")]
 pub struct PerformanceServerTiming(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PerformanceServerTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceServerTiming {}
+
 impl PerformanceServerTiming {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceServerTiming/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
@@ -71194,6 +76394,16 @@ impl PerformanceServerTiming {
 /// [`PerformanceTiming`](https://developer.mozilla.org/docs/Web/API/PerformanceTiming)
 #[cfg_attr(rust_js, rust_js::types = "PerformanceTiming")]
 pub struct PerformanceTiming(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PerformanceTiming {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PerformanceTiming {}
 
 impl PerformanceTiming {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceTiming/navigationStart)
@@ -71399,6 +76609,16 @@ impl PerformanceTiming {
 #[cfg_attr(rust_js, rust_js::types = "PeriodicWave")]
 pub struct PeriodicWave(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PeriodicWave {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PeriodicWave {}
+
 pub mod periodic_wave {
     use super::*;
 
@@ -71414,6 +76634,16 @@ pub mod periodic_wave {
 /// [`PermissionStatus`](https://developer.mozilla.org/docs/Web/API/PermissionStatus)
 #[cfg_attr(rust_js, rust_js::types = "PermissionStatus")]
 pub struct PermissionStatus(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PermissionStatus {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PermissionStatus {}
 
 impl Deref for PermissionStatus {
     type Target = EventTarget;
@@ -71477,6 +76707,16 @@ impl PermissionStatus {
 #[cfg_attr(rust_js, rust_js::types = "Permissions")]
 pub struct Permissions(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Permissions {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Permissions {}
+
 impl Permissions {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Permissions/query)
     #[cfg_attr(rust_js, rust_js::link_name = "query")]
@@ -71491,6 +76731,16 @@ impl Permissions {
 /// [`PictureInPictureEvent`](https://developer.mozilla.org/docs/Web/API/PictureInPictureEvent)
 #[cfg_attr(rust_js, rust_js::types = "PictureInPictureEvent")]
 pub struct PictureInPictureEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PictureInPictureEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PictureInPictureEvent {}
 
 impl Deref for PictureInPictureEvent {
     type Target = Event;
@@ -71535,6 +76785,16 @@ impl PictureInPictureEvent {
 /// [`PictureInPictureWindow`](https://developer.mozilla.org/docs/Web/API/PictureInPictureWindow)
 #[cfg_attr(rust_js, rust_js::types = "PictureInPictureWindow")]
 pub struct PictureInPictureWindow(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PictureInPictureWindow {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PictureInPictureWindow {}
 
 impl Deref for PictureInPictureWindow {
     type Target = EventTarget;
@@ -71599,6 +76859,16 @@ impl PictureInPictureWindow {
 /// [`Plugin`](https://developer.mozilla.org/docs/Web/API/Plugin)
 #[cfg_attr(rust_js, rust_js::types = "Plugin")]
 pub struct Plugin(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Plugin {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Plugin {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for Plugin {
@@ -71682,6 +76952,16 @@ impl Plugin {
 #[cfg_attr(rust_js, rust_js::types = "PluginArray")]
 pub struct PluginArray(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PluginArray {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PluginArray {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for PluginArray {
     type Output = Plugin;
@@ -71749,6 +77029,16 @@ impl PluginArray {
 #[cfg_attr(rust_js, rust_js::types = "PopStateEvent")]
 pub struct PopStateEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PopStateEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PopStateEvent {}
+
 impl Deref for PopStateEvent {
     type Target = Event;
 
@@ -71800,6 +77090,16 @@ impl PopStateEvent {
 /// [`ProcessingInstruction`](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction)
 #[cfg_attr(rust_js, rust_js::types = "ProcessingInstruction")]
 pub struct ProcessingInstruction(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ProcessingInstruction {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ProcessingInstruction {}
 
 impl Deref for ProcessingInstruction {
     type Target = CharacterData;
@@ -71913,6 +77213,16 @@ impl ProcessingInstruction {
 #[cfg_attr(rust_js, rust_js::types = "ProgressEvent")]
 pub struct ProgressEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ProgressEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ProgressEvent {}
+
 impl Deref for ProgressEvent {
     type Target = Event;
 
@@ -71973,6 +77283,16 @@ impl ProgressEvent {
 #[cfg_attr(rust_js, rust_js::types = "PromiseRejectionEvent")]
 pub struct PromiseRejectionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PromiseRejectionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PromiseRejectionEvent {}
+
 impl Deref for PromiseRejectionEvent {
     type Target = Event;
 
@@ -72024,6 +77344,16 @@ impl PromiseRejectionEvent {
 /// [`PublicKeyCredential`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredential)
 #[cfg_attr(rust_js, rust_js::types = "PublicKeyCredential")]
 pub struct PublicKeyCredential(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PublicKeyCredential {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PublicKeyCredential {}
 
 impl Deref for PublicKeyCredential {
     type Target = Credential;
@@ -72150,6 +77480,16 @@ impl PublicKeyCredential {
 #[cfg_attr(rust_js, rust_js::types = "PushManager")]
 pub struct PushManager(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PushManager {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PushManager {}
+
 pub mod push_manager {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/supportedContentEncodings)
@@ -72191,6 +77531,16 @@ impl PushManager {
 /// [`PushSubscription`](https://developer.mozilla.org/docs/Web/API/PushSubscription)
 #[cfg_attr(rust_js, rust_js::types = "PushSubscription")]
 pub struct PushSubscription(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for PushSubscription {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PushSubscription {}
 
 impl PushSubscription {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscription/endpoint)
@@ -72249,6 +77599,16 @@ impl PushSubscription {
 #[cfg_attr(rust_js, rust_js::types = "PushSubscriptionOptions")]
 pub struct PushSubscriptionOptions(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for PushSubscriptionOptions {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for PushSubscriptionOptions {}
+
 impl PushSubscriptionOptions {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushSubscriptionOptions/userVisibleOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "get userVisibleOnly")]
@@ -72273,6 +77633,16 @@ impl PushSubscriptionOptions {
 #[cfg_attr(rust_js, rust_js::types = "RTCCertificate")]
 pub struct RTCCertificate(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCCertificate {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCCertificate {}
+
 impl RTCCertificate {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCCertificate/expires)
     #[cfg_attr(rust_js, rust_js::link_name = "get expires")]
@@ -72296,6 +77666,16 @@ impl RTCCertificate {
 /// [`RTCDTMFSender`](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender)
 #[cfg_attr(rust_js, rust_js::types = "RTCDTMFSender")]
 pub struct RTCDTMFSender(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCDTMFSender {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCDTMFSender {}
 
 impl Deref for RTCDTMFSender {
     type Target = EventTarget;
@@ -72368,6 +77748,16 @@ impl RTCDTMFSender {
 #[cfg_attr(rust_js, rust_js::types = "RTCDTMFToneChangeEvent")]
 pub struct RTCDTMFToneChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCDTMFToneChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCDTMFToneChangeEvent {}
+
 impl Deref for RTCDTMFToneChangeEvent {
     type Target = Event;
 
@@ -72411,6 +77801,16 @@ impl RTCDTMFToneChangeEvent {
 /// [`RTCDataChannel`](https://developer.mozilla.org/docs/Web/API/RTCDataChannel)
 #[cfg_attr(rust_js, rust_js::types = "RTCDataChannel")]
 pub struct RTCDataChannel(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCDataChannel {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCDataChannel {}
 
 impl Deref for RTCDataChannel {
     type Target = EventTarget;
@@ -72702,6 +78102,16 @@ impl RTCDataChannel {
 #[cfg_attr(rust_js, rust_js::types = "RTCDataChannelEvent")]
 pub struct RTCDataChannelEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCDataChannelEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCDataChannelEvent {}
+
 impl Deref for RTCDataChannelEvent {
     type Target = Event;
 
@@ -72745,6 +78155,16 @@ impl RTCDataChannelEvent {
 /// [`RTCDtlsTransport`](https://developer.mozilla.org/docs/Web/API/RTCDtlsTransport)
 #[cfg_attr(rust_js, rust_js::types = "RTCDtlsTransport")]
 pub struct RTCDtlsTransport(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCDtlsTransport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCDtlsTransport {}
 
 impl Deref for RTCDtlsTransport {
     type Target = EventTarget;
@@ -72834,6 +78254,16 @@ impl RTCDtlsTransport {
 #[cfg_attr(rust_js, rust_js::types = "RTCEncodedAudioFrame")]
 pub struct RTCEncodedAudioFrame(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCEncodedAudioFrame {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCEncodedAudioFrame {}
+
 pub mod rtc_encoded_audio_frame {
     use super::*;
 
@@ -72876,6 +78306,16 @@ impl RTCEncodedAudioFrame {
 /// [`RTCEncodedVideoFrame`](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame)
 #[cfg_attr(rust_js, rust_js::types = "RTCEncodedVideoFrame")]
 pub struct RTCEncodedVideoFrame(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCEncodedVideoFrame {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCEncodedVideoFrame {}
 
 pub mod rtc_encoded_video_frame {
     use super::*;
@@ -72927,6 +78367,16 @@ impl RTCEncodedVideoFrame {
 /// [`RTCError`](https://developer.mozilla.org/docs/Web/API/RTCError)
 #[cfg_attr(rust_js, rust_js::types = "RTCError")]
 pub struct RTCError(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCError {}
 
 impl Deref for RTCError {
     type Target = DOMException;
@@ -73008,6 +78458,16 @@ impl RTCError {
 #[cfg_attr(rust_js, rust_js::types = "RTCErrorEvent")]
 pub struct RTCErrorEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCErrorEvent {}
+
 impl Deref for RTCErrorEvent {
     type Target = Event;
 
@@ -73051,6 +78511,16 @@ impl RTCErrorEvent {
 /// [`RTCIceCandidate`](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate)
 #[cfg_attr(rust_js, rust_js::types = "RTCIceCandidate")]
 pub struct RTCIceCandidate(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCIceCandidate {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCIceCandidate {}
 
 pub mod rtc_ice_candidate {
     use super::*;
@@ -73204,6 +78674,16 @@ impl RTCIceCandidate {
 #[cfg_attr(rust_js, rust_js::types = "RTCIceTransport")]
 pub struct RTCIceTransport(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCIceTransport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCIceTransport {}
+
 impl Deref for RTCIceTransport {
     type Target = EventTarget;
 
@@ -73317,6 +78797,16 @@ impl RTCIceTransport {
 /// [`RTCPeerConnection`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection)
 #[cfg_attr(rust_js, rust_js::types = "RTCPeerConnection")]
 pub struct RTCPeerConnection(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCPeerConnection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCPeerConnection {}
 
 impl Deref for RTCPeerConnection {
     type Target = EventTarget;
@@ -73785,6 +79275,16 @@ impl RTCPeerConnection {
 #[cfg_attr(rust_js, rust_js::types = "RTCPeerConnectionIceErrorEvent")]
 pub struct RTCPeerConnectionIceErrorEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCPeerConnectionIceErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCPeerConnectionIceErrorEvent {}
+
 impl Deref for RTCPeerConnectionIceErrorEvent {
     type Target = Event;
 
@@ -73864,6 +79364,16 @@ impl RTCPeerConnectionIceErrorEvent {
 #[cfg_attr(rust_js, rust_js::types = "RTCPeerConnectionIceEvent")]
 pub struct RTCPeerConnectionIceEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCPeerConnectionIceEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCPeerConnectionIceEvent {}
+
 impl Deref for RTCPeerConnectionIceEvent {
     type Target = Event;
 
@@ -73908,6 +79418,16 @@ impl RTCPeerConnectionIceEvent {
 /// [`RTCRtpReceiver`](https://developer.mozilla.org/docs/Web/API/RTCRtpReceiver)
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpReceiver")]
 pub struct RTCRtpReceiver(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCRtpReceiver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCRtpReceiver {}
 
 pub mod rtc_rtp_receiver {
     use super::*;
@@ -74004,6 +79524,16 @@ impl RTCRtpReceiver {
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpScriptTransform")]
 pub struct RTCRtpScriptTransform(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCRtpScriptTransform {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCRtpScriptTransform {}
+
 pub mod rtc_rtp_script_transform {
     use super::*;
 
@@ -74019,6 +79549,16 @@ pub mod rtc_rtp_script_transform {
 /// [`RTCRtpSender`](https://developer.mozilla.org/docs/Web/API/RTCRtpSender)
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpSender")]
 pub struct RTCRtpSender(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCRtpSender {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCRtpSender {}
 
 pub mod rtc_rtp_sender {
     use super::*;
@@ -74117,6 +79657,16 @@ impl RTCRtpSender {
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpTransceiver")]
 pub struct RTCRtpTransceiver(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCRtpTransceiver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCRtpTransceiver {}
+
 impl RTCRtpTransceiver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiver/mid)
     #[cfg_attr(rust_js, rust_js::link_name = "get mid")]
@@ -74191,6 +79741,16 @@ impl RTCRtpTransceiver {
 /// [`RTCSctpTransport`](https://developer.mozilla.org/docs/Web/API/RTCSctpTransport)
 #[cfg_attr(rust_js, rust_js::types = "RTCSctpTransport")]
 pub struct RTCSctpTransport(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCSctpTransport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCSctpTransport {}
 
 impl Deref for RTCSctpTransport {
     type Target = EventTarget;
@@ -74272,6 +79832,16 @@ impl RTCSctpTransport {
 #[cfg_attr(rust_js, rust_js::types = "RTCSessionDescription")]
 pub struct RTCSessionDescription(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RTCSessionDescription {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCSessionDescription {}
+
 pub mod rtc_session_description {
     use super::*;
 
@@ -74314,6 +79884,16 @@ impl RTCSessionDescription {
 /// [`RTCStatsReport`](https://developer.mozilla.org/docs/Web/API/RTCStatsReport)
 #[cfg_attr(rust_js, rust_js::types = "RTCStatsReport")]
 pub struct RTCStatsReport(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCStatsReport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCStatsReport {}
 
 impl RTCStatsReport {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/forEach)
@@ -74378,6 +79958,16 @@ impl RTCStatsReport {
 /// [`RTCTrackEvent`](https://developer.mozilla.org/docs/Web/API/RTCTrackEvent)
 #[cfg_attr(rust_js, rust_js::types = "RTCTrackEvent")]
 pub struct RTCTrackEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RTCTrackEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RTCTrackEvent {}
 
 impl Deref for RTCTrackEvent {
     type Target = Event;
@@ -74447,6 +80037,16 @@ impl RTCTrackEvent {
 #[cfg_attr(rust_js, rust_js::types = "RadioNodeList")]
 pub struct RadioNodeList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for RadioNodeList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RadioNodeList {}
+
 impl Deref for RadioNodeList {
     type Target = NodeList;
 
@@ -74510,6 +80110,16 @@ impl RadioNodeList {
 /// [`Range`](https://developer.mozilla.org/docs/Web/API/Range)
 #[cfg_attr(rust_js, rust_js::types = "Range")]
 pub struct Range(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Range {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Range {}
 
 impl Deref for Range {
     type Target = AbstractRange;
@@ -74774,6 +80384,16 @@ impl Range {
 #[cfg_attr(rust_js, rust_js::types = "ReadableByteStreamController")]
 pub struct ReadableByteStreamController(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ReadableByteStreamController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableByteStreamController {}
+
 impl ReadableByteStreamController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/byobRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "get byobRequest")]
@@ -74825,6 +80445,16 @@ impl ReadableByteStreamController {
 /// [`ReadableStreamBYOBReader`](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader)
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamBYOBReader")]
 pub struct ReadableStreamBYOBReader(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ReadableStreamBYOBReader {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStreamBYOBReader {}
 
 pub mod readable_stream_byob_reader {
     use super::*;
@@ -74878,6 +80508,16 @@ impl ReadableStreamBYOBReader {
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamBYOBRequest")]
 pub struct ReadableStreamBYOBRequest(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ReadableStreamBYOBRequest {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStreamBYOBRequest {}
+
 impl ReadableStreamBYOBRequest {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBRequest/view)
     #[cfg_attr(rust_js, rust_js::link_name = "get view")]
@@ -74911,6 +80551,16 @@ impl ReadableStreamBYOBRequest {
 /// [`ReadableStreamDefaultController`](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController)
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamDefaultController")]
 pub struct ReadableStreamDefaultController(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ReadableStreamDefaultController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStreamDefaultController {}
 
 impl ReadableStreamDefaultController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/desiredSize)
@@ -74954,6 +80604,16 @@ impl ReadableStreamDefaultController {
 /// [`ReadableStreamDefaultReader`](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader)
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamDefaultReader")]
 pub struct ReadableStreamDefaultReader(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ReadableStreamDefaultReader {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStreamDefaultReader {}
 
 pub mod readable_stream_default_reader {
     use super::*;
@@ -75006,6 +80666,16 @@ impl ReadableStreamDefaultReader {
 /// [`RemotePlayback`](https://developer.mozilla.org/docs/Web/API/RemotePlayback)
 #[cfg_attr(rust_js, rust_js::types = "RemotePlayback")]
 pub struct RemotePlayback(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for RemotePlayback {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for RemotePlayback {}
 
 impl Deref for RemotePlayback {
     type Target = EventTarget;
@@ -75121,6 +80791,16 @@ impl RemotePlayback {
 #[cfg_attr(rust_js, rust_js::types = "ReportingObserver")]
 pub struct ReportingObserver(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ReportingObserver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReportingObserver {}
+
 pub mod reporting_observer {
     use super::*;
 
@@ -75165,6 +80845,16 @@ impl ReportingObserver {
 /// [`ResizeObserver`](https://developer.mozilla.org/docs/Web/API/ResizeObserver)
 #[cfg_attr(rust_js, rust_js::types = "ResizeObserver")]
 pub struct ResizeObserver(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ResizeObserver {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ResizeObserver {}
 
 pub mod resize_observer {
     use super::*;
@@ -75211,6 +80901,16 @@ impl ResizeObserver {
 /// [`ResizeObserverEntry`](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry)
 #[cfg_attr(rust_js, rust_js::types = "ResizeObserverEntry")]
 pub struct ResizeObserverEntry(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ResizeObserverEntry {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ResizeObserverEntry {}
 
 impl ResizeObserverEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverEntry/target)
@@ -75259,6 +80959,16 @@ impl ResizeObserverEntry {
 #[cfg_attr(rust_js, rust_js::types = "ResizeObserverSize")]
 pub struct ResizeObserverSize(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ResizeObserverSize {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ResizeObserverSize {}
+
 impl ResizeObserverSize {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserverSize/inlineSize)
     #[cfg_attr(rust_js, rust_js::link_name = "get inlineSize")]
@@ -75281,6 +80991,16 @@ impl ResizeObserverSize {
 /// [`SVGAngle`](https://developer.mozilla.org/docs/Web/API/SVGAngle)
 #[cfg_attr(rust_js, rust_js::types = "SVGAngle")]
 pub struct SVGAngle(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAngle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAngle {}
 
 pub mod svg_angle {
 
@@ -75382,6 +81102,16 @@ impl SVGAngle {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedAngle")]
 pub struct SVGAnimatedAngle(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedAngle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedAngle {}
+
 impl SVGAnimatedAngle {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedAngle/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75404,6 +81134,16 @@ impl SVGAnimatedAngle {
 /// [`SVGAnimatedBoolean`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedBoolean)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedBoolean")]
 pub struct SVGAnimatedBoolean(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedBoolean {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedBoolean {}
 
 impl SVGAnimatedBoolean {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedBoolean/baseVal)
@@ -75435,6 +81175,16 @@ impl SVGAnimatedBoolean {
 /// [`SVGAnimatedEnumeration`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedEnumeration)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedEnumeration")]
 pub struct SVGAnimatedEnumeration(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedEnumeration {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedEnumeration {}
 
 impl SVGAnimatedEnumeration {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedEnumeration/baseVal)
@@ -75469,6 +81219,16 @@ impl SVGAnimatedEnumeration {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedInteger")]
 pub struct SVGAnimatedInteger(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedInteger {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedInteger {}
+
 impl SVGAnimatedInteger {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedInteger/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75502,6 +81262,16 @@ impl SVGAnimatedInteger {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedLength")]
 pub struct SVGAnimatedLength(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedLength {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedLength {}
+
 impl SVGAnimatedLength {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedLength/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75525,6 +81295,16 @@ impl SVGAnimatedLength {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedLengthList")]
 pub struct SVGAnimatedLengthList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedLengthList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedLengthList {}
+
 impl SVGAnimatedLengthList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedLengthList/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75547,6 +81327,16 @@ impl SVGAnimatedLengthList {
 /// [`SVGAnimatedNumber`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumber)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedNumber")]
 pub struct SVGAnimatedNumber(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedNumber {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedNumber {}
 
 impl SVGAnimatedNumber {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumber/baseVal)
@@ -75579,6 +81369,16 @@ impl SVGAnimatedNumber {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedNumberList")]
 pub struct SVGAnimatedNumberList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedNumberList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedNumberList {}
+
 impl SVGAnimatedNumberList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedNumberList/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75601,6 +81401,16 @@ impl SVGAnimatedNumberList {
 /// [`SVGAnimatedPreserveAspectRatio`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedPreserveAspectRatio)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedPreserveAspectRatio")]
 pub struct SVGAnimatedPreserveAspectRatio(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedPreserveAspectRatio {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedPreserveAspectRatio {}
 
 impl SVGAnimatedPreserveAspectRatio {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedPreserveAspectRatio/baseVal)
@@ -75625,6 +81435,16 @@ impl SVGAnimatedPreserveAspectRatio {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedRect")]
 pub struct SVGAnimatedRect(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedRect {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedRect {}
+
 impl SVGAnimatedRect {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedRect/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75647,6 +81467,16 @@ impl SVGAnimatedRect {
 /// [`SVGAnimatedString`](https://developer.mozilla.org/docs/Web/API/SVGAnimatedString)
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedString")]
 pub struct SVGAnimatedString(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedString {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedString {}
 
 impl SVGAnimatedString {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedString/baseVal)
@@ -75671,6 +81501,16 @@ impl SVGAnimatedString {
 #[cfg_attr(rust_js, rust_js::types = "SVGAnimatedTransformList")]
 pub struct SVGAnimatedTransformList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGAnimatedTransformList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGAnimatedTransformList {}
+
 impl SVGAnimatedTransformList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedTransformList/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
@@ -75693,6 +81533,16 @@ impl SVGAnimatedTransformList {
 /// [`SVGLength`](https://developer.mozilla.org/docs/Web/API/SVGLength)
 #[cfg_attr(rust_js, rust_js::types = "SVGLength")]
 pub struct SVGLength(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGLength {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGLength {}
 
 pub mod svg_length {
 
@@ -75812,6 +81662,16 @@ impl SVGLength {
 #[cfg_attr(rust_js, rust_js::types = "SVGLengthList")]
 pub struct SVGLengthList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGLengthList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGLengthList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for SVGLengthList {
     type Output = SVGLength;
@@ -75918,6 +81778,16 @@ impl SVGLengthList {
 #[cfg_attr(rust_js, rust_js::types = "SVGNumber")]
 pub struct SVGNumber(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGNumber {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGNumber {}
+
 impl SVGNumber {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGNumber/value)
     #[cfg_attr(rust_js, rust_js::link_name = "get value")]
@@ -75940,6 +81810,16 @@ impl SVGNumber {
 /// [`SVGNumberList`](https://developer.mozilla.org/docs/Web/API/SVGNumberList)
 #[cfg_attr(rust_js, rust_js::types = "SVGNumberList")]
 pub struct SVGNumberList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGNumberList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGNumberList {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for SVGNumberList {
@@ -76047,6 +81927,16 @@ impl SVGNumberList {
 #[cfg_attr(rust_js, rust_js::types = "SVGPointList")]
 pub struct SVGPointList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGPointList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPointList {}
+
 pub mod svg_point_list {
     use super::*;
 
@@ -76141,6 +82031,16 @@ impl SVGPointList {
 #[cfg_attr(rust_js, rust_js::types = "SVGPreserveAspectRatio")]
 pub struct SVGPreserveAspectRatio(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGPreserveAspectRatio {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGPreserveAspectRatio {}
+
 pub mod svg_preserve_aspect_ratio {
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_UNKNOWN`
@@ -76226,6 +82126,16 @@ impl SVGPreserveAspectRatio {
 /// [`SVGStringList`](https://developer.mozilla.org/docs/Web/API/SVGStringList)
 #[cfg_attr(rust_js, rust_js::types = "SVGStringList")]
 pub struct SVGStringList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGStringList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGStringList {}
 
 pub mod svg_string_list {
     use super::*;
@@ -76320,6 +82230,16 @@ impl SVGStringList {
 /// [`SVGTransform`](https://developer.mozilla.org/docs/Web/API/SVGTransform)
 #[cfg_attr(rust_js, rust_js::types = "SVGTransform")]
 pub struct SVGTransform(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGTransform {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTransform {}
 
 pub mod svg_transform {
 
@@ -76430,6 +82350,16 @@ impl SVGTransform {
 /// [`SVGTransformList`](https://developer.mozilla.org/docs/Web/API/SVGTransformList)
 #[cfg_attr(rust_js, rust_js::types = "SVGTransformList")]
 pub struct SVGTransformList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SVGTransformList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGTransformList {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for SVGTransformList {
@@ -76554,6 +82484,16 @@ impl SVGTransformList {
 #[cfg_attr(rust_js, rust_js::types = "SVGUnitTypes")]
 pub struct SVGUnitTypes(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SVGUnitTypes {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SVGUnitTypes {}
+
 pub mod svg_unit_types {
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_UNKNOWN`
@@ -76569,6 +82509,16 @@ pub mod svg_unit_types {
 /// [`Sanitizer`](https://developer.mozilla.org/docs/Web/API/Sanitizer)
 #[cfg_attr(rust_js, rust_js::types = "Sanitizer")]
 pub struct Sanitizer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Sanitizer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Sanitizer {}
 
 pub mod sanitizer {
     use super::*;
@@ -76685,6 +82635,16 @@ impl Sanitizer {
 #[cfg_attr(rust_js, rust_js::types = "Scheduler")]
 pub struct Scheduler(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Scheduler {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Scheduler {}
+
 impl Scheduler {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Scheduler/postTask)
     #[cfg_attr(rust_js, rust_js::link_name = "postTask")]
@@ -76710,6 +82670,16 @@ impl Scheduler {
 /// [`Screen`](https://developer.mozilla.org/docs/Web/API/Screen)
 #[cfg_attr(rust_js, rust_js::types = "Screen")]
 pub struct Screen(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Screen {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Screen {}
 
 impl Screen {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/availWidth)
@@ -76779,6 +82749,16 @@ impl Screen {
 /// [`ScreenOrientation`](https://developer.mozilla.org/docs/Web/API/ScreenOrientation)
 #[cfg_attr(rust_js, rust_js::types = "ScreenOrientation")]
 pub struct ScreenOrientation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ScreenOrientation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ScreenOrientation {}
 
 impl Deref for ScreenOrientation {
     type Target = EventTarget;
@@ -76860,6 +82840,16 @@ impl ScreenOrientation {
 #[cfg_attr(rust_js, rust_js::types = "ScriptProcessorNode")]
 pub struct ScriptProcessorNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ScriptProcessorNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ScriptProcessorNode {}
+
 impl Deref for ScriptProcessorNode {
     type Target = AudioNode;
 
@@ -76915,6 +82905,16 @@ impl ScriptProcessorNode {
 #[cfg_attr(rust_js, rust_js::types = "ScrollTimeline")]
 pub struct ScrollTimeline(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ScrollTimeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ScrollTimeline {}
+
 impl Deref for ScrollTimeline {
     type Target = AnimationTimeline;
 
@@ -76967,6 +82967,16 @@ impl ScrollTimeline {
 /// [`SecurityPolicyViolationEvent`](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent)
 #[cfg_attr(rust_js, rust_js::types = "SecurityPolicyViolationEvent")]
 pub struct SecurityPolicyViolationEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SecurityPolicyViolationEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SecurityPolicyViolationEvent {}
 
 impl Deref for SecurityPolicyViolationEvent {
     type Target = Event;
@@ -77102,6 +83112,16 @@ impl SecurityPolicyViolationEvent {
 /// [`Selection`](https://developer.mozilla.org/docs/Web/API/Selection)
 #[cfg_attr(rust_js, rust_js::types = "Selection")]
 pub struct Selection(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Selection {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Selection {}
 
 impl Selection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/anchorNode)
@@ -77328,6 +83348,16 @@ impl Selection {
 #[cfg_attr(rust_js, rust_js::types = "Serial")]
 pub struct Serial(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Serial {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Serial {}
+
 impl Deref for Serial {
     type Target = EventTarget;
 
@@ -77371,6 +83401,16 @@ impl Serial {
 /// [`SerialPort`](https://developer.mozilla.org/docs/Web/API/SerialPort)
 #[cfg_attr(rust_js, rust_js::types = "SerialPort")]
 pub struct SerialPort(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SerialPort {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SerialPort {}
 
 impl Deref for SerialPort {
     type Target = EventTarget;
@@ -77510,6 +83550,16 @@ impl SerialPort {
 #[cfg_attr(rust_js, rust_js::types = "ServiceWorker")]
 pub struct ServiceWorker(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ServiceWorker {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ServiceWorker {}
+
 impl Deref for ServiceWorker {
     type Target = EventTarget;
 
@@ -77598,6 +83648,16 @@ impl ServiceWorker {
 /// [`ServiceWorkerContainer`](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer)
 #[cfg_attr(rust_js, rust_js::types = "ServiceWorkerContainer")]
 pub struct ServiceWorkerContainer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ServiceWorkerContainer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ServiceWorkerContainer {}
 
 impl Deref for ServiceWorkerContainer {
     type Target = EventTarget;
@@ -77730,6 +83790,16 @@ impl ServiceWorkerContainer {
 /// [`ServiceWorkerRegistration`](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration)
 #[cfg_attr(rust_js, rust_js::types = "ServiceWorkerRegistration")]
 pub struct ServiceWorkerRegistration(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ServiceWorkerRegistration {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ServiceWorkerRegistration {}
 
 impl Deref for ServiceWorkerRegistration {
     type Target = EventTarget;
@@ -77875,6 +83945,16 @@ impl ServiceWorkerRegistration {
 /// [`ShadowRoot`](https://developer.mozilla.org/docs/Web/API/ShadowRoot)
 #[cfg_attr(rust_js, rust_js::types = "ShadowRoot")]
 pub struct ShadowRoot(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ShadowRoot {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ShadowRoot {}
 
 impl Deref for ShadowRoot {
     type Target = DocumentFragment;
@@ -78081,6 +84161,16 @@ impl ShadowRoot {
 #[cfg_attr(rust_js, rust_js::types = "SharedWorker")]
 pub struct SharedWorker(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SharedWorker {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SharedWorker {}
+
 impl Deref for SharedWorker {
     type Target = EventTarget;
 
@@ -78142,6 +84232,16 @@ impl SharedWorker {
 /// [`SourceBuffer`](https://developer.mozilla.org/docs/Web/API/SourceBuffer)
 #[cfg_attr(rust_js, rust_js::types = "SourceBuffer")]
 pub struct SourceBuffer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SourceBuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SourceBuffer {}
 
 impl Deref for SourceBuffer {
     type Target = EventTarget;
@@ -78377,6 +84477,16 @@ impl SourceBuffer {
 #[cfg_attr(rust_js, rust_js::types = "SourceBufferList")]
 pub struct SourceBufferList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SourceBufferList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SourceBufferList {}
+
 impl Deref for SourceBufferList {
     type Target = EventTarget;
 
@@ -78462,6 +84572,16 @@ impl SourceBufferList {
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionAlternative")]
 pub struct SpeechRecognitionAlternative(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SpeechRecognitionAlternative {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechRecognitionAlternative {}
+
 impl SpeechRecognitionAlternative {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionAlternative/transcript)
     #[cfg_attr(rust_js, rust_js::link_name = "get transcript")]
@@ -78484,6 +84604,16 @@ impl SpeechRecognitionAlternative {
 /// [`SpeechRecognitionErrorEvent`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEvent)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionErrorEvent")]
 pub struct SpeechRecognitionErrorEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SpeechRecognitionErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechRecognitionErrorEvent {}
 
 impl Deref for SpeechRecognitionErrorEvent {
     type Target = Event;
@@ -78537,6 +84667,16 @@ impl SpeechRecognitionErrorEvent {
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionEvent")]
 pub struct SpeechRecognitionEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SpeechRecognitionEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechRecognitionEvent {}
+
 impl Deref for SpeechRecognitionEvent {
     type Target = Event;
 
@@ -78589,6 +84729,16 @@ impl SpeechRecognitionEvent {
 /// [`SpeechRecognitionResult`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResult")]
 pub struct SpeechRecognitionResult(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SpeechRecognitionResult {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechRecognitionResult {}
 
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for SpeechRecognitionResult {
@@ -78647,6 +84797,16 @@ impl SpeechRecognitionResult {
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResultList")]
 pub struct SpeechRecognitionResultList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SpeechRecognitionResultList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechRecognitionResultList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for SpeechRecognitionResultList {
     type Output = SpeechRecognitionResult;
@@ -78695,6 +84855,16 @@ impl SpeechRecognitionResultList {
 /// [`SpeechSynthesis`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesis)
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesis")]
 pub struct SpeechSynthesis(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SpeechSynthesis {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechSynthesis {}
 
 impl Deref for SpeechSynthesis {
     type Target = EventTarget;
@@ -78810,6 +84980,16 @@ impl SpeechSynthesis {
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisErrorEvent")]
 pub struct SpeechSynthesisErrorEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SpeechSynthesisErrorEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechSynthesisErrorEvent {}
+
 impl Deref for SpeechSynthesisErrorEvent {
     type Target = SpeechSynthesisEvent;
 
@@ -78853,6 +85033,16 @@ impl SpeechSynthesisErrorEvent {
 /// [`SpeechSynthesisEvent`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEvent)
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisEvent")]
 pub struct SpeechSynthesisEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SpeechSynthesisEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechSynthesisEvent {}
 
 impl Deref for SpeechSynthesisEvent {
     type Target = Event;
@@ -78931,6 +85121,16 @@ impl SpeechSynthesisEvent {
 /// [`SpeechSynthesisUtterance`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance)
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisUtterance")]
 pub struct SpeechSynthesisUtterance(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SpeechSynthesisUtterance {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechSynthesisUtterance {}
 
 impl Deref for SpeechSynthesisUtterance {
     type Target = EventTarget;
@@ -79192,6 +85392,16 @@ impl SpeechSynthesisUtterance {
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisVoice")]
 pub struct SpeechSynthesisVoice(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for SpeechSynthesisVoice {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SpeechSynthesisVoice {}
+
 impl SpeechSynthesisVoice {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisVoice/voiceURI)
     #[cfg_attr(rust_js, rust_js::link_name = "get voiceURI")]
@@ -79239,6 +85449,16 @@ impl SpeechSynthesisVoice {
 #[cfg_attr(rust_js, rust_js::types = "StaticRange")]
 pub struct StaticRange(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for StaticRange {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StaticRange {}
+
 impl Deref for StaticRange {
     type Target = AbstractRange;
 
@@ -79271,6 +85491,16 @@ pub mod static_range {
 /// [`StereoPannerNode`](https://developer.mozilla.org/docs/Web/API/StereoPannerNode)
 #[cfg_attr(rust_js, rust_js::types = "StereoPannerNode")]
 pub struct StereoPannerNode(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for StereoPannerNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StereoPannerNode {}
 
 impl Deref for StereoPannerNode {
     type Target = AudioNode;
@@ -79315,6 +85545,16 @@ impl StereoPannerNode {
 /// [`StorageEvent`](https://developer.mozilla.org/docs/Web/API/StorageEvent)
 #[cfg_attr(rust_js, rust_js::types = "StorageEvent")]
 pub struct StorageEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for StorageEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StorageEvent {}
 
 impl Deref for StorageEvent {
     type Target = Event;
@@ -79405,6 +85645,16 @@ impl StorageEvent {
 #[cfg_attr(rust_js, rust_js::types = "StorageManager")]
 pub struct StorageManager(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for StorageManager {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StorageManager {}
+
 impl StorageManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageManager/getDirectory)
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectory")]
@@ -79443,6 +85693,16 @@ impl StorageManager {
 /// [`StylePropertyMap`](https://developer.mozilla.org/docs/Web/API/StylePropertyMap)
 #[cfg_attr(rust_js, rust_js::types = "StylePropertyMap")]
 pub struct StylePropertyMap(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for StylePropertyMap {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StylePropertyMap {}
 
 impl Deref for StylePropertyMap {
     type Target = StylePropertyMapReadOnly;
@@ -79509,6 +85769,16 @@ impl StylePropertyMap {
 /// [`StylePropertyMapReadOnly`](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly)
 #[cfg_attr(rust_js, rust_js::types = "StylePropertyMapReadOnly")]
 pub struct StylePropertyMapReadOnly(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for StylePropertyMapReadOnly {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StylePropertyMapReadOnly {}
 
 pub mod style_property_map_read_only {
     use super::*;
@@ -79596,6 +85866,16 @@ impl StylePropertyMapReadOnly {
 #[cfg_attr(rust_js, rust_js::types = "StyleSheet")]
 pub struct StyleSheet(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for StyleSheet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StyleSheet {}
+
 impl StyleSheet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StyleSheet/type)
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
@@ -79671,6 +85951,16 @@ impl StyleSheet {
 #[cfg_attr(rust_js, rust_js::types = "StyleSheetList")]
 pub struct StyleSheetList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for StyleSheetList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for StyleSheetList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for StyleSheetList {
     type Output = CSSStyleSheet;
@@ -79719,6 +86009,16 @@ impl StyleSheetList {
 /// [`SubtleCrypto`](https://developer.mozilla.org/docs/Web/API/SubtleCrypto)
 #[cfg_attr(rust_js, rust_js::types = "SubtleCrypto")]
 pub struct SubtleCrypto(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for SubtleCrypto {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for SubtleCrypto {}
 
 impl SubtleCrypto {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SubtleCrypto/encrypt)
@@ -79807,6 +86107,16 @@ impl SubtleCrypto {
 #[cfg_attr(rust_js, rust_js::types = "TaskController")]
 pub struct TaskController(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TaskController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TaskController {}
+
 impl Deref for TaskController {
     type Target = AbortController;
 
@@ -79852,6 +86162,16 @@ impl TaskController {
 #[cfg_attr(rust_js, rust_js::types = "TaskPriorityChangeEvent")]
 pub struct TaskPriorityChangeEvent(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TaskPriorityChangeEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TaskPriorityChangeEvent {}
+
 impl Deref for TaskPriorityChangeEvent {
     type Target = Event;
 
@@ -79895,6 +86215,16 @@ impl TaskPriorityChangeEvent {
 /// [`TaskSignal`](https://developer.mozilla.org/docs/Web/API/TaskSignal)
 #[cfg_attr(rust_js, rust_js::types = "TaskSignal")]
 pub struct TaskSignal(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TaskSignal {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TaskSignal {}
 
 impl Deref for TaskSignal {
     type Target = AbortSignal;
@@ -79958,6 +86288,16 @@ impl TaskSignal {
 #[cfg_attr(rust_js, rust_js::types = "TextDecoderStream")]
 pub struct TextDecoderStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TextDecoderStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextDecoderStream {}
+
 pub mod text_decoder_stream {
     use super::*;
 
@@ -80017,6 +86357,16 @@ impl TextDecoderStream {
 #[cfg_attr(rust_js, rust_js::types = "TextEncoderStream")]
 pub struct TextEncoderStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TextEncoderStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextEncoderStream {}
+
 pub mod text_encoder_stream {
     use super::*;
 
@@ -80059,6 +86409,16 @@ impl TextEncoderStream {
 /// [`TextEvent`](https://developer.mozilla.org/docs/Web/API/TextEvent)
 #[cfg_attr(rust_js, rust_js::types = "TextEvent")]
 pub struct TextEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TextEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextEvent {}
 
 impl Deref for TextEvent {
     type Target = UIEvent;
@@ -80104,6 +86464,16 @@ impl TextEvent {
 /// [`TextMetrics`](https://developer.mozilla.org/docs/Web/API/TextMetrics)
 #[cfg_attr(rust_js, rust_js::types = "TextMetrics")]
 pub struct TextMetrics(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TextMetrics {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextMetrics {}
 
 impl TextMetrics {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextMetrics/width)
@@ -80207,6 +86577,16 @@ impl TextMetrics {
 /// [`TextTrack`](https://developer.mozilla.org/docs/Web/API/TextTrack)
 #[cfg_attr(rust_js, rust_js::types = "TextTrack")]
 pub struct TextTrack(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TextTrack {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextTrack {}
 
 impl Deref for TextTrack {
     type Target = EventTarget;
@@ -80346,6 +86726,16 @@ impl TextTrack {
 #[cfg_attr(rust_js, rust_js::types = "TextTrackCue")]
 pub struct TextTrackCue(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TextTrackCue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextTrackCue {}
+
 impl Deref for TextTrackCue {
     type Target = EventTarget;
 
@@ -80483,6 +86873,16 @@ impl TextTrackCue {
 #[cfg_attr(rust_js, rust_js::types = "TextTrackCueList")]
 pub struct TextTrackCueList(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TextTrackCueList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextTrackCueList {}
+
 /// `list[index]`, TypeScript's index signature: the item at `index`, as JS reads it.
 impl Index<usize> for TextTrackCueList {
     type Output = TextTrackCue;
@@ -80531,6 +86931,16 @@ impl TextTrackCueList {
 /// [`TextTrackList`](https://developer.mozilla.org/docs/Web/API/TextTrackList)
 #[cfg_attr(rust_js, rust_js::types = "TextTrackList")]
 pub struct TextTrackList(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TextTrackList {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TextTrackList {}
 
 impl Deref for TextTrackList {
     type Target = EventTarget;
@@ -80652,6 +87062,16 @@ impl TextTrackList {
 #[cfg_attr(rust_js, rust_js::types = "TimeRanges")]
 pub struct TimeRanges(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for TimeRanges {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TimeRanges {}
+
 impl TimeRanges {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TimeRanges/length)
     #[cfg_attr(rust_js, rust_js::link_name = "get length")]
@@ -80683,6 +87103,16 @@ impl TimeRanges {
 /// [`TrackEvent`](https://developer.mozilla.org/docs/Web/API/TrackEvent)
 #[cfg_attr(rust_js, rust_js::types = "TrackEvent")]
 pub struct TrackEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TrackEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TrackEvent {}
 
 impl Deref for TrackEvent {
     type Target = Event;
@@ -80716,6 +87146,16 @@ pub mod track_event {
 /// [`TransformStream`](https://developer.mozilla.org/docs/Web/API/TransformStream)
 #[cfg_attr(rust_js, rust_js::types = "TransformStream")]
 pub struct TransformStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TransformStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TransformStream {}
 
 pub mod transform_stream {
     use super::*;
@@ -80751,6 +87191,16 @@ impl TransformStream {
 /// [`TransformStreamDefaultController`](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController)
 #[cfg_attr(rust_js, rust_js::types = "TransformStreamDefaultController")]
 pub struct TransformStreamDefaultController(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TransformStreamDefaultController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TransformStreamDefaultController {}
 
 impl TransformStreamDefaultController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/desiredSize)
@@ -80794,6 +87244,16 @@ impl TransformStreamDefaultController {
 /// [`TreeWalker`](https://developer.mozilla.org/docs/Web/API/TreeWalker)
 #[cfg_attr(rust_js, rust_js::types = "TreeWalker")]
 pub struct TreeWalker(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for TreeWalker {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for TreeWalker {}
 
 impl TreeWalker {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TreeWalker/root)
@@ -80907,6 +87367,16 @@ impl TreeWalker {
 #[cfg_attr(rust_js, rust_js::types = "URLPattern")]
 pub struct URLPattern(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for URLPattern {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for URLPattern {}
+
 pub mod url_pattern {
     use super::*;
 
@@ -81014,6 +87484,16 @@ impl URLPattern {
 /// [`URLSearchParams`](https://developer.mozilla.org/docs/Web/API/URLSearchParams)
 #[cfg_attr(rust_js, rust_js::types = "URLSearchParams")]
 pub struct URLSearchParams(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for URLSearchParams {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for URLSearchParams {}
 
 pub mod url_search_params {
     use super::*;
@@ -81153,6 +87633,16 @@ impl URLSearchParams {
 #[cfg_attr(rust_js, rust_js::types = "UserActivation")]
 pub struct UserActivation(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for UserActivation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for UserActivation {}
+
 impl UserActivation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UserActivation/hasBeenActive)
     #[cfg_attr(rust_js, rust_js::link_name = "get hasBeenActive")]
@@ -81175,6 +87665,16 @@ impl UserActivation {
 /// [`VTTCue`](https://developer.mozilla.org/docs/Web/API/VTTCue)
 #[cfg_attr(rust_js, rust_js::types = "VTTCue")]
 pub struct VTTCue(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for VTTCue {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VTTCue {}
 
 impl Deref for VTTCue {
     type Target = TextTrackCue;
@@ -81382,6 +87882,16 @@ impl VTTCue {
 #[cfg_attr(rust_js, rust_js::types = "VTTRegion")]
 pub struct VTTRegion(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for VTTRegion {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VTTRegion {}
+
 pub mod vtt_region {
     use super::*;
 
@@ -81530,6 +88040,16 @@ impl VTTRegion {
 #[cfg_attr(rust_js, rust_js::types = "ValidityState")]
 pub struct ValidityState(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ValidityState {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ValidityState {}
+
 impl ValidityState {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ValidityState/valueMissing)
     #[cfg_attr(rust_js, rust_js::link_name = "get valueMissing")]
@@ -81625,6 +88145,16 @@ impl ValidityState {
 #[cfg_attr(rust_js, rust_js::types = "VideoColorSpace")]
 pub struct VideoColorSpace(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for VideoColorSpace {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VideoColorSpace {}
+
 pub mod video_color_space {
     use super::*;
 
@@ -81687,6 +88217,16 @@ impl VideoColorSpace {
 /// [`VideoDecoder`](https://developer.mozilla.org/docs/Web/API/VideoDecoder)
 #[cfg_attr(rust_js, rust_js::types = "VideoDecoder")]
 pub struct VideoDecoder(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for VideoDecoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VideoDecoder {}
 
 impl Deref for VideoDecoder {
     type Target = EventTarget;
@@ -81811,6 +88351,16 @@ impl VideoDecoder {
 #[cfg_attr(rust_js, rust_js::types = "VideoEncoder")]
 pub struct VideoEncoder(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for VideoEncoder {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VideoEncoder {}
+
 impl Deref for VideoEncoder {
     type Target = EventTarget;
 
@@ -81933,6 +88483,16 @@ impl VideoEncoder {
 /// [`VideoFrame`](https://developer.mozilla.org/docs/Web/API/VideoFrame)
 #[cfg_attr(rust_js, rust_js::types = "VideoFrame")]
 pub struct VideoFrame(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for VideoFrame {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VideoFrame {}
 
 pub mod video_frame {
     use super::*;
@@ -82076,6 +88636,16 @@ impl VideoFrame {
 #[cfg_attr(rust_js, rust_js::types = "VideoPlaybackQuality")]
 pub struct VideoPlaybackQuality(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for VideoPlaybackQuality {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VideoPlaybackQuality {}
+
 impl VideoPlaybackQuality {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoPlaybackQuality/creationTime)
     #[cfg_attr(rust_js, rust_js::link_name = "get creationTime")]
@@ -82117,6 +88687,16 @@ impl VideoPlaybackQuality {
 /// [`ViewTimeline`](https://developer.mozilla.org/docs/Web/API/ViewTimeline)
 #[cfg_attr(rust_js, rust_js::types = "ViewTimeline")]
 pub struct ViewTimeline(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ViewTimeline {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ViewTimeline {}
 
 impl Deref for ViewTimeline {
     type Target = ScrollTimeline;
@@ -82178,6 +88758,16 @@ impl ViewTimeline {
 #[cfg_attr(rust_js, rust_js::types = "ViewTransition")]
 pub struct ViewTransition(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for ViewTransition {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ViewTransition {}
+
 impl ViewTransition {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransition/updateCallbackDone)
     #[cfg_attr(rust_js, rust_js::link_name = "get updateCallbackDone")]
@@ -82225,6 +88815,16 @@ impl ViewTransition {
 /// [`ViewTransitionTypeSet`](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet)
 #[cfg_attr(rust_js, rust_js::types = "ViewTransitionTypeSet")]
 pub struct ViewTransitionTypeSet(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ViewTransitionTypeSet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ViewTransitionTypeSet {}
 
 impl ViewTransitionTypeSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/forEach)
@@ -82307,6 +88907,16 @@ impl ViewTransitionTypeSet {
 /// [`VisualViewport`](https://developer.mozilla.org/docs/Web/API/VisualViewport)
 #[cfg_attr(rust_js, rust_js::types = "VisualViewport")]
 pub struct VisualViewport(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for VisualViewport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for VisualViewport {}
 
 impl Deref for VisualViewport {
     type Target = EventTarget;
@@ -82446,6 +89056,16 @@ impl VisualViewport {
 #[cfg_attr(rust_js, rust_js::types = "WGSLLanguageFeatures")]
 pub struct WGSLLanguageFeatures(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WGSLLanguageFeatures {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WGSLLanguageFeatures {}
+
 impl WGSLLanguageFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
@@ -82502,6 +89122,16 @@ impl WGSLLanguageFeatures {
 #[cfg_attr(rust_js, rust_js::types = "WakeLock")]
 pub struct WakeLock(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WakeLock {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WakeLock {}
+
 impl WakeLock {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLock/request)
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
@@ -82516,6 +89146,16 @@ impl WakeLock {
 /// [`WakeLockSentinel`](https://developer.mozilla.org/docs/Web/API/WakeLockSentinel)
 #[cfg_attr(rust_js, rust_js::types = "WakeLockSentinel")]
 pub struct WakeLockSentinel(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WakeLockSentinel {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WakeLockSentinel {}
 
 impl Deref for WakeLockSentinel {
     type Target = EventTarget;
@@ -82587,6 +89227,16 @@ impl WakeLockSentinel {
 #[cfg_attr(rust_js, rust_js::types = "WaveShaperNode")]
 pub struct WaveShaperNode(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WaveShaperNode {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WaveShaperNode {}
+
 impl Deref for WaveShaperNode {
     type Target = AudioNode;
 
@@ -82656,6 +89306,16 @@ impl WaveShaperNode {
 /// [`WebGL2RenderingContext`](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext)
 #[cfg_attr(rust_js, rust_js::types = "WebGL2RenderingContext")]
 pub struct WebGL2RenderingContext(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGL2RenderingContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGL2RenderingContext {}
 
 pub mod web_gl_2_rendering_context {
 
@@ -86566,6 +93226,16 @@ impl WebGL2RenderingContext {
 #[cfg_attr(rust_js, rust_js::types = "WebGLActiveInfo")]
 pub struct WebGLActiveInfo(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLActiveInfo {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLActiveInfo {}
+
 impl WebGLActiveInfo {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLActiveInfo/size)
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
@@ -86599,9 +93269,29 @@ impl WebGLActiveInfo {
 #[cfg_attr(rust_js, rust_js::types = "WebGLBuffer")]
 pub struct WebGLBuffer(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLBuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLBuffer {}
+
 /// [`WebGLContextEvent`](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent)
 #[cfg_attr(rust_js, rust_js::types = "WebGLContextEvent")]
 pub struct WebGLContextEvent(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLContextEvent {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLContextEvent {}
 
 impl Deref for WebGLContextEvent {
     type Target = Event;
@@ -86647,21 +93337,71 @@ impl WebGLContextEvent {
 #[cfg_attr(rust_js, rust_js::types = "WebGLFramebuffer")]
 pub struct WebGLFramebuffer(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLFramebuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLFramebuffer {}
+
 /// [`WebGLProgram`](https://developer.mozilla.org/docs/Web/API/WebGLProgram)
 #[cfg_attr(rust_js, rust_js::types = "WebGLProgram")]
 pub struct WebGLProgram(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLProgram {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLProgram {}
 
 /// [`WebGLQuery`](https://developer.mozilla.org/docs/Web/API/WebGLQuery)
 #[cfg_attr(rust_js, rust_js::types = "WebGLQuery")]
 pub struct WebGLQuery(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLQuery {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLQuery {}
+
 /// [`WebGLRenderbuffer`](https://developer.mozilla.org/docs/Web/API/WebGLRenderbuffer)
 #[cfg_attr(rust_js, rust_js::types = "WebGLRenderbuffer")]
 pub struct WebGLRenderbuffer(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLRenderbuffer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLRenderbuffer {}
+
 /// [`WebGLRenderingContext`](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext)
 #[cfg_attr(rust_js, rust_js::types = "WebGLRenderingContext")]
 pub struct WebGLRenderingContext(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLRenderingContext {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLRenderingContext {}
 
 pub mod web_gl_rendering_context {
 
@@ -88851,13 +95591,43 @@ impl WebGLRenderingContext {
 #[cfg_attr(rust_js, rust_js::types = "WebGLSampler")]
 pub struct WebGLSampler(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLSampler {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLSampler {}
+
 /// [`WebGLShader`](https://developer.mozilla.org/docs/Web/API/WebGLShader)
 #[cfg_attr(rust_js, rust_js::types = "WebGLShader")]
 pub struct WebGLShader(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLShader {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLShader {}
+
 /// [`WebGLShaderPrecisionFormat`](https://developer.mozilla.org/docs/Web/API/WebGLShaderPrecisionFormat)
 #[cfg_attr(rust_js, rust_js::types = "WebGLShaderPrecisionFormat")]
 pub struct WebGLShaderPrecisionFormat(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLShaderPrecisionFormat {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLShaderPrecisionFormat {}
 
 impl WebGLShaderPrecisionFormat {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLShaderPrecisionFormat/rangeMin)
@@ -88893,25 +95663,85 @@ impl WebGLShaderPrecisionFormat {
 #[cfg_attr(rust_js, rust_js::types = "WebGLSync")]
 pub struct WebGLSync(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLSync {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLSync {}
+
 /// [`WebGLTexture`](https://developer.mozilla.org/docs/Web/API/WebGLTexture)
 #[cfg_attr(rust_js, rust_js::types = "WebGLTexture")]
 pub struct WebGLTexture(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLTexture {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLTexture {}
 
 /// [`WebGLTransformFeedback`](https://developer.mozilla.org/docs/Web/API/WebGLTransformFeedback)
 #[cfg_attr(rust_js, rust_js::types = "WebGLTransformFeedback")]
 pub struct WebGLTransformFeedback(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLTransformFeedback {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLTransformFeedback {}
+
 /// [`WebGLUniformLocation`](https://developer.mozilla.org/docs/Web/API/WebGLUniformLocation)
 #[cfg_attr(rust_js, rust_js::types = "WebGLUniformLocation")]
 pub struct WebGLUniformLocation(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebGLUniformLocation {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLUniformLocation {}
 
 /// [`WebGLVertexArrayObject`](https://developer.mozilla.org/docs/Web/API/WebGLVertexArrayObject)
 #[cfg_attr(rust_js, rust_js::types = "WebGLVertexArrayObject")]
 pub struct WebGLVertexArrayObject(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebGLVertexArrayObject {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebGLVertexArrayObject {}
+
 /// [`WebSocket`](https://developer.mozilla.org/docs/Web/API/WebSocket)
 #[cfg_attr(rust_js, rust_js::types = "WebSocket")]
 pub struct WebSocket(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebSocket {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebSocket {}
 
 impl Deref for WebSocket {
     type Target = EventTarget;
@@ -89109,6 +95939,16 @@ impl WebSocket {
 #[cfg_attr(rust_js, rust_js::types = "WebTransport")]
 pub struct WebTransport(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebTransport {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransport {}
+
 pub mod web_transport {
     use super::*;
 
@@ -89225,6 +96065,16 @@ impl WebTransport {
 #[cfg_attr(rust_js, rust_js::types = "WebTransportBidirectionalStream")]
 pub struct WebTransportBidirectionalStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebTransportBidirectionalStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransportBidirectionalStream {}
+
 impl WebTransportBidirectionalStream {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportBidirectionalStream/readable)
     #[cfg_attr(rust_js, rust_js::link_name = "get readable")]
@@ -89247,6 +96097,16 @@ impl WebTransportBidirectionalStream {
 /// [`WebTransportDatagramDuplexStream`](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream)
 #[cfg_attr(rust_js, rust_js::types = "WebTransportDatagramDuplexStream")]
 pub struct WebTransportDatagramDuplexStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebTransportDatagramDuplexStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransportDatagramDuplexStream {}
 
 impl WebTransportDatagramDuplexStream {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/readable)
@@ -89308,6 +96168,16 @@ impl WebTransportDatagramDuplexStream {
 #[cfg_attr(rust_js, rust_js::types = "WebTransportError")]
 pub struct WebTransportError(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebTransportError {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransportError {}
+
 impl Deref for WebTransportError {
     type Target = DOMException;
 
@@ -89361,6 +96231,16 @@ impl WebTransportError {
 #[cfg_attr(rust_js, rust_js::types = "WebTransportReceiveStream")]
 pub struct WebTransportReceiveStream(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WebTransportReceiveStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransportReceiveStream {}
+
 impl Deref for WebTransportReceiveStream {
     type Target = ReadableStream;
 
@@ -89396,6 +96276,16 @@ impl WebTransportReceiveStream {
 /// [`WebTransportSendStream`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStream)
 #[cfg_attr(rust_js, rust_js::types = "WebTransportSendStream")]
 pub struct WebTransportSendStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WebTransportSendStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WebTransportSendStream {}
 
 impl Deref for WebTransportSendStream {
     type Target = WritableStream;
@@ -89449,6 +96339,16 @@ impl WebTransportSendStream {
 /// [`Worker`](https://developer.mozilla.org/docs/Web/API/Worker)
 #[cfg_attr(rust_js, rust_js::types = "Worker")]
 pub struct Worker(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for Worker {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Worker {}
 
 impl Deref for Worker {
     type Target = EventTarget;
@@ -89558,6 +96458,16 @@ impl Worker {
 #[cfg_attr(rust_js, rust_js::types = "Worklet")]
 pub struct Worklet(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for Worklet {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Worklet {}
+
 impl Worklet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worklet/addModule)
     #[cfg_attr(rust_js, rust_js::link_name = "addModule")]
@@ -89572,6 +96482,16 @@ impl Worklet {
 /// [`WritableStream`](https://developer.mozilla.org/docs/Web/API/WritableStream)
 #[cfg_attr(rust_js, rust_js::types = "WritableStream")]
 pub struct WritableStream(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WritableStream {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WritableStream {}
 
 pub mod writable_stream {
     use super::*;
@@ -89624,6 +96544,16 @@ impl WritableStream {
 #[cfg_attr(rust_js, rust_js::types = "WritableStreamDefaultController")]
 pub struct WritableStreamDefaultController(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for WritableStreamDefaultController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WritableStreamDefaultController {}
+
 impl WritableStreamDefaultController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultController/signal)
     #[cfg_attr(rust_js, rust_js::link_name = "get signal")]
@@ -89647,6 +96577,16 @@ impl WritableStreamDefaultController {
 /// [`WritableStreamDefaultWriter`](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter)
 #[cfg_attr(rust_js, rust_js::types = "WritableStreamDefaultWriter")]
 pub struct WritableStreamDefaultWriter(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for WritableStreamDefaultWriter {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for WritableStreamDefaultWriter {}
 
 pub mod writable_stream_default_writer {
     use super::*;
@@ -89725,6 +96665,16 @@ impl WritableStreamDefaultWriter {
 #[cfg_attr(rust_js, rust_js::types = "XMLDocument")]
 pub struct XMLDocument(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for XMLDocument {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XMLDocument {}
+
 impl Deref for XMLDocument {
     type Target = Document;
 
@@ -89749,6 +96699,16 @@ pub mod xml_document {
 /// [`XMLHttpRequest`](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest)
 #[cfg_attr(rust_js, rust_js::types = "XMLHttpRequest")]
 pub struct XMLHttpRequest(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for XMLHttpRequest {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XMLHttpRequest {}
 
 impl Deref for XMLHttpRequest {
     type Target = XMLHttpRequestEventTarget;
@@ -89997,6 +96957,16 @@ impl XMLHttpRequest {
 #[cfg_attr(rust_js, rust_js::types = "XMLHttpRequestEventTarget")]
 pub struct XMLHttpRequestEventTarget(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for XMLHttpRequestEventTarget {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XMLHttpRequestEventTarget {}
+
 impl Deref for XMLHttpRequestEventTarget {
     type Target = EventTarget;
 
@@ -90151,6 +97121,16 @@ impl XMLHttpRequestEventTarget {
 #[cfg_attr(rust_js, rust_js::types = "XMLHttpRequestUpload")]
 pub struct XMLHttpRequestUpload(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for XMLHttpRequestUpload {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XMLHttpRequestUpload {}
+
 impl Deref for XMLHttpRequestUpload {
     type Target = XMLHttpRequestEventTarget;
 
@@ -90175,6 +97155,16 @@ pub mod xml_http_request_upload {
 /// [`XMLSerializer`](https://developer.mozilla.org/docs/Web/API/XMLSerializer)
 #[cfg_attr(rust_js, rust_js::types = "XMLSerializer")]
 pub struct XMLSerializer(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for XMLSerializer {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XMLSerializer {}
 
 pub mod xml_serializer {
     use super::*;
@@ -90202,6 +97192,16 @@ impl XMLSerializer {
 /// [`XPathEvaluator`](https://developer.mozilla.org/docs/Web/API/XPathEvaluator)
 #[cfg_attr(rust_js, rust_js::types = "XPathEvaluator")]
 pub struct XPathEvaluator(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for XPathEvaluator {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XPathEvaluator {}
 
 pub mod x_path_evaluator {
     use super::*;
@@ -90246,6 +97246,16 @@ impl XPathEvaluator {
 #[cfg_attr(rust_js, rust_js::types = "XPathExpression")]
 pub struct XPathExpression(PhantomData<JsObject>);
 
+/// `a === b`: the same object.
+impl PartialEq for XPathExpression {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XPathExpression {}
+
 impl XPathExpression {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathExpression/evaluate)
     #[cfg_attr(rust_js, rust_js::link_name = "evaluate")]
@@ -90260,6 +97270,16 @@ impl XPathExpression {
 /// [`XPathResult`](https://developer.mozilla.org/docs/Web/API/XPathResult)
 #[cfg_attr(rust_js, rust_js::types = "XPathResult")]
 pub struct XPathResult(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for XPathResult {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XPathResult {}
 
 pub mod x_path_result {
 
@@ -90377,6 +97397,16 @@ impl XPathResult {
 /// [`XSLTProcessor`](https://developer.mozilla.org/docs/Web/API/XSLTProcessor)
 #[cfg_attr(rust_js, rust_js::types = "XSLTProcessor")]
 pub struct XSLTProcessor(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for XSLTProcessor {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for XSLTProcessor {}
 
 pub mod xslt_processor {
     use super::*;

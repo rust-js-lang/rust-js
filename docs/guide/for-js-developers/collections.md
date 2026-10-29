@@ -205,7 +205,7 @@ export function hasFloat(xs, x) {
 | `find` | `iter().find(..)`, an `Option` |
 | `findIndex` | `iter().position(..)`, an `Option`, never `-1` |
 | `some`, `every` | `iter().any(..)`, `iter().all(..)` |
-| `includes` | `contains(&x)`; of floats, which `==` finds no `NaN` of, `indexOf(x) >= 0` ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md)) |
+| `includes` | `contains(&x)`, of an object equal only to itself too, a DOM node's ([ADR 1016](../../decisions/1016-a-webapi-object-is-equal-only-to-itself.md)); of floats, which `==` finds no `NaN` of, `indexOf(x) >= 0` ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md)) |
 | `flat` | `iter().flatten()` |
 | `slice(a, b)` | `&v[a..b]` |
 | `forEach` | `for x in &v` |

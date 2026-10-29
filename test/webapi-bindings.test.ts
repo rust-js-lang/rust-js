@@ -884,3 +884,90 @@ pub fn parent_name(node: Option<&Node>) -> Option<String> {
   expect([lib.getLeafNode({ firstChild: { firstChild: leaf } }), lib.getLeafNode(null), lib.getLeafNode(undefined)]).toEqual([leaf, null, undefined]);
   expect([lib.parentName({ parentNode: { nodeName: "DIV" } }), lib.parentName({ parentNode: null }), lib.parentName(undefined)]).toEqual(["DIV", undefined, undefined]);
 });
+
+// ADR 1016: each webapi class is equal only to itself, its `PartialEq`'s
+// `eq` the binding of JS's `===`, as `ptr::eq` says natively: `==` of two
+// is `===`, a `contains` of one `includes`, a derived `==` of a struct
+// holding one compares it so, never by what's in it.
+test("a webapi object is equal only to itself, == its ===", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-identity");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{EventTarget, Node};
+
+pub fn has(targets: &[&EventTarget], target: &EventTarget) -> bool {
+    targets.contains(&target)
+}
+
+pub fn same(a: &Node, b: &Node) -> bool {
+    a == b
+}
+
+pub fn differ(a: Option<&Node>, b: Option<&Node>) -> bool {
+    a != b
+}
+
+#[derive(PartialEq)]
+pub struct Pair {
+    pub node: &'static Node,
+    pub name: String,
+}
+
+pub fn same_pair(a: &Pair, b: &Pair) -> bool {
+    a == b
+}
+
+pub fn same_nodes(a: &[&Node], b: &[&Node]) -> bool {
+    a == b
+}
+
+pub fn place(nodes: &[&Node], node: &Node) -> usize {
+    nodes.iter().position(|&each| each == node).unwrap_or(nodes.len())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function has(targets, target) {\n  return targets.includes(target);\n}");
+  expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
+  expect(js).toContain("export function differ(a, b) {\n  return a != b;\n}");
+  expect(js).toContain("return a.node === b.node && a.name === b.name;");
+  expect(js).not.toContain("$eq");
+  const lib = await import(join(dir, "lib.js"));
+  const [x, y] = [{ n: 1 }, { n: 1 }];
+  expect([lib.has([x], x), lib.has([x], y), lib.same(x, x), lib.same(x, y), lib.differ(x, undefined), lib.differ(undefined, null), lib.differ(x, y)]).toEqual([true, false, true, false, true, false, true]);
+  expect([lib.samePair({ node: x, name: "a" }, { node: x, name: "a" }), lib.samePair({ node: x, name: "a" }, { node: y, name: "a" })]).toEqual([true, false]);
+  expect([lib.place([y, x], x), lib.place([y], x)]).toEqual([1, 1]);
+  expect([lib.sameNodes([x], [x]), lib.sameNodes([x], [y])]).toEqual([true, false]);
+  // A binding crate's own \`ne\`, whose JS no binding names, is refused,
+  // as an \`eq\` bound to other JS than \`===\` is.
+  writeFileSync(join(dir, "dep.rs"), `use core::marker::PhantomData;
+use js::JsObject;
+
+pub struct Handle(PhantomData<JsObject>);
+
+impl PartialEq for Handle {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !core::ptr::eq(self, other)
+    }
+}
+
+pub struct Other(PhantomData<JsObject>);
+
+impl PartialEq for Other {
+    #[cfg_attr(rust_js, rust_js::link_name = "isEqualNode")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+`);
+  run([compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=dep", "--emit=metadata", "--target=wasm32-unknown-unknown", join(dir, "dep.rs"), "--extern", `js=${join(target, "libjs.rmeta")}`, "-o", join(dir, "libdep.rmeta")]);
+  for (const type of ["Handle", "Other"]) {
+    writeFileSync(join(dir, "app.rs"), `pub fn differ(a: &dep::${type}, b: &dep::${type}) -> bool {\n    a != b\n}\n`);
+    const refused = Bun.spawnSync([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+    expect(refused.stderr.toString()).toContain(`\`==\` on \`dep::${type}\``);
+  }
+});

@@ -510,6 +510,52 @@ pub fn circle(radius: f64) -> &'static Circle {
 
 `circle(2.0).area()` is `new Circle(2).area()`. The `deref` body is no JS.
 
+### Equal only to itself
+
+A JS object is the same object or another: its `PartialEq` is `ptr::eq`,
+and, in a binding crate, whose bodies rust-js never reads, its `eq` is
+the binding of `===`, as webapi writes each of its classes'
+([ADR 1016](../../decisions/1016-a-webapi-object-is-equal-only-to-itself.md)):
+
+```rust excerpt
+impl PartialEq for Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for Node {}
+```
+
+So `a == b` of two is `a === b`, a `contains` of one `includes`, and
+what holds one compares it by `===`:
+
+```rust
+use webapi::{EventTarget, Node};
+
+pub fn listened(targets: &[&EventTarget], target: &EventTarget) -> bool {
+    targets.contains(&target)
+}
+
+pub fn same(a: Option<&Node>, b: Option<&Node>) -> bool {
+    a == b
+}
+```
+
+```js
+export function listened(targets, target) {
+  return targets.includes(target);
+}
+
+export function same(a, b) {
+  return a == b;
+}
+```
+
+The program's own type says it by its `ptr::eq` alone, which rust-js reads
+([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).
+
 ## The forms of `link_name`
 
 | `link_name` | JS | of |

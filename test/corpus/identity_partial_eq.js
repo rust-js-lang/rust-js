@@ -22,7 +22,7 @@ function main() {
     `${differ(first, again)} ${differ(first, alike)} ${differ(undefined, first)} ${differ(undefined)}`,
   );
   const updates = [first, alike];
-  console.log(`${has(updates, again, partialEq)} ${updates.indexOf(alike) >= 0}`);
+  console.log(`${has(updates, again, partialEq)} ${updates.includes(alike)}`);
   const lone = { lane: 2 };
   console.log(`${has([lone], lone, partialEq)} ${(lone.lane + first.lane) >>> 0}`);
 }

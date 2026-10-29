@@ -62,11 +62,12 @@ fn identity<'tcx>(
         return identity(recognition, bodies, pointee, hashed);
     }
     let ty::Adt(adt, _) = ty.kind() else { return false };
-    // A library's, as its contract says.
+    // A library's, as its contract says; or a binding crate's class's, its
+    // `eq` the binding of JS's `===`, which no contract lists (ADR 1016).
     if !adt.did().is_local() {
         return match hashed {
             true => recognition.foreign.equal_only_to_itself(adt.did()),
-            false => recognition.foreign.eq_by_address(adt.did()),
+            false => recognition.foreign.eq_by_address(adt.did()) || recognition.eq_bound_to_strict_equality(adt.did()),
         };
     }
     if !adt.is_struct() {
@@ -900,10 +901,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         equal_only_to_itself(&self.recognition(), self.krate.bodies, ty)
     }
 
-    /// Whether `==` of `ty` is `===` (ADR 0864, amended), as
-    /// `eq_by_address` answers.
+    /// Whether `==` of `ty`, through its references, is `===` (ADR 0864,
+    /// amended), as `eq_by_address` answers.
     pub(super) fn eq_by_address(&self, ty: Ty<'tcx>) -> bool {
-        eq_by_address(&self.recognition(), self.krate.bodies, ty)
+        !self.has_cell_layer(ty) && eq_by_address(&self.recognition(), self.krate.bodies, ty.peel_refs())
     }
 
     /// Whether `ty`, through its references, is a JS value of any shape,
@@ -1058,12 +1059,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let same = self.eq_value(Expr::var("each"), x.clone(), item, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
             if matches!(&each.kind, js::ExprKind::Var(v) if v == "each") && **of == x);
+        // Of what's never `NaN`, an object equal only to itself (ADR
+        // 1016), `includes`, which finds what `indexOf` does.
         if body.is_empty() && strict {
-            return Ok(Expr::bin(
-                Op::Ge,
-                Expr::call(Expr::member(items, "indexOf"), vec![x]),
-                Expr::int(0),
-            ));
+            return Ok(match self.js_eq(item) {
+                None => Expr::call(Expr::member(items, "includes"), vec![x]),
+                Some(_) => Expr::bin(
+                    Op::Ge,
+                    Expr::call(Expr::member(items, "indexOf"), vec![x]),
+                    Expr::int(0),
+                ),
+            });
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         let f = Expr::arrow(vec!["each".into()], body);

@@ -293,4 +293,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
+  {
+    name: "bound-eq-own-ne-trusted",
+    breaks: "a binding crate's `PartialEq` whose `eq` is bound to `===` and whose `ne` is its own, which no binding names, is `===` and `!==`, its `ne` never asked (ADR 1016)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "                && !implementors.contains_key(&ne)\n",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
+  {
+    name: "bound-eq-form-unchecked",
+    breaks: "a binding crate's `PartialEq` whose `eq` is any binding is `===`, whatever JS it names (ADR 1016)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "                    super::super::bindings::is_binding(tcx, eq)\n                        && matches!(",
+    replace: "                    super::super::bindings::is_binding(tcx, eq)\n                        || matches!(",
+    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
 ];

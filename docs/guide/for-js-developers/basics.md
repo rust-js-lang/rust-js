@@ -2739,6 +2739,9 @@ export function isFirst(points, p) {
 - "Is it the same object?" is `std::ptr::eq` ([ADR 0582](../../decisions/0582-ptr-eq-of-an-object-is-its-identity.md)),
   of an item of a list too, whose index is checked as `points[0]` is
   ([ADR 0285](../../decisions/0285-ptr-eq.md), amended).
+- A DOM object, webapi's, is equal only to itself: `a == b` of two
+  `&Node`s is `a === b`, and `nodes.contains(&node)` is
+  `nodes.includes(node)` ([ADR 1016](../../decisions/1016-a-webapi-object-is-equal-only-to-itself.md)).
 
 ## `typeof` checks
 

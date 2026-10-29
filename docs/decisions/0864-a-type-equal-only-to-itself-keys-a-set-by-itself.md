@@ -7,7 +7,9 @@ and an `Rc` of one is equal only to itself too; and a `PartialEq` of
 `ptr::eq` alone is `===`, whatever its `Hash`; and a library's contract
 lists those too. Amended by
 [1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md):
-what holds one compares it by `===`, never by `$eq`.
+what holds one compares it by `===`, never by `$eq`. Extended by
+[1016](1016-a-webapi-object-is-equal-only-to-itself.md): a binding
+crate's type whose `eq` is the binding of `===` is one too.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and

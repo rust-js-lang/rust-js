@@ -1277,6 +1277,35 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.own_impl_method(adt, self.tcx.lang_items().eq_trait()?, "eq")
     }
 
+    /// Whether `adt`'s `PartialEq<Self>` is a binding's of JS's `===`, its
+    /// `eq` `#[rust_js::link_name = "==="]`, its `ne` std's: what a binding
+    /// crate, whose bodies rust-js never reads, says of a JS object equal
+    /// only to itself, webapi's classes' (ADR 1016).
+    pub(in crate::lower) fn eq_bound_to_strict_equality(&self, adt: DefId) -> bool {
+        let tcx = self.tcx;
+        let Some(partial_eq) = tcx.lang_items().eq_trait() else {
+            return false;
+        };
+        let of_adt = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(of, _) if of.did() == adt);
+        let (eq, ne) = (trait_method(tcx, partial_eq, "eq"), trait_method(tcx, partial_eq, "ne"));
+        let impls = tcx.trait_impls_of(partial_eq).non_blanket_impls();
+        let simplified = rustc_middle::ty::fast_reject::SimplifiedType::Adt(adt);
+        impls.get(&simplified).into_iter().flatten().any(|&imp| {
+            let tr = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+            let implementors = tcx.impl_item_implementor_ids(imp);
+            of_adt(tr.self_ty())
+                && of_adt(tr.args.type_at(1))
+                && !implementors.contains_key(&ne)
+                && (implementors.get(&eq)).is_some_and(|&eq| {
+                    super::super::bindings::is_binding(tcx, eq)
+                        && matches!(
+                            super::super::bindings::js_form(tcx, eq),
+                            super::super::bindings::JsForm::StrictEquals
+                        )
+                })
+        })
+    }
+
     /// The crate's own `eq` and `hash` of `adt`, its impls' of `PartialEq`
     /// and `Hash`, `own_eq`'s and its `Hash`'s (ADR 0864).
     pub(in crate::lower) fn eq_and_hash(&self, adt: DefId) -> Option<(DefId, DefId)> {
