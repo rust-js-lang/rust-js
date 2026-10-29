@@ -1277,12 +1277,8 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
             if default.as_deref().is_some_and(does_nothing) {
                 *default = None;
             }
-            // A `break` that ends a branch of the `if` a case that doesn't
-            // fall ends with, which the case's end does, as its `break;`
-            // after it, or the `switch`'s end, does: `if (g) { .. }`.
             for body in (cases.iter_mut().filter(|case| !case.falls).map(|case| &mut case.body)).chain(default.as_mut())
             {
-                ending_breaks(body);
                 guard_held(body, switches);
             }
             // The last case's `break`, which its end does (ADR 0629,

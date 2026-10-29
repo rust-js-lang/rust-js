@@ -295,14 +295,6 @@ export const mutations: Mutation[] = [
     tests: twoGuards,
   },
   {
-    name: "switch-case-ending-break-kept",
-    breaks: "a case's `if` ends its branch with the `break;` its end does, `if (g) { ..; break; }`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "                ending_breaks(body);\n",
-    replace: "",
-    tests: twoGuards,
-  },
-  {
     name: "switch-default-fallen-refused",
     breaks: "a guarded case whose chain goes on to the `_`'s statements isn't one that falls to the `default`, so React's `describeFiber` is an `if` chain",
     file: "src/lower/mir/tidy/switches.rs",
@@ -400,11 +392,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-break-switch-labeled",
-    breaks: "a `match` an arm of which breaks a loop the program didn't label is a `switch` of `loop: .. break loop;`, a label the Rust has none of (#389, ADR 0629 amended)",
+    breaks: "a `match` an arm of which breaks a loop the program didn't label is made as a loop it labeled is, so match_breaks_its_loop.js is not as written (#389, ADR 0629 amended)",
     file: "src/lower/mir/tidy/switches.rs",
     find: "        } else if around.written || falling {\n",
     replace: "        } else if true {\n",
-    tests: ["test/lowering-switch-ends.test.ts", "-t", "no label"],
+    tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
+    snapshots: true,
   },
   {
     name: "loop-break-framed-past-the-turn",

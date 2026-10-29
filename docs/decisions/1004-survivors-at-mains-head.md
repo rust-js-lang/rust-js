@@ -199,3 +199,24 @@ ADR 0037, amended), so it can't show whether they're reached:
 port does reach (validateProperty's `switch` in an `if`), but no corpus
 case yet.
 
+## Amendment: main's check at d82b8463a's tidy survivors (agent-tdyk, 2026-10-29)
+
+Four of `switches.rs` and `jumps/continues.rs` survive from 6ed14b332 on,
+before this session's commits, and were swept as above. React's port was
+built besides, every package with the compiler as it is and with each.
+
+- `loop-break-switch-labeled` changes `match_breaks_its_loop.rs`'s JS,
+  whose snapshot it now checks: the labeled loop's path, which
+  `blocks_breaking_loops` (98c8bb7b1) left no `loop:` to give, still reads
+  the `switch` apart.
+- `switch-case-ending-break-kept`: the first `ending_breaks` of
+  `switches`, of each case that doesn't fall, changes no corpus case's JS
+  and none of React's port's. It goes with its mutation; the last case's
+  stays.
+- Left open: `jumps-into-arms-that-leave-their-own-way`, which React's port
+  reaches (CSSPropertyOperations, ReactFiberHydrationDiffs) and no corpus
+  case does yet; and `switch-failing-guard-goes-after`, which nothing
+  reaches, but whose filter keeps a failed guard from running the
+  statements of the arm others fall to: a wrong answer were it reached, so
+  it isn't removed without a case.
+
