@@ -771,13 +771,29 @@ fn in_place_adapters<'tcx>(
     // std's struct, which knows it, a variable's or a `flatten()`'s (ADR
     // 0899).
     let size_hint = super::recognition::trait_method(tcx, iterator_traits[0], "size_hint");
-    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span, maker: DefId| {
+    // Each made of another of them, `zip(..).rev()`'s `rev()`: what it's
+    // made of, and its maker. One is sized in place where it and what it's
+    // made of are, so a `rev()` of a zip isn't (#400).
+    let sources: HashMap<Span, (Span, DefId)> = (given.iter())
+        .filter(|&&(_, _, callee, index, _)| index == 0 && super::recognition::makes_held_compiled(tcx, callee))
+        .map(|&(made, at, _, _, maker)| (at, (made, maker)))
+        .collect();
+    let sized = |mut made: Span, mut maker: DefId| loop {
+        if !super::recognition::sized_in_place(tcx, maker) {
+            break false;
+        }
+        match sources.get(&made) {
+            Some(&(source, of)) => (made, maker) = (source, of),
+            None => break true,
+        }
+    };
+    let steps_as_js = |callee: DefId, index: usize, in_place: &HashSet<Span>, at: Span, maker: DefId, made: Span| {
         // Another of them, itself made in place, `enumerate().rev()`'s: in
         // place too.
         if super::recognition::makes_held_compiled(tcx, callee) {
             return in_place.contains(&at);
         }
-        if callee == size_hint && !super::recognition::sized_in_place(tcx, maker) {
+        if callee == size_hint && !sized(made, maker) {
             return false;
         }
         let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
@@ -914,7 +930,7 @@ fn in_place_adapters<'tcx>(
     loop {
         let before = found.len();
         for &(made, at, callee, index, maker) in &given {
-            if steps_as_js(callee, index, &found, at, maker) {
+            if steps_as_js(callee, index, &found, at, maker, made) {
                 found.insert(made);
                 steps.insert(at);
             }

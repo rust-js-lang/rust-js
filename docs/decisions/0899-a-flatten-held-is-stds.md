@@ -138,3 +138,37 @@ snapshots, and the lowering-iterators, collections, options, diagnostics,
 tidy-stages, snapshots and js-builtins suites all pass: it changes no JS.
 The mutation goes; `OPTIMIZING`'s comment still says why `OneShot` isn't
 one, as std's `OneShot` impls change what `size_hint` gives.
+
+## Amendment: a zip whose hint is asked is std's
+
+`v.iter().zip(v.iter().skip(2)).size_hint()` was `(0, None)` where Rust's
+is `(3, Some(3))`, and `(0..4).zip(..).rev()`'s was too (#400): a zip
+was listed sized in place, but what it's made of in place, `drop(2)`,
+`map(f)` or an owned `Vec`, is JS's own iterator, which counts nothing,
+so `$lazyZip` couldn't say. **A zip isn't sized in place**
+(`HELD_COMPILED`'s `Zip`): one whose `size_hint()` is asked is std's
+struct, whose compiled `size_hint` asks each side's, std's too. **A
+`rev()` or another sized one is sized in place only where what it's made
+of is** (`in_place_adapters`' `sized`), so a zip's `rev()` is std's too.
+
+What's asked of the sides then is std's: a range's, `$rangeHintOf`'s,
+which `$sizeHint` now asks of a range given as one, its exact count and
+`n..`'s `(usize::MAX, None)`, std's `RangeFrom`'s, of any type. A zip
+made in place where its hint isn't asked, given to generic code, hints
+its sides' as std's `Zip` does, each what its JS value tells
+(`$zipHint`), as a generic iterator's hint is (`semantics.md`, 14).
+
+Each such zip is std's struct of its sides, an array's items a `$iter`,
+`iterator_zip($iter(v), $iter(w), ..)`, so `docs/readability.txt`'s
+`$iter` share grew with the corpus case below (81.6 to 83.1 in 10,000
+lines), blessed as this decision's cost.
+
+Case R: the hint is std's, where it printed another. Held by
+`test/corpus/zip_size_hints.rs` against native Rust: zips of an array's
+items, a `skip`, a slice, an owned `Vec`, ranges, a `map`, an endless
+range, a `rev()`, of an array's items held, given to generic code, and
+held and stepped. Mutations `zip-sized-in-place` (`recognition/std_items.ts`),
+`rev-sized-whatever-its-source` (`body_queries.ts`), `range-from-unhinted`
+(`runtime/range_len.ts`), `size-hint-range-given-unasked`
+(`runtime/size_hint.ts`), and `lazy-zip-unhinted` and `zip-hint-*`
+(`runtime/lazy_zip.ts`).

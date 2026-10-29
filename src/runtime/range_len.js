@@ -84,9 +84,11 @@ function $rangeInclusiveLen(range) {
 
 // The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
 // inclusive or back form's: std's, exact, of how many numbers it has left
-// (ADR 0918); of a `char`'s or a BigInt's, none known, as before.
-// `undefined` of another `next`.
+// (ADR 0918); of a `char`'s or a BigInt's, none known, as before. Of `n..`,
+// `$rangeFromNext`'s, `usize::MAX` and none known, std's `RangeFrom`'s,
+// whatever it's of (#400). `undefined` of another `next`.
 function $rangeHintOf(next) {
+  if (next === $rangeFromNext) return () => [4294967295, undefined];
   const len =
     next === $rangeNext || next === $rangeNextBack
       ? $rangeLen

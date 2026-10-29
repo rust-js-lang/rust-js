@@ -2920,9 +2920,11 @@ export function $rangeInclusiveLen(range) {
 
 // The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
 // inclusive or back form's: std's, exact, of how many numbers it has left
-// (ADR 0918); of a `char`'s or a BigInt's, none known, as before.
-// `undefined` of another `next`.
+// (ADR 0918); of a `char`'s or a BigInt's, none known, as before. Of `n..`,
+// `$rangeFromNext`'s, `usize::MAX` and none known, std's `RangeFrom`'s,
+// whatever it's of (#400). `undefined` of another `next`.
 export function $rangeHintOf(next) {
+  if (next === $rangeFromNext) return () => [4294967295, undefined];
   const len =
     next === $rangeNext || next === $rangeNextBack
       ? $rangeLen
@@ -10456,18 +10458,11 @@ export function $bytesAsciiEq(a, b) {
 // dictionary's own, `iterator.size_hint`, where its impl has one (ADR 0411).
 export function $sizeHint(it, iterator) {
   if (iterator?.sizeHint !== undefined) return iterator.sizeHint(it);
-  // An exclusive range of numbers, given as one, `{ next: $rangeNext }`:
-  // exact, as it knows how many it has left.
-  if (iterator?.next === $rangeNext && typeof it.start === "number") {
-    const left = $rangeLen(it);
-    return [left, left];
-  }
-  // And an inclusive one, `{ next: $rangeInclusiveNext }`, as std's
-  // `RangeInclusive` (ADR 0918).
-  if (iterator?.next === $rangeInclusiveNext && typeof it.start === "number") {
-    const left = $rangeInclusiveLen(it);
-    return [left, left];
-  }
+  // A range given as one, `{ next: $rangeNext }`: its own, `$rangeHintOf`'s,
+  // exact of numbers, as it knows how many it has left, and of `n..`,
+  // `{ next: $rangeFromNext }`, `usize::MAX` and none known (ADR 0918, #400).
+  const ranged = iterator === undefined ? undefined : $rangeHintOf(iterator.next);
+  if (ranged !== undefined) return ranged(it);
   // An explicit adapter's, its own, of what it steps (ADR 0542).
   if (it.hint !== undefined) return it.hint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
@@ -11556,7 +11551,17 @@ export function $lazyZip(a, b, dropA) {
     return { done: false, value: [item.value, other.value] };
   }, close);
   zipped.from = [left, right];
+  // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
+  // value tells, as a generic iterator's is (#400).
+  zipped.hint = () => $zipHint($sizeHint(left), $sizeHint(right));
   return zipped;
+}
+
+// A zip's `size_hint()` of its sides', std's `Zip`'s: the fewer of their
+// lower bounds, and of their upper, the one either has, or none (#400).
+export function $zipHint([aLow, aHigh], [bLow, bHigh]) {
+  const high = aHigh === undefined ? bHigh : bHigh === undefined ? aHigh : Math.min(aHigh, bHigh);
+  return [Math.min(aLow, bLow), high];
 }
 
 // `a.zip(b)` std reads by index, its sides `TrustedRandomAccess` and a

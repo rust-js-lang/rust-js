@@ -25,7 +25,17 @@ function $lazyZip(a, b, dropA) {
     return { done: false, value: [item.value, other.value] };
   }, close);
   zipped.from = [left, right];
+  // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
+  // value tells, as a generic iterator's is (#400).
+  zipped.hint = () => $zipHint($sizeHint(left), $sizeHint(right));
   return zipped;
+}
+
+// A zip's `size_hint()` of its sides', std's `Zip`'s: the fewer of their
+// lower bounds, and of their upper, the one either has, or none (#400).
+function $zipHint([aLow, aHigh], [bLow, bHigh]) {
+  const high = aHigh === undefined ? bHigh : bHigh === undefined ? aHigh : Math.min(aHigh, bHigh);
+  return [Math.min(aLow, bLow), high];
 }
 
 // `a.zip(b)` std reads by index, its sides `TrustedRandomAccess` and a

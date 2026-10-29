@@ -449,7 +449,7 @@ const HELD_COMPILED: &[(&str, &str, bool)] = &[
     ("Take", "take", true),
     ("StepBy", "step_by", false),
     ("Chain", "chain", false),
-    ("Zip", "zip", true),
+    ("Zip", "zip", false),
 ];
 
 /// Of those, the adapters std's struct is the meaning of alone, on their way

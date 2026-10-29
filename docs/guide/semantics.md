@@ -973,8 +973,10 @@ React and JSX are [their own pages](README.md#react).
 14. A generic iterator's `size_hint()` is its array's or its range's length
     ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), a range's
     `step_by`'s of it, a `rev()`'s of either
-    ([0989](../decisions/0989-a-rev-hints-what-its-source-hints.md)), or `(0, None)`:
-    an endless `n..`'s too, Rust's `(usize::MAX, None)`.
+    ([0989](../decisions/0989-a-rev-hints-what-its-source-hints.md)), a
+    zip's of its sides', as std's `Zip` combines them
+    ([0899](../decisions/0899-a-flatten-held-is-stds.md), amended), or
+    `(0, None)`. An endless `n..`'s is Rust's, `(usize::MAX, None)`.
 15. Recursion deeper than about 10,000 calls throws a `RangeError`, the JS
     engine's stack's limit.
 16. Where the crate's iterator's impl writes its own `fold`, std's

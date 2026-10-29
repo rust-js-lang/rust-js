@@ -309,4 +309,12 @@ export const mutations: Mutation[] = [
     replace: "                    super::super::bindings::is_binding(tcx, eq)\n                        || matches!(",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
+  {
+    name: "zip-sized-in-place",
+    breaks: "a zip whose `size_hint()` is asked is made in place, `$lazyZip`, whose sides, JS's own, count nothing: `(0, Some(5))` of `v.iter().zip(v.iter().skip(2))` (#400)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    (\"Zip\", \"zip\", false),\n",
+    replace: "    (\"Zip\", \"zip\", true),\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
+  },
 ];

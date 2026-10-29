@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "  return range.start <= range.end ? range.end - range.start : 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
+  {
+    name: "range-from-unhinted",
+    breaks: "a zip of `n..`, `(0..).zip(w)`, hints `(0, Some(2))`, as `n..` hints nothing, not `usize::MAX` (#400)",
+    file: "src/runtime/range_len.js",
+    find: "  if (next === $rangeFromNext) return () => [4294967295, undefined];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
+  },
+  {
+    name: "size-hint-of-range-unknown",
+    breaks: "a range given as an `Iterator`, `{ next: $rangeNext }`, hints `(0, None)`, so std's `Peekable` of one does, and its `len()` panics",
+    file: "src/runtime/range_len.js",
+    find: "    next === $rangeNext || next === $rangeNextBack\n",
+    replace: "    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
+  },
+  {
+    name: "inclusive-range-hint-unknown",
+    breaks: "an `a..=b` given as it is to std's `Skip` says nothing of how many it has left, so its `len` asserts and panics (ADR 0918)",
+    file: "src/runtime/range_len.js",
+    find: "      : next === $rangeInclusiveNext || next === $rangeInclusiveNextBack\n",
+    replace: "      : false\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+  },
 ];
