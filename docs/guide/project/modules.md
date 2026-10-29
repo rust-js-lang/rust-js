@@ -119,7 +119,12 @@ module `use`s, `hello` above, is its named import. A thread-local's or a
 `static mut`'s read through the namespace is its live binding, as its
 named import is. The namespace is the module's name camelCase with a
 capital first letter, given apart where the file has that name already;
-a library's module's alike, its root's by its crate's name.
+a library's module's alike, its root's by its crate's name. A function
+a module re-exports, `pub use crate::props::register_simple as
+register_events;`, named through that module's path, is read through
+that module's namespace by the name it's re-exported as,
+`Plugin.registerEvents()`, as React DOM's DOMPluginEventSystem calls
+`SimpleEventPlugin.registerEvents()`.
 `crate::f()`, `self::f()` and `super::f()` name no module of their own,
 and a value that may hold a function, `Box<dyn Fn()>`, is read by its
 name, so a call of it gives the function no `this`

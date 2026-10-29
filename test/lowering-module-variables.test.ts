@@ -175,6 +175,43 @@ pub fn named() -> String {
   }
 });
 
+// rd137: a module that reads a function another re-exports, through the
+// re-exporting module's namespace, `A.f()`, imports that module, so a
+// thread-local of it whose initializer runs the reader is of an import
+// cycle, made where it's first used (ADR 1006, amended).
+test("a function read through a module that re-exports it imports that module", async () => {
+  const dir = fixture("reexporter-cycle");
+  writeFileSync(join(dir, "lib.rs"), `pub mod a {
+    pub use crate::b::f;
+
+    thread_local! {
+        static Y: u32 = crate::c::x();
+    }
+
+    pub fn y() -> u32 {
+        Y.with(|y| *y)
+    }
+}
+
+pub mod b {
+    pub fn f() -> u32 {
+        5
+    }
+}
+
+pub mod c {
+    pub fn x() -> u32 {
+        super::a::f() + 1
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js")]);
+  expect(readFileSync(join(dir, "out", "c.js"), "utf8")).toContain('import * as A from "./a.js";\n');
+  expect(readFileSync(join(dir, "out", "a.js"), "utf8")).toContain("const Y = $local(() => C.x());\n");
+  const a = await import(join(dir, "out", "a.js"));
+  expect(a.y()).toBe(6);
+});
+
 // React's `let callbacks = []`, set `callbacks = []` again: a thread-local
 // `RefCell` of an array its module sets whole is its `export let`, given
 // the new one there; another module's `set` writes the one it reads in

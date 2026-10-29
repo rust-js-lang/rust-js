@@ -43,6 +43,8 @@ struct Pass {
     /// The bindings each module reads through another that holds them
     /// (ADR 0633).
     held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    /// Each module read through another that re-exports a function (rd137).
+    reexporters: HashSet<(LocalModId, LocalModId)>,
     /// Each copy of a function another module calls, by its index (ADR
     /// 0051, amended).
     copy_references: HashSet<(LocalModId, DefId, usize)>,
@@ -522,11 +524,11 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.references),
                     lowered().flat_map(|d| &d.held),
                     lowered().flat_map(|d| &d.package_uses),
+                    lowered().flat_map(|d| &d.reexporters),
                 );
                 let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
-                // A thread-local its module's load can't make before what it
-                // runs: made where it's first used, the crate lowered again
-                // so, a `pub` one refused (ADR 1006, amended).
+                // A thread-local its module's load can't make first: made where
+                // it's first used, lowered again, a `pub` one refused (ADR 1006).
                 let cyclic = load_cycles::made_in_cycles(tcx, &locals_at_load, &fns, &imports);
                 if !cyclic.is_empty() {
                     return Lowered::MadeWhereUsed(cyclic);
@@ -1024,6 +1026,7 @@ pub fn lower_crate<'tcx>(
         pass.references.iter().chain(copy_edges.iter()),
         pass.held.iter(),
         pass.package_uses.iter(),
+        pass.reexporters.iter(),
     );
     let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
     load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
@@ -1356,10 +1359,12 @@ pub fn lower_crate<'tcx>(
             // By what each imports, `import { MAX as LIMIT, unstable_now as getCurrentTime }`.
             imports.sort_by(|(a, an, ae, _), (b, bn, be, _)| (&paths[a], ae, an).cmp(&(&paths[b], be, bn)));
             // And each module it imports of, itself, which it reads where a
-            // path names a function through it, `Plugin.extractEvents` (rd114,
-            // ADR 1018): after what it imports by name, which keeps its name.
-            let through: BTreeMap<&Vec<String>, LocalModId> =
-                imports.iter().map(|&(target, ..)| (&paths[&target], target)).collect();
+            // path names a function through it, `Plugin.extractEvents`, or one
+            // it re-exports, `Plugin.registerEvents` (rd114, rd137, ADR 1018):
+            // after what it imports by name, which keeps its name.
+            let reexporters = (pass.reexporters.iter()).filter_map(|&(from, to)| (from == module).then_some(to));
+            let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);
+            let through: BTreeMap<&Vec<String>, LocalModId> = targets.map(|to| (&paths[&to], to)).collect();
             let namespaces: Vec<_> = (through.into_values())
                 .map(|target| {
                     let name = super::analysis::namespace_of(tcx, target);

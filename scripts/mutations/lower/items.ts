@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     replace: "            false => super::default_exports::exported_as(self.tcx, def_id, &name),\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "reexported-path-own-name",
+    breaks: "a function a module re-exports by another name, `pub use crate::shared::doubled as twice;`, read through that module's namespace is read by its own name, `Plugins.doubled`, not the name it's re-exported as, `Plugins.twice` (rd137)",
+    file: "src/lower/items.rs",
+    find: "super::reexports::exported_in(self.tcx, self.krate.fns, module, path.name, def_id)",
+    replace: "super::reexports::exported_in(self.tcx, self.krate.fns, module, self.tcx.item_name(def_id), def_id)",
+    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+  },
 ];

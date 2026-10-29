@@ -12,9 +12,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-through-reexport",
-    breaks: "a function a module re-exports, `plugins::doubled()` of `pub use crate::shared::doubled`, is read through the namespace of the module that has it, `Shared.doubled`, where the path named another (rd114)",
+    breaks: "a function a module `use`s but its file doesn't re-export, `plugins::paired()` of `pub(crate) use crate::shared::doubled as paired`, is read through that module's namespace, `Plugins.paired`, which it doesn't export (rd114, rd137)",
     file: "src/lower/analysis/namespaces.rs",
-    find: "        && tcx.parent(function) == named\n",
+    find: "        && (tcx.parent(function) == named || reexports(named))\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "read through its namespace"],
   },
@@ -52,5 +52,13 @@ export const mutations: Mutation[] = [
     find: "        Some((from, _)) if !module.is_crate_root() => {\n",
     replace: "        Some((from, _)) => {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "read through its namespace"],
+  },
+  {
+    name: "reexported-path-not-through",
+    breaks: "a function a module re-exports, called through that module's path, `plugins::doubled(2)`, imports the function from where it's defined, not `Plugins.doubled(2)`, as React DOM's `SimpleEventPlugin.registerEvents()` reads (rd137)",
+    file: "src/lower/analysis/namespaces.rs",
+    find: "        && (tcx.parent(function) == named || reexports(named))\n",
+    replace: "        && tcx.parent(function) == named\n",
+    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
   },
 ];

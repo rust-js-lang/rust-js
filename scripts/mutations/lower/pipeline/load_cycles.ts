@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: ".partition(|&key| false && tcx.visibility(key).is_public());\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local"],
   },
+  {
+    name: "reexporter-not-an-import",
+    breaks: "a module that reads a function through a module that re-exports it, `A.f()`, has no import of that module in the load-order graph, so a cycle through it is unseen and a thread-local of it is made as its module loads (rd137)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "        referenced.chain(held).chain(reexporters).chain(reexported),\n",
+    replace: "        referenced.chain(held).chain(reexporters.take(0)).chain(reexported),\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a function read through a module that re-exports it imports that module"],
+  },
 ];

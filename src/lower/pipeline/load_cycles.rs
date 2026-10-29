@@ -215,16 +215,18 @@ pub(super) type ReexportFrom = (LocalModId, js::ImportFrom);
 
 /// What the crate's modules import of each other (`load_order`), of what
 /// their bodies import: another module's items each reads, the bindings it
-/// reads through another that holds them (ADR 0633), and the JS modules it
+/// reads through another that holds them (ADR 0633), each whose namespace
+/// it reads a function through that it re-exports (rd137), and the JS modules it
 /// imports, a binding's, as `imported` says of each too, and those it
 /// imports for their effects, and what each re-exports, `reexports`'s.
 pub(super) fn module_imports<'d>(
     places: &[ModuleJs],
     fns: &HashMap<DefId, FnInfo>,
-    (references, held, package_uses): (
+    (references, held, package_uses, reexporters): (
         impl Iterator<Item = &'d (LocalModId, DefId)>,
         impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
         impl Iterator<Item = &'d (LocalModId, Export)>,
+        impl Iterator<Item = &'d (LocalModId, LocalModId)>,
     ),
     (imported, reexports): (&BTreeMap<Export, HashSet<LocalModId>>, &[ReexportFrom]),
     js_modules: &dyn crate::program::JsModules,
@@ -234,6 +236,9 @@ pub(super) fn module_imports<'d>(
         .collect();
     let referenced = references.map(|&(from, id)| (from, fns[&id].module));
     let held = held.map(|&(from, holder, ..)| (from, holder));
+    // A module whose namespace a function it re-exports is read through
+    // (rd137).
+    let reexporters = reexporters.copied();
     // And what each module re-exports, as `reexports` writes it, `export {
     // one } from "./z.js"`: an import of that module, or of a binding's JS
     // file, so a cycle through it is one (#295). A type's, which has no JS,
@@ -252,5 +257,10 @@ pub(super) fn module_imports<'d>(
         (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
     let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
     let bound = used.chain(users).chain(effects).chain(reexported_files);
-    crate::lower::load_order::ModuleImports::new(&laid_out, referenced.chain(held).chain(reexported), bound, js_modules)
+    crate::lower::load_order::ModuleImports::new(
+        &laid_out,
+        referenced.chain(held).chain(reexporters).chain(reexported),
+        bound,
+        js_modules,
+    )
 }

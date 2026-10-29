@@ -484,6 +484,10 @@ struct Dependencies {
     /// holds it, by its `const`'s name there and whether it's that
     /// module's default (ADR 0633).
     held: HashSet<(LocalModId, LocalModId, String, bool, DefId)>,
+    /// Each of the crate's modules a module reads a function through the
+    /// namespace of, which re-exports it, `Plugin.registerEvents` (rd137):
+    /// an import of that module, where the function's own is another's.
+    reexporters: HashSet<(LocalModId, LocalModId)>,
 }
 
 struct FnCx<'a, 'tcx> {

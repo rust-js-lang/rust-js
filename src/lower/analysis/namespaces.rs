@@ -17,14 +17,16 @@ use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::HashMap;
 
 /// A path through a module: the function it names, the module, which has
-/// it, the crate's or a library's, the name its namespace is imported by,
-/// and the module the path is written in.
+/// it, the crate's or a library's, or re-exports it, the name its
+/// namespace is imported by, the module the path is written in, and the
+/// name the path calls it, `register_events` of `plugin::register_events`.
 #[derive(Clone, PartialEq, Eq)]
 pub(in crate::lower) struct Through {
     pub(in crate::lower) function: DefId,
     pub(in crate::lower) module: DefId,
     pub(in crate::lower) namespace: String,
     pub(in crate::lower) scope: LocalModId,
+    pub(in crate::lower) name: rustc_span::Symbol,
 }
 
 /// Each path of the crate's bodies that names a function through the
@@ -89,6 +91,8 @@ impl<'tcx> intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {
         };
         if let Some(qpath) = path
             && let Some((function, module)) = through(self.tcx, self.foreign, qpath)
+            && let hir::QPath::Resolved(None, resolved) = qpath
+            && let Some(last) = resolved.segments.last()
         {
             let scope = self.tcx.parent_module(expr.hir_id);
             let namespace = match module.as_local() {
@@ -100,6 +104,7 @@ impl<'tcx> intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {
                 module,
                 namespace,
                 scope,
+                name: last.ident.name,
             };
             self.through.insert(expr.span, through);
         }
@@ -110,9 +115,10 @@ impl<'tcx> intravisit::Visitor<'tcx> for Paths<'_, '_, 'tcx> {
 /// What `qpath` names through a module: a function of that module's, the
 /// crate's or a library's, by a path whose last but one segment is the
 /// module by its name, `plugin` of `plugin::f` and of `crate::plugin::f`,
-/// `scheduler` of `scheduler::f`. Not `f` alone, a `use`'s, nor `crate::f`,
-/// `self::f` or `super::f`, which name no module but their own place's,
-/// nor a function another module has that this one re-exports.
+/// `scheduler` of `scheduler::f`, or a function of the crate's that module
+/// re-exports, `plugin::register_events` (rd137). Not `f` alone, a `use`'s,
+/// nor `crate::f`, `self::f` or `super::f`, which name no module but their
+/// own place's.
 fn through(
     tcx: TyCtxt<'_>,
     foreign: &crate::lower::library::Foreign<'_, '_>,
@@ -133,9 +139,26 @@ fn through(
         return None;
     };
     let listed = function.is_local() || foreign.item(function).is_some_and(|item| item.member.is_none());
+    // Its own, or a function of the crate's another module has that this
+    // one's file re-exports, `pub use crate::props::register_simple as
+    // register_events;`, by the name it's re-exported as (rd137).
+    let reexports = |named: DefId| {
+        let (Some(named), Some(last)) = (named.as_local(), path.segments.last()) else {
+            return false;
+        };
+        function.is_local()
+            && tcx.def_kind(function) == DefKind::Fn
+            && (crate::lower::reexports::reexporting_use(
+                tcx,
+                LocalModId::new_unchecked(named),
+                last.ident.name,
+                function,
+            ))
+            .is_some()
+    };
     let through = listed
         && !module.ident.is_path_segment_keyword()
-        && tcx.parent(function) == named
+        && (tcx.parent(function) == named || reexports(named))
         && !holds_a_callable(tcx, function);
     through.then_some((function, named))
 }

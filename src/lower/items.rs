@@ -114,7 +114,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and `fiber::CURRENT`, read through its namespace,
     /// `Plugin.extractEvents` and `Fiber.current` (rd114, rd114a, ADR 1018).
     pub(super) fn named_fn_ref(&self, def_id: DefId, copy: Option<usize>, named: Span) -> Expr {
-        let through = (self.krate.module_paths.get(&named)).is_some_and(|through| through.function == def_id);
+        let path = (self.krate.module_paths.get(&named)).filter(|through| through.function == def_id);
+        let through = path.is_some();
+        // The crate's function a module re-exports, called through that
+        // module's path, `plugin::register_events()`: through its
+        // namespace, by the name it re-exports it as,
+        // `Plugin.registerEvents()` (rd137, ADR 1018, amended).
+        if let Some(path) = path
+            && copy.is_none()
+            && let Some(info) = self.krate.fns.get(&def_id)
+            && let Some(module) = path
+                .module
+                .as_local()
+                .map(rustc_span::def_id::LocalModId::new_unchecked)
+            && module != info.module
+            && module != self.module
+            && let Some(export) = super::reexports::exported_in(self.tcx, self.krate.fns, module, path.name, def_id)
+        {
+            self.dependencies.borrow_mut().reexporters.insert((self.module, module));
+            let namespace = Expr {
+                facts: js::Facts::NONE,
+                kind: js::ExprKind::Symbol(super::module_symbol(module, js::NAMESPACE)),
+                span: js::Span::NONE,
+            };
+            return Expr::member(namespace, export).item();
+        }
         // A library's, its module's namespace's, imported from where the
         // module imports the function from, `Scheduler.unstable_now`; not
         // one the crate compiles itself, nor its module's default.

@@ -204,6 +204,7 @@ pub(super) fn gather(
         pass.references.extend(dependencies.references.drain());
         pass.package_uses.extend(dependencies.package_uses.drain());
         pass.held.extend(dependencies.held.drain());
+        pass.reexporters.extend(dependencies.reexporters.drain());
         pass.copy_references.extend(dependencies.copy_references.drain());
     }
     if copies.iter().any(|copy| copy.jsx) {

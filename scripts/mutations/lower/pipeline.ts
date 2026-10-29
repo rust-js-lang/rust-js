@@ -615,4 +615,12 @@ export const mutations: Mutation[] = [
     replace: "                super::default_exports::exported_as(tcx, id, &name),\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "reexporter-namespace-unimported",
+    breaks: "a module that reads a function only through a module that re-exports it, `Plugins.doubled(2)`, isn't offered that module's namespace import, and the linker panics (rd137)",
+    file: "src/lower/pipeline.rs",
+    find: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);\n",
+    replace: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters.take(0));\n",
+    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+  },
 ];

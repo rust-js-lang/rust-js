@@ -246,3 +246,34 @@ snapshot `imports` and the guide's bindings page, compiled; and the
 mutations `namespace-named-by-rust-name`, `library-root-namespace-by-file`,
 `namespace-named-camel-case`, `namespace-name-repeat-accepted` and
 `namespace-of-any-holding-module`.
+
+## Amendment: a function a module re-exports, through that module (rd137)
+
+React port gap rd137 (2026-10-29). DOMPluginEventSystem's port calls
+`simple_event_plugin::register_events()`, which SimpleEventPlugin
+re-exports, `pub use crate::events::dom_event_properties::register_simple_events
+as register_events;`. "Which paths" above left out a function another
+module has that the named one re-exports, so it was that function's
+named import, `import { registerSimpleEvents } from "./DOMEventProperties.js";`,
+where upstream writes `SimpleEventPlugin.registerEvents();`.
+
+**A function of the crate's that a module's file re-exports, named
+through that module's path, is read through that module's namespace, by
+the name it re-exports it as** (`reexports::exported_in`, the name
+`export { registerSimpleEvents as registerEvents } from ..` gives it):
+`SimpleEventPlugin.registerEvents()`. Which `pub use`s its file
+re-exports is `analysis::is_reexport`'s, asked of the module by
+`reexports::reexporting_use`; one it doesn't, a `pub(crate) use`, stays
+the function's named import, as `plugins.js` exports nothing of it. A
+path in the re-exporting module itself, and a copy (ADR 0051), stay
+their named import. The reading module imports the re-exporting one
+(`reexporters`, its dependencies): its namespace is offered for import, and
+the load-order graph has that import, as JS does. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, the same function.
+
+Held by `test/modules.test.ts`, "a function called through its module is
+read through its namespace" (`Plugins.doubled`, `Plugins.twice`, and a
+`pub(crate) use`'s named import), and `test/lowering-module-variables.test.ts`,
+"a function read through a module that re-exports it imports that module";
+mutations `reexported-path-*`, `reexporter-*`, `namespace-through-reexport`.
+

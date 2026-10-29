@@ -336,7 +336,7 @@ fn written_module(path: &hir::UsePath<'_>) -> Option<LocalModId> {
 /// there by `name`: its own item's name, or its default or alias
 /// (`default_exports::exported_as`); else the name a `pub use` of it there
 /// gives it, which re-exports it. `None` where it does neither.
-fn exported_in(
+pub(super) fn exported_in(
     tcx: TyCtxt<'_>,
     fns: &HashMap<DefId, FnInfo>,
     module: LocalModId,
@@ -350,18 +350,25 @@ fn exported_in(
             false => super::default_exports::alias_named(tcx, item, name),
         };
     }
+    let used = reexporting_use(tcx, module, name, item)?;
+    Some(match name == tcx.item_name(item) {
+        true => info.name.clone(),
+        false => super::bindings::alias_name(tcx, used, name),
+    })
+}
+
+/// The `pub use` of `module` that re-exports `item` by `name`, which its
+/// file's JS re-exports (`analysis::is_reexport`), as `pub use
+/// crate::props::register_simple as register_events;` does: the `use`
+/// item.
+pub(super) fn reexporting_use(tcx: TyCtxt<'_>, module: LocalModId, name: Symbol, item: DefId) -> Option<DefId> {
     tcx.hir_module_items(module).free_items().find_map(|id| {
         let used = tcx.hir_item(id);
         let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = used.kind else {
             return None;
         };
         let names_it = matches!(path.res.value_ns, Some(Res::Def(_, named)) if named == item);
-        (names_it && ident.name == name && super::analysis::is_reexport(tcx, used)).then(|| {
-            match name == tcx.item_name(item) {
-                true => info.name.clone(),
-                false => super::bindings::alias_name(tcx, used.owner_id.to_def_id(), name),
-            }
-        })
+        (names_it && ident.name == name && super::analysis::is_reexport(tcx, used)).then(|| used.owner_id.to_def_id())
     })
 }
 

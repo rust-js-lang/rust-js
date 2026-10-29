@@ -1437,8 +1437,11 @@ pub fn reset() -> Option<&'static Unknown> {
 
 // rd114 (ADR 1018): a function called through its module's path is read
 // through that module's namespace, from a module below too; a path
-// through `super` alone names its own module's function by its name, and
-// one through a module that re-exports another's is that one's import.
+// through `super` alone names its own module's function by its name; and
+// one through a module that re-exports another's is read through the
+// re-exporting module's namespace, by the name it re-exports it as,
+// React DOM's `SimpleEventPlugin.registerEvents()` (rd137), where its file
+// re-exports it.
 test("a function called through its module is read through its namespace", async () => {
   const dir = fixture("module-namespace");
   writeFileSync(join(dir, "lib.rs"), `#[path = "events/DOMPluginEventSystem.rs"]
@@ -1452,7 +1455,7 @@ pub fn base() -> u32 {
 }
 
 pub fn run() -> u32 {
-    plugin::nested::depth() + plugins::doubled(2) + dom_plugin_event_system::dispatch()
+    plugin::nested::depth() + plugins::doubled(2) + plugins::twice(3) + plugins::paired(1) + dom_plugin_event_system::dispatch()
 }
 `);
   mkdirSync(join(dir, "events"), { recursive: true });
@@ -1467,19 +1470,22 @@ pub mod nested {
     }
 }
 `);
-  writeFileSync(join(dir, "plugins.rs"), "pub use crate::shared::doubled;\n");
+  writeFileSync(join(dir, "plugins.rs"), "pub use crate::shared::doubled;\npub use crate::shared::doubled as twice;\npub(crate) use crate::shared::doubled as paired;\n");
   writeFileSync(join(dir, "shared.rs"), "pub fn doubled(n: u32) -> u32 {\n    n * 2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js")]);
   const nested = readFileSync(join(dir, "out", "plugin", "nested.js"), "utf8");
   expect(nested).toContain('import { base } from "../lib.js";\nimport { extractEvents } from "../plugin.js";\nimport * as Plugin from "../plugin.js";\n');
   expect(nested).toContain("return (((extractEvents(1) + Plugin.extractEvents(2)) >>> 0) + base()) >>> 0;");
   const lib = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  expect(lib).toContain('import * as Plugins from "./plugins.js";\n');
+  // One its file doesn't re-export, `pub(crate) use`, is its own module's.
   expect(lib).toContain('import { doubled } from "./shared.js";\n');
   expect(lib).toContain('import * as Nested from "./plugin/nested.js";\n');
   // A #[path] module's namespace is named as its JS file is, as upstream's
   // file names it (rd114c, ADR 1018).
   expect(lib).toContain('import * as DOMPluginEventSystem from "./events/DOMPluginEventSystem.js";\n');
-  expect(lib).toContain("return (((Nested.depth() + doubled(2)) >>> 0) + DOMPluginEventSystem.dispatch()) >>> 0;");
+  expect(lib).toContain("Nested.depth() + Plugins.doubled(2)");
+  expect(lib).toContain("Plugins.twice(3)");
   const { run: ran } = await import(join(dir, "out", "lib.js"));
-  expect(ran()).toBe(15);
+  expect(ran()).toBe(23);
 });
