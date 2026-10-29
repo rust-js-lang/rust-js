@@ -628,4 +628,12 @@ export const mutations: Mutation[] = [
     replace: "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself keys a JS Set by itself"],
   },
+  {
+    name: "generic-made-key-classed",
+    breaks: "a set in generic code keyed by `(T, i32)` is a JS `Set`, which holds `(1, 0)` twice, as it finds objects by themselves (#401)",
+    file: "src/lower/std_types/map.rs",
+    find: "            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))\n",
+    replace: "            && false\n",
+    tests: ["test/limitations.test.ts", "-t", "A map or set in generic code keyed by a type made of a type parameter"],
+  },
 ];

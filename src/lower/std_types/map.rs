@@ -345,6 +345,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return given
                 .ok_or_else(|| self.unsupported(span, &format!("a map of `{key}` keys, whose class isn't given")));
         }
+        // One made of a type parameter, `Key<T>`, `(T, i32)` or `Option<T>`:
+        // which class finds it is its parameter's too, an object's of equal
+        // ones found as one only by value, which no class given here says
+        // of it: refused, never a JS `Set` of objects found by themselves
+        // (#401).
+        if let Some(key) = key
+            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("a map or a set keyed by `{key}`, made of a type parameter, in generic code"),
+            ));
+        }
         let name = match key {
             // Paths, each kept under its components (ADR 0401).
             Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],

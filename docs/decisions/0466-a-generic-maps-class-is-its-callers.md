@@ -129,3 +129,22 @@ gives, `&graph[&v]`, it didn't. Held by the corpus case
 `generic_map_made_by_entry` and the mutations `map-made-behind-mut-unasked`
 and `map-made-by-a-std-fn-unasked`.
 
+
+## Amendment: a key made of a type parameter is refused (#401)
+
+`xs.into_iter().map(|a| Key { a }).collect::<HashSet<_>>()` in generic
+code, its key `Key<T>`, printed `new Set(..)`, a JS `Set`, which finds an
+object by itself: of `vec![1, 1]` it held two where Rust holds one, a
+wrong answer. So did a `(T, i32)`'s and an `Option<T>`'s of a struct `T`.
+What class finds such a key depends on its parameter, a `$KeySet` of
+equal ones by value, or a `$keySet` of an object equal only to itself
+(ADR 1015), and what the caller gives is `T`'s class alone, never one of
+a type made of it. **A map or a set keyed by a type made of a type
+parameter, or of an associated type of one (`known_by_bounds`), is
+refused in generic code** (`map_class`), where its key's type is written
+and where it's only inferred alike; a `T` itself is its caller's, as
+before.
+
+Case D: no class rust-js has finds it as Rust does. Listed in
+`docs/guide/limitations.md`, whose example `test/limitations.test.ts`
+compiles, and held by the mutation `generic-made-key-classed` (`std_types/map.ts`).
