@@ -668,10 +668,10 @@ test("a module's own item a pub use renames is imported by that name", async () 
 mod report;
 mod scheduler;
 
-use scheduler::unstable_now;
+use scheduler::{to_array as zero_based, unstable_now};
 
 pub fn by_alias() -> f64 {
-    unstable_now() + scheduler::to_array()
+    unstable_now() + scheduler::to_array() + zero_based()
 }
 
 pub fn by_path() -> f64 {
@@ -702,14 +702,16 @@ pub fn to_array() -> f64 {
   // module's `use` names it so, else by its own name.
   // A function called through its module, its namespace's, by what it
   // exports it as (ADR 1018).
-  expect(read("lib.js")).toContain('import { unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
-  expect(read("lib.js")).toContain("return unstable_now() + Scheduler.toArray();");
+  // Its names listed by what each is exported as, `toArray` before
+  // `unstable_now`, whatever it's named here.
+  expect(read("lib.js")).toContain('import { toArray as zeroBased, unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
+  expect(read("lib.js")).toContain("return unstable_now() + Scheduler.toArray() + zeroBased();");
   expect(read("lib.js")).toContain("return Report.report() + unstable_now() + Scheduler.MAX;");
   expect(read("report.js")).toContain('import * as Scheduler from "./scheduler.js";\n\nexport');
   expect(read("report.js")).toContain("return Scheduler.unstable_now() * 10 + Scheduler.MAX;");
   expect(read("index.js")).toContain('export { unstable_now as getCurrentTime } from "./scheduler.js";');
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.byAlias(), lib.byPath()]).toEqual([13, 266]);
+  expect([lib.byAlias(), lib.byPath()]).toEqual([20, 266]);
   const index = await import(join(dir, "index.js"));
   expect(Object.keys(index)).toEqual(["getCurrentTime"]);
   expect(index.getCurrentTime()).toBe(6);
