@@ -355,16 +355,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return (parts, None);
         }
-        let parts = self.range_parts(range, kind, out);
-        let num = self.range_index(ty).and_then(Num::of).filter(|num| !num.float());
-        let (Some(num), RangeKind::Inclusive, [start, end]) = (num, kind, parts.as_slice()) else {
-            return (parts, None);
+        let index = self.range_index(ty);
+        let num = index.and_then(Num::of).filter(|num| !num.float());
+        let text = index.is_some_and(|index| index.is_char());
+        if kind != RangeKind::Inclusive || (num.is_none() && !text) {
+            return (self.range_parts(range, kind, out), None);
+        }
+        let range = match range.reads_same() {
+            true => range,
+            false => self.spill("range", range, out),
+        };
+        // One used up as std's `fold` leaves it, or a `char`'s past its
+        // last, holds Rust's bounds in `exhausted`.
+        let held = Expr::member(range.clone(), "exhausted");
+        let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());
+        let used = Expr::bin(Op::Ne, held, Expr::undefined());
+        let [start, end] = ["start", "end"].map(|bound| Expr::member(own.clone(), bound));
+        let Some(num) = num else {
+            return (vec![start, end], Some(used));
         };
         let (lo, hi) = num.range();
-        let past = Expr::bin(Op::Gt, start.clone(), num.literal(hi as i128));
-        let before = Expr::bin(Op::Lt, end.clone(), num.literal(lo));
-        let exhausted = Expr::bin(Op::Or, past, before);
-        (vec![num.wrap(start.clone()), num.wrap(end.clone())], Some(exhausted))
+        let past = Expr::bin(Op::Gt, Expr::member(range.clone(), "start"), num.literal(hi as i128));
+        let before = Expr::bin(Op::Lt, Expr::member(range, "end"), num.literal(lo));
+        let exhausted = Expr::bin(Op::Or, Expr::bin(Op::Or, used, past), before);
+        (vec![num.wrap(start), num.wrap(end)], Some(exhausted))
     }
 
     /// `a == b` of two ranges of type `ty` (ADR 0129): `a.start === b.start

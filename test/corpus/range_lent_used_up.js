@@ -55,10 +55,7 @@ function main() {
   // Not lent: what it's copied from is as it was.
   const g = { start: 1, end: 3 };
   console.log(
-    `${$rangeInclusiveLen({
-      start: g.start,
-      end: g.end,
-    })} ${g.start & 255}..=${g.end & 255}${g.start > 255 || g.end < 0 ? " (exhausted)" : ""}`,
+    `${$rangeInclusiveLen({ ...g })} ${(g.exhausted ?? g).start & 255}..=${(g.exhausted ?? g).end & 255}${g.exhausted !== undefined || g.start > 255 || g.end < 0 ? " (exhausted)" : ""}`,
   );
   const h = { start: 1, end: 5 };
   const taken = $count($lent($iterator(h, $rangeInclusiveNext)).take(2));

@@ -261,8 +261,8 @@ export const mutations: Mutation[] = [
     name: "range-state-unwrapped",
     breaks: "an inclusive range stepped past its type's last reads its bounds unwrapped, `128..=127`, not std's exhausted `-128..=127 (exhausted)` (#414)",
     file: "src/lower/std_types/range.rs",
-    find: "        let (Some(num), RangeKind::Inclusive, [start, end]) = (num, kind, parts.as_slice()) else {\n",
-    replace: "        let (Some(num), RangeKind::Exclusive, [start, end]) = (num, kind, parts.as_slice()) else {\n",
+    find: "        (vec![num.wrap(start), num.wrap(end)], Some(exhausted))\n",
+    replace: "        (vec![start, end], Some(exhausted))\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
   {
@@ -279,6 +279,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),\n",
     replace: "            (Some(_), None) | (None, Some(_)) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
+  {
+    name: "range-state-held-unread",
+    breaks: "an inclusive range used up by a fold reads its own bounds, past each other, not Rust's in `exhausted` (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "        let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());\n",
+    replace: "        let own = range.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

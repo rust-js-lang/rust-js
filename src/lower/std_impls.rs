@@ -467,7 +467,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let all = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![place]);
                 Ok(Expr::new_(class, vec![Expr::call(Expr::member(all, "map"), vec![f])]))
             }
-            // `{ start: r.start, end: r.end }` (ADR 0129).
+            // `{ start: r.start, end: r.end }` (ADR 0129); of an inclusive one
+            // of numbers or `char`s, which a step may leave exhausted, `{ ...r
+            // }`, its `exhausted` too (#414).
+            ty::Adt(_, args)
+                if self.range_kind(ty) == Some(super::std_types::range::RangeKind::Inclusive)
+                    && (args.type_at(0).is_integral() || args.type_at(0).is_char()) =>
+            {
+                Ok(Expr::object(vec![Prop::Spread(place)]))
+            }
             ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => {
                 let props = kind
                     .bounds()

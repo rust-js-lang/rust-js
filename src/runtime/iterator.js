@@ -17,6 +17,13 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   hint ??= $rangeHintOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
+  // An inclusive range's own `try_fold`, std's, which what folds it asks,
+  // and so its `fold`: they end it as std's do, exhausted at its last (#414).
+  const rangeFold = $rangeFoldOf(next);
+  if (rangeFold !== undefined) {
+    it.tryFold = (init, f, broke) => rangeFold(iterator, init, f, broke);
+    it.fold = (init, f) => rangeFold(iterator, init, f, () => false);
+  }
   // The crate's own `fold` and `nth`, where its impl writes them, which
   // what std routes through them calls (#162).
   // That `fold` takes what it steps and drops it, which `ownFold` says.

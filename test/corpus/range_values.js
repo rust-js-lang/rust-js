@@ -86,9 +86,7 @@ function main() {
 
   const inclusive = { start: 1, end: 6 };
   console.log(
-    `${inclusive.start | 0}..=${inclusive.end | 0}${inclusive.start > 2147483647 || inclusive.end < -2147483648 ? " (exhausted)" : ""} ${inclusive.start | 0} ${inclusive.end | 0} [${evens(
-      { start: inclusive.start, end: inclusive.end },
-    ).join(", ")}]`,
+    `${(inclusive.exhausted ?? inclusive).start | 0}..=${(inclusive.exhausted ?? inclusive).end | 0}${inclusive.exhausted !== undefined || inclusive.start > 2147483647 || inclusive.end < -2147483648 ? " (exhausted)" : ""} ${(inclusive.exhausted ?? inclusive).start | 0} ${(inclusive.exhausted ?? inclusive).end | 0} [${evens({ ...inclusive }).join(", ")}]`,
   );
   const low = 3;
   const high = 9;

@@ -40,7 +40,7 @@ function main() {
   );
   const r = { start: 1, end: 4 };
   $rangeInclusiveNext(r);
-  const value$4 = hint($iterator({ start: r.start, end: r.end }, $rangeInclusiveNext));
+  const value$4 = hint($iterator({ ...r }, $rangeInclusiveNext));
   console.log(
     `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) ${len($iterator(r, $rangeInclusiveNext, false, undefined, $rangeInclusiveLen))}`,
   );

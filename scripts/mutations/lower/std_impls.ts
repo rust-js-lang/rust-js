@@ -893,4 +893,12 @@ export const mutations: Mutation[] = [
     replace: "                None => Expr::bin(Op::Ge, Expr::call(Expr::member(items, \"indexOf\"), vec![x]), Expr::int(0)),\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
+  {
+    name: "range-inclusive-clone-unexhausted",
+    breaks: "a clone of an exhausted inclusive range copies its bounds alone, not exhausted, `3..=3` where std's clone is `3..=3 (exhausted)` (#414)",
+    file: "src/lower/std_impls.rs",
+    find: "                Ok(Expr::object(vec![Prop::Spread(place)]))\n",
+    replace: "                Ok(Expr::object(vec![Prop::Field(\"start\".into(), Expr::member(place.clone(), \"start\")), Prop::Field(\"end\".into(), Expr::member(place, \"end\"))]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
 ];

@@ -83,10 +83,11 @@ function $rangeCountOut(range) {
   return left;
 }
 
-// `count()` of `a..=b` lent: how many, its start then past its end.
+// `count()` of `a..=b` lent: how many, it then exhausted at its end, as
+// std's `fold` leaves it.
 function $rangeInclusiveCountOut(range) {
   const left = $rangeInclusiveLen(range);
-  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);
   return left;
 }
 
@@ -97,10 +98,10 @@ function $rangeLastOut(range) {
   return last;
 }
 
-// `last()` of `a..=b` lent: its end, or none, its start then past its end.
+// `last()` of `a..=b` lent: its end, or none, it then exhausted at its end.
 function $rangeInclusiveLastOut(range) {
   const last = $rangeInclusiveLast(range);
-  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);
   return last;
 }
 
@@ -129,6 +130,15 @@ function $rangeHintOf(next) {
     const left = len(range);
     return [left, left];
   };
+}
+
+// The `try_fold` of an inclusive range stepped by `next`, std's, which ends
+// it exhausted at its last, or of one stepped from its back, its `try_rfold`
+// (#414). `undefined` of another `next`.
+function $rangeFoldOf(next) {
+  if (next === $rangeInclusiveNext) return $rangeInclusiveTryFold;
+  if (next === $rangeInclusiveNextBack) return $rangeInclusiveTryRfold;
+  return undefined;
 }
 
 // The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive

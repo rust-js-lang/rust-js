@@ -14,7 +14,7 @@ function main() {
   for (let i = 0; i < 5; i++) {
     const value = f(r);
     console.log(
-      `${value == null ? "None" : `Some(${value})`} ${r.start >>> 0}..=${r.end >>> 0}${r.start > 4294967295 || r.end < 0 ? " (exhausted)" : ""}`,
+      `${value == null ? "None" : `Some(${value})`} ${(r.exhausted ?? r).start >>> 0}..=${(r.exhausted ?? r).end >>> 0}${r.exhausted !== undefined || r.start > 4294967295 || r.end < 0 ? " (exhausted)" : ""}`,
     );
   }
   const e = { start: 5, end: 4 };

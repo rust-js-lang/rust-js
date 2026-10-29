@@ -547,6 +547,13 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   hint ??= $rangeHintOf(next);
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
+  // An inclusive range's own `try_fold`, std's, which what folds it asks,
+  // and so its `fold`: they end it as std's do, exhausted at its last (#414).
+  const rangeFold = $rangeFoldOf(next);
+  if (rangeFold !== undefined) {
+    it.tryFold = (init, f, broke) => rangeFold(iterator, init, f, broke);
+    it.fold = (init, f) => rangeFold(iterator, init, f, () => false);
+  }
   // The crate's own `fold` and `nth`, where its impl writes them, which
   // what std routes through them calls (#162).
   // That `fold` takes what it steps and drops it, which `ownFold` says.
@@ -3058,10 +3065,11 @@ export function $rangeCountOut(range) {
   return left;
 }
 
-// `count()` of `a..=b` lent: how many, its start then past its end.
+// `count()` of `a..=b` lent: how many, it then exhausted at its end, as
+// std's `fold` leaves it.
 export function $rangeInclusiveCountOut(range) {
   const left = $rangeInclusiveLen(range);
-  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);
   return left;
 }
 
@@ -3072,10 +3080,10 @@ export function $rangeLastOut(range) {
   return last;
 }
 
-// `last()` of `a..=b` lent: its end, or none, its start then past its end.
+// `last()` of `a..=b` lent: its end, or none, it then exhausted at its end.
 export function $rangeInclusiveLastOut(range) {
   const last = $rangeInclusiveLast(range);
-  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);
   return last;
 }
 
@@ -3104,6 +3112,15 @@ export function $rangeHintOf(next) {
     const left = len(range);
     return [left, left];
   };
+}
+
+// The `try_fold` of an inclusive range stepped by `next`, std's, which ends
+// it exhausted at its last, or of one stepped from its back, its `try_rfold`
+// (#414). `undefined` of another `next`.
+export function $rangeFoldOf(next) {
+  if (next === $rangeInclusiveNext) return $rangeInclusiveTryFold;
+  if (next === $rangeInclusiveNextBack) return $rangeInclusiveTryRfold;
+  return undefined;
 }
 
 // The `nth` of a range stepped by `next`, `$rangeNext`'s or its inclusive
@@ -3376,18 +3393,72 @@ export function $rangeNext(range) {
 
 // A `RangeInclusive`'s `next()`, `{ start, end }`: its start, moved past,
 // while it's at most its end. Past its end, as Rust's, it gives nothing; a
-// `char`'s by its code point, and past the last `char`, its start its end's
-// and its end before it.
+// `char`'s by its code point. Its number's past its type's last is left
+// unwrapped, std's exhausted range, which its readers wrap (#414); past the
+// last `char`, it's exhausted at it, as std's is.
 export function $rangeInclusiveNext(range) {
   if (typeof range.start === "string") {
     if (range.start.codePointAt(0) > range.end.codePointAt(0)) return undefined;
     const c = range.start;
     const next = $charStep(c, 1);
-    if (next === undefined) range.end = $charStep(c, -1);
+    if (next === undefined) $rangeInclusiveExhausted(range, c, range.end);
     else range.start = next;
     return c;
   }
   return range.start <= range.end ? range.start++ : undefined;
+}
+
+// An inclusive range used up as std's leaves one, its bounds Rust's,
+// `start` and `end`, and exhausted: `exhausted` holds those, which its
+// readers read, and its own bounds hold nothing, its start past its end, so
+// what asks whether it's empty asks them as it is (#414).
+export function $rangeInclusiveExhausted(range, start, end) {
+  range.exhausted = { start, end };
+  if (typeof range.end !== "string") {
+    range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  } else {
+    const after = $charStep(range.end, 1);
+    if (after !== undefined) range.start = after;
+    else range.end = $charStep(range.start, -1) ?? range.end;
+  }
+}
+
+// Std's `RangeInclusive::try_fold`: `f` of each number from its start,
+// given what it gave, until `broke` says what it gave stops it; at its last,
+// it's exhausted there, its start its end, before `f` of it, as std's
+// leaves it, not past it as `next` does (#414). Of `char`s, by code point.
+export function $rangeInclusiveTryFold(range, init, f, broke) {
+  const text = typeof range.start === "string";
+  const at = (c) => (text ? c.codePointAt(0) : c);
+  if (!(at(range.start) <= at(range.end))) return init;
+  let folded = init;
+  while (at(range.start) < at(range.end)) {
+    const n = range.start;
+    range.start = text ? $charStep(n, 1) : typeof n === "bigint" ? n + 1n : n + 1;
+    folded = f(folded, n);
+    if (broke(folded)) return folded;
+  }
+  const last = range.end;
+  $rangeInclusiveExhausted(range, last, last);
+  return f(folded, last);
+}
+
+// Std's `RangeInclusive::try_rfold`, from its end: at its first, it's
+// exhausted there, its end its start.
+export function $rangeInclusiveTryRfold(range, init, f, broke) {
+  const text = typeof range.start === "string";
+  const at = (c) => (text ? c.codePointAt(0) : c);
+  if (!(at(range.start) <= at(range.end))) return init;
+  let folded = init;
+  while (at(range.start) < at(range.end)) {
+    const n = range.end;
+    range.end = text ? $charStep(n, -1) : typeof n === "bigint" ? n - 1n : n - 1;
+    folded = f(folded, n);
+    if (broke(folded)) return folded;
+  }
+  const first = range.start;
+  $rangeInclusiveExhausted(range, first, first);
+  return f(folded, first);
 }
 
 // A `Range`'s `next_back()`, `{ start, end }`: its end, moved down, while
@@ -3403,13 +3474,13 @@ export function $rangeNextBack(range) {
 
 // A `RangeInclusive`'s `next_back()`, `{ start, end }`: its end, moved
 // down, while it's at least its start; a `char`'s by its code point, and
-// before the first `char`, its end its start's and its start past it.
+// before the first `char`, exhausted at it, as std's is (#414).
 export function $rangeInclusiveNextBack(range) {
   if (typeof range.start === "string") {
     if (range.start.codePointAt(0) > range.end.codePointAt(0)) return undefined;
     const c = range.end;
     const before = $charStep(c, -1);
-    if (before === undefined) range.start = $charStep(c, 1);
+    if (before === undefined) $rangeInclusiveExhausted(range, range.start, c);
     else range.end = before;
     return c;
   }
@@ -12465,15 +12536,20 @@ export function $formatFloat(value, options, show) {
 // from it and stops early, as `take` or a loop that breaks does, closes
 // this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
 // as std's `&mut I` gives it, the crate's own where `$iterator` was given
-// it; its `fold`, std's, of `next` (#162); its `tryFold`, `it`'s, as
-// std's `&mut I` gives it, where `it` is std's adapter of one.
+// it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
+// is std's adapter of one, or a range, whose `tryFold` it is too.
 export function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
   // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
   if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
+  // And its `fold` that `tryFold`, as std's `&mut I` folds by its
+  // `I::try_fold`: an inclusive range's ends it exhausted at its last (#414).
+  if (it.tryFold !== undefined) {
+    lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
+    lent.fold = (init, f) => it.tryFold(init, f, () => false);
+  }
   // And its back and its length, `it`'s, as std's `&mut I` passes on an
   // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold`
   // and an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by

@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "lent-try-fold-own",
     breaks: "a lent iterator's tryFold is its iterator's",
     file: "src/runtime/lent.js",
-    find: "  if (it.tryFold !== undefined) lent.tryFold",
-    replace: "  if (false) lent.tryFold",
+    find: "    lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {
@@ -41,5 +41,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.$steps !== undefined) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
+  },
+  {
+    name: "lent-fold-by-next",
+    breaks: "a `&mut`'s `fold` steps its lender by `next`, where std's folds by its `try_fold`, an inclusive range's leaving it exhausted at its last (#414)",
+    file: "src/runtime/lent.js",
+    find: "    lent.fold = (init, f) => it.tryFold(init, f, () => false);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

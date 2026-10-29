@@ -155,3 +155,27 @@ corpus cases read a held range's bounds wrapped now, `inclusive.start |
 make. Still to come: a `fold`'s end state, `3..=3 (exhausted)`, and a
 `char` range's at `char::MAX` (stage 2), and the JS protocol's consumers
 of a lent range (stage 3).
+
+## Amendment: a fold leaves an inclusive range as std's does (2026-10-30, #414 stage 2)
+
+Std's `RangeInclusive::try_fold`, which its `fold`, and a `&mut`'s through
+it, and `any`, `all`, `find`, `sum` and a `filter`'s `next` reach, steps
+it to `start == end`, marks it exhausted, then gives its last: `3..=3
+(exhausted)`, where `next` leaves `4..=3`; `try_rfold` alike from its end;
+and a `char` range past `char::MAX`, or before `'\0'`, is exhausted where
+it is. **One used up so holds Rust's bounds in `exhausted`, `{ start: 3,
+end: 3 }`, `$rangeInclusiveExhausted`'s, its own bounds past each other,
+so what asks whether it's empty asks them as before; `range_state` reads
+`(r.exhausted ?? r).start` and counts it exhausted too.** `$iterator` of an
+inclusive range gives it std's `tryFold`, `$rangeFoldOf`'s, and its
+`fold`; `$lent`'s `fold` is its lender's `tryFold`, as std's `&mut I`
+folds by `I::try_fold`; a lent `count()` and `last()` end it so; and a
+clone of one, which a step may have left exhausted, is `{ ...r }`, so it's
+what it copies. Held by `range_inclusive_exhausted.rs` against native
+Rust and the mutations `range-inclusive-exhausted-unheld`
+(`runtime/range_inclusive_next.ts`), `range-inclusive-fold-by-next`
+(`runtime/range_len.ts`), `lent-fold-by-next` (`runtime/lent.ts`),
+`range-inclusive-clone-unexhausted` (`lower/std_impls.ts`) and
+`range-state-held-unread` (`lower/std_types/range.ts`). Still to come
+(stage 3): `collect()` of a lent one, which JS steps through its iterator
+protocol, `Array.from`, by `next`, and `$count` alike.

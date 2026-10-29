@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     name: "range-inclusive-last-out-kept",
     breaks: "`last()` of a lent `a..=b` leaves its start where it was, so it steps again (#414)",
     file: "src/runtime/range_len.js",
-    find: "  const last = $rangeInclusiveLast(range);\n  if (range.start <= range.end) range.start = typeof range.end === \"bigint\" ? range.end + 1n : range.end + 1;\n",
+    find: "  const last = $rangeInclusiveLast(range);\n  if (range.start <= range.end) $rangeInclusiveExhausted(range, range.end, range.end);\n",
     replace: "  const last = $rangeInclusiveLast(range);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
   },
@@ -88,6 +88,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/range_len.js",
     find: "  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at <= range.end ? at : undefined;\n",
     replace: "  if (at > range.end) {\n    range.start = typeof at === \"bigint\" ? range.end + 1n : range.end + 1;\n    return undefined;\n  }\n  range.start = typeof at === \"bigint\" ? at + 1n : at + 1;\n  return at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
+  {
+    name: "range-inclusive-fold-by-next",
+    breaks: "a fold of an inclusive range steps it by `next`, past its end, `4..=4`, where std's `try_fold` leaves it exhausted at its last (#414)",
+    file: "src/runtime/range_len.js",
+    find: "  if (next === $rangeInclusiveNext) return $rangeInclusiveTryFold;\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

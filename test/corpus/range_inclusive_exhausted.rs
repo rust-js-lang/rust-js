@@ -45,6 +45,23 @@ fn main() {
     let fresh = -128i8..=127;
     println!("{:?} {}", map.range(fresh.clone()).count(), fresh == r);
 
+    // Used up by a fold, through `by_ref()`: exhausted at its last, as
+    // std's `try_fold` leaves it, its clone too.
+    let mut f = 1u8..=3;
+    let all: u32 = f.by_ref().map(u32::from).sum();
+    let copy = f.clone();
+    println!("{all} {f:?} {copy:?} {} {}", f.is_empty(), f == copy);
+    let mut g = 1u8..=4;
+    println!("{} {g:?}", g.by_ref().any(|x| x == 4));
+    let mut h = 1u8..=4;
+    println!("{} {h:?}", h.by_ref().any(|x| x == 2));
+    let mut k = 1u8..=3;
+    println!("{} {k:?} {:?}", k.by_ref().rev().fold(0, |a, x| a * 10 + x), k.start());
+    let mut c = 'x'..='z';
+    println!("{} {c:?}", c.by_ref().fold(String::new(), |s, x| s + &x.to_string()));
+    let mut last = char::MAX..=char::MAX;
+    println!("{:?} {last:?}", last.next());
+
     // Stepped to its end below its type's last: no wrap, not exhausted.
     let mut s = 1u8..=3;
     while s.next().is_some() {}

@@ -2,15 +2,20 @@
 // from it and stops early, as `take` or a loop that breaks does, closes
 // this, not `it`, which its lender goes on stepping. Its `nth` is `it`'s,
 // as std's `&mut I` gives it, the crate's own where `$iterator` was given
-// it; its `fold`, std's, of `next` (#162); its `tryFold`, `it`'s, as
-// std's `&mut I` gives it, where `it` is std's adapter of one.
+// it; its `fold`, std's, of `next` (#162), or of `it`'s `tryFold` where `it`
+// is std's adapter of one, or a range, whose `tryFold` it is too.
 function $lent(it) {
   const lent = new $Steps(() => it.next());
   if (it.nth !== undefined) lent.nth = (k, drop) => it.nth(k, drop);
   if (it.ownNth) lent.ownNth = true;
   // Its `advance_by`, `it`'s, as std's `&mut I` gives it (ADR 0913).
   if (Object.hasOwn(it, "advanceBy")) lent.advanceBy = (m, drop) => it.advanceBy(m, drop);
-  if (it.tryFold !== undefined) lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
+  // And its `fold` that `tryFold`, as std's `&mut I` folds by its
+  // `I::try_fold`: an inclusive range's ends it exhausted at its last (#414).
+  if (it.tryFold !== undefined) {
+    lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
+    lent.fold = (init, f) => it.tryFold(init, f, () => false);
+  }
   // And its back and its length, `it`'s, as std's `&mut I` passes on an
   // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold`
   // and an `ExactSizeIterator`'s `len`; not its `rfold`, which it folds by
