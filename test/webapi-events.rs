@@ -148,6 +148,22 @@ pub fn given_wrapped(button: &HTMLButtonElement, given: EventListenerOrEventList
     button.add_event_listener_named("custom", attached, None);
 }
 
+// FragmentInstance's `once` wrapper, kept to add to each child and remove
+// by identity: a function of its `this`, a JS-owned listener (rd209).
+pub fn kept_wrapped(buttons: &[&HTMLButtonElement], given: EventListenerOrEventListenerObject) -> EventListenerOrEventListenerObject {
+    let attached = listener(function::with_this(move |this, (event,): (&'static Event,)| {
+        record(20);
+        if let EventListenerOrEventListenerObject::EventListener(f) = given {
+            function::call(f, this.map(|t| t as &dyn js::IntoUnknown), (event,));
+        }
+    }));
+    let attached = EventListenerOrEventListenerObject::EventListener(attached);
+    for button in buttons {
+        button.add_event_listener_named("custom", attached, None);
+    }
+    attached
+}
+
 // React DOM's checkPassiveEvents: an options object whose `passive` is a
 // getter, given as the listener too, an `EventListenerObject` of no
 // `handleEvent`, which JS calls only where "test" is dispatched; and to

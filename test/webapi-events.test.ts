@@ -28,6 +28,27 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).toContain('if (typeof given === "function") {\n      given.call(this, event);\n    } else {\n      given.handleEvent(event);\n    }');
 });
 
+// FragmentInstance's \`once\` wrapper, a \`function::with_this\` function kept
+// as an \`EventListener\` to add to each child and remove by identity:
+// \`listener(..)\` of it, the function itself (rd209).
+test("a function of its this is kept as a listener, the function itself", async () => {
+  const js = compileEvents();
+  expect(js).toContain('  function attached(event) {\n    globalThis.record(20);\n    if (typeof given === "function") {\n      given.call(this, event);\n    }\n  }\n  for (const button of buttons) {\n    button.addEventListener("custom", attached);\n  }\n  return attached;');
+  const out = join(fixture("webapi-events"), "events.js");
+  writeFileSync(out, js);
+  const { keptWrapped } = await import(out);
+  const added: [unknown, Function][] = [];
+  const button = (name: string) => ({ name, addEventListener: (_: string, f: Function) => void added.push([name, f]) });
+  const seen: unknown[] = [];
+  (globalThis as Record<string, unknown>).record = (n: number) => void seen.push(n);
+  const kept = keptWrapped([button("a"), button("b")], function (this: unknown, event: unknown) {
+    seen.push([this, event]);
+  });
+  expect(added.map(([name, f]) => [name, f === kept])).toEqual([["a", true], ["b", true]]);
+  added[1][1].call("b", "e");
+  expect(seen).toEqual([20, ["b", "e"]]);
+});
+
 test("event methods keep target types and retained callback lifetimes", () => {
   const dir = fixture("event-errors");
   const source = join(dir, "lib.rs");

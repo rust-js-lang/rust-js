@@ -346,8 +346,11 @@ How WebIDL maps to Rust, one rule for each:
   shared one, `listener(..)`'s, or one JS gave, an
   `EventListenerOrEventListenerObject`, passed as it is, so removal finds
   it; `match` it to call it as JS would,
-  `function::call(f, this, (event,))` or `object.handle_event(event)`
-  ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md)).
+  `function::call(f, this, (event,))` or `object.handle_event(event)`.
+  A function of its `this` kept to add and remove is `listener(..)` of
+  it, `EventListener(listener(function::with_this(move |this, (event,):
+  (&'static Event,)| ..)))`, the function itself
+  ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md), amended).
 - **A union is each of its members as it is:** `window.fetch(url, None)`
   and `window.fetch(request, None)`; a union a JS API gives is an enum of
   its members ([ADR 0215](../../decisions/0215-webapi-unions.md)). A

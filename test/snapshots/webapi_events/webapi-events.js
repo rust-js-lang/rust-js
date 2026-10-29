@@ -157,6 +157,21 @@ export function givenWrapped(button, given) {
   button.addEventListener("custom", attached);
 }
 
+// FragmentInstance's `once` wrapper, kept to add to each child and remove
+// by identity: a function of its `this`, a JS-owned listener (rd209).
+export function keptWrapped(buttons, given) {
+  function attached(event) {
+    globalThis.record(20);
+    if (typeof given === "function") {
+      given.call(this, event);
+    }
+  }
+  for (const button of buttons) {
+    button.addEventListener("custom", attached);
+  }
+  return attached;
+}
+
 // React DOM's checkPassiveEvents: an options object whose `passive` is a
 // getter, given as the listener too, an `EventListenerObject` of no
 // `handleEvent`, which JS calls only where "test" is dispatched; and to

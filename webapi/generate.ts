@@ -2017,8 +2017,9 @@ line();
 line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove_event_listener",
   "and an event handler property's setter, set_onclick(Some(&listener(..))).",
   "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
-  "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..)."], "this",
-  "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));
+  "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..).",
+  "Of any function of the event, a `function::with_this(..)`'s too, whose `this` is what it's added to (rd209)."], "this",
+  "listener<E: 'static>(this: impl Fn(&'static E) + 'static) -> &'static dyn Fn(&'static E)").replaceAll(/^    /gm, ""));
 line();
 line(`/// [\`EventListenerObject\`](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener#the_event_listener_callback):
 /// an object a listener is, which JS calls \`handleEvent\` of. No global
@@ -2091,7 +2092,7 @@ impl<E> IntoEventListener<E> for &'static EventListenerObject {}
 #[diagnostic::on_unimplemented(message = "\`{Self}\` is not a listener added before", note = "removal finds the listener added: a shared one, \`listener(..)\`'s, or one JS gave, an \`EventListenerOrEventListenerObject\`")]
 #[cfg_attr(rust_js, rust_js::types = "EventListenerOrEventListenerObject")]
 pub trait IntoAddedEventListener<E>: listeners::Sealed<E> {}
-impl<E> IntoAddedEventListener<E> for &'static dyn Fn(&E) {}
+impl<E: 'static> IntoAddedEventListener<E> for &'static dyn Fn(&'static E) {}
 impl<E> IntoAddedEventListener<E> for EventListenerOrEventListenerObject {}
 impl<E> IntoAddedEventListener<E> for &'static EventListenerObject {}
 

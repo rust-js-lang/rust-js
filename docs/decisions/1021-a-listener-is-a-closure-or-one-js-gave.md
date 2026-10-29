@@ -125,3 +125,44 @@ not given, as an optional union is (ADR 0443), so a closure is `Copy`,
 owning nothing it would drop while JS keeps it. See ADR 0653's amendment,
 which says each handler's trait and why an element's `onerror` is an
 `EventHandler`.
+
+## Amendment: `listener(..)` takes a function of `&'static` events (rd209)
+
+React DOM's FragmentInstance wraps a `once` listener in `function
+(event) { .. listener.call(this, event) }`, keeps it, adds it to each
+child and removes it by identity. Its port makes it with
+`function::with_this(..)`, a `Box<dyn Fn(&'static Event)>`, which was no
+`EventListener(&'static dyn Fn(&'static Event))`: `listener(..)` took only
+a closure of every lifetime's event, `impl Fn(&E)`.
+
+**`listener<E: 'static>(impl Fn(&'static E) + 'static) -> &'static dyn
+Fn(&'static E)`**, the event `&'static` as every listener's is (an event
+is a JS object a listener may keep): one way to make a JS-owned listener,
+of a closure or of a `with_this` function. A closure's event is inferred
+`&'static` as before. Removal takes the shared listener so typed; one of
+every lifetime, a handler getter's, is one so typed, as it coerces, `f as
+&dyn Fn(&'static Event)` (two impls, of both types, overlap: rustc's
+coherence warns of them).
+
+```rust
+let attached = listener(function::with_this(move |this, (event,): (&'static Event,)| {
+    if let EventListenerOrEventListenerObject::EventListener(f) = given {
+        function::call(f, this.map(|t| t as &dyn js::IntoUnknown), (event,));
+    }
+}));
+let attached = EventListenerOrEventListenerObject::EventListener(attached);
+```
+
+```js
+function attached(event) {
+  if (typeof given === "function") {
+    given.call(this, event);
+  }
+}
+```
+
+Held by `test/webapi-events.test.ts`'s "a function of its this is kept as
+a listener, the function itself" (`kept_wrapped`, run: added to two
+targets, the one function, called with its `this`). No mutation: the
+generator's.
+
