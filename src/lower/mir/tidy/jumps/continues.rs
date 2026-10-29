@@ -363,8 +363,11 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
 /// where one leaves: `if (a) { x } else if (b) { y } else { break l; }
 /// continue;` is `if (a) { x; continue; } else if (b) { y; continue; } else
 /// { break l; }`, as React's commitBeforeMutationEffects_begin writes each
-/// arm's `continue` (ADR 0745, amended).
-pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
+/// arm's `continue` (ADR 0745, amended). Not a chain of a `match` whose
+/// guarded arms fall to the next, `1 if on(n) => break, 1 | 2 => { .. }`,
+/// whose arms `switches` reads by the blocks MIR leaves them by, then the
+/// `if` chain they are (#389c).
+pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>, switches: &[super::Switch]) {
     // An `else` that is one `if` with an `else` of its own: the chain's
     // next link.
     fn linked(otherwise: &[Stmt]) -> bool {
@@ -394,9 +397,12 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>) {
     // a chain of arms that leave each their own way, a `match`'s, which
     // `switches` reads as they are.
     let into_arms = |stmt: &Stmt| {
-        let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
+        let StmtKind::If(test, then, Some(otherwise)) = &stmt.kind else {
             return false;
         };
+        if super::switches::switched_falling(test, stmt.span, switches) {
+            return false;
+        }
         if then.last().is_some_and(ends) != otherwise.last().is_some_and(ends) {
             return true;
         }

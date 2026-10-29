@@ -313,4 +313,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
 
+  {
+    name: "jumps-into-branches-of-falling-match",
+    breaks: "a chain of a `match` whose guarded arms fall gets the jump after it pushed into its arms, which `switches` then can't read: `1 if on(n) => break` before `1 | 2 => { .. }` keeps `bb26: { bb12: { .. } } ` (#389c)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        if super::switches::switched_falling(test, stmt.span, switches) {\n",
+    replace: "        if false && super::switches::switched_falling(test, stmt.span, switches) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_breaks_before_its_fall.rs$"],
+    snapshots: true,
+  },
 ];

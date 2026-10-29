@@ -572,3 +572,46 @@ Held by `test/corpus/match_breaks_its_loop.rs` (`skipped`, `rows_until`,
 `blocks-breaking-loops-kept`, `blocks-breaking-loops-of-written-label`
 (`while_let_at_end.rs`) and `blocks-breaking-loops-inner-loop`
 (`mir/tidy/jumps/continues.ts`).
+
+## Amendment: a guarded arm placed before the arm it falls to (#389c)
+
+A guarded arm that leaves, `1 if on(n) => break`, before the arm its
+value falls to, `1 | 2 => { let m = if n > 4 { 1 } else { return 0 }; ..
+}`, which MIR places after the chain's block, printed `bb26: { bb12: { if
+(t === 1) { if (!on(n)) { break bb12; } break; } if (t !== 2) { .. } } ..
+}`. `jumps into branches` (ADR 0745) had pushed the `break;` MIR leaves
+the guard by into the chain's arms and split the chain, so `switches`
+couldn't read the arms by their blocks. It now leaves alone a chain that
+tests an arm of a `match` whose guarded arms fall to the next
+(`switches::switched_falling`, from the same hints `switches` reads), and
+`switches` then `guarded_loops` make it the `if` chain Rust tries:
+
+```js
+for (const t of tags) {
+  if (t === 1 && on(n)) {
+    break;
+  }
+  if (t === 1 || t === 2) {
+    if (n <= 4) {
+      return 0;
+    }
+    ..
+  } else if (t === 3) {
+    ..
+  }
+  n = (n + 1) >>> 0;
+}
+```
+
+The `switch` that stays of such a `match`, `switch_guards_apart`'s, has its
+last case's `break;` that ends its guard's branch gone too, where the case
+falls to nothing and no `default` follows: the case's end goes where the
+`break` does (`if (!owned && on(..)) { info += "forwardRef"; }`, as it read
+before).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+Held by `test/corpus/guarded_arm_breaks_before_its_fall.rs` against native
+Rust and the mutations `jumps-into-branches-of-falling-match`
+(`mir/tidy/jumps/continues.ts`) and `last-falling-case-keeps-break`
+(`mir/tidy/switches.ts`).

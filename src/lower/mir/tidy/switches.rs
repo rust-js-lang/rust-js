@@ -1230,12 +1230,18 @@ fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
 /// Whether `if (test)`, at `span`, tests an arm of a `match` of constants,
 /// a `switch`, whose arms' values are no `?:` then (ADR 0629).
 pub(super) fn switched(test: &Expr, span: js::Span, switches: &[Switch]) -> bool {
-    let arm = |at: u32| {
-        (switches.iter())
-            .flat_map(|s| &s.arms)
-            .any(|arm| within(at, arm.pattern))
-    };
-    test_at(test, span).is_some_and(arm)
+    test_at(test, span).is_some_and(|at| switches.iter().any(|s| tests_arm(s, at)))
+}
+
+/// Whether so of a `match` whose guarded arms fall to the next (ADR 0905),
+/// whose chain `switches` reads as MIR tests it, by its blocks (#389c).
+pub(super) fn switched_falling(test: &Expr, span: js::Span, switches: &[Switch]) -> bool {
+    let falling = |s: &&Switch| s.arms.iter().any(|arm| arm.falls);
+    test_at(test, span).is_some_and(|at| switches.iter().filter(falling).any(|s| tests_arm(s, at)))
+}
+
+fn tests_arm(switch: &Switch, at: u32) -> bool {
+    switch.arms.iter().any(|arm| within(at, arm.pattern))
 }
 
 /// Where `stmt` is first written: what it does, or the value it gives.
@@ -1310,12 +1316,15 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
                 guard_held(body, switches);
             }
             // The last case's `break`, which its end does (ADR 0629,
-            // amended).
+            // amended), one that falls to nothing's too, ending its guard's
+            // branch (#389c).
             if default.is_none()
                 && let Some(last) = cases.iter_mut().rfind(|case| !case.values.is_empty())
-                && matches!(last.body.last().map(|s| &s.kind), Some(StmtKind::Break(None)))
             {
-                last.body.pop();
+                if matches!(last.body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {
+                    last.body.pop();
+                }
+                ending_breaks(&mut last.body);
             }
             if discriminant_in_place(stmts, i) {
                 i -= 1;

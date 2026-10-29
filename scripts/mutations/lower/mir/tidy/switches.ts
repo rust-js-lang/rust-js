@@ -439,4 +439,13 @@ export const mutations: Mutation[] = [
     replace: "        for (_, body, ..) in cases.iter_mut().filter(|_| false) {\n            body.push(jump.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^(guarded_arms_nested_break|loop_exit_tuple).rs$"],
   },
+  {
+    name: "last-falling-case-keeps-break",
+    breaks: "the last case of a `switch` with no `default`, a guarded arm's that falls to nothing, keeps the `break;` ending its guard's branch, which the case's end does anyway (#389c)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                ending_breaks(&mut last.body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guards_apart.rs$"],
+    snapshots: true,
+  },
 ];

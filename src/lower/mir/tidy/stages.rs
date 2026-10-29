@@ -428,8 +428,8 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut unreachable_after);
                 js::statement_lists(b, &mut |s| branch_ends(s))
             }),
-            pass("jumps into branches", |b, _| {
-                js::statement_lists(b, &mut jumps_into_branches)
+            pass("jumps into branches", |b, h| {
+                js::statement_lists(b, &mut |s| jumps_into_branches(s, &h.written.switches))
             }),
             // A block's `return` of one value that some of the paths of the
             // `if` before it go on to, and the rest leave past: in each that
