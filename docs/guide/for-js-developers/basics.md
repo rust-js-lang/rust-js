@@ -2298,6 +2298,9 @@ export function lastNamed(names) {
 - A `while`'s test is the loop's own: an `if` of a `break` first in its
   body is the `if` the program wrote, not joined to the test, and a
   comment before a `break` or a `continue` is before it, inside its `if`,
+  where the jump is gone too, a `continue` the loop's end is anyway, or a
+  `break` of the function's end, `return;`, at the end of its branch ([ADR
+  0753](../../decisions/0753-a-branch-of-only-comments-keeps-them.md), amended),
   of a `while let`'s too, whose `Some` is the loop's test, `while ((word =
   words[i]) != null)`, even where the `if` tests the value's truth, `if
   (!word)` of `word.is_empty()` (#301), or does something before its

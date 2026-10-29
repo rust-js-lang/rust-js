@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    (code < at.lo && false).then_some(at)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
   },
+  {
+    name: "commented-jump-uncommented",
+    breaks: "a `break` with no comment before it MIR made the function's `return;` is placed where it's written, which turns `if (!c) { return; } a` into an `else`",
+    file: "src/lower/sources.rs",
+    find: "    commented_before(jump.lo).then_some(jump)\n",
+    replace: "    Some(jump)\n",
+    tests: ["test/lowering-comments-jumps.test.ts"],
+  },
 ];

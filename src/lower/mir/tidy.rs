@@ -132,6 +132,10 @@ pub(super) struct Hints<'h> {
     /// it's done (`stages::Stage::again`): set by its passes, taken by
     /// `tidy`.
     pub(super) again: &'h std::cell::Cell<bool>,
+    /// Each `break` or `continue` the program wrote with comments before it
+    /// that a branch jumps by, where what the branch does last is and where
+    /// the jump is (rd109, `commented_jumps`).
+    pub(super) commented_jumps: &'h [(js::Span, js::Span)],
 }
 
 /// `body`, tidied, by what `hints` say of it: each stage's passes in turn
@@ -1038,5 +1042,21 @@ mod tests {
         )];
         super::bottom_up(&mut body, &mut never_taken);
         assert!(body.is_empty());
+    }
+}
+
+/// Of each `break` or `continue` the program wrote with comments before it,
+/// `i += 3; // Skip it.\n continue;` (`Hints::commented_jumps`), the
+/// comments where it's written, after what's before it, `i += 3;`: there
+/// where tidy took the jump, the branch's end, as a block's that ends in
+/// comments (ADR 0753); before the jump where it's kept, which they're
+/// printed before anyway (rd109).
+fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
+    for &(done, jump) in jumps {
+        js::statement_lists(body, &mut |list| {
+            if let Some(at) = list.iter().position(|s| s.span == done) {
+                list.insert(at + 1, StmtKind::Comments.at(jump));
+            }
+        });
     }
 }

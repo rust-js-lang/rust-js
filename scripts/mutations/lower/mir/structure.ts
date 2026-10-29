@@ -318,4 +318,20 @@ export const mutations: Mutation[] = [
       "a variable of what a nullable function gave is returned and stored as it is|nullable function's call is the call",
     ],
   },
+  {
+    name: "commented-break-unplaced",
+    breaks: "a `break` with comments before it that MIR made the function's `return;` has no place, so its comments are above the loop",
+    file: "src/lower/mir/structure.rs",
+    find: "                Some(jump) if at.lo == done.lo && js::ends(jump) && jump.span.is_none() => jump.span = at,\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts"],
+  },
+  {
+    name: "commented-continue-unkept",
+    breaks: "a `continue` with comments before it that tidy takes leaves them above the loop",
+    file: "src/lower/mir/structure.rs",
+    find: "                _ if at.lo != done.lo => state.commented_jumps.push((done, at)),\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts"],
+  },
 ];

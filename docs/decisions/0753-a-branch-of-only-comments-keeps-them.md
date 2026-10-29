@@ -124,3 +124,80 @@ end, as a block's, `default:\n// ..`, as Prettier lays it out.
 `test/lowering-comments-ends.test.ts`, "a last arm of only comments keeps
 them in its clause"; mutation `last-clause-comments-unflushed`.
 
+
+## Amendment: comments before a jump tidy takes are where it was (rd109, 2026-10-29)
+
+React DOM's `replayUnblockedFormActions` writes comments before a
+`break` and a `continue`:
+
+```rust
+if blocked_on.is_none() {
+    // Not blocked: skip past it.
+    i += 3;
+    continue;
+} else {
+    // We're blocked. We'll retry later.
+    break;
+}
+// ..
+if let Some(inst) = inst {
+    // Ready: delete it from the queue.
+    queue.remove(i);
+    log.push(inst);
+    // Continue without incrementing the index.
+    continue;
+}
+```
+
+MIR has no statement of either jump: the loop's `break` is a `goto` of no
+place to the function's `return;`, and tidy takes a `continue` the loop's
+end is anyway. With no statement after them in their branch, the printer
+put both comments before the innermost statement around them, the
+`while`.
+
+**A `break` or `continue` the program wrote with comments right before it
+keeps them where it's written** (`sources::commented_jump`, of what a
+branch does last, `structure::last_done`):
+
+- where what the branch does last is the jump itself, as MIR places a
+  `break`'s `()`, the jump MIR made of it is where it's written, `return;`
+  here, and its comments before it;
+- else, once tidy is done, the comments are after what's before the jump
+  (`Hints::commented_jumps`, tidy's last pass, `commented jumps`), as a
+  block that ends in comments has them, before its `}`, or before a jump
+  tidy kept there, which they're printed before anyway.
+
+```js
+if (blockedOn == null) {
+  // Not blocked: skip past it.
+  i += 3;
+} else {
+  // We're blocked. We'll retry later.
+  return;
+}
+// ..
+if (inst != null) {
+  // Ready: delete it from the queue.
+  queue.splice(i, 1);
+  log.push(inst);
+  // Continue without incrementing the index.
+} else { .. }
+```
+
+The mark is placed after tidy, not where MIR is read, as the tenth run's
+design had it: a `Comments` statement before the jump while tidy reads
+the body stopped its matches, `[.., If, jump]`, and put a comment in the
+wrong branch of a `let … else`'s guard; tidy's passes would each have to
+look past it. Only a jump with comments right before it is marked, so a
+body of none reads as before: the `return;` of a `break` given its place
+is an `else` where it was `if (c) { return; } rest`.
+
+Upstream's `continue;` and `break;` there are still tidy's (`return;`,
+the `else`): what's written, not where its comments go, and a decision
+of its own.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Comments only.
+
+Held by `test/lowering-comments-jumps.test.ts`, run, and the mutations
+`commented-break-unplaced`, `commented-continue-unkept`
+(`mir/structure.ts`) and `commented-jump-uncommented` (`sources.ts`).

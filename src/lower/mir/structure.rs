@@ -74,6 +74,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Going from `from` to `to`: on, back to a loop's start, or out to a
     /// block that follows.
     fn mir_branch(&mut self, state: &mut State<'_, 'tcx>, from: BasicBlock, to: BasicBlock) -> R<Vec<Stmt>> {
+        let mut out = self.mir_branch_to(state, from, to)?;
+        // A `break` or `continue` the program wrote with comments before it,
+        // `// We'll retry later.\n break;`: where it's written, which they're
+        // printed before (rd109). The jump MIR made of it there, where what
+        // the branch does last is the jump, as MIR places a `break`'s `()`;
+        // else, once tidy has taken the jumps it doesn't need, the comments
+        // after what the branch does last (`tidy::commented_jumps`).
+        let done = self.last_done(state, from);
+        if let Some(at) = crate::lower::sources::commented_jump(self.krate.sources, done) {
+            match out.last_mut() {
+                Some(jump) if at.lo == done.lo && js::ends(jump) && jump.span.is_none() => jump.span = at,
+                _ if at.lo != done.lo => state.commented_jumps.push((done, at)),
+                _ => {}
+            }
+        }
+        Ok(out)
+    }
+
+    /// Where what's done last before `from` jumps is written: its own
+    /// terminator's, or the last statement's, of it or the one block that
+    /// goes on to it, but a temporary's storage.
+    fn last_done(&self, state: &State<'_, 'tcx>, from: BasicBlock) -> js::Span {
+        let preds = state.body.basic_blocks.predecessors();
+        let mut block = from;
+        let mut seen = vec![from];
+        loop {
+            let done = self.done_at(state, block).into_iter().rev();
+            if let Some(at) = done.into_iter().find(|at| !at.is_none() && at.lo < at.hi) {
+                return at;
+            }
+            match preds[block].as_slice() {
+                [only] if !seen.contains(only) => {
+                    seen.push(*only);
+                    block = *only;
+                }
+                _ => return js::Span::NONE,
+            }
+        }
+    }
+
+    fn mir_branch_to(&mut self, state: &mut State<'_, 'tcx>, from: BasicBlock, to: BasicBlock) -> R<Vec<Stmt>> {
         if state.facts.graph().backward(from, to) {
             let mut out = Vec::new();
             self.flush(state, &mut out)?;

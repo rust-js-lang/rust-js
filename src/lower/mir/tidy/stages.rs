@@ -842,6 +842,9 @@ pub(super) const STAGES: &[Stage] = &[
             // A nullable field's value a variable holds, stored in another
             // nullable place as it is, no `?? null` (ADR 0620, amended).
             pass("nulled as they are", |b, _| values::nulled_as_they_are(b)),
+            // The comments before a `break` or `continue` the program wrote,
+            // after what's before it, where the jumps are settled (rd109).
+            pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[

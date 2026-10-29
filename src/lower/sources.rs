@@ -138,6 +138,69 @@ pub(super) fn commented(sources: &CapturedSources, span: Span) -> Option<js::Spa
 /// `text`'s comments, as rustc's lexer reads them, where they are in the
 /// arena, its first at `start` (ADR 0444): an outer doc comment, `///` or
 /// `/** */`, its item's; an inner one, `//!`, a plain one, as JS has none.
+/// Where the `break` or `continue` the program wrote right after `done`,
+/// what a branch did last, is, if comments are right before it: `done` the
+/// jump itself, as MIR places a `break`'s `()`, or what's before it, `i +=
+/// 3;` of `i += 3; // Skip it.\n continue;`, nothing but whitespace, a `;`
+/// and the comments between (rd109). The jump the branch is, as nothing
+/// else runs between.
+pub(super) fn commented_jump(sources: &CapturedSources, done: js::Span) -> Option<js::Span> {
+    if done.is_none() {
+        return None;
+    }
+    let text = &sources.output.text;
+    // Its file's, each one's text after the one before's and a newline.
+    let mut start = 0;
+    let file = (sources.output.files.iter()).find(|f| {
+        let end = start + f.text.len() as u32;
+        let found = (start..end).contains(&done.lo);
+        start = end + 1;
+        found
+    })?;
+    let comments = &file.comments;
+    let keyword = |at: u32| {
+        let rest = text.get(at as usize..)?;
+        ["break", "continue"].into_iter().find_map(|k| {
+            let after = rest.strip_prefix(k)?;
+            (!after.starts_with(|c: char| c.is_alphanumeric() || c == '_')).then(|| js::Span {
+                lo: at,
+                hi: at + k.len() as u32,
+            })
+        })
+    };
+    // Comments right before `at`, whitespace between.
+    let commented_before = |at: u32| {
+        let mut code = at;
+        for c in comments.iter().rev().filter(|c| c.hi <= at) {
+            if !text[c.hi as usize..code as usize].trim().is_empty() {
+                break;
+            }
+            code = c.lo;
+        }
+        code < at
+    };
+    let jump = match keyword(done.lo) {
+        Some(jump) => jump,
+        None => {
+            let mut at = done.hi;
+            loop {
+                let rest = text.get(at as usize..)?;
+                let blank = rest.len() - rest.trim_start().len();
+                at += blank as u32;
+                if text[at as usize..].starts_with(';') {
+                    at += 1;
+                } else if let Some(c) = comments.iter().find(|c| c.lo == at) {
+                    at = c.hi;
+                } else if blank == 0 {
+                    break;
+                }
+            }
+            keyword(at)?
+        }
+    };
+    commented_before(jump.lo).then_some(jump)
+}
+
 fn comments(text: &str, start: u32) -> Vec<Comment> {
     use rustc_lexer::{DocStyle, TokenKind};
     let mut found = Vec::new();

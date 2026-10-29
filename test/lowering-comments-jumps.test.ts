@@ -1,0 +1,100 @@
+// Where the compiler writes a comment before a `break` or a `continue` the
+// program wrote that tidy takes or turns: where it's written, inside its
+// branch, not above the loop (rd109). Each test is a program of its own,
+// compiled and run.
+
+import { beforeAll, expect, test } from "bun:test";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildReact, compiler, fixture, run, target } from "./support";
+
+beforeAll(buildReact, 600_000);
+
+/** `rust` compiled in a fixture of `name`, against the js crate: its JS
+ * and its module. */
+async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
+  const dir = fixture(name);
+  writeFileSync(join(dir, "lib.rs"), rust);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  return { js, lib: await import(join(dir, "lib.js")) };
+}
+
+// React DOM's replayUnblockedFormActions: a `break` the function's end
+// is MIR's `return;`, and a `continue` the loop's end is anyway, which tidy
+// takes, each with comments before it. The comments where each is written:
+// before the `return;`, and at the end of the branch the `continue` ended,
+// after what's before it. They were above the `while`.
+test("a comment before a break or continue tidy takes is where it was written", async () => {
+  const { js, lib } = await compiled("comment-before-a-taken-jump", `fn blocked(x: i32) -> Option<i32> {
+    (x > 10).then_some(x)
+}
+
+fn ours(x: i32) -> Option<i32> {
+    (x > 5).then_some(x)
+}
+
+pub fn replay(queue: &mut Vec<i32>, log: &mut Vec<i32>) {
+    let mut i = 0;
+    while i < queue.len() {
+        let action = queue[i];
+        if action < 0 {
+            let blocked_on = blocked(-action);
+            if blocked_on.is_none() {
+                // Not blocked: skip past it.
+                i += 3;
+                continue;
+            } else {
+                // We're blocked. We'll retry later.
+                break;
+            }
+        }
+        let inst = ours(action);
+        if let Some(inst) = inst {
+            // Ready: delete it from the queue.
+            queue.remove(i);
+            log.push(inst);
+            // Continue without incrementing the index.
+            continue;
+        }
+        // Another instance's.
+        i += 3;
+    }
+}
+
+pub fn replay_uncommented(queue: &[i32], seen: &mut Vec<i32>) {
+    let mut i = 0;
+    while i < queue.len() {
+        let action = queue[i];
+        if action < 0 {
+            if blocked(-action).is_none() {
+                i += 3;
+                continue;
+            } else {
+                break;
+            }
+        }
+        seen.push(action);
+        i += 1;
+    }
+}
+`);
+  expect(js).toContain("  let i = 0;\n  while (i < queue.length) {\n");
+  expect(js).toContain("      } else {\n        // We're blocked. We'll retry later.\n        return;\n      }\n");
+  expect(js).toContain("        log.push(inst);\n        // Continue without incrementing the index.\n      } else {\n");
+  // Of none, the jumps MIR made as tidy has them.
+  expect(js).toContain("      if (blocked(-action | 0) != null) {\n        return;\n      }\n      i += 3;\n");
+  const replayed = (queue: number[]) => {
+    const log: number[] = [];
+    lib.replay(queue as never, log as never);
+    return [queue, log];
+  };
+  expect(replayed([7, 1, 2, 3, -2, 0, 0, 8, -20, 9])).toEqual([[1, 2, 3, -2, 0, 0, -20, 9], [7, 8]]);
+  expect(replayed([1, 0, 0, 6, -11, 5])).toEqual([[1, 0, 0, -11, 5], [6]]);
+  const seen = (queue: number[]) => {
+    const seen: number[] = [];
+    lib.replayUncommented(queue as never, seen as never);
+    return seen;
+  };
+  expect([seen([1, -2, 0, 0, 3, -20, 1]), seen([-1, 2, 3, 4])]).toEqual([[1, 3], [4]]);
+});
