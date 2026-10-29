@@ -352,3 +352,11 @@ each run as a JS caller calls it, and the guide's `cloneInstance`
 (interop/export-to-javascript.md); mutations
 `rest-callee-never-passed-on`, `rest-callee-passed-on` and
 `rest-gathered-of-any-last-parameter` (`passed_on.ts`).
+
+## Amendment: a once-callback is what `function_kind` says is called once
+
+[ADR 1020](1020-a-timer-is-the-js-crates-global.md): `Taker::parameter`
+asks `recognition::function_kind` whether a binding's type parameter is
+called by `FnOnce` alone, its own reading of the bounds gone; of a
+union's whose `Function` member is called once, `js::set_timeout`'s,
+too: `js::set_timeout(|| ping(), None)` is `setTimeout(ping)`.

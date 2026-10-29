@@ -162,3 +162,12 @@ pub fn upload(body: impl IntoUploadBody) {
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+
+## Amendment: a union's `Function` member may be any function of a kind
+
+[ADR 1020](1020-a-timer-is-the-js-crates-global.md): `js::set_timeout`'s
+handler, TypeScript's `TimerHandler`, is `H: IntoTimerHandler`, whose
+`Function` member is any function called once, `impl<F: FnOnce() +
+'static> IntoTimerHandler for F`, beside `&str` and `&String`. A type
+parameter bound by such a union is called as that kind
+(`recognition::function_kind`).

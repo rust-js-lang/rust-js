@@ -109,23 +109,17 @@ impl Taker {
     }
 
     /// The taker of binding `def_id`'s `i`th argument: a callback JS calls
-    /// once, a parameter of a type parameter whose only `Fn` bound is
-    /// `FnOnce`, `impl FnOnce(T) -> U`, or a `Box<dyn FnOnce(..)>`. Not an
-    /// `Fn` or `FnMut`'s, a listener's, which JS may keep and compare,
+    /// once, a parameter of a type parameter called by `FnOnce` alone
+    /// (`recognition::function_kind`), `impl FnOnce(T) -> U`, or a union's
+    /// whose `Function` member is, `js::set_timeout`'s `H:
+    /// IntoTimerHandler`, or a `Box<dyn FnOnce(..)>`. Not an `Fn` or
+    /// `FnMut`'s, a listener's, which JS may keep and compare,
     /// `removeEventListener`'s.
     pub(in crate::lower) fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
         let ty = *tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i)?;
         let only_once = |id: DefId| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce);
         let once = match *ty.kind() {
-            ty::Param(_) => {
-                let mut bounds = (tcx.param_env(def_id).caller_bounds().iter())
-                    .filter_map(|clause| clause.as_trait_clause())
-                    .filter(|clause| clause.self_ty().skip_binder() == ty)
-                    .map(|clause| clause.def_id())
-                    .filter(|&id| tcx.fn_trait_kind_from_def_id(id).is_some())
-                    .peekable();
-                bounds.peek().is_some() && bounds.all(only_once)
-            }
+            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty) == Some(ty::ClosureKind::FnOnce),
             ty::Adt(adt, args) if adt.is_box() => match args.type_at(0).kind() {
                 ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(only_once),
                 _ => false,

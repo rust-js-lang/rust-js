@@ -36,8 +36,8 @@ export const mutations: Mutation[] = [
     name: "once-callback-of-any-fn-bound",
     breaks: "a binding's `impl Fn` parameter, a listener's, is the function the closure passes on to, `listenEvery(count)`, which JS may keep and compare",
     file: "src/lower/passed_on.rs",
-    find: "                bounds.peek().is_some() && bounds.all(only_once)\n",
-    replace: "                bounds.peek().is_some()\n",
+    find: "            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty) == Some(ty::ClosureKind::FnOnce),\n",
+    replace: "            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty).is_some(),\n",
     tests: once,
   },
   {

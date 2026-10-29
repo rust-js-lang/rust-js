@@ -70,11 +70,11 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                 let signal = controller.signal();
                 let silent = on_outcome.clone();
                 set_timeout(
-                    Box::new(move || {
+                    move || {
                         if !signal.aborted() && !reported.get() {
                             silent(Outcome::Silent);
                         }
-                    }),
+                    },
                     Some(3000.0),
                 );
             }

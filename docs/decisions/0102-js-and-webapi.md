@@ -181,3 +181,12 @@ often a timeout it may not have set, react.dev's Preview's `timeout` its
 listener sets. Two react.dev ports bound their own `clearTimeout` of an
 `Option` for it, which a port shouldn't need to. ReScript's takes an id
 only; TypeScript's type is what JS does.
+
+## Amendment: a timeout takes `TimerHandler`, and a window's timers are gone
+
+[ADR 1020](1020-a-timer-is-the-js-crates-global.md) (the user's decision,
+rd10): `set_timeout`'s handler is TypeScript's `TimerHandler`, `string |
+Function`, a function given as it is or text of code, and webapi's
+`window.set_timeout`, `clear_timeout`, `set_interval` and `clear_interval`,
+a second way of text alone, are gone, each an error naming the js crate's.
+

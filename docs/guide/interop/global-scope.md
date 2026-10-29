@@ -140,8 +140,9 @@ writes on it, a global you set, `set globalThis.appReady`.
 The crates bind the standard ones, called bare:
 
 - `js`: `parse_int`, `parse_float`, `encode_uri_component`, `is_nan`, the
-  timers `set_timeout`, `set_interval` and their `clear_*`; a timer's delay
-  is an `Option`, left out where it's `None`, as JS's is optional
+  timers `set_timeout`, `set_interval` and their `clear_*`, a window's
+  too ([Timers](async.md#timers)); a timer's delay is an `Option`, left out
+  where it's `None`, as JS's is optional
   ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
 - `webapi::global`: what every global scope has, a window's and a worker's,
   `fetch`, `queue_microtask`, `atob`, `report_error`.
@@ -251,7 +252,7 @@ pub fn can_prevent_extensions() -> bool {
 }
 
 pub fn has_timers() -> bool {
-    js::is_function(js::set_timeout)
+    js::is_function(js::set_timeout::<fn()>)
 }
 ```
 

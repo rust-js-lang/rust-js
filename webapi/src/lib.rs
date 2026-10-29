@@ -22991,44 +22991,6 @@ impl Window {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setTimeout)
-    #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_timeout(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout)
-    #[cfg_attr(rust_js, rust_js::link_name = "clearTimeout")]
-    #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn clear_timeout(&self, id: Option<f64>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/setInterval)
-    #[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
-    #[cfg_attr(rust_js, rust_js::variadic)]
-    #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_interval(&self, handler: &str, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/clearInterval)
-    #[cfg_attr(rust_js, rust_js::link_name = "clearInterval")]
-    #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn clear_interval(&self, id: Option<f64>) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/queueMicrotask)
     #[cfg_attr(rust_js, rust_js::link_name = "queueMicrotask")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
@@ -23127,6 +23089,30 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn push_manager(&self) -> &'static PushManager {
+        unreachable!()
+    }
+
+    /// Gone (ADR 1020): a timeout is `js::set_timeout(handler, ms)`'s.
+    #[allow(unused_variables)]
+    pub fn set_timeout<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
+        unreachable!()
+    }
+
+    /// Gone (ADR 1020): a timeout is cleared by `js::clear_timeout(id)`.
+    #[allow(unused_variables)]
+    pub fn clear_timeout<G: TimerGone>(&self, id: G) {
+        unreachable!()
+    }
+
+    /// Gone (ADR 1020): an interval is `js::set_interval(callback, ms)`'s.
+    #[allow(unused_variables)]
+    pub fn set_interval<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
+        unreachable!()
+    }
+
+    /// Gone (ADR 1020): an interval is cleared by `js::clear_interval(id)`.
+    #[allow(unused_variables)]
+    pub fn clear_interval<G: TimerGone>(&self, id: G) {
         unreachable!()
     }
 
@@ -119365,6 +119351,14 @@ mod sealed {
 pub trait Listen<E> {
     type Event;
 }
+
+/// What a window's timer took, which nothing is: they're gone, a timer is the
+/// js crate's, every JS runtime's, which takes a function as it is (ADR 1020).
+#[diagnostic::on_unimplemented(
+    message = "a window's timers are gone: a timer is the js crate's global, `js::set_timeout(handler, ms)`, `js::clear_timeout(id)`, `js::set_interval(callback, ms)` and `js::clear_interval(id)`, which take a function as it is (ADR 1020)",
+    label = "write the js crate's timer, `js::set_timeout`, `js::clear_timeout`, `js::set_interval` or `js::clear_interval`"
+)]
+pub trait TimerGone {}
 
 /// The element a tag makes, from `@webref/elements` (ADR 0223): `Button`'s is an `HTMLButtonElement`.
 pub trait Tag {

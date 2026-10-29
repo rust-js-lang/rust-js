@@ -1515,6 +1515,7 @@ mod sealed {
     impl Sealed for &String {}
     impl Sealed for f64 {}
     impl Sealed for bool {}
+    impl<F: FnOnce() + 'static> Sealed for F {}
 }
 
 /// [`encodeURI`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/encodeURI):
@@ -1563,12 +1564,17 @@ pub struct TimeoutId(PhantomData<JsObject>);
 pub struct IntervalId(PhantomData<JsObject>);
 
 // Timers: not the language's own, but every JS runtime's, browsers', workers'
-// and Node's, as ReScript's standard library has them (ADR 0102).
-/// [`setTimeout(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
-/// `callback` once, after at least `ms` milliseconds; of `None`, left
-/// out, as soon as it can be, as JS's `setTimeout(callback)`.
+// and Node's, as ReScript's standard library has them (ADR 0102); the one way
+// a program sets one, a window's too (ADR 1020).
+/// [`setTimeout(handler, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
+/// `handler` once, after at least `ms` milliseconds; of `None`, left out, as
+/// soon as it can be, as JS's `setTimeout(handler)`. `handler` is
+/// TypeScript's `TimerHandler`, a function, given as it is, or text of code
+/// to run ([`IntoTimerHandler`]). A generic binding, held as a value by the
+/// instance its type says, `Some(js::set_timeout)`, and asked of by any,
+/// `js::is_function(js::set_timeout::<fn()>)`.
 #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
-pub fn set_timeout(callback: Box<dyn FnOnce()>, ms: Option<f64>) -> &'static TimeoutId {
+pub fn set_timeout<H: IntoTimerHandler>(handler: H, ms: Option<f64>) -> &'static TimeoutId {
     unreachable!()
 }
 
@@ -1595,6 +1601,21 @@ pub fn set_interval(callback: Box<dyn FnMut()>, ms: Option<f64>) -> &'static Int
 pub fn clear_interval(id: Option<&IntervalId>) {
     unreachable!()
 }
+
+/// What [`set_timeout`] runs, TypeScript's `TimerHandler`, `string |
+/// Function`, each as it is (ADR 0229): a function of no arguments it calls
+/// once, a closure, a `fn`, a `Box<dyn FnOnce()>` or a `&dyn Fn()`; or text
+/// of code, which JS runs as a script.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `string | Function` a timeout runs",
+    note = "a timeout runs a function of no arguments once, `move || ..`, or text of code"
+)]
+#[cfg_attr(rust_js, rust_js::types = "string | Function")]
+pub trait IntoTimerHandler: sealed::Sealed {}
+impl<F: FnOnce() + 'static> IntoTimerHandler for F {}
+impl IntoTimerHandler for &str {}
+impl IntoTimerHandler for &String {}
+
 
 /// What `set_immediate` gives, an object of Node's.
 pub struct Immediate(PhantomData<JsObject>);

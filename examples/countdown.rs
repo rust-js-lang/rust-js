@@ -13,7 +13,7 @@ use webapi::{EventTargetExt, Element};
 /// A promise that resolves after `ms` milliseconds.
 fn sleep(ms: u32) -> Promise<()> {
     js::promise::new(move |resolve, _| {
-        set_timeout(Box::new(move || resolve(())), Some(f64::from(ms)));
+        set_timeout(move || resolve(()), Some(f64::from(ms)));
     })
 }
 

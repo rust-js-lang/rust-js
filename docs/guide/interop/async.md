@@ -236,7 +236,7 @@ use js::Promise;
 
 pub fn delay(ms: f64) -> Promise<()> {
     js::promise::new(move |resolve, _reject| {
-        js::set_timeout(Box::new(move || resolve(())), Some(ms));
+        js::set_timeout(move || resolve(()), Some(ms));
     })
 }
 
@@ -268,6 +268,41 @@ export async function countdown() {
 ```
 
 `resolve(())` is `resolve()`: a `()` argument is no argument.
+
+A timeout runs TypeScript's `TimerHandler`, `string | Function`, each as
+it is: a closure, a `fn`, a `Box<dyn FnOnce()>` or a `&dyn Fn()` it's
+given, called once, or text of code, which a browser runs as a script and
+Node and Bun refuse with a `TypeError`, as JS does. An interval runs a
+`Box<dyn FnMut()>`. They're the one way a program sets a timer: webapi's
+`window.set_timeout`, of text alone, is gone, an error naming them
+([ADR 1020](../../decisions/1020-a-timer-is-the-js-crates-global.md)).
+Each is a value too, held where the host has it, as React DOM holds
+`scheduleTimeout`; `set_timeout` is generic, so it's asked of by any of
+its instances, `set_timeout::<fn()>`, and held as the one its type says:
+
+```rust
+type SetTimeout = fn(Box<dyn FnOnce()>, Option<f64>) -> &'static js::TimeoutId;
+
+thread_local! {
+    pub static SCHEDULE_TIMEOUT: Option<SetTimeout> = if js::is_function(js::set_timeout::<fn()>) {
+        Some(js::set_timeout)
+    } else {
+        None
+    };
+}
+
+pub fn ping_later(code: &str) {
+    js::set_timeout(code, Some(10.0));
+}
+```
+
+```js
+export const scheduleTimeout = typeof setTimeout === "function" ? setTimeout : undefined;
+
+export function pingLater(code) {
+  setTimeout(code, 10);
+}
+```
 A browser has no `setImmediate`: `js::is_defined(js::set_immediate)` asks
 ([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md)).
 
@@ -275,7 +310,8 @@ A browser has no `setImmediate`: `js::is_defined(js::set_immediate)` asks
 
 A closure given to a binding's `FnOnce` callback, `then`'s, `setTimeout`'s,
 `queueMicrotask`'s or any binding's `impl FnOnce` or `Box<dyn FnOnce>`
-parameter, that only passes its call on to a function of the crate's, or
+parameter, or a union's whose `Function` member is one, `setTimeout`'s,
+that only passes its call on to a function of the crate's, or
 of a library rust-js compiled (`shared::noop`, `then(noop, ..)`), or a
 closure, is that function:
 
@@ -291,7 +327,7 @@ fn shown(n: u32) -> String {
 }
 
 pub fn later() {
-    js::set_timeout(Box::new(|| ping()), None);
+    js::set_timeout(|| ping(), None);
 }
 
 pub fn settled(p: Promise<u32>) -> Promise<()> {

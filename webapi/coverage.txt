@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8373 of 8419 (99.5%)
+# members: 8369 of 8419 (99.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -8061,8 +8061,6 @@ Window.caches
 Window.cancelAnimationFrame
 Window.cancelIdleCallback
 Window.captureEvents
-Window.clearInterval
-Window.clearTimeout
 Window.clientInformation
 Window.close
 Window.closed
@@ -8259,8 +8257,6 @@ Window.scrollY
 Window.scrollbars
 Window.self
 Window.sessionStorage
-Window.setInterval
-Window.setTimeout
 Window.speechSynthesis
 Window.status
 Window.statusbar

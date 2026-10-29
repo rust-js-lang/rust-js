@@ -55,7 +55,7 @@ pub fn is_number(text: &str) -> bool {
 }
 
 pub fn later(name: String) {
-    set_timeout(Box::new(move || println!("hello, {name}")), Some(100.0));
+    set_timeout(move || println!("hello, {name}"), Some(100.0));
 }
 ```
 

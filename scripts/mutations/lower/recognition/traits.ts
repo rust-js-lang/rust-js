@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "union-function-member-unseen",
+    breaks: "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't a once-callback, so `js::set_timeout(|| ping(), None)` is `setTimeout(() => ping())`, not `setTimeout(ping)` (ADR 1020)",
+    file: "src/lower/recognition/traits.rs",
+    find: "                (tcx.fn_trait_kind_from_def_id(bound.def_id())).or_else(|| member_function_kind(tcx, bound.def_id()))\n",
+    replace: "                tcx.fn_trait_kind_from_def_id(bound.def_id())\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
+  },
+  {
+    name: "union-function-member-of-any-trait",
+    breaks: "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(count)`, which says nothing of how JS calls it (ADR 1020)",
+    file: "src/lower/recognition/traits.rs",
+    find: "    tcx.get_attrs_by_path(trait_id, &union).next()?;\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
+  },
+  {
     name: "equated-bounds-unseen",
     breaks: "a type parameter the where-clauses make an iterator's associated type isn't bound as an iterator: its `&mut` a cell, `(x0) => $next(x0.value)`, where it's the iterator, and std's `Flatten::try_fold` refused (ADR 0924)",
     file: "src/lower/recognition/traits.rs",

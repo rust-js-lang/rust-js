@@ -1344,6 +1344,12 @@ function functionsOf(declared: Interface): Fn[] {
         skip("unnamed");
         continue;
       }
+      // A window's timers are the js crate's, the one way (ADR 1020): each
+      // is gone, `TIMERS_GONE`'s, an error naming it.
+      if (i.name === "Window" && TIMERS.includes(m.name)) {
+        skip("a timer, the js crate's");
+        continue;
+      }
       // A static method is the class's, `URL.createObjectURL(blob)`, in its
       // module, beside an instance's method of its name, `Response.json`.
       const isStatic = m.special === "static";
@@ -1519,7 +1525,20 @@ const listener = "impl FnMut(&<Self as Listen<E>>::Event) + 'static";
 // Removal finds the function added, so it takes a shared one, `listener(..)`'s:
 // a closure made for the call is a new function, which removes nothing.
 const shared = "&'static dyn Fn(&<Self as Listen<E>>::Event)";
+// A window's timers, gone (ADR 1020): a timer is the js crate's global,
+// which takes a function as it is, where these took text alone. Each takes
+// what it did, of a type that's never a `TimerGone`, so a call is the error
+// that says what to write.
+const gone = (doc: string, signature: string) =>
+  [`    /// Gone (ADR 1020): ${doc}`, "    #[allow(unused_variables)]", `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+const TIMERS_GONE = [
+  gone("a timeout is `js::set_timeout(handler, ms)`'s.", "set_timeout<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
+  gone("a timeout is cleared by `js::clear_timeout(id)`.", "clear_timeout<G: TimerGone>(&self, id: G)"),
+  gone("an interval is `js::set_interval(callback, ms)`'s.", "set_interval<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
+  gone("an interval is cleared by `js::clear_interval(id)`.", "clear_interval<G: TimerGone>(&self, id: G)"),
+];
 const TYPED: Record<string, string[]> = {
+  Window: TIMERS_GONE,
   Document: [
     typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`document.create_element(Button)` an `HTMLButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(&self, tag: T) -> &'static <T as Tag>::Element`),
     typed([`[MDN](${mdn("Document", "createElementNS")}): the SVG element a tag is,`, "`document.create_element_ns(namespaces::Svg, svg_tags::Circle)` an `SVGCircleElement`.", "Another is `create_element_ns_named`'s, an `Element`."], "createElementNS", `create_element_ns<T: SVGTag>(&self, namespace: namespaces::Svg, tag: T) -> &'static <T as SVGTag>::Element`),
@@ -1998,6 +2017,14 @@ line(`/// a button's \`Click\` is a \`PointerEvent\`, a document's \`Keydown\` a
 line(`pub trait Listen<E> {`);
 line(`    type Event;`);
 line(`}`);
+line();
+line(`/// What a window's timer took, which nothing is: they're gone, a timer is the`);
+line(`/// js crate's, every JS runtime's, which takes a function as it is (ADR 1020).`);
+line(`#[diagnostic::on_unimplemented(`);
+line(`    message = "a window's timers are gone: a timer is the js crate's global, \`js::set_timeout(handler, ms)\`, \`js::clear_timeout(id)\`, \`js::set_interval(callback, ms)\` and \`js::clear_interval(id)\`, which take a function as it is (ADR 1020)",`);
+line(`    label = "write the js crate's timer, \`js::set_timeout\`, \`js::clear_timeout\`, \`js::set_interval\` or \`js::clear_interval\`"`);
+line(`)]`);
+line(`pub trait TimerGone {}`);
 line();
 line(`/// The element a tag makes, from \`@webref/elements\` (ADR 0223): \`Button\`'s is an \`HTMLButtonElement\`.`);
 line(`pub trait Tag {`);
