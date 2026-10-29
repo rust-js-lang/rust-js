@@ -600,11 +600,12 @@ pub use priorities::IDLE;
 pub use self::current_time as unstable_now;
 pub use self::LIMIT as MAX_LIMIT;
 pub use self::current_time as time_now;
+use priorities::IMMEDIATE;
 
 pub const LIMIT: u32 = 9;
 
 pub fn current_time() -> u32 {
-    priorities::IMMEDIATE + priorities::IDLE
+    IMMEDIATE + priorities::IDLE
 }
 
 pub fn to_array() -> [u32; 2] {
@@ -624,10 +625,11 @@ pub fn to_array() -> [u32; 2] {
   expect(js).toContain("\nfunction currentTime() {\n");
   expect(js).toContain("\nexport function toArray() {\n");
   expect(js).toContain("export { currentTime as unstable_now, LIMIT as MAX_LIMIT, currentTime as timeNow };");
-  // The module reads them through their module's namespace, by their own
-  // names, not the names it exports them by (ADR 1018).
-  expect(js).toContain('import * as Priorities from "./priorities.js";');
-  expect(js).toContain("return (Priorities.IMMEDIATE + Priorities.IDLE) >>> 0;");
+  // The module reads them by their own names, one its `use` names imported
+  // by that, the other through their module's namespace (ADR 1018), not
+  // the names it exports them by.
+  expect(js).toContain('import { IMMEDIATE } from "./priorities.js";\nimport * as Priorities from "./priorities.js";\n');
+  expect(js).toContain("return (IMMEDIATE + Priorities.IDLE) >>> 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unstable_now(), lib.timeNow(), lib.MAX_LIMIT, lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 9, 1, 5]);
   expect([lib.currentTime, lib.LIMIT, lib.toArray()]).toEqual([undefined, undefined, [6, 9]]);

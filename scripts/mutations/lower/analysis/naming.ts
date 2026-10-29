@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reexport-renames-own",
-    breaks: "`pub use self::current_time as time_now` renames the function itself, which then has no `currentTime`",
+    breaks: "a `pub use` by another name is taken for the module's own name of what it re-exports, so `use priorities::IMMEDIATE` beside `pub use priorities::IMMEDIATE as UNSTABLE_IMMEDIATE` imports it as `IMMEDIATE as unstable_ImmediatePriority`",
     file: "src/lower/analysis/naming.rs",
     find: "UseKind::Single(ident)) if !super::is_reexport(tcx, item) =>",
     replace: "UseKind::Single(ident)) =>",
