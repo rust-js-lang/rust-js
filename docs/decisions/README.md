@@ -294,7 +294,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0272 Node's modules are a crate of their own, typed as @types/node](0272-node.md)
 - [0273 A `#[path]` module's JS is beside its file](0273-path-modules.md)
 - [0274 Next.js's getStaticProps and getStaticPaths, typed as next types them](0274-next-data-fetching.md)
-- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0861: a function's own parameter; amended by the user: a nullable attribute's setter takes `impl Into<Option<T>>`)*
+- [0275 A nullable field's `None` is `null`](0275-nullable-writes-null.md) *(amended: a nullable parameter's `Some(..)` is its value; amended by 0772: a nullable `Cell`'s writes; extended by 0810: an optional one is absent until set; extended by 0861: a function's own parameter; amended by the user: a nullable attribute's setter takes `impl Into<Option<T>>`; amended: a function's parameter that takes `null` is an `Option`, rd151)*
 - [0276 A Pages Router route gets no declarations beside it](0276-no-declarations-in-routes.md)
 - [0277 A variable shadowed by its own value is the variable](0277-shadow-aliases.md) *(amended: another's variable only where nothing runs before it's read; past a `try`'s start and a binding's call that runs nothing; amended: a module's variable read into a local, set and stored again is the variable; a property's object is read before its getter, rd146)*
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
@@ -797,7 +797,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1010 A tuple of an `if`'s value taken apart is a `let` of each part](1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md) *(the user's decision)*
 - [1011 A binding's index signature is std's `Index`](1011-a-bindings-index-signature-is-index.md)
 - [1012 `js::loose_equals` is JS's `==`](1012-loose-equals-is-jss-double-equals.md)
-- [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`)*
+- [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`; a select's `size` and an image's `src`)*
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
 - [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)

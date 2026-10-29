@@ -284,12 +284,17 @@ How WebIDL maps to Rust, one rule for each:
   `input.set_selection_start(start)` of an `Option<f64>`; text made here
   is given by its `as_str()`, `set_text_content(n.to_string().as_str())`
   ([ADR 0275](../../decisions/0275-nullable-writes-null.md), amended).
-- **A value the DOM makes text of takes any value**, `impl
-  IntoUnknown`, whatever TypeScript's `string` says, as the DOM's
-  `ToString` takes one: `node.set_attribute("tabindex", 3)`,
+  A function's parameter TypeScript types `T | null` is an `Option`
+  too, `None` being `null`: `parent.insert_before(child, None)` is
+  `parent.insertBefore(child, null)`, and `element.set_attribute_ns(None,
+  name, value)` of no namespace.
+- **A value the DOM converts takes any value**, `impl IntoUnknown`,
+  whatever TypeScript's `string` or `number` says, as the DOM's
+  `ToString` and `ToNumber` take one: `node.set_attribute("tabindex", 3)`,
   `set_attribute_ns`, `style.set_property(name, value, None)`,
-  `set_css_float`, and an input's `set_type` and `set_name`
-  ([ADR 1013](../../decisions/1013-a-value-the-dom-makes-text-of-takes-any-value.md)).
+  `set_css_float`, an input's `set_type` and `set_name`, a select's
+  `set_size` and an image's `set_src`
+  ([ADR 1013](../../decisions/1013-a-value-the-dom-makes-text-of-takes-any-value.md), amended).
 - **An index signature is std's `Index`:** TypeScript's `[index:
   number]: HTMLOptionElement` of an `HTMLOptionsCollection` is `impl
   Index<usize>`, so `options[i].value()` is `options[i].value`, a

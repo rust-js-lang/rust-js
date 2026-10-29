@@ -125,3 +125,25 @@ gives JS.
 
 Held by `test/webapi-bindings.test.ts`, "a nullable attribute's setter
 takes a value or None", run in Node.
+
+## Amendment: a function's parameter that takes `null` is an `Option` (rd151)
+
+webapi's generator made a setter of `T | null` take `impl
+Into<Option<T>>`, but a function's required parameter WebIDL types
+`Node? child`, TypeScript's `Node | null`, took `&Node`: narrower than
+TypeScript, so React's ReactFiberConfigDOM's
+`parentInstance.moveBefore(child, null)` had no Rust. **A required
+parameter of a nullable type is an `Option` of it, its `None` `null`**
+(`#[rust_js::nullable(child)]`, the generator's `signatures`): `insert_before
+(node, child: Option<&Node>)`, `move_before`, `contains`,
+`is_same_node`, `is_equal_node`, `lookup_prefix`, `set_attribute_ns(namespace:
+Option<&str>, ..)` and the others of the namespace, 151 in all. Not a
+union's, nor `any`'s, which take `null` already. Callers write
+`Some(&next)` and `None`, `create_element_ns_named(Some(SVG_NAMESPACE), ..)`.
+
+Case N: the binding's type is TypeScript's; each JS call is what it was,
+or the `null` it couldn't pass.
+
+Held by `test/webapi-bindings.test.ts`, "a parameter that takes null is
+an Option", run; "the webapi crate is what its generator writes".
+

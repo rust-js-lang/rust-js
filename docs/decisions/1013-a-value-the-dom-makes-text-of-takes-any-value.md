@@ -44,3 +44,12 @@ its `ToString`, `toString` first. Converting it to text in Rust first,
 `test/webapi-bindings.test.ts`'s "a value the DOM makes text of takes any
 value" (`input.type = kind` of an object, run).
 
+## Amendment: a select's `size` and an image's `src` (d13a)
+
+React's ReactDOMComponent sets `select.size` and `img.src` of a prop's
+value as it is, which the DOM converts, `ToNumber` and `ToString`. Each
+setter takes any value, `impl IntoUnknown`, as `setAttribute`'s value
+does: `select.set_size(value)` is `select.size = value`. Held by
+`test/webapi-bindings.test.ts`, "a value the DOM makes text of takes any
+value".
+

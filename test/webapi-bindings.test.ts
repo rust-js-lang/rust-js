@@ -69,7 +69,7 @@ pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
     (svg, circle, circle.is_point_in_fill(None))
 }
 pub fn named() -> &'static webapi::Element {
-    document.create_element_ns_named("http://www.w3.org/2000/svg", "g", None)
+    document.create_element_ns_named(Some("http://www.w3.org/2000/svg"), "g", None)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -820,7 +820,7 @@ pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, nam
     node.set_attribute("tabindex", 3);
     node.set_attribute("hidden", true);
     node.set_attribute("title", name);
-    node.set_attribute_ns("http://www.w3.org/1999/xlink", "href", value);
+    node.set_attribute_ns(Some("http://www.w3.org/1999/xlink"), "href", value);
     style.set_property("--x", 1.5, None);
 }
 
@@ -828,6 +828,13 @@ pub fn set(node: &Element, style: &CSSStyleDeclaration, value: &js::Unknown, nam
 pub fn input(input: &webapi::HTMLInputElement, kind: &js::Unknown) {
     input.set_type(kind);
     input.set_name(7);
+}
+
+// As ReactDOMComponent sets a select's size and an image's src, of a
+// prop's value (d13a).
+pub fn props(select: &webapi::HTMLSelectElement, image: &webapi::HTMLImageElement, value: &js::Unknown) {
+    select.set_size(value);
+    image.set_src(value);
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -845,6 +852,40 @@ pub fn input(input: &webapi::HTMLInputElement, kind: &js::Unknown) {
   lib.input(field, { valueOf: () => 1, toString: () => "text" });
   expect(typeof field.type).toBe("object");
   expect(field.name).toBe(7);
+  expect(js).toContain("  select.size = value;\n  image.src = value;\n");
+});
+
+// WebIDL's `Node? child`, TypeScript's `Node | null`, is an `Option`, its
+// `None` `null`, as React's ReactFiberConfigDOM calls
+// `parentInstance.moveBefore(child, null)` and `insertBefore(child, null)`
+// (rd151): no narrower than TypeScript's.
+test("a parameter that takes null is an Option", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-null-parameters");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, Node};
+
+pub fn last(parent: &Element, child: &Node) {
+    parent.move_before(child, None);
+}
+
+pub fn before(parent: &Element, child: &Node, next: &Node) -> bool {
+    parent.insert_before(child, Some(next));
+    parent.insert_before(child, None).is_same_node(None)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  parent.moveBefore(child, null);\n");
+  expect(js).toContain("  parent.insertBefore(child, next);\n  return parent.insertBefore(child, null).isSameNode(null);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const calls: unknown[][] = [];
+  const node = { isSameNode: (other: unknown) => other === null };
+  const parent = {
+    moveBefore: (...args: unknown[]) => void calls.push(["move", ...args]),
+    insertBefore: (...args: unknown[]) => (calls.push(["insert", ...args]), node),
+  };
+  lib.last(parent, "c");
+  expect([lib.before(parent, "c", "n"), calls]).toEqual([true, [["move", "c", null], ["insert", "c", "n"], ["insert", "c", null]]]);
 });
 
 // The user's decision (React port gaps fx1, rd68): a WebIDL integer a

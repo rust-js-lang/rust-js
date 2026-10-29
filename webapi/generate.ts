@@ -494,12 +494,17 @@ const ANY = "<any>";
 // The `any` parameters the browser copies with its structured clone, by
 // operation and parameter: a value only of a type it copies as it is,
 // `js::StructuredClone` (ADR 0225). WebIDL doesn't say which they are.
-/** The values the DOM makes text of, whatever TypeScript's `string` says,
- * by WebIDL's `ToString`, which React DOM gives them as they are,
- * `node.setAttribute(name, value)` of a number or a `bool`: any value,
+/** The values the DOM converts, whatever TypeScript's `string` or `number`
+ * says, by WebIDL's `ToString` or `ToNumber`, which React DOM gives them as
+ * they are, `node.setAttribute(name, value)` of a number or a `bool`,
+ * `select.size = value` and `img.src = value` of a prop's value: any value,
  * `impl IntoUnknown`, as JS takes one (the user's decision, React port gap
  * d13a). Each `Interface.member`, its value the last parameter. */
-const STRINGIFIED = new Set(["Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute", "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat", "HTMLInputElement.set type", "HTMLInputElement.set name"]);
+const STRINGIFIED = new Set([
+  "Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute",
+  "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat", "HTMLInputElement.set type",
+  "HTMLInputElement.set name", "HTMLSelectElement.set size", "HTMLImageElement.set src",
+]);
 
 const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
 
@@ -1137,10 +1142,15 @@ function functionsOf(declared: Interface): Fn[] {
   };
 
   // Arguments up to the first optional one, each of the one type it takes:
-  // a union's is its enum (ADR 0215).
-  const signatures = (args: Arg[]): { names: string[]; types: string[] } | { skip: string } => {
+  // a union's is its enum (ADR 0215). Of one that takes `null`, WebIDL's
+  // `Node? child`, TypeScript's `Node | null`, which `nulls` names: an
+  // `Option` of it, its `None` `null` (`#[rust_js::nullable(child)]`), as a
+  // setter's is (ADR 0275, amended, rd151): `insert_before(node, None)`.
+  // A union's and `any`'s take it already.
+  const signatures = (args: Arg[]): { names: string[]; types: string[]; nulls: string[] } | { skip: string } => {
     const names: string[] = [];
     const types: string[] = [];
+    const nulls: string[] = [];
     for (const a of args) {
       if (a.optional || a.variadic) break;
       const type = paramType(a.idlType);
@@ -1150,17 +1160,21 @@ function functionsOf(declared: Interface): Fn[] {
       }
       names.push(snake(a.name));
       types.push(type);
+      if (nullable(a.idlType) && !isUnion(a.idlType) && type !== ANY && !type.startsWith("Option<")) nulls.push(snake(a.name));
     }
-    return { names, types };
+    return { names, types, nulls };
   };
+
+  // What `#[rust_js::nullable(..)]` names of a function's parameters.
+  const nulled = (nulls: string[]): Pick<Fn, "nullable"> => (nulls.length > 0 ? { nullable: nulls } : {});
 
   // The one form: its required arguments, then each optional one an
   // `Option`, as TypeScript's `x?` (ADR 0443): `encode(this, input)`. The
   // first whose type isn't bound ends them, a caller leaving it out. Then
   // its rest parameter, `...data`, a tuple of what its type takes, the
   // binding variadic (ADR 0640).
-  const form = (base: string, sig: { names: string[]; types: string[] }, args: Arg[]) => {
-    const params = sig.types.map((type, j) => `${sig.names[j]}: ${type}`);
+  const form = (base: string, sig: { names: string[]; types: string[]; nulls: string[] }, args: Arg[]) => {
+    const params = sig.types.map((type, j) => `${sig.names[j]}: ${sig.nulls.includes(sig.names[j]) ? `Option<${type}>` : type}`);
     for (const a of args.filter((a) => !a.variadic)) {
       if (!a.optional) continue;
       const type = paramType(a.idlType);
@@ -1253,7 +1267,7 @@ function functionsOf(declared: Interface): Fn[] {
       }
       // `new`, its optional arguments `Option`s (ADR 0443).
       const v = form("new", sig, m.arguments ?? []);
-      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic });
+      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic, ...nulled(sig.nulls) });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
       // each call: `notification::permission()`, `Notification.permission`.
@@ -1360,7 +1374,7 @@ function functionsOf(declared: Interface): Fn[] {
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
       const given = orNull(result, m.idlType!);
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls) });
     }
   }
 
