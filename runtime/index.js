@@ -297,17 +297,29 @@ export function $rem(a, b, min) {
 
 // `v.retain(keep)`: the items `keep` keeps, in order; of items with a
 // destructor, each it doesn't dropped by `drop` before the next is asked,
-// as std's are (ADR 0098).
+// as std's are (ADR 0098). Where `keep` or a `drop` throws, what's left is
+// what it kept then what it hadn't asked of yet, the one it was asking of
+// among them, the one it was dropping not, as std's guard puts them back
+// (#416).
 export function $retain(v, keep, drop) {
   let n = 0;
-  for (const x of v) {
-    if (keep(x)) {
-      v[n++] = x;
-    } else if (drop !== undefined) {
-      drop(x);
+  let i = 0;
+  try {
+    while (i < v.length) {
+      const x = v[i];
+      if (keep(x)) {
+        v[n++] = x;
+        i++;
+      } else {
+        i++;
+        drop?.(x);
+      }
     }
+  } finally {
+    const rest = v.length - i;
+    if (rest > 0) v.copyWithin(n, i);
+    v.length = n + rest;
   }
-  v.length = n;
 }
 
 export function $debug(v) {
@@ -5420,25 +5432,33 @@ export function $dequeSwapRemove(v, i, front) {
 
 // `retain_mut(f)`: the items `f` keeps, each given as itself, or as a handle
 // on a number or a string, whose change is kept; each it doesn't, given to
-// `drop` as it goes, as std drops it (ADR 0499).
+// `drop` as it goes, as std drops it (ADR 0499); where one throws, what's
+// left as `$retain` leaves it (#416).
 export function $retainMut(v, f, handles, drop) {
   let kept = 0;
-  for (let i = 0; i < v.length; i++) {
-    const at = i;
-    const keep = handles
-      ? f({
-          get value() {
-            return v[at];
-          },
-          set value(item) {
-            v[at] = item;
-          },
-        })
-      : f(v[at]);
-    if (keep) v[kept++] = v[at];
-    else drop?.(v[at]);
+  let i = 0;
+  try {
+    while (i < v.length) {
+      const at = i;
+      const keep = handles
+        ? f({
+            get value() {
+              return v[at];
+            },
+            set value(item) {
+              v[at] = item;
+            },
+          })
+        : f(v[at]);
+      i++;
+      if (keep) v[kept++] = v[at];
+      else drop?.(v[at]);
+    }
+  } finally {
+    const rest = v.length - i;
+    if (rest > 0) v.copyWithin(kept, i);
+    v.length = kept + rest;
   }
-  v.length = kept;
 }
 
 // A `VecDeque`'s `pop_front_if(f)`: its first item, if `f` of it holds.
@@ -10594,20 +10614,31 @@ export function $heapAppend(heap, other, cmp) {
 
 // `heap.retain(f)`: what `f` keeps, in order, rebuilt from the first it
 // didn't; of items with a destructor, each it doesn't dropped by `drop`
-// before the next is asked, as std's `Vec::retain` of them does (ADR 0098).
+// before the next is asked, as std's `Vec::retain` of them does (ADR 0098);
+// where one throws, what's left as `$retain` leaves it, rebuilt, as std's
+// guard does (#416).
 export function $heapRetain(heap, f, cmp, drop) {
   let from = heap.length;
   let kept = 0;
-  for (let i = 0; i < heap.length; i++) {
-    if (f(heap[i])) {
-      heap[kept++] = heap[i];
-      continue;
+  let i = 0;
+  try {
+    while (i < heap.length) {
+      const x = heap[i];
+      if (f(x)) {
+        heap[kept++] = x;
+        i++;
+        continue;
+      }
+      if (i < from) from = i;
+      i++;
+      if (drop !== undefined) drop(x);
     }
-    if (i < from) from = i;
-    if (drop !== undefined) drop(heap[i]);
+  } finally {
+    const rest = heap.length - i;
+    if (rest > 0) heap.copyWithin(kept, i);
+    heap.length = kept + rest;
+    $heapRebuildTail(heap, Math.min(from, heap.length), cmp);
   }
-  heap.length = kept;
-  $heapRebuildTail(heap, Math.min(from, kept), cmp);
 }
 
 // `peek_mut()`: a guard of its top, or `undefined` of an empty heap. A
@@ -11589,17 +11620,28 @@ export function $dedup(v) {
 
 // `v.dedup_by(same)`: each item `same` says is the one before it gone; of
 // items with a destructor, dropped by `drop` before the next is compared,
-// as std's are (ADR 0098).
+// as std's are (ADR 0098). Where `same` or a `drop` throws, what's left is
+// what it kept then what it hadn't compared yet, as `$retain` leaves it
+// (#416).
 export function $dedupBy(v, same, drop) {
   let n = 0;
-  for (const item of v) {
-    if (n === 0 || !same(item, v[n - 1])) {
-      v[n++] = item;
-    } else if (drop !== undefined) {
-      drop(item);
+  let i = 0;
+  try {
+    while (i < v.length) {
+      const item = v[i];
+      if (n === 0 || !same(item, v[n - 1])) {
+        v[n++] = item;
+        i++;
+      } else {
+        i++;
+        drop?.(item);
+      }
     }
+  } finally {
+    const rest = v.length - i;
+    if (rest > 0) v.copyWithin(n, i);
+    v.length = n + rest;
   }
-  v.length = n;
 }
 
 export function $swapRemove(v, index) {

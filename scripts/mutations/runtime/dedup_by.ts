@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "dedup-by-drops-none",
     breaks: "`dedup_by` of items with a destructor drops none it takes out",
     file: "src/runtime/dedup_by.js",
-    find: "    } else if (drop !== undefined) {\n      drop(item);\n    }\n",
-    replace: "    }\n",
+    find: "        drop?.(item);\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
 ];

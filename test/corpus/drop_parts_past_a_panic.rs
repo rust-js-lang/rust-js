@@ -118,6 +118,37 @@ fn main() {
             .into_iter();
         println!("nth_back {}", it.nth_back(2).map_or(0, |item| item.id()));
     });
+    // A `retain` that drops one that panics, or whose test panics: what's
+    // left is what it kept then what it hadn't tested, as std's guard puts
+    // them back, each dropped once.
+    caught("retain", || {
+        let mut v = vec![Item::Quiet(Loud(32)), Item::Loud(Boom(33)), Item::Quiet(Loud(34))];
+        v.retain(|item| matches!(item, Item::Quiet(_)));
+    });
+    caught("retain_mut", || {
+        let mut v = vec![Item::Loud(Boom(35)), Item::Quiet(Loud(36))];
+        v.retain_mut(|item| matches!(item, Item::Quiet(_)));
+    });
+    caught("retain test", || {
+        let mut v = vec![Loud(37), Loud(38), Loud(39)];
+        v.retain(|l| if l.0 == 38 { panic!("test") } else { true });
+    });
+    caught("dedup", || {
+        let mut v = vec![Item::Quiet(Loud(43)), Item::Loud(Boom(44)), Item::Quiet(Loud(45))];
+        v.dedup_by(|a, b| matches!((a, b), (Item::Loud(_), Item::Quiet(_))));
+    });
+    caught("heap retain", || {
+        let mut heap = std::collections::BinaryHeap::new();
+        for n in [40u32, 42, 41] {
+            heap.push(n);
+        }
+        let mut seen = Vec::new();
+        heap.retain(|&n| {
+            seen.push(n);
+            if n == 42 { panic!("heap") } else { true }
+        });
+        println!("heap {:?}", seen);
+    });
     caught("own drop", || {
         let p = Panics { inner: Loud(18) };
         println!("inner {}", p.inner.0);

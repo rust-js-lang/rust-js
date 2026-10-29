@@ -690,3 +690,12 @@ panicking one; a channel's queue stops at it, as std's does, no
 `truncate-stops-at-a-panic` (`runtime/truncate.ts`); `docs/readability.txt`'s
 `$iter` share went from 82 to 82.1 in 10,000 lines, blessed: the case's
 own `nth_back` of a `Vec`'s iterator.
+
+A `retain`, `retain_mut` and a heap's `retain` that throw as they drop
+one, or as their test does, leave what they kept then what they hadn't
+tested, the one being dropped gone, the one being tested kept, as std's
+guard puts them back, so the vector's own drop drops each once: `$retain`,
+`$retainMut`, `$heapRetain` and `dedup_by`'s `$dedupBy` in a `finally`.
+Held by `drop_parts_past_a_panic.rs`'s `retain`, `retain_mut`, `retain
+test`, `dedup` and `heap retain`, and the mutation `retain-left-as-thrown`
+(`runtime/retain.ts`).

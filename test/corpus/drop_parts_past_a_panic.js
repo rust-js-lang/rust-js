@@ -7,13 +7,18 @@ import {
   $closing,
   $cmp,
   $collectOptions,
+  $dedupBy,
   $dropItems,
   $dropReceiver,
   $dropSender,
+  $heapPush,
+  $heapRetain,
   $insert,
   $iter,
   $next,
   $nthBack,
+  $retain,
+  $retainMut,
   $send,
   $sortedEntries,
   $truncate,
@@ -328,6 +333,139 @@ function main() {
         }
       });
     }
+  });
+  // A `retain` that drops one that panics, or whose test panics: what's
+  // left is what it kept then what it hadn't tested, as std's guard puts
+  // them back, each dropped once.
+  caught("retain", () => {
+    const v = [
+      { TAG: "Quiet", _0: [32] },
+      { TAG: "Loud", _0: [33] },
+      { TAG: "Quiet", _0: [34] },
+    ];
+    try {
+      $retain(
+        v,
+        (item) => item.TAG === "Quiet",
+        (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        },
+      );
+    } finally {
+      $dropItems(v, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("retain_mut", () => {
+    const v = [
+      { TAG: "Loud", _0: [35] },
+      { TAG: "Quiet", _0: [36] },
+    ];
+    try {
+      $retainMut(
+        v,
+        (item) => item.TAG === "Quiet",
+        false,
+        (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        },
+      );
+    } finally {
+      $dropItems(v, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("retain test", () => {
+    const v = [[37], [38], [39]];
+    try {
+      $retain(
+        v,
+        (l) => {
+          if (l[0] === 38) {
+            throw new Error("test");
+          } else {
+            return true;
+          }
+        },
+        loudDrop_drop,
+      );
+    } finally {
+      for (const item of v) {
+        loudDrop_drop(item);
+      }
+    }
+  });
+  caught("dedup", () => {
+    const v = [
+      { TAG: "Quiet", _0: [43] },
+      { TAG: "Loud", _0: [44] },
+      { TAG: "Quiet", _0: [45] },
+    ];
+    try {
+      $dedupBy(
+        v,
+        (a, b) => a.TAG === "Loud" && b.TAG === "Quiet",
+        (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        },
+      );
+    } finally {
+      $dropItems(v, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("heap retain", () => {
+    const heap = [];
+    for (const n of [40, 42, 41]) {
+      $heapPush(heap, n, $cmp);
+    }
+    const seen = [];
+    $heapRetain(
+      heap,
+      (n) => {
+        seen.push(n);
+        if (n === 42) {
+          throw new Error("heap");
+        } else {
+          return true;
+        }
+      },
+      $cmp,
+    );
+    console.log(`heap [${seen.join(", ")}]`);
   });
   caught("own drop", () => {
     const inner = [18];

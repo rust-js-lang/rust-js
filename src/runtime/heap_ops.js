@@ -29,20 +29,31 @@ function $heapAppend(heap, other, cmp) {
 
 // `heap.retain(f)`: what `f` keeps, in order, rebuilt from the first it
 // didn't; of items with a destructor, each it doesn't dropped by `drop`
-// before the next is asked, as std's `Vec::retain` of them does (ADR 0098).
+// before the next is asked, as std's `Vec::retain` of them does (ADR 0098);
+// where one throws, what's left as `$retain` leaves it, rebuilt, as std's
+// guard does (#416).
 function $heapRetain(heap, f, cmp, drop) {
   let from = heap.length;
   let kept = 0;
-  for (let i = 0; i < heap.length; i++) {
-    if (f(heap[i])) {
-      heap[kept++] = heap[i];
-      continue;
+  let i = 0;
+  try {
+    while (i < heap.length) {
+      const x = heap[i];
+      if (f(x)) {
+        heap[kept++] = x;
+        i++;
+        continue;
+      }
+      if (i < from) from = i;
+      i++;
+      if (drop !== undefined) drop(x);
     }
-    if (i < from) from = i;
-    if (drop !== undefined) drop(heap[i]);
+  } finally {
+    const rest = heap.length - i;
+    if (rest > 0) heap.copyWithin(kept, i);
+    heap.length = kept + rest;
+    $heapRebuildTail(heap, Math.min(from, heap.length), cmp);
   }
-  heap.length = kept;
-  $heapRebuildTail(heap, Math.min(from, kept), cmp);
 }
 
 // `peek_mut()`: a guard of its top, or `undefined` of an empty heap. A
