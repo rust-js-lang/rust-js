@@ -734,14 +734,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let items = list[0].clone();
         // Checked as `slice::range` checks it, its end first, not as
-        // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
+        // `&v[a..b]` is: `$extend(v, $copyRange(v, a, b))`, each pushed, as
+        // a call's spread of more than JS's bound of arguments throws (#334).
         if op == TextOp::ExtendFromWithin {
             let copied = Expr::call(Expr::helper("$copyRange"), list);
             let copied = match clone {
                 Some(clone) => Expr::call(Expr::member(copied, "map"), vec![clone]),
                 None => copied,
             };
-            return Expr::call(Expr::member(items, "push"), vec![Expr::spread(copied)]);
+            return Expr::call_helper("$extend", vec![items, copied]);
         }
         if list.len() == 2 {
             list.push(Expr::member(items, "length"));

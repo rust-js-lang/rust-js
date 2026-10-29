@@ -7,6 +7,7 @@ import {
   $dedupBy,
   $eq,
   $exchange,
+  $extend,
   $fill,
   $iter,
   $next,
@@ -134,7 +135,10 @@ function dedup() {
 function lend() {
   const d = [[11], [12], [13]];
   try {
-    d.push(...$copyRange(d, 1).map((value) => [value[0]]));
+    $extend(
+      d,
+      $copyRange(d, 1).map((value) => [value[0]]),
+    );
   } catch (error) {
     for (const item of d) {
       loudDrop_drop(item);

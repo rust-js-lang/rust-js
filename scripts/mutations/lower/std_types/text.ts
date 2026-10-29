@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "extend-from-within-spread",
+    breaks: "`v.extend_from_within(..)` of 200,000 items is `v.push(...$copyRange(v, 0))`, a call's spread past JS's bound of arguments: `RangeError` (#334)",
+    file: "src/lower/std_types/text.rs",
+    find: "            return Expr::call_helper(\"$extend\", vec![items, copied]);\n",
+    replace: "            return Expr::call(Expr::member(items, \"push\"), vec![Expr::spread(copied)]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^long_spreads.rs$"],
+  },
+  {
     name: "drain-in-bounds-checked",
     breaks: "a `drain(0..i)` the body's ranges show in bounds is `$drain(queue, 0, i)`, not `queue.splice(0, i)`",
     file: "src/lower/std_types/text.rs",
@@ -137,7 +145,7 @@ export const mutations: Mutation[] = [
     name: "extend-from-within-unspread",
     breaks: "`extend_from_within` pushes the range as one item, not its items",
     file: "src/lower/std_types/text.rs",
-    find: "            return Expr::call(Expr::member(items, \"push\"), vec![Expr::spread(copied)]);\n",
+    find: "            return Expr::call_helper(\"$extend\", vec![items, copied]);\n",
     replace: "            return Expr::call(Expr::member(items, \"push\"), vec![copied]);\n",
     tests: ["test/corpus.test.ts","-t","vec_edits"],
   },

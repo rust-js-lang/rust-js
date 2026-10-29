@@ -128,12 +128,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 (step, Some(parts)) => {
                     let part = self.builder_part(kind, (step, typed, generic_args), span, out)?;
-                    let added = match part {
-                        crate::lower::display::BuilderPart::One(text) => text,
-                        crate::lower::display::BuilderPart::Many(texts) => Expr::spread(texts),
-                    };
+                    // Many, each pushed, `$extend(parts, texts)`, as a call's
+                    // spread of more than JS's bound of arguments throws (#334).
                     self.flush(state, out)?;
-                    let push = Expr::call(Expr::member(Expr::var(&parts), "push"), vec![added]);
+                    let push = match part {
+                        crate::lower::display::BuilderPart::One(text) => {
+                            Expr::call(Expr::member(Expr::var(&parts), "push"), vec![text])
+                        }
+                        crate::lower::display::BuilderPart::Many(texts) => {
+                            Expr::call_helper("$extend", vec![Expr::var(&parts), texts])
+                        }
+                    };
                     out.push(StmtKind::Expr(push).at(self.js_span(span)));
                     state.built.insert(root, (kind, type_name, steps, Some(parts)));
                 }

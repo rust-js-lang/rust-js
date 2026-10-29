@@ -4,6 +4,7 @@ import {
   $copyRange,
   $debugStr,
   $dedupByCells,
+  $extend,
   $index,
   $iter,
   $popIfCell,
@@ -55,7 +56,7 @@ function main() {
   $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const s = [1, 2, 3];
-  s.push(...$copyRange(s, 1));
+  $extend(s, $copyRange(s, 1));
   console.log(`[${s.join(", ")}]`);
   const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
   console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);

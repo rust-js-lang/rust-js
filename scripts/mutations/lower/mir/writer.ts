@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "builder-entries-spread",
+    breaks: "a Debug builder's `entries` of 200,000 items is `parts.push(...items)`, a call's spread past JS's bound of arguments: `RangeError` (#334)",
+    file: "src/lower/mir/writer.rs",
+    find: "                            Expr::call_helper(\"$extend\", vec![Expr::var(&parts), texts])\n",
+    replace: "                            Expr::call(Expr::member(Expr::var(&parts), \"push\"), vec![Expr::spread(texts)])\n",
+    tests: ["test/corpus.test.ts", "-t", "^long_spreads.rs$"],
+  },
+  {
     name: "mir-writer-written-whole",
     breaks: "MIR's `write!` of what may fail in a writer is written whole, what came before it lost",
     file: "src/lower/mir/writer.rs",
@@ -126,8 +134,8 @@ export const mutations: Mutation[] = [
     name: "builder-held-entries-one-part",
     breaks: "a held `Debug` builder's `entries` adds its array as one part, not each entry",
     file: "src/lower/mir/writer.rs",
-    find: "                        crate::lower::display::BuilderPart::Many(texts) => Expr::spread(texts),",
-    replace: "                        crate::lower::display::BuilderPart::Many(texts) => texts,",
+    find: "                            Expr::call_helper(\"$extend\", vec![Expr::var(&parts), texts])\n",
+    replace: "                            Expr::call(Expr::member(Expr::var(&parts), \"push\"), vec![texts])\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_builder_held.rs$"],
   },
   {

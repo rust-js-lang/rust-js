@@ -70,9 +70,8 @@ wherever there is one, exact of a string, a map and a set alike.
 - `runtime_long_writes.rs` writes a megabyte to a `Vec<u8>`, splices,
   repeats and appends a million items, against native Rust.
 - The compiler's own output spreads only arrays: `Array.from(..)`, a
-  `Vec`, a rest parameter. Its `v.push(...$copyRange(v, a, b))` of
-  `extend_from_within`, and a Debug builder's `parts.push(...entries)`,
-  have the argument bound: #334.
+  `Vec`, a rest parameter. `extend_from_within` and a Debug builder's
+  `entries` are `$extend` loops too, below.
 
 ## Alternatives
 
@@ -84,3 +83,21 @@ wherever there is one, exact of a string, a map and a set alike.
   not rust-js's.
 - **Array.from for every for-of over a string too**: it makes no
   transform that breaks for-of work, and copies each string first.
+
+## Amendment: the compiler's own spreads into a call (#334)
+
+The compiler wrote two calls that spread an array of any length:
+`v.push(...$copyRange(v, a, b))` for `extend_from_within`, and
+`parts.push(...Array.from(items, each))` for a Debug builder's `entries`.
+Past JS's bound of arguments, about 120,000 in Node, each threw `RangeError:
+Maximum call stack size exceeded` where Rust runs. That's ADR 0262's
+"results change" case, so Rust's behavior is kept. Each is now the runtime's
+`$extend(v, items)`, which pushes one item at a time: `$extend(v,
+$copyRange(v, a, b))` and `$extend(parts, Array.from(items, each))`. A
+builder chained in one expression, `debug_map().entry(..).entries(..)`,
+already joins with `concat`, which has no bound.
+
+- `test/corpus/long_spreads.rs` checks 200,000 items of each against
+  native Rust.
+- The mutations are `extend-from-within-spread` and
+  `builder-entries-spread`.
