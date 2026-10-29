@@ -422,7 +422,7 @@ Its jobs run at once:
 |---|---|---|
 | `plan` | of a push, the commit its mutations are since, `main`'s last check whose mutations passed, and their machines | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
-| `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`, the corpus in parts beside it; a bless patch on failure | to be measured: 13–24 min in 2 shards with the corpus in one file |
+| `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`, the corpus in parts beside it; a bless patch on failure | 9–14 min in 2 shards (run 40881358992), where the corpus in one file took 13–24 |
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
