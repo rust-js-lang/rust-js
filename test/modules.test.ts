@@ -1010,12 +1010,15 @@ test("a module's default is called with whatever JS gives it", async () => {
   const dir = fixture("default-called-by-js");
   writeFileSync(join(dir, "lib.rs"), "mod declared;\nmod helpers;\nmod page;\nmod thrice;\nmod twice;\n");
   writeFileSync(join(dir, "helpers.rs"), "pub(crate) fn twice(n: u32) -> u32 {\n    n * 2\n}\n\npub(crate) fn thrice(n: u32) -> u32 {\n    n * 3\n}\n");
-  writeFileSync(join(dir, "twice.rs"), "js::export_default!(super::helpers::twice);\n");
+  writeFileSync(join(dir, "twice.rs"), "use super::helpers::twice;\n\njs::export_default!(twice);\n\npub fn four() -> u32 {\n    twice(2)\n}\n");
   writeFileSync(join(dir, "thrice.rs"), "js::export_default!(super::helpers::thrice);\n\npub fn nine() -> u32 {\n    super::helpers::thrice(3)\n}\n");
   writeFileSync(join(dir, "page.rs"), "fn page(n: u32) -> u32 {\n    n * 5\n}\n\njs::export_default!(page);\n\npub fn fifteen() -> u32 {\n    page(3)\n}\n");
   writeFileSync(join(dir, "declared.rs"), "js::export_default! {\n    fn seven(n: u32) -> u32 {\n        n * 7\n    }\n}\n\npub fn fourteen() -> u32 {\n    seven(2)\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   expect(readFileSync(join(dir, "helpers.js"), "utf8")).toContain("export function twice(n) {\n  return (n * 2) >>> 0;\n}");
+  // Its `use`'s name, beside the macro's `use twice as _;`, as written.
+  expect(readFileSync(join(dir, "twice.js"), "utf8")).toContain('import { twice } from "./helpers.js";\n');
+  expect(readFileSync(join(dir, "twice.js"), "utf8")).toContain("  return twice(2);\n");
   expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain('import * as Helpers from "./helpers.js";\n');
   expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain("  return Helpers.thrice(3);\n");
   // u32's product wraps, as Rust's without overflow checks does.
@@ -1023,7 +1026,7 @@ test("a module's default is called with whatever JS gives it", async () => {
   const at = async (file: string) => (await import(join(dir, file))).default(big);
   expect([await at("twice.js"), await at("thrice.js"), await at("page.js"), await at("declared.js")])
     .toEqual([2, 3, 5, 7].map((k) => (k * big) % 2 ** 32));
-  expect([(await import(join(dir, "thrice.js"))).nine(), (await import(join(dir, "page.js"))).fifteen()]).toEqual([9, 15]);
+  expect([(await import(join(dir, "thrice.js"))).nine(), (await import(join(dir, "page.js"))).fifteen(), (await import(join(dir, "twice.js"))).four()]).toEqual([9, 15, 4]);
 });
 
 // ADR 0267: what a module runs when it's loaded, `js::on_load!`, is its

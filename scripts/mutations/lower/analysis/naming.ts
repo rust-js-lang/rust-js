@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "use-as-underscore-renames",
-    breaks: "`js::export_default!`'s `use super::helpers::thrice as _;` renames `thrice` in its module, `import { thrice as _ }` and `_(3)` (ADR 0577, amended)",
+    breaks: "`js::export_default!`'s `use twice as _;` renames `twice` in its module, which its `use super::helpers::twice;` names by its name, `import { twice as _ }` and `_(2)` (ADR 0577, amended)",
     file: "src/lower/analysis/naming.rs",
     find: "                        && (ident.name == tcx.item_name(def_id) || ident.name == rustc_span::kw::Underscore)\n",
     replace: "                        && (ident.name == tcx.item_name(def_id))\n",
