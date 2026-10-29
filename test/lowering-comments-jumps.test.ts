@@ -104,6 +104,45 @@ pub fn replay_uncommented(queue: &[i32], seen: &mut Vec<i32>) {
   expect([seen([1, -2, 0, 0, 3, -20, 1]), seen([-1, 2, 3, 4])]).toEqual([[1, 3], [4]]);
 });
 
+// A `continue` the program wrote last in a loop's body, or last in a match
+// arm there, not an `if`'s branch, which tidy takes as the turn ends there
+// anyway: its comments at the end of the body or the branch, where it was
+// written (ADR 0753), not above the `for`.
+test("a comment before a continue tidy takes at a loop's end is where it was written", async () => {
+  const { js, lib } = await compiled("comment-before-a-tail-continue", `pub fn tail(xs: &[i32], out: &mut Vec<i32>) {
+    for &x in xs {
+        out.push(x);
+        // On to the next.
+        continue;
+    }
+}
+
+pub fn arm(xs: &[i32], out: &mut Vec<i32>) {
+    for &x in xs {
+        match x {
+            0 => {
+                out.push(0);
+                // Zero: the next.
+                continue;
+            }
+            _ => out.push(x * 2),
+        }
+    }
+}
+`);
+  expect(js).toContain("  for (const x of xs) {\n    out.push(x);\n    // On to the next.\n  }\n");
+  expect(js).toContain("    if (x === 0) {\n      out.push(0);\n      // Zero: the next.\n    } else {\n");
+  const pushed = (f: string, xs: number[]) => {
+    const out: number[] = [];
+    lib[f](xs as never, out as never);
+    return out;
+  };
+  expect([pushed("tail", [1, 2]), pushed("arm", [0, 3])]).toEqual([
+    [1, 2],
+    [0, 6],
+  ]);
+});
+
 // React DOM's SimpleEventPlugin: a guarded arm that falls through to the
 // next, a comment between that arm's patterns, `"mouseup" // TODO: ..
 // | "mouseout"`, and a last `_` of only comments. The first comment between

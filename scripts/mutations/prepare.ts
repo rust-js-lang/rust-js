@@ -165,11 +165,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "declared-at-top-off",
-    breaks: "a thread-local's closure of `const`s and then its value stays `(() => { const at = ..; return ..; })()`, not the module's `const`s (ADR 0870)",
+    breaks: "an exported thread-local's closure of its value alone, of a test, stays `(() => { if (t) { return a; } return b; })()`, not `export const AREA = t ? a : undefined;` (ADR 0870, amended)",
     file: "src/prepare.rs",
     find: "    initializers::declared_at_top(module);\n",
     replace: "",
-    tests: ["test/lowering-cells.test.ts", "test/lowering-bindings.test.ts", "-t", "a thread-local an if makes|a thread-local of a let chain"],
+    tests: ["test/lowering-cells.test.ts", "-t", "an exported thread-local an if makes None of is a conditional"],
   },
   {
     name: "assigned-in-place-off",

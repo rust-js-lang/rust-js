@@ -107,11 +107,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-continued-block-kept",
-    breaks: "a loop body's last labeled block, its `break` the loop's `continue`, stays",
+    breaks: "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {\n",
     replace: "                    if true {\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "if-let chains and loops from MIR"],
+    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they're written"],
   },
   {
     name: "mir-tidy-written-continue-nested",
