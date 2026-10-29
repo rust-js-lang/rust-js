@@ -60,11 +60,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-handles-unsorted",
-    breaks: "a B-tree's `iter_mut()` and `values_mut()` go in insertion order, not its keys'",
+    breaks: "a B-tree's `iter_mut()` and `values_mut()` go in insertion order, not its keys', of a `Map` JS gives in another order (the crate's own are kept in order, ADR 0404, amended)",
     file: "src/lower/mut_refs.rs",
     find: "            Std::Map(MapOp::Iter(_)) if self.is_sorted(receiver) => {",
     replace: "            Std::Map(MapOp::Iter(_)) if false && self.is_sorted(receiver) => {",
-    tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a B-tree JS gives is changed through in its keys' order"],
   },
   {
     name: "cow-mut-no-handle",

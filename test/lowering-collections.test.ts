@@ -232,6 +232,37 @@ pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
   expect([lib.fromTwo(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
 });
 
+// A `Map` JS hands a `&mut BTreeMap` may be in any order: its `iter_mut()`
+// and `values_mut()` go in its keys' order all the same (ADR 0404, amended).
+test("a B-tree JS gives is changed through in its keys' order", async () => {
+  const dir = fixture("mir-tree-mut-order");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeMap;
+pub fn numbered(m: &mut BTreeMap<u32, u32>) -> Vec<u32> {
+    let mut order = Vec::new();
+    for (n, (k, v)) in m.iter_mut().enumerate() {
+        *v = n as u32;
+        order.push(*k);
+    }
+    order
+}
+pub fn doubled(m: &mut BTreeMap<u32, u32>) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for v in m.values_mut() {
+        seen.push(*v);
+        *v *= 2;
+    }
+    seen
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const m = new Map([[3, 30], [1, 10], [2, 20]]);
+  expect(lib.numbered(m)).toEqual([1, 2, 3]);
+  expect([...m]).toEqual([[3, 2], [1, 0], [2, 1]]);
+  expect(lib.doubled(m)).toEqual([0, 1, 2]);
+  expect([...m]).toEqual([[3, 4], [1, 0], [2, 2]]);
+});
+
 // Sets and maps from MIR made of arrays and read as arrays:
 // \`new Set([1, 2, 3])\`, a set's algebra and a sorted map's entries mapped.
 test("sets and maps from MIR are made of arrays and read as them", async () => {

@@ -682,6 +682,12 @@ test("a library's generic function takes the drops its body uses", () => {
   expect(app).toContain('import * as Dep from "../dep/lib.js";');
   expect(app).toContain("\nfunction pick(a, b, dropB) {\n  dropB?.(b);\n  return a;\n}");
   expect(app).toContain("\nfunction discard(value, dropT) {\n  pick(undefined, value, dropT);\n}");
+  // A closure's call drops what it's given by its own code, so `apply` and
+  // `keep_by`, which only call one, drop nothing: the library's, by its
+  // namespace, not compiled again here.
+  expect(app).not.toMatch(/^function (apply|keepBy)\(/m);
+  expect(app).toContain("Dep.apply(");
+  expect(app).toContain("Dep.keepBy(");
 }, 300_000);
 
 // A library's generic function its own crate gives a value with a
