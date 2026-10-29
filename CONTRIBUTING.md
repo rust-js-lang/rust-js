@@ -23,6 +23,19 @@ behaves differently, except for the deliberate differences listed in
 - **Known-failure lists only shrink.** A change may take tests off
   `test/rustc-known-failures.txt`; adding one needs a reason in the change.
 
+## Issue priority
+
+| Label | When |
+|---|---|
+| `P0: wrong answer` | The JS does what the Rust doesn't. |
+| `P1: crash or blocker` | rust-js panics, `main` is red, or a port is blocked. |
+| `P2: refused` | Valid, idiomatic Rust is refused. |
+| `P3: readability` | The JS is right but reads worse than a person would write it. |
+
+A refusal is better than a wrong answer, so issues are worked in this order,
+and every issue carries exactly one of these labels. A P0 is fixed or filed
+at once, as [Correctness first](#correctness-first) says.
+
 ## Architecture principle
 
 **Understand each piece through its responsibility and contracts.**
