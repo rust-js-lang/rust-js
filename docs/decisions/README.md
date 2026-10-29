@@ -449,7 +449,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0427 `#[track_caller]`: a function that reads where it was called is given it](0427-track-caller.md)
 - [0428 A C-variadic function's `...` is JS's rest parameter](0428-c-variadic-functions.md)
 - [0429 A generic or `dyn` double-ended iterator is a JS iterator that knows its back](0429-a-double-ended-iterator-knows-its-back.md)
-- [0430 `mul_add` rounds once](0430-mul-add-rounds-once.md)
+- [0430 `mul_add` rounds once](0430-mul-add-rounds-once.md) *(amended: a finite product given an infinity is that infinity, #417)*
 - [0431 std's conversions are one list of what's converted into what](0431-std-conversions-are-one-list.md)
 - [0432 A `return` is written where its value is made](0432-a-return-is-written-where-its-value-is-made.md)
 - [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md) *(amended: a copy, a pattern's binding's too, is the variable where each read is before it's set, on every way; amended: a `while let`'s binding too; amended: a branch that leaves is no way past it)*

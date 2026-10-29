@@ -56,3 +56,19 @@ const error = $mulAdd(0.1, 10, -1); // 5.551115123125783e-17
 
 - A `mul_add` allocates a few `BigInt`s; a hot loop of them is slower
   than the hardware's, as `$powi` is than `**`.
+
+## Amendment: a finite product given an infinity is that infinity (#417)
+
+Of an infinity or a `NaN` among its operands, `$fused` gave JS's own
+`a * b + c`, taken to be what rounding once gives. It isn't where `a` and
+`b` are finite and `c` is infinite: the product is exact, so finite, and
+the sum is `c`, but JS's `a * b` may be past the range,
+`f64::MAX.mul_add(2.0, f64::NEG_INFINITY)` its `Infinity - Infinity`,
+`NaN` where Rust gives `-inf`. A wrong answer, case C
+([0262](0262-when-rust-and-js-disagree.md)): such a `c` is the answer;
+any other non-finite operand is JS's `a * b + c` as before, an infinite
+product's sum and a `NaN`'s.
+
+Held by corpus `mul_add` against native Rust, of each sign and of an
+`f32`; mutations `fused-infinite-addend-unfused` and
+`fused-infinite-addend-whatever-product`.

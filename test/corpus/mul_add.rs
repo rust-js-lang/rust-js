@@ -34,6 +34,13 @@ fn main() {
     show(f64::INFINITY.mul_add(1.0, f64::NEG_INFINITY));
     show(1e308f64.mul_add(10.0, 0.0));
     show(0.0f64.mul_add(-2.0, std::f64::consts::E));
+    // A finite product past the float's range given an infinity of the
+    // other sign: that infinity, as the product is exact, and finite (#417).
+    show(f64::MAX.mul_add(2.0, f64::NEG_INFINITY));
+    show(1.0e308f64.mul_add(-1.0e308, f64::INFINITY));
+    show(f64::MIN.mul_add(2.0, f64::INFINITY));
+    show(f64::MAX.mul_add(2.0, -1.0));
+    show(f64::MAX.mul_add(2.0, f64::NAN));
 
     // An `f32`'s, rounded once to an `f32`: `a * b` is a tie, which `c`
     // tips, though too little for an `f64` to hold.
@@ -43,6 +50,7 @@ fn main() {
     show32(1.0f32.mul_add(2.0, 5.0));
     show32(f32::MAX.mul_add(2.0, -f32::MAX));
     show32(f32::MAX.mul_add(1.5, 0.0));
+    show32(f32::MAX.mul_add(2.0, f32::NEG_INFINITY));
     show32(f32::from_bits(1).mul_add(0.5, 0.0));
     show32(f32::from_bits(1).mul_add(1.5, 0.0));
     show32(f32::from_bits(1).mul_add(0.5, f32::from_bits(1)));

@@ -46,6 +46,13 @@ function main() {
   show($mulAdd(Infinity, 1, -Infinity));
   show($mulAdd(1e308, 10, 0));
   show($mulAdd(0, -2, Math.E));
+  // A finite product past the float's range given an infinity of the
+  // other sign: that infinity, as the product is exact, and finite (#417).
+  show($mulAdd(1.7976931348623157e308, 2, -Infinity));
+  show($mulAdd(1.0e308, -1.0e308, Infinity));
+  show($mulAdd(-1.7976931348623157e308, 2, Infinity));
+  show($mulAdd(1.7976931348623157e308, 2, -1));
+  show($mulAdd(1.7976931348623157e308, 2, NaN));
 
   // An `f32`'s, rounded once to an `f32`: `a * b` is a tie, which `c`
   // tips, though too little for an `f64` to hold.
@@ -55,6 +62,7 @@ function main() {
   show32($mulAddF32(1, 2, 5));
   show32($mulAddF32(Math.fround(3.4028235e38), 2, -Math.fround(3.4028235e38)));
   show32($mulAddF32(Math.fround(3.4028235e38), 1.5, 0));
+  show32($mulAddF32(Math.fround(3.4028235e38), 2, -Infinity));
   show32($mulAddF32($floatFromBits(1, 4), 0.5, 0));
   show32($mulAddF32($floatFromBits(1, 4), 1.5, 0));
   show32($mulAddF32($floatFromBits(1, 4), 0.5, $floatFromBits(1, 4)));

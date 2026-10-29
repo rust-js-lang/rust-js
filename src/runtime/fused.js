@@ -4,9 +4,12 @@
 // times a power of two, so the sum is one too, exactly, in a `BigInt`.
 function $fused(a, b, c, digits, least) {
   // Of an infinity or a NaN, and of a sum that's exactly zero, whose sign
-  // JS's own gives, JS's answer is the one rounding gives.
+  // JS's own gives, JS's answer is the one rounding gives; but of a finite
+  // product and an infinite `c`, `c`: the product is exact, so finite,
+  // where JS's `a * b` may be past the range, `f64::MAX.mul_add(2.0,
+  // f64::NEG_INFINITY)`'s `-Infinity`, not `NaN` (#417).
   if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) {
-    return a * b + c;
+    return Number.isFinite(a) && Number.isFinite(b) && !Number.isNaN(c) ? c : a * b + c;
   }
   const parts = (x) => {
     const view = new DataView(new ArrayBuffer(8));

@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "    if (true) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
   },
+  {
+    name: "fused-infinite-addend-unfused",
+    breaks: "a finite product past the range given the other infinity is `NaN`, JS's `a * b + c`, not that infinity: `f64::MAX.mul_add(2.0, f64::NEG_INFINITY)` (#417)",
+    file: "src/runtime/fused.js",
+    find: "    return Number.isFinite(a) && Number.isFinite(b) && !Number.isNaN(c) ? c : a * b + c;\n",
+    replace: "    return a * b + c;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
+  },
+  {
+    name: "fused-infinite-addend-whatever-product",
+    breaks: "an infinite `c` is the answer whatever the product, so `f64::INFINITY.mul_add(1.0, f64::NEG_INFINITY)` is `-inf`, not `NaN`",
+    file: "src/runtime/fused.js",
+    find: "    return Number.isFinite(a) && Number.isFinite(b) && !Number.isNaN(c) ? c : a * b + c;\n",
+    replace: "    return !Number.isNaN(c) && !Number.isFinite(c) ? c : a * b + c;\n",
+    tests: ["test/corpus.test.ts", "-t", "^mul_add.rs$"],
+  },
 ];
