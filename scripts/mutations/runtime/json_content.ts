@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "json-content-map-left-over-kept",
+    breaks: "a buffered map with entries left over, `{\"c\":{\"a\":1,\"b\":2},\"t\":\"F\"}` of a visitor that reads one, is read, where serde says `invalid length 2, expected 1 element in map`",
+    file: "src/runtime/json_content.js",
+    find: "    if (this.count < length) {\n      const count = this.count;\n      throw $jsonError(`invalid length ${length}, expected ${count} element${count === 1 ? \"\" : \"s\"} in map`);\n",
+    replace: "    if (false) {\n      const count = this.count;\n      throw $jsonError(`invalid length ${length}, expected ${count} element${count === 1 ? \"\" : \"s\"} in map`);\n",
+    tests: ["test/serde.test.ts", "-t", "well formed or not"],
+  },
+  {
     name: "json-seq-comma-unnamed",
     breaks: "a list's items with no comma between are `trailing characters`, where serde_json says ``expected `,` or `]` ``",
     file: "src/runtime/json_content.js",

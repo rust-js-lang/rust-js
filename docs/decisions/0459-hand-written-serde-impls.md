@@ -192,3 +192,25 @@ native serde_json.
 
 The serde tests of a hand-written `Serialize`'s collections and variants,
 and of a visitor's option, against native serde_json.
+
+## Amendment: a hint given a value already read (#236)
+
+A hint's `deserialize_map(visitor)` of a hand-written visitor peeked the
+JSON text, `reader.parseWhitespace()`, to refuse a kind the visitor has no
+method for, as serde_json's `peek_invalid_type` does. Given serde's
+buffered content, an untagged variant's or an adjacently tagged one's
+before its tag, or a `serde_json::Value` through `from_value`, there's no
+text. It threw `TypeError: reader.parseWhitespace is not a function`,
+where serde_json reads it. A wrong answer, so ADR 0262's "results change"
+case: Rust's behavior is kept.
+
+Each decoder now answers it, `deserializeHinted(expected, visitor)`, given
+the methods that hint takes. The text's peeks first, `$JsonReader`'s. A
+value already read, `$JsonDecoder`'s, is visited by its kind's method, or
+refused as the type it is, as serde's `ContentDeserializer` refuses it.
+
+- The malformed-text table in `test/serde.test.ts` has back the rows it
+  left out, `{"c":{"a":1,"b":2},"t":"F"}` among them. It has an untagged
+  `EitherFirst`, and `First` read from a `Value`, all against native Rust.
+- The mutations are `hinted-content-peeked`, `hinted-text-unpeeked` and
+  `json-content-map-left-over-kept`, put back.

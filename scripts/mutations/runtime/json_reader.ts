@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "hinted-text-unpeeked",
+    breaks: "a hand-written visitor's `deserialize_map` given text of a kind it has no method for, `[1,2,3]`, is refused where it's read, not as serde_json's `peek_invalid_type` refuses it where it starts",
+    file: "src/runtime/json_reader.js",
+    find: "    if (kind !== undefined && !visitor[kind]) throw this.peekInvalidType(expected);\n",
+    replace: "",
+    tests: ["test/serde.test.ts", "-t", "well formed or not"],
+  },
+  {
     name: "json-f64-correctly-rounded",
     breaks: "a JSON float is read correctly rounded, as JS reads one, where serde_json's own multiplication by a power of ten gives another `f64`",
     file: "src/runtime/json_reader.js",

@@ -6049,29 +6049,12 @@ export function $jsonVisit(json, expected, methods) {
 }
 
 // `deserialize_str(visitor)` and the other hints but `deserialize_any`: of a
-// kind it has no method for, serde_json's error of what it peeks at, before
-// it's read, a sequence's or a map's where it starts.
+// kind it has no method for, the reader's error, `deserializeHinted`'s: the
+// text's of what it peeks at, before it's read, a sequence's or a map's
+// where it starts; a value already read, the type it is (#236).
 export function $jsonVisitHint(json, expected, methods) {
   const visitor = $jsonVisitor(expected, methods);
-  return $jsonRead(json, (reader) => {
-    const peek = reader.parseWhitespace();
-    const kind =
-      peek === 110
-        ? "unit"
-        : peek === 116 || peek === 102
-          ? "bool"
-          : peek === 45 || (peek >= 48 && peek <= 57)
-            ? "number"
-            : peek === 34
-              ? "string"
-              : peek === 91
-                ? "seq"
-                : peek === 123
-                  ? "map"
-                  : undefined;
-    if (kind !== undefined && !visitor[kind]) throw reader.peekInvalidType(expected);
-    return reader.deserializeAny(expected, visitor);
-  });
+  return $jsonRead(json, (reader) => reader.deserializeHinted(expected, visitor));
 }
 
 // `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
@@ -7618,6 +7601,14 @@ export function $jsonF32(x) {
 // the text (`$JsonReader`), or a value already read (`$JsonContent`), which
 // is how serde reads a tagged or an untagged enum.
 export class $JsonDecoder {
+  // A hint's `deserialize_*` of a hand-written visitor, given the methods
+  // that hint takes: of a value already read, serde's `ContentDeserializer`
+  // and serde_json's `Value`, what it is visited by its method, or the
+  // type it is refused (#236). The text's peeks first, `$JsonReader`'s.
+  deserializeHinted(expected, visitor) {
+    return this.deserializeAny(expected, visitor);
+  }
+
   // An integer type, named as serde names it, from `min` to `max`: a
   // number, or for an `i64` or `u64`, a BigInt (ADR 0086).
   int(name, min, max) {
@@ -8512,6 +8503,28 @@ export class $JsonReader extends $JsonDecoder {
   // `deserialize_any`: whatever's there, for the `visitor` method of its
   // kind (`unit`, `bool`, `number`, `string`, `seq` or `map`), which is
   // `expected` if the visitor has none.
+  // A hint of what it reads, serde_json's: what's there of a kind the
+  // visitor has no method for refused as `peek_invalid_type` refuses it.
+  deserializeHinted(expected, visitor) {
+    const peek = this.parseWhitespace();
+    const kind =
+      peek === 110
+        ? "unit"
+        : peek === 116 || peek === 102
+          ? "bool"
+          : peek === 45 || (peek >= 48 && peek <= 57)
+            ? "number"
+            : peek === 34
+              ? "string"
+              : peek === 91
+                ? "seq"
+                : peek === 123
+                  ? "map"
+                  : undefined;
+    if (kind !== undefined && !visitor[kind]) throw this.peekInvalidType(expected);
+    return this.deserializeAny(expected, visitor);
+  }
+
   deserializeAny(expected, visitor) {
     const peek = this.parseWhitespace();
     if (peek === -1) throw this.peekError("EOF while parsing a value");

@@ -3,6 +3,14 @@
 // the text (`$JsonReader`), or a value already read (`$JsonContent`), which
 // is how serde reads a tagged or an untagged enum.
 class $JsonDecoder {
+  // A hint's `deserialize_*` of a hand-written visitor, given the methods
+  // that hint takes: of a value already read, serde's `ContentDeserializer`
+  // and serde_json's `Value`, what it is visited by its method, or the
+  // type it is refused (#236). The text's peeks first, `$JsonReader`'s.
+  deserializeHinted(expected, visitor) {
+    return this.deserializeAny(expected, visitor);
+  }
+
   // An integer type, named as serde names it, from `min` to `max`: a
   // number, or for an `i64` or `u64`, a BigInt (ADR 0086).
   int(name, min, max) {

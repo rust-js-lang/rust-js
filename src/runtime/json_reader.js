@@ -614,6 +614,28 @@ class $JsonReader extends $JsonDecoder {
   // `deserialize_any`: whatever's there, for the `visitor` method of its
   // kind (`unit`, `bool`, `number`, `string`, `seq` or `map`), which is
   // `expected` if the visitor has none.
+  // A hint of what it reads, serde_json's: what's there of a kind the
+  // visitor has no method for refused as `peek_invalid_type` refuses it.
+  deserializeHinted(expected, visitor) {
+    const peek = this.parseWhitespace();
+    const kind =
+      peek === 110
+        ? "unit"
+        : peek === 116 || peek === 102
+          ? "bool"
+          : peek === 45 || (peek >= 48 && peek <= 57)
+            ? "number"
+            : peek === 34
+              ? "string"
+              : peek === 91
+                ? "seq"
+                : peek === 123
+                  ? "map"
+                  : undefined;
+    if (kind !== undefined && !visitor[kind]) throw this.peekInvalidType(expected);
+    return this.deserializeAny(expected, visitor);
+  }
+
   deserializeAny(expected, visitor) {
     const peek = this.parseWhitespace();
     if (peek === -1) throw this.peekError("EOF while parsing a value");

@@ -474,8 +474,10 @@ test("serde: text, well formed or not, is read and refused as serde_json reads i
     '{"t":"T","c":[1,2]}', '{"t":"T","c":[1,2,3]}', '{"t":"S","c":{"x":1,"y":2}}', '{"t":"S","c":[1]}', '{"t":"F","c":{"a":1,"b":2}}', '{"t":"T","c":null}',
     '{"1":2}', '{"-1":2}', '{"x":2}', '{"1x":2}', '{"true":1}', '{"tru":1}', '{"false":0,"true":1}',
     '{"t":2}', '{"t":3}', '{"A":1,"B":2}', '"A"', '{"t":1,"a":1}', '{"t":0,"x":2}',
-    // Not `{"c":{"a":1,"b":2},"t":"F"}`: a hand-written visitor given buffered
-    // content throws (#236).
+    // A hand-written visitor given buffered content, an adjacently tagged
+    // variant's before its tag, an untagged one's, with an entry left over
+    // or not (#236).
+    '{"c":{"a":1,"b":2},"t":"F"}', '{"c":{"a":1},"t":"F"}', '{"a":1}', '{"a":1,"b":2}',
     '{"t":"W","C":null}', '{"t":"W","C":[1,2]}', '{"t":"W","C":{"x":1}}', '{"t":"W","D":1}', '{"t":"W","D":[1]}', '{"t":"W","B":null}', '{"C":1}', '{"D":"x"}',
     '{"a":1,"b":"x","c":2,"z":3}', '{"a":1,"t":"A","x":2}', '{"a":1,"t":"C"}', '{"t":"B","a":2,"b":"y"}', '{"C":[]}', '{"A":1,"k":2}',
     "127", "128", "-128", "-129", "255", "256", '"x"', '"xy"', '""', "{}", '{"aa":5}', '{"a":1,"aa":2}', '{"1":2,"1":3}', "[1,2,3]",
@@ -499,6 +501,9 @@ pub enum Adjacent { A(u32), B, T(u8, u8), S { x: u32 } }
 #[derive(serde::Deserialize, Debug)]
 #[serde(tag = "t", content = "c")]
 pub enum AdjacentFirst { F(First) }
+#[derive(serde::Deserialize, Debug)]
+#[serde(untagged)]
+pub enum EitherFirst { F(First) }
 #[derive(serde::Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Either { I(Internal), N(u32), S(String), L(Vec<u32>), P(Loose), E(Tagged) }
@@ -581,6 +586,7 @@ pub fn report() -> String {
         read!(out, Internal, text);
         read!(out, Adjacent, text);
         read!(out, AdjacentFirst, text);
+        read!(out, EitherFirst, text);
         read!(out, Either, text);
         read!(out, Flat, text);
         read!(out, std::collections::BTreeMap<u32, u32>, text);
@@ -612,7 +618,8 @@ pub fn report() -> String {
             again!(out, (u8, bool), value);
             again!(out, Option<u32>, value);
             again!(out, Tagged, value);
-            // Not First: a hand-written visitor given a Value throws (#236).
+            // A hand-written visitor given a Value (#236).
+            again!(out, First, value);
             again!(out, Internal, value);
             again!(out, Adjacent, value);
             again!(out, Either, value);

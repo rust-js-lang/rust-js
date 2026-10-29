@@ -8,29 +8,12 @@ function $jsonVisit(json, expected, methods) {
 }
 
 // `deserialize_str(visitor)` and the other hints but `deserialize_any`: of a
-// kind it has no method for, serde_json's error of what it peeks at, before
-// it's read, a sequence's or a map's where it starts.
+// kind it has no method for, the reader's error, `deserializeHinted`'s: the
+// text's of what it peeks at, before it's read, a sequence's or a map's
+// where it starts; a value already read, the type it is (#236).
 function $jsonVisitHint(json, expected, methods) {
   const visitor = $jsonVisitor(expected, methods);
-  return $jsonRead(json, (reader) => {
-    const peek = reader.parseWhitespace();
-    const kind =
-      peek === 110
-        ? "unit"
-        : peek === 116 || peek === 102
-          ? "bool"
-          : peek === 45 || (peek >= 48 && peek <= 57)
-            ? "number"
-            : peek === 34
-              ? "string"
-              : peek === 91
-                ? "seq"
-                : peek === 123
-                  ? "map"
-                  : undefined;
-    if (kind !== undefined && !visitor[kind]) throw reader.peekInvalidType(expected);
-    return reader.deserializeAny(expected, visitor);
-  });
+  return $jsonRead(json, (reader) => reader.deserializeHinted(expected, visitor));
 }
 
 // `deserialize_option(visitor)`: `null` given to its `visit_none`, anything
