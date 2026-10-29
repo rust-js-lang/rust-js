@@ -436,6 +436,11 @@ pub(super) struct Found {
     /// unlike a struct's field of that name. Its locals', by name, and a
     /// place a reborrow found one at, `o.value` of `&mut **u`.
     pub(super) cells: Vec<Expr>,
+    /// Of a body lowered from its MIR, its inclusive ranges no step can
+    /// leave exhausted, by name: each a `let` not `mut`, so never lent as a
+    /// `&mut`, made only by `a..=b`, which `range_state` reads as it is
+    /// (#418).
+    pub(super) fresh_ranges: HashSet<String>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
@@ -515,6 +520,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value : undefined` is given as `test && value` where it's moved to.
     pub(super) fn note_falsy(&mut self, name: &str) {
         self.locals.mir.falsy.insert(name.to_string());
+    }
+
+    /// A body's inclusive ranges no step can leave exhausted, by name
+    /// (`fresh_ranges`, #418).
+    pub(super) fn note_fresh_ranges(&mut self, names: Vec<String>) {
+        self.locals.mir.fresh_ranges.extend(names);
+    }
+
+    /// Whether `range` is a variable no step can leave exhausted, a `let`
+    /// not `mut` of `a..=b` (`fresh_ranges`, #418).
+    pub(in crate::lower) fn never_exhausted(&self, range: &Expr) -> bool {
+        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name))
     }
 }
 

@@ -368,6 +368,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return (parts, None);
         }
+        if self.never_exhausted(&range) {
+            return (self.range_parts(range, kind, out), None);
+        }
         let index = self.range_index(ty);
         let num = index.and_then(Num::of).filter(|num| !num.float());
         let text = index.is_some_and(|index| index.is_char());
@@ -449,7 +452,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return shown(self, (parts, None));
         }
-        let state = self.range_state(Expr::var("range"), ty, &mut Vec::new());
+        let fresh = self.never_exhausted(&range);
+        let state = match fresh {
+            true => (
+                kind.bounds()
+                    .iter()
+                    .map(|name| Expr::member(Expr::var("range"), *name))
+                    .collect(),
+                None,
+            ),
+            false => self.range_state(Expr::var("range"), ty, &mut Vec::new()),
+        };
         let body = shown(self, state)?;
         let f = Expr::arrow(
             vec!["range".into()],

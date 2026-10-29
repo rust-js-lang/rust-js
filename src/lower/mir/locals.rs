@@ -68,6 +68,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// Of `body`, the names of its inclusive ranges no step can leave
+    /// exhausted: each a `let` not `mut`, which nothing lends as a `&mut`,
+    /// whose every write is `RangeInclusive::new(a, b)`, `a..=b` (#418).
+    pub(super) fn fresh_ranges(&self, body: &mir::Body<'tcx>, names: &IndexVec<Local, String>) -> Vec<String> {
+        use crate::lower::std_types::range::RangeKind;
+        let n = body.local_decls.len();
+        let (mut writes, mut made): (IndexVec<Local, usize>, IndexVec<Local, usize>) =
+            (IndexVec::from_elem_n(0, n), IndexVec::from_elem_n(0, n));
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind {
+                    writes[assign.0.local] += 1;
+                }
+            }
+            if let TerminatorKind::Call { func, destination, .. } = &data.terminator().kind {
+                writes[destination.local] += 1;
+                let new = fn_def(func.ty(&body.local_decls, self.tcx))
+                    .is_some_and(|(id, _)| self.tcx.is_lang_item(id, LangItem::RangeInclusiveNew));
+                if new && destination.projection.is_empty() {
+                    made[destination.local] += 1;
+                }
+            }
+        }
+        (body.local_decls.iter_enumerated())
+            .filter(|&(local, decl)| {
+                decl.mutability == mir::Mutability::Not
+                    && !names[local].is_empty()
+                    && writes[local] > 0
+                    && writes[local] == made[local]
+                    && self.range_kind(decl.ty) == Some(RangeKind::Inclusive)
+            })
+            .map(|(local, _)| names[local].clone())
+            .collect()
+    }
+
     /// Each local's name, the user's where it has one, and how it's used.
     pub(super) fn mir_locals(
         &mut self,
@@ -238,6 +273,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             locals.names[local] = self.fresh(&base);
         }
+        // Its inclusive ranges no step can leave exhausted, by name (#418).
+        let fresh = self.fresh_ranges(body, &locals.names);
+        self.note_fresh_ranges(fresh);
         locals
     }
 

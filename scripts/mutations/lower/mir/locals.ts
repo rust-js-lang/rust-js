@@ -107,4 +107,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
   },
+  {
+    name: "fresh-ranges-none",
+    breaks: "a `let` not `mut` of `a..=b`, which no step can leave exhausted, reads its bounds wrapped, `inclusive.start | 0`, and tested exhausted (#418)",
+    file: "src/lower/mir/locals.rs",
+    find: "                decl.mutability == mir::Mutability::Not\n",
+    replace: "                decl.mutability == mir::Mutability::Not && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
+    snapshots: true,
+  },
 ];

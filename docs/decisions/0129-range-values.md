@@ -205,3 +205,17 @@ bounds, and a `RangeFull` has none: `a == b` of two, as rustc's
 bound it compares, as before #414, so two `RangeFull`s are `true`. Held by
 corpus `range_values` (`same(RangeFull, ..)`) against native Rust and
 the mutation `range-full-eq-bound-asked`.
+
+## Amendment: a range nothing can step reads as it is (2026-10-30, #418)
+
+Since #414, an inclusive range's own state is read through `range_state`,
+each bound wrapped and tested exhausted, `inclusive.start | 0`, of a
+local that nothing can have stepped too. A range is exhausted only by a
+step through a `&mut`, which a `let` not `mut` never lends. **So a
+body's inclusive ranges each a `let` not `mut` whose every write is
+`RangeInclusive::new(a, b)`, `a..=b`, are `fresh_ranges` (MIR's locals,
+by name), and `range_state`, `{:?}` and a clone read them as they are,
+`inclusive.start`, `{ start: g.start, end: g.end }`.** `range_values.js`
+and `range_lent_used_up.js` read as they did before #414. Held by the
+mutation `fresh-ranges-none` (`lower/mir/locals.ts`), against the
+snapshots.

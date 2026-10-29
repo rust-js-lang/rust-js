@@ -472,7 +472,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // }`, its `exhausted` too (#414).
             ty::Adt(_, args)
                 if self.range_kind(ty) == Some(super::std_types::range::RangeKind::Inclusive)
-                    && (args.type_at(0).is_integral() || args.type_at(0).is_char()) =>
+                    && (args.type_at(0).is_integral() || args.type_at(0).is_char())
+                    && !self.never_exhausted(&place) =>
             {
                 Ok(Expr::object(vec![Prop::Spread(place)]))
             }

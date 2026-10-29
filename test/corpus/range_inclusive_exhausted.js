@@ -94,7 +94,7 @@ function main() {
       .join(", ")}]`,
   );
   const fresh = { start: -128, end: 127 };
-  const range$2 = { ...fresh };
+  const range$2 = { start: fresh.start, end: fresh.end };
   console.log(
     `${
       $treeRange(
@@ -105,9 +105,9 @@ function main() {
         { TAG: "Included", _0: ((range$2.exhausted ?? range$2).start << 24) >> 24 },
         range$2.exhausted !== undefined || range$2.start > 127 || range$2.end < -128
           ? { TAG: "Excluded", _0: ((range$2.exhausted ?? range$2).start << 24) >> 24 }
-          : { TAG: "Included", _0: { ...fresh }.end },
+          : { TAG: "Included", _0: { start: fresh.start, end: fresh.end }.end },
       ).length
-    } ${((fresh.exhausted ?? fresh).start << 24) >> 24 === ((r.exhausted ?? r).start << 24) >> 24 && ((fresh.exhausted ?? fresh).end << 24) >> 24 === ((r.exhausted ?? r).end << 24) >> 24 && (fresh.exhausted !== undefined || fresh.start > 127 || fresh.end < -128) === (r.exhausted !== undefined || r.start > 127 || r.end < -128)}`,
+    } ${fresh.start === ((r.exhausted ?? r).start << 24) >> 24 && fresh.end === ((r.exhausted ?? r).end << 24) >> 24 && !(r.exhausted !== undefined || r.start > 127 || r.end < -128)}`,
   );
 
   // Used up by a fold, through `by_ref()`: exhausted at its last, as
