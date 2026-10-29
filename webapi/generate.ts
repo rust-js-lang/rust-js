@@ -686,6 +686,30 @@ function alternatives(t: IdlType): string[] {
   return typeof rust === "string" ? [rust] : [];
 }
 
+/**
+ * What a getter of a union of a Trusted Type and a string gives: the string,
+ * `(TrustedHTML or DOMString) innerHTML`'s `DOMString`. A Trusted Type is
+ * what a setter is given, never what a getter gives (Trusted Types, the
+ * spec), and TypeScript declares it so, `innerHTML: string`; its setter
+ * takes the string too (`paramType`'s `alternatives`) (rd125). A union of
+ * other unbound members, `(RTCRtpScriptTransform or SFrameTransform)`,
+ * may give either, so it's no one member's.
+ */
+const TRUSTED = new Set(["TrustedHTML", "TrustedScript", "TrustedScriptURL"]);
+function soleMember(t: IdlType): IdlType | undefined {
+  if (!isUnion(t) || unionOf(t)) return undefined;
+  const members = (u: IdlType): IdlType[] => {
+    const aliased = !u.union && !u.generic && typedefs.get(u.idlType as string);
+    if (aliased) return members(aliased);
+    return u.union ? (u.idlType as IdlType[]).flatMap(members) : [u];
+  };
+  const [trusted, bound] = [members(t).filter((u) => TRUSTED.has(u.idlType as string)), members(t).filter((u) => !TRUSTED.has(u.idlType as string))];
+  if (trusted.length === 0 || bound.length !== 1 || !STRINGS.has(bound[0].idlType as string)) return undefined;
+  // (webidl2's fields are getters, so each is read, not spread.)
+  const [u] = bound;
+  return { generic: u.generic, union: u.union, idlType: u.idlType, nullable: u.nullable || t.nullable } as IdlType;
+}
+
 /** Is `t` a union, written out or through a typedef? */
 function isUnion(t: IdlType): boolean {
   const aliased = !t.union && !t.generic && typedefs.get(t.idlType as string);
@@ -1262,7 +1286,8 @@ function functionsOf(declared: Interface): Fn[] {
       }
       // `stringifier attribute USVString href`: `toString()` is it too.
       if (m.special === "stringifier") fns.push(toString(i));
-      const result = rustType(m.idlType!, "result");
+      const sole = soleMember(m.idlType!);
+      const result = rustType(sole ?? m.idlType!, "result");
       // A getter whose type isn't supported (a union, say) is skipped, but
       // its setter can still take the union's enum.
       if (typeof result === "string") {

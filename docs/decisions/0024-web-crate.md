@@ -233,6 +233,27 @@ which always passes `--extern webapi=..`.
 property, `set events#EventEmitter.defaultMaxListeners`. Not an import
 itself, `set fs#x`, which JS can't assign: that stays refused.
 
+## Amendment: a Trusted Type's attribute's getter gives its string (rd125)
+
+React port gap rd125 (2026-10-29). WebIDL types `innerHTML` as
+`(TrustedHTML or [LegacyNullToEmptyString] DOMString)`: a union, so the
+generator left its getter out and bound its setter alone, of the string
+it takes. React DOM's normalizeHTML reads `testElement.innerHTML`, and
+TypeScript declares `innerHTML: string`.
+
+**A getter of a union of Trusted Types and one string type gives the
+string**, `inner_html() -> String`: a Trusted Type is what a setter is
+given, never what a getter gives (the Trusted Types spec), as the setter
+already took the string. `Element`'s and `ShadowRoot`'s `innerHTML`,
+`Element.outerHTML`, `HTMLIFrameElement.srcdoc` and
+`SVGAnimatedString.baseVal` gain theirs, each TypeScript's `string`. A
+union of other members the crate doesn't bind, `(RTCRtpScriptTransform
+or SFrameTransform) transform`, may give either, so its getter stays out
+(`generate.ts`'s `soleMember`). Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, the host's value. Held by `test/webapi-bindings.test.ts`'s "a
+Trusted Type's attribute's getter gives its string" and the generator's
+output test.
+
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct

@@ -1564,10 +1564,26 @@ impl Element {
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/innerHTML)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerHTML")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_html(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/innerHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "set innerHTML")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_inner_html(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/outerHTML)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outerHTML")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn outer_html(&self) -> String {
         unreachable!()
     }
 
@@ -13758,6 +13774,14 @@ impl HTMLIFrameElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_src(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLIFrameElement/srcdoc)
+    #[cfg_attr(rust_js, rust_js::link_name = "get srcdoc")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn srcdoc(&self) -> String {
         unreachable!()
     }
 
@@ -81500,6 +81524,14 @@ impl Eq for SVGAnimatedString {}
 
 impl SVGAnimatedString {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedString/baseVal)
+    #[cfg_attr(rust_js, rust_js::link_name = "get baseVal")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn base_val(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGAnimatedString/baseVal)
     #[cfg_attr(rust_js, rust_js::link_name = "set baseVal")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
@@ -84087,6 +84119,14 @@ impl ShadowRoot {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_html(&self, options: Option<GetHTMLOptions<'_>>) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/innerHTML)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerHTML")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_html(&self) -> String {
         unreachable!()
     }
 

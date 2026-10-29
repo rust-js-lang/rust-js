@@ -713,6 +713,30 @@ pub fn texts(node: &Node, other: &Node, text: Option<&str>) {
   expect([node.textContent, other.textContent]).toEqual([null, null]);
 });
 
+// React port gap rd125: a getter of a Trusted Type or a string, `(TrustedHTML
+// or DOMString) innerHTML`, gives the string, as TypeScript's `innerHTML:
+// string` says and React DOM's normalizeHTML reads `testElement.innerHTML`;
+// it was left out as a union, its setter alone bound.
+test("a Trusted Type's attribute's getter gives its string, el.innerHTML", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-trusted-getters");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Element;
+
+pub fn normalized(element: &Element, html: &str) -> String {
+    element.set_inner_html(html);
+    element.inner_html()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  element.innerHTML = html;\n  return element.innerHTML;\n");
+  const lib = await import(join(dir, "lib.js"));
+  // A host normalizes what it's set to, which the getter gives.
+  let held = "";
+  const element = { set innerHTML(html: string) { held = html.trim(); }, get innerHTML() { return held; } };
+  expect(lib.normalized(element, " <b>x</b> ")).toBe("<b>x</b>");
+});
+
 // React port gap rd68: TypeScript's index signature, `[index: number]:
 // HTMLOptionElement`, is std's `Index`, so ReactDOMSelect's
 // `options[i].value` and ReactDOMInput's `group[i]` read as JS reads them,
