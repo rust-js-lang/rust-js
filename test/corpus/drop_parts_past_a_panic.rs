@@ -91,6 +91,33 @@ fn main() {
         m.insert(2, Item::Loud(Boom(16)));
         m.insert(3, Item::Quiet(Loud(17)));
     });
+    // A `Vec`'s items it drops itself, `truncate`'s and `clear`'s, a
+    // receiver's queue, and what a failed `collect` of options took, each
+    // dropped though one before panics, as std's slice drop goes on.
+    caught("truncate", || {
+        let mut v = vec![Item::Quiet(Loud(19)), Item::Loud(Boom(20)), Item::Quiet(Loud(21))];
+        v.truncate(0);
+    });
+    caught("clear", || {
+        let mut v = vec![Item::Loud(Boom(22)), Item::Quiet(Loud(23))];
+        v.clear();
+    });
+    caught("queue", || {
+        let (send, receive) = std::sync::mpsc::channel();
+        send.send(Item::Loud(Boom(24))).unwrap();
+        send.send(Item::Quiet(Loud(25))).unwrap();
+        drop(receive);
+    });
+    caught("collect", || {
+        let items = vec![Some(Item::Loud(Boom(26))), Some(Item::Quiet(Loud(27))), None];
+        let all: Option<Vec<Item>> = items.into_iter().collect();
+        println!("collected {}", all.is_some());
+    });
+    caught("nth_back", || {
+        let mut it = vec![Item::Quiet(Loud(28)), Item::Quiet(Loud(29)), Item::Loud(Boom(30)), Item::Quiet(Loud(31))]
+            .into_iter();
+        println!("nth_back {}", it.nth_back(2).map_or(0, |item| item.id()));
+    });
     caught("own drop", || {
         let p = Panics { inner: Loud(18) };
         println!("inner {}", p.inner.0);

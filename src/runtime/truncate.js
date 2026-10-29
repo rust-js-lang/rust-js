@@ -3,8 +3,8 @@
 function $truncate(v, length, drop) {
   if (length < v.length) {
     const gone = v.splice(length);
-    if (drop !== undefined) {
-      for (const item of gone) drop(item);
-    }
+    // The rest still dropped after one panics, as std's `drop_in_place`
+    // of the slice goes on (#416).
+    if (drop !== undefined) $dropItems(gone, drop);
   }
 }

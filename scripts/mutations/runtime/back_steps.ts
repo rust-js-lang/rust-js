@@ -334,8 +334,8 @@ export const mutations: Mutation[] = [
     name: "nth-back-slice-from-back",
     breaks: "a `Vec`'s `nth_back(k)` drops the `k` it passes back to front, where std drops them as one slice (#234)",
     file: "src/runtime/back_steps.js",
-    find: "    for (const item of passed) drop(item);\n    if (k < n) return undefined;",
-    replace: "    for (const item of passed.reverse()) drop(item);\n    if (k < n) return undefined;",
+    find: "    $dropItems(passed, drop);\n    if (k < n) return undefined;",
+    replace: "    $dropItems(passed.reverse(), drop);\n    if (k < n) return undefined;",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {

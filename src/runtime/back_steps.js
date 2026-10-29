@@ -19,7 +19,7 @@ function $nthBack(it, n, found = (item) => item, drop, slices = true) {
     const k = Math.min(n, it.len());
     const passed = it.items.slice(it.end - k, it.end);
     it.end -= k;
-    for (const item of passed) drop(item);
+    $dropItems(passed, drop);
     if (k < n) return undefined;
     const step = it.back();
     return step.done ? undefined : found(step.value);
@@ -43,7 +43,7 @@ function $advanceBackBy(it, m, _found, drop, slices = true) {
     const k = Math.min(m, it.len());
     const passed = it.items.slice(it.end - k, it.end);
     it.end -= k;
-    for (const item of passed) drop(item);
+    $dropItems(passed, drop);
     left = m - k;
   } else {
     for (; left > 0; left--) {

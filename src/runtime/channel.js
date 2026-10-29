@@ -38,6 +38,8 @@ function $dropSender(channel) {
 // receiver drops it (ADR 0142).
 function $dropReceiver(channel, drop) {
   channel.receiving = false;
+  // Stopped at one that panics, the rest not dropped, as std's queue's
+  // drop stops, unlike a slice's (#416).
   if (drop !== undefined) for (const item of channel.queue) drop(item);
   channel.queue.length = 0;
 }

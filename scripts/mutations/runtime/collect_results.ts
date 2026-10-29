@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "collect-results-values-undropped",
     breaks: "a `collect` into a `Result` that stops at an `Err` drops none of the values it collected",
     file: "src/runtime/collect_results.js",
-    find: "  if (drop) values.forEach((value) => drop(value));\n",
+    find: "  if (drop) $dropItems(values, drop);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
   },

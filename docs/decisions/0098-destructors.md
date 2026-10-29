@@ -679,3 +679,14 @@ own `drop` panics) and the mutations `drop-parts-unchained`,
 `drop-function-quiet-unknown`. `docs/readability.txt`'s `$iter` share went
 from 82.1 to 82.2 in 10,000 lines, blessed: the new case's own loop over
 two references, in a corpus 156 lines shorter.
+
+And the runtime's own drops of a slice of items, `truncate`'s and
+`clear`'s, `$truncate`, the items a `nth_back` passes over, `advance_back_by`'s,
+and what a failed `collect` of options or results took, drop them by
+`$dropItems` too, as std's `drop_in_place` of a slice goes on past a
+panicking one; a channel's queue stops at it, as std's does, no
+`$dropItems` (2026-10-30). Held by `drop_parts_past_a_panic.rs`'s
+`truncate`, `clear`, `queue`, `collect` and `nth_back`, and the mutation
+`truncate-stops-at-a-panic` (`runtime/truncate.ts`); `docs/readability.txt`'s
+`$iter` share went from 82 to 82.1 in 10,000 lines, blessed: the case's
+own `nth_back` of a `Vec`'s iterator.

@@ -3,12 +3,21 @@
 import {
   $BTreeMap,
   $catchUnwind,
+  $channel,
+  $closing,
   $cmp,
+  $collectOptions,
   $dropItems,
+  $dropReceiver,
+  $dropSender,
   $insert,
   $iter,
   $next,
+  $nthBack,
+  $send,
   $sortedEntries,
+  $truncate,
+  $unwrapOk,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -159,6 +168,163 @@ function main() {
         }
         if (value.TAG === "Loud") {
           boomDrop_drop(value._0);
+        }
+      });
+    }
+  });
+  // A `Vec`'s items it drops itself, `truncate`'s and `clear`'s, a
+  // receiver's queue, and what a failed `collect` of options took, each
+  // dropped though one before panics, as std's slice drop goes on.
+  caught("truncate", () => {
+    const v = [
+      { TAG: "Quiet", _0: [19] },
+      { TAG: "Loud", _0: [20] },
+      { TAG: "Quiet", _0: [21] },
+    ];
+    try {
+      $truncate(v, 0, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    } finally {
+      $dropItems(v, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("clear", () => {
+    const v = [
+      { TAG: "Loud", _0: [22] },
+      { TAG: "Quiet", _0: [23] },
+    ];
+    try {
+      $truncate(v, 0, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    } finally {
+      $dropItems(v, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("queue", () => {
+    const [send, receive] = $channel();
+    try {
+      try {
+        $unwrapOk($send(send, { TAG: "Loud", _0: [24] }), undefined, (e) => "SendError { .. }");
+        $unwrapOk($send(send, { TAG: "Quiet", _0: [25] }), undefined, (e) => "SendError { .. }");
+      } finally {
+        $dropReceiver(receive, (item) => {
+          if (item.TAG === "Quiet") {
+            loudDrop_drop(item._0);
+          }
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        });
+      }
+    } finally {
+      $dropSender(send);
+    }
+  });
+  caught("collect", () => {
+    const items = [{ TAG: "Loud", _0: [26] }, { TAG: "Quiet", _0: [27] }, undefined];
+    const all = $collectOptions(
+      $closing($iter(items), (intoIter) => {
+        $dropItems(intoIter, (item) => {
+          if (item != null) {
+            if (item.TAG === "Quiet") {
+              loudDrop_drop(item._0);
+            }
+            if (item.TAG === "Loud") {
+              boomDrop_drop(item._0);
+            }
+          }
+        });
+      }),
+      false,
+      undefined,
+      (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      },
+    );
+    console.log(`collected ${all != null}`);
+    if (all != null) {
+      $dropItems(all, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+    }
+  });
+  caught("nth_back", () => {
+    const it = $iter([
+      { TAG: "Quiet", _0: [28] },
+      { TAG: "Quiet", _0: [29] },
+      { TAG: "Loud", _0: [30] },
+      { TAG: "Quiet", _0: [31] },
+    ]);
+    try {
+      const nthBack = $nthBack(it, 2, undefined, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
+        }
+      });
+      function map(item) {
+        let result;
+        try {
+          try {
+            result = Item.id(item);
+          } finally {
+            if (item.TAG === "Quiet") {
+              loudDrop_drop(item._0);
+            }
+          }
+        } finally {
+          if (item.TAG === "Loud") {
+            boomDrop_drop(item._0);
+          }
+        }
+        return result;
+      }
+      console.log(`nth_back ${nthBack != null ? map(nthBack) : 0}`);
+    } finally {
+      $dropItems(it, (item) => {
+        if (item.TAG === "Quiet") {
+          loudDrop_drop(item._0);
+        }
+        if (item.TAG === "Loud") {
+          boomDrop_drop(item._0);
         }
       });
     }

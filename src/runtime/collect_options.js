@@ -15,6 +15,6 @@ function $collectOptions(items, boxed = false, into, drop) {
     values.push(boxed ? $someValue(item) : item);
   }
   if (!failed) return into ? into(values) : values;
-  if (drop) values.forEach((value) => drop(value));
+  if (drop) $dropItems(values, drop);
   return undefined;
 }

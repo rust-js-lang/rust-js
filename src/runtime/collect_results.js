@@ -14,6 +14,6 @@ function $collectResults(items, into, drop) {
     values.push(item._0);
   }
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
-  if (drop) values.forEach((value) => drop(value));
+  if (drop) $dropItems(values, drop);
   return failed;
 }

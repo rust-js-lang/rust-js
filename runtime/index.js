@@ -2555,7 +2555,7 @@ export function $nthBack(it, n, found = (item) => item, drop, slices = true) {
     const k = Math.min(n, it.len());
     const passed = it.items.slice(it.end - k, it.end);
     it.end -= k;
-    for (const item of passed) drop(item);
+    $dropItems(passed, drop);
     if (k < n) return undefined;
     const step = it.back();
     return step.done ? undefined : found(step.value);
@@ -2579,7 +2579,7 @@ export function $advanceBackBy(it, m, _found, drop, slices = true) {
     const k = Math.min(m, it.len());
     const passed = it.items.slice(it.end - k, it.end);
     it.end -= k;
-    for (const item of passed) drop(item);
+    $dropItems(passed, drop);
     left = m - k;
   } else {
     for (; left > 0; left--) {
@@ -10192,6 +10192,8 @@ export function $dropSender(channel) {
 // receiver drops it (ADR 0142).
 export function $dropReceiver(channel, drop) {
   channel.receiving = false;
+  // Stopped at one that panics, the rest not dropped, as std's queue's
+  // drop stops, unlike a slice's (#416).
   if (drop !== undefined) for (const item of channel.queue) drop(item);
   channel.queue.length = 0;
 }
@@ -11569,9 +11571,9 @@ export function $unsettled(value) {
 export function $truncate(v, length, drop) {
   if (length < v.length) {
     const gone = v.splice(length);
-    if (drop !== undefined) {
-      for (const item of gone) drop(item);
-    }
+    // The rest still dropped after one panics, as std's `drop_in_place`
+    // of the slice goes on (#416).
+    if (drop !== undefined) $dropItems(gone, drop);
   }
 }
 
@@ -12766,7 +12768,7 @@ export function $collectResults(items, into, drop) {
     values.push(item._0);
   }
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
-  if (drop) values.forEach((value) => drop(value));
+  if (drop) $dropItems(values, drop);
   return failed;
 }
 
@@ -12786,7 +12788,7 @@ export function $collectOptions(items, boxed = false, into, drop) {
     values.push(boxed ? $someValue(item) : item);
   }
   if (!failed) return into ? into(values) : values;
-  if (drop) values.forEach((value) => drop(value));
+  if (drop) $dropItems(values, drop);
   return undefined;
 }
 
