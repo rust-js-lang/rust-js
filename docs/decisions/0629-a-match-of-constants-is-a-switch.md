@@ -805,3 +805,36 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N.
 Held by `test/corpus/match_breaks_its_loop.rs`'s `counted` against native
 Rust and the mutation `blocks-breaking-loops-inner-loop`
 (`mir/tidy/jumps/continues.ts`), now caught.
+
+## Amendment: a `Some`'s `switch` takes `None` to its `default` (#221, 2026-10-29)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same arm, `None`
+or a value no case names, taken.
+
+A `match` of an `Option`'s constants whose `_` does something,
+`match tag(value) { Some(A | B) => hit = true, Some(C) => return, _ =>
+hit = false }`, kept MIR's block: `bb13: { if (symbolFor != null) {
+switch (symbolFor) { case A: case B: hit = true; break bb13; case C:
+return; } } hit = false; }`, as `None` and what no case names both reach
+the `_` arm's statements MIR placed after the `if`. The `if` of the
+`Some` went only where the `default` did nothing, and only of literal
+cases, `"fulfilled"`.
+
+**The statements after that `if`, in the block, are the `default`'s**,
+`switch (tag(value)) { case A: case B: hit = true; break; case C: return;
+default: hit = false; }`, as JS's `switch` takes `null` and `undefined`
+to the `default` where no case is theirs: of literal cases, or of a
+`match` whose every constant is a number, a string or the registry's
+symbol (`Switch::valued`, `PatternValue`). Not where a case's `break;`
+leaves the `switch` for those statements, which in the `default` it
+would skip, nor where they hold a `break;` of the loop, which in the
+`default` would leave the `switch`; and a `default` of its own is no
+`switch` the `if`'s `else` falls to.
+
+Held by `test/lowering-switches.test.ts`'s "a value some arms of a match
+of symbols give is given where they give it" (`kept`, `continued`,
+`returned`, `unwound`, `observed`, `guarded`, `stopped`, against what
+native Rust gives) and `test/corpus/option_switch_default.rs`; mutations
+`some-switch-default-off`, `some-switch-rest-break` (`tidy/switches.ts`)
+and `switch-constants-unvalued` (`hints.ts`). A case's `break;` before
+the rest has none: no tree the corpus has makes one.

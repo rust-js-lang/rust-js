@@ -1535,7 +1535,7 @@ symbol, or a `Some` of them, [ADR
 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)), and at most
 a last `_`, or a last name, `current => current`, which is the value, is a
 `switch`: `|`'s constants are stacked `case`s, `_` or the name is the
-`default`, left out where it does nothing, and each case ends in `break;`
+`default`, of a `Some`'s constants `None`'s too, left out where it does nothing, and each case ends in `break;`
 where it'd go on, the case's own where it's left for what follows the
 `switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
 or for the function's end or the one `return` after the `match`, not a

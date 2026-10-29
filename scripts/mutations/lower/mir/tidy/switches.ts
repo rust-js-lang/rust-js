@@ -7,7 +7,17 @@ const typeofs = ["test/lowering-switches.test.ts", "-t", "a match of what a valu
 
 const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
 const twoGuards = ["test/lowering-switch-fallthrough.test.ts", "-t", "two guarded arms"];
+const someSwitch = ["test/lowering-switch-symbols.test.ts", "-t", "a match of symbols give is given"];
 export const mutations: Mutation[] = [
+  {
+    name: "some-switch-default-off",
+    breaks: "a `match` of an `Option`'s constants whose `_` does something keeps `bb22: { if (x != null) { switch (x) { .. break bb22; } } hit = false; }`, not `default: hit = false;` (#221)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            some_switch_defaults(body, switches);\n",
+    replace: "",
+    tests: someSwitch,
+    snapshots: true,
+  },
   {
     name: "guard-failing-past-default-kept",
     breaks: "a guarded arm's case whose guard fails past the `match` `break`s past a `default` holding what follows the `match`: a `<link>` that isn't a stylesheet is never removed (rd184, a wrong answer)",

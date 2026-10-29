@@ -118,6 +118,11 @@ pub(super) const SUBJECT: &str = "$subject";
 pub(super) struct Switch {
     pub span: js::Span,
     pub arms: Vec<SwitchArm>,
+    /// Whether each constant its patterns name is a number, a string or
+    /// the registry's symbol (`PatternValue`), but a last `_`'s: what a
+    /// `switch` of an `Option`'s value takes of no case, `null` among them
+    /// (#221).
+    pub valued: bool,
 }
 
 /// An arm of a `match` of constants (`Written::switches`): where it, its
@@ -687,6 +692,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             )
                     })
                     .collect();
+                let valued = (arms.iter().enumerate()).all(|(i, arm)| match arm.pattern.kind {
+                    thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. } => {
+                        i == last && arm.guard.is_none()
+                    }
+                    _ => self.constant_values(&arm.pattern, present).is_some(),
+                });
                 let arms: Vec<SwitchArm> = (arms.iter().enumerate())
                     .filter(|&(i, _)| !i.checked_sub(1).is_some_and(|before| joined[before]))
                     .map(|(i, arm)| {
@@ -758,6 +769,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (cases >= SWITCH_CASES).then(|| Switch {
                     span: self.js_span(e.span),
                     arms,
+                    valued,
                 })
             })
             .collect()

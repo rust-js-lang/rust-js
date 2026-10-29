@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {\n",
     replace: "                    if false {\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-past-another-jump",
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !self.local && !inside.holds(label.as_deref(), is_continue) {\n",
     replace: "                    if false {\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-past-a-return",
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                StmtKind::Return(_) | StmtKind::Throw(_) if !self.local => return None,\n",
     replace: "                StmtKind::Return(_) | StmtKind::Throw(_) => 0,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-over-a-call",
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                _ if self.local || stmt.only_makes_values() => 0,\n",
     replace: "                _ => 0,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-over-a-guard",
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        let quiet = |e: &Expr| self.local || !e.may_throw();\n",
     replace: "        let quiet = |_: &Expr| true;\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-local-anywhere",
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)\n",
     replace: "        .is_some()\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "symbols give|invokeCallback"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "symbols give|invokeCallback"],
   },
   {
     name: "default-value-never-local",

@@ -14,7 +14,9 @@ use super::loop_labels::{LOOP_LABEL, continued, held_subject, labeled_breaks, la
 use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 
 mod kinds;
+mod nullish;
 use kinds::{kinds_of, of_subject};
+use nullish::{some_switch_defaults, switch_of};
 
 /// Each chain of `body` that tests the arms of a `match` of `switches`, in
 /// the order written, a `switch`; a `break` in it of a loop around it, of
@@ -1259,6 +1261,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
             let label = label.clone();
+            some_switch_defaults(body, switches);
             ending_switches(body, &mut |case| case_breaks(case, &label));
             // `None`, which no case takes, goes past the `switch` to the
             // block's end, as the `break` does.
@@ -1271,7 +1274,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
                     },
                 ] = &then[..]
                 && *to == label
-                && js::null_test(test, false).is_some_and(|x| switch_of(switch, x))
+                && js::null_test(test, false).is_some_and(|x| switch_of(switch, x, switches))
             {
                 body.remove(body.len() - 2);
             }
@@ -1282,7 +1285,7 @@ pub(super) fn breaks_past_switches(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     while i < stmts.len() {
         if let StmtKind::If(test, then, None) = &stmts[i].kind
             && let [switch] = &then[..]
-            && js::null_test(test, true).is_some_and(|x| switch_of(switch, x))
+            && js::null_test(test, true).is_some_and(|x| switch_of(switch, x, switches))
         {
             let switch = switch.clone();
             stmts[i] = switch;
@@ -1345,30 +1348,6 @@ fn does_nothing(stmts: &[Stmt]) -> bool {
             ..
         }]
     )
-}
-
-/// Whether `stmt` is a `switch` of the variable `x`, each case a literal,
-/// which `null` and `undefined` aren't, and a `default` that does nothing:
-/// one that does nothing of what's nullish.
-fn switch_of(stmt: &Stmt, x: &Expr) -> bool {
-    let StmtKind::Switch {
-        discriminant,
-        cases,
-        default,
-    } = &stmt.kind
-    else {
-        return false;
-    };
-    let literal = |v: &Expr| {
-        matches!(
-            v.kind,
-            ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::Bool(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
-        )
-    };
-    matches!(&x.kind, ExprKind::Var(_))
-        && js::same_path(discriminant, x)
-        && default.as_deref().is_none_or(does_nothing)
-        && (cases.iter()).all(|case| case.values.iter().all(literal))
 }
 
 /// A block a case ends with, through the branches of an `if` it ends with,

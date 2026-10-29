@@ -5,6 +5,14 @@ const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls th
 const toDefault = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"];
 export const mutations: Mutation[] = [
   {
+    name: "switch-constants-unvalued",
+    breaks: "a `match` of the registry's symbols in a `Some`, `Some(A | B)`, is no `switch` that takes `None` to its `default`, its `if (symbolFor != null)` kept (#221)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    _ => self.constant_values(&arm.pattern, present).is_some(),\n",
+    replace: "                    _ => false,\n",
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a match of symbols give is given"],
+  },
+  {
     name: "transparent-constant-no-case",
     breaks: "a `match` of a `#[repr(transparent)]` struct's constants is no `switch`, an `if` chain of its tests (ADR 0590, amended)",
     file: "src/lower/mir/hints.rs",

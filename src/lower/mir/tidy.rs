@@ -655,6 +655,7 @@ mod tests {
                 constants: Vec::new(),
                 falls: false,
             }],
+            valued: false,
         }];
         let then = [assign("x", Expr::num(1))];
         let otherwise = [assign("x", Expr::num(2))];
