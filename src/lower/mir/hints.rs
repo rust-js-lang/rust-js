@@ -749,8 +749,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a value `a` matches may be one `b` matches, of the patterns
     /// of constants (`constants_of`): unless each constant of one is a value
     /// another of the other's isn't, a variant or the value a constant
-    /// pattern is (`body_queries::pattern_value`). Of a string's or a
-    /// float's, which that doesn't tell, it may.
+    /// pattern is (`body_queries::pattern_value`). Of a float's, which
+    /// that doesn't tell, it may.
     fn may_match_alike(&self, a: &thir::Pat<'tcx>, b: &thir::Pat<'tcx>) -> bool {
         use thir::PatKind;
         match (&a.kind, &b.kind) {

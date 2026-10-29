@@ -8,12 +8,14 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 /// A value a pattern tests, which a `const` may name (`constant_patterns`):
-/// a number's or a `char`'s, by its type and bits; or the registry's
-/// symbol's, `js::SymbolFor`'s, by its key (ADR 0634).
+/// a number's or a `char`'s, by its type and bits; the registry's
+/// symbol's, `js::SymbolFor`'s, by its key (ADR 0634); or a string's, by
+/// its text, which tells two string patterns apart (#389c, rd112).
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub(in crate::lower) enum PatternValue<'tcx> {
     Bits(ty::Ty<'tcx>, u128),
     Key(String),
+    Text(String),
 }
 
 /// A step from the value a `match` or `let` tests to a part a pattern
@@ -197,8 +199,8 @@ fn tested_constants<'tcx>(
     }
 }
 
-/// The value `pat` tests, of a number, a `char` or the registry's symbol,
-/// itself, not what's in it: the one answer to which value a constant
+/// The value `pat` tests, of a number, a `char`, a string or the
+/// registry's symbol, itself, not what's in it: the one answer to which value a constant
 /// pattern is (`PatternValue`).
 pub(in crate::lower) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
     match &pat.kind {
@@ -219,7 +221,8 @@ pub(in crate::lower) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) 
                 _ => None,
             }
         }
-        _ => None,
+        // A string's, `"keypress"`, by its text.
+        _ => pattern_text(pat).map(PatternValue::Text),
     }
 }
 

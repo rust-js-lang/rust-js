@@ -90,4 +90,13 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trait_const\\.rs$"],
   },
+  {
+    name: "text-pattern-untold",
+    breaks: "a string pattern has no value, so a guarded arm that falls to the next string arm, `\"keypress\" if .. => return`, isn't known to fall and its `match` is no `switch`: `bb22: { if (name === \"keypress\") { .. } else if (name !== \"keydown\") { .. } ctor = 1; }` (rd112)",
+    file: "src/lower/body_queries/constants.rs",
+    find: "        _ => pattern_text(pat).map(PatternValue::Text),\n",
+    replace: "        _ => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_text_guard_falls.rs$"],
+    snapshots: true,
+  },
 ];

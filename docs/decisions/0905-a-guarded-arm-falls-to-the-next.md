@@ -586,3 +586,41 @@ The arm goes with its mutation; popToNextHostParent's test, "a case of an
 arm that returns ends with its return", still holds the `default` with
 no `continue;`.
 
+
+## Amendment: a string's arms fall too (rd112)
+
+A guarded arm of strings that falls to the next, React's SimpleEventPlugin,
+`"keypress" if char_code(event) == 0 => return None`, then `"keypress" |
+"keydown" => ..`, printed `bb22: { if (name === "keypress") { .. } else if
+(name !== "keydown") { .. } ctor = 1; }`, or, in a port module of thirty
+arms, `bb175:`. Whether an arm falls to the next, and whether two arms may
+match one value, ask the value each constant pattern is
+(`body_queries::pattern_value`), which told numbers, `char`s and the
+registry's symbols, not strings: so the guarded arm wasn't known to fall,
+nor to fall to nothing, and the `match` had no `switch`. A string's
+pattern's value is now its text (`PatternValue::Text`), so the `match` is
+the `switch` upstream writes:
+
+```js
+switch (name) {
+  case "keypress":
+    // Remove unwanted keypresses.
+    if (code(n) === 0) {
+      return -1;
+    }
+  // Fallthrough
+  case "keydown":
+    ctor = 1;
+    break;
+  ..
+}
+```
+
+and in a loop the `if` chain Rust tries (#389b). Two string patterns of
+other texts never match one value, as `may_match_alike` now tells.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order.
+
+Held by `test/corpus/switch_text_guard_falls.rs` against native Rust and
+the mutation `text-pattern-untold` (`body_queries/constants.ts`).
