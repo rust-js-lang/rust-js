@@ -1,6 +1,6 @@
 # 0024. The `webapi` crate: DOM bindings generated from WebIDL
 
-Status: Accepted. Amended by [0994](0994-a-number-a-binding-takes-is-typescripts-number.md): a number a function or a setter takes is an `f64`, where an integer's was its Rust integer; and by [0215](0215-webapi-unions.md): a union is its untagged enum, where it was a function per member; and by [0223](0223-webapi-event-and-tag-maps.md): an event's name and a tag are types, `add_event_listener(b, Click, ..)` and `create_element(document, Button)`, where they were strings; and by [0376](0376-keyword-names-are-raw.md): a name that's a Rust keyword is its raw identifier, `r#type`, where it was `type_`; and by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): an optional argument is an `Option` of the one function, where it was a `_with_` form of its own; and by [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md): a function JS gives is a `dyn Fn` of its signature, where it was a `JsObject`; and by [0654](0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md): a dictionary's member of `any` is a `dyn IntoUnknown`, where it was left out. Extends [0021](0021-js-interop.md). Extended by [0891](0891-a-windows-constructor-is-the-windows.md): `new X` of a method is `new this.X(..)`. Named `webapi`, and its JS-language types moved to the `js` crate, by [0102](0102-js-and-webapi.md), which also names its forms as ReScript's.
+Status: Accepted. Amended (2026-10-29, #403): a JS object's `Deref` a generic bound meets is the object itself too. Amended by [0994](0994-a-number-a-binding-takes-is-typescripts-number.md): a number a function or a setter takes is an `f64`, where an integer's was its Rust integer; and by [0215](0215-webapi-unions.md): a union is its untagged enum, where it was a function per member; and by [0223](0223-webapi-event-and-tag-maps.md): an event's name and a tag are types, `add_event_listener(b, Click, ..)` and `create_element(document, Button)`, where they were strings; and by [0376](0376-keyword-names-are-raw.md): a name that's a Rust keyword is its raw identifier, `r#type`, where it was `type_`; and by [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md): an optional argument is an `Option` of the one function, where it was a `_with_` form of its own; and by [0653](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md): a function JS gives is a `dyn Fn` of its signature, where it was a `JsObject`; and by [0654](0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md): a dictionary's member of `any` is a `dyn IntoUnknown`, where it was left out. Extends [0021](0021-js-interop.md). Extended by [0891](0891-a-windows-constructor-is-the-windows.md): `new X` of a method is `new this.X(..)`. Named `webapi`, and its JS-language types moved to the `js` crate, by [0102](0102-js-and-webapi.md), which also names its forms as ReScript's.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -236,3 +236,23 @@ itself, `set fs#x`, which JS can't assign: that stays refused.
 ## Amended by
 
 - [0373](0373-one-binding-form.md): A binding of a JS function is an ordinary function, and a JS type a struct
+
+## Amendment: a JS object's `Deref` a generic bound meets (2026-10-29, #403)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: the deref is the
+object itself, as its call is.
+
+A generic function bounded by `T: Deref<Target = Base>`, given a JS
+class whose `Deref` is to the class it extends, `generic(d)` of a
+`Derived`, made rust-js panic: its dictionary named the impl's `deref`,
+which is never lowered (`is_js_object_deref`), and found no function for
+it. **The dictionary of such an impl's `Deref` is `{ deref: (x) => x }`,
+and its `DerefMut`'s, given the cell its `&mut self` is, `(cell) =>
+cell`** (`traits/dictionaries.rs`), as of any JS object (ADR 0454):
+`generic(d, { deref: (x) => x })`. The impl's `deref` given as a `fn`,
+`Deref::deref`, was `(x) => x` already.
+
+- Held by `test/bindings.test.ts`, "a JS class's Deref to the class it
+  extends is no JS", run: mutations `js-object-deref-dictionary-unmade`
+  (`lower/traits/dictionaries.ts`) and `js-object-deref-lowered`, which
+  the `fn` form now catches again.

@@ -69,12 +69,23 @@ pub fn as_fn(d: &Derived) -> &Base {
     let f: fn(&Derived) -> &Base = Deref::deref;
     f(d)
 }
+
+fn generic<T: Deref<Target = Base>>(t: &T) -> String {
+    base_name(t)
+}
+
+pub fn through(d: &Derived) -> String {
+    generic(d)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return name(d);");
   // Its `deref` as a value is the object itself, not a function of its own.
   expect(js).toContain("const f = (x) => x;");
+  // Met by a generic function's bound, its dictionary's `deref` is too
+  // (#403), where rust-js panicked looking for the impl's function.
+  expect(js).toContain("return generic(d, { deref: (x) => x });");
   expect(js).not.toContain("Deref_deref");
 });
 

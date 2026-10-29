@@ -403,6 +403,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let writer = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span)?;
             return Ok(Expr::call_helper("$mutWriter", vec![writer]));
         }
+        // A JS object type's `Deref` to the class it extends, which is never
+        // lowered: the object itself, `(x) => x`, as a call of it is (ADR
+        // 0024); its `DerefMut`'s, given the cell its `&mut self` is, that
+        // cell, as of any JS object (ADR 0454) (#403).
+        let deref = self.tcx.is_lang_item(tr.def_id, LangItem::Deref);
+        if (deref || self.tcx.is_lang_item(tr.def_id, LangItem::DerefMut))
+            && let Some(imp) = self.recognition().user_impl(tr)
+            && crate::lower::recognition::is_js_object_deref(self.tcx, imp)
+        {
+            let (method, param) = if deref { ("deref", "x") } else { ("deref_mut", "cell") };
+            let method = crate::lower::recognition::trait_method(self.tcx, tr.def_id, method);
+            let f = Expr::arrow(
+                vec![param.into()],
+                vec![StmtKind::Return(Some(Expr::var(param))).at(js::Span::NONE)],
+            );
+            let mut props = match deref {
+                true => Vec::new(),
+                false => self.supertrait_entries(tr, span)?,
+            };
+            props.push(Prop::Field(bindings::fn_name(self.tcx, method), f));
+            return Ok(Expr::object(props));
+        }
         // std's `Deref` of a `P: Deref` in generic code: what std's `deref`
         // of the type is, as a function, `(x) => x` of a reference, a `Box`
         // or text, which are their values (ADR 0394). The crate's own is its

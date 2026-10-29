@@ -481,4 +481,12 @@ export const mutations: Mutation[] = [
     replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
+  {
+    name: "js-object-deref-dictionary-unmade",
+    breaks: "a generic function bounded by `Deref<Target = Base>`, given a JS class whose `Deref` is to the class it extends, panics: its dictionary looks for the impl's function, which is never lowered (#403)",
+    file: "src/lower/traits/dictionaries.rs",
+    find: "            && crate::lower::recognition::is_js_object_deref(self.tcx, imp)\n",
+    replace: "            && false\n",
+    tests: ["test/bindings.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
+  },
 ];
