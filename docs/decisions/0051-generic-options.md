@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`. Amended: a thread-local's `with` and `with_borrow` give their closure's, boxed as it makes it.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -408,3 +408,18 @@ gives with `$sort`. Mutations `js-given-copy-unrouted`,
 `js-given-boxed`, `js-given-copy-kept`, `js-given-copy-unimported`,
 `js-given-call-unrouted`, `js-given-value-unrouted` and
 `js-given-copy-self-call-apart`.
+
+## Amendment (2026-10-29): what a thread-local's closure gives
+
+A std call whose `Option` may be boxed is refused unless rust-js knows it
+gives the box its value has (`refuses_boxed_option`). A thread-local's
+`with` and `with_borrow`, which give what their closure gives, weren't
+among those, so React's SimpleEventPlugin's `let Some(react_name) =
+NAMES.with_borrow(|names| names.get(dom).cloned()) else { return; }`, of
+a `HashMap<DOMEventName, Option<String>>`, was refused (rd111). **They
+give the closure's own `Option`, boxed as the closure makes it**, as
+`and_then`'s does: `const withBorrow = $someGet(names, dom); if
+(withBorrow == null) { return; }`. Upstream's `reactName === undefined`
+needs ADR 1017's payload representation of a map's value, which a `Map`
+holds; not yet. Held by `test/corpus/local_borrow_nested_option.rs`, with
+native Rust, and the mutation `local-borrow-nested-option-refused`.

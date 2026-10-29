@@ -360,6 +360,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)
             // The fallback's, or the function's, as each is given.
             | Std::Comb(Comb::MapOr | Comb::MapOrElse)
+            // A thread-local's closure's, as it gives it (rd111).
+            | Std::LocalWith
+            | Std::LocalBorrow { .. }
             | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)
             | Std::Last
             // What a pointer points to, boxed as it's given (ADR 0407).
