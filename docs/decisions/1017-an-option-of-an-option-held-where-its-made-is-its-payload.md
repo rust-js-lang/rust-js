@@ -147,3 +147,25 @@ let previousInstance;
   (`lower/mir/places.ts`).
 - React's port with DOMPluginEventSystem installed: the seven DOM event
   suites pass, 9 suites, 401 tests.
+
+## Amendment: `Some(None)` is `=== null`
+
+`matches!(last, Some(None))` printed its two tests, the outer's and the
+inner's, `last !== undefined && last == null`. Of one place, `x !==
+undefined && x == null` holds only of `null`, and `x === undefined || x !=
+null` of all but it, whatever `x` is: `Expr::bin` folds them, `last ===
+null` and `last !== null`, as a person writes the test of the one value
+`Some(None)` is. A test of `undefined` beside another place's of `null`,
+`last !== undefined && plain == null`, stays two.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same truth of
+every value.
+
+Not yet: `last == Some(None)` and `last.is_some()` give the `Option` to
+`PartialEq::eq` and `is_some(&self)`, so `last` keeps its box there
+(`$eq(last, { $someNone: 0 })`); reading them as the tests they are is the
+representation's to extend.
+
+Held by `test/corpus/nested_option_held_as_payload.rs` against native
+Rust, `test/lowering-nested-options.test.ts`, and the mutations
+`null-apart-unfolded` and `null-apart-of-two-places` (`js/make.ts`).

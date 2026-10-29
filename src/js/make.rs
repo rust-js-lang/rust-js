@@ -704,6 +704,13 @@ impl Expr {
         {
             return lhs;
         }
+        // `x !== undefined && x == null` is `x === null`, and `x === undefined
+        // || x != null` is `x !== null`: `== null` holds of both, a place read
+        // twice the same value, an `Option` of an `Option`'s `Some(None)`
+        // (ADR 1017).
+        if let Some(strict) = null_apart(op, &lhs, &rhs) {
+            return strict;
+        }
         // `0 < 0` is `false`: a comparison of two numbers written out is its
         // answer, as a person writes it.
         if let (ExprKind::Num(a), ExprKind::Num(b)) = (&lhs.kind, &rhs.kind) {
@@ -1152,4 +1159,32 @@ fn is_text(e: &Expr) -> bool {
         ExprKind::Binary(Op::Add, lhs, _) => is_text(lhs),
         _ => false,
     }
+}
+
+/// `x === null` of `x !== undefined && x == null`, `x !== null` of `x ===
+/// undefined || x != null`, of a place `x` (`Expr::bin`).
+fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
+    use super::stmt_walk::{null_test, same_path, taken_place};
+    let present = match op {
+        Op::And => false,
+        Op::Or => true,
+        _ => return None,
+    };
+    // `x !== undefined` of `And`, `x === undefined` of `Or`: written so, or
+    // of an `Option` whose `None` is only `undefined`.
+    let strict = if present { Op::Eq } else { Op::Ne };
+    let x = match &lhs.kind {
+        ExprKind::Binary(o, x, u) if *o == strict && matches!(u.kind, ExprKind::Undefined) => &**x,
+        _ => null_test(lhs, !present).filter(|_| lhs.facts.of_presence() == Facts::of(Known::NoneUndefined))?,
+    };
+    let inner = null_test(rhs, present)?;
+    if !taken_place(x) || !same_path(x, inner) || rhs.facts.of_presence() != Facts::default() {
+        return None;
+    }
+    let strict = if present { Op::Ne } else { Op::Eq };
+    Some(Expr::new(ExprKind::Binary(
+        strict,
+        Box::new(inner.clone()),
+        Box::new(Expr::null()),
+    )))
 }

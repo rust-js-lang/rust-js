@@ -46,7 +46,7 @@ function lookups(values, wanted) {
     if (i === wanted) {
       last = value ?? null;
     }
-    if (last !== undefined && last == null) {
+    if (last === null) {
       seen = (seen + 1) | 0;
     }
   }

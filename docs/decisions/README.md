@@ -801,7 +801,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
 - [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)
-- [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation)*
+- [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -526,4 +526,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
   },
+  {
+    name: "null-apart-unfolded",
+    breaks: "`x !== undefined && x == null`, an `Option` of an `Option`'s `Some(None)` test, stays two tests, not `x === null` (ADR 1017, amended)",
+    file: "src/js/make.rs",
+    find: "    if !taken_place(x) || !same_path(x, inner) || rhs.facts.of_presence() != Facts::default() {\n",
+    replace: "    if true || !taken_place(x) || !same_path(x, inner) || rhs.facts.of_presence() != Facts::default() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "null-apart-of-two-places",
+    breaks: "`a !== undefined && b == null` of two places is `b === null`, which drops `a`'s test: a wrong answer",
+    file: "src/js/make.rs",
+    find: "    if !taken_place(x) || !same_path(x, inner) || rhs.facts.of_presence() != Facts::default() {\n",
+    replace: "    if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {\n",
+    tests: ["test/lowering-nested-options.test.ts"],
+  },
 ];
