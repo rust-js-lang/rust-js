@@ -486,3 +486,10 @@ port compiled with a probe in it reached it nowhere).
   and `*=` and a `String`'s `+=` of a `&str` and a `&String` through a
   call's `&mut`, a held one and a parameter, against native Rust.
 - The mutation is `mir-assign-op-call-place-twice`.
+
+The readability ratchet's `renamed x$1` share rose with it, 668.3 to
+668.5 per 10,000 lines, blessed: the new case does five such assignments
+in one `main`, each its own `const item`, so four are `item$1` to
+`item$4`, as five `*first(&mut v) += five`s already give `value` to
+`value$4`. The names are the one `fixed_place_of` gives a place's object;
+a program that does one in a scope gets `item`.
