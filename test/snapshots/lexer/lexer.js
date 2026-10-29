@@ -53,7 +53,7 @@ export const Lexer = {
     let w = first;
     let c;
     while (
-      (c = $nextIf(lexer.chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null
+      (c = $nextIf(lexer.chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null
     ) {
       w += c;
     }

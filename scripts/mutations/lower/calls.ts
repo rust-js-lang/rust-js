@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bool-call-result-unknown",
+    breaks: "a call of another module's function that gives a `bool` isn't known one, so `ready && isSupported(name) && (..)` is `!!(ready && isSupported(name)) && (..)` (rd145)",
+    file: "src/lower/calls.rs",
+    find: "    if output.is_bool() {\n        facts = facts.with(Known::Boolean);\n",
+    replace: "    if false {\n        facts = facts.with(Known::Boolean);\n",
+    tests: ["test/lowering-bool-ternaries.test.ts", "-t", "another module's function that gives a bool"],
+  },
+  {
     name: "trait-nullable-result-trusted",
     breaks: "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
     file: "src/lower/calls.rs",

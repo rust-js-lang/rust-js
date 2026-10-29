@@ -84,7 +84,7 @@ export function words(text) {
   const value = sum(text);
   const total = value.TAG === "Ok" ? `sum ${value._0}` : `error: ${value._0}`;
   // A closure as the pattern.
-  const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r");
+  const pieces = $splitBy(text, (c) => /^[0-9]$/.test(c) || c === "\r");
   return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
 export function slices(v) {

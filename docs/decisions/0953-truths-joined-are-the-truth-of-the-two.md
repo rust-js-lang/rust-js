@@ -37,3 +37,26 @@ static of type `bool` is `Known::Boolean`, as a `bool` constant read by
 its name is (ADR 0031, amended), TypeScript's `boolean`, so `&&` gives it
 as it is. Held by the test of ADR 0947's amendment and mutation
 `bool-binding-static-not-boolean`.
+
+## Amendment: a call that gives a `bool` is one (rd145)
+
+React DOM's ChangeEventPlugin, ported, writes `CAN_USE_DOM.with(..) &&
+is_event_supported("input") && (..)`, and it printed
+`!!(canUseDOM && isEventSupported('input')) && (..)`: tidy's conditional
+asks whether its test is a `bool` (`branches::is_boolean`), and a call is
+one only where its name is among the module's own `bool`s, which another
+module's function, `isEventSupported` of its import, isn't. The `!!`
+changed nothing, every operand being a `bool`.
+
+**A call of a function item whose result is a `bool` is known one**
+(`calls::given_by`, `Known::Boolean`), as a `bool` constant's read and a
+global's are: a Rust function's, which rust-js makes a JS `boolean`, and a
+binding's, which TypeScript declares a `boolean`, wherever it's of. So
+`ready && isSupported(name) && (mode < 1 || mode > 9)` reads as written.
+
+Case N: the `!!` of what's a `bool` already changes nothing.
+
+Held by `test/lowering-bool-ternaries.test.ts`, "a call of another
+module's function that gives a bool is one", run; corpus
+`bool_call_of_another_module`, against native Rust; the mutation
+`bool-call-result-unknown`. A regex's `test(c)`, a binding's `bool`, loses its `!!` too: the lexer's and calculator's `/^[0-9]$/.test(c) || c === "\r"`.

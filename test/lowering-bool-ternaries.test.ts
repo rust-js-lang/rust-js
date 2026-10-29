@@ -102,3 +102,33 @@ pub fn truth(v: Option<&Unknown>, n: u32) -> bool {
   }
   expect([lib.truth(0 as never, 5 as never), lib.truth("x" as never, 5 as never), lib.truth("x" as never, 1 as never)]).toEqual([false, true, false]);
 });
+
+// A call that gives a `bool` is one, of another module's function too,
+// which the module's own names don't say: React DOM's ChangeEventPlugin's
+// `canUseDOM && isEventSupported('input') && (..)`, no `!!` of its first
+// two (rd145).
+test("a call of another module's function that gives a bool is one", async () => {
+  const dir = fixture("bool-call-of-another-module");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `mod support {
+    pub fn is_supported(name: &str) -> bool {
+        name.len() > 3
+    }
+}
+
+pub mod plugin {
+    use crate::support::is_supported;
+
+    pub fn input_supported(ready: bool, name: &str, mode: f64) -> bool {
+        ready && is_supported(name) && (mode < 1.0 || mode > 9.0)
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "plugin.js"), "utf8");
+  expect(js).toContain("  return ready && isSupported(name) && (mode < 1 || mode > 9);\n");
+  const { inputSupported } = await import(join(dir, "plugin.js"));
+  expect([inputSupported(true, "input", 0), inputSupported(true, "in", 0), inputSupported(true, "input", 5)]).toEqual([true, false, false]);
+});

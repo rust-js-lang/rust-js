@@ -270,7 +270,8 @@ pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Exp
 /// else is known of it. A closure's value isn't asked.
 /// And, of an `Option` it gives, what its `None` is where it's only one
 /// (`none_given_by`), which its test says (ADR 0298, amended); of an `f64`
-/// a `#[rust_js::whole]` binding gives, that it's whole (ADR 0994, amended).
+/// a `#[rust_js::whole]` binding gives, that it's whole (ADR 0994, amended);
+/// of a `bool`, that it's one.
 pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) -> Expr {
     let ty::FnDef(def_id, _) = *f.kind() else {
         return value;
@@ -287,6 +288,12 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
         && matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
     {
         facts = facts.with(none);
+    }
+    // Of a `bool` it gives, that it's one, as a `bool` constant's and a
+    // global's read are (ADRs 0031, 0953): `canUseDOM &&
+    // isEventSupported("input") && ..`, no `!!` of it (rd145).
+    if output.is_bool() {
+        facts = facts.with(Known::Boolean);
     }
     Expr { facts, ..value }
 }
