@@ -208,3 +208,24 @@ itself field by field, `$eq(a, b)` and `{ eq: $eq }`, false (#129).
 case: results would change, so Rust's. Held by
 `test/corpus/partial_eq_other_type.rs` and the mutations
 `eq-of-other-type-derived` and `eq-dictionary-of-self`.
+
+## Amendment: what an owning iterator gives is its own (#141)
+
+A `Copy` value read where it's held is copied where its type is changed
+in place, so a loop over an array by value, `for mut p in [(0, 5), (7,
+0)] { bump(&mut p); }`, copied each item it took, `const p = [value[0],
+value[1]];` in a `while` over `$next(iter)`, where nothing else held
+it. **An item an owning iterator gives, `(_9 as Some).0` of its
+`next()`, or a part of one, an `enumerate()`'s, is taken as it is**
+(`operands::owned_item`, `recognition/owners.rs`'s `gives_owned_items`):
+an owning iterator's, `owned_items`' answer, the one its drops ask, a
+`Vec`'s, an array's, a map's or a `drain(..)`'s, which own what they were
+given by value, moved or copied as it was given; a `Copied`'s or a
+`Cloned`'s, a copy made as each is given; or an `Enumerate`, a `Rev`, a
+`Skip`, a `Take`, a `StepBy` or a `Fuse` of one. One read through a
+reference it gives, `for &(mut p) in refs`, is copied. Case A: no other
+holder sees the change. Another iterator's item is copied as before,
+though each rust-js lowers copies what it gives where it's read, so no
+case yet fails beyond them. Held by `test/corpus/owned_items_uncopied.rs`
+against native Rust, an array read after its loop as it was, and the
+mutations `owned-item-*` (`mir/operands.ts`).

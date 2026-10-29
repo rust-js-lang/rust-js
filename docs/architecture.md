@@ -277,6 +277,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Compiled std bodies, types and module placement | `recognition/std_items.rs`, `recognition/iterators.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
 | Memory-addressing operations, and which two handles compared are two objects compared (ADR 0285, amended) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory`, `same_object` |
 | Std iterator specialization | `recognition/specialization.rs`, `recognition/std_items.rs` | `fact_specialization` (the one a fact picks), `optimized_default` (the one that only does less work), `std_private` |
+| What an iterator owns of what it gives, which its drops drop and which nothing else holds (#141) | `recognition/owners.rs` | `owned_items`, `owned_into_items`, `owns_one_item`, `gives_owned_items` |
 | Compiled iterator stepping | `iterators.rs` | `std_iterator_steps`, `compiled_step` |
 | Generic IntoIterator representation | `iterators.rs`, `recognition/iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is`, `into_iter_by_dictionary` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |

@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "mir-static-copy-shared",
     breaks: "`let mut p = ORIGIN;` of a `Copy` static changes the static",
     file: "src/lower/mir/operands.rs",
-    find: "if place.is_indirect() || !state.pending",
-    replace: "if !state.pending",
+    find: "if (place.is_indirect() || !state.pending",
+    replace: "if (!state.pending",
     tests: ["test/corpus.test.ts","-t","statics"],
   },
   {
@@ -186,5 +186,22 @@ export const mutations: Mutation[] = [
     find: "        matches!(variant(inner)?, (0, None)).then_some(())\n",
     replace: "        variant(inner).map(|_| ())\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
+  },
+  {
+    name: "owned-item-copied",
+    breaks: "an item an owning iterator gives, nothing else holding it, is copied, `const p = [value[0], value[1]];` in a `while` over `$next(iter)`, not `for (const p of ..)` (#141)",
+    file: "src/lower/mir/operands.rs",
+    find: "                && !self.owned_item(state, place));",
+    replace: ");",
+    tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "owned-item-through-a-reference",
+    breaks: "what a reference an owning iterator gives points at, `for &(mut p) in refs`, is taken uncopied, so changing `p` changes what it's of (#141)",
+    file: "src/lower/mir/operands.rs",
+    find: "        if !parts.iter().all(|part| matches!(part, PlaceElem::Field(..))) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
   },
 ];

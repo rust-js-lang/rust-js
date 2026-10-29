@@ -14,7 +14,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of it. A temporary's is its own,
         // but not what it refers to, a static's.
         let copied = matches!(operand, Operand::Copy(place)
-            if place.is_indirect() || !state.pending.iter().any(|(l, _)| *l == place.local));
+            if (place.is_indirect() || !state.pending.iter().any(|(l, _)| *l == place.local))
+                && !self.owned_item(state, place));
         // A copy of a closure that changes what it captured would share it,
         // as a copy of a JS function does (ADR 0246).
         if let Operand::Copy(place) = operand
@@ -32,6 +33,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             value => Ok(value),
         }
+    }
+
+    /// Whether `place` is an item an owning iterator gave, `(_9 as
+    /// Some).0` of `_9 = <array::IntoIter<_, _> as Iterator>::next(..)`,
+    /// which nothing else holds: its collection was given it by value,
+    /// moved, or a copy of what's held (#141).
+    fn owned_item(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> bool {
+        // Or a part of it, an `enumerate()`'s item, `(_9 as Some).0.1`.
+        let [
+            PlaceElem::Downcast(_, variant),
+            PlaceElem::Field(field, _),
+            ref parts @ ..,
+        ] = place.projection[..]
+        else {
+            return false;
+        };
+        if !parts.iter().all(|part| matches!(part, PlaceElem::Field(..))) {
+            return false;
+        }
+        if variant.as_u32() != 1 || field.as_u32() != 0 {
+            return false;
+        }
+        let mut calls = (state.body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
+            TerminatorKind::Call { func, destination, .. } if destination.local == place.local => Some(func),
+            _ => None,
+        });
+        let (Some(func), None) = (calls.next(), calls.next()) else {
+            return false;
+        };
+        let Some((def_id, args)) = crate::lower::fn_def(func.ty(&state.body.local_decls, self.tcx)) else {
+            return false;
+        };
+        let recognition = self.recognition();
+        matches!(
+            recognition.iterator_method(def_id),
+            Some(crate::lower::recognition::IterMethod::Next | crate::lower::recognition::IterMethod::NextBack)
+        ) && recognition.gives_owned_items(args.type_at(0))
     }
 
     /// A field of a list made and not yet read, `copy _5.0`, or a reborrow
