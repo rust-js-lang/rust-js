@@ -41,6 +41,8 @@ reads memory by where it is, it refuses:
 - A raw address of an immutable `static`: `static N: u32 = 7; let p = &raw const N; println!("{}", unsafe { *p });`
 - A `&mut` to a `static mut`, which Rust 2024 denies too (`static_mut_refs`); a pointer to it, `&mut *addr_of_mut!(N)`, compiles: `static mut N: u32 = 0; #[allow(static_mut_refs)] let r = unsafe { &mut N }; *r += 1;`
 - A `transmute` of an enum, whose bytes a niche or a tag lays out: `#[repr(u8)] enum Size { One = 1 } let n: u8 = unsafe { std::mem::transmute::<Option<Size>, u8>(None) }; let _ = (n, Size::One);`
+- A `static` of a reference to another `static`'s array or item; one to a literal or a `const` compiles: `static NAMES: [&str; 2] = ["x", "y"]; static REF: &[&str] = &NAMES; println!("{}", REF.join(""));`
+- `==` or `{:?}` of raw pointers in generic code to a type that holds a type parameter, `NonNull<Node<T>>`, whose size rust-js can't give: `struct Node<T>(T); fn same<T>(a: *const Node<T>, b: *const Node<T>) -> bool { a == b } let n = Node(1); println!("{}", same(&n, &n));`
 
 And refused when it runs, as a panic that says so, since which it is
 depends on what the program does:
@@ -70,6 +72,33 @@ depends on what the program does:
 - A `&mut` to an object given for a type parameter inside what generic code takes or gives, an `Option`, which it has as a box and its caller as the object: `fn some<D>(d: Option<D>) -> Option<D> { d } let mut v = vec![1]; if let Some(r) = some(Some(&mut v)) { r.push(2); }`
 - A `RefCell`'s guard mapped to part of what it holds, `Ref::map` or `RefMut::map`: `let c = std::cell::RefCell::new((1, 2)); let r = std::cell::Ref::map(c.borrow(), |p| &p.0); println!("{}", *r);`
 - A `&mut` to an object given for a type parameter that's a closure's parameter: `fn apply<D, F: Fn(D) -> usize>(d: D, f: F) -> usize { f(d) } let mut v = vec![1]; println!("{}", apply(&mut v, |w: &mut Vec<i32>| w.len()));`
+- `downcast_ref`, `is` or `downcast` of a `dyn Error`, whose `impl` keeps no type to compare, as a `dyn Any`'s `TypeId` does: `let e: Box<dyn std::error::Error> = "x".parse::<i32>().unwrap_err().into(); println!("{:?}", e.downcast_ref::<std::num::ParseIntError>());`
+- std's `From` of an `Option` or a `Vec<u8>` given to generic code bound by it, `impl Into<Option<u32>>`'s: `fn limit(l: impl Into<Option<u32>>) -> Option<u32> { l.into() } println!("{:?}", limit(5));`
+- `<` of a `PartialOrd` of another type, `A: PartialOrd<B>` in generic code or the crate's `PartialOrd<Mm> for Cm` through references: `fn less<A: PartialOrd<B>, B>(a: &A, b: &B) -> bool { a < b } println!("{}", less(&1, &2));`
+- A `&mut` to an object of a type parameter's inside what generic code takes or gives, `Option<&mut T>` or a struct holding a `&'a mut T`: `struct P { x: i32 } struct Stack<T> { items: Vec<T> } impl<T> Stack<T> { fn top(&mut self) -> Option<&mut T> { self.items.last_mut() } } let mut s = Stack { items: vec![P { x: 1 }] }; if let Some(p) = s.top() { p.x += 1; }`
+- A `&mut` to a struct in a `Vec` given straight to generic code, which a binding of it compiles: `fn set<T>(t: &mut T, u: T) { *t = u; } struct P { x: i32 } let mut v = vec![P { x: 1 }]; set(&mut v[0], P { x: 2 }); println!("{}", v[0].x);`
+- A clone of an `Rc<RefCell<dyn Trait>>` put where its type is written, a `Vec`'s item or a field: `use std::{cell::RefCell, rc::Rc}; trait Obs { fn hear(&self) -> u32; } struct A; impl Obs for A { fn hear(&self) -> u32 { 1 } } let e: Rc<RefCell<dyn Obs>> = Rc::new(RefCell::new(A)); let v: Vec<Rc<RefCell<dyn Obs>>> = vec![e.clone()]; println!("{}", v[0].borrow().hear());`
+- A `Weak<RefCell<dyn Trait>>` of a counted `Rc`: `use std::{cell::RefCell, rc::{Rc, Weak}}; trait Obs { fn hear(&self) -> u32; } struct A; impl Obs for A { fn hear(&self) -> u32 { 1 } } let a = Rc::new(RefCell::new(A)); let w = Rc::downgrade(&a) as Weak<RefCell<dyn Obs>>; println!("{:?}", w.upgrade().map(|o| o.borrow().hear()));`
+- Copying a `Copy` closure that changes what it captured; its `.clone()` compiles: `let mut n = 0; let mut bump = move || { n += 1; n }; let mut copy = bump; println!("{} {}", bump(), copy());`
+- A map or set key that's an `Rc` or an `Arc`, a string interner's `Rc<str>`: `let mut m = std::collections::HashMap::new(); let k: std::rc::Rc<str> = "a".into(); m.insert(k.clone(), 1); println!("{:?}", m.get(&k));`
+- Changing an `Option` through the `&mut` a call gives, `get_or_insert` or `insert` of `last_mut().unwrap()` or an entry's `or_insert`, which a binding of the `&mut` compiles: `let mut v = vec![None]; *v.last_mut().unwrap().get_or_insert(1) += 1; println!("{v:?}");`
+- `Option<&T>` from a `&Option<T>`, `(&Some(7)).into()`: `let o: Option<&i32> = (&Some(7)).into(); println!("{o:?}");`
+- A `RefCell`'s guard cloned, `Ref::clone`: `let c = std::cell::RefCell::new(1); let a = c.borrow(); let b = std::cell::Ref::clone(&a); println!("{} {}", *a, *b);`
+- A `RefCell`'s guard split in two, `RefMut::map_split`: `let c = std::cell::RefCell::new([1, 2]); let (a, b) = std::cell::RefMut::map_split(c.borrow_mut(), |s| s.split_at_mut(1)); println!("{} {}", a[0], b[0]);`
+- Ordering `RefCell`s, `<` or `cmp`; `==` compiles: `let a = std::cell::RefCell::new(1); println!("{}", a < std::cell::RefCell::new(2));`
+- A `OnceCell` made by `From`: `let c = std::cell::OnceCell::from(5); println!("{:?}", c.get());`
+- `RefCell::into_inner` of a value with a destructor: `struct D(u32); impl Drop for D { fn drop(&mut self) {} } let c = std::cell::RefCell::new(D(1)); println!("{}", c.into_inner().0);`
+- An `Rc` that's counted, `Rc::strong_count`, given on as an `Rc<dyn Trait>`: `trait Obs { fn n(&self) -> u32; } struct L; impl Obs for L { fn n(&self) -> u32 { 1 } } let l = std::rc::Rc::new(L); let v: Vec<std::rc::Rc<dyn Obs>> = vec![l.clone()]; println!("{} {}", v[0].n(), std::rc::Rc::strong_count(&l));`
+- `TryFrom` of a type parameter, `T::try_from`: `fn narrow<T: TryFrom<i64>>(x: i64) -> Option<T> { T::try_from(x).ok() } println!("{:?}", narrow::<u8>(300));`
+- An `Into` of the crate's, not a `From`, given where any `Into` goes: `struct B; impl Into<String> for B { fn into(self) -> String { "B".into() } } fn takes(s: impl Into<String>) -> String { s.into() } println!("{}", takes(B));`
+- A map or a set keyed by `()`: `let mut m = std::collections::HashMap::new(); m.insert((), 1); println!("{:?}", m.get(&()));`
+- A map key with a `PhantomData` field: `#[derive(Hash, PartialEq, Eq)] struct U; #[derive(Hash, PartialEq, Eq)] struct Id<T> { raw: u32, t: std::marker::PhantomData<T> } let mut s = std::collections::HashSet::new(); s.insert(Id::<U> { raw: 1, t: std::marker::PhantomData }); println!("{}", s.len());`
+- A map key of an associated type: `trait E { type Id: std::hash::Hash + Eq; fn id(&self) -> Self::Id; } struct U; impl E for U { type Id = u32; fn id(&self) -> u32 { 1 } } fn index<T: E>(xs: Vec<T>) -> usize { xs.into_iter().map(|x| (x.id(), x)).collect::<std::collections::HashMap<_, _>>().len() } println!("{}", index(vec![U]));`
+- `==` of an associated type in a trait's default method: `trait R { type Id: PartialEq + Copy; fn ids(&self) -> Vec<Self::Id>; fn has(&self, id: Self::Id) -> bool { self.ids().iter().any(|i| *i == id) } } struct A; impl R for A { type Id = u32; fn ids(&self) -> Vec<u32> { vec![1] } } println!("{}", A.has(1));`
+- `Rc::make_mut` of an `Rc` a `&mut self` holds: `struct C { cur: std::rc::Rc<Vec<i32>> } impl C { fn push(&mut self, x: i32) { std::rc::Rc::make_mut(&mut self.cur).push(x); } } let mut c = C { cur: std::rc::Rc::new(vec![1]) }; c.push(2); println!("{:?}", c.cur);`
+- A `dyn Iterator` of a value with a destructor: `struct D; impl Drop for D { fn drop(&mut self) {} } let it: Box<dyn Iterator<Item = u32>> = Box::new(vec![D].into_iter().map(|_| 1)); println!("{}", it.count());`
+- A trait's default method that makes a value of its associated type, `Self::Unit::default()`, where an impl leaves the method to the default: `trait Shape { type Unit: Default + std::fmt::Display; fn unit(&self) -> Self::Unit { Self::Unit::default() } } struct Tri; impl Shape for Tri { type Unit = u8; } println!("{}", Tri.unit());`
+- A derived `Default` of a struct holding a map keyed by a type parameter, made in generic code, which isn't given its keys' class; a written `impl Default` is: `#[derive(Default)] struct Node<K> { children: std::collections::HashMap<K, u8> } fn make<K: Default + Eq + std::hash::Hash>() -> Node<K> { Node::default() } println!("{}", make::<u32>().children.len());`
 
 ## Modules
 
@@ -98,6 +127,24 @@ depends on what the program does:
 - Giving generic code a zip it folds, collects or steps, of sides std stops at the shorter of, where a step of its first side runs code: its JS steps it as `next()` does, its first side once more ([ADR 1014](../decisions/1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md)): `fn pairs<A: Iterator<Item = u32>, B: Iterator<Item = u32>>(a: A, b: B) -> Vec<(u32, u32)> { a.zip(b).collect() } let v = vec![1u32, 2, 3]; println!("{:?}", pairs(v.iter().map(|x| { println!("a"); *x }), v[..2].iter().copied()));`
 - A collection of the crate's given where any `IntoIterator` goes, which wouldn't call its `into_iter`: `struct Cart(Vec<u32>); impl IntoIterator for Cart { type Item = u32; type IntoIter = std::vec::IntoIter<u32>; fn into_iter(self) -> Self::IntoIter { self.0.into_iter() } } let mut v = vec![1]; v.extend(Cart(vec![2])); println!("{v:?}");`
 - Looking a key up by what the crate's own `Borrow` gives: `use std::borrow::Borrow; use std::collections::HashMap; #[derive(PartialEq, Eq, Hash)] struct K(String); impl Borrow<str> for K { fn borrow(&self) -> &str { &self.0 } } let mut m = HashMap::new(); m.insert(K("a".into()), 1); println!("{:?}", m.get("a"));`
+- `next_back()` of a lazy `lines()`, `split_whitespace()`, `split_terminator()` or `rsplit()`, whose `.rev()` compiles: `let mut l = "a\nb".lines(); println!("{:?}", l.next_back());`
+- `.rev()` of a `take()` or a `skip()` of items with the crate's destructor, which std drops from the back as a `Vec`'s tail: `struct L(u32); impl Drop for L { fn drop(&mut self) { println!("drop {}", self.0); } } let v = vec![L(1), L(2), L(3)]; let r: Vec<L> = v.into_iter().take(2).rev().collect(); println!("{}", r.len());`
+- `.rev()` of a `chain()` of a `map()` of a slice's items and another slice's: `let v = [1, 2]; let w = [3]; let r: Vec<i32> = v.iter().map(|x| x * 10).chain(w.iter().copied()).rev().collect(); println!("{r:?}");`
+- `VecDeque::remove` in generic code given an `Option` for its item, whose `None` the result's could look like: `fn take<T>(q: &mut std::collections::VecDeque<T>, i: usize) -> Option<T> { q.remove(i) } let mut q = std::collections::VecDeque::from(vec![None, Some(2)]); println!("{:?}", take(&mut q, 0));`
+- `dedup_by` in generic code, whose closure takes a `&mut` of a type parameter's items: `fn dd<T, F: FnMut(&mut T, &mut T) -> bool>(v: &mut Vec<T>, f: F) { v.dedup_by(f) } let mut v = vec![1, 1, 2]; dd(&mut v, |a, b| a == b); println!("{v:?}");`
+- `len()` of a zip: `let v = [1, 2, 3]; println!("{}", v.iter().zip(v.iter()).len());`
+- `size_hint()` of an iterator but a slice's, a range's, a collection's own `into_iter`, and what keeps their length (`skip`, `take`, `map`, `rev`, `enumerate`, `chain` and the like): a `filter`'s, a `str`'s `chars`, a map's `iter`: `let v = [1, 2, 3]; println!("{:?}", v.iter().filter(|x| **x > 1).size_hint());`
+- A `&mut` from `flatten()` of an `iter_mut()`: `let mut g = vec![vec![1u64], vec![2]]; for x in g.iter_mut().flatten() { *x += 1; } println!("{g:?}");`
+- `sum()` or `product()` of `Wrapping`s: `let s: std::num::Wrapping<u8> = [std::num::Wrapping(200u8), std::num::Wrapping(100)].into_iter().sum(); println!("{s}");`
+- `slice::from_mut`; `slice::from_ref` compiles: `let mut x = 5; std::slice::from_mut(&mut x)[0] += 1; println!("{x}");`
+- `extend()` of a pair of collections: `let mut p: (Vec<i32>, Vec<char>) = (vec![], vec![]); p.extend([(1, 'a')]); println!("{p:?}");`
+- `collect()` into a `Box<str>`: `let b: Box<str> = ['a', 'b'].into_iter().collect(); println!("{b}");`
+- `collect()` into an `Rc<[T]>`: `let r: std::rc::Rc<[i32]> = (1..4).collect(); println!("{r:?}");`
+- `rposition()` of a lazy iterator held in a variable: `let v = [1, 2, 3]; let mut it = v.iter().map(|x| x + 1); println!("{:?}", it.rposition(|x| x == 3));`
+- `HashMap::get_disjoint_mut`: `let mut m: std::collections::HashMap<&str, i32> = [("a", 1), ("b", 2)].into(); let [a, b] = m.get_disjoint_mut(["a", "b"]); println!("{:?} {:?}", a, b);`
+- `rposition` of a `skip()` or a `take()`, of a held `map()`, or of a `map()` of a range or of the crate's iterator, which rust-js can't count yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().skip(1).rposition(|&x| x == 2));`
+- `rfind` of a `skip()` or a `take()`, which rust-js can't step from its back yet: `let v = vec![1, 2, 3]; println!("{:?}", v.iter().take(2).rfind(|x| **x > 1));`
+- Stepping from its back a `chain()` or a `step_by()` of a `Vec`'s items that have a destructor, which is held where it's made: `struct L(u32); impl Drop for L { fn drop(&mut self) {} } let v: Vec<L> = vec![L(1), L(2)].into_iter().chain(vec![L(3)]).rev().collect(); println!("{}", v.len());`
 
 ## Numbers and text
 
@@ -108,6 +155,8 @@ depends on what the program does:
 
 - A placeholder's options, a width or `{:x?}`, for a `dyn Debug`, which is the string it shows already ([ADR 0060](../decisions/0060-debug.md)): `let b: Box<dyn std::fmt::Debug> = Box::new(31u8); println!("{:x?}", b);`
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
+- A `ToString` of the crate's with no `Display`: `struct A; impl ToString for A { fn to_string(&self) -> String { "A".into() } } println!("{}", A.to_string());`
+- `{:?}` of one item of a collection of a `dyn` whose trait has `Debug` as a supertrait, `v[0]`, which is made where it's shown; the whole collection's compiles: `trait Ev: std::fmt::Debug {} #[derive(Debug)] struct C; impl Ev for C {} let v: Vec<Box<dyn Ev>> = vec![Box::new(C)]; println!("{:?}", v[0]);`
 
 ## Hashing
 
@@ -125,6 +174,7 @@ keys by value and never hashes ([ADR 0121](../decisions/0121-value-keys.md)).
 - `process::abort`: `std::process::abort();`
 - Standard input: `let mut s = String::new(); let _ = std::io::stdin().read_line(&mut s);`
 - The file system: `let _ = std::fs::read_to_string("x");`
+- `panic::take_hook`: `let h = std::panic::take_hook(); drop(h);`
 
 ## Async, threads and time
 
@@ -141,8 +191,12 @@ There's one thread ([the semantics](semantics.md#async-threads-and-time)).
 
 serde_json's common attributes work ([the semantics](semantics.md#the-javascript-boundary)).
 Refused, each held by `test/diagnostics.test.ts`, which compiles them with
-serde: a `u128` in JSON; reading a `BinaryHeap`; a map keyed by a struct;
-`Value::pointer`, and assigning to a `Value`'s key.
+serde: a `u128` in JSON; reading a `BinaryHeap` or a `Box<str>`; writing a
+`Cow<str>` or a `Duration`; a map keyed by a struct or an enum; an
+internally tagged newtype variant of a map; a width for a `Value`;
+`Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,
+and collecting into one; `Map::clear` and `map::Entry::or_insert`;
+`to_vec`; an `Error`'s `line`, `column`, `is_syntax` and `classify`.
 
 ## React and JSX
 

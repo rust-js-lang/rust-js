@@ -226,6 +226,22 @@ for (const [name, source, message, crate] of [
   ["assigning to a Value's key", 'pub fn f() -> String { let mut v = serde_json::json!({}); v["k"] = serde_json::json!(1); v.to_string() }', "`std::ops::IndexMut::index_mut`", "serde"],
   // A JSON object's keys are strings: serde_json refuses a struct's (ADR 0121).
   ["a map keyed by a struct in JSON", '#[derive(PartialEq, Eq, Hash, serde::Serialize)] pub struct P { pub x: u32 }\npub fn f(m: &std::collections::HashMap<P, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
+  // What else of serde_json's isn't written yet (#171).
+  ["an Error's line", 'pub fn f(s: &str) -> usize { serde_json::from_str::<serde_json::Value>(s).map_err(|e| e.line()).err().unwrap_or(0) }', "`serde_json::Error::line`", "serde"],
+  ["an Error's column", 'pub fn f(s: &str) -> usize { serde_json::from_str::<serde_json::Value>(s).map_err(|e| e.column()).err().unwrap_or(0) }', "`serde_json::Error::column`", "serde"],
+  ["an Error's is_syntax", 'pub fn f(s: &str) -> bool { serde_json::from_str::<serde_json::Value>(s).is_err_and(|e| e.is_syntax()) }', "`serde_json::Error::is_syntax`", "serde"],
+  ["an Error's classify", 'pub fn f(s: &str) -> bool { serde_json::from_str::<serde_json::Value>(s).is_err_and(|e| e.classify() == serde_json::error::Category::Eof) }', "`serde_json::Error::classify`", "serde"],
+  ["Value::pointer_mut", 'pub fn f(v: &mut serde_json::Value) -> bool { v.pointer_mut("/a").is_some() }', "`Value::pointer_mut`", "serde"],
+  ["Value::take", 'pub fn f(v: &mut serde_json::Value) -> serde_json::Value { v.take() }', "`Value::take`", "serde"],
+  ["to_vec", 'pub fn f(v: &serde_json::Value) -> Vec<u8> { serde_json::to_vec(v).unwrap() }', "`serde_json::to_vec`", "serde"],
+  ["a Map's entry or_insert", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.entry("k").or_insert(serde_json::json!(1)); }', "`serde_json::map::Entry::<'a>::or_insert`", "serde"],
+  ["Map::clear", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.clear() }', "::clear`", "serde"],
+  ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
+  ["reading a Box<str>", 'pub fn f(s: &str) -> Box<str> { serde_json::from_str(s).unwrap() }', "deserializing `str`", "serde"],
+  ["writing a Cow<str>", 'pub fn f(c: &std::borrow::Cow<str>) -> String { serde_json::to_string(c).unwrap() }', "serializing `std::borrow::Cow<'_, str>`", "serde"],
+  ["writing a Duration", 'pub fn f(d: &std::time::Duration) -> String { serde_json::to_string(d).unwrap() }', "serializing `std::time::Duration`", "serde"],
+  ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
+  ["an internally tagged newtype variant of a map", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E { M(std::collections::BTreeMap<String, u32>) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serializing", "serde"],
 ] as [string, string, string, string?][]) {
   test(`${name} reports a source location and preserves existing output`, () => {
     const dir = fixture("diagnostic");
