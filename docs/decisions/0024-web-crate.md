@@ -252,7 +252,7 @@ cell`** (`traits/dictionaries.rs`), as of any JS object (ADR 0454):
 `generic(d, { deref: (x) => x })`. The impl's `deref` given as a `fn`,
 `Deref::deref`, was `(x) => x` already.
 
-- Held by `test/bindings.test.ts`, "a JS class's Deref to the class it
+- Held by `test/js-class-deref.test.ts`, "a JS class's Deref to the class it
   extends is no JS", run: mutations `js-object-deref-dictionary-unmade`
   (`lower/traits/dictionaries.ts`) and `js-object-deref-lowered`, which
   the `fn` form now catches again.

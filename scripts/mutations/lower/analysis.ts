@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "                    && !is_js_object_deref(tcx, parent)\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
+    tests: ["test/js-class-deref.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
   },
   {
     name: "reexport-only-module-unwritten",

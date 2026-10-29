@@ -487,6 +487,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dictionaries.rs",
     find: "            && crate::lower::recognition::is_js_object_deref(self.tcx, imp)\n",
     replace: "            && false\n",
-    tests: ["test/bindings.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
+    tests: ["test/js-class-deref.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
   },
 ];
