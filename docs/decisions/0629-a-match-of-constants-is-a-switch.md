@@ -583,7 +583,7 @@ value falls to, `1 | 2 => { let m = if n > 4 { 1 } else { return 0 }; ..
 the guard by into the chain's arms and split the chain, so `switches`
 couldn't read the arms by their blocks. It now leaves alone a chain that
 tests an arm of a `match` whose guarded arms fall to the next
-(`switches::switched_falling`, from the same hints `switches` reads), and
+(`switches::switched` of those `switch`es, the same hints `switches` reads), and
 `switches` then `guarded_loops` make it the `if` chain Rust tries:
 
 ```js
@@ -614,4 +614,44 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
 Held by `test/corpus/guarded_arm_breaks_before_its_fall.rs` against native
 Rust and the mutations `jumps-into-branches-of-falling-match`
 (`mir/tidy/jumps/continues.ts`) and `last-falling-case-keeps-break`
+(`mir/tidy/switches.ts`).
+
+## Amendment: the subject read as written, and a guard whose `else` leaves (#389c)
+
+The `if` chain of guarded arms that fall through read its subject through
+MIR's copy of the index, `const value = i; if (codes[value] === 97 && ..)`.
+The chain's tests run one after another before any link's statements, and
+no test sets a variable the function declares (a test is an expression,
+which in tidy sets nothing; a call can't set a local Rust lends to the
+`match`), so `codes[i]` reads the same item in each: the copy, MIR's
+temporary of a variable the function declares, read by the chain's tests
+alone, is that variable (`loop_labels::copy_read_in_place`). A copy of
+what a call may set, a thread-local's index, `codes[AT.get()]` with a
+guard that sets `AT`, stays.
+
+And a guard MIR tests as `if (!guard) { next } else { break; } rest`, the
+arm before the one it falls to leaving, `b'a' if on(n) => break` before
+`b'a' | b'b' if .. => { i += 2; continue; }`, is the guard's `if` too
+(`guard_alone`), so that `match` is the chain, not `bb25: { bb10: { .. }
+}`:
+
+```js
+while (i < codes.length) {
+  if (codes[i] === 97 && on(n)) {
+    break;
+  }
+  if ((codes[i] === 97 || codes[i] === 98) && on((n + 1) >>> 0)) {
+    i += 2;
+    continue;
+  }
+  ..
+}
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same item read,
+the same tests in order.
+
+Held by `test/corpus/guarded_arms_index_copy.rs` (and `loop_exit_tuple`)
+against native Rust, and the mutations `copy-read-in-place-kept`
+(`mir/tidy/loop_labels.ts`) and `guard-alone-else-leaving-unread`
 (`mir/tidy/switches.ts`).

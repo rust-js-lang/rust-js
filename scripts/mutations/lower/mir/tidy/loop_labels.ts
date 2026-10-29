@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "guarded-loops-kept",
     breaks: "a loop a `switch` of guarded arms that fall through breaks keeps tidy's `loop:` label and `break loop;`, a label the program didn't write (#389b)",
     file: "src/lower/mir/tidy/loop_labels.rs",
-    find: "            chained_in(body, &name);\n",
+    find: "            chained_in(body, &name, &locals);\n",
     replace: "",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "guarded arms"],
   },
@@ -83,5 +83,14 @@ export const mutations: Mutation[] = [
     find: "                vec![StmtKind::If(test.negated_test(), after, None).at(span)]\n",
     replace: "                vec![StmtKind::If(test, Vec::new(), Some(after)).at(span)]\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "empty arm"],
+  },
+  {
+    name: "copy-read-in-place-kept",
+    breaks: "an `if` chain of guarded arms reads its subject through MIR's copy of the index, `const value = i; if (codes[value] === 97 && ..)`, not `codes[i]` as written (#389c)",
+    file: "src/lower/mir/tidy/loop_labels.rs",
+    find: "    let Some(at) = k.checked_sub(1) else {\n",
+    replace: "    let Some(at) = k.checked_sub(1).filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arms_index_copy.rs$"],
+    snapshots: true,
   },
 ];

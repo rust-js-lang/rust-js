@@ -95,6 +95,10 @@ pub(super) fn continued(switch: &mut StmtKind) {
 /// label (#389b, the user's decision: no label the program didn't
 /// write).
 pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
+    let mut locals = HashSet::new();
+    js::each_declared(stmts, &mut |name| {
+        locals.insert(name.to_string());
+    });
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
             let (StmtKind::While { label, body, .. }
@@ -107,7 +111,7 @@ pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
             let Some(name) = label.clone().filter(|l| tidy_made(l)) else {
                 continue;
             };
-            chained_in(body, &name);
+            chained_in(body, &name, &locals);
             if !js::names_jump(body, &name) {
                 *label = None;
             }
@@ -156,10 +160,11 @@ fn tidy_made(label: &str) -> bool {
 /// what's matched forbids it, or a temporary that holds what does
 /// something, `const nextCode = c.nextCode();`; and a `switch` that stays,
 /// held still where the `switch` stays one.
-fn chained_in(stmts: &mut [Stmt], label: &str) {
-    for stmt in stmts.iter_mut() {
-        let span = stmt.span;
-        match &mut stmt.kind {
+fn chained_in(stmts: &mut Vec<Stmt>, label: &str, locals: &HashSet<String>) {
+    let mut k = 0;
+    while k < stmts.len() {
+        let span = stmts[k].span;
+        match &mut stmts[k].kind {
             StmtKind::Switch {
                 discriminant,
                 cases,
@@ -168,21 +173,74 @@ fn chained_in(stmts: &mut [Stmt], label: &str) {
                 && discriminant.reads_same() =>
             {
                 if let Some(chain) = guarded_chain(discriminant, cases, default.as_deref(), label, span) {
-                    *stmt = chain;
+                    stmts[k] = chain;
+                    if copy_read_in_place(stmts, k, locals) {
+                        k -= 1;
+                    }
                 }
             }
             StmtKind::If(_, a, b) => {
-                chained_in(a, label);
-                chained_in(b.as_deref_mut().unwrap_or_default(), label);
+                chained_in(a, label, locals);
+                if let Some(b) = b {
+                    chained_in(b, label, locals);
+                }
             }
-            StmtKind::Labeled(_, body) => chained_in(body, label),
+            StmtKind::Labeled(_, body) => chained_in(body, label, locals),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                chained_in(a, label);
-                chained_in(b, label);
+                chained_in(a, label, locals);
+                chained_in(b, label, locals);
             }
             _ => {}
         }
+        k += 1;
     }
+}
+
+/// MIR's copy of a variable the `if` chain at `stmts[k]` reads its subject
+/// through, `const _12 = i; if (codes[_12] === 97 && on(..)) { .. } else if
+/// (codes[_12] === 98) ..`, read by the chain's tests alone: the variable,
+/// `codes[i]`, as the program writes it, the copy gone. Each test runs
+/// before any link's statements, and no test sets a variable the function
+/// declares, which only a statement does. Whether it went.
+fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &HashSet<String>) -> bool {
+    // Each test of the chain `stmt`, its links'.
+    fn tests(stmt: &mut Stmt, f: &mut dyn FnMut(&mut Expr)) {
+        if let StmtKind::If(test, _, otherwise) = &mut stmt.kind {
+            f(test);
+            if let Some([next]) = otherwise.as_deref_mut() {
+                tests(next, f);
+            }
+        }
+    }
+    let Some(at) = k.checked_sub(1) else {
+        return false;
+    };
+    let StmtKind::Const(copy, value) = &stmts[at].kind else {
+        return false;
+    };
+    let js::ExprKind::Var(of) = &value.kind else {
+        return false;
+    };
+    if !super::is_temporary(copy) || !locals.contains(of) || value.facts.has(js::Known::LocalRead) {
+        return false;
+    }
+    let (copy, of) = (copy.clone(), Expr::var(of).or_at(value.span));
+    let mut chain = stmts[k].clone();
+    let mut read = true;
+    tests(&mut chain, &mut |test| {
+        let with = |name: &str| (name == copy).then(|| of.clone());
+        match test.substitute(&with) {
+            Some(read_in_place) => *test = read_in_place,
+            None => read = false,
+        }
+    });
+    if !read || js::mentions_in(std::slice::from_ref(&chain), &copy) > 0 || js::mentions_in(&stmts[k + 1..], &copy) > 0
+    {
+        return false;
+    }
+    stmts[k] = chain;
+    stmts.remove(at);
+    true
 }
 
 /// The `if` chain the arms of a `switch` of `subject` are, as Rust tries

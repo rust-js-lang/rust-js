@@ -28,21 +28,20 @@ function scan(codes, log) {
   let i = 0;
   let n = 0;
   while (i < codes.length) {
-    const value = i;
-    if (codes[value] === 97 && on(log, "a", n > 3)) {
+    if (codes[i] === 97 && on(log, "a", n > 3)) {
       break;
     }
-    if ((codes[value] === 97 || codes[value] === 98) && on(log, "ab", n % 2 === 0)) {
+    if ((codes[i] === 97 || codes[i] === 98) && on(log, "ab", n % 2 === 0)) {
       i += 2;
       continue;
     }
-    if (codes[value] === 97 || codes[value] === 98 || codes[value] === 99) {
+    if (codes[i] === 97 || codes[i] === 98 || codes[i] === 99) {
       if (n > 5) {
         n = (n + 10) >>> 0;
       } else {
         n++;
       }
-    } else if (codes[value] === 100) {
+    } else if (codes[i] === 100) {
       if (n !== 0) {
         if (n >= 1 && n < 10) {
           n = (n + 100) >>> 0;

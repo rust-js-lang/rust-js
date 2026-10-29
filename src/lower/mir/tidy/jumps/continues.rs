@@ -400,7 +400,8 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>, sw
         let StmtKind::If(test, then, Some(otherwise)) = &stmt.kind else {
             return false;
         };
-        if super::switches::switched_falling(test, stmt.span, switches) {
+        let falling = switches.iter().filter(|s| s.arms.iter().any(|arm| arm.falls));
+        if switched(test, stmt.span, falling) {
             return false;
         }
         if then.last().is_some_and(ends) != otherwise.last().is_some_and(ends) {

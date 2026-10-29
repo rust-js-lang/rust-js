@@ -587,6 +587,10 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
         Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {
             (test.clone(), then.clone())
         }
+        // And `if (!guard) { next } else { .. } rest`, its `else` leaving (#389c).
+        Some(otherwise) if otherwise.last().is_some_and(js::ends) && alike(&[then, rest].concat(), next) => {
+            (test.clone().negated_test(), otherwise.clone())
+        }
         _ => return None,
     };
     let (test, then) = held;
@@ -1228,20 +1232,10 @@ fn test_at(test: &Expr, span: js::Span) -> Option<u32> {
 }
 
 /// Whether `if (test)`, at `span`, tests an arm of a `match` of constants,
-/// a `switch`, whose arms' values are no `?:` then (ADR 0629).
-pub(super) fn switched(test: &Expr, span: js::Span, switches: &[Switch]) -> bool {
-    test_at(test, span).is_some_and(|at| switches.iter().any(|s| tests_arm(s, at)))
-}
-
-/// Whether so of a `match` whose guarded arms fall to the next (ADR 0905),
-/// whose chain `switches` reads as MIR tests it, by its blocks (#389c).
-pub(super) fn switched_falling(test: &Expr, span: js::Span, switches: &[Switch]) -> bool {
-    let falling = |s: &&Switch| s.arms.iter().any(|arm| arm.falls);
-    test_at(test, span).is_some_and(|at| switches.iter().filter(falling).any(|s| tests_arm(s, at)))
-}
-
-fn tests_arm(switch: &Switch, at: u32) -> bool {
-    switch.arms.iter().any(|arm| within(at, arm.pattern))
+/// a `switch`, of `switches`, whose arms' values are no `?:` then (ADR 0629).
+pub(super) fn switched<'a>(test: &Expr, span: js::Span, switches: impl IntoIterator<Item = &'a Switch>) -> bool {
+    let mut arms = switches.into_iter().flat_map(|s| &s.arms);
+    test_at(test, span).is_some_and(|at| arms.any(|arm| within(at, arm.pattern)))
 }
 
 /// Where `stmt` is first written: what it does, or the value it gives.
