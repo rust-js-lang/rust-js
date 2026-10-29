@@ -1390,7 +1390,7 @@ pub fn closure_name() -> (String, String) {
 
 // What JS calls with what it gives: an arrow of what Rust gives.
 pub fn parsed(text: js::Promise<&'static str>) -> js::Promise<f64> {
-    text.then_resolve(js::parse_float)
+    text.then(js::parse_float)
 }
 `);
   expect(warnings).toEqual([]);

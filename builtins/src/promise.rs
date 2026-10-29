@@ -11,9 +11,12 @@ use super::{IntoUnknown, JsError, Promise, Unknown};
 
 impl<T> Promise<T> {
     /// [`promise.then(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
-    /// the promise `f` makes of what it fulfils, as ReScript's `then`.
+    /// what `f` gives of what it fulfils, a value or a promise of one
+    /// ([`Fulfils`]), TypeScript's `TResult | PromiseLike<TResult>`, as
+    /// `catch`'s is: where rustc can't tell which, the promise it makes says,
+    /// `let p: Promise<String> = ..` (ADR 0782, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "then")]
-    pub fn then<U>(self, f: impl FnOnce(T) -> Promise<U> + 'static) -> Promise<U> {
+    pub fn then<U, F: Fulfils<U>>(self, f: impl FnOnce(T) -> F + 'static) -> Promise<U> {
         unreachable!()
     }
 

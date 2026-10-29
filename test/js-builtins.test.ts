@@ -1026,6 +1026,33 @@ console.log(unhandled);
   expect(ran.stdout).toBe('[7,"no",null]\n0\n');
 });
 
+// TypeScript's `then(onfulfilled)` gives what its handler does, a value or a
+// promise of one, as `catch`'s does: react-dom's readAsDataURL returns its
+// text from `blob.arrayBuffer().then(..)` (ADR 0782, amended).
+test("a promise's then handler gives a value or a promise", async () => {
+  const dir = fixture("js-promise-then-value");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Promise, promise};
+pub fn texted(n: Promise<u32>) -> Promise<String> {
+    n.then(|n| format!("n{n}"))
+}
+pub async fn chained() -> u32 {
+    promise::resolve(1_u32).then(|n| promise::resolve(n + 1)).then(|n: u32| n * 10).await
+}
+`);
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  expect(built.stderr).not.toContain("warning");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return n.then((n) => `n${n}`);");
+  expect(js).toContain(".then((n) => Promise.resolve((n + 1) >>> 0))");
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+console.log(JSON.stringify([await lib.texted(Promise.resolve(4)), await lib.chained()]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe('["n4",20]\n');
+});
+
 // React's lazy() stashes a promise's resolvers in its own `let`s, `new
 // Promise((resolve, reject) => { resolveDebugValue = resolve; .. })`: the
 // executor runs before `new Promise` returns, so it may borrow what's
@@ -1091,7 +1118,7 @@ pub fn rejected(info: &Info, error: Option<&'static Unknown>) -> Promise<String>
 
 pub fn twice(value: Promise<u32>) -> Promise<u32> {
     let _: Promise<()> = value.then_with(|_| {}, |_| {});
-    value.then_resolve(|n| n + 1)
+    value.then(|n| n + 1)
 }
 
 pub fn rethrown(error: &JsError) -> Promise<u32> {
@@ -1138,8 +1165,8 @@ console.log(unhandled);
   writeFileSync(join(dir, "moved.rs"), `use js::Promise;
 
 pub fn both(value: Promise<Vec<u32>>) -> Promise<usize> {
-    let _: Promise<()> = value.then_resolve(|mut v| v.push(1));
-    value.then_resolve(|v| v.len())
+    let _: Promise<()> = value.then(|mut v| v.push(1));
+    value.then(|v| v.len())
 }
 `);
   const moved = runSync([compiler, join(dir, "moved.rs"), "-o", join(dir, "moved.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);

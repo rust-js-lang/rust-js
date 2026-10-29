@@ -230,3 +230,20 @@ throw error;
   stored in a field and thrown again, the same value.
   `test/rest-parameters.test.ts`, React's `erroredNode.v = error`, run
   against upstream's.
+
+## Amendment: `then` of a value or a promise, TypeScript's (the user's decision, 2026-10-29)
+
+`p.then(f)` took only a handler that gives a promise, `then_resolve(f)`
+one that gives a value: two ways of TypeScript's one `then(onfulfilled)`,
+whose handler gives `TResult | PromiseLike<TResult>`, narrower each than
+its type. React DOM's readAsDataURL returns its text from
+`blob.arrayBuffer().then(arrayBuffer => { .. return 'data:' + .. })`.
+**`then` takes a handler that gives a value or a promise of one,
+[`Fulfils`], as `catch` and `then_with` do; `then_resolve` is gone**
+(`builtins/src/promise.rs`): one way, no narrower than TypeScript's.
+Where rustc can't tell which a handler gives, a chain's next handler's
+parameter or the promise it makes says, `.then(|n: u32| n * 10)`, `let p:
+Promise<String> = ..`. Every caller in rust-js and react-in-rust inferred
+it already but `then_resolve`'s five, now `then`'s. Held by
+`test/js-builtins.test.ts` ("a promise's then handler gives a value or a
+promise"), which a `then` narrowed again doesn't compile.

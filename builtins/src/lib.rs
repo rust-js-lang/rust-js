@@ -1439,16 +1439,6 @@ impl<T: Copy> Clone for Promise<T> {
 
 impl<T: Copy> Copy for Promise<T> {}
 
-impl<T> Promise<T> {
-    /// [`promise.then(f)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/then):
-    /// a promise of what `f` makes of what it fulfils, as ReScript's
-    /// `Promise.thenResolve`. `f` gives no promise, which JS would wait for.
-    #[cfg_attr(rust_js, rust_js::link_name = "then")]
-    #[allow(unused_variables)]
-    pub fn then_resolve<U>(self, f: impl FnOnce(T) -> U + 'static) -> Promise<U> {
-        unreachable!()
-    }
-}
 
 impl<T> core::future::Future for Promise<T> {
     type Output = T;

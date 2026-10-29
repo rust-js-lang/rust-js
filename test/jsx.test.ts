@@ -859,7 +859,7 @@ pub fn Empty() -> JSX::Element { jsx! { <hr /> } }
 
 // A module whose component isn't its default, lazy-loaded as one, as
 // react.dev's Search loads DocSearch's modal: `import(..).then((mod) =>
-// ({ default: mod.DocSearchModal }))`, by `Promise::then_resolve` and
+// ({ default: mod.DocSearchModal }))`, by `Promise::then` and
 // `Module::of`.
 test("a module's named component is loaded as a module's default", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
@@ -886,7 +886,7 @@ fn label_of(this: &Labels) -> fn(LabelProps) -> JSX::Element {
 }
 
 pub fn load() -> Promise<Module<LabelProps<'static>>> {
-    import_labels("./labels.js").then_resolve(|r#mod| Module::of(label_of(r#mod)))
+    import_labels("./labels.js").then(|r#mod| Module::of(label_of(r#mod)))
 }
 `, { "labels.js": 'export function Label({ text }) { return text; }\n' });
   run([...args.slice(0, -2), "--extern", `js=${join(target, "libjs.rmeta")}`, ...args.slice(-2)]);
