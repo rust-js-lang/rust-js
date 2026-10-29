@@ -293,7 +293,8 @@ How WebIDL maps to Rust, one rule for each:
   `ToString` and `ToNumber` take one: `node.set_attribute("tabindex", 3)`,
   `set_attribute_ns`, `style.set_property(name, value, None)`,
   `set_css_float`, an input's `set_type` and `set_name`, a select's
-  `set_size` and an image's `set_src`
+  `set_size`, an image's `set_src` and `set_srcset`, and a style's
+  `set_display`, `set_margin`, `set_margin_top` and `set_margin_bottom`
   ([ADR 1013](../../decisions/1013-a-value-the-dom-makes-text-of-takes-any-value.md), amended).
 - **An index signature is std's `Index`:** TypeScript's `[index:
   number]: HTMLOptionElement` of an `HTMLOptionsCollection` is `impl

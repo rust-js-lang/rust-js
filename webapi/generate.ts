@@ -520,6 +520,8 @@ const STRINGIFIED = new Set([
   "Element.setAttribute", "Element.setAttributeNS", "ProcessingInstruction.setAttribute",
   "CSSStyleDeclaration.setProperty", "CSSStyleProperties.set cssFloat", "HTMLInputElement.set type",
   "HTMLInputElement.set name", "HTMLSelectElement.set size", "HTMLImageElement.set src",
+  "HTMLImageElement.set srcset", "CSSStyleProperties.set display", "CSSStyleProperties.set margin",
+  "CSSStyleProperties.set marginTop", "CSSStyleProperties.set marginBottom",
 ]);
 
 const CLONED = new Set(["postMessage.message", "pushState.data", "replaceState.data", "structuredClone.value"]);
@@ -1670,7 +1672,9 @@ function cssProperties(have: Fn[]): Fn[] {
     const css = js.replace(/^webkit(?=[A-Z])/, "-webkit").replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
     const doc = [`[\`${css}\`](https://developer.mozilla.org/docs/Web/CSS/${css})`];
     fns.push({ name: snake(js), jsName: `get ${js}`, params: ["this: &CSSStyleProperties"], result: "String", doc });
-    fns.push({ name: `set_${snakeWords(js)}`, jsName: `set ${js}`, params: ["this: &CSSStyleProperties", "value: &str"], result: "()", doc });
+    // One the DOM makes text of any value of, as React gives it (`STRINGIFIED`).
+    const value = STRINGIFIED.has(`CSSStyleProperties.set ${js}`) ? "value: impl IntoUnknown" : "value: &str";
+    fns.push({ name: `set_${snakeWords(js)}`, jsName: `set ${js}`, params: ["this: &CSSStyleProperties", value], result: "()", doc });
   }
   return fns;
 }

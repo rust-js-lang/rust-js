@@ -1,6 +1,6 @@
 # 1013. A value the DOM makes text of takes any value
 
-Status: Accepted. The user's decision (2026-10-28), React port gap d13a.
+Status: Accepted. The user's decision (2026-10-28), React port gap d13a; amended (rd159).
 
 ## Context
 
@@ -53,3 +53,19 @@ does: `select.set_size(value)` is `select.size = value`. Held by
 `test/webapi-bindings.test.ts`, "a value the DOM makes text of takes any
 value".
 
+
+## Amendment: an image's `srcset`, a style's `display` and margins (rd159)
+
+React DOM's ReactFiberConfigDOM sets `img.srcset = newProps.srcSet` in
+commitMount and, restoring a view transition's name, `style.display =
+display`, `style.margin = margin`, `style.marginTop` and
+`style.marginBottom` of a style prop's values, any of them. Each setter
+takes any value, `impl IntoUnknown`: the list's
+`HTMLImageElement.set srcset` and `CSSStyleProperties.set display`,
+`set margin`, `set marginTop` and `set marginBottom`. A CSS property's
+setter, generated of TypeScript's `CSSStyleProperties` (`cssProperties`),
+asks the same list, one catalog; the rest still take text. Converting it
+in Rust first, `js::string(value)`, would differ of a symbol, which
+`String(value)` makes text of and the DOM throws a `TypeError` of. Held by
+`test/webapi-bindings.test.ts`'s "a value the DOM makes text of takes any
+value" (`style.display = display` of a symbol, given as it is).

@@ -835,6 +835,17 @@ pub fn input(input: &webapi::HTMLInputElement, kind: &js::Unknown) {
 pub fn props(select: &webapi::HTMLSelectElement, image: &webapi::HTMLImageElement, value: &js::Unknown) {
     select.set_size(value);
     image.set_src(value);
+    image.set_srcset(value);
+}
+
+// As ReactFiberConfigDOM restores a style's display and margins, of a
+// style prop's values (rd159).
+pub fn restored(style: &webapi::CSSStyleProperties, display: &js::Unknown, margin: &js::Unknown) {
+    style.set_display(display);
+    style.set_margin(margin);
+    style.set_margin_top(margin);
+    style.set_margin_bottom(margin);
+    style.set_padding_top("0");
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -852,7 +863,13 @@ pub fn props(select: &webapi::HTMLSelectElement, image: &webapi::HTMLImageElemen
   lib.input(field, { valueOf: () => 1, toString: () => "text" });
   expect(typeof field.type).toBe("object");
   expect(field.name).toBe(7);
-  expect(js).toContain("  select.size = value;\n  image.src = value;\n");
+  expect(js).toContain("  select.size = value;\n  image.src = value;\n  image.srcset = value;\n");
+  expect(js).toContain("  style.display = display;\n  style.margin = margin;\n  style.marginTop = margin;\n  style.marginBottom = margin;\n");
+  // The DOM makes text of what it's given, `toString` first.
+  const style: Record<string, unknown> = {};
+  lib.restored(style, Symbol.for("x"), 4);
+  expect(typeof style.display).toBe("symbol");
+  expect(style.marginTop).toBe(4);
 });
 
 // WebIDL's `Node? child`, TypeScript's `Node | null`, is an `Option`, its

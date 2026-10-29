@@ -10355,7 +10355,7 @@ impl HTMLImageElement {
     #[cfg_attr(rust_js, rust_js::link_name = "set srcset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_srcset(&self, value: &str) {
+    pub fn set_srcset(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -27869,7 +27869,7 @@ impl CSSStyleProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "set display")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_display(&self, value: &str) {
+    pub fn set_display(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -29325,7 +29325,7 @@ impl CSSStyleProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "set margin")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_margin(&self, value: &str) {
+    pub fn set_margin(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -29389,7 +29389,7 @@ impl CSSStyleProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "set marginBottom")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_margin_bottom(&self, value: &str) {
+    pub fn set_margin_bottom(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
@@ -29485,7 +29485,7 @@ impl CSSStyleProperties {
     #[cfg_attr(rust_js, rust_js::link_name = "set marginTop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_margin_top(&self, value: &str) {
+    pub fn set_margin_top(&self, value: impl IntoUnknown) {
         unreachable!()
     }
 
