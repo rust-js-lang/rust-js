@@ -110,10 +110,13 @@ react.dev's TopNav passes the same closure instead.
   getVendorPrefixedEventName('animationend')` is made where upstream makes
   it, so JS's importers read its value. What the initializer prints, a
   panic in it, and what it reads and changes are where its module loads,
-  where Rust has them at its first use; a `pub(crate)` one is made there.
-  One whose module's load can't make it before what it reads, an import
-  cycle's or one reading itself, is refused. Listed in the guide's
-  differences (`semantics.md`, 30).
+  where Rust has them at its first use. One whose module's load can't make
+  it before what it reads, an import cycle's or one reading itself, is
+  refused. A private one is made as its module loads too (2026-10-29, gap
+  rd120, ADR 1006, amended), React DOM's `const isScrollEndEventSupported =
+  isEventSupported('scrollend')`, and where its module's load can't make
+  it, where it's first used. Listed in the guide's differences
+  (`semantics.md`, 30).
 - **A package's default entry is its root**, the second case's, which the
   user decided (2026-10-28, gap rd55, ADR 1008, amended): React DOM's
   `import {Children} from 'react'` is of `react`'s `"default":

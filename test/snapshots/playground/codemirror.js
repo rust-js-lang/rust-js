@@ -9,22 +9,21 @@ import { rust } from "@codemirror/lang-rust";
 import { Compartment, EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
-import { $local } from "@rust-js/runtime";
 
 // Made once: as the module loads, or what runs the crate's code where it's
 // first used (ADR 0037, amended). One theme compartment serves
 // both editors: it only names the slot a view reconfigures.
 const theme = new Compartment();
-const source = $local(() => [
+const source = [
   basicSetup,
   rust(),
   theme.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
-]);
+];
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
-const jsOutput = $local(() => output(javascript()));
-const plainOutput = $local(() => output(undefined));
+const jsOutput = output(javascript());
+const plainOutput = output(undefined);
 
 function output(language) {
   const extensions = [basicSetup];
@@ -48,13 +47,13 @@ function themeFor(dark) {
 export function sourceState(text) {
   return EditorState.create({
     doc: text,
-    extensions: source(),
+    extensions: source,
   });
 }
 
 /** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
 export function outputState(text, js) {
-  const extensions = js ? jsOutput() : plainOutput();
+  const extensions = js ? jsOutput : plainOutput;
   return EditorState.create({
     doc: text,
     extensions,

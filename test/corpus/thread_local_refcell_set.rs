@@ -2,8 +2,9 @@
 // (issue #249): of one that's the array it holds (ADR 0863), the array
 // written in place, so the next read sees it, not `ports.value = [..]`; of
 // a `{ value }` box, its value; of what has a destructor, the old dropped
-// once the new is in its place, as std's does; of a lazy one set before
-// its first use, made of what's given.
+// once the new is in its place, as std's does; of one made where it's
+// first used, as its initializer runs a module in an import cycle with its
+// own (ADR 1006, amended), set before its first use, made of what's given.
 use std::cell::RefCell;
 
 struct Noisy(&'static str);
@@ -18,12 +19,16 @@ thread_local! {
     static PORTS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
     static COUNT: RefCell<u32> = const { RefCell::new(0) };
     static NOISY: RefCell<Vec<Noisy>> = RefCell::new(vec![Noisy("first")]);
-    static LATE: RefCell<Vec<u32>> = RefCell::new(first_ports());
+    static LATE: RefCell<Vec<u32>> = RefCell::new(ports::first_ports());
 }
 
-fn first_ports() -> Vec<u32> {
-    println!("made");
-    vec![5]
+const FIRST_PORT: u32 = 5;
+
+mod ports {
+    pub fn first_ports() -> Vec<u32> {
+        println!("made");
+        vec![super::FIRST_PORT]
+    }
 }
 
 fn first_port() -> u32 {

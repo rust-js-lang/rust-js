@@ -123,3 +123,81 @@ says. `analysis/lazy_locals.rs` makes no `pub` one lazy.
   given std; one reading itself through another thread-local; one of a
   `dyn Fn`'s call. `docs/guide/limitations.md`'s example.
 - Mutations `exported-local-*` (`lazy_locals.rs`, `load_cycles.rs`).
+
+## Amendment: a private one too, where its module's load can make it (rd120)
+
+The user's decision (2026-10-29, React port gap rd120). A private
+thread-local whose initializer ran the crate's code, printed, may have
+panicked, or read what may change was made where it's first used,
+`const isScrollEndEventSupported = $local(() => isEventSupported("scrollend"))`,
+read `isScrollEndEventSupported()`, where React DOM's ScrollEndEventPlugin
+writes `const isScrollEndEventSupported = isEventSupported('scrollend');`:
+two forms of one item, by its visibility.
+
+**Every thread-local is made as its module loads, whatever its initializer
+runs, where its module's load can make it first**: `const x = f();`, read
+by its name. `analysis/lazy_locals.rs` asks of each what it may run and
+read there (`LazyLocals::at_load`): of one that runs none of the crate's
+code (`Initializer::runs_the_crates`: no call of the crate's, a closure's,
+a fn pointer's or a `dyn`'s, no print, which may run the crate's
+`Display`, no std call given the crate's closure or function, no drop of
+the crate's destructor), the thread-locals and `static`s it reads, and
+what a thread-local among them reaches (a `const` it reads by its name is
+read as its value where its module may load first, ADR 0031); else all `loaded_by` finds. What made one
+lazy before but runs none of that, a check that may panic, a read of a
+`static mut` or an atomic, no longer sends it to `loaded_by`, and "a
+function of the crate's that only makes a value" (`Makers`) is gone: a call
+of one is followed by `loaded_by`, whose answer is the same, as it calls
+nothing else. A binding's call there is taken to run nothing of the crate's,
+0037's rule, which React's `memo(Badge)` and the scheduler's
+`port1.onmessage = ..` rely on; `loaded_by` follows what a binding is given.
+Making one rule of the two is left to the user (asking `loaded_by` alone
+makes those two `$local`). **Where its module's load can't make
+it first, a private one is made where it's first used, as before, and not
+refused**: the three tests above, now one predicate,
+`load_cycles::out_of_order`, which a `pub` one's refusal asks too: it runs
+what rust-js can't follow, it reads itself, or it runs or reads code of a
+module in an import cycle with its own. The crate is lowered again with
+those made where they're first used (`Lowered::MadeWhereUsed`), as one
+whose maker was of a module in an import cycle was. A `pub` one keeps
+this decision's rule; its refusals no longer advise `pub(crate)`, which
+is made as its module loads now too.
+
+This replaces 0037's amendments that made one where it's first used for
+what its initializer runs or reads, #376's among them: one that reads
+what may change after its module loads, a `Cell` thread-local, a `static
+mut` or an atomic, is made as its module loads and reads what they hold
+then. Its own module's items it reads are made first (`js::in_load_order`),
+another module's, of no cycle, have loaded. A `$local` stays for those
+made where they're first used.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B, this decision's
+accepted difference, the user's, extended to private ones: what the
+initializer prints, panics with, reads and changes is done as its module
+loads, where Rust does it at its first use, or never, of one never used or
+`set` first. Where nothing can tell, none.
+
+- Corpus cases that showed the difference read what they make first, in
+  the order their modules make them, so they still run as native Rust
+  does: `thread_local_exported_at_load` (`prefixed` reads `VENDOR` before
+  it records its name), `thread_local_exported_made`,
+  `thread_local_made_by_constructor`, `thread_local_made_where_used`,
+  `thread_local_reads_another_set`, and the crate pair
+  `thread_local_reads_library`. Those of lazy ones, made of what `set`
+  gives, a panic caught and made again at the next use, are of a module in
+  an import cycle: `thread_local_set_before_use`, `thread_local_refcell_set`,
+  `thread_local_made_where_used`'s `FLAKY`.
+- `test/lowering-module-variables.test.ts`, "a private thread-local is
+  made as its module loads, where its module's load can make it":
+  ScrollEndEventPlugin's `const`, its print at the import, and one of an
+  import cycle made where it's first used. `test/lowering-dictionaries.test.ts`:
+  one of a dictionary, after it.
+- Corpus `thread_local_runs_a_cycle`, against native Rust: one of each
+  way an initializer runs a module in an import cycle with its own, a drop,
+  a fn pointer, a print's `Display`, `Option::map` given its function, a
+  call and a `static`'s read, each made where it's first used.
+  `test/diagnostics.test.ts`: a `pub` one reading itself through another's
+  initializer, and one reading one of a `dyn Fn`'s call.
+- Mutations `at-load-*` and `out-of-order-*` (`lazy_locals.rs`,
+  `load_cycles.rs`); 0037's that held what made one lazy, gone with it.
+

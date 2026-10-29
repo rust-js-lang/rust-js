@@ -112,7 +112,7 @@ renders a table's memo; a mutation refuses it again.
 
 - [0270](0270-module-variables.md): A thread-local only read and set is its module's variable
 - [0306](0306-item-order.md): A module's items are where its Rust has them
-- [1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md): A `pub` thread-local is made as its module loads
+- [1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md): A `pub` thread-local is made as its module loads; amended (rd120), every one its module's load can make first, which replaces the amendments below that made one where it's first used for what its initializer runs or reads (#376's)
 
 ## Amendment: one whose initializer runs the crate's code is made where it's first used
 

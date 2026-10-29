@@ -198,6 +198,7 @@ export const mutations: Mutation[] = [
     find: "                if named.contains(base) || module.contains(base) {\n",
     replace: "                if named.contains(base) {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_reads_another_set.rs$"],
+    snapshots: true,
   },
   {
     name: "alias-of-changing-set-between",

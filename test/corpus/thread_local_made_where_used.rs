@@ -1,10 +1,10 @@
-// A thread-local whose initializer runs the crate's code, or may panic, is
-// made where it's first used, as Rust makes each (ADR 0037, amended): what
-// it prints after what runs before its first use, and what it drops; one
-// whose initializer panics made again at its next use; and one a module's load would make
-// before another module it calls has loaded (#207), made only once both
-// have. One that only makes a value is its module's own, made as it loads,
-// which nothing can tell.
+// A thread-local is made as its module loads, whatever its initializer
+// runs (ADR 1006, amended), so `main` first reads those whose initializers
+// print, in the order they're made. One a module's load would make before
+// another module it runs has loaded, of an import cycle with its own
+// (#207), is made where it's first used, as Rust makes each (ADR 0037,
+// amended), once both have: what it prints after what runs before its
+// first use, and one whose initializer panics made again at its next use.
 
 use std::cell::Cell;
 
@@ -25,19 +25,20 @@ thread_local! {
     static LOUD: Cell<u32> = Cell::new(noisy(7));
     static PLAIN: Cell<u32> = Cell::new(3);
     // A fn pointer's call runs what it may be, the crate's `noisy` here
-    // (ADR 0907): made where it's first used.
+    // (ADR 0907).
     static POINTED: u32 = {
         let made: fn(u32) -> u32 = noisy;
         made(9)
     };
     // Another module's `const`, read by its name, as written.
     static FROM_LIMITS: u32 = noisy(limits::LIMIT);
-    // What it drops runs the crate's code too: made where it's first used.
+    // What it drops runs the crate's code too.
     static GUARDED: u32 = {
         let _guard = Guard;
         5
     };
     static TRIES: Cell<u32> = const { Cell::new(0) };
+    // Of `limits`, in an import cycle with this module.
     static FLAKY: u32 = {
         let n = TRIES.with(|t| {
             t.set(t.get() + 1);
@@ -47,7 +48,7 @@ thread_local! {
         if n == 1 {
             panic!("first try");
         }
-        n * 10
+        n * 10 + limits::LIMIT
     };
 }
 
@@ -88,12 +89,15 @@ mod start {
 }
 
 fn main() {
+    let loud_at_start = LOUD.with(Cell::get);
+    let pointed = POINTED.with(|p| *p);
+    let guarded = GUARDED.with(|g| *g);
     println!("main");
-    println!("{}", LOUD.with(|l| l.get()));
+    println!("{loud_at_start}");
     LOUD.with(|l| l.set(8));
     println!("{} {}", LOUD.with(|l| l.get()), PLAIN.with(|p| p.get()));
-    println!("{}", GUARDED.with(|g| *g));
-    println!("{}", POINTED.with(|p| *p));
+    println!("{guarded}");
+    println!("{pointed}");
     println!("{}", FROM_LIMITS.with(|f| *f));
     println!("{}", around());
 

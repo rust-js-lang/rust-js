@@ -17,25 +17,23 @@ function guardDrop_drop(guard) {
   console.log("guard dropped");
 }
 
-const loud = $local(() => ({ value: noisy(7) }));
+let loud = noisy(7);
 const plain = 3;
+const made = noisy;
 // A fn pointer's call runs what it may be, the crate's `noisy` here
-// (ADR 0907): made where it's first used.
-const POINTED = $local(() => {
-  const made = noisy;
-  return made(9);
-});
-
+// (ADR 0907).
+const POINTED = made(9);
 // Another module's `const`, read by its name, as written.
 const FROM_LIMITS = $local(() => noisy(Limits.LIMIT));
-// What it drops runs the crate's code too: made where it's first used.
-const GUARDED = $local(() => {
+// What it drops runs the crate's code too.
+const GUARDED = (() => {
   const _guard = undefined;
   guardDrop_drop({ value: _guard });
   return 5;
-});
+})();
 
 let tries = 0;
+// Of `limits`, in an import cycle with this module.
 const FLAKY = $local(() => {
   tries = (tries + 1) >>> 0;
   const n = tries;
@@ -43,7 +41,7 @@ const FLAKY = $local(() => {
   if (n === 1) {
     throw new Error("first try");
   }
-  return (n * 10) >>> 0;
+  return (((n * 10) >>> 0) + Limits.LIMIT) >>> 0;
 });
 
 // Of this module, which `limits` calls back into, so it may load after
@@ -55,13 +53,15 @@ export function around() {
 }
 
 function main() {
+  const loudAtStart = loud;
+  const pointed = POINTED;
+  const guarded = GUARDED;
   console.log("main");
-  console.log(`${loud().value}`);
-  const l = loud();
-  l.value = 8;
-  console.log(`${loud().value} ${plain}`);
-  console.log(`${GUARDED()}`);
-  console.log(`${POINTED()}`);
+  console.log(`${loudAtStart}`);
+  loud = 8;
+  console.log(`${loud} ${plain}`);
+  console.log(`${guarded}`);
+  console.log(`${pointed}`);
   console.log(`${FROM_LIMITS()}`);
   console.log(`${around()}`);
 

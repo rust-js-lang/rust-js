@@ -87,9 +87,10 @@ pub fn shown(n: u32) -> String {
   expect(js).not.toContain("var ");
   expect(js).toContain("export const squareShape = { area: squareShape_area };");
   expect(js).toContain("const $wrapperDisplay = new WeakMap();");
-  // A thread-local whose initializer calls the crate's `total` is made where
-  // it's first used, its dictionary read then (ADR 0037, amended).
-  expect(js).toContain("const FIRST = $local(() => ({ value: total([[3]], squareShape) }));");
+  // A thread-local whose initializer calls the crate's `total` is made as
+  // its module loads, after the dictionary it reads (ADR 1006, amended).
+  expect(js).toContain("const FIRST = total([[3]], squareShape);");
+  expect(js.indexOf("const FIRST =")).toBeGreaterThan(js.indexOf("export const squareShape ="));
   const lib = await import(join(dir, "lib.js"));
   expect([lib.first(), lib.shown(5), lib.shown(6), lib.slots()]).toEqual([9, "shown [5]", "shown [6]", 9]);
 

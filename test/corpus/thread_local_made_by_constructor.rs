@@ -1,10 +1,11 @@
 // A thread-local whose initializer calls a function of the crate's that
 // only makes a value of what it's given, as React's `createCursor` does,
-// is made as its module loads, as JS writes it: what it runs can't tell
-// when it does (ADR 0037, amended). One whose maker reads another
-// thread-local or a static, or prints, is made where it's first used, and
-// so is one whose maker is of a module that imports its own back, which
-// may load after it, before its `const` is made.
+// is made as its module loads, as JS writes it (ADR 0037, amended), and so
+// is one whose maker reads another thread-local or a static, or prints
+// (ADR 1006, amended), so `main` first reads those that print, in the
+// order they're made. One whose maker is of a module that imports its own
+// back, which may load after it, before its `const` is made, is made where
+// it's first used.
 
 use std::cell::Cell;
 
@@ -96,12 +97,14 @@ fn read(cursor: &'static std::thread::LocalKey<stack::Cursor<u32>>) -> u32 {
 }
 
 fn main() {
+    let noisy = read(&NOISY);
+    let mapped = MAPPED.with(|mapped| *mapped.current.borrow());
     println!("main");
     CURSOR.with(|cursor| cursor.current.replace(3));
     println!("{} {}", read(&CURSOR), read(&BASED));
     NESTED.with(|nested| println!("{:?}", nested.current.borrow()));
     NONE.with(|none| println!("{:?}", none.current.borrow()));
-    println!("{} {}", read(&COUNTED), read(&NOISY));
-    MAPPED.with(|mapped| println!("{:?}", mapped.current.borrow()));
+    println!("{} {noisy}", read(&COUNTED));
+    println!("{mapped:?}");
     println!("{} {}", marks::used(), marks::LIMIT);
 }

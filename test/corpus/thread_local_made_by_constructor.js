@@ -2,7 +2,6 @@
 
 import * as Marks from "./marks.js";
 import * as Stack from "./stack.js";
-import { $local } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -42,25 +41,26 @@ function mapped() {
 const cursor = Stack.createCursor(0);
 const nested = Stack.cursorOfSome(1);
 const none = Stack.createCursor(undefined);
-const BASED = $local(() => based());
-const COUNTED = $local(() => counted());
-const NOISY = $local(() => noisy());
-const MAPPED = $local(() => mapped());
+const BASED = based();
+const COUNTED = counted();
+const NOISY = noisy();
+const MAPPED = mapped();
 
 function read(cursor) {
   return cursor.current;
 }
 
 function main() {
+  const noisy = read(NOISY);
+  const mapped = MAPPED.current;
   console.log("main");
   const old = cursor.current;
   cursor.current = 3;
-  console.log(`${read(cursor)} ${read(BASED())}`);
+  console.log(`${read(cursor)} ${read(BASED)}`);
   console.log(`${nested.current == null ? "None" : `Some(${nested.current})`}`);
   console.log(`${none.current == null ? "None" : `Some(${none.current})`}`);
-  console.log(`${read(COUNTED())} ${read(NOISY())}`);
-  const mapped = MAPPED();
-  console.log(`${mapped.current == null ? "None" : `Some(${mapped.current})`}`);
+  console.log(`${read(COUNTED)} ${noisy}`);
+  console.log(`${mapped == null ? "None" : `Some(${mapped})`}`);
   console.log(`${Marks.used()} ${Marks.LIMIT}`);
 }
 //# sourceMappingURL=case.js.map

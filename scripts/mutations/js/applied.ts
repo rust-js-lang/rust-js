@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     file: "src/js/applied.rs",
     find: "        _ => return None,\n    };\n    if held {",
     replace: "        _ => return None,\n    };\n    if held && false {",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_made_where_used.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_runs_a_cycle.rs$"],
     snapshots: true,
   },
   {

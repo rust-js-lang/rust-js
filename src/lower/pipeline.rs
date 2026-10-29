@@ -146,8 +146,7 @@ pub fn lower_crate<'tcx>(
         quiet_locals,
         quiet_library_keys,
         lazy_locals,
-        local_makers,
-        exported_locals,
+        locals_at_load,
         named_expressions,
         local_functions,
         local_consts,
@@ -525,10 +524,10 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.package_uses),
                 );
                 let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
-                // A thread-local made as its module loads, of a function of a
-                // module that may load after it: made where it's first used,
-                // the crate lowered again so, a `pub` one refused (ADR 1006).
-                let cyclic = load_cycles::made_in_cycles(tcx, (&local_makers, &exported_locals), &fns, &imports);
+                // A thread-local its module's load can't make before what it
+                // runs: made where it's first used, the crate lowered again
+                // so, a `pub` one refused (ADR 1006, amended).
+                let cyclic = load_cycles::made_in_cycles(tcx, &locals_at_load, &fns, &imports);
                 if !cyclic.is_empty() {
                     return Lowered::MadeWhereUsed(cyclic);
                 }

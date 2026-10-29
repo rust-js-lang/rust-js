@@ -116,6 +116,65 @@ thread_local! {
   }
 });
 
+// React DOM's ScrollEndEventPlugin, `const isScrollEndEventSupported =
+// isEventSupported('scrollend')`: a private thread-local is made as its
+// module loads too, whatever its initializer runs, so what it prints is
+// printed as its module is imported, where Rust prints it at its first use,
+// the guide's differences, 30 (ADR 1006, amended, the user's decision). One
+// whose initializer runs a module in an import cycle with its own, which may
+// not have loaded yet, is made where it's first used.
+test("a private thread-local is made as its module loads, where its module's load can make it", async () => {
+  const dir = fixture("private-made-at-load");
+  writeFileSync(join(dir, "lib.rs"), "pub mod is_event_supported;\npub mod scroll_end;\npub mod cycle;\n");
+  writeFileSync(join(dir, "is_event_supported.rs"), `pub fn is_event_supported(name: &str) -> bool {
+    println!("asked {name}");
+    name.starts_with("scroll")
+}
+`);
+  writeFileSync(join(dir, "scroll_end.rs"), `use crate::is_event_supported::is_event_supported;
+
+thread_local! {
+    static IS_SCROLL_END_EVENT_SUPPORTED: bool = is_event_supported("scrollend");
+}
+
+pub fn supported() -> bool {
+    IS_SCROLL_END_EVENT_SUPPORTED.with(|supported| *supported)
+}
+
+pub fn named() -> String {
+    println!("naming");
+    crate::cycle::NAME.to_owned()
+}
+`);
+  writeFileSync(join(dir, "cycle.rs"), `thread_local! {
+    static NAMED: String = crate::scroll_end::named();
+}
+
+pub const NAME: &str = "cycle";
+
+pub fn named() -> String {
+    NAMED.with(Clone::clone)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "scroll_end.js"), "utf8")).toContain('\nconst IS_SCROLL_END_EVENT_SUPPORTED = isEventSupported("scrollend");\n');
+  expect(readFileSync(join(dir, "cycle.js"), "utf8")).toContain("const NAMED = $local(() => ScrollEnd.named());\n");
+  const printed: string[] = [];
+  const log = console.log;
+  console.log = (...line: unknown[]) => void printed.push(line.join(" "));
+  try {
+    const scroll = await import(join(dir, "scroll_end.js"));
+    expect(printed).toEqual(["asked scrollend"]);
+    expect(scroll.supported()).toBe(true);
+    const cycle = await import(join(dir, "cycle.js"));
+    expect(printed).toEqual(["asked scrollend"]);
+    expect(cycle.named()).toBe("cycle");
+    expect(printed).toEqual(["asked scrollend", "naming"]);
+  } finally {
+    console.log = log;
+  }
+});
+
 // React's `let callbacks = []`, set `callbacks = []` again: a thread-local
 // `RefCell` of an array its module sets whole is its `export let`, given
 // the new one there; another module's `set` writes the one it reads in

@@ -2,7 +2,7 @@
 
 import * as Flags from "./flags.js";
 import * as Marks from "./marks.js";
-import { $catchUnwind, $debugStr, $index, $local } from "@rust-js/runtime";
+import { $debugStr, $take } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -17,53 +17,47 @@ function double(n) {
 }
 
 let tries = 0;
-let names = [];
-const made = $local(() => {
-  if (tries === 0) {
-    return 1;
-  }
-});
+const names = [];
+let made;
+if (tries === 0) {
+  made = 1;
+}
 
-const taken = $local(() => {
-  const old = names;
-  names = [];
-  return old;
-});
-
-const LIMITED = $local(() => (LIMIT * 10) >>> 0);
-const COUNTED = $local(() => (HITS + 1) >>> 0);
+const taken = $take(names, []);
+const LIMITED = (LIMIT * 10) >>> 0;
+const COUNTED = (HITS + 1) >>> 0;
 const BASED = (BASE * 2) >>> 0;
-const PRINTED = $local(() => {
-  console.log("printed");
-  return 3;
-});
+let PRINTED;
+console.log("printed");
+PRINTED = 3;
+const n$1 = 2;
 
-const mapped = $local(() => {
-  const n = 2;
-  function map(n) {
-    console.log(`mapped ${n}`);
-    return (n * 2) >>> 0;
-  }
-  return n != null ? map(n) : undefined;
-});
+const map = (n) => {
+  console.log(`mapped ${n}`);
+  return (n * 2) >>> 0;
+};
 
-// Reads `PRINTED`, made where it's first used, so it is too.
-const AFTER_PRINTED = $local(() => (PRINTED() + 1) >>> 0);
+const mapped = n$1 != null ? map(n$1) : undefined;
+// Reads `PRINTED`, made before it.
+const AFTER_PRINTED = (PRINTED + 1) >>> 0;
 const LATER = 7;
-// Reads `LATER`, made after it, so it's made where it's first used.
-const BEFORE_LATER = $local(() => (LATER + 1) >>> 0);
+// Reads `LATER`, written after it, so it's made after that one.
+const BEFORE_LATER = (LATER + 1) >>> 0;
 const picked = double;
 const APPLIED = picked(4);
-// Indexes past its end, so it's made where it's first used, where Rust
-// panics.
-const FIRST = $local(() => {
-  const items = [1, 2];
-  return $index(items, BASE);
-});
 
 const USES_FLAG = Flags.ON && BASE > 1;
 
 function main() {
+  const madeAtStart = made;
+  const takenAtStart = taken.slice();
+  const limited = LIMITED;
+  const counted = COUNTED;
+  const based = BASED;
+  const afterPrinted = AFTER_PRINTED;
+  const mappedAtStart = mapped;
+  const beforeLater = BEFORE_LATER;
+  const applied = APPLIED;
   console.log("main");
   const arg = Marks.used();
   console.log(`${USES_FLAG} ${arg}`);
@@ -72,17 +66,21 @@ function main() {
   LIMIT = 4;
   const previous = HITS;
   HITS = (previous + 6) >>> 0;
-  console.log(`${made() == null ? "None" : `Some(${made()})`}`);
-  const taken$1 = taken();
-  console.log(`[${taken$1.map((item) => $debugStr(item)).join(", ")}]`);
+  console.log(
+    `${madeAtStart == null ? "None" : `Some(${madeAtStart})`} ${made == null ? "None" : `Some(${made})`}`,
+  );
+  console.log(`[${takenAtStart.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(`${names.length}`);
-  console.log(`${LIMITED()}`);
-  console.log(`${COUNTED()}`);
-  console.log(`${BASED}`);
-  console.log(`${AFTER_PRINTED()}`);
-  console.log(`${mapped() == null ? "None" : `Some(${mapped()})`}`);
-  console.log(`${BEFORE_LATER()}`);
-  console.log(`${APPLIED}`);
-  console.log(`${$catchUnwind(() => FIRST()).TAG === "Err"}`);
+  console.log(`${limited} ${LIMITED}`);
+  console.log(`${counted}`);
+  console.log(`${based}`);
+  console.log(`${afterPrinted}`);
+  console.log(`${mappedAtStart == null ? "None" : `Some(${mappedAtStart})`}`);
+  console.log(`${beforeLater}`);
+  console.log(`${applied}`);
+  // A closure's parameter named as the module's `tries` is, stays apart
+  // from it.
+  const tries$1 = [1, 2].map((tries) => (tries + 1) >>> 0);
+  console.log(`[${tries$1.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -8,9 +8,9 @@ export function entry() {
 }
 
 function main() {
+  console.log(`${$byteLen(EventNames.ANIMATION_END)}`);
   console.log(`main ${EventNames.count()}`);
   console.log(`${EventNames.ANIMATION}`);
-  console.log(`${$byteLen(EventNames.ANIMATION_END())}`);
   console.log(`${EventNames.animationEnd()} ${EventNames.count()}`);
 }
 //# sourceMappingURL=case.js.map

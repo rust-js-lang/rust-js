@@ -28,7 +28,8 @@ thread_local! {
         } else {
             Box::new(|x| x)
         };
-    // Made where it's first used: the crate's code.
+    // Of the crate's code, made as its module loads too (ADR 1006,
+    // amended): `main` reads it first.
     static SCALE: Box<dyn Fn(u32) -> u32> =
         if flag("scale", true) && let Some(k) = lookup("scale", 3) {
             Box::new(move |x| x * k)
@@ -132,12 +133,13 @@ pub fn width(on: bool, settings: &Settings) -> u32 {
 }
 
 fn main() {
+    let scaled = SCALE.with(|f| f(5));
     println!("{}", OFFSET.with(|f| f(2)));
     println!("{}", LIMIT.with(|l| *l));
     println!("{}", LOWER.with(|l| *l));
     println!("{}", LOGGED.with(|l| *l));
     println!("{}", BASE.with(|f| f(1)));
-    println!("{}", SCALE.with(|f| f(5)));
+    println!("{scaled}");
     println!("{}", SCALE.with(|f| f(6)));
     for (on, n) in [(true, 3), (true, 1), (false, 3)] {
         println!("doubled {}", doubled(on, n));

@@ -1,11 +1,11 @@
 // A thread-local whose initializer reads what may change after its module
-// loads is made where it's first used, as Rust makes it: another
-// thread-local, but one made before it that holds what can't change; a
-// `static mut`; or an atomic `static`. So is one whose initializer prints,
-// gives std a closure that does, or may panic (ADR 0037, amended; #376).
-// One that reads a `static` that can't change, `BASE`, or a thread-local
-// of a `fn` made before it and never changed, `PICKED`, is made as its
-// module loads.
+// loads is made as its module loads, as JS's `const x = f();` is, whatever
+// it reads (ADR 1006, amended, the user's decision): another thread-local,
+// a `static mut` or an atomic `static`; so is one whose initializer prints
+// or gives std a closure that does, and one that reads another made after
+// it, after that one. It differs from Rust only in when it runs, so `main`
+// first reads each, in the order they're made, and then changes what they
+// read (#376).
 
 use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -34,22 +34,18 @@ thread_local! {
         println!("mapped {n}");
         n * 2
     });
-    // Reads `PRINTED`, made where it's first used, so it is too.
+    // Reads `PRINTED`, made before it.
     static AFTER_PRINTED: u32 = PRINTED.with(|p| *p) + 1;
-    // Reads `LATER`, made after it, so it's made where it's first used.
+    // Reads `LATER`, written after it, so it's made after that one.
     static BEFORE_LATER: u32 = LATER.with(|l| *l) + 1;
     static LATER: u32 = 7;
     static PICKED: fn(u32) -> u32 = double;
     static APPLIED: u32 = PICKED.with(|f| f(4));
-    // Indexes past its end, so it's made where it's first used, where Rust
-    // panics.
-    static FIRST: u32 = [1, 2][BASE as usize];
 }
 
-// A thread-local of another module's that can't change, made first as that
-// module loads first, is read as its module loads; one of a module that
-// imports its own back, in an import cycle, which may load after it, where
-// it's first used.
+// A thread-local of another module's, made first as that module loads
+// first, is read as its module loads; one of a module that imports its own
+// back, in an import cycle, which may load after it, where it's first used.
 mod flags {
     thread_local! {
         pub static ON: bool = true;
@@ -81,21 +77,33 @@ mod uses {
 }
 
 fn main() {
+    let made_at_start = MADE.with(|m| *m);
+    let taken_at_start = TAKEN.with(Clone::clone);
+    let limited = LIMITED.with(|l| *l);
+    let counted = COUNTED.with(|c| *c);
+    let based = BASED.with(|b| *b);
+    let after_printed = AFTER_PRINTED.with(|a| *a);
+    let mapped_at_start = MAPPED.with(|m| *m);
+    let before_later = BEFORE_LATER.with(|b| *b);
+    let applied = APPLIED.with(|a| *a);
     println!("main");
     println!("{} {}", USES_FLAG.with(|&uses| uses), marks::used());
     TRIES.set(3);
     NAMES.with_borrow_mut(|names| names.push("a".to_string()));
     unsafe { LIMIT = 4 };
     HITS.fetch_add(6, Ordering::Relaxed);
-    println!("{:?}", MADE.with(|m| *m));
-    TAKEN.with(|taken| println!("{taken:?}"));
+    println!("{made_at_start:?} {:?}", MADE.with(|m| *m));
+    println!("{taken_at_start:?}");
     NAMES.with_borrow(|names| println!("{}", names.len()));
-    println!("{}", LIMITED.with(|l| *l));
-    println!("{}", COUNTED.with(|c| *c));
-    println!("{}", BASED.with(|b| *b));
-    println!("{}", AFTER_PRINTED.with(|a| *a));
-    println!("{:?}", MAPPED.with(|m| *m));
-    println!("{}", BEFORE_LATER.with(|b| *b));
-    println!("{}", APPLIED.with(|a| *a));
-    println!("{}", std::panic::catch_unwind(|| FIRST.with(|f| *f)).is_err());
+    println!("{limited} {}", LIMITED.with(|l| *l));
+    println!("{counted}");
+    println!("{based}");
+    println!("{after_printed}");
+    println!("{mapped_at_start:?}");
+    println!("{before_later}");
+    println!("{applied}");
+    // A closure's parameter named as the module's `tries` is, stays apart
+    // from it.
+    let tries: Vec<u32> = [1, 2].iter().map(|tries| tries + 1).collect();
+    println!("{tries:?}");
 }

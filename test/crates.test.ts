@@ -591,16 +591,15 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
   expect(app).toContain("  valueStack[$at(valueStack, 0)] = undefined;\n");
 }, 300_000);
 
-// ADR 0037, amended (#376): a thread-local whose initializer reads a
-// library's flag, which its contract makes as its module loads and which
-// can't change, is made as its own module loads, React's
-// `supportsUserTiming`; one of the count the library sets, where it's first
-// used.
+// ADR 0037, amended (#376), and ADR 1006, amended: a thread-local whose
+// initializer reads a library's flag, which its contract makes as its
+// module loads, is made as its own module loads, React's
+// `supportsUserTiming`; and so is one of the count the library sets.
 test("a thread-local of a library's flag is made as its module loads", () => {
   const out = chain(pairs, "thread_local_reads_library", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   // Through the library's namespace, as their paths name them (ADR 1018).
-  expect(app).toContain("const SUPPORTS_USER_TIMING = Dep.ENABLE_PROFILER_TIMER;\nconst SEEN = $local(() => Dep.count);\n");
+  expect(app).toContain("const { ENABLE_PROFILER_TIMER: SUPPORTS_USER_TIMING, count: SEEN } = Dep;\n");
 }, 300_000);
 
 // ADR 0330, amended (React port gap rd56): a library's struct field whose

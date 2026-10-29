@@ -1,9 +1,8 @@
 // A `pub` thread-local is its value, made as its module loads, where its
-// initializer only makes one; one made where it's first used, its
-// initializer running the crate's code, is `pub(crate)`, which the crate's
-// modules read where they use it, and a `pub fn` gives JS its value (ADR
-// 0037, amended): a `pub` one is refused, as JS's importers would read the
-// function that makes it.
+// initializer only makes one; a `pub(crate)` one whose initializer runs the
+// crate's code is made as its module loads too, which the crate's modules
+// read by its name, and a `pub fn` gives JS its value (ADR 1006, amended):
+// `main` first reads it, as its module made it.
 mod event_names {
     use std::cell::RefCell;
 
@@ -32,8 +31,8 @@ mod event_names {
 }
 
 fn main() {
+    println!("{}", event_names::ANIMATION_END.with(|end| end.len()));
     println!("main {}", event_names::count());
     println!("{}", event_names::ANIMATION.with(|a| *a));
-    println!("{}", event_names::ANIMATION_END.with(|end| end.len()));
     println!("{} {}", event_names::animation_end(), event_names::count());
 }

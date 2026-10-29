@@ -1,10 +1,10 @@
 //! What the crate's modules import of each other, of what their bodies
 //! import (`module_imports`), and what a module's load reads of another
 //! that may load after it, in an import cycle: a `const` read by its name,
-//! which its body reads as its value instead (ADR 0031, amended); a
-//! thread-local's maker, which then makes it where it's first used (ADR
-//! 0037, amended); and a dictionary that's its module's `const`, refused
-//! there (ADR 0592).
+//! which its body reads as its value instead (ADR 0031, amended); what a
+//! thread-local's initializer runs or reads, which then makes a private one
+//! where it's first used and refuses a `pub` one (ADR 1006, amended); and a
+//! dictionary that's its module's `const`, refused there (ADR 0592).
 
 use super::Pass;
 use crate::js;
@@ -47,92 +47,102 @@ pub(super) fn load_cycles(
         .collect()
 }
 
-/// Each `pub` thread-local, and what its initializer may run and read as its
-/// module loads; `None`, what rust-js can't follow (ADR 1006).
-type Exported = HashMap<LocalDefId, Option<Vec<DefId>>>;
+/// Each thread-local made as its module loads, and what its initializer may
+/// run and read there; `None`, what rust-js can't follow (ADR 1006,
+/// amended).
+type AtLoad = HashMap<LocalDefId, Option<Vec<DefId>>>;
 
-/// Each thread-local, of `makers`, made as its module loads by functions of
-/// the crate's that only make a value, or of another module's thread-local
-/// its initializer reads (ADR 0037, amended), one of which is
-/// of a module that may load after its own: of another module that reaches
-/// its own by what the crate's modules import of each other, `imports`, an
-/// import cycle. Its maker may read what that module hasn't made yet, a
-/// `const`, so it's made where it's first used. Where none is, each `pub`
-/// one of `exported`, which is made as its module loads whatever it runs,
-/// is refused where it can't be (`refuse_exported_out_of_order`, ADR 1006).
+/// Each private thread-local, of `at_load`, its module's load can't make
+/// before what its initializer runs and reads (`out_of_order`): made where
+/// it's first used, as Rust makes it, the crate lowered again so (the
+/// user's decision, ADR 1006, amended). Where none is, each `pub` one such
+/// is refused, as what JS's importers read is an `export const`.
 pub(super) fn made_in_cycles(
     tcx: TyCtxt<'_>,
-    (makers, exported): (&HashMap<LocalDefId, Vec<DefId>>, &Exported),
+    at_load: &AtLoad,
     fns: &HashMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
 ) -> Vec<LocalDefId> {
-    let mut cyclic: Vec<_> = (makers.iter())
-        .filter(|&(&key, makers)| {
-            let own = fns[&key.to_def_id()].module;
-            (makers.iter()).any(|maker| {
-                let module = fns[maker].module;
-                module != own && imports.reaches(module, own)
-            })
-        })
-        .map(|(&key, _)| key)
-        .collect();
-    cyclic.sort_by_key(|&key| tcx.def_span(key));
-    if cyclic.is_empty() {
-        refuse_exported_out_of_order(tcx, exported, fns, imports);
+    let mut keys: Vec<_> = at_load.keys().copied().collect();
+    keys.sort_by_key(|&key| tcx.def_span(key));
+    let out_of_order = |key: LocalDefId| out_of_order(tcx, (key, at_load[&key].as_deref()), fns, imports);
+    let (exported, private): (Vec<_>, Vec<_>) = keys.into_iter().partition(|&key| tcx.visibility(key).is_public());
+    let lazy: Vec<_> = private.into_iter().filter(|&key| out_of_order(key).is_some()).collect();
+    if lazy.is_empty() {
+        for key in exported {
+            if let Some(why) = out_of_order(key) {
+                refuse_exported(tcx, key, why);
+            }
+        }
     }
-    cyclic
+    lazy
 }
 
-/// Each `pub` thread-local, of `exported`, made as its module loads, as
-/// JS's importers read an `export const` (ADR 0037, amended), whose
-/// initializer may run or read, as it does, what may not be made yet:
-/// refused. What rust-js can't follow (`None`); itself, which it would read
-/// before it's made; or code of another module that may load after its
-/// own, one that reaches its own by what the crate's modules import of
-/// each other, `imports`, an import cycle. Its own module's `const`s and
-/// thread-locals are made before it where it reads them
-/// (`js::in_load_order`), and a module it imports, of no cycle, has loaded.
-fn refuse_exported_out_of_order(
+/// Why a thread-local's module's load can't make it before what its
+/// initializer runs and reads.
+enum OutOfOrder {
+    /// It may run what rust-js can't follow.
+    Unfollowed,
+    /// It reads itself, which it would before it's made.
+    ReadsItself,
+    /// It runs or reads code of the first module, which reaches its own,
+    /// the second, by what the crate's modules import of each other: an
+    /// import cycle, so it may not have loaded yet.
+    InCycle(LocalModId, LocalModId),
+}
+
+/// Whether `key`'s module's load can't make it before what its initializer
+/// may run or read there, `reached`: what rust-js can't follow (`None`);
+/// itself; or code of another module that may load after its own, one that
+/// reaches its own by what the crate's modules import of each other,
+/// `imports`. Its own module's `const`s and thread-locals are made before
+/// it where it reads them (`js::in_load_order`), and a module it imports,
+/// of no cycle, has loaded.
+fn out_of_order(
     tcx: TyCtxt<'_>,
-    exported: &Exported,
+    (key, reached): (LocalDefId, Option<&[DefId]>),
     fns: &HashMap<DefId, FnInfo>,
     imports: &crate::lower::load_order::ModuleImports,
-) {
+) -> Option<OutOfOrder> {
     let module_of = |id: DefId| {
         (fns.get(&id).or_else(|| fns.get(&tcx.typeck_root_def_id(id))))
             .map(|info| info.module)
             .or_else(|| id.as_local().map(|id| tcx.parent_module_from_def_id(id)))
     };
-    let mut keys: Vec<_> = exported.keys().copied().collect();
-    keys.sort_by_key(|&key| tcx.def_span(key));
-    let advice = "keep it `pub(crate)`, which the crate's modules read where they first use it, and export a `pub fn` that reads it (ADR 0037, amended)";
-    for key in keys {
-        let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
-        let refuse = |what: &str, why: &str| {
-            crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
-        };
-        let Some(reached) = &exported[&key] else {
-            refuse(
-                "a `pub` thread-local whose initializer may run what rust-js can't follow",
-                &format!(
-                    "it's made as its module loads, as JS's `export const` is, and its initializer calls a `dyn Fn`, a fn pointer that may be any function, or what a type parameter is given, which may run code of a module that hasn't loaded yet: call what it runs by its name, or {advice}"
-                ),
-            );
-            continue;
-        };
-        if reached.contains(&key.to_def_id()) {
-            refuse(
-                "a `pub` thread-local whose initializer reads itself",
-                &format!(
-                    "it's made as its module loads, as JS's `export const` is, so it would read itself before it's made: {advice}"
-                ),
-            );
-            continue;
-        }
-        let own = fns[&key.to_def_id()].module;
-        let cyclic = (reached.iter().filter_map(|&id| module_of(id)))
-            .find(|&module| module != own && imports.reaches(module, own));
-        if let Some(module) = cyclic {
+    let Some(reached) = reached else {
+        return Some(OutOfOrder::Unfollowed);
+    };
+    if reached.contains(&key.to_def_id()) {
+        return Some(OutOfOrder::ReadsItself);
+    }
+    let own = fns[&key.to_def_id()].module;
+    (reached.iter().filter_map(|&id| module_of(id)))
+        .find(|&module| module != own && imports.reaches(module, own))
+        .map(|module| OutOfOrder::InCycle(module, own))
+}
+
+/// A `pub` thread-local its module's load can't make first, `why`: refused,
+/// as JS's importers read it as an `export const` (ADR 1006, amended).
+fn refuse_exported(tcx: TyCtxt<'_>, key: LocalDefId, why: OutOfOrder) {
+    let span = tcx.def_ident_span(key).unwrap_or_else(|| tcx.def_span(key));
+    let refuse = |what: &str, why: &str| {
+        crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
+    };
+    let made = "it's made as its module loads, as JS's `export const` is";
+    match why {
+        OutOfOrder::Unfollowed => refuse(
+            "a `pub` thread-local whose initializer may run what rust-js can't follow",
+            &format!(
+                "{made}, and its initializer calls a `dyn Fn`, a fn pointer that may be any function, or what a type parameter is given, which may run code of a module that hasn't loaded yet: call what it runs by its name (ADR 1006)"
+            ),
+        ),
+        OutOfOrder::ReadsItself => refuse(
+            "a `pub` thread-local whose initializer reads itself",
+            &format!(
+                "{made}, so it would read itself before it's made: make it of what it reads, not of itself (ADR 1006)"
+            ),
+        ),
+        OutOfOrder::InCycle(module, own) => {
             refuse(
                 &format!(
                     "a `pub` thread-local whose initializer runs or reads `{}` as its module loads, in an import cycle with `{}`",
@@ -140,7 +150,7 @@ fn refuse_exported_out_of_order(
                     tcx.def_path_str(own.to_def_id()),
                 ),
                 &format!(
-                    "it's made as its module loads, as JS's `export const` is, and that module may not have loaded yet: move one of them out of the cycle, or {advice}"
+                    "{made}, and that module may not have loaded yet: move one of them out of the cycle (ADR 1006)"
                 ),
             );
         }

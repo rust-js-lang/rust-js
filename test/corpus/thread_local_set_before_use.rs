@@ -1,13 +1,21 @@
-// A thread-local made where it's first used (ADR 0037, amended) that's
-// `set` before then is made of what it's given, its initializer never run
-// and nothing of it dropped, as std's `LocalKey::set` (#252); and one used
-// by a call is made after what that call is given, as Rust makes it inside
-// the call: `replace(made(9))` makes 9, then the thread-local.
+// A thread-local made where it's first used (ADR 0037, amended), as its
+// initializer runs code of a module in an import cycle with its own, which
+// may not have loaded as its module does (ADR 1006, amended), that's `set`
+// before then is made of what it's given, its initializer never run and
+// nothing of it dropped, as std's `LocalKey::set` (#252); and one used by a
+// call is made after what that call is given, as Rust makes it inside the
+// call: `replace(made(9))` makes 9, then the thread-local.
 use std::cell::{Cell, RefCell};
 
-fn made(n: u32) -> u32 {
-    println!("made {n}");
-    n
+use log::made;
+
+const LABEL: &str = "made";
+
+mod log {
+    pub fn made(n: u32) -> u32 {
+        println!("{} {n}", super::LABEL);
+        n
+    }
 }
 
 struct Noisy(&'static str);

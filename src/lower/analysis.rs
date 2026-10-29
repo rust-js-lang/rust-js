@@ -584,16 +584,13 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// another, so none is counted (ADR 0863, amended, gap rd76).
     pub quiet_library_keys: HashSet<DefId>,
     /// The thread-locals, by their keys, made where they're first used, as
-    /// their initializer runs the crate's code or may panic (ADR 0037,
-    /// amended): each `$local(() => init)`, read by calling it.
+    /// their module's load can't make them first (ADR 0037, amended): each
+    /// `$local(() => init)`, read by calling it.
     pub lazy_locals: HashSet<LocalDefId>,
-    /// Of the others, made as their modules load, the crate's functions
-    /// that make each one's value, by its key (ADR 0037, amended).
-    pub local_makers: HashMap<LocalDefId, Vec<DefId>>,
-    /// The `pub` ones, each made as its module loads, and what its
-    /// initializer may run and read of the crate's there; `None`, what
-    /// rust-js can't follow (ADR 0037, amended).
-    pub exported_locals: HashMap<LocalDefId, Option<Vec<DefId>>>,
+    /// The others, each made as its module loads, and what its initializer
+    /// may run and read of the crate's there; `None`, what rust-js can't
+    /// follow (ADR 1006, amended).
+    pub locals_at_load: HashMap<LocalDefId, Option<Vec<DefId>>>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub named_expressions: HashSet<DefId>,
@@ -1060,17 +1057,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // can't be made as it's read (ADR 0037, amended).
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
-        made_by: local_makers,
-        exported: exported_locals,
+        at_load: locals_at_load,
     } = lazy_locals::lazy_locals(
         tcx,
         all_bodies,
         (&thread_local_inits, made_where_used),
-        (cell_borrows.pointers(), &|key| {
-            // A library's thread-local its contract doesn't list, made where
-            // it's first used, as what's taken to change.
-            (foreign.item(key)).is_none_or(|item| item.calling.has(crate::library::ItemFact::Lazy))
-        }),
+        cell_borrows.pointers(),
         &|id, args| {
             let recognition = Recognition {
                 tcx,
@@ -1298,8 +1290,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         quiet_locals,
         quiet_library_keys,
         lazy_locals,
-        local_makers,
-        exported_locals,
+        locals_at_load,
         named_expressions,
         local_functions,
         local_consts,
