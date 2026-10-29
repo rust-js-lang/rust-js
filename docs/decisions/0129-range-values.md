@@ -224,3 +224,15 @@ snapshots.
 lines with #414's cases, blessed: `range_inclusive_exhausted.rs`'s 23 and
 `range_lent_used_up.rs`'s 8 are a test's many printed `value$n`s, as
 `integer_bits.rs`'s 4 new ones are another change's.
+
+## Amendment: a reversed `char` range steps by code point (2026-10-30, #420)
+
+A reversed range's `step_by(n)`, `$lazyRangeBack(a, b, n)` (#163), stepped
+by subtraction, which of a `char`'s, a string, gave `NaN` after its first:
+`('a'..='e').rev().step_by(2)` was `"e"`, not `"eca"`. Results change, so
+Rust's behavior is kept (ADR 0262): **`$lazyRangeBack` of `char`s steps
+each that many code points back, past the surrogates, by `$charStep`, as
+std's `Step::backward` does.** Held by `char_ranges_stepped.rs` (an
+inclusive one, an open one, one across the surrogates) against native
+Rust and the mutation `lazy-range-back-chars-as-numbers`
+(`runtime/lazy_range.ts`).

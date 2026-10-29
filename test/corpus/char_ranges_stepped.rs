@@ -9,4 +9,10 @@ fn main() {
     let down: Vec<char> = ('p'..='s').rev().collect();
     let back: Vec<u32> = ('\u{D7FF}'..'\u{E001}').rev().map(|c| c as u32).collect();
     println!("{first:?} {last:?} {rest:?} {around:?} {down:?} {back:?}");
+    // Reversed and stepped by, each step that many code points back, past
+    // the surrogates too (#420).
+    let every: String = ('a'..='e').rev().step_by(2).collect();
+    let open: String = ('a'..'e').rev().step_by(3).collect();
+    let across: Vec<u32> = ('\u{D7FD}'..='\u{E002}').rev().step_by(2).map(|c| c as u32).collect();
+    println!("{every:?} {open:?} {across:?}");
 }

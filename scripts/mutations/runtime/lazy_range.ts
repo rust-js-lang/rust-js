@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    return [0, undefined];\n  };\n  return range;\n",
     tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
   },
+  {
+    name: "lazy-range-back-chars-as-numbers",
+    breaks: "a reversed `char` range's `step_by(n)` steps by subtraction, `NaN` after its first, `('a'..='e').rev().step_by(2)` giving `\"e\"`, not `\"eca\"` (#420)",
+    file: "src/runtime/lazy_range.js",
+    find: "  if (typeof end === \"string\") {\n    let c = inclusive ? end : $charStep(end, -1);\n",
+    replace: "  if (false) {\n    let c = inclusive ? end : $charStep(end, -1);\n",
+    tests: ["test/corpus.test.ts", "-t", "^char_ranges_stepped.rs$"],
+  },
 ];

@@ -3,6 +3,7 @@
 import {
   $debugStr,
   $iterator,
+  $lazyRangeBack,
   $rangeInclusiveNextBack,
   $rangeNext,
   $rangeNextBack,
@@ -27,5 +28,11 @@ function main() {
   console.log(
     `${first == null ? "None" : `Some(${$debugStr(first, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`} [${rest.map((item) => $debugStr(item, "'")).join(", ")}] [${around.join(", ")}] [${down.map((item) => $debugStr(item, "'")).join(", ")}] [${back.join(", ")}]`,
   );
+  // Reversed and stepped by, each step that many code points back, past
+  // the surrogates too (#420).
+  const every = Array.from($lazyRangeBack("a", "e", 2, true)).join("");
+  const open = Array.from($lazyRangeBack("a", "e", 3)).join("");
+  const across = Array.from($lazyRangeBack("퟽", "\ue002", 2, true).map((c) => c.codePointAt(0)));
+  console.log(`${$debugStr(every)} ${$debugStr(open)} [${across.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
