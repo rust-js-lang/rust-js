@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    }\n",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
   },
+  {
+    name: "header-on-code-spaced",
+    breaks: "a file's leading comments right above its code are a blank line above its JS, where the source has none, React's `// This is a generated file.` above its first `export` (#419)",
+    file: "src/to_oxc/header.rs",
+    find: "    if !(module.header_on_code && lines.is_empty() && module.directives.is_empty()) {\n",
+    replace: "    if true {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "right above the code are right above its JS"],
+  },
 ];

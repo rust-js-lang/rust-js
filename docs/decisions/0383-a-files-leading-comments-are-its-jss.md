@@ -66,3 +66,21 @@ comment is one, whole. Held by `comments::tests`, the lowering test "a
 file's block comment with a blank line in it is one comment" and the
 mutation `head-comment-cut-inside-a-comment`.
 
+
+## Amendment: leading comments right above the code (2026-10-30, #419)
+
+A file's leading comments are its JS's header, then a blank line, then
+its imports and code. Where the source has no blank line between them and
+its first item, and the module imports nothing, that blank line is the
+JS's alone: React's generated `ReactDOMFizzInstructionSetInlineCodeStrings`
+writes `// This is a generated file.` right above its first `export`.
+**Of a module that imports nothing and has no directive, leading comments
+right above its code (`Module::header_on_code`, what `output.rs` reads of
+the source after them) are right above its JS too, no blank line.** A
+module with imports keeps them after a blank line, as the corpus's files,
+whose first comments are right above their `use`s, describe the file.
+A block comment right above the code, TheAlgorithms' PCG32's (#312), is
+right above its JS so too. Held by `lowering-comments-items`'s "leading
+comments right above the code are right above its JS", `lowering-comments`'
+PCG32 test, and the mutation `header-on-code-spaced`
+(`to_oxc/header.ts`); no corpus case changes.

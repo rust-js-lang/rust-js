@@ -330,3 +330,17 @@ pub fn register(n: u32) -> usize {
   expect(js).toContain('    console.log("big");\n  }\n\n  seen.push(n);\n  const count = seen.length;\n\n  function shown() {\n    console.log(`${n}`);\n  }');
   expect((lib.register as (n: number) => number)(3)).toBe(1);
 });
+
+// A file's leading comments right above its code, no blank line between,
+// are right above its JS too, of a module that imports nothing: React's
+// generated InlineCodeStrings, `// This is a generated file.` right above
+// its first `export` (#419).
+test("leading comments right above the code are right above its JS", async () => {
+  const { js, lib } = await compiled("header-on-code", `// This is a generated file.
+// Run \`yarn generate\` to generate.
+#[cfg_attr(rust_js, rust_js::name = "markShellTime")]
+pub const MARK_SHELL_TIME: &str = r#"requestAnimationFrame(function(){$RT=performance.now()});"#;
+`);
+  expect(js).toContain("// This is a generated file.\n// Run `yarn generate` to generate.\nexport const markShellTime =");
+  expect(lib.markShellTime).toBe("requestAnimationFrame(function(){$RT=performance.now()});");
+});

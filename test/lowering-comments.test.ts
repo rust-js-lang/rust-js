@@ -68,7 +68,7 @@ js::export_default! {
 // TheAlgorithms/rust's PCG32 starts with a block comment with a blank line
 // in it: one comment, its file's, whole. A blank line between two
 // comments parts a license from what's right above the code; one inside a
-// comment parts nothing (#312).
+// comment parts nothing (#312), and right above the code, its JS (#419).
 test("a file's block comment with a blank line in it is one comment", async () => {
   const { js, lib } = await compiled("blank-line-in-a-block-comment", `/*
 Permuted Congruential Generator
@@ -79,7 +79,7 @@ pub fn one() -> u8 {
     1
 }
 `);
-  expect(js).toContain("/*\nPermuted Congruential Generator\n\nNot for serious use.\n */\n\nexport function one() {\n");
+  expect(js).toContain("/*\nPermuted Congruential Generator\n\nNot for serious use.\n */\nexport function one() {\n");
   expect(lib.one()).toBe(1);
 });
 

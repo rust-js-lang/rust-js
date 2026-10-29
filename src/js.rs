@@ -90,6 +90,11 @@ pub fn positional(i: usize) -> String {
 
 pub struct Module {
     pub header: String,
+    /// Whether the file's leading comments, the header's, are right above
+    /// its code, no blank line between: then, of a module that imports
+    /// nothing, none in its JS either, `// This is a generated file.` right
+    /// above its first `export` (#419).
+    pub header_on_code: bool,
     /// `"use client"`, before its imports (ADR 0192).
     pub directives: Vec<String>,
     /// Imports from JS modules, from `#[link_name = "module#path"]` (ADR 0028).

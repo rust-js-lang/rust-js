@@ -104,6 +104,10 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         code.push('\n');
         code.push_str(&lines.concat());
     }
-    code.push('\n');
+    // A blank line before the code, but after leading comments right above
+    // it, of a module that imports nothing, as the source has none (#419).
+    if !(module.header_on_code && lines.is_empty() && module.directives.is_empty()) {
+        code.push('\n');
+    }
     code
 }
