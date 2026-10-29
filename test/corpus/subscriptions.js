@@ -5,6 +5,7 @@ import {
   $borrowMut,
   $cmp,
   $downgrade,
+  $dropItems,
   $iter,
   $next,
   $rcDrop,
@@ -64,21 +65,24 @@ const Component = {
         c = (c + 1) | 0;
       });
     } catch (error) {
-      const bus = $upgrade(first.bus);
-      if (bus != null) {
-        try {
-          const borrowMut = $borrowMut(bus.value, true);
+      try {
+        const bus = $upgrade(first.bus);
+        if (bus != null) {
           try {
-            borrowMut.handlers.delete(first.id);
+            const borrowMut = $borrowMut(bus.value, true);
+            try {
+              borrowMut.handlers.delete(first.id);
+            } finally {
+              $unborrow(borrowMut);
+            }
+            console.log(`unsubscribed ${first.id}`);
           } finally {
-            $unborrow(borrowMut);
+            $rcDrop(bus);
           }
-          console.log(`unsubscribed ${first.id}`);
-        } finally {
-          $rcDrop(bus);
         }
+      } finally {
+        $weakDrop(first.bus);
       }
-      $weakDrop(first.bus);
       throw error;
     }
     return {
@@ -103,123 +107,141 @@ function main() {
     try {
       b = Component.new("b", bus);
     } catch (error) {
-      for (const item of a.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      $dropItems(a.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
+      });
       throw error;
     }
     try {
       publish(bus, "hello");
     } catch (error) {
-      for (const item of b.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      $dropItems(b.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
-      for (const item of a.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      });
+      $dropItems(a.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
+      });
       throw error;
     }
     console.log(`${b.name} has ${b.subs.length}`);
     try {
-      for (const item of b.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      $dropItems(b.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
+      });
     } catch (error) {
-      for (const item of a.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      $dropItems(a.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
+      });
       throw error;
     }
     try {
       publish(bus, "again");
     } catch (error) {
-      for (const item of a.subs) {
-        const bus = $upgrade(item.bus);
-        if (bus != null) {
-          try {
-            const borrowMut = $borrowMut(bus.value, true);
+      $dropItems(a.subs, (item) => {
+        try {
+          const bus = $upgrade(item.bus);
+          if (bus != null) {
             try {
-              borrowMut.handlers.delete(item.id);
+              const borrowMut = $borrowMut(bus.value, true);
+              try {
+                borrowMut.handlers.delete(item.id);
+              } finally {
+                $unborrow(borrowMut);
+              }
+              console.log(`unsubscribed ${item.id}`);
             } finally {
-              $unborrow(borrowMut);
+              $rcDrop(bus);
             }
-            console.log(`unsubscribed ${item.id}`);
-          } finally {
-            $rcDrop(bus);
           }
+        } finally {
+          $weakDrop(item.bus);
         }
-        $weakDrop(item.bus);
-      }
+      });
       throw error;
     }
     const comps = [a];
@@ -228,7 +250,36 @@ function main() {
         comps,
         (c) => c.name !== "a",
         (component) => {
-          for (const item of component.subs) {
+          $dropItems(component.subs, (item) => {
+            try {
+              const bus = $upgrade(item.bus);
+              if (bus != null) {
+                try {
+                  const borrowMut = $borrowMut(bus.value, true);
+                  try {
+                    borrowMut.handlers.delete(item.id);
+                  } finally {
+                    $unborrow(borrowMut);
+                  }
+                  console.log(`unsubscribed ${item.id}`);
+                } finally {
+                  $rcDrop(bus);
+                }
+              }
+            } finally {
+              $weakDrop(item.bus);
+            }
+          });
+        },
+      );
+      publish(bus, "empty");
+      const borrow = $borrow(bus.value, true);
+      console.log(`left ${borrow.handlers.size}`);
+      $unborrow(borrow);
+    } finally {
+      $dropItems(comps, (item) => {
+        $dropItems(item.subs, (item) => {
+          try {
             const bus = $upgrade(item.bus);
             if (bus != null) {
               try {
@@ -243,34 +294,11 @@ function main() {
                 $rcDrop(bus);
               }
             }
+          } finally {
             $weakDrop(item.bus);
           }
-        },
-      );
-      publish(bus, "empty");
-      const borrow = $borrow(bus.value, true);
-      console.log(`left ${borrow.handlers.size}`);
-      $unborrow(borrow);
-    } finally {
-      for (const item of comps) {
-        for (const item$1 of item.subs) {
-          const bus = $upgrade(item$1.bus);
-          if (bus != null) {
-            try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item$1.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
-              console.log(`unsubscribed ${item$1.id}`);
-            } finally {
-              $rcDrop(bus);
-            }
-          }
-          $weakDrop(item$1.bus);
-        }
-      }
+        });
+      });
     }
   } finally {
     $rcDrop(bus);

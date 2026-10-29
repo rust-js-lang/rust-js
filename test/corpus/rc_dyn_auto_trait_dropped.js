@@ -16,24 +16,18 @@ function main() {
   let b;
   try {
     b = $rcClone(a);
-  } catch (error) {
-    $rcDrop(a);
-    throw error;
-  }
-  let f;
-  try {
-    f = b.impl.f(b.value);
-  } catch (error) {
-    $rcDrop(b);
-    $rcDrop(a);
-    throw error;
-  }
-  console.log(`${f} ${a.strong} ${b.strong}`);
-  try {
-    $rcDrop(a);
-    console.log(`${b.strong}`);
+    let f;
+    try {
+      f = b.impl.f(b.value);
+    } catch (error) {
+      $rcDrop(b);
+      throw error;
+    }
+    console.log(`${f} ${a.strong} ${b.strong}`);
   } finally {
-    $rcDrop(b);
+    $rcDrop(a);
   }
+  console.log(`${b.strong}`);
+  $rcDrop(b);
 }
 //# sourceMappingURL=case.js.map

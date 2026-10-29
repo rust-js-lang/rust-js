@@ -3,6 +3,7 @@
 import {
   $assign,
   $dropEach,
+  $dropItems,
   $extend,
   $given,
   $held,
@@ -36,9 +37,9 @@ function firsts(
   try {
     iter = $intoIter(iterable);
   } catch (error) {
-    for (const item of out) {
+    $dropItems(out, (item) => {
       dropIItemItem?.(item);
-    }
+    });
     throw error;
   }
   let tmp;
@@ -49,18 +50,18 @@ function firsts(
       tmp = $nextSome(iter);
     } catch (error) {
       dropIIntoIter?.(iter);
-      for (const item of out) {
+      $dropItems(out, (item) => {
         dropIItemItem?.(item);
-      }
+      });
       throw error;
     }
     if (tmp == null) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
-        for (const item of out) {
+        $dropItems(out, (item) => {
           dropIItemItem?.(item);
-        }
+        });
         throw error;
       }
       break;
@@ -70,9 +71,9 @@ function firsts(
       it = $held(IItemIntoIterator.intoIter(inner));
     } catch (error) {
       dropIIntoIter?.(iter);
-      for (const item of out) {
+      $dropItems(out, (item) => {
         dropIItemItem?.(item);
-      }
+      });
       throw error;
     }
     try {
@@ -80,9 +81,9 @@ function firsts(
     } catch (error) {
       dropIItemIntoIter?.(it);
       dropIIntoIter?.(iter);
-      for (const item of out) {
+      $dropItems(out, (item) => {
         dropIItemItem?.(item);
-      }
+      });
       throw error;
     }
     if (next != null) {
@@ -92,9 +93,9 @@ function firsts(
       } catch (error) {
         dropIItemIntoIter?.(it);
         dropIIntoIter?.(iter);
-        for (const item of out) {
+        $dropItems(out, (item) => {
           dropIItemItem?.(item);
-        }
+        });
         throw error;
       }
     } else {
@@ -105,9 +106,9 @@ function firsts(
       } catch (error) {
         dropIItemIntoIter?.(it);
         dropIIntoIter?.(iter);
-        for (const item of out) {
+        $dropItems(out, (item) => {
           dropIItemItem?.(item);
-        }
+        });
         throw error;
       }
     }
@@ -115,9 +116,9 @@ function firsts(
       dropIItemIntoIter?.(it);
     } catch (error) {
       dropIIntoIter?.(iter);
-      for (const item of out) {
+      $dropItems(out, (item) => {
         dropIItemItem?.(item);
-      }
+      });
       throw error;
     }
   }

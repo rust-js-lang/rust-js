@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "map-keys-undropped",
     breaks: "dropping a map of keys and values with destructors drops its values alone",
     file: "src/lower/drops/parts.rs",
-    find: "                        Some(value_ty) => {\n                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;\n",
-    replace: "                        Some(value_ty) => {\n",
+    find: "                            let mut value_dropped = Vec::new();\n                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;\n",
+    replace: "                            let mut value_dropped = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
   {
@@ -177,5 +177,21 @@ export const mutations: Mutation[] = [
     find: "            || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n                && !crate::lower::recognition::is_held_compiled(self.tcx, self.reveal(ty)))",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+  },
+  {
+    name: "drop-parts-unchained",
+    breaks: "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
+    file: "src/lower/drops/parts.rs",
+    find: "            false => vec![StmtKind::Try(part, rest).at(js_span)],\n",
+    replace: "            false => part.into_iter().chain(rest).collect(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
+  },
+  {
+    name: "drop-items-unchained",
+    breaks: "an array's or a `Vec`'s items after one whose destructor panics are never dropped, a `for…of` left by its throw (#416)",
+    file: "src/lower/drops/parts.rs",
+    find: "    if !may_throw(&body) {\n        return StmtKind::ForOf {\n",
+    replace: "    if true {\n        return StmtKind::ForOf {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
   },
 ];

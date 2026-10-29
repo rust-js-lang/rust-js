@@ -3,6 +3,7 @@
 import {
   $borrow,
   $borrowMut,
+  $dropItems,
   $dynCell,
   $index,
   $iter,
@@ -75,11 +76,11 @@ function main() {
         $unborrow(value);
       }
     } finally {
-      for (const item of sinks) {
+      $dropItems(sinks, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.value);
         });
-      }
+      });
     }
     const borrow = $borrow(counter.value, true);
     console.log(`${counterSink_total(borrow.value)}`);

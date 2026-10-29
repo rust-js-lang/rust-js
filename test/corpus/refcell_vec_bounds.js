@@ -4,6 +4,7 @@ import {
   $at,
   $borrow,
   $borrowMut,
+  $dropItems,
   $index,
   $panicMessage,
   $unborrow,
@@ -229,9 +230,7 @@ function main() {
       debug,
     );
   } finally {
-    for (const item of slots) {
-      clearerDrop_drop(item);
-    }
+    $dropItems(slots, clearerDrop_drop);
   }
 }
 //# sourceMappingURL=case.js.map

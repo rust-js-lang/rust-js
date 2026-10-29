@@ -147,33 +147,8 @@ function main() {
   }
   const value = { value: 1, strong: 1, weak: 0 };
   console.log(`${tmp$2} ${tmp$3.value === value.value}`);
-  try {
-    $rcDrop(value);
-  } catch (error) {
-    $rcDrop(tmp$3);
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(tmp$3);
-  } catch (error) {
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  $rcDrop(value);
+  $rcDrop(tmp$3);
   try {
     copy.pages = $makeMut(copy.pages, (value) => value.slice());
   } catch (error) {
@@ -654,27 +629,7 @@ function main() {
     throw error;
   }
   console.log(`${defaulted.value} ${arg$2}`);
-  try {
-    $rcDrop(value$4);
-  } catch (error) {
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  $rcDrop(value$4);
   let w;
   try {
     w = $downgrade(defaulted);
@@ -698,27 +653,7 @@ function main() {
     throw error;
   }
   console.log(`${defaulted.weak}`);
-  try {
-    $weakDrop(w);
-  } catch (error) {
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  $weakDrop(w);
   console.log(`${defaulted.weak}`);
   const two = { value: 2, strong: 1, weak: 0 };
   let also;
@@ -823,116 +758,11 @@ function main() {
   }
   alias.value.value = 5;
   console.log(`${cell.value.value}`);
-  try {
-    $rcDrop(alias);
-  } catch (error) {
-    $rcDrop(cell);
-    $rcDrop(counter);
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(cell);
-  } catch (error) {
-    $rcDrop(counter);
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(counter);
-  } catch (error) {
-    $rcDrop(also);
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(also);
-  } catch (error) {
-    $rcDrop(defaulted);
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(defaulted);
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  $rcDrop(alias);
+  $rcDrop(cell);
+  $rcDrop(counter);
+  $rcDrop(also);
+  $rcDrop(defaulted);
   try {
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -952,22 +782,7 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    $rcDrop(other$1);
-  } catch (error) {
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
+  $rcDrop(other$1);
   try {
     for (const item of lists) {
       $rcDrop(item);
@@ -983,42 +798,13 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  try {
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-  } catch (error) {
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-  } catch (error) {
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-  } catch (error) {
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  try {
-    $rcDrop(other);
-  } catch (error) {
-    $rcDrop(converted);
-    throw error;
-  }
+  $rcDrop(fresh.title);
+  $rcDrop(fresh.pages);
+  $rcDrop(copy.title);
+  $rcDrop(copy.pages);
+  $rcDrop(doc.title);
+  $rcDrop(doc.pages);
+  $rcDrop(other);
   $rcDrop(converted);
 }
 //# sourceMappingURL=case.js.map

@@ -51,15 +51,9 @@ function main() {
         $weakDrop(value);
         throw error;
       }
-      try {
-        try {
-          $weakDrop(borrowMut.value);
-        } finally {
-          borrowMut.value = value;
-        }
-      } finally {
-        $unborrow(borrowMut);
-      }
+      $weakDrop(borrowMut.value);
+      borrowMut.value = value;
+      $unborrow(borrowMut);
       const borrow = $borrow($fieldCell(leaf.value, "parent"), true);
       let parent;
       try {

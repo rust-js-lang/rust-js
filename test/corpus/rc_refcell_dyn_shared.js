@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $downgrade,
+  $dropItems,
   $dynCell,
   $fieldCell,
   $index,
@@ -121,19 +122,7 @@ function main() {
     });
     throw error;
   }
-  try {
-    $weakDrop(borrowMut.value);
-  } catch (error) {
-    borrowMut.value = tmp;
-    $unborrow(borrowMut);
-    $rcDrop(leaf, (value) => {
-      $weakDrop(value.parent);
-    });
-    $rcDrop(root, (value) => {
-      $weakDrop(value.parent);
-    });
-    throw error;
-  }
+  $weakDrop(borrowMut.value);
   borrowMut.value = tmp;
   try {
     $unborrow(borrowMut);
@@ -247,11 +236,11 @@ function main() {
             $unborrow(value$1);
           }
         } finally {
-          for (const item of sinks) {
+          $dropItems(sinks, (item) => {
             $rcDrop(item, (value) => {
               value.impl.$drop?.(value.value);
             });
-          }
+          });
         }
         const value = $borrow(counter.value, true);
         console.log(`${counterSink_total(value.value)} ${counter.strong}`);

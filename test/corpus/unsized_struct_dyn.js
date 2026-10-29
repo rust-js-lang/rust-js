@@ -78,10 +78,13 @@ function main() {
   ];
   const value = $dynCell(wrapper, {});
   try {
-    wrapperDrop_drop(value, (value) => {
-      value.impl.$drop?.(value.value);
-    });
-    value.impl.$drop?.(value[1]);
+    try {
+      wrapperDrop_drop(value, (value) => {
+        value.impl.$drop?.(value.value);
+      });
+    } finally {
+      value.impl.$drop?.(value[1]);
+    }
   } catch (error) {
     plain.impl.$drop?.(plain.inner);
     sent.impl.$drop?.(sent.inner);
@@ -106,10 +109,13 @@ function main() {
   try {
     try {
       try {
-        wrapperDrop_drop(held, (value) => {
-          value.impl.$drop?.(value.value);
-        });
-        held.impl.$drop?.(held[1]);
+        try {
+          wrapperDrop_drop(held, (value) => {
+            value.impl.$drop?.(value.value);
+          });
+        } finally {
+          held.impl.$drop?.(held[1]);
+        }
         console.log(`end ${x}`);
       } finally {
         plain.impl.$drop?.(plain.inner);

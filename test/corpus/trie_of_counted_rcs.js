@@ -7,6 +7,7 @@ import {
   $cmp,
   $debugStr,
   $downgrade,
+  $dropItems,
   $entry,
   $iter,
   $mutGet,
@@ -30,10 +31,13 @@ export function entry() {
 function insert(root, word) {
   function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
-    for (const [, value] of $sortedEntries(node.children, $cmp)) {
-      $rcDrop(value, dropNode);
+    try {
+      $dropItems($sortedEntries(node.children, $cmp), ([, value]) => {
+        $rcDrop(value, dropNode);
+      });
+    } finally {
+      $weakDrop(node.parent);
     }
-    $weakDrop(node.parent);
   }
   let label$live = false;
   let cur = $rcClone(root);
@@ -82,9 +86,9 @@ function insert(root, word) {
             try {
               parent = $downgrade(tmp$1);
             } catch (error) {
-              for (const [, value] of $sortedEntries(tmp, $cmp)) {
+              $dropItems($sortedEntries(tmp, $cmp), ([, value]) => {
                 $rcDrop(value, dropNode);
-              }
+              });
               console.log(`drop ${$debugStr(label[0])}`);
               throw error;
             }
@@ -133,10 +137,13 @@ function insert(root, word) {
 function depth(node) {
   function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
-    for (const [, value] of $sortedEntries(node.children, $cmp)) {
-      $rcDrop(value, dropNode);
+    try {
+      $dropItems($sortedEntries(node.children, $cmp), ([, value]) => {
+        $rcDrop(value, dropNode);
+      });
+    } finally {
+      $weakDrop(node.parent);
     }
-    $weakDrop(node.parent);
   }
   let cur = $rcClone(node);
   let depth = 0;
@@ -181,10 +188,13 @@ function depth(node) {
 function main() {
   function dropNode(node) {
     console.log(`drop ${$debugStr(node.label[0])}`);
-    for (const [, value] of $sortedEntries(node.children, $cmp)) {
-      $rcDrop(value, dropNode);
+    try {
+      $dropItems($sortedEntries(node.children, $cmp), ([, value]) => {
+        $rcDrop(value, dropNode);
+      });
+    } finally {
+      $weakDrop(node.parent);
     }
-    $weakDrop(node.parent);
   }
   const label = [""];
   let tmp;

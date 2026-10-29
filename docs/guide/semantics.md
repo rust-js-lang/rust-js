@@ -650,6 +650,12 @@ is a call of the crate's function that can't panic either, one whose
 body only prints and reads, `loudDrop_drop(b); loudDrop_drop(a);`; one
 that may, by an index or a `Display` that panics, keeps its `finally`
 ([0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md)).
+A part whose destructor panics leaves the parts after it still dropped,
+as Rust's drop glue goes on: a struct's fields after its own `drop` and
+each other, a tuple's and a variant's, `try { boomDrop_drop(pair.first);
+} finally { loudDrop_drop(pair.second); }`, and an array's or a map's
+items, `$dropItems(items, drop)`, where what's dropped may throw
+([0098](../decisions/0098-destructors.md), [`drop_parts_past_a_panic`](../../test/corpus/drop_parts_past_a_panic.rs)).
 A `Drop` is its body where it's dropped, at each drop, its guard its
 fields, `const previous = depth; try { .. } finally { depth = previous; }`
 ([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).

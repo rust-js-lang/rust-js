@@ -3,6 +3,7 @@
 import {
   $KeyMap,
   $dropEach,
+  $dropItems,
   $eq,
   $given,
   $hashSlice,
@@ -41,9 +42,9 @@ function tCounting(TIterator, dropT, dropTItem) {
           dropT?.(iter);
         }
       } catch (error) {
-        for (const item of counts.keys()) {
+        $dropItems(counts.keys(), (item) => {
           dropTItem?.(item);
-        }
+        });
         throw error;
       }
       return counts;

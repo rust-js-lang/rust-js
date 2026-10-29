@@ -3,6 +3,7 @@
 import {
   $borrowMut,
   $dropEach,
+  $dropItems,
   $iter,
   $next,
   $nextSome,
@@ -40,10 +41,13 @@ function tee(iter, dropI, dropIItem) {
     };
   } catch (error) {
     $rcDrop(t1.rcbuffer, (value) => {
-      for (const item of value.backlog) {
-        dropIItem?.(item);
+      try {
+        $dropItems(value.backlog, (item) => {
+          dropIItem?.(item);
+        });
+      } finally {
+        dropI?.(value.iter);
       }
-      dropI?.(value.iter);
     });
     throw error;
   }

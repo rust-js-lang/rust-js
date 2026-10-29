@@ -17,13 +17,13 @@ function main() {
     const watch = $rcClone(first);
     try {
       first = $makeMut(first, (value) => failsClone_clone(value));
-    } catch (error) {
-      console.log(`owners as it unwinds: ${watch.strong}`);
-      $rcDrop(watch);
-      throw error;
+    } finally {
+      try {
+        console.log(`owners as it unwinds: ${watch.strong}`);
+      } finally {
+        $rcDrop(watch);
+      }
     }
-    console.log(`owners as it unwinds: ${watch.strong}`);
-    $rcDrop(watch);
   } finally {
     $rcDrop(first);
   }

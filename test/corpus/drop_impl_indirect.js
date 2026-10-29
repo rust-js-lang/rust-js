@@ -84,14 +84,20 @@ function pairTake(dropA, dropB) {
   return $traitImpl($pairTake, [dropA, dropB], () => ({
     take(self) {
       function dropSelf(pair) {
-        dropA?.(pair[0]);
-        dropB?.(pair[1]);
+        try {
+          dropA?.(pair[0]);
+        } finally {
+          dropB?.(pair[1]);
+        }
       }
       dropSelf?.(self);
     },
     $drop(pair) {
-      dropA?.(pair[0]);
-      dropB?.(pair[1]);
+      try {
+        dropA?.(pair[0]);
+      } finally {
+        dropB?.(pair[1]);
+      }
     },
   }));
 }

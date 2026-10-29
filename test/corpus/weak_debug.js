@@ -55,9 +55,9 @@ function main() {
     // Of a counted `Rc`'s, two to nothing are one (ADR 0843).
     const none = $weakNone;
     console.log(`${none === $weakNone}`);
+    $weakDrop($weakNone);
+    const s = { value: 3, strong: 1, weak: 0 };
     try {
-      $weakDrop($weakNone);
-      const s = { value: 3, strong: 1, weak: 0 };
       try {
         const value = $downgrade(s);
         console.log("(Weak)");

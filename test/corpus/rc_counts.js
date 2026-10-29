@@ -5,6 +5,7 @@ import {
   $borrowMut,
   $debugStr,
   $downgrade,
+  $dropItems,
   $fieldCell,
   $intoInner,
   $makeMut,
@@ -27,9 +28,9 @@ export function entry() {
 function main() {
   function dropNode(node) {
     $weakDrop(node.parent);
-    for (const item of node.children) {
+    $dropItems(node.children, (item) => {
       $rcDrop(item, dropNode);
-    }
+    });
   }
   let a = { value: 5, strong: 1, weak: 0 };
   console.log(`${a.strong} ${a.weak}`);
@@ -49,20 +50,9 @@ function main() {
     throw error;
   }
   console.log(`${a.strong} ${(c.value + b.value) | 0}`);
-  try {
-    $rcDrop(c);
-  } catch (error) {
-    $rcDrop(b);
-    $rcDrop(a);
-    throw error;
-  }
+  $rcDrop(c);
   console.log(`${a.strong} ${a === b}`);
-  try {
-    $rcDrop(b);
-  } catch (error) {
-    $rcDrop(a);
-    throw error;
-  }
+  $rcDrop(b);
   console.log(`${a.strong}`);
 
   let tmp;
@@ -231,15 +221,9 @@ function main() {
           $weakDrop(value);
           throw error;
         }
-        try {
-          try {
-            $weakDrop(borrowMut.value);
-          } finally {
-            borrowMut.value = value;
-          }
-        } finally {
-          $unborrow(borrowMut);
-        }
+        $weakDrop(borrowMut.value);
+        borrowMut.value = value;
+        $unborrow(borrowMut);
         const value$1 = $borrow($fieldCell(leaf.value, "parent"), true);
         try {
           const value = $upgrade(value$1.value);

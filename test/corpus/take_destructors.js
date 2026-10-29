@@ -5,6 +5,7 @@ import {
   $closing,
   $count,
   $dropEach,
+  $dropItems,
   $held,
   $iter,
   $lent,
@@ -35,9 +36,9 @@ function splitFirst(iter, k, dropI, dropIItem) {
     result = $count(Iterator.from(iter), dropIItem);
     dropI?.(iter);
   } catch (error) {
-    for (const item of first) {
+    $dropItems(first, (item) => {
       dropIItem?.(item);
-    }
+    });
     throw error;
   }
   return [first, result];

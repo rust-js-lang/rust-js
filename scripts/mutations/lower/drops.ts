@@ -58,4 +58,13 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(typing_env) = None::<ty::TypingEnv<'tcx>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^const_param_drops.rs$"],
   },
+  {
+    name: "drop-function-quiet-unknown",
+    breaks: "a call of a drop function made here whose body never throws is taken as one that may, each part after it in a `finally` of its own (#416)",
+    file: "src/lower/drops.rs",
+    find: "        if self.drop_state.quiet.contains(name) {\n",
+    replace: "        if false && self.drop_state.quiet.contains(name) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_generic_types.rs$"],
+    snapshots: true,
+  },
 ];

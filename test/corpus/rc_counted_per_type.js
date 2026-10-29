@@ -42,18 +42,18 @@ function main() {
       try {
         try {
           const [c, d] = pair(3);
-          try {
-            $rcDrop(c);
-            console.log(`${d.value.value} ${d.strong}`);
+          $rcDrop(c);
+          console.log(`${d.value.value} ${d.strong}`);
 
-            const flag = {
-              value: {
-                first: true,
-                second: 1,
-              },
-              strong: 1,
-              weak: 0,
-            };
+          const flag = {
+            value: {
+              first: true,
+              second: 1,
+            },
+            strong: 1,
+            weak: 0,
+          };
+          try {
             try {
               const flagAgain = again(flag);
               console.log(`${flagAgain.value.first} ${flag.strong}`);

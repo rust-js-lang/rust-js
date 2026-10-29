@@ -31,9 +31,12 @@ function manuallyDropped() {
   console.log(`${kept[0]}`);
   const inner = 3;
   const other = 4;
-  console.log("holder");
-  console.log(`drop ${inner}`);
-  console.log(`drop ${other}`);
+  try {
+    console.log("holder");
+    console.log(`drop ${inner}`);
+  } finally {
+    console.log(`drop ${other}`);
+  }
   const v = [[5], [6]];
   for (const item of v) {
     console.log(`drop ${item[0]}`);

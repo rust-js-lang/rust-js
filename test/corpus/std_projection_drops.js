@@ -144,9 +144,12 @@ function main() {
   const value = [["d"], ["e"], ["f"]];
   try {
     const found = relay($iterator({ rest: $iter(value) }, drainIterator_next), (it) => {
-      console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
-      for (const item of it.of.rest) {
-        loudDrop_drop(item);
+      try {
+        console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
+      } finally {
+        for (const item of it.of.rest) {
+          loudDrop_drop(item);
+        }
       }
     });
     console.log(`relayed ${found?.[0] ?? "none"}`);
@@ -169,15 +172,21 @@ function main() {
           bag,
           $iterator({ rest: $iter(value) }, drainIterator_next),
           (it) => {
-            console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
-            for (const item of it.of.rest) {
-              loudDrop_drop(item);
+            try {
+              console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
+            } finally {
+              for (const item of it.of.rest) {
+                loudDrop_drop(item);
+              }
             }
           },
           (it) => {
-            console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
-            for (const item of it.of.rest) {
-              loudDrop_drop(item);
+            try {
+              console.log(`drain dropped, ${it.of.rest.end - it.of.rest.at} left`);
+            } finally {
+              for (const item of it.of.rest) {
+                loudDrop_drop(item);
+              }
             }
           },
         );

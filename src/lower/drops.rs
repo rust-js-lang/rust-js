@@ -156,6 +156,9 @@ pub(super) struct DropState<'tcx> {
     /// The drops of each function a copied default is lowered in, innermost
     /// last, in its impl's terms (ADR 0495).
     outer: Vec<SwappedDrops<'tcx>>,
+    /// The drop functions made here whose body never throws, so a part
+    /// dropped by one needs no `finally` for those after it (#416).
+    quiet: HashSet<String>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -400,7 +403,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One whose drop is a function already, in this drop: that.
         if let Some((_, name)) = made.functions.iter().find(|(t, _)| *t == ty) {
             let js_span = self.js_span(span);
-            out.push(StmtKind::Expr(Expr::call(Expr::var(name), vec![value])).at(js_span));
+            let name = name.clone();
+            out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
             return Ok(());
         }
         // One declared at the body's top already.
@@ -412,7 +416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, name)| name.clone())
         {
             let js_span = self.js_span(span);
-            out.push(StmtKind::Expr(Expr::call(Expr::var(&name), vec![value])).at(js_span));
+            out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
             return Ok(());
         }
         // A type of the crate's own whose drop is long, or inside itself, as
@@ -435,15 +439,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let mut body = Vec::new();
             self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
+            if !parts::may_throw(&body) {
+                self.drop_state.quiet.insert(name.clone());
+            }
             let def = StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span);
             match self.drop_state.hoisted.as_mut() {
                 Some(hoisted) => hoisted.defs.push(def),
                 None => made.defs.push(def),
             }
-            out.push(StmtKind::Expr(Expr::call(Expr::var(&name), vec![value])).at(js_span));
+            out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
             return Ok(());
         }
         self.drop_parts(value, ty, span, made, out)
+    }
+
+    /// A call of `name`, a drop function made here, of `value`: known never
+    /// to throw where its body never does (`quiet`).
+    fn drop_function_call(&self, name: &str, value: Expr) -> Expr {
+        let mut call = Expr::call(Expr::var(name), vec![value]);
+        if self.drop_state.quiet.contains(name) {
+            call.facts = call.facts.with(js::Known::NeverThrows);
+        }
+        call
     }
 }
 

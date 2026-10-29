@@ -385,8 +385,11 @@ export const Zip = {
         return x;
       }
       n = (n - 1) >>> 0;
-      dropAItem?.(x[0]);
-      dropBItem?.(x[1]);
+      try {
+        dropAItem?.(x[0]);
+      } finally {
+        dropBItem?.(x[1]);
+      }
     }
   },
 };
@@ -3076,9 +3079,15 @@ export function scanIterator_fold(
   );
   $dispose(f$1);
   const result = controlFlow.TAG === "Continue" ? controlFlow._0 : controlFlow._0;
-  dropI?.(scan.iter);
-  dropF?.(scan.f);
-  dropSt?.(scan.state);
+  try {
+    dropI?.(scan.iter);
+  } finally {
+    try {
+      dropF?.(scan.f);
+    } finally {
+      dropSt?.(scan.state);
+    }
+  }
   return result;
 }
 
@@ -6745,12 +6754,18 @@ export function iterator_flatten(
       },
       takes: ["fold"],
       close(iterator) {
-        iterator.inner.iter.return();
-        if (iterator.inner.frontiter != null) {
-          dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
-        }
-        if (iterator.inner.backiter != null) {
-          dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+        try {
+          iterator.inner.iter.return();
+        } finally {
+          try {
+            if (iterator.inner.frontiter != null) {
+              dropSelfItemIntoIter?.($someValue(iterator.inner.frontiter));
+            }
+          } finally {
+            if (iterator.inner.backiter != null) {
+              dropSelfItemIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          }
         }
       },
     },
@@ -6953,12 +6968,18 @@ export function iterator_flatMap(
       },
       takes: ["fold"],
       close(iterator) {
-        iterator.inner.iter.return();
-        if (iterator.inner.frontiter != null) {
-          dropUIntoIter?.($someValue(iterator.inner.frontiter));
-        }
-        if (iterator.inner.backiter != null) {
-          dropUIntoIter?.($someValue(iterator.inner.backiter));
+        try {
+          iterator.inner.iter.return();
+        } finally {
+          try {
+            if (iterator.inner.frontiter != null) {
+              dropUIntoIter?.($someValue(iterator.inner.frontiter));
+            }
+          } finally {
+            if (iterator.inner.backiter != null) {
+              dropUIntoIter?.($someValue(iterator.inner.backiter));
+            }
+          }
         }
       },
     },
@@ -9628,9 +9649,15 @@ export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
       return scanDebug_fmt(arg0, arg1, IDebug, StDebug, dropI, dropSt, dropF);
     },
     $drop(scan) {
-      dropI?.(scan.iter);
-      dropF?.(scan.f);
-      dropSt?.(scan.state);
+      try {
+        dropI?.(scan.iter);
+      } finally {
+        try {
+          dropF?.(scan.f);
+        } finally {
+          dropSt?.(scan.state);
+        }
+      }
     },
   }));
 }

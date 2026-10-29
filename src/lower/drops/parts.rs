@@ -91,22 +91,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             js::Pattern::Name(key)
                         }
                         Some(value_ty) => {
+                            let mut value_dropped = Vec::new();
                             self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
-                            self.drop_in(Expr::var(&item), value_ty, span, made, &mut body)?;
+                            self.drop_in(Expr::var(&item), value_ty, span, made, &mut value_dropped)?;
+                            body = each_dropped(vec![body, value_dropped], js_span);
                             js::Pattern::names_array([keys.then_some(key), values.then_some(item)])
                         }
                     };
-                    out.push(
-                        StmtKind::ForOf {
-                            label: None,
-                            pattern,
-                            mutable: false,
-                            iterable: entries,
-                            body,
-                            keys: false,
-                        }
-                        .at(js_span),
-                    );
+                    out.push(items_dropped(entries, pattern, body, js_span));
                 }
             }
             // A `RefCell`'s value (ADR 0320), and a `Mutex`'s or an
@@ -161,7 +153,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     args.push(drop);
                 }
-                out.push(StmtKind::Expr(Expr::call(Expr::helper("$rcDrop"), args)).at(js_span));
+                // Of no `drop`, it never throws: a count, one less.
+                let mut call = Expr::call(Expr::helper("$rcDrop"), args);
+                if let js::ExprKind::Call(_, given) = &call.kind
+                    && given.len() == 1
+                {
+                    call.facts = call.facts.with(js::Known::NeverThrows);
+                }
+                out.push(StmtKind::Expr(call).at(js_span));
             }
             // A heap's `PeekMut` (ADR 0333).
             ty::Adt(..) if self.recognition().peek_mut_of(ty).is_some() => {
@@ -171,8 +170,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_guard(ty) => {
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));
             }
+            // A count, one less, which never throws.
             ty::Adt(..) if self.counted_weak(ty).is_some() => {
-                out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
+                let mut call = Expr::call(Expr::helper("$weakDrop"), vec![value]);
+                call.facts = call.facts.with(js::Known::NeverThrows);
+                out.push(StmtKind::Expr(call).at(js_span));
             }
             // One that carries its drop, its own, which its clones don't share
             // (ADRs 0484, 0521, 0522), anywhere but in its own body: an
@@ -226,12 +228,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Array(item, _) | ty::Slice(item) => self.drop_items(value, *item, span, made, out)?,
             ty::Tuple(items) => {
+                let mut parts = Vec::new();
                 for (i, item) in items.iter().enumerate() {
                     let part = self.project(value.clone(), ty, i);
-                    self.drop_in(part, item, span, made, out)?;
+                    let mut dropped = Vec::new();
+                    self.drop_in(part, item, span, made, &mut dropped)?;
+                    parts.push(dropped);
                 }
+                out.extend(each_dropped(parts, js_span));
             }
             ty::Adt(adt, args) => {
+                // Its own `drop`, then each field's, each run though one
+                // before it panics, as Rust's drop glue goes on (#416).
+                let mut parts = Vec::new();
                 if let Some(d) = self.tcx.adt_destructor(adt.did())
                     && self.runs_drop(d.did)
                 {
@@ -250,7 +259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let call = self
                         .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], span, out)?
                         .ok_or_else(|| self.unsupported(span, &format!("calling `{ty}`'s `drop`")))?;
-                    out.push(StmtKind::Expr(call).at(js_span));
+                    parts.push(vec![StmtKind::Expr(call).at(js_span)]);
                 }
                 if let Some(inner) = self.option_of(ty) {
                     // A `Some` of what may look like `None`, a generic `T`
@@ -261,7 +270,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let mut some = Vec::new();
                     self.drop_in(payload, inner, span, made, &mut some)?;
-                    out.push(StmtKind::If(Expr::bin(Op::LooseNe, value, Expr::null()), some, None).at(js_span));
+                    let test = Expr::bin(Op::LooseNe, value, Expr::null());
+                    parts.push(vec![StmtKind::If(test, some, None).at(js_span)]);
                 } else if adt.is_struct() {
                     for (i, field) in adt.non_enum_variant().fields.iter().enumerate() {
                         let part = self.project(value.clone(), ty, i);
@@ -270,12 +280,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // was given (ADRs 0409, 0436).
                         if let ty::Dynamic(..) = field.kind() {
                             let dictionary = Expr::member(value.clone(), js::DICTIONARY);
-                            out.push(dyn_dropped(dictionary, part, js_span));
+                            parts.push(vec![dyn_dropped(dictionary, part, js_span)]);
                             continue;
                         }
-                        self.drop_in(part, field, span, made, out)?;
+                        let mut dropped = Vec::new();
+                        self.drop_in(part, field, span, made, &mut dropped)?;
+                        parts.push(dropped);
                     }
                 } else if adt.is_enum() {
+                    // One part, each variant's test: only one of them runs.
+                    let mut variants = Vec::new();
                     for variant in adt.variants() {
                         let mut fields = Vec::new();
                         // An untagged enum's variant is its payload (ADR 0214).
@@ -285,8 +299,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 true => value.clone(),
                                 false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
                             };
-                            self.drop_in(part, self.field_ty(field, args), span, made, &mut fields)?;
+                            let mut dropped = Vec::new();
+                            self.drop_in(part, self.field_ty(field, args), span, made, &mut dropped)?;
+                            fields.push(dropped);
                         }
+                        let fields = each_dropped(fields, js_span);
                         if fields.is_empty() {
                             continue;
                         }
@@ -300,13 +317,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 false,
                             ),
                         };
-                        out.push(StmtKind::If(test, fields, None).at(js_span));
+                        variants.push(StmtKind::If(test, fields, None).at(js_span));
                     }
+                    parts.push(variants);
                 } else if !adt.is_union() {
                     // A union's fields are never dropped, which Rust holds
                     // to what has no destructor, or a `ManuallyDrop` (ADR 0406).
                     return Err(self.unsupported(span, &format!("dropping `{ty}`")));
                 }
+                out.extend(each_dropped(parts, js_span));
             }
             _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
         }
@@ -326,17 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut body = Vec::new();
         self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
         let js_span = self.js_span(span);
-        out.push(
-            StmtKind::ForOf {
-                label: None,
-                pattern: js::Pattern::Name(name),
-                mutable: false,
-                iterable: items,
-                body,
-                keys: false,
-            }
-            .at(js_span),
-        );
+        out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));
         Ok(())
     }
 
@@ -383,4 +392,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
+}
+
+/// Each of `parts`' drops in turn, as Rust's drop glue runs them: one that
+/// may throw, a destructor's panic, the rest after it in its `finally`, so
+/// they still run, `try { boom_drop(pair.first); } finally {
+/// loudDrop_drop(pair.second); }` (#416). One that can't, as it is.
+fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
+    let mut rest: Vec<Stmt> = Vec::new();
+    for part in parts.into_iter().rev().filter(|part| !part.is_empty()) {
+        rest = match rest.is_empty() || !may_throw(&part) {
+            true => part.into_iter().chain(rest).collect(),
+            false => vec![StmtKind::Try(part, rest).at(js_span)],
+        };
+    }
+    rest
+}
+
+/// Each of `items` dropped by `body`, binding it to `pattern`: `for (const
+/// item of v) { .. }`, or of a `body` that may throw, `$dropItems(v,
+/// loudDrop_drop)`, which drops the rest of them after one throws, as
+/// Rust's drop of a slice goes on past a panicking item (#416).
+fn items_dropped(items: Expr, pattern: js::Pattern, body: Vec<Stmt>, js_span: js::Span) -> Stmt {
+    if !may_throw(&body) {
+        return StmtKind::ForOf {
+            label: None,
+            pattern,
+            mutable: false,
+            iterable: items,
+            body,
+            keys: false,
+        }
+        .at(js_span);
+    }
+    // `(item) => { dropItem(item); }` is `dropItem`.
+    let drop = match (&pattern, body.as_slice()) {
+        (
+            js::Pattern::Name(name),
+            [
+                Stmt {
+                    kind:
+                        StmtKind::Expr(Expr {
+                            kind: js::ExprKind::Call(callee, given),
+                            ..
+                        }),
+                    ..
+                },
+            ],
+        ) if matches!(callee.kind, js::ExprKind::Var(_))
+            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if n == name) =>
+        {
+            (**callee).clone()
+        }
+        _ => Expr::arrow(vec![pattern], body),
+    };
+    StmtKind::Expr(Expr::call_helper("$dropItems", vec![items, drop])).at(js_span)
+}
+
+/// Whether a drop's `stmts` may throw: a statement that may, or a branch's,
+/// a loop's over what's made, or a `try`'s.
+pub(super) fn may_throw(stmts: &[Stmt]) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::If(test, then, otherwise) => {
+            test.may_throw() || may_throw(then) || otherwise.as_deref().is_some_and(may_throw)
+        }
+        StmtKind::ForOf { iterable, body, .. } => iterable.may_throw() || may_throw(body),
+        StmtKind::Try(body, finally) => may_throw(body) || may_throw(finally),
+        _ => !stmt.cannot_throw(),
+    })
 }

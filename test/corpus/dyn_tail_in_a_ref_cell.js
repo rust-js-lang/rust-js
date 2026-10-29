@@ -4,6 +4,7 @@ import {
   $borrow,
   $borrowMut,
   $displayF64,
+  $dropItems,
   $dynCell,
   $index,
   $rcClone,
@@ -199,11 +200,11 @@ function main() {
     try {
       tmp$2 = $borrowMut($index(shapes, 1).value, true);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -222,11 +223,11 @@ function main() {
       receiver$1.impl.grow(receiver$1, 3);
     } catch (error) {
       $unborrow(tmp$2);
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -235,11 +236,11 @@ function main() {
     try {
       $unborrow(tmp$2);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -249,11 +250,11 @@ function main() {
     try {
       tmp$3 = $borrowMut($index(shapes, 1).value, true);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -263,11 +264,11 @@ function main() {
     try {
       $unborrow(tmp$3);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -277,11 +278,11 @@ function main() {
     try {
       tmp$4 = total(shapes);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -291,11 +292,11 @@ function main() {
     try {
       tmp$5 = $borrow(square.value, true);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -305,11 +306,11 @@ function main() {
     try {
       $unborrow(tmp$5);
     } catch (error) {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
       $rcDrop(square, (value) => {
         squareDrop_drop(value.shape);
       });
@@ -320,11 +321,11 @@ function main() {
         squareDrop_drop(value.shape);
       });
     } finally {
-      for (const item of shapes) {
+      $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
           value.impl.$drop?.(value.shape);
         });
-      }
+      });
     }
     console.log(`${circle.strong}`);
   } finally {

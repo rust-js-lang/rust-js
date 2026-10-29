@@ -651,3 +651,31 @@ A library's function a consumer could reach was given a drop of each
 type parameter, for consumers it never sees. It's given those its own
 crate's calls give it; a consumer that gives a value with a destructor to
 one that takes no drop for it compiles its own, from the library's MIR.
+
+## Amendment: the parts after a panicking destructor are dropped (2026-10-29, #416)
+
+A value's drop wrote each part's as the next statement, and an array's
+items as a `for…of`: a destructor that panicked, a thrown `Error`, left
+the parts after it undropped, where Rust's drop glue drops them as it
+unwinds. Results change, so Rust's behavior is kept (ADR 0262): **each
+part's drop, a type's own `drop` then its fields', a tuple's items, a
+variant's fields, a map entry's key then value, runs though one before it
+throws, the parts after a drop that may throw in its `finally`, `try {
+boomDrop_drop(pair.first); } finally { loudDrop_drop(pair.second); }`;
+and the items of an array, a `Vec` or a map, where each one's drop may
+throw, are `$dropItems(items, drop)`, which drops the rest after one
+throws and throws on what was thrown** (`drops::parts::each_dropped`,
+`items_dropped`, and `$dropEach`'s owning iterators through it). What
+never throws needs no `finally`: a call the analysis found never unwinds
+(ADR 0902), a drop function made here whose body never throws
+(`DropState::quiet`), `$rcDrop(rc)` of no `drop` and `$weakDrop`, a count
+one less; so 36 corpus cases changed, 156 lines shorter in all, most of
+them catches of an `Rc`'s drop that can't throw now gone. A second panic
+while one unwinds still replaces it, where Rust aborts, as the guide
+lists. Held by `drop_parts_past_a_panic.rs` against native Rust (a
+struct, a tuple, a variant, an array, a `Vec`, a `BTreeMap`, a type whose
+own `drop` panics) and the mutations `drop-parts-unchained`,
+`drop-items-unchained`, `drop-items-stop-at-a-throw` and
+`drop-function-quiet-unknown`. `docs/readability.txt`'s `$iter` share went
+from 82.1 to 82.2 in 10,000 lines, blessed: the new case's own loop over
+two references, in a corpus 156 lines shorter.
