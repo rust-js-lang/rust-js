@@ -17,3 +17,14 @@ impl<T> Bag<T> {
         self.items.clear();
     }
 }
+
+/// What it's given, kept only if asked, checked first where it isn't: its
+/// drop flag, its optimized MIR's, known where it's tested (#381).
+pub fn given<T>(t: T, keep: bool, check: impl Fn()) -> Option<T> {
+    let held = t;
+    if keep {
+        return Some(held);
+    }
+    check();
+    None
+}

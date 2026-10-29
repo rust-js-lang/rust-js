@@ -725,3 +725,22 @@ Not yet: a copy that is needed, of one given a value with a destructor,
 is printed from optimized MIR, its drop flags of each `()` it's given
 kept, and its cleanup tests them nested, a branch for each, growing as
 two to the power of their number (#394).
+
+## Amendment: its optimized MIR's drop flags settled as rust-js's own (#381)
+
+A consumer's copy of `dep::hold<T>(t: T) { let v = vec![t]; .. }`, from
+the library's optimized MIR, kept the drop flag rustc's own elaboration
+gave `t`, `_9 = const false; _9 = const true; Box::new_uninit(); _9 =
+const false;`, as `const value = false;` and a `catch` testing it, `if
+(value) { dropT?.(t); } throw error;`, where the crate's own copy, of the
+drops rust-js elaborates, has neither. **Each `bool` of a body only ever
+set to a constant and only tested, a `switchInt` of it alone, is one of
+its drop flags** (`drops::constant_flags`), which `tidy`'s flags settle as
+they settle rust-js's own (ADR 0372): its test where it's known goes, a
+`try` whose `catch` then only throws on is no `try`, and a flag nothing
+reads goes with its writes. Case N: what a value set only to `true` or
+`false` reads is known where nothing between sets it; one lent, `&mut`,
+or read otherwise is none. Held by `test/crates.test.ts`'s
+`generic_boxed_drop` pair against native Rust, `dep::given`'s flag, of a
+value moved on one path, still tested where it isn't known and dropped
+by a panic, and the mutations `constant-flags-*` (`mir/drops.ts`).

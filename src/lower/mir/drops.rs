@@ -834,3 +834,56 @@ pub(super) fn cleans_up<'tcx>(
         }
     }
 }
+
+/// The names of `body`'s drop flags, for `tidy`: rust-js's own, and those
+/// it was given (`constant_flags`).
+pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> HashSet<String> {
+    let given = constant_flags(body)
+        .into_iter()
+        .map(|local| state.locals.names[local].clone());
+    state.naming.flag_names().into_iter().chain(given).collect()
+}
+
+/// The drop flags `body` was given before rust-js saw it, a library's
+/// optimized MIR's, `_9 = const false; .. switchInt(_9)`: each `bool` only
+/// ever set to a constant and only tested, which `tidy`'s flags settle as
+/// rust-js's own (#381).
+fn constant_flags(body: &mir::Body<'_>) -> Vec<mir::Local> {
+    use mir::visit::{PlaceContext, Visitor};
+    struct Uses(HashMap<mir::Local, usize>);
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: mir::Local, context: PlaceContext, _: Location) {
+            if !matches!(context, PlaceContext::NonUse(_)) {
+                *self.0.entry(local).or_default() += 1;
+            }
+        }
+    }
+    let mut uses = Uses(HashMap::new());
+    uses.visit_body(body);
+    // Each local's uses that set it to a constant or test it.
+    let mut flag_uses: HashMap<mir::Local, usize> = HashMap::new();
+    for data in body.basic_blocks.iter() {
+        for stmt in &data.statements {
+            if let StatementKind::Assign(assign) = &stmt.kind
+                && let (place, mir::Rvalue::Use(mir::Operand::Constant(_), _)) = &**assign
+                && let Some(local) = place.as_local()
+            {
+                *flag_uses.entry(local).or_default() += 1;
+            }
+        }
+        if let TerminatorKind::SwitchInt {
+            discr: mir::Operand::Copy(place) | mir::Operand::Move(place),
+            ..
+        } = &data.terminator().kind
+            && let Some(local) = place.as_local()
+        {
+            *flag_uses.entry(local).or_default() += 1;
+        }
+    }
+    let mut flags: Vec<mir::Local> = (flag_uses.into_iter())
+        .filter(|(local, n)| body.local_decls[*local].ty.is_bool() && uses.0.get(local) == Some(n))
+        .map(|(local, _)| local)
+        .collect();
+    flags.sort();
+    flags
+}

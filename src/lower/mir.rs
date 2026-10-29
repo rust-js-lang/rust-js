@@ -1251,7 +1251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 plain: &self.plain_names(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
-                flags: &state.naming.flag_names(),
+                flags: &drops::flag_names(&state, mir_body),
                 fuse: self.fuse_import().as_deref(),
                 until: self.krate.tidy_until,
                 params: &params,

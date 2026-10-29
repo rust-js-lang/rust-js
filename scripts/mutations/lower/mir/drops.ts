@@ -210,4 +210,21 @@ export const mutations: Mutation[] = [
     replace: "            if true\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "constant-flags-never",
+    breaks: "a library's optimized MIR's drop flag, a consumer's copy of `vec![t]`'s, is `const value = false;` and a `catch` testing it, `if (value) { dropT?.(t); }` (#381)",
+    file: "src/lower/mir/drops.rs",
+    find: "        .map(|(local, _)| local)\n        .collect();\n    flags.sort();",
+    replace: "        .map(|(local, _)| local)\n        .filter(|_| false)\n        .collect();\n    flags.sort();",
+    tests: ["test/crates.test.ts", "-t", "never crashes"],
+  },
+  {
+    name: "constant-flags-of-any-use",
+    breaks: "a `bool` set to other than a constant, or read other than by a test, is settled as a drop flag (#381)",
+    file: "src/lower/mir/drops.rs",
+    find: "is_bool() && uses.0.get(local) == Some(n))",
+    replace: "is_bool())",
+    tests: ["test/corpus.test.ts", "-t", "^(catch_unwind_drops|drop_update_panics).rs$"],
+    snapshots: true,
+  },
 ];
