@@ -6,8 +6,10 @@ use super::known::{ITEM, Known, Range};
 use super::{Slice, Walk};
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{SliceLength, is_vec_from_elem, slice_length};
+use crate::lower::recognition::{SliceLength, is_vec_from_elem, slice_length, vec_view};
+use rustc_middle::mir::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::ty::{self, Ty};
 
 /// The range of the larger of `a` and `b`, or the smaller: below a bound
 /// both are below, or, the smaller, either's (#367).
@@ -47,6 +49,42 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         if let (Some((_, var)), Some(k)) = (self.row_of(place), known.as_mut()) {
             k.rows_changed(var);
         }
+    }
+
+    /// Whether a table lent as a view of its rows, `board.iter_mut()`'s
+    /// `&mut *board`, keeps its rows' lengths: where nothing the body
+    /// does can resize a row of its type, no call but a view's, an index's
+    /// or a length's given a `&mut` of one, no closure holding one, and no
+    /// row assigned whole (#372).
+    pub(super) fn rows_kept(&self, table: ExprId) -> bool {
+        let thir = self.thir;
+        let ty::Adt(_, args) = thir[strip(thir, table)].ty.peel_refs().kind() else {
+            return false;
+        };
+        let Some(row) = args.types().next() else { return false };
+        let is_row = |t: Ty<'tcx>| t == row;
+        let lent_row = |t: Ty<'tcx>| matches!(t.kind(), ty::Ref(_, of, Mutability::Mut) if is_row(*of));
+        let safe = |fun: ExprId| {
+            fn_def(thir[strip(thir, fun)].ty).is_some_and(|(def_id, generic_args)| {
+                vec_view(self.tcx, def_id, generic_args).is_some()
+                    || matches!(
+                        slice_length(self.tcx, def_id, generic_args),
+                        Some(SliceLength::Len | SliceLength::IsEmpty | SliceLength::Index)
+                    )
+            })
+        };
+        !(thir.exprs.iter()).any(|e| match &e.kind {
+            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),
+            ExprKind::Closure(closure) => (closure.upvars.iter()).any(|&upvar| {
+                thir[upvar]
+                    .ty
+                    .walk()
+                    .filter_map(|part| part.as_type())
+                    .any(|t| lent_row(t) || is_row(t))
+            }),
+            ExprKind::Assign { lhs, .. } => is_row(thir[*lhs].ty),
+            _ => false,
+        })
     }
 
     /// The rows of a table `items` is one of, `board[r]`: `([ITEM], board)`,

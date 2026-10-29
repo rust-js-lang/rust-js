@@ -601,4 +601,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
   },
+  {
+    name: "rows-kept-never",
+    breaks: "a table's `iter_mut()` loop that only writes its cells forgets its rows' lengths, so `board[r - 1][c]` after it is `$index(..)` (#372)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                let viewed = self.vec_view(fun).is_some() && self.rows_kept(arg);\n",
+    replace: "                let viewed = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+    snapshots: true,
+  },
 ];

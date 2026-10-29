@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
+  {
+    name: "rows-kept-of-a-resizing-call",
+    breaks: "a table whose loop truncates a row, `row.truncate(1)`, is taken to keep its rows' lengths, so a read past its end reads `undefined` where Rust panics (#372)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "            ExprKind::Call { fun, args, .. } => args.iter().any(|&arg| lent_row(thir[arg].ty)) && !safe(*fun),\n",
+    replace: "            ExprKind::Call { .. } => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+  },
+  {
+    name: "rows-kept-of-a-closure",
+    breaks: "a table whose loop gives a row to a closure that pops it is taken to keep its rows' lengths, so a read past its end reads `undefined` (#372)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "            ExprKind::Closure(closure) => (closure.upvars.iter()).any(|&upvar| {\n",
+    replace: "            ExprKind::Closure(closure) => false && (closure.upvars.iter()).any(|&upvar| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+  },
+  {
+    name: "rows-kept-of-a-row-assigned",
+    breaks: "a table whose loop assigns a row whole, `*row = Vec::new()`, is taken to keep its rows' lengths, so a read past its end reads `undefined` (#372)",
+    file: "src/lower/body_queries/ranges/tables.rs",
+    find: "            ExprKind::Assign { lhs, .. } => is_row(thir[*lhs].ty),\n",
+    replace: "            ExprKind::Assign { .. } => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+  },
 ];

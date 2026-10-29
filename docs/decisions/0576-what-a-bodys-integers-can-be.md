@@ -327,3 +327,19 @@ panics); mutations `vec-remove-length-unasked` (`recognition/types.ts`),
 `removed-item-unread-indexed` and `remove-insert-in-bounds-checked`
 (`mir/bounds.ts`). `loop_ending_branch_loop`'s and two lowering-loops
 tests' removes are JS's own now.
+
+## Amendment: a table's rows kept through a view of them (#372)
+
+A table's `iter_mut()` loop, javascript-algorithms' `dpUniquePaths` base
+case writing `*cell = 1.0` of each `row.iter_mut()`, forgot its rows'
+lengths, as any `&mut` of the table but an index's did (#370), so
+`board[r - 1][c]` after it was `$index(..)`. **A table lent as a view of
+its rows, `&mut *board` of `iter_mut()`, keeps its rows' lengths where
+nothing the body does can resize a row of its type** (`tables::rows_kept`):
+no call given a `&mut` of one but a view's, an index's or a length's, no
+closure holding one, and no row assigned whole. A body that truncates a
+row, gives one to a closure that pops it, or assigns one, forgets them as
+before. Held by `test/corpus/table_rows_kept_by_views.rs` against native
+Rust, each of those panicking past a row's end as Rust's does, and the
+mutations `rows-kept-*` (`body_queries/ranges.ts`,
+`body_queries/ranges/tables.ts`).

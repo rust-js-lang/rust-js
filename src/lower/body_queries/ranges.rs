@@ -809,8 +809,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     false => k.changed(var),
                 }
                 // Its rows, which any `&mut` but an index's may give to code
-                // that resizes one, `iter_mut()`'s (#370).
-                if !matches!(asked, Some((SliceLength::Index, _))) {
+                // that resizes one, `iter_mut()`'s (#370); but a view's of a
+                // body that resizes no row (#372).
+                let viewed = self.vec_view(fun).is_some() && self.rows_kept(arg);
+                if !matches!(asked, Some((SliceLength::Index, _))) && !viewed {
                     k.rows_changed(var);
                 }
             }
