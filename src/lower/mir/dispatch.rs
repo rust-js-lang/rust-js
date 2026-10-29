@@ -438,6 +438,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
             return Ok(given);
         }
+        // A map that's the option itself, `lane.map(EventPriority::from)`:
+        // the option alone, its function never named, so one only it names
+        // is written nowhere (ADR 0584, amended).
+        if self.recognition().classify(callee.0, callee.1) == Some(crate::lower::Std::OptionMap)
+            && let [option, _] = operands
+            && let [_, f] = arg_tys
+            && self.maps_to_itself(*f, (callee.1.type_at(0), callee.1.type_at(1)))
+        {
+            return Ok(self.take_operands(state, &[option], out)?.remove(0));
+        }
         let strict = self.strictly_equal(state, callee.0, operands, span);
         // Of a binding with a nullable parameter, or of what a `Cell` is
         // written, which a nullable field's stores so, each `Option` that's

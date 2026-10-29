@@ -666,4 +666,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
     snapshots: true,
   },
+  {
+    name: "map-to-itself-names-its-function",
+    breaks: "a map that's the option itself, `lane.map(EventPriority::from)`, names its function, which is then written though nothing calls it (ADR 0584, amended)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            && let [option, _] = operands\n",
+    replace: "            && let [option, _] = operands\n            && false\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "called, are written nowhere"],
+  },
 ];

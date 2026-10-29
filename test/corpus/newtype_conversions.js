@@ -8,10 +8,6 @@ function eventPriorityDebug_fmt(eventPriority) {
   return `EventPriority(${eventPriority})`;
 }
 
-function eventPriorityFromI32_from(lane) {
-  return lane;
-}
-
 function doubledDebug_fmt(doubled) {
   return `Doubled(${doubled})`;
 }

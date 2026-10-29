@@ -547,7 +547,9 @@ export function parsed(id) {
   between it and its field that makes it of what it's given, `UserId(id)`,
   or reads its field, `user.0`, is that value too, a library's as well:
   `UserId::from(id)` is `id`, as React DOM's `EventPriority::from(lane)` is
-  `lane` (the user's decision, ADR 0584, amended).
+  `lane`, and a map by it is the option, `lane.map(EventPriority::from)`'s
+  `lane`, the crate's `from` that nothing else names written nowhere (the
+  user's decision, ADR 0584, amended).
   A newtype without the attribute is an array of one, `[id]`.
 
 [Structs, enums and traits as JavaScript sees them](objects.md) covers

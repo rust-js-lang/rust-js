@@ -1,6 +1,6 @@
 # 0584. A `#[repr(transparent)]` struct is its field
 
-Status: Accepted. Amends [0448](0448-a-transparent-struct-is-its-field.md),
+Status: Accepted. Amended (2026-10-29): a map by its `From` names no function. Amends [0448](0448-a-transparent-struct-is-its-field.md),
 whose struct was `[field]` and a `transmute` made or read it. Extends
 [0020](0020-structs-and-tuples.md)'s structs.
 
@@ -184,3 +184,18 @@ is the value it's given", and the mutations `newtype-from-called`,
 `newtype-from-of-anything`, `newtype-from-unresolved` and
 `gives-argument-unlisted`.
 
+## Amendment: a map by it names no function (2026-10-29)
+
+`lane.map(EventPriority::from)` was `lane`, as above, but the crate's
+`from` was still written, `function eventPriorityFromI32_from(lane) {
+return lane; }`, which nothing called: the map's function, an operand,
+was named before the map's lowering saw that the map is the option. **A
+map that's the option itself is the option alone where its call is
+lowered, its function never named** (`mir/dispatch.rs`, asking
+`maps_to_itself`, the one answer of ADR 0861's amendment of this day), so
+a function only it names is written nowhere, as one only called is
+(ADR 0264, amended).
+
+Held by `test/lowering-structs-enums.test.ts`, "an enum's own names of
+the crate alone, called, are written nowhere", run, and the mutation
+`map-to-itself-names-its-function` (`lower/mir/dispatch.ts`).

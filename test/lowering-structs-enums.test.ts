@@ -479,7 +479,8 @@ pub fn key(section: Option<Section>) -> Option<&'static str> {
 
 // ADR 0264, amended (h08b): React's `HookType`'s `name(self)`, of the
 // crate alone, each call of which is the hook type itself, is written
-// nowhere, as upstream has no such function; one read as a value is
+// nowhere, as upstream has no such function, and so is one a map is by,
+// `hook.map(HookType::kind)`, the option itself; one read as a value is
 // written, which that value calls, and a library's, which another crate's
 // JS calls.
 test("an enum's own names of the crate alone, called, are written nowhere", async () => {
@@ -508,6 +509,13 @@ test("an enum's own names of the crate alone, called, are written nowhere", asyn
             }
         }
 
+        pub(crate) fn kind(self) -> &'static str {
+            match self {
+                HookType::UseState => "useState",
+                HookType::UseEffect => "useEffect",
+            }
+        }
+
         pub fn as_str(self) -> &'static str {
             match self {
                 HookType::UseState => "useState",
@@ -527,15 +535,21 @@ pub fn labeled(hooks: &[HookType]) -> Vec<&'static str> {
     let label: fn(HookType) -> &'static str = HookType::label;
     hooks.iter().map(|&h| label(h)).collect()
 }
+
+pub fn maybe(hook: Option<HookType>) -> Option<&'static str> {
+    hook.map(HookType::kind)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const types = readFileSync(join(dir, "types.js"), "utf8");
   expect(types).not.toContain("name(");
+  // Nor one a map is by, which is its option, \`hook\` (ADR 0584, amended).
+  expect(types).not.toContain("kind(");
   expect(types).toContain("label(hookType) {\n    return hookType;\n  }");
   // A library's, which another crate's JS calls, is written.
   expect(types).toContain("asStr(hookType) {\n    return hookType;\n  }");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.describe("useState"), lib.labeled(["useEffect", "useState"])]).toEqual(["hook useState useState", ["useEffect", "useState"]]);
+  expect([lib.describe("useState"), lib.labeled(["useEffect", "useState"]), lib.maybe("useEffect"), lib.maybe(undefined)]).toEqual(["hook useState useState", ["useEffect", "useState"], "useEffect", undefined]);
 });
 
 // A unit struct named `#[rust_js::name]` is that string, as a fieldless
