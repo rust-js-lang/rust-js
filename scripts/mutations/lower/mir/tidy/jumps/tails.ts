@@ -3,10 +3,19 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-else-of-a-made-return-unturned",
+    breaks: "an `if … else { break; }` of the loop a function ends with, MIR's `if (!t) { return; } rest`, isn't turned back, `if (x <= 3) { break; } out.push(x);` (ADR 0684, amended)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                            || matches!(e.kind, StmtKind::Return(None)) && made(e)) =>\n",
+    replace: ") =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
     name: "written-else-of-a-lone-jump-guarded",
     breaks: "a chain's last arm of the `break` the program wrote, which `early breaks` made `if (!b) { break; }`, stays a guard in the `else`, `} else { if (!(..)) { break; } .. }`, not `} else if (..) { .. } else { break; }` (ADR 0237, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "                        && matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) =>\n",
+    find: "                        && matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))\n                            || matches!(e.kind, StmtKind::Return(None)) && made(e)) =>\n",
     replace: "                        && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
     snapshots: true,

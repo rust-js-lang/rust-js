@@ -23,9 +23,11 @@ async function compiled(name: string, rust: string): Promise<{ js: string; lib: 
 
 // React DOM's replayUnblockedFormActions: a `break` the function's end
 // is MIR's `return;`, and a `continue` the loop's end is anyway, which tidy
-// takes, each with comments before it. The comments where each is written:
-// before the `return;`, and at the end of the branch the `continue` ended,
-// after what's before it. They were above the `while`.
+// takes, each with comments before it. Each jump is kept where it's
+// written, its comments before it (the user's decision, 2026-10-29: as
+// upstream's `if (blockedOn === null) { ..; continue; } else { break; }`),
+// and what follows an `if` written without an `else` after it. The
+// comments were above the `while`, then at the end of the branch.
 test("a comment before a break or continue tidy takes is where it was written", async () => {
   const { js, lib } = await compiled("comment-before-a-taken-jump", `fn blocked(x: i32) -> Option<i32> {
     (x > 10).then_some(x)
@@ -81,10 +83,12 @@ pub fn replay_uncommented(queue: &[i32], seen: &mut Vec<i32>) {
 }
 `);
   expect(js).toContain("  let i = 0;\n  while (i < queue.length) {\n");
-  expect(js).toContain("      } else {\n        // We're blocked. We'll retry later.\n        return;\n      }\n");
-  expect(js).toContain("        log.push(inst);\n        // Continue without incrementing the index.\n      } else {\n");
-  // Of none, the jumps MIR made as tidy has them.
-  expect(js).toContain("      if (blocked(-action | 0) != null) {\n        return;\n      }\n      i += 3;\n");
+  expect(js).toContain(
+    "        i += 3;\n        continue;\n      } else {\n        // We're blocked. We'll retry later.\n        break;\n      }\n    }\n    const inst = ours(action);\n",
+  );
+  expect(js).toContain("      log.push(inst);\n      // Continue without incrementing the index.\n      continue;\n    }\n    // Another instance's.\n    i += 3;\n  }\n");
+  // Of none, the jumps as written too.
+  expect(js).toContain("      if (blocked(-action | 0) == null) {\n        i += 3;\n        continue;\n      } else {\n        break;\n      }\n    }\n    seen.push(action);\n");
   const replayed = (queue: number[]) => {
     const log: number[] = [];
     lib.replay(queue as never, log as never);

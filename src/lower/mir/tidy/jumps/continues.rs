@@ -126,36 +126,18 @@ pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards:
     }
 }
 
-/// `for (..) { .. if (c) { ..; return; } .. }`, the loop a function ends
-/// with, whose `return;` MIR made of a `break` the program wrote there, `if c
-/// { ..; break; }` (`Written::breaks`), the function's end the loop's: that
-/// `break;`, as written, React's commitDeletedPairViewTransitions' `if
-/// (pairs.size === 0) { break; }` (ADR 0684, amended). Not in a loop or a
-/// `switch` inside it, which a `break;` would leave instead.
-pub(in crate::lower::mir::tidy) fn written_breaks_of_last_loops(body: &mut [Stmt], breaks: &[(js::Span, js::Span)]) {
-    fn broken(stmts: &mut [Stmt], breaks: &[(js::Span, js::Span)]) {
-        for stmt in stmts {
-            let span = stmt.span;
-            match &mut stmt.kind {
-                StmtKind::If(_, then, otherwise) => {
-                    let written = breaks
-                        .iter()
-                        .any(|(test, _)| !span.is_none() && span.lo <= test.lo && test.hi <= span.hi);
-                    match then.last_mut() {
-                        Some(last) if written && matches!(last.kind, StmtKind::Return(None)) => {
-                            last.kind = StmtKind::Break(None);
-                        }
-                        _ => broken(then, breaks),
-                    }
-                    if let Some(otherwise) = otherwise {
-                        broken(otherwise, breaks);
-                    }
-                }
-                StmtKind::Labeled(_, inner) => broken(inner, breaks),
-                _ => {}
-            }
-        }
-    }
+/// Each `continue` and loop `break` the program wrote last in a branch of
+/// an `if`, `if c { ..; continue; } else { break; }`, kept where it wrote
+/// it, as its `else`s and labels are (the user's decision, 2026-10-29; ADR
+/// 0684, amended): where the loop's turn ends anyway after the branch, the
+/// `continue` tidy took, given back; and in the loop a function ends with,
+/// the `return;` MIR made of a `break`, `break;`, as React DOM's
+/// replayUnblockedFormActions writes them; not where an `if` the program
+/// wrote of a `return` ends so. Not in a loop or a `switch` inside the
+/// loop, whose own a jump of no label would be. What MIR then put in the `else` of an `if`
+/// the program wrote without one, which now never goes on, preparation's
+/// `unelsed` puts after it again (ADR 0237).
+pub(in crate::lower::mir::tidy) fn kept_jumps(body: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Written) {
     // The loop before the `return;` the function ends with, MIR's, too (ag6).
     let end = body.len() - usize::from(body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))));
     if let Some(Stmt {
@@ -163,7 +145,96 @@ pub(in crate::lower::mir::tidy) fn written_breaks_of_last_loops(body: &mut [Stmt
         ..
     }) = body[..end].last_mut()
     {
-        broken(body, breaks);
+        kept_in_turn(body, written, Kept::Breaks, true);
+    }
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. } = &mut stmt.kind
+            {
+                kept_in_turn(body, written, Kept::Continues, true);
+            }
+        }
+    });
+}
+
+/// The `if`s the program wrote of a `continue` and of a loop's `break` a
+/// branch of theirs ends with (`Written::continues` and `breaks`, or
+/// `else_continues` and `else_breaks`): where each tests, and its jump.
+type BranchJumps<'w> = (&'w [(js::Span, js::Span)], &'w [(js::Span, js::Span)]);
+
+/// Which of the jumps the program wrote `kept_in_turn` gives back.
+#[derive(Clone, Copy, PartialEq)]
+enum Kept {
+    /// A `continue` where the turn ends anyway.
+    Continues,
+    /// A `break` of the loop a function ends with, MIR's `return;`.
+    Breaks,
+}
+
+/// Of `stmts`, a loop's body or what's in it but another loop's or a
+/// `switch`'s, `at_end` where the turn ends after it: the jumps of `kept`
+/// each `if`'s branches end with as written (`kept_jumps`).
+fn kept_in_turn(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written, kept: Kept, at_end: bool) {
+    let last = stmts.len().saturating_sub(1);
+    for (k, stmt) in stmts.iter_mut().enumerate() {
+        let end = at_end && k == last;
+        let span = stmt.span;
+        if let StmtKind::If(test, then, otherwise) = &mut stmt.kind {
+            kept_in_turn(then, written, kept, end);
+            let (continues, breaks) = (written.continues.as_slice(), written.breaks.as_slice());
+            kept_in_branch(then, span, test, (continues, breaks), kept, end);
+            if let Some(otherwise) = otherwise {
+                kept_in_turn(otherwise, written, kept, end);
+                let elses = (written.else_continues.as_slice(), written.else_breaks.as_slice());
+                kept_in_branch(otherwise, span, test, elses, kept, end);
+            }
+        }
+    }
+}
+
+/// A branch of the `if` at `span` testing `test`, given the jump the program
+/// wrote it ends with, of `jumps`, its `continue`s' and its `break`s' (the
+/// `then`'s or the `else`'s, `Written::continues` or `else_continues`),
+/// where it's of `kept`; at that jump's place, which its comment is before.
+/// A `return;` only of a branch of nothing written after the `break`, so
+/// not the other of an `if` tidy turned, `std_enumerate.rs`'s; a
+/// `continue`, where the turn ends after either branch, in the one of its
+/// list.
+fn kept_in_branch(
+    branch: &mut Vec<Stmt>,
+    span: js::Span,
+    test: &Expr,
+    (continues, breaks): BranchJumps,
+    kept: Kept,
+    end: bool,
+) {
+    let tested = |written: &[(js::Span, js::Span)]| written_jump(written, span, test).map(|k| written[k].1);
+    let after = |at: js::Span| {
+        let mut after = false;
+        js::each_list(branch, &mut |list| {
+            after |= list.iter().any(|s| !s.span.is_none() && s.span.lo >= at.hi);
+        });
+        after
+    };
+    match kept {
+        Kept::Continues if end && !branch.last().is_some_and(ends) => {
+            if let Some(at) = tested(continues) {
+                branch.push(StmtKind::Continue(None).at(at));
+            }
+        }
+        Kept::Breaks => {
+            if let Some(last) = branch.last()
+                && matches!(last.kind, StmtKind::Return(None))
+                && let Some(at) = tested(breaks)
+                && !after(at)
+            {
+                *branch.last_mut().expect("matched") = StmtKind::Break(None).at(at);
+            }
+        }
+        Kept::Continues => {}
     }
 }
 
@@ -193,16 +264,23 @@ pub(in crate::lower::mir::tidy) fn written_jumps(
             Some(StmtKind::Break(None)) => breaks,
             _ => continue,
         };
-        let found = jump_tested(written, span).or_else(|| match &test.kind {
-            ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, written_at(last)),
-            _ => None,
-        });
-        if let Some((_, at)) = found.map(|k| &written[k])
+        if let Some((_, at)) = written_jump(written, span, test).map(|k| &written[k])
             && let Some(last) = then.last_mut()
         {
             last.span = *at;
         }
     }
+}
+
+/// Which of `written`, `if`s the program wrote of a jump, the `if` at
+/// `span` testing `test` is: by `jump_tested`, or of one that tests the
+/// loop's own test or another first, `if (x == null || (stop && x > 3))`
+/// of a `while let`, the one whose test is its last `||`'s.
+fn written_jump(written: &[(js::Span, js::Span)], span: js::Span, test: &Expr) -> Option<usize> {
+    jump_tested(written, span).or_else(|| match &test.kind {
+        ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, written_at(last)),
+        _ => None,
+    })
 }
 
 /// Which of `written`, `if`s the program wrote of a jump (`Written::continues`,
@@ -274,10 +352,11 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
     // `else`: that after it, as written, its `continue` kept.
     let going_on = |l: &Option<String>| l.is_none() || l == looped;
     if let Some(Stmt {
-        kind: StmtKind::If(_, then, otherwise @ Some(_)),
+        kind: StmtKind::If(test, then, otherwise @ Some(_)),
         span,
     }) = stmts.last_mut()
         && tests_continue(continues, *span)
+        && !test.facts.has(js::Known::Else)
         && matches!(then.last(), Some(Stmt { kind: StmtKind::Continue(l), .. }) if going_on(l))
     {
         let rest = otherwise.take().expect("matched");

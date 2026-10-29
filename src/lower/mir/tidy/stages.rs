@@ -748,12 +748,6 @@ pub(super) const STAGES: &[Stage] = &[
                 logicals::bit_tests(b, h.numbers, &h.written.patterns)
             }),
             pass("source spans", |b, _| js::statement_lists(b, &mut |s| source_spans(s))),
-            // A `continue` or a loop's `break` the program wrote, where it
-            // wrote it, which its comment is before (ADR 0684, amended).
-            pass("written jumps", |b, h| {
-                written_breaks_of_last_loops(b, &h.written.breaks);
-                js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
-            }),
         ],
         ensures: &[
             contracts::NOTHING_AFTER_A_JUMP,
@@ -847,6 +841,13 @@ pub(super) const STAGES: &[Stage] = &[
             // A nullable field's value a variable holds, stored in another
             // nullable place as it is, no `?? null` (ADR 0620, amended).
             pass("nulled as they are", |b, _| values::nulled_as_they_are(b)),
+            // A `continue` or a loop's `break` the program wrote, kept where
+            // it wrote it, which its comment is before, once nothing moves
+            // them (ADR 0684, amended).
+            pass("written jumps", |b, h| {
+                kept_jumps(b, h.written);
+                js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
+            }),
             // The comments before a `break` or `continue` the program wrote,
             // after what's before it, where the jumps are settled (rd109).
             pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),

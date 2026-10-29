@@ -8,7 +8,9 @@ whose comments are before the statement whose code follows them, and
 body's last `if` is an early `continue` only where the program wrote one.
 Amended below: a loop's `break` the program wrote is where it wrote it too
 (#298); and a `for…in`'s guards, with their comments, as React's
-hydration diffs write them.
+hydration diffs write them; and (2026-10-29, the user's decision) each
+`continue` and loop `break` the program wrote is kept, though the turn or
+the function ends there anyway.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads, and
 a comment, which nothing runs.
@@ -243,3 +245,84 @@ case, lowering, port or JSX test reaches it now, nor a probe of the
 shapes it was for (a `break` then an `if` of a `continue` ending the
 body): what's before reads such a turn's end as the body's end. It's
 gone with its mutation, `loop-tail-continue-kept` (ADR 0093).
+
+## Amendment: a jump the program wrote is kept, though redundant (2026-10-29, the user's decision)
+
+React DOM's replayUnblockedFormActions, ported (rd109), writes upstream's
+
+```rust
+if action < 0 {
+    let blocked_on = blocked(-action);
+    if blocked_on.is_none() {
+        // Not blocked: skip past it.
+        i += 3;
+        continue;
+    } else {
+        // We're blocked. We'll retry later.
+        break;
+    }
+}
+let inst = ours(action);
+if let Some(inst) = inst {
+    ..;
+    // Continue without incrementing the index.
+    continue;
+}
+i += 3;
+```
+
+in a loop its function ends with. The JS was `if (blockedOn == null) { i
++= 3; } else { return; }`, the rest an `else` of `if (action < 0)`, and
+`// Continue ..` ended a branch with no `continue` after it: MIR has the
+`break` as the function's `return;` (`written_breaks_of_last_loops` turned
+only a `then`'s back), and each `continue` the loop's end, which tidy
+takes where the turn ends anyway (`tail jumps`, `tail continues`).
+
+**The user decided: keep the `continue` and `break` the program wrote,
+even where redundant**, as a written `else` (ADR 0237, amended) and a
+written label (wl4) are kept. So:
+
+- `hints::jump_ifs` says where each `if … else` whose `else` ends in a
+  `continue` or a loop's `break` is, `Written::else_continues` and
+  `else_breaks`, beside the `then`s' `continues` and `breaks`.
+- **`kept_jumps`, the first part of `written jumps`, now in `finish`**,
+  where nothing moves a jump after it: in each loop, a branch of an `if`
+  of one of those that the turn ends after, and that doesn't end in a
+  jump, ends in the `continue` again, at the place it's written, its
+  comment before it; and in the loop a function ends with, a branch's
+  `return;` of an `if` of a written `break`, `then`'s or `else`'s, is that
+  `break` (`written_breaks_of_last_loops`, which it replaces). Not a
+  branch whose statements are written after the jump, the other of an
+  `if` tidy turned (`std_enumerate.rs`'s), nor in a loop or `switch`
+  inside the loop, nor where a drop follows the `if`, `if (x > 3) { .. }
+  else { .. } drop(n)`, whose turn doesn't end after the branch.
+- Preparation's `unelsed` (ADR 0237) then puts what MIR made the `else`
+  of an `if` written without one after it again, as its `then` now ends:
+  `if (action < 0) { .. } const inst = ..`.
+- `written elses` turns back an `if` of MIR's `return;` of such a `break`
+  too, `if (x <= 3) { return; } out.push(x);` of `if x > 3 { .. } else {
+  break; }`, as it turns one of a lone `break` or `continue`.
+- `tail continues` leaves an `else` the program wrote where it was, `if
+  (x > 3) { ..; continue; } else { .. }`, not after the `if`.
+
+The port's JS is upstream's, and `normalizeConsoleFormat`'s `if (..) {
+i++; continue; }`. In the corpus, `loop_drops.rs`'s `} else { ..;
+console.log("moved"); continue; }` reads as written.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A jump where the
+turn or the function ends anyway does what falling there does.
+
+Not covered yet: a `continue` in a `match` arm a `switch` is made of, whose
+case ends in the `switch`'s `break;` (`switch_tail_continues.rs`'s shape),
+and one before a drop, which MIR shares after the `if`.
+
+- `test/lowering-comments-jumps.test.ts`, "a comment before a break or
+  continue tidy takes is where it was written", run; the corpus case
+  `written_jumps_kept.rs` against native Rust.
+- Mutations `mir-else-continues-of-thens`, `mir-else-breaks-unknown`
+  (`hints.ts`), `kept-last-loop-breaks-unrun`, `kept-continue-dropped`,
+  `kept-continue-before-the-turn-end`, `kept-else-jumps-of-thens`,
+  `kept-break-of-a-turned-if`, `written-continue-else-dropped`, and
+  `last-loop-break-returned` and `last-loop-return-of-any-if-broken` moved
+  to `kept_jumps` (`continues.ts`); `written-else-of-a-made-return-unturned`
+  (`tails.ts`).

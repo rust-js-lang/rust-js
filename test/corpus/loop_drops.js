@@ -237,6 +237,7 @@ function main() {
     } else {
       noisyDrop_drop(n);
       console.log("moved");
+      continue;
     }
   }
 

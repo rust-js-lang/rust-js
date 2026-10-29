@@ -50,6 +50,12 @@ pub(super) struct Written {
     /// Each `if` of a loop's `break`, as of a `continue`: where its
     /// condition is, and where the `break` is (ADR 0684, amended).
     pub breaks: Vec<(js::Span, js::Span)>,
+    /// Each `if … else` whose `else` ends in a `continue`, as `continues`
+    /// of a `then`, `} else { ..; continue; }`: kept where it's written
+    /// (`kept_jumps`, ADR 0684, amended).
+    pub else_continues: Vec<(js::Span, js::Span)>,
+    /// And each whose `else` ends in a loop's `break`, `} else { break; }`.
+    pub else_breaks: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each block the program labeled, `'desc: { .. }` (`labeled_blocks`).
@@ -314,7 +320,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             })
             .collect();
-        let continues = self.jump_ifs(&|kind| matches!(kind, thir::ExprKind::Continue { .. }));
+        let continue_of = |kind: &thir::ExprKind<'tcx>| matches!(kind, thir::ExprKind::Continue { .. });
+        let continues = self.jump_ifs(&continue_of, false);
+        let else_continues = self.jump_ifs(&continue_of, true);
         // Of a loop's `break`, not a block's the program labeled, whose
         // `break`s are where they're written already (ADR 0790).
         let labeled: std::collections::HashSet<rustc_hir::ItemLocalId> = (self.frame.thir.exprs.iter())
@@ -326,9 +334,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let breaks = self.jump_ifs(
-            &|kind| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id)),
-        );
+        let break_of = |kind: &thir::ExprKind<'tcx>| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id));
+        let breaks = self.jump_ifs(&break_of, false);
+        let else_breaks = self.jump_ifs(&break_of, true);
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
         let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
@@ -451,6 +459,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             negations,
             continues,
             breaks,
+            else_continues,
+            else_breaks,
             loops,
             blocks: self.labeled_blocks(),
             switches,
@@ -1047,11 +1057,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each `let … else` of one, which MIR tests as an `if` of it in its
     /// place: and where its jump is, which its comment is before (ADR 0684,
     /// amended).
-    fn jump_ifs(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool) -> Vec<(js::Span, js::Span)> {
+    /// Of an `if`'s `else` block, `of_else`, where it ends in the jump, of
+    /// no `let … else`'s.
+    fn jump_ifs(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool, of_else: bool) -> Vec<(js::Span, js::Span)> {
+        let lets = if of_else { Vec::new() } else { self.let_else_jumps(jump) };
         (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
-                thir::ExprKind::If { cond, then, .. } => {
-                    let mut then = then;
+                thir::ExprKind::If {
+                    cond, then, else_opt, ..
+                } => {
+                    let mut then = if of_else { else_opt? } else { then };
                     while let thir::ExprKind::Scope { value: inner, .. }
                     | thir::ExprKind::NeverToAny { source: inner } = self.frame.thir[then].kind
                     {
@@ -1084,7 +1099,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             })
-            .chain(self.let_else_jumps(jump))
+            .chain(lets)
             .collect()
     }
 

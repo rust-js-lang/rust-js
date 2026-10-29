@@ -968,10 +968,13 @@ fn linked_elses(
                 // A jump alone MIR made, or put where the test is, `if (!b)
                 // { break; }` of a written `else { break; }` (`early
                 // breaks`): the branch the rest isn't written in. Not a
-                // `while`'s, whose `else` is the whole loop.
+                // `while`'s, whose `else` is the whole loop. The `return;`
+                // MIR made of a `break` of the loop a function ends with
+                // too, which `kept_jumps` makes it again (ADR 0684, amended).
                 (false, false)
                     if otherwise.lo >= then.hi
-                        && matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))) =>
+                        && matches!(&exit[..], [e] if jumps(e) && (e.span.is_none() || within(cond, e.span))
+                            || matches!(e.kind, StmtKind::Return(None)) && made(e)) =>
                 {
                     (branch(then, Some(cond)).map(|k| (true, k)))
                         .or_else(|| branch(otherwise, None).map(|k| (false, k)))
