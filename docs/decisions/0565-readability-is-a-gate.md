@@ -104,3 +104,18 @@ the diff shows what got better.
 - `test/readability.test.ts`: no shape's share grew; the file is what the
   measure says; each shape is one line's, counted; the list is the seven.
 - `docs/readability.txt`, the baseline, blessed with the snapshots.
+
+## Amendment: like for like
+
+A case added moved every share a little, its lines and its shapes
+counted with the rest: one with none diluted each share, and the gate
+said "reads better", a bless the case was no reason for, which agents
+did anyway (m6 - react's twice). **`docs/readability.txt` lists each
+file's lines and counts after the totals, and the gate compares each
+shape's share over the files it lists that the repository has, like for
+like** (`scripts/readability.ts`'s `report`, `measuredOf`, `compared`):
+a case added moves no share, and is named, counted once it's blessed; a
+shape added to a case both have grows its share, and fails, as before.
+Held by `test/readability.test.ts` ("a case added moves no share, and a
+shape added to a case grows one"), of a case of no shapes added, one of
+many, and a shape added and taken from a case both have.

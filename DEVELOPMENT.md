@@ -316,7 +316,9 @@ checked:
   `git fetch` before removing the worktree that made the change; its
   branch stays, but the next step starts from the wrong place.
 - **Regenerate what's generated on a conflict**, never merge it by hand:
-  `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`,
+  `docs/readability.txt` with `BLESS=1 bun test test/readability.test.ts`
+  (its shares are compared over the files it lists, so a case added is no
+  reason to bless: it's counted once anything else is blessed),
   corpus snapshots with `bun run bless`; the decision index merges by
   union, and the architecture test names a line left twice.
 - **After a rebase, check again only what the incoming commits touch**:
