@@ -8,7 +8,8 @@ second question; and [0887](0887-std-items-that-are-math-are-math.md)'s
 Amended: a chain of its tests reads as written, a comment before it kept;
 and of a value of a function's type JS gives, it asks the value; and of a
 path it asks the last part alone, not each before it; and a path may start
-from a value (below).
+from a value; and whether a global is a number is the family's third
+question, `js::is_number` (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -301,3 +302,57 @@ from a value asks its member", run of a selection with and without
 `extend`; mutations `value-path-refused` and `value-path-member-unread`
 (`mir/calls.ts`).
 
+## Amendment: whether a global is a number is `js::is_number` (rd195)
+
+React DOM's `estimateImageBytes` reads a window's pixel ratio where there
+may be no window, `typeof devicePixelRatio === 'number' ? devicePixelRatio
+: 1`. ADR 0269's amendment made `devicePixelRatio` a getter function,
+`webapi::window_global::device_pixel_ratio()`, but the port could ask it
+only `js::is_defined(..)`, `typeof devicePixelRatio !== "undefined"`: a
+different test from upstream's, true of a `devicePixelRatio` a script set
+to a string, as `[Replaceable]` lets one.
+
+The user's decision: **whether a global is a number is the family's third
+question, `js::is_number(binding)`**, `typeof X === "number"`, given what
+`js::is_defined` and `js::is_function` are given. One form: the three are
+one binding form, `JsForm::Asks(Asked)`, `Asked` naming the question and
+the `typeof` it's of (`Asked::type_of`), so a path, a static, a refusal and
+the operand left unread are each the family's, not a copy per question.
+
+```rust
+pub fn pixel_ratio() -> f64 {
+    if js::is_number(webapi::window_global::device_pixel_ratio) {
+        webapi::window_global::device_pixel_ratio()
+    } else {
+        1.0
+    }
+}
+```
+
+```js
+export function pixelRatio() {
+  return typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
+}
+```
+
+Of a path it asks the last part alone, as `js::is_function` does. What it
+asks of is what the binding reads: a getter's value, its output, or a
+static's (`read_by`). **Of what's no number in Rust it's refused**: a
+function's binding, `js::is_number(set_timeout)`, or a static of a
+symbol would be `false` wherever the program runs, so the error names the
+form, a getter's or a static's binding of a number, `f64` or an `Option`
+of one. Not of a value JS gives: `js::type_of(value) == "number"` asks
+that.
+
+Case (ADR 0262): A, what's asked of the host, as JS asks it; upstream's
+test, so no difference.
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_number is whether a
+global a binding reads is a number" (a getter and an `Option<f64>`
+static, run without the global, with a string, `null` and a number) and
+"js::is_number of what's no number is refused", and
+`test/compiler.test.ts`'s web_forms `pixel_ratio`, run without
+`devicePixelRatio`, with `2` and with `"2"`; mutations
+`is-number-form-called`, `is-number-asked-as-function` (`bindings.ts`),
+`is-number-of-a-function-asked`, `is-number-of-an-option-refused` and
+`is-number-of-a-getter-refused` (`mir/calls.ts`).

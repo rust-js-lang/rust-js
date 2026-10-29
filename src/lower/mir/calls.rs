@@ -3,6 +3,7 @@
 //! `&mut`. `mir_call_values` tells which a call is, and hands it here.
 
 use super::*;
+use crate::lower::bindings::Asked;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of what may be a with_this function, a `dyn Fn`'s or a
@@ -535,10 +536,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !bindings::is_binding(tcx, def_id) {
             return Ok(None);
         }
-        let asked = match bindings::js_form(tcx, def_id) {
-            bindings::JsForm::Defined => Asked::Defined,
-            bindings::JsForm::Function => Asked::Function,
-            _ => return Ok(None),
+        let bindings::JsForm::Asks(asked) = bindings::js_form(tcx, def_id) else {
+            return Ok(None);
         };
         if self.asks_of_value(body, def_id, args) {
             let mut values = self.take_operands(state, &[&args[0].node], out)?;
@@ -556,7 +555,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !steps.is_empty()
         {
             if let Some(value_ty) = value_first(steps) {
-                let path = self.defined_path(&steps[1..], Some(value_ty), asked, span)?;
+                let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked, span)?;
+                self.asked_of_number(asked, read, span)?;
                 let mut values = self.take_operands(state, &[&arg.node], out)?;
                 let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
                     return Err(self.unsupported(
@@ -566,7 +566,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 return self.mir_defined_parts(Some(path), Some(items.swap_remove(0)), asked, span);
             }
-            let path = self.defined_path(steps, None, asked, span)?;
+            let (path, read) = self.defined_path(steps, None, asked, span)?;
+            self.asked_of_number(asked, read, span)?;
             return self.mir_defined_parts(Some(path), None, asked, span);
         }
         let Some(arg) = args.first() else {
@@ -579,6 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(function) = self.math_function(f, f_args)
             && let js::ExprKind::Member(_, name) = function.kind
         {
+            self.asked_of_number(asked, given, span)?;
             return self.mir_defined_parts(Some(format!("Math.{name}")), None, asked, span);
         }
         let global = match *given.kind() {
@@ -606,7 +608,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => None,
             },
         };
+        if global.is_some() {
+            let read = match crate::lower::fn_def(given) {
+                Some((f, args)) => read_by(tcx, f, args, given),
+                None => given,
+            };
+            self.asked_of_number(asked, read, span)?;
+        }
         self.mir_defined_parts(global, None, asked, span)
+    }
+
+    /// `js::is_number` of what's a number in Rust, `f64`, or an `Option`
+    /// of one, as a getter's or a static's is (rd195): of what isn't, a
+    /// function's binding, it would be false, so it's refused.
+    fn asked_of_number(&self, asked: Asked, read: Ty<'tcx>, span: Span) -> R<()> {
+        let number = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Float(_) | ty::Int(_) | ty::Uint(_));
+        let read = read.peel_refs();
+        if asked != Asked::Number
+            || number(read)
+            || self.option_of(read).is_some_and(|payload| number(payload.peel_refs()))
+        {
+            return Ok(());
+        }
+        Err(self.tcx.dcx().span_err(
+            span,
+            "`js::is_number` of what isn't a number in Rust is false: it's asked of a getter's or \
+             a static's binding of one, `js::is_number(webapi::window_global::device_pixel_ratio)`",
+        ))
     }
 
     /// Whether a call of `js::is_defined` or `js::is_function`, binding
@@ -639,7 +667,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> bool {
         let tcx = self.tcx;
         let [arg] = args else { return false };
-        matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Function)
+        matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Asks(Asked::Function))
             && self.function_given(arg.node.ty(&body.local_decls, tcx))
             && self
                 .static_given(body, &arg.node)
@@ -708,9 +736,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 read = Expr::member(read, part.to_string());
             }
             let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
-            if asked == Asked::Function {
+            if let Some(kind) = asked.type_of() {
                 if k + 1 == parts.len() {
-                    tests.push(Expr::bin(Op::Eq, typeof_, Expr::str("function")));
+                    tests.push(Expr::bin(Op::Eq, typeof_, Expr::str(kind)));
                 }
             } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(part)) {
                 tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
@@ -727,8 +755,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The path a tuple of bindings is, each step a method of what the one
     /// before gives, its first a global's binding (ADR 0624):
     /// `(Window::document, Document::create_element::<Div>)` is
-    /// `window.document.createElement`.
-    fn defined_path(&self, steps: &[ty::Ty<'tcx>], from: Option<ty::Ty<'tcx>>, asked: Asked, span: Span) -> R<String> {
+    /// `window.document.createElement`; and the type of what its last
+    /// step reads (`read_by`).
+    fn defined_path(
+        &self,
+        steps: &[ty::Ty<'tcx>],
+        from: Option<ty::Ty<'tcx>>,
+        asked: Asked,
+        span: Span,
+    ) -> R<(String, ty::Ty<'tcx>)> {
         let tcx = self.tcx;
         let refused = || {
             self.unsupported(
@@ -744,6 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut path = String::new();
         let mut gives: Option<ty::Ty<'tcx>> = from;
+        let mut read = None;
         for (k, step) in steps.iter().enumerate() {
             let Some((f, args)) = crate::lower::fn_def(*step) else {
                 return Err(refused());
@@ -773,8 +809,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             };
             gives = Some(sig.output());
+            read = Some(read_by(tcx, f, args, *step));
         }
-        Ok(path)
+        Ok((path, read.ok_or_else(refused)?))
     }
 
     /// `performance.now` of `Performance::now`, a method binding of a type
@@ -885,13 +922,24 @@ fn member_read(tcx: rustc_middle::ty::TyCtxt<'_>, method: rustc_span::def_id::De
     }
 }
 
-/// What `js::is_defined` asks of a binding's global, `typeof X !==
-/// "undefined"`, or `js::is_function`, `typeof X === "function"` (ADRs
-/// 0597, 0942).
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Asked {
-    Defined,
-    Function,
+/// What `binding` (`f` of `args`, of type `step`) reads where it's
+/// asked of: a getter's value, its output's type; another's the function
+/// itself, its own.
+fn read_by<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    f: rustc_span::def_id::DefId,
+    args: rustc_middle::ty::GenericArgsRef<'tcx>,
+    step: ty::Ty<'tcx>,
+) -> ty::Ty<'tcx> {
+    match bindings::js_form(tcx, f) {
+        bindings::JsForm::Get(_) => tcx
+            .fn_sig(f)
+            .instantiate(tcx, args)
+            .skip_normalization()
+            .skip_binder()
+            .output(),
+        _ => step,
+    }
 }
 
 /// The value a path of `steps` starts from, its first, where that's no
@@ -900,16 +948,6 @@ enum Asked {
 fn value_first<'tcx>(steps: &[ty::Ty<'tcx>]) -> Option<ty::Ty<'tcx>> {
     let first = *steps.first()?;
     (steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)
-}
-
-impl Asked {
-    /// The function that asks it, as a program writes it.
-    fn function(self) -> &'static str {
-        match self {
-            Asked::Defined => "js::is_defined",
-            Asked::Function => "js::is_function",
-        }
-    }
 }
 
 /// Whether every JS host has `global`, one of ECMAScript's first edition's

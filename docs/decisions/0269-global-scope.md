@@ -57,7 +57,7 @@ Getters only; a setter of a global is `globalThis`'s, as above.
 
 ```rust
 pub fn pixel_ratio() -> f64 {
-    if js::is_defined(webapi::window_global::device_pixel_ratio) {
+    if js::is_number(webapi::window_global::device_pixel_ratio) {
         webapi::window_global::device_pixel_ratio()
     } else {
         1.0
@@ -67,15 +67,15 @@ pub fn pixel_ratio() -> f64 {
 
 ```js
 export function pixelRatio() {
-  return typeof devicePixelRatio !== "undefined" ? devicePixelRatio : 1;
+  return typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
 }
 ```
 
-Its test is ADR 0597's, `typeof X !== "undefined"`, where upstream tests
-`=== 'number'`: the same wherever the binding's type holds, a window's
-`devicePixelRatio` being a number; a script that replaces it, as
-`[Replaceable]` lets one, with what isn't, breaks the type either way.
-That difference is the port's to accept (a decision to confirm).
+Its test is upstream's, `typeof devicePixelRatio === 'number'`, the user's
+decision: `js::is_number`, ADR 0942's third question (amended). It had
+been ADR 0597's `typeof X !== "undefined"`, which differs of a
+`devicePixelRatio` a script replaced, as `[Replaceable]` lets one, with
+what isn't a number.
 
 Held by `test/compiler.test.ts`, "the webapi crate's bindings become plain
 JS" (web_forms' `pixel_ratio`, its JS, run with and without the global),

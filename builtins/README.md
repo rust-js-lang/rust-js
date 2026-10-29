@@ -51,7 +51,10 @@ spawn(Box::new(async move {                            // runs, unawaited
   `dict::get(d, key)`, `dict::entries(d)`, `dict::set(d, key, value)`.
 - `is_defined(binding)` is whether the host has a global, `typeof X !==
   "undefined"`: `is_defined(set_immediate)`, which a browser hasn't
-  ([ADR 0597](../docs/decisions/0597-whether-the-host-has-a-global-is-is-defined.md)).
+  ([ADR 0597](../docs/decisions/0597-whether-the-host-has-a-global-is-is-defined.md));
+  `is_function(binding)` whether it's a function, and `is_number(binding)`
+  whether it's a number, `typeof devicePixelRatio === "number"`
+  ([ADR 0942](../docs/decisions/0942-whether-a-global-is-a-function-is-is-function.md)).
 - `StructuredClone` is what the browser's structured clone copies as it is:
   what `postMessage`, `pushState` and `structuredClone` take. A struct is one
   by `unsafe impl StructuredClone for Saved {}`, which vouches its fields are.

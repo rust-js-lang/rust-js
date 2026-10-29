@@ -102,6 +102,60 @@ pub fn dated() -> bool {
   }
 });
 
+// React DOM's estimateImageBytes: `typeof devicePixelRatio === 'number' ?
+// devicePixelRatio : 1`. `js::is_number` asks it of a global a getter or a
+// static reads, as `js::is_function` asks whether it's a function (rd195):
+// the last part of a path alone, as the others are. What's no number in
+// Rust, a function's binding, is refused: it would be false.
+test("js::is_number is whether a global a binding reads is a number", async () => {
+  const dir = fixture("is-number");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get rustJsWidth")]
+pub fn width() -> f64 {
+    unreachable!()
+}
+
+unsafe extern "Rust" {
+    #[link_name = "rustJsMeter.ratio"]
+    pub safe static RATIO: Option<f64>;
+}
+
+pub fn wide() -> f64 {
+    if js::is_number(width) { width() } else { 1.0 }
+}
+
+pub fn ratio() -> bool {
+    js::is_number(RATIO)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return typeof rustJsWidth === "number" ? rustJsWidth : 1;');
+  expect(js).toContain('return typeof rustJsMeter.ratio === "number";');
+  const global = globalThis as Record<string, unknown>;
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.wide()).toBe(1);
+  expect(() => lib.ratio()).toThrow(ReferenceError);
+  global.rustJsWidth = "3";
+  global.rustJsMeter = { ratio: null };
+  expect([lib.wide(), lib.ratio()]).toEqual([1, false]);
+  global.rustJsWidth = 3;
+  global.rustJsMeter = { ratio: 2 };
+  expect([lib.wide(), lib.ratio()]).toEqual([3, true]);
+});
+
+test("js::is_number of what's no number is refused", () => {
+  const dir = fixture("is-number-refused");
+  const refused = (code: string) => {
+    writeFileSync(join(dir, "lib.rs"), code);
+    const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
+    return [p.code === 0, p.stderr];
+  };
+  const message = expect.stringContaining("`js::is_number` of what isn't a number in Rust");
+  const callable = '#[cfg_attr(rust_js, rust_js::link_name = "rustJsCallable")]\npub fn callable() -> f64 {\n    unreachable!()\n}\n\n';
+  expect(refused(`${callable}pub fn ask() -> bool {\n    js::is_number(callable)\n}\n`)).toEqual([false, message]);
+  expect(refused("pub fn ask() -> bool {\n    js::is_number(js::symbol::iterator)\n}\n")).toEqual([false, message]);
+});
+
 // What isn't a global's binding is refused, naming `js::is_function`.
 test("js::is_function of what isn't a global's binding is refused", () => {
   const dir = fixture("is-function-refused");

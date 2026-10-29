@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     name: "is-defined-runs-code",
     breaks: "`js::is_defined`'s `typeof` may run anything, so React's `aggregateErrors` makes `thrownErrors` a counted cell (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "                | JsForm::StrictEquals\n                | JsForm::Defined\n",
+    find: "                | JsForm::StrictEquals\n                | JsForm::Asks(_)\n",
     replace: "                | JsForm::StrictEquals\n",
     tests: ["test/js-builtins.test.ts", "-t", "AggregateError"],
   },

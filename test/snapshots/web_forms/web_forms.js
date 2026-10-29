@@ -280,9 +280,9 @@ export function hoistedOf(node) {
 
 /**
  * A window's attribute is a global, read bare, as estimateImageBytes
- * tests it where a window may not be (rd195).
+ * tests it where a window may not be, whether it's a number (rd195).
  */
 export function pixelRatio() {
-  return typeof devicePixelRatio !== "undefined" ? devicePixelRatio : 1;
+  return typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
 }
 //# sourceMappingURL=web_forms.js.map

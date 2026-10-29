@@ -515,8 +515,7 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
                 | JsForm::InstanceOfGiven
                 | JsForm::Truthy
                 | JsForm::StrictEquals
-                | JsForm::Defined
-                | JsForm::Function
+                | JsForm::Asks(_)
                 | JsForm::WithThis
                 | JsForm::TypeofObject
                 | JsForm::Null

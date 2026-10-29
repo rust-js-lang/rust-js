@@ -149,7 +149,7 @@ The crates bind the standard ones, called bare:
   each read when it's called, `is_secure_context()`, `isSecureContext`.
 - `webapi::window_global`: a window's own, `confirm`, `alert`, and its
   attributes, `device_pixel_ratio()`, `devicePixelRatio`, which a program
-  tests where there may be no window, `js::is_defined(device_pixel_ratio)`
+  tests where there may be no window, `js::is_number(device_pixel_ratio)`
   ([ADR 0269](../../decisions/0269-global-scope.md), amended). Not those a
   value names already, `webapi::document` and `webapi::window`.
 - `webapi::console`, `webapi::css` and `webapi::web_assembly`: a namespace's
@@ -270,6 +270,30 @@ export function canPreventExtensions() {
 
 export function hasTimers() {
   return typeof setTimeout === "function";
+}
+```
+
+Whether it's a number is `js::is_number(binding)`, `typeof X ===
+"number"`, of a getter's binding or a static's of a number, as React DOM
+reads a window's pixel ratio where there may be no window. Of a path it
+asks the last part alone, as `js::is_function` does; of what's no number
+in Rust, a function's binding, it's an error
+([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
+amended):
+
+```rust
+pub fn pixel_ratio() -> f64 {
+    if js::is_number(webapi::window_global::device_pixel_ratio) {
+        webapi::window_global::device_pixel_ratio()
+    } else {
+        1.0
+    }
+}
+```
+
+```js
+export function pixelRatio() {
+  return typeof devicePixelRatio === "number" ? devicePixelRatio : 1;
 }
 ```
 
