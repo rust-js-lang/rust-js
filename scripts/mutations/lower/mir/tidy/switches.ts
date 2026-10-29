@@ -457,4 +457,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^guarded_arms_index_copy.rs$"],
     snapshots: true,
   },
+  {
+    name: "switch-missing-an-arm",
+    breaks: "a chain begun past an arm MIR tested apart, `if (c === 97) { break; }`, is a `switch` of the arms left, `switch (c) { case 98: .. }`, a `switch` of one case (#389c)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    if (arms.iter()).any(|arm| !arm.constants.is_empty() && !cases.iter().any(|case| case.3 == arm.span)) {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_breaks_its_loop.rs$"],
+    snapshots: true,
+  },
 ];

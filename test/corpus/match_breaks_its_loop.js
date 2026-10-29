@@ -115,9 +115,8 @@ function shadowed(codes) {
     if (c === 97) {
       break;
     }
-    switch (c) {
-      case 98:
-        n = (n + 5) >>> 0;
+    if (c === 98) {
+      n = (n + 5) >>> 0;
     }
     c = String(c);
     n = (n + $byteLen(c)) >>> 0;

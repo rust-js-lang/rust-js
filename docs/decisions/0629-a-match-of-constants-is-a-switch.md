@@ -655,3 +655,17 @@ Held by `test/corpus/guarded_arms_index_copy.rs` (and `loop_exit_tuple`)
 against native Rust, and the mutations `copy-read-in-place-kept`
 (`mir/tidy/loop_labels.ts`) and `guard-alone-else-leaving-unread`
 (`mir/tidy/switches.ts`).
+
+## Amendment: a `switch` holds each arm of constants (#389c)
+
+Where an arm that leaves the loop, `b'a' => break`, is tested apart, `if
+(c === 97) { break; }`, before what follows the `match`, the chain of the
+arms left was a `switch` of one case, `switch (c) { case 98: .. }`. A
+`switch` is now made only where each arm of constants is one of its cases;
+else the arms are the `if` chain they are, `if (c === 97) { break; } if (c
+=== 98) { .. }`, as #389 writes them.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by `test/corpus/match_breaks_its_loop.rs` (`shadowed`) against native
+Rust and the mutation `switch-missing-an-arm` (`mir/tidy/switches.ts`).

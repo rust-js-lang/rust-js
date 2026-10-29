@@ -275,6 +275,12 @@ fn switch_at(
     // an arm's alternatives MIR tested apart, a guard's each, one case.
     cases.sort_by_key(|case| case.3.lo);
     let mut cases = stacked(cases)?;
+    // Each arm of constants a case: not a chain begun past one MIR tested
+    // apart, `if (c === 97) { break; }`, which a `switch` of one case
+    // would follow (#389c).
+    if (arms.iter()).any(|arm| !arm.constants.is_empty() && !cases.iter().any(|case| case.3 == arm.span)) {
+        return None;
+    }
     // What follows it to its list's end, where one case alone goes on to
     // it and it's that arm's, written there or MIR's: that case's, `'.' =>
     // break` of a loop's `break` after it.
