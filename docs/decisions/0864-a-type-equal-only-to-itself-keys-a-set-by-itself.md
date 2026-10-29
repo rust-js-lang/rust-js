@@ -4,7 +4,8 @@ Status: Accepted. Amended: `==` of two values of one is `===` too, and
 its `PartialEq`'s dictionary is written only where it's reached; and a
 library's contract lists its, which its consumers key by themselves;
 and an `Rc` of one is equal only to itself too; and a `PartialEq` of
-`ptr::eq` alone is `===`, whatever its `Hash`. Amended by
+`ptr::eq` alone is `===`, whatever its `Hash`; and a library's contract
+lists those too. Amended by
 [1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md):
 what holds one compares it by `===`, never by `$eq`.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
@@ -290,3 +291,32 @@ Held by `test/lowering-dictionaries.test.ts`, "an identity PartialEq is
 `identity-eq-trait-call-resolved`. Corpus `unknown_option_equality`'s
 `Value`, whose `PartialEq` is `ptr::eq`, no longer writes the dictionary
 nothing read.
+
+## Amendment: a library's contract lists its `PartialEq`s of `ptr::eq` alone
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: `===` is what
+the library's own `eq` does, as in its crate.
+
+React's update queue is the reconciler's, and its consumers compare two
+`Rc<Update>`s. The amendment above made `==` of a `PartialEq` of
+`ptr::eq` alone `===` in its own crate, but a library's contract listed
+only its types equal only to themselves, both impls, so its consumer
+asked its own `eq_by_address` of none: `Update`'s `eq`, which the
+library doesn't export, was compiled again in the consumer (ADR 0914),
+`function updatePartialEq_eq(update, other) { return update === other; }`,
+and each `==` called it.
+
+**A library's contract lists, `eq_by_address`, its types whose `==` is
+their address's, whatever their `Hash`, its `identities` among them; a
+consumer's `eq_by_address` of a library's type is its contract's
+answer**, as its `equal_only_to_itself` is `identities`'. Each list is
+one function's answer of the crate's own types (`pipeline/reached.rs`),
+written by `library.rs` and read by `Foreign`. So a consumer's `==` of
+two `Rc<Update>`s, or of what holds them, is `===`, and the impl isn't
+compiled where nothing else reaches it.
+
+`test/crates.test.ts`, "a consumer's == of what holds a library's type
+equal only to itself is never $eq", holds the contract's lists and that
+the consumer writes no `updatePartialEq_eq`; mutations
+`library-eq-by-address-unlisted` (`lower/library.ts`) and
+`library-eq-by-address-unread` (`lower/std_impls.ts`).

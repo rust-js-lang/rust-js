@@ -632,7 +632,8 @@ pub fn lower_crate<'tcx>(
     // What's written only where it's reached (`reached.rs`), and the types
     // equal only to themselves, its contract's (ADR 0864, amended).
     let lowered = lowered_items.iter().map(|&(id, _)| id);
-    let (identities, derived) = written_where_reached(tcx, (&trait_impls, &foreign), &function_bodies, lowered);
+    let ((identities, eq_by_address), derived) =
+        written_where_reached(tcx, (&trait_impls, &foreign), &function_bodies, lowered);
     // Its functions each call of which is what it's given, which its
     // contract lists for its consumers (ADR 0584, amended).
     let gives_argument: Vec<DefId> = (function_bodies.keys().copied())
@@ -1459,6 +1460,7 @@ pub fn lower_crate<'tcx>(
                         lazy_locals: &lazy_locals,
                         variables: &variables,
                         identities: &identities,
+                        eq_by_address: &eq_by_address,
                         gives_argument: &gives_argument,
                     },
                     (&trait_impls, &held.modules),

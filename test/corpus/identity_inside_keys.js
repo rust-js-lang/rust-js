@@ -40,7 +40,7 @@ function keyHash_hash(key, state, HHasher, dropH) {
   HHasher.writeU32(state, key.lane);
 }
 
-function key(fiber, lane) {
+function laneKey(fiber, lane) {
   return {
     fiber,
     lane,
@@ -51,53 +51,54 @@ function distinct(keys, KHash, KPartialEq, KSet) {
   return new KSet(keys).size;
 }
 
-function main() {
-  const a = fiber(1);
-  const b = fiber(1);
-  // A cycle, which a key walking its fields wouldn't leave.
-  a.alternate = b;
-  b.alternate = a;
-
+function byStruct(a, b) {
   const m = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
-  m.set(key(a, 1), "a");
-  m.set(key(b, 1), "b");
-  m.set(key(a, 2), "a2");
+  m.set(laneKey(a, 1), "a");
+  m.set(laneKey(b, 1), "b");
+  m.set(laneKey(a, 2), "a2");
   const size = m.size;
-  const get = m.get(key(a, 1));
-  const value = m.get(key(b, 1));
+  const get = m.get(laneKey(a, 1));
+  const value = m.get(laneKey(b, 1));
   console.log(
     `${size} ${get == null ? "None" : `Some(${$debugStr(get)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
   );
-  const key$1 = key(a, 1);
-  $orInsert(m, key$1, "none");
-  $mutGet(m, key$1).value = "a again";
-  const removed = $remove(m, key(b, 1));
+  const key = laneKey(a, 1);
+  $orInsert(m, key, "none");
+  $mutGet(m, key).value = "a again";
+  const removed = $remove(m, laneKey(b, 1));
   console.log(
-    `${m.size} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(m.get(key(a, 1)))} ${removed == null ? "None" : `Some(${$debugStr(removed)})`}`,
+    `${m.size} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(m.get(laneKey(a, 1)))} ${removed == null ? "None" : `Some(${$debugStr(removed)})`}`,
   );
-  console.log(`${m.has(key(b, 1))} ${m.has(key(a, 2))}`);
+  console.log(`${m.has(laneKey(b, 1))} ${m.has(laneKey(a, 2))}`);
 
   const set = new ($keySet((key) => ({ ...key, fiber: $id(key.fiber) })))();
-  console.log(`${$add(set, key(a, 1))} ${$add(set, key(b, 1))} ${$add(set, key(a, 1))}`);
+  console.log(
+    `${$add(set, laneKey(a, 1))} ${$add(set, laneKey(b, 1))} ${$add(set, laneKey(a, 1))}`,
+  );
   console.log(`${set.size}`);
+  return m;
+}
 
+function byTuple(a, b) {
   const pairs = new ($keyMap((key) => [$id(key[0]), key[1]]))();
+  const key = [a, 1];
+  $orInsertWith(pairs, key, () => 0);
+  const orDefault = $mutGet(pairs, key);
+  orDefault.value = (orDefault.value + 1) >>> 0;
+  const key$1 = [b, 1];
+  $orInsertWith(pairs, key$1, () => 0);
+  const value = $mutGet(pairs, key$1);
+  value.value = (value.value + 10) >>> 0;
   const key$2 = [a, 1];
   $orInsertWith(pairs, key$2, () => 0);
-  const orDefault = $mutGet(pairs, key$2);
-  orDefault.value = (orDefault.value + 1) >>> 0;
-  const key$3 = [b, 1];
-  $orInsertWith(pairs, key$3, () => 0);
-  const value$1 = $mutGet(pairs, key$3);
-  value$1.value = (value$1.value + 10) >>> 0;
-  const key$4 = [a, 1];
-  $orInsertWith(pairs, key$4, () => 0);
-  const value$2 = $mutGet(pairs, key$4);
-  value$2.value = (value$2.value + 100) >>> 0;
+  const value$1 = $mutGet(pairs, key$2);
+  value$1.value = (value$1.value + 100) >>> 0;
   console.log(
     `${pairs.size} ${((value) => (value == null ? "None" : `Some(${value})`))(pairs.get([a, 1]))}`,
   );
+}
 
+function byParts(a, b) {
   const instances = new ($keySet($id))([a, b, undefined, a]);
   console.log(`${instances.size} ${instances.has(undefined)}`);
 
@@ -108,35 +109,35 @@ function main() {
   ]);
   console.log(`${paths.size}`);
 
-  const key$5 = key(a, 1);
-  const key$6 = key(b, 1);
+  const key = laneKey(a, 1);
+  const key$1 = laneKey(b, 1);
   const outers = new ($keySet((key) => ({
     ...key,
     key: { ...key.key, fiber: $id(key.key.fiber) },
   })))([
     {
-      key: key$5,
+      key,
       name: "x",
     },
     {
-      key: key$6,
+      key: key$1,
       name: "x",
     },
     {
-      key: key(a, 1),
+      key: laneKey(a, 1),
       name: "x",
     },
   ]);
   console.log(`${outers.size}`);
 
-  const value$3 = key(a, 1);
-  const value$4 = key(b, 1);
+  const value = laneKey(a, 1);
+  const value$1 = laneKey(b, 1);
   const maybe = new ($keySet((key) => (key == null ? key : { ...key, fiber: $id(key.fiber) })))([
-    value$3,
+    value,
     undefined,
-    value$4,
+    value$1,
     undefined,
-    key(a, 1),
+    laneKey(a, 1),
   ]);
   const arg = maybe.has(undefined);
   console.log(`${maybe.size} ${arg}`);
@@ -169,11 +170,21 @@ function main() {
     },
   ]);
   console.log(`${targets.size}`);
+}
 
+function main() {
+  const a = fiber(1);
+  const b = fiber(1);
+  // A cycle, which a key walking its fields wouldn't leave.
+  a.alternate = b;
+  b.alternate = a;
+  const m = byStruct(a, b);
+  byTuple(a, b);
+  byParts(a, b);
   // Generic code given such a key makes the same map.
   console.log(
     `${distinct(
-      [key(a, 1), key(b, 1), key(a, 1)],
+      [laneKey(a, 1), laneKey(b, 1), laneKey(a, 1)],
       keyHash,
       { eq: (a, b) => a.fiber === b.fiber && a.lane === b.lane },
       $keySet((key) => ({ ...key, fiber: $id(key.fiber) })),
@@ -199,7 +210,7 @@ function main() {
     )}`,
   );
   const cloned = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))(m);
-  cloned.set(key(b, 3), "b3");
+  cloned.set(laneKey(b, 3), "b3");
   console.log(`${m.size} ${cloned.size} ${(a.tag + b.tag) >>> 0}`);
   a.alternate = undefined;
 }

@@ -99,6 +99,8 @@ function sameListener(a, b) {
   library's contract needs nothing new. A library type whose `PartialEq`
   is `ptr::eq` without a `Hash` is custom by its listed impl, which the
   consumer compiles itself where the library doesn't export it (ADR 0914).
+  (Amended by ADR 0864's last amendment: the contract lists it, and its
+  `==` is `===` there too.)
 
 ## Why
 

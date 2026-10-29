@@ -751,8 +751,8 @@ export const mutations: Mutation[] = [
     name: "library-identity-unread",
     breaks: "a library's type equal only to itself isn't, to its consumer: a `HashSet<&'static Fiber>` of the library's is refused, as React's reconciler's was",
     file: "src/lower/std_impls.rs",
-    find: "        return recognition.foreign.equal_only_to_itself(adt.did());\n",
-    replace: "        return false;\n",
+    find: "            true => recognition.foreign.equal_only_to_itself(adt.did()),\n",
+    replace: "            true => false,\n",
     tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
   {
@@ -860,5 +860,13 @@ export const mutations: Mutation[] = [
     find: "        self.any_shape(ty) || self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
     replace: "        self.any_shape(ty) || self.equal_only_to_itself(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_identities_inside.rs$"],
+  },
+  {
+    name: "library-eq-by-address-unread",
+    breaks: "a consumer asks a library's `Update`, whose `PartialEq` alone is `ptr::eq`, whether it's equal only to itself, which needs its `Hash` too, and calls its `eq` (ADR 0864, amended)",
+    file: "src/lower/std_impls.rs",
+    find: "            false => recognition.foreign.eq_by_address(adt.did()),\n",
+    replace: "            false => recognition.foreign.equal_only_to_itself(adt.did()),\n",
+    tests: ["test/crates.test.ts", "-t", "never \\$eq"],
   },
 ];

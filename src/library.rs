@@ -248,6 +248,11 @@ pub struct Library {
     /// consumer keys a `Set` or a `Map` by each, and compares two by `===`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub identities: Vec<String>,
+    /// The keys of its types whose `==` is their address's, `ptr::eq`,
+    /// whatever their `Hash`, its types equal only to themselves among
+    /// them (ADR 0864, amended): a consumer compares two by `===`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub eq_by_address: Vec<String>,
     /// The keys of its functions each call of which is what it's given, a
     /// transparent struct's `From` (ADRs 0264, 0584, amended): a consumer's
     /// call of one is the value.
@@ -406,6 +411,9 @@ pub struct Exports {
     pub ref_cells: RefCellFacts,
     /// Its types equal only to themselves, by their keys (ADR 0864).
     pub identities: HashSet<String>,
+    /// Its types whose `==` is their address's, by their keys (ADR 0864,
+    /// amended).
+    pub eq_by_address: HashSet<String>,
     /// Its functions each call of which is what it's given, by their keys
     /// (ADR 0584, amended).
     pub gives_argument: HashSet<String>,
@@ -474,6 +482,7 @@ impl Dependencies {
                 makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
                 writers_take_options: library.writers_take_options,
                 identities: library.identities.into_iter().collect(),
+                eq_by_address: library.eq_by_address.into_iter().collect(),
                 gives_argument: library.gives_argument.into_iter().collect(),
                 fields: library
                     .fields
@@ -613,6 +622,7 @@ impl Dependencies {
             makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,
             writers_take_options: library.writers_take_options,
             identities: library.identities.into_iter().collect(),
+            eq_by_address: library.eq_by_address.into_iter().collect(),
             gives_argument: library.gives_argument.into_iter().collect(),
             fields: library
                 .fields

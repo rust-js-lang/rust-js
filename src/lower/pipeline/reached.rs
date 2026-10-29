@@ -27,7 +27,7 @@ pub(super) fn written_where_reached<'tcx>(
     (trait_impls, foreign): (&[DefId], &Foreign<'_, 'tcx>),
     function_bodies: &HashMap<DefId, &Body<'tcx>>,
     lowered: impl Iterator<Item = DefId>,
-) -> (Vec<DefId>, HashSet<DefId>) {
+) -> ((Vec<DefId>, Vec<DefId>), HashSet<DefId>) {
     let recognition = super::super::recognition::Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -50,11 +50,14 @@ pub(super) fn written_where_reached<'tcx>(
             .skip_normalization()
             .def_id
     };
-    let identities: Vec<DefId> = (trait_impls.iter())
-        .filter(|&&id| identity_eq(id, trait_of(id), true))
-        .filter_map(|&id| tcx.type_of(id).instantiate_identity().skip_normalization().ty_adt_def())
-        .map(|adt| adt.did())
-        .collect();
+    let of_impls = |keyed: bool| -> Vec<DefId> {
+        (trait_impls.iter())
+            .filter(|&&id| identity_eq(id, trait_of(id), keyed))
+            .filter_map(|&id| tcx.type_of(id).instantiate_identity().skip_normalization().ty_adt_def())
+            .map(|adt| adt.did())
+            .collect()
+    };
+    let identities = (of_impls(true), of_impls(false));
     let derived: HashSet<DefId> = trait_impls
         .iter()
         .filter(|&&id| {

@@ -64,7 +64,10 @@ fn identity<'tcx>(
     let ty::Adt(adt, _) = ty.kind() else { return false };
     // A library's, as its contract says.
     if !adt.did().is_local() {
-        return recognition.foreign.equal_only_to_itself(adt.did());
+        return match hashed {
+            true => recognition.foreign.equal_only_to_itself(adt.did()),
+            false => recognition.foreign.eq_by_address(adt.did()),
+        };
     }
     if !adt.is_struct() {
         return false;

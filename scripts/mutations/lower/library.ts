@@ -322,4 +322,12 @@ export const mutations: Mutation[] = [
     replace: "            let mut keys: Vec<String> = (gives_argument.iter().take(0))\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "transparent struct's From"],
   },
+  {
+    name: "library-eq-by-address-unlisted",
+    breaks: "a library's contract lists no type whose `PartialEq` alone is `ptr::eq`, so its consumer compiles the library's `updatePartialEq_eq` again and calls it, where `===` is its `==` (ADR 0864, amended)",
+    file: "src/lower/library.rs",
+    find: "            let mut keys: Vec<String> = (eq_by_address.iter())\n",
+    replace: "            let mut keys: Vec<String> = (eq_by_address.iter().take(0))\n",
+    tests: ["test/crates.test.ts", "-t", "never \\$eq"],
+  },
 ];

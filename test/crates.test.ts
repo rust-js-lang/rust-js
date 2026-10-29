@@ -483,8 +483,14 @@ test("a consumer's == of what holds a library's type equal only to itself is nev
   const out = chain(pairs, "library_eq", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("function sameInstance(previous, instance) {\n  const right = $some(instance);\n  return previous == null || right == null\n    ? previous == right\n    : $someValue(previous) == $someValue(right);\n}");
-  expect(app).toContain("dispatch.instance == right$8.instance && dispatch.name === right$8.name");
+  expect(app).toContain("dispatch.instance == right$5.instance && dispatch.name === right$5.name");
   expect(app.match(/\$eq\([^)]*\)/g)).toEqual(["$eq(p, q)", "$eq(p, r)", "$eq(p, q)"]);
+  // The library's `Update`, whose `PartialEq` alone is `ptr::eq`, its
+  // contract's `eq_by_address`: `===`, never its `eq` compiled again.
+  const { identities, eq_by_address } = contract(out);
+  expect([identities.length, eq_by_address.length, identities.every((id: string) => eq_by_address.includes(id))]).toEqual([1, 2, true]);
+  expect(app).not.toContain("updatePartialEq_eq");
+  expect(app).not.toContain("function fiberPartialEq_eq");
 }, 300_000);
 
 // #398: a key holding a library's type equal only to itself, a derived

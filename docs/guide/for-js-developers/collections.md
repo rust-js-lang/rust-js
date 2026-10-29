@@ -740,8 +740,9 @@ export function at(b, row, col) {
   library's contract says: the reconciler's set of `react`'s fibers
   ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).
   A `PartialEq` of `ptr::eq` alone, with no `Hash`, is `===` too, React's
-  update, `a != b` of two `Option<Rc<Update>>` `a != b`; only a set or a
-  map of it asks for the `Hash` (ADR 0864, amended). What holds one, an
+  update, `a != b` of two `Option<Rc<Update>>` `a != b`, another crate's too,
+  as its library's contract says; only a set or a map of it asks for the
+  `Hash` (ADR 0864, amended). What holds one, an
   `Option`, a tuple, a `Vec` or a derived struct, compares it by `===`
   too, never by `$eq`, which would walk its fields: two fibers alike are
   told apart, and a fiber's `alternate`, a cycle, is never walked, in

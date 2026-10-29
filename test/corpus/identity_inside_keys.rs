@@ -54,7 +54,7 @@ enum Target {
     Both { fiber: Rc<Fiber>, lane: u32 },
 }
 
-fn key(fiber: &Rc<Fiber>, lane: u32) -> Key {
+fn lane_key(fiber: &Rc<Fiber>, lane: u32) -> Key {
     Key {
         fiber: Rc::clone(fiber),
         lane,
@@ -65,47 +65,50 @@ fn distinct<K: Hash + Eq>(keys: Vec<K>) -> usize {
     keys.into_iter().collect::<HashSet<K>>().len()
 }
 
-fn main() {
-    let a = fiber(1);
-    let b = fiber(1);
-    // A cycle, which a key walking its fields wouldn't leave.
-    *a.alternate.borrow_mut() = Some(Rc::clone(&b));
-    *b.alternate.borrow_mut() = Some(Rc::clone(&a));
-
+fn by_struct(a: &Rc<Fiber>, b: &Rc<Fiber>) -> HashMap<Key, &'static str> {
     let mut m = HashMap::new();
-    m.insert(key(&a, 1), "a");
-    m.insert(key(&b, 1), "b");
-    m.insert(key(&a, 2), "a2");
-    println!("{} {:?} {:?}", m.len(), m.get(&key(&a, 1)), m.get(&key(&b, 1)));
-    *m.entry(key(&a, 1)).or_insert("none") = "a again";
-    let removed = m.remove(&key(&b, 1));
-    println!("{} {:?} {:?}", m.len(), m.get(&key(&a, 1)), removed);
-    println!("{} {}", m.contains_key(&key(&b, 1)), m.contains_key(&key(&a, 2)));
+    m.insert(lane_key(a, 1), "a");
+    m.insert(lane_key(b, 1), "b");
+    m.insert(lane_key(a, 2), "a2");
+    println!("{} {:?} {:?}", m.len(), m.get(&lane_key(a, 1)), m.get(&lane_key(b, 1)));
+    *m.entry(lane_key(a, 1)).or_insert("none") = "a again";
+    let removed = m.remove(&lane_key(b, 1));
+    println!("{} {:?} {:?}", m.len(), m.get(&lane_key(a, 1)), removed);
+    println!(
+        "{} {}",
+        m.contains_key(&lane_key(b, 1)),
+        m.contains_key(&lane_key(a, 2))
+    );
 
     let mut set = HashSet::new();
     println!(
         "{} {} {}",
-        set.insert(key(&a, 1)),
-        set.insert(key(&b, 1)),
-        set.insert(key(&a, 1))
+        set.insert(lane_key(a, 1)),
+        set.insert(lane_key(b, 1)),
+        set.insert(lane_key(a, 1))
     );
     println!("{}", set.len());
+    m
+}
 
+fn by_tuple(a: &Rc<Fiber>, b: &Rc<Fiber>) {
     let mut pairs: HashMap<(Rc<Fiber>, u32), u32> = HashMap::new();
-    *pairs.entry((Rc::clone(&a), 1)).or_default() += 1;
-    *pairs.entry((Rc::clone(&b), 1)).or_default() += 10;
-    *pairs.entry((Rc::clone(&a), 1)).or_default() += 100;
-    println!("{} {:?}", pairs.len(), pairs.get(&(Rc::clone(&a), 1)));
+    *pairs.entry((Rc::clone(a), 1)).or_default() += 1;
+    *pairs.entry((Rc::clone(b), 1)).or_default() += 10;
+    *pairs.entry((Rc::clone(a), 1)).or_default() += 100;
+    println!("{} {:?}", pairs.len(), pairs.get(&(Rc::clone(a), 1)));
+}
 
-    let instances: HashSet<Option<Rc<Fiber>>> = [Some(Rc::clone(&a)), Some(Rc::clone(&b)), None, Some(Rc::clone(&a))]
+fn by_parts(a: &Rc<Fiber>, b: &Rc<Fiber>) {
+    let instances: HashSet<Option<Rc<Fiber>>> = [Some(Rc::clone(a)), Some(Rc::clone(b)), None, Some(Rc::clone(a))]
         .into_iter()
         .collect();
     println!("{} {}", instances.len(), instances.contains(&None));
 
     let paths: HashSet<Vec<Rc<Fiber>>> = [
-        vec![Rc::clone(&a), Rc::clone(&b)],
-        vec![Rc::clone(&b), Rc::clone(&a)],
-        vec![Rc::clone(&a), Rc::clone(&b)],
+        vec![Rc::clone(a), Rc::clone(b)],
+        vec![Rc::clone(b), Rc::clone(a)],
+        vec![Rc::clone(a), Rc::clone(b)],
     ]
     .into_iter()
     .collect();
@@ -113,15 +116,15 @@ fn main() {
 
     let outers: HashSet<Outer> = [
         Outer {
-            key: key(&a, 1),
+            key: lane_key(a, 1),
             name: "x",
         },
         Outer {
-            key: key(&b, 1),
+            key: lane_key(b, 1),
             name: "x",
         },
         Outer {
-            key: key(&a, 1),
+            key: lane_key(a, 1),
             name: "x",
         },
     ]
@@ -129,41 +132,57 @@ fn main() {
     .collect();
     println!("{}", outers.len());
 
-    let maybe: HashSet<Option<Key>> = [Some(key(&a, 1)), None, Some(key(&b, 1)), None, Some(key(&a, 1))]
-        .into_iter()
-        .collect();
+    let maybe: HashSet<Option<Key>> = [
+        Some(lane_key(a, 1)),
+        None,
+        Some(lane_key(b, 1)),
+        None,
+        Some(lane_key(a, 1)),
+    ]
+    .into_iter()
+    .collect();
     println!("{} {}", maybe.len(), maybe.contains(&None));
 
     let targets: HashSet<Target> = [
-        Target::Fiber(Rc::clone(&a)),
-        Target::Fiber(Rc::clone(&b)),
+        Target::Fiber(Rc::clone(a)),
+        Target::Fiber(Rc::clone(b)),
         Target::Lane(1),
         Target::Lane(1),
         Target::Both {
-            fiber: Rc::clone(&a),
+            fiber: Rc::clone(a),
             lane: 1,
         },
         Target::Both {
-            fiber: Rc::clone(&b),
+            fiber: Rc::clone(b),
             lane: 1,
         },
         Target::Both {
-            fiber: Rc::clone(&a),
+            fiber: Rc::clone(a),
             lane: 1,
         },
     ]
     .into_iter()
     .collect();
     println!("{}", targets.len());
+}
 
+fn main() {
+    let a = fiber(1);
+    let b = fiber(1);
+    // A cycle, which a key walking its fields wouldn't leave.
+    *a.alternate.borrow_mut() = Some(Rc::clone(&b));
+    *b.alternate.borrow_mut() = Some(Rc::clone(&a));
+    let m = by_struct(&a, &b);
+    by_tuple(&a, &b);
+    by_parts(&a, &b);
     // Generic code given such a key makes the same map.
     println!(
         "{} {}",
-        distinct(vec![key(&a, 1), key(&b, 1), key(&a, 1)]),
+        distinct(vec![lane_key(&a, 1), lane_key(&b, 1), lane_key(&a, 1)]),
         distinct(vec![(1, 2), (1, 2)])
     );
     let mut cloned = m.clone();
-    cloned.insert(key(&b, 3), "b3");
+    cloned.insert(lane_key(&b, 3), "b3");
     println!("{} {} {}", m.len(), cloned.len(), a.tag + b.tag);
     *a.alternate.borrow_mut() = None;
 }
