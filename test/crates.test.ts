@@ -221,7 +221,10 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.
 test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Vec of its own", () => {
   const out = chain(pairs, "cell_dyn_apart", ["dep", "app"]);
-  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).toContain("$borrowMut(hooks.list, true)");
+  // Checked: the held borrow counted, the momentary one checked alone (3901c815a).
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("  $borrowMut(hooks.list).push(hook);\n");
+  expect(dep).toContain("  const borrow = $borrow(hooks.list, true);\n");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
 }, 300_000);
 
@@ -566,7 +569,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // no code rust-js can't see, a cell's borrow running only its own check:
   // counted, not refused (ADR 0863, amended).
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let mine = Rc::new(RefCell::new(Vec::new()));\n    copy(&types, &mine);\n    println!(\"{}\", mine.borrow().len());\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("$borrowMut(to, true)");
+  // The momentary one checked alone, as 3901c815a makes it, the other counted.
+  const copied = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  expect(copied).toContain("const borrow = $borrow(from, true);");
+  expect(copied).toContain("$borrowMut(to).push(t);");
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");
@@ -577,8 +583,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   const counted = chain(pairs, "ref_cells_counted", ["dep", "app"]);
   expect([contract(counted).ref_cells.boxed, contract(counted).ref_cells.counted.length]).toEqual([[{}], 1]);
   const consumer = readFileSync(join(counted, "app", "lib.js"), "utf8");
-  expect(consumer).toContain("        const borrowMut = $borrowMut(list.value, true);\n");
-  expect(consumer).toContain("      value.value.push(3);\n");
+  // Each momentary borrow checked alone (3901c815a), the library's held one
+  // found by the closure's.
+  expect(consumer).toContain("    $borrowMut(list.value).value.push(3);\n");
+  expect(consumer).toContain("        $borrowMut(list.value).value.push(n);\n");
 }, 300_000);
 
 // ADR 0863, amended: a thread-local is a place of its own, as a struct's
