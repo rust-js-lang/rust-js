@@ -47,6 +47,11 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     with_this: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
     /// Whether one is made in generic code, of what its callers give.
     with_this_generic: bool,
+    /// Each field of a `dyn Fn` of the crate's structs, and whether each
+    /// write of it the crate makes, a literal's or an assignment's, is of
+    /// a closure or a function of its own, `Box::new(move || ..)`, never
+    /// a with_this function's, and its place never lent mutably (#405).
+    own_fields: HashMap<DefId, bool>,
 }
 
 impl<'tcx> FnPointers<'tcx> {
@@ -115,7 +120,16 @@ impl<'tcx> FnPointers<'tcx> {
     /// of one through a field, `(s.f)()`, gives it none, `const f = s.f;
     /// f()`. Another, JS's own, is called through its object, `s.f()`, as
     /// JS calls it (#402, the user's decision, #404).
-    pub(in crate::lower) fn may_read_this(&self, tcx: TyCtxt<'tcx>, (args, output): (Ty<'tcx>, Ty<'tcx>)) -> bool {
+    pub(in crate::lower) fn may_read_this(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        (args, output): (Ty<'tcx>, Ty<'tcx>),
+        field: Option<DefId>,
+    ) -> bool {
+        // A field the crate fills with its own closures alone (#405).
+        if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {
+            return false;
+        }
         self.with_this_generic
             || self.with_this.contains(&(
                 tcx.erase_and_anonymize_regions(args),
@@ -326,6 +340,59 @@ impl<'tcx> Made<'_, '_, 'tcx> {
     }
 }
 
+impl<'tcx> Made<'_, '_, 'tcx> {
+    /// The field of the crate's struct `place` reads, `s.f`, of a `dyn Fn`'s.
+    fn field_of(&self, place: &hir::Expr<'tcx>) -> Option<DefId> {
+        let hir::ExprKind::Field(base, _) = place.kind else {
+            return None;
+        };
+        let ty::Adt(adt, _) = self.results.expr_ty_adjusted(base).peel_refs().kind() else {
+            return None;
+        };
+        if !adt.is_struct() {
+            return None;
+        }
+        let field = adt
+            .non_enum_variant()
+            .fields
+            .get(self.results.field_index(place.hir_id))?;
+        Some(field.did)
+    }
+
+    /// A write of `field`, of `value`, or of what's lent mutably: kept as
+    /// one of the crate's own closures where it is one, of a field of a
+    /// `dyn Fn`.
+    fn field_written(&mut self, field: DefId, value: Option<&'tcx hir::Expr<'tcx>>) {
+        let tcx = self.recognition.tcx;
+        let declared = tcx.type_of(field).instantiate_identity().skip_normalization();
+        if !(declared.walk().filter_map(|part| part.as_type())).any(|part| matches!(part.kind(), ty::Dynamic(..))) {
+            return;
+        }
+        let own = value.is_some_and(|value| self.own_function(value));
+        *self.found.own_fields.entry(field).or_insert(true) &= own;
+    }
+
+    /// Whether `value` is a closure or a function of the crate's, or a box
+    /// or an `Rc` of one, `Box::new(move || ..)`: never a with_this one.
+    fn own_function(&self, value: &'tcx hir::Expr<'tcx>) -> bool {
+        let tcx = self.recognition.tcx;
+        let value = match value.kind {
+            hir::ExprKind::AddrOf(_, _, inner) => inner,
+            _ => value,
+        };
+        if matches!(self.results.expr_ty(value).kind(), ty::Closure(..) | ty::FnDef(..)) {
+            return true;
+        }
+        let made = |id: DefId| {
+            crate::lower::recognition::is_rc_new(tcx, id)
+                || crate::lower::recognition::is_std_def(tcx, id, crate::lower::recognition::StdItem::BoxNew)
+        };
+        matches!(value.kind, hir::ExprKind::Call(callee, [inner])
+            if matches!(*self.results.expr_ty(callee).kind(), ty::FnDef(id, _) if made(id))
+                && self.own_function(inner))
+    }
+}
+
 impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
         let tcx = self.recognition.tcx;
@@ -399,6 +466,23 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                 if let Some(f) = results.type_dependent_def_id(expr.hir_id) {
                     self.call(f, results.expr_ty(expr), &[results.expr_ty_adjusted(a)]);
                 }
+            }
+            // What a field of a `dyn Fn` is written of: a literal's, an
+            // assignment's, or lent mutably, any.
+            hir::ExprKind::Struct(_, fields, _)
+                if let ty::Adt(adt, _) = results.expr_ty(expr).kind()
+                    && adt.is_struct() =>
+            {
+                for field in fields.iter() {
+                    let def = adt.non_enum_variant().fields[results.field_index(field.hir_id)].did;
+                    self.field_written(def, Some(field.expr));
+                }
+            }
+            hir::ExprKind::Assign(place, value, _) if let Some(def) = self.field_of(place) => {
+                self.field_written(def, Some(value));
+            }
+            hir::ExprKind::AddrOf(_, rustc_hir::Mutability::Mut, place) if let Some(def) = self.field_of(place) => {
+                self.field_written(def, None);
             }
             // A library's static or constant.
             hir::ExprKind::Path(ref qpath) => {

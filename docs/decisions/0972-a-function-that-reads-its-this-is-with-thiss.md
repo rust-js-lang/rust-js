@@ -232,3 +232,23 @@ Fn(..)>`; an impl of another crate's, `type Function = fn() -> R`, is
 rustc's error (`test/js-functions.test.ts`, "with_this's Parameters is of
 a tuple alone"). A JS function given where a fn pointer goes is JS's own,
 called through what holds it, as the user decided.
+
+## Amendment: a field the crate fills with its own closures (#405)
+
+Matched by signature alone, inputValueTracking's `tracker.stopTracking()`
+was held, `const f = ..; f()`, as SyntheticEvent's with_this functions are
+`() -> ()` too, though `stop_tracking: Box<dyn Fn()>` only ever holds the
+crate's own `Box::new(move || ..)`. **A field of a `dyn Fn` whose every
+write the crate makes is of a closure or a function of its own, or a box
+or an `Rc` of one, and whose place is never lent mutably, holds no
+with_this function** (`FnPointers::own_fields`, of each struct literal's
+and assignment's write, and a `&mut` of the field taken): its call is
+`tracker.stopTracking()`, as upstream writes it, whatever its signature.
+The field is read of the call's own place, `(s.f)()`'s, or what a
+temporary of it borrows (`calls::called_field`). A write of a variable,
+of what a call gives or through a `&mut` may be any, and is held as
+before; one another crate or JS makes of an exported struct is JS's,
+called through its object, as the user decided. Held by
+`test/js-functions.test.ts`, "a dyn Fn field the crate fills with its own
+closures is called through its object", and the mutations `own-field-*`
+(`analysis/fn_pointers.ts`).

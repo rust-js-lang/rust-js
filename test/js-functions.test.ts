@@ -551,3 +551,52 @@ impl<'l, R> js::function::Parameters<'l, R> for Mine {
 `);
   expect(said).toContain("js::sealed::Tuple");
 });
+
+// #405: a field of a with_this function's signature that the crate fills
+// with its own closures alone, `Box::new(move || ..)`, holds none: called
+// through its object, `tracker.stop()`, as upstream writes it. One filled
+// with what may be one, a variable of it, is held first.
+test("a dyn Fn field the crate fills with its own closures is called through its object", async () => {
+  const { js, lib } = await compiled("dyn-fn-field-own-closures", `use js::Unknown;
+
+pub struct Tracker {
+    pub stop: Box<dyn Fn() -> bool>,
+}
+
+pub struct Held {
+    pub f: Box<dyn Fn() -> bool>,
+}
+
+pub fn tracker(n: u32) -> Tracker {
+    Tracker { stop: Box::new(move || n > 1) }
+}
+
+pub fn stop(t: &Tracker) -> bool {
+    (t.stop)()
+}
+
+pub fn held() -> bool {
+    let f: Box<dyn Fn() -> bool> = js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
+    let h = Held { f };
+    (h.f)()
+}
+
+pub struct Lent {
+    pub g: Box<dyn Fn() -> bool>,
+}
+
+fn set(g: &mut Box<dyn Fn() -> bool>) {
+    *g = js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
+}
+
+pub fn lent() -> bool {
+    let mut l = Lent { g: Box::new(|| true) };
+    set(&mut l.g);
+    (l.g)()
+}
+`);
+  expect(js).toContain("return t.stop();");
+  expect(js).toContain("  const f$1 = h.f;\n  return f$1();\n");
+  expect(js).toContain("  const g$1 = l.g;\n  return g$1();\n");
+  expect([lib.stop(lib.tracker(2)), lib.held(), lib.lent()]).toEqual([true, false, false]);
+});

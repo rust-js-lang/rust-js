@@ -106,4 +106,28 @@ export const mutations: Mutation[] = [
     replace: "            || !self.with_this.is_empty() || self.with_this.contains(&(\n",
     tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
   },
+  {
+    name: "own-field-held",
+    breaks: "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {\n",
+    replace: "        if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {\n",
+    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+  },
+  {
+    name: "own-field-of-any-value",
+    breaks: "a field filled with a variable that holds a with_this function is taken for one of the crate's closures alone, `h.f()`, which gives it `h` as its `this` (#405)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        let own = value.is_some_and(|value| self.own_function(value));\n",
+    replace: "        let own = value.is_some();\n",
+    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+  },
+  {
+    name: "own-field-lent-unwritten",
+    breaks: "a field lent mutably, `set(&mut l.g)`, which writes a with_this function through it, is taken for one of the crate's closures alone, `l.g()`, giving it `l` as its `this` (#405)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                self.field_written(def, None);\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+  },
 ];

@@ -5,12 +5,12 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
-    /// A call of what may read its `this`, a `dyn Fn`'s, a generic one's or
-    /// a fn pointer's that may be JS's, whose callee is read as a member,
+    /// A call of what may be a with_this function, a `dyn Fn`'s or a
+    /// generic one's of its signature, whose callee is read as a member,
     /// `s.f`, or an item, `fs[i]`, which JS would give it as its `this`:
     /// its callee held first, `const f = s.f; f()`, so it's called with
-    /// none, as Rust calls it (#402, ADR 0972).
+    /// none, as Rust calls it (#402, ADR 0972). Not of a field the crate
+    /// fills with its own closures alone (#405).
     pub(super) fn called_unbound(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -24,7 +24,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(call);
         };
-        if !self.krate.cell_borrows.pointers().may_read_this(self.tcx, signature) {
+        let (pointers, field) = (self.krate.cell_borrows.pointers(), self.called_field(state));
+        if !pointers.may_read_this(self.tcx, signature, field) {
             return Ok(Value::Expr(Expr::call(*callee, args)));
         }
         let name = match &callee.kind {
@@ -37,6 +38,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Value::Expr(Expr::call(callee, args)))
     }
 
+    /// The field of the crate's struct the call that ends `state.at` calls,
+    /// `(s.f)()`'s `f`: of its first argument's place, or the place a
+    /// temporary of it borrows, `_3 = &(*((*_1).0))`.
+    fn called_field(&self, state: &State<'_, 'tcx>) -> Option<rustc_span::def_id::DefId> {
+        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
+            return None;
+        };
+        let mut place = args.first()?.node.place()?;
+        if place.projection.is_empty() {
+            let statements = state.body.basic_blocks.iter().flat_map(|block| &block.statements);
+            place = statements.into_iter().find_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.local == place.local && assign.0.projection.is_empty() => {
+                    match &assign.1 {
+                        Rvalue::Ref(_, _, of) | Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) => Some(*of),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })?;
+        }
+        let (base, elem) = (place.iter_projections()).rfind(|(_, elem)| matches!(elem, PlaceElem::Field(..)))?;
+        let PlaceElem::Field(index, _) = elem else { return None };
+        match base.ty(state.body, self.tcx).ty.kind() {
+            ty::Adt(adt, _) if adt.is_struct() => Some(adt.non_enum_variant().fields[index].did),
+            _ => None,
+        }
+    }
+
+    /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
     /// `async` one's, `AsyncFn::async_call`, which gives its promise.
     pub(super) fn mir_closure_call(
         &mut self,
