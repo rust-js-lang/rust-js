@@ -1,11 +1,11 @@
 use std::cell::Cell;
 
-use webapi::{document};
+use webapi::{document, window};
 use webapi::events::{Click, Keydown};
 use js::{PropertyDescriptor, function, object};
 use webapi::{
     AddEventListenerOptions, Event, EventListenerObject, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt,
-    HTMLButtonElement,
+    EventOrStr, HTMLButtonElement, HTMLImageElement, HTMLLinkElement,
     KeyboardEvent, PointerEvent, abort_controller, listener,
 };
 
@@ -169,4 +169,38 @@ pub fn passive(button: &HTMLButtonElement) {
     let listener: &EventListenerObject = unsafe { js::cast(Some(js::unknown(&options))) };
     button.add_event_listener_named("test", listener, Some(&options));
     button.remove_event_listener_named("test", listener, Some(&options));
+}
+
+// An event handler property is set to a Rust function or closure, or to any
+// JS function value as it is: React DOM's preloadStylesheet keeps a promise
+// on a link, which its load fulfils and its error rejects, each with the
+// event (rd192).
+pub fn settled(link: &'static HTMLLinkElement) {
+    js::set(
+        link,
+        "_p",
+        js::promise::new(|resolve: &'static dyn Fn(&'static Event), reject| {
+            link.set_onload(Some(&resolve));
+            link.set_onerror(Some(&reject));
+        }),
+    );
+}
+
+// An element's `onerror` is called with the event alone; a window's with
+// the error's message, where it was and what was thrown.
+pub fn errors(image: &'static HTMLImageElement) {
+    image.set_onerror(Some(&|e: &Event| record(if e.r#type() == "error" { 7 } else { 0 })));
+    window.set_onerror(Some(&|message: EventOrStr<'_>, _: Option<&str>, line: Option<f64>, _: Option<f64>, _: Option<&js::Unknown>| {
+        record(if matches!(message, EventOrStr::Str(_)) { line.unwrap_or(0.0) } else { -1.0 });
+        true
+    }));
+}
+
+// A window's `onerror` read and set back is the function it was.
+pub fn restored() {
+    let saved = window.onerror();
+    window.set_onerror(None);
+    if let Some(saved) = saved {
+        window.set_onerror(Some(&saved));
+    }
 }

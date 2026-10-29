@@ -1,6 +1,6 @@
 # 1021. A listener is a closure or one JS gave, each as it is
 
-Status: Accepted (the user's decision, rd185). Amends
+Status: Accepted (the user's decision, rd185); amended (rd192): an event handler property's setter takes a union too. Amends
 [0282](0282-event-listener-methods.md) (one method API for event
 listeners): a listener parameter is TypeScript's
 `EventListenerOrEventListenerObject`, a union, so a closure's parameter
@@ -114,3 +114,14 @@ mutate (ADR 0093); the tests above fail without each impl.
 - A union trait with an `Fn` supertrait, which rustc deduces a closure's
   signature from: the enum and the object would have to be `Fn`, which
   only nightly allows.
+
+## Amendment: an event handler property's setter takes a union too (rd192)
+
+The user's decision (2026-10-29). A handler's setter, `set_onclick`,
+takes `Option<&dyn IntoEventHandler<E>>`: a Rust function or a `Copy`
+closure of the event, or any JS function of it or of any value, each as
+it is, so a promise's `resolve` is one, `link.onload = resolve`. Borrowed,
+not given, as an optional union is (ADR 0443), so a closure is `Copy`,
+owning nothing it would drop while JS keeps it. See ADR 0653's amendment,
+which says each handler's trait and why an element's `onerror` is an
+`EventHandler`.

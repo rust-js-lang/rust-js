@@ -1,6 +1,6 @@
 # 0653. A JS function value is a `dyn Fn` of its signature
 
-Status: Accepted; amended by [0700](0700-typescripts-function-gives-any-value.md):
+Status: Accepted; amended (rd192): a handler's setter takes `Option<&dyn IntoEventHandler<E>>`, and an element's `onerror` is an `EventHandler`; amended by [0700](0700-typescripts-function-gives-any-value.md):
 TypeScript's `Function` is `&dyn Fn() -> Option<&'static Unknown>`; extended
 by [0740](0740-a-functions-members-are-read-of-any-function.md): its members,
 `js::function::name(f)`, of any function. Amends [0024](0024-web-crate.md)'s and
@@ -172,3 +172,85 @@ a closure that captures, each as JS and run; `test/web_forms.rs`'s
 handlers, `onerror` and `onbeforeunload` too, and its snapshot;
 `test/webapi-coverage.test.ts`, "the webapi crate is what its generator
 writes".
+
+## Amendment: a handler's setter takes a union; an element's `onerror` is an `EventHandler` (rd192)
+
+The user's decision (2026-10-29, React port gap rd192). React DOM's
+`preloadStylesheet` keeps a promise on a link that its load fulfils and
+its error rejects, `link._p = new Promise((resolve, reject) => {
+link.onload = resolve; link.onerror = reject; })`. A setter of
+`Option<&'static dyn Fn(&E)>` took neither: `resolve` of a
+`Promise<&'static Event>` is a `&'static dyn Fn(&'static Event)`, another
+type, and `reject` a `&'static dyn Fn(Option<&Unknown>)`; and an element's
+`onerror` was typed with a window's five arguments, where the spec calls
+an element's with the event alone.
+
+**A handler's setter takes a union, `Option<&dyn IntoEventHandler<E>>`,
+each member borrowed as it is (ADR 0443's form, ADR 1021's union):**
+
+- a Rust function or closure of the event, `F: Fn(&'static E) + Copy +
+  'static`, which covers the getter's `&'static dyn Fn(&E)` and a JS
+  function of the kept event, `resolve`'s;
+- a JS function of any value, `&'static dyn Fn(Option<&Unknown>)`,
+  `reject`'s.
+
+`Copy`, because JS keeps what Rust only lent: a closure that owns what
+isn't `Copy` would be dropped as the statement ends while JS still calls
+it, so it's refused, rustc's "`String: Copy` is not satisfied", and is
+`webapi::listener(..)`'s, `Some(&listener(..))`, which JS owns. As a
+listener's, a closure's parameter is annotated where the body reads it,
+rustc's "type annotations needed" otherwise.
+
+`onbeforeunload` takes `IntoOnBeforeUnloadEventHandler<E>` (`F:
+Fn(&'static E) -> Option<String> + Copy`), and a window's `onerror`
+`IntoOnErrorEventHandler` (the five arguments, giving `bool`), each with
+the JS function of any value; a window's takes its getter's function too,
+`Option<&'static Unknown>` its result, so it's set back as it was read.
+
+**An element's `onerror`, and a document's, is an `EventHandler`**: the
+generator gives `OnErrorEventHandler`'s five arguments only to a global
+object, `[Global]`, a window (generate.ts's `HANDLERS`), `Fn(&Event)`
+elsewhere, getter and setter. The getters stay as above, a window's
+`onerror` giving `Option<&'static Unknown>`.
+
+```rust
+pub fn settled(link: &'static HTMLLinkElement) {
+    js::set(
+        link,
+        "_p",
+        js::promise::new(|resolve: &'static dyn Fn(&'static Event), reject| {
+            link.set_onload(Some(&resolve));
+            link.set_onerror(Some(&reject));
+        }),
+    );
+}
+```
+
+```js
+export function settled(link) {
+  link._p = new Promise((resolve, reject) => {
+    link.onload = resolve;
+    link.onerror = reject;
+  });
+}
+```
+
+The expando is the guide's `js::set(value, key, to)`, `link._p = ..`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the function
+it is, set as JS sets it.
+
+The cost: an `Option` the getter gave isn't one the setter takes, so a
+handler saved and restored is `if let Some(saved) = saved {
+window.set_onerror(Some(&saved)) }`.
+
+Held by `test/webapi-events.test.ts`, "an event handler is a closure or any
+JS function, each as it is, in Chromium" (a link's `onload`/`onerror` a
+promise's `resolve`/`reject`, settled by dispatched events; an image's
+`onerror` given the event alone; a window's given an `ErrorEvent`'s message
+and line, its `true` cancelling it; a window's read and set back), and its
+diagnostics (an unannotated closure, another event's, one owning a
+`String`, a JS function of another argument); `test/web_forms.rs`'s
+handlers and `test/compiler.test.ts`; `test/bindings.test.ts`, "a function
+JS gives is a dyn Fn of its signature" (a capturing `Copy` closure set as
+it is). No mutation: the change is the webapi generator's (ADR 1021).

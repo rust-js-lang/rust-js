@@ -48,6 +48,13 @@ test("event methods keep target types and retained callback lifetimes", () => {
     // never removes anything: only a shared callback, `listener(..)`'s, can.
     ['button.remove_event_listener(Click, |_: &PointerEvent| {}, None);', 'is not a listener added before'],
     ['button.remove_event_listener_named("custom", |_: &Event| {}, None);', 'is not a listener added before'],
+    // An event handler property's setter takes the same union, a handler
+    // borrowed, which JS keeps: a closure owning what it would drop isn't
+    // one, and a JS function of another argument isn't either (rd192).
+    ['button.set_onclick(Some(&|e| record(e.client_x() as i32)));', 'type annotations needed'],
+    ['button.set_onclick(Some(&|_: &KeyboardEvent| {}));', 'expected closure signature `fn(&\'static webapi::PointerEvent) -> _`'],
+    ['let name = String::new(); button.set_onclick(Some(&move |_: &PointerEvent| record(name.len() as i32)));', '`std::string::String: std::marker::Copy` is not satisfied'],
+    ["let f: &'static dyn Fn(f64) = &|_| {}; button.set_onclick(Some(&f));", 'is not an event handler of a `webapi::PointerEvent`'],
   ]) {
     writeFileSync(source, `use webapi::{Event, EventTargetExt, HTMLButtonElement, listener, PointerEvent, KeyboardEvent};
 use webapi::events::{Click, Keydown, Message};
@@ -115,6 +122,50 @@ test("a listener JS gave, a function or a handleEvent object, is added and remov
       expect(result, name).toEqual(expected);
       await page.close();
     }
+  } finally {
+    await browser.close();
+  }
+}, 60_000);
+
+// rd192: an event handler property takes a Rust function or closure, or any
+// JS function value as it is, a promise's `resolve` and `reject` too; an
+// element's `onerror` is called with the event alone, a window's with what
+// the error was, and a window's read and set back is what it was.
+test("an event handler is a closure or any JS function, each as it is, in Chromium", async () => {
+  const js = compileEvents();
+  expect(js).toContain('link._p = new Promise((resolve, reject) => {\n    link.onload = resolve;\n    link.onerror = reject;\n  });');
+  expect(js).toContain('image.onerror = (e) => {\n    globalThis.record(e.type === "error" ? 7 : 0);\n  };');
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent('<link id="a"><link id="b"><img id="image">');
+    const result = await page.evaluate(async ({ js }) => {
+      const values: number[] = [];
+      Object.assign(globalThis, { record: (n: number) => values.push(n) });
+      const url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
+      const program = await import(url);
+      const [a, b] = document.querySelectorAll("link") as unknown as (HTMLLinkElement & { _p: Promise<Event> })[];
+      program.settled(a);
+      program.settled(b);
+      const load = new Event("load");
+      const error = new Event("error");
+      a.dispatchEvent(load);
+      b.dispatchEvent(error);
+      values.push((await a._p) === load ? 1 : 0, await b._p.then(() => 0, (reason) => (reason === error ? 2 : 0)));
+      program.errors(document.querySelector("img"));
+      document.querySelector("img")!.dispatchEvent(new ErrorEvent("error", { lineno: 8 }));
+      const handled = new ErrorEvent("error", { message: "boom", lineno: 9, cancelable: true });
+      window.dispatchEvent(handled);
+      values.push(handled.defaultPrevented ? 1 : 0);
+      const own = () => false;
+      window.onerror = own;
+      program.restored();
+      values.push(window.onerror === own ? 1 : 0);
+      URL.revokeObjectURL(url);
+      return values;
+    }, { js });
+    expect(result).toEqual([1, 2, 7, 9, 1, 1]);
+    await page.close();
   } finally {
     await browser.close();
   }

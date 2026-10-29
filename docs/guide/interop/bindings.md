@@ -887,13 +887,26 @@ export async function open(other) {
   `any` an `Option<&Unknown>`, to call, keep, or compare by
   `std::ptr::eq`, which is `===`
   ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
-  An event handler property is set to what it gives, an
-  `Option<&'static dyn Fn(&PointerEvent)>` of `button.onclick()`:
-  `button.set_onclick(Some(&noop))` of `fn noop(_event: &PointerEvent) {}`
-  is `button.onclick = noop`, `button.onclick().is_some_and(|f|
+  An event handler property gives one, an `Option<&'static dyn
+  Fn(&PointerEvent)>` of `button.onclick()`, and is set to a union,
+  `Option<&dyn IntoEventHandler<PointerEvent>>`, each member borrowed as
+  it is: a Rust function or a `Copy` closure of the event, its parameter
+  annotated where the body reads it, `Some(&|e: &PointerEvent| ..)`; the
+  function the getter gave; or any JS function of the event, or of any
+  value, as a promise's `resolve` and `reject` are, so
+  `js::promise::new(|resolve: &'static dyn Fn(&'static Event), reject| {
+  link.set_onload(Some(&resolve)); link.set_onerror(Some(&reject)); })` is
+  `new Promise((resolve, reject) => { link.onload = resolve; link.onerror =
+  reject; })`. `button.set_onclick(Some(&noop))` of `fn noop(_event:
+  &PointerEvent) {}` is `button.onclick = noop`, `button.onclick().is_some_and(|f|
   std::ptr::eq(f, &noop))` is `button.onclick === noop`, and a closure
-  that captures is `webapi::listener(move |event| ..)`'s, the closure
-  itself (ADR 0653, amended).
+  that owns what isn't `Copy`, which JS keeps where Rust lent it, is
+  `webapi::listener(move |event| ..)`'s, `Some(&listener(..))`. An
+  element's `onerror` is called with the event alone, as the spec says; a
+  window's, `IntoOnErrorEventHandler`, with the message, where it was and
+  what was thrown, and gives whether it's handled (ADR 0653, amended;
+  [ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md),
+  amended).
   TypeScript's `Function`, of whatever it takes, is `&dyn Fn() ->
   Option<&'static Unknown>`, called of nothing for any value, as
   `js::Kind::Function` holds it

@@ -173,4 +173,36 @@ export function passive(button) {
   button.addEventListener("test", listener, options);
   button.removeEventListener("test", listener, options);
 }
+
+// An event handler property is set to a Rust function or closure, or to any
+// JS function value as it is: React DOM's preloadStylesheet keeps a promise
+// on a link, which its load fulfils and its error rejects, each with the
+// event (rd192).
+export function settled(link) {
+  link._p = new Promise((resolve, reject) => {
+    link.onload = resolve;
+    link.onerror = reject;
+  });
+}
+
+// An element's `onerror` is called with the event alone; a window's with
+// the error's message, where it was and what was thrown.
+export function errors(image) {
+  image.onerror = (e) => {
+    globalThis.record(e.type === "error" ? 7 : 0);
+  };
+  window.onerror = (message, _, line) => {
+    globalThis.record(typeof message === "string" ? (line ?? 0) : -1);
+    return true;
+  };
+}
+
+// A window's `onerror` read and set back is the function it was.
+export function restored() {
+  const saved = window.onerror;
+  window.onerror = null;
+  if (saved !== null) {
+    window.onerror = saved;
+  }
+}
 //# sourceMappingURL=webapi-events.js.map

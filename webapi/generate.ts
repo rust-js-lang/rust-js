@@ -374,6 +374,9 @@ type Interface = {
   isNamespace?: boolean;
   /** The global scope's: functions called bare, `fetch(url)` (ADR 0269). */
   isGlobal?: boolean;
+  /** `[Global]`: a global object, a `Window`, whose `onerror` JS calls with
+   * an error's message, where it was and what was thrown (rd192). */
+  globalObject?: boolean;
   /** `[Exposed=(Window,Worker)]`: the global scopes whose global object
    * has its class, `window.ErrorEvent` (ADR 0891); `*` every one. */
   exposed?: string[];
@@ -391,6 +394,7 @@ for (const d of read) {
       // `[HTMLConstructor]` elements can't be made with `new`.
       i.constructible = !(d.extAttrs ?? []).some((a) => a.name === "HTMLConstructor");
       i.legacyNamespace = (d.extAttrs ?? []).find((a) => a.name === "LegacyNamespace")?.rhs?.value;
+      i.globalObject = (d.extAttrs ?? []).some((a) => a.name === "Global");
       // `[Exposed=*]` is of the type `*`, of no value.
       const exposed: any = (d.extAttrs ?? []).find((a) => a.name === "Exposed")?.rhs;
       i.exposed =
@@ -996,26 +1000,32 @@ const NAMED: Record<string, string> = {
   "Document.createElementNS": "create_element_ns_named",
 };
 
+/** A window's `onerror`'s parameters, TypeScript's `OnErrorEventHandlerNonNull`'s. */
+const ERROR_HANDLER = "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>)";
 /** What an event handler property holds, by its type, given its event:
  * `onclick`'s function takes it; `onbeforeunload`'s gives the text that
- * asks whether to leave, or none; `onerror`'s is given an error's event,
- * or on a window its message, where it was, and what was thrown. Its
- * setter takes the function as its getter gives it, a `&'static dyn Fn`,
- * as `remove_event_listener` does, so a handler read back is compared with
- * the function set by `std::ptr::eq`, `node.onclick === noop` (ADR 0653,
- * amended). Of `onclick`'s, TypeScript's `any` result is nothing a caller
- * reads; `onerror`'s setter's function gives whether the error is handled,
- * `true` not reported, while its getter's gives what JS's gave, any value,
- * an `Unknown`: one a JS program set may give none. */
-const HANDLERS: Record<string, { set: (event: string) => string; get: (event: string) => string }> = {
-  EventHandler: { set: (event) => `Fn(&${event})`, get: (event) => `Fn(&${event})` },
+ * asks whether to leave, or none; `onerror`'s, on a global object, a
+ * window, is given an error's message, where it was, and what was thrown,
+ * and gives whether the error is handled, `true` not reported, while an
+ * element's, whose `onerror` JS calls with the event alone, as the spec
+ * says, is an `EventHandler` (rd192). Its getter gives the function JS
+ * holds, a `&'static dyn Fn` (ADR 0653); of `onclick`'s, TypeScript's
+ * `any` result is nothing a caller reads, and of `onerror`'s it's any
+ * value, an `Unknown`, as one a JS program set may give none. Its setter
+ * takes the union its trait, `into`, is: a Rust function or closure, the
+ * function the getter gave, or any JS function value, each as it is, so a
+ * handler read back is compared with the function set by `std::ptr::eq`,
+ * `node.onclick === noop` (ADR 0653, amended), and a promise's `resolve`
+ * is one, `link.onload = resolve` (ADR 1021, amended). */
+const HANDLERS: Record<string, { into: (event: string) => string; get: (event: string) => string }> = {
+  EventHandler: { into: (event) => `IntoEventHandler<${event}>`, get: (event) => `Fn(&${event})` },
   OnBeforeUnloadEventHandler: {
-    set: (event) => `Fn(&${event}) -> Option<String>`,
+    into: (event) => `IntoOnBeforeUnloadEventHandler<${event}>`,
     get: (event) => `Fn(&${event}) -> Option<String>`,
   },
   OnErrorEventHandler: {
-    set: () => "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool",
-    get: () => "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>",
+    into: () => "IntoOnErrorEventHandler",
+    get: () => `${ERROR_HANDLER} -> Option<&'static Unknown>`,
   },
 };
 /** `onerror`'s first argument, TypeScript's `Event | string`. */
@@ -1315,7 +1325,10 @@ function functionsOf(declared: Interface): Fn[] {
       // An event handler property, `onclick`: what it holds, a function or
       // none, and a closure to set it to, given the event its name is on this
       // target, as `add_event_listener`'s is (ADR 0223), or `None`, `null`.
-      const handler = HANDLERS[m.idlType!.idlType as string];
+      // An element's `onerror` JS calls with the event alone; a global
+      // object's, with what the error was (rd192).
+      const kind = m.idlType!.idlType as string;
+      const handler = HANDLERS[kind === "OnErrorEventHandler" && !i.globalObject ? "EventHandler" : kind];
       if (handler && m.name!.startsWith("on")) {
         const event = listens.get(i.name)?.get(m.name!.slice(2)) ?? "Event";
         const name = snake(m.name!);
@@ -1325,7 +1338,7 @@ function functionsOf(declared: Interface): Fn[] {
         fns.push({
           name: `set_${name}`,
           jsName: `set ${m.name}`,
-          params: [...self, `value: Option<&'static dyn ${handler.set(typeName(event))}>`],
+          params: [...self, `value: Option<&dyn ${handler.into(typeName(event))}>`],
           result: "()",
           doc,
           nullable: ["value"],
@@ -1932,7 +1945,7 @@ line("}");
 line("impl<T: IsA<EventTarget>> EventTargetExt for T {}");
 line();
 line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove_event_listener",
-  "and an event handler property's setter, set_onclick(Some(listener(..))).",
+  "and an event handler property's setter, set_onclick(Some(&listener(..))).",
   "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
   "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..)."], "this",
   "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));
@@ -2019,6 +2032,57 @@ mod listeners {
     impl<E: 'static, F: FnMut(&'static E) + 'static> Sealed<E> for F {}
     impl<E> Sealed<E> for EventListenerOrEventListenerObject {}
     impl<E> Sealed<E> for &'static EventListenerObject {}
+}
+
+/// What an event handler property's setter, \`set_onclick\`, takes, each member
+/// as it is (ADR 0229), borrowed, \`Some(&value)\`, or \`None\`, \`null\` (ADR 1021,
+/// amended): a Rust function or closure of the event, the function its getter
+/// gave, or a JS function of any value, as a promise's \`reject\` is. Being a
+/// union, it gives rustc no closure's signature, so a closure's parameter says
+/// its event, \`|e: &PointerEvent| ..\`. JS keeps what it's given where Rust
+/// lent it, so a closure is \`Copy\`, which owns nothing to drop: one that
+/// owns what isn't is \`listener(..)\`'s, which JS owns.
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not an event handler of a \`{E}\`", note = "an event handler is a function or closure of the event, \`Copy\`, \`listener(..)\`'s, or a JS function value")]
+#[cfg_attr(rust_js, rust_js::types = "(event: E) => any")]
+pub trait IntoEventHandler<E>: handlers::Event<E> {}
+impl<E: 'static, F: Fn(&'static E) + Copy + 'static> IntoEventHandler<E> for F {}
+impl<E> IntoEventHandler<E> for &'static dyn Fn(Option<&Unknown>) {}
+
+/// What \`set_onbeforeunload\` takes, as \`IntoEventHandler\` is: a function of the
+/// event that gives the text that asks whether to leave, or none, or a JS
+/// function of any value.
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not an \`onbeforeunload\` handler of a \`{E}\`", note = "an \`onbeforeunload\` handler is a function or closure of the event that gives an \`Option<String>\`, \`Copy\`, or a JS function value")]
+#[cfg_attr(rust_js, rust_js::types = "OnBeforeUnloadEventHandlerNonNull")]
+pub trait IntoOnBeforeUnloadEventHandler<E>: handlers::BeforeUnload<E> {}
+impl<E: 'static, F: Fn(&'static E) -> Option<String> + Copy + 'static> IntoOnBeforeUnloadEventHandler<E> for F {}
+impl<E> IntoOnBeforeUnloadEventHandler<E> for &'static dyn Fn(Option<&Unknown>) {}
+
+/// What a window's \`set_onerror\` takes, as \`IntoEventHandler\` is: a function
+/// of the error's message or event, its source, line and column, and what was
+/// thrown, that gives whether it's handled, \`true\` not reported; the function
+/// the getter gave; or a JS function of any value.
+#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a window's \`onerror\` handler", note = "a window's \`onerror\` is a function or closure of \`(EventOrStr, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>)\` that gives a \`bool\`, \`Copy\`, the function \`onerror()\` gave, or a JS function value")]
+#[cfg_attr(rust_js, rust_js::types = "OnErrorEventHandlerNonNull")]
+pub trait IntoOnErrorEventHandler: handlers::Error {}
+impl<F: ${ERROR_HANDLER} -> bool + Copy + 'static> IntoOnErrorEventHandler for F {}
+impl IntoOnErrorEventHandler for &'static dyn ${ERROR_HANDLER} -> Option<&'static Unknown> {}
+impl IntoOnErrorEventHandler for &'static dyn Fn(Option<&Unknown>) {}
+
+mod handlers {
+    use super::*;
+
+    pub trait Event<E> {}
+    impl<E: 'static, F: Fn(&'static E) + Copy + 'static> Event<E> for F {}
+    impl<E> Event<E> for &'static dyn Fn(Option<&Unknown>) {}
+
+    pub trait BeforeUnload<E> {}
+    impl<E: 'static, F: Fn(&'static E) -> Option<String> + Copy + 'static> BeforeUnload<E> for F {}
+    impl<E> BeforeUnload<E> for &'static dyn Fn(Option<&Unknown>) {}
+
+    pub trait Error {}
+    impl<F: ${ERROR_HANDLER} -> bool + Copy + 'static> Error for F {}
+    impl Error for &'static dyn ${ERROR_HANDLER} -> Option<&'static Unknown> {}
+    impl Error for &'static dyn Fn(Option<&Unknown>) {}
 }`);
 
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).

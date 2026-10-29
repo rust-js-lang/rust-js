@@ -249,7 +249,7 @@ pub fn click(button: &HTMLElement, event: &PointerEvent) {
 }
 
 pub fn replace(button: &HTMLElement, seen: &'static dyn Fn(f64)) {
-    button.set_onclick(Some(webapi::listener(move |event: &PointerEvent| seen(event.client_x()))));
+    button.set_onclick(Some(&move |event: &PointerEvent| seen(event.client_x())));
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);

@@ -185,12 +185,13 @@ export function staticsRead() {
 }
 
 /**
- * `onerror`'s closure is given an error's event, or on a window its
- * message, and gives whether it's handled; `onbeforeunload`'s gives the
- * text that asks whether to leave, or none.
+ * An element's `onerror` closure is given the event alone; a window's its
+ * message, or event, and where it was, and gives whether it's handled;
+ * `onbeforeunload`'s gives the text that asks whether to leave, or none.
  */
 export function onErrors(button) {
-  button.onerror = (e) => typeof e === "string";
+  button.onerror = (e) => e.preventDefault();
+  window.onerror = (e) => typeof e === "string";
   window.onbeforeunload = () => undefined;
   return button.onerror !== null;
 }

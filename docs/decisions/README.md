@@ -536,7 +536,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0853: a binding the variable it shadows is given last; amended: an `if` branch that does more than give the binding is set in place; amended: an `if` branch that's its own value, of a test that it's there, is its other way)*
 - [0651 A `let`, then its fallback where it's falsy, is `||`](0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`; amended: an event handler's setter takes what its getter gives)*
+- [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`; amended: an event handler's setter takes what its getter gives; amended: it takes a union, `IntoEventHandler`, and an element's `onerror` is an `EventHandler`, rd192)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](0656-an-events-emit-arguments-are-typescripts-emits.md)
@@ -805,7 +805,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
-- [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185)*
+- [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185; amended: a handler's setter takes a union too, rd192)*
 - [1022 A field of a struct JS made is read as often as Rust reads it](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md) *(the user's decision, rd204; amended: what a binding gives back is the program's; amended: a struct the program builds is its own data, rd221)*
 - [1023 A dictionary is a JS object, and a member of a union its parent is](1023-a-dictionary-is-a-js-object-and-its-parents.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*

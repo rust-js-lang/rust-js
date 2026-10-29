@@ -155,12 +155,17 @@ pub fn statics_read() -> (String, &'static webapi::Response) {
     (webapi::notification::permission(), webapi::response::json(vec![1, 2], None))
 }
 
-/// `onerror`'s closure is given an error's event, or on a window its
-/// message, and gives whether it's handled; `onbeforeunload`'s gives the
-/// text that asks whether to leave, or none.
+/// An element's `onerror` closure is given the event alone; a window's its
+/// message, or event, and where it was, and gives whether it's handled;
+/// `onbeforeunload`'s gives the text that asks whether to leave, or none.
 pub fn on_errors(button: &webapi::HTMLButtonElement) -> bool {
-    button.set_onerror(Some(&|e, _, _, _, _| matches!(e, webapi::EventOrStr::Str(_))));
-    webapi::window.set_onbeforeunload(Some(&|_| None));
+    button.set_onerror(Some(&|e: &webapi::Event| e.prevent_default()));
+    webapi::window.set_onerror(Some(
+        &|e: webapi::EventOrStr<'_>, _: Option<&str>, _: Option<f64>, _: Option<f64>, _: Option<&js::Unknown>| {
+            matches!(e, webapi::EventOrStr::Str(_))
+        },
+    ));
+    webapi::window.set_onbeforeunload(Some(&|_: &webapi::BeforeUnloadEvent| None));
     button.onerror().is_some()
 }
 

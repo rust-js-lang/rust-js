@@ -954,8 +954,9 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("return [url.toString(), list.toString()];");
   // A static attribute and a static method beside an instance's of its name.
   expect(js).toContain("return [Notification.permission, Response.json([1, 2])];");
-  // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
-  expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror !== null;');
+  // An element's `onerror` closure, given the event alone, a window's, given
+  // an event or a message (rd192), and `onbeforeunload`'s.
+  expect(js).toContain('button.onerror = (e) => e.preventDefault();\n  window.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return button.onerror !== null;');
   // `[Symbol.iterator]`, `Iterator.from(list)`.
   expect(js).toContain("const count = Iterator.from(list).reduce((n) => n + 1, 0);\n  const names = Array.from(headers).map(([name]) => name);");
   // A list's items collected, `Array.from` of it.
@@ -976,10 +977,12 @@ test("the webapi crate's bindings become plain JS", async () => {
   const labels = [{ htmlFor: "name" }];
   expect(selected({ querySelectorAll: () => [p(1), p(2)] }, { labels: Object.assign(labels, { item: (n: number) => labels[n] }) })).toEqual([[1, 2], "name"]);
   expect(widths({ querySelectorAll: () => [p(3), p(4)] })).toEqual([3, 4]);
-  (globalThis as any).window = {};
+  const win: any = ((globalThis as any).window = {});
   const button: any = {};
   expect(onErrors(button)).toBe(true);
-  expect([button.onerror("Script error."), button.onerror(new Event("error"))]).toEqual([true, false]);
+  const error = new Event("error", { cancelable: true });
+  button.onerror(error);
+  expect([win.onerror("Script error."), win.onerror(new Event("error")), error.defaultPrevented]).toEqual([true, false, true]);
   delete (globalThis as any).window;
   expect(texts(new URL("https://example.com/a"), { toString: () => "a b" })).toEqual(["https://example.com/a", "a b"]);
   (globalThis as any).FontFace = class { constructor(public family: string) {} };
