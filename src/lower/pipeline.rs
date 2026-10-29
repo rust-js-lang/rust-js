@@ -1452,6 +1452,7 @@ pub fn lower_crate<'tcx>(
                         identities: &identities,
                         eq_by_address: &eq_by_address,
                         gives_argument: &gives_argument,
+                        built: cell_borrows.pointers().built().collect(),
                     },
                     (&trait_impls, &held.modules),
                     dependencies,

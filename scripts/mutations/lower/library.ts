@@ -338,4 +338,20 @@ export const mutations: Mutation[] = [
     replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "library-built-unwritten",
+    breaks: "a library's contract leaves out the structs its code makes, so its consumer takes the reconciler's fiber, which React DOM casts a node's key to, for JS's, `const old = fiber.return;` (rd221)",
+    file: "src/lower/library.rs",
+    find: "            let mut keys: Vec<String> = built.iter().map(|&id| key(tcx, id)).collect();\n",
+    replace: "            let mut keys: Vec<String> = built.iter().take(0).map(|&id| key(tcx, id)).collect();\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
+  },
+  {
+    name: "library-built-unread",
+    breaks: "a consumer reads no library's structs it makes, taking the reconciler's fiber for JS's (rd221)",
+    file: "src/lower/library.rs",
+    find: "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key))\n",
+    replace: "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key) && false)\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
+  },
 ];

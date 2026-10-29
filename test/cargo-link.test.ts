@@ -50,7 +50,7 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   const original = readFileSync(libraryManifest, "utf8");
   parseManifest(original);
   for (const [edit, message] of [
-    [(m: any) => m.library.version = 2, "unsupported library ABI 2; expected 10"],
+    [(m: any) => m.library.version = 2, "unsupported library ABI 2; expected 11"],
     [(m: any) => m.compiler.toolchain = "wrong", "incompatible dependency compiler identity"],
     // Another build of the compiler, of one version, or one before builds
     // were told apart (ADR 1003).

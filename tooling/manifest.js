@@ -48,7 +48,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 10 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 11 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -71,8 +71,10 @@ export function parseManifest(text) {
         // What it says of each of its structs' fields, by key (ADRs 0863,
         // amended, 0906).
         || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
-          && typeof field.key === "string" && facts(field.facts, ["quiet", "rust_functions"])))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 10");
+          && typeof field.key === "string" && facts(field.facts, ["quiet", "rust_functions"])))
+        // The structs its code makes values of, by key (ADR 1022, amended).
+        || !(library.built === undefined || strings(library.built))) {
+      throw new Error("Invalid rust-js library contract; expected library ABI 11");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

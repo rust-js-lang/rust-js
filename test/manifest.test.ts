@@ -72,12 +72,13 @@ test("compiler identities reject incompatible ABI and missing version fields", (
 // types whose `Rc`s it counts (ADR 0852).
 test("library manifests validate their items and remap fingerprinted inputs", () => {
   const library = {
-    version: 10, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
+    version: 11, name: "shared", crate_hash: "0123456789abcdef", inputs: [{ file: "/virtual/shared.rs", hash: "1234567890abcdef" }],
     items: [{ key: "ab12", rust_path: "shared::User::validate", module: [], export: "User", member: "validate" },
       { key: "cd34", rust_path: "shared::count", module: ["util"], export: "count", member: null, params: [{ index: 0, marks: ["drop"] }, { index: 1, marks: ["copy", "clone"], stepped: ["9f0e"] }], facts: ["takes_location"] }],
     impls: ["ef56"], libraries: ["base"], counted_rcs: [{ of: "ab12", args: [{}] }],
     ref_cells: { counted: [{ of: "ab12", args: [{}] }], unchecked: [{}] },
     fields: [{ key: "gh78", facts: ["quiet"] }, { key: "ij90", facts: ["rust_functions"] }],
+    built: ["kl12"],
   };
   const value = { ...manifest, library };
   expect(parseManifest(JSON.stringify(value))).toEqual(value);
@@ -90,7 +91,7 @@ test("library manifests validate their items and remap fingerprinted inputs", ()
     { ...library, items: [{ ...item, module: "root" }] }, { ...library, items: [{ ...item, params: [{ index: 1, stepped: [0] }] }] }, { ...library, items: [{ ...item, params: [{ index: 0, marks: ["dropped"] }] }] }, { ...library, items: [{ ...item, facts: ["throws"] }] },
     { ...library, counted_rcs: true }, { ...library, counted_rcs: [{ of: 1 }] }, { ...library, counted_rcs: [{ args: [null] }] },
     { ...library, ref_cells: [] }, { ...library, ref_cells: { handed: {} } }, { ...library, ref_cells: { boxed: [{ of: 1 }] } },
-    { ...library, fields: {} }, { ...library, fields: [{ key: 1 }] }, { ...library, fields: [{ key: "gh78", facts: ["loud"] }] }]) {
+    { ...library, fields: {} }, { ...library, fields: [{ key: 1 }] }, { ...library, fields: [{ key: "gh78", facts: ["loud"] }] }, { ...library, built: "kl12" }, { ...library, built: [1] }]) {
     expect(() => parseManifest(JSON.stringify({ ...manifest, library: invalid }))).toThrow("library contract");
   }
 });

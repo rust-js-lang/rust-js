@@ -603,16 +603,22 @@ request.url;`, and tested as that, not read again in the test
 ([ADR 0672](../../decisions/0672-a-property-a-test-reads-is-read-once.md)).
 
 So is a field of a struct JS made, an object the program didn't build:
-one `js::cast`, a binding or a library gives. Each read of it is JS's, as
-often as Rust reads it, so `let margin = style_prop.margin; if
-margin.is_some() { style.set_margin(margin) }` is `const margin =
-styleProp.margin;` and `style.margin = margin`, not `styleProp.margin`
-again, which a getter would answer twice. A struct the program builds
-itself is its own data, read in place. So is a struct JS gives an
-exported function, or a closure or `fn` pointer it calls, and one a
-generic `js::cast::<T>` gives: each relies on JS giving an object of plain
-data, no getters, as React's props and state are
-([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md)).
+one `js::cast`, a binding or a library gives, of a struct no code of the
+program's builds. Each read of it is JS's, as often as Rust reads it, so
+`let margin = style_prop.margin; if margin.is_some() {
+style.set_margin(margin) }` is `const margin = styleProp.margin;` and
+`style.margin = margin`, not `styleProp.margin` again, which a getter
+would answer twice. A struct the program builds, by a literal in its code
+or a rust-js library's, is its own data, read in place, and so is what it
+holds, whatever JS gives of its type: React's fiber, cast back from an
+owner of any shape, `js::cast::<&Fiber>(Some(owner))`, is set as
+`fiber.return = parent;`; a view of a value the program has,
+`js::cast(Some(js::unknown_of(Rc::clone(queue))))`, is that value's. So is
+a struct JS gives an exported function, or a closure or `fn` pointer it
+calls, and one a generic `js::cast::<T>` gives: each relies on JS giving
+an object of plain data, no getters, as React's props and state are
+([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+amended).
 
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a
 value of any shape, a `Result`, as `+` throws of a symbol and of an object

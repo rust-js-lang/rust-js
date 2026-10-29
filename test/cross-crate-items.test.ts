@@ -1301,3 +1301,56 @@ pub fn idle() -> bool {
   const { idle } = await import(join(dir, "app", "lib.js"));
   expect(idle()).toBe(true);
 });
+
+// A struct a library makes values of is the program's own data in its
+// consumer too, as in the library: React DOM's getParent, of a fiber the
+// reconciler makes, is `inst != null ? inst.return : null`, as upstream's,
+// not a getter's `inst?.return` (rd221, ADR 1022, amended). A struct no
+// code makes is JS's still, its field read once.
+test("a struct a library builds is the program's own data in its consumer", async () => {
+  const dir = fixture("cross-crate-built");
+  const { app } = compiled(dir, `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Fiber {
+    pub parent: Cell<Option<Rc<Fiber>>>,
+}
+
+pub struct Props {
+    pub key: Option<&'static Unknown>,
+}
+
+pub fn fiber(parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { parent: Cell::new(parent) })
+}
+`, `use std::rc::Rc;
+
+use dep::Fiber;
+use js::Unknown;
+
+pub fn fiber_of(node: &Unknown) -> Option<Rc<Fiber>> {
+    // Safety: a node's key holds its fiber.
+    unsafe { js::cast(js::get(node, "fiber")) }
+}
+
+pub fn reparent(fiber: &Fiber, parent: Rc<Fiber>) {
+    fiber.parent.replace(Some(parent));
+}
+
+pub fn keyed(given: &Unknown) -> bool {
+    // Safety: what's given is props.
+    let props: &dep::Props = unsafe { js::cast(Some(given)) };
+    let key = props.key;
+    key.is_some() && js::truthy(key)
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.built).toHaveLength(1);
+  expect(app).toContain("export function reparent(fiber, parent) {\n  fiber.parent = parent;\n}");
+  expect(app).toContain("  const key = props.key;\n");
+  const { reparent, keyed } = await import(join(dir, "app", "lib.js"));
+  const fiber = { parent: null };
+  reparent(fiber, fiber);
+  expect([fiber.parent === fiber, keyed({ key: 0 })]).toEqual([true, false]);
+});

@@ -542,3 +542,132 @@ pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
   lib.own(style as never, "1px" as never);
   expect(style.margin).toBe("1px");
 });
+
+// A struct the program makes values of is its own data, whatever JS gives
+// of its type: React's fiber, which a cast of an owner of any shape gives
+// too, `js::cast::<&Fiber>(Some(owner))`, and what it holds, a never-built
+// view of its queue's updates, are read and set in place, `fiber.return =
+// parent;`, not `const old = fiber.return;` first; and so is a view of a
+// value the program has, `js::cast(Some(js::unknown_of(Rc::clone(queue))))`.
+// A view of one JS made is JS's still (rd221, ADR 1022, amended).
+test("a struct the program builds is its own data, whatever JS gives of its type", async () => {
+  const { js, lib } = await compiled("program-built-fields", `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+pub struct Update {
+    pub lane: Cell<u32>,
+    pub next: Cell<Option<&'static Update>>,
+}
+
+pub struct ConcurrentUpdate {
+    pub lane: Cell<u32>,
+}
+
+pub struct Queue {
+    pub pending: Cell<Option<&'static Update>>,
+}
+
+pub struct Fiber {
+    pub tag: u32,
+    pub parent: Cell<Option<&'static Fiber>>,
+    pub queue: Option<&'static Queue>,
+    pub updates: Option<Rc<ConcurrentUpdate>>,
+}
+
+unsafe impl js::Defined for Update {}
+unsafe impl js::Defined for StyleProp {}
+
+pub fn fiber() -> &'static Fiber {
+    Box::leak(Box::new(Fiber { tag: 5, parent: Cell::new(None), queue: None, updates: None }))
+}
+
+pub fn tag_of(owner: &Unknown) -> u32 {
+    // Safety: an owner with a numeric tag is a fiber.
+    let fiber: &Fiber = unsafe { js::cast(Some(owner)) };
+    fiber.parent.set(None);
+    if fiber.tag > 3 { fiber.tag } else { 0 }
+}
+
+pub fn shared_fiber(owner: &Unknown) -> Option<Rc<Fiber>> {
+    // Safety: an owner with a numeric tag is a fiber.
+    unsafe { js::cast(Some(owner)) }
+}
+
+pub fn link(fiber: &Fiber, parent: &'static Fiber, update: &'static Update) {
+    fiber.parent.set(Some(parent));
+    update.next.set(Some(update));
+    if let Some(queue) = fiber.queue {
+        queue.pending.set(Some(update));
+    }
+    if let Some(updates) = &fiber.updates {
+        updates.lane.set(updates.lane.get() | 1);
+    }
+}
+
+pub struct Kept {
+    pub margin: Option<&'static Unknown>,
+}
+
+pub struct KeptView {
+    pub margin: Option<&'static Unknown>,
+}
+
+unsafe impl js::Defined for Kept {}
+
+pub fn kept(margin: Option<&'static Unknown>) -> Rc<Kept> {
+    Rc::new(Kept { margin })
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set margin")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
+#[allow(unused_variables)]
+fn set_margin(this: &Unknown, value: Option<&Unknown>) {
+    unreachable!()
+}
+
+pub fn kept_margin(style: &Unknown, kept: &Rc<Kept>) {
+    // Safety: what's kept is a view of a margin.
+    let view: Rc<KeptView> = unsafe { js::cast(Some(js::unknown_of(Rc::clone(kept)))) };
+    let margin = view.margin;
+    if margin.is_some() {
+        set_margin(style, margin);
+    }
+}
+
+pub struct StyleProp {
+    pub margin: Option<&'static Unknown>,
+}
+
+pub struct Margin {
+    pub margin: Option<&'static Unknown>,
+}
+
+pub fn margin_of(style: &Unknown, props: &Unknown) {
+    // Safety: a style prop is an object of a margin.
+    let style_prop: &StyleProp = unsafe { js::cast(js::get(props, "style")) };
+    let view: &Margin = unsafe { js::cast(Some(js::unknown(style_prop))) };
+    let margin = view.margin;
+    if margin.is_some() {
+        set_margin(style, margin);
+    }
+}
+`);
+  expect(js).toContain("  fiber.parent = undefined;\n  return fiber.tag > 3 ? fiber.tag : 0;\n");
+  expect(js).toContain("  fiber.parent = parent;\n  update.next = update;\n");
+  expect(js).toContain("    queue.pending = update;\n");
+  expect(js).toContain("    fiber.updates.lane = (fiber.updates.lane | 1) >>> 0;\n");
+  expect(js).toContain("  if (view.margin != null) {\n    style.margin = view.margin;\n");
+  expect(js).not.toContain("const old");
+  // A view of a struct JS made is read once, as Rust reads it.
+  expect(js).toContain("  const view = props.style;\n  const margin = view.margin;\n");
+  let reads = 0;
+  const styleProp = { get margin() { return ++reads === 1 ? "4px" : undefined; } };
+  const style: Record<string, unknown> = {};
+  lib.marginOf(style as never, { style: styleProp } as never);
+  expect([style.margin, reads]).toEqual(["4px", 1]);
+  expect(lib.tagOf({ tag: 7, parent: {} } as never)).toBe(7);
+  lib.keptMargin(style as never, lib.kept("1px" as never) as never);
+  expect(style.margin).toBe("1px");
+});

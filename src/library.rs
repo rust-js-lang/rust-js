@@ -24,8 +24,9 @@ use std::path::Path;
 /// calls give one, a fact of it, `clone` (ADR 0914, amended). 10: a
 /// type parameter's `Some` is the value where its crate's calls give it
 /// nothing that may look like `None`, a fact of it, `unboxed` (ADR 0051,
-/// amended).
-pub const VERSION: u32 = 10;
+/// amended). 11: the structs its code makes values of, `built`, which a
+/// consumer takes as the program's own data (ADR 1022, amended).
+pub const VERSION: u32 = 11;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -258,6 +259,12 @@ pub struct Library {
     /// call of one is the value.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gives_argument: Vec<String>,
+    /// The keys of the structs its code makes values of, its own or a
+    /// library's, a literal's (ADR 1022, amended): the
+    /// program's own data, whose fields a consumer reads in place, whatever
+    /// JS gives of its type.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub built: Vec<String>,
     /// Each of its structs' fields its consumers read a fact of, by key,
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -417,6 +424,9 @@ pub struct Exports {
     /// Its functions each call of which is what it's given, by their keys
     /// (ADR 0584, amended).
     pub gives_argument: HashSet<String>,
+    /// The structs its code makes values of, by their keys (ADR 1022,
+    /// amended).
+    pub built: HashSet<String>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
     pub fields: HashMap<String, BTreeSet<FieldFact>>,
     pub items: HashMap<String, Imported>,
@@ -484,6 +494,7 @@ impl Dependencies {
                 identities: library.identities.into_iter().collect(),
                 eq_by_address: library.eq_by_address.into_iter().collect(),
                 gives_argument: library.gives_argument.into_iter().collect(),
+                built: library.built.into_iter().collect(),
                 fields: library
                     .fields
                     .into_iter()
@@ -624,6 +635,7 @@ impl Dependencies {
             identities: library.identities.into_iter().collect(),
             eq_by_address: library.eq_by_address.into_iter().collect(),
             gives_argument: library.gives_argument.into_iter().collect(),
+            built: library.built.into_iter().collect(),
             fields: library
                 .fields
                 .into_iter()

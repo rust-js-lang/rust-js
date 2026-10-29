@@ -53,11 +53,23 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     with_this: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
     /// Whether one is made in generic code, of what its callers give.
     with_this_generic: bool,
+    /// What code that isn't the crate's gives, `made_outside`'s, each a type
+    /// a value of which may be a JS object, or hold one.
+    outside: Vec<Ty<'tcx>>,
+    /// Each cast of a value the program has, `js::cast(Some(js::unknown(x)))`,
+    /// of the type it's of and the type it's cast to: what it's cast to is
+    /// that value, a JS object only where a value of that type may be one
+    /// (rd221).
+    recast: Vec<(Ty<'tcx>, Ty<'tcx>)>,
     /// The structs a value code that isn't the crate's makes may be, or
-    /// hold, through what it's made of (`made_outside`), and whether one of a
-    /// type rustc can't normalize may be any.
-    js_made: HashSet<DefId>,
-    js_made_any: bool,
+    /// hold, through what it's made of, and whether one of a type rustc
+    /// can't normalize may be any (`JsMade`).
+    js_made: JsMade,
+    /// The structs the crate's code makes a value of, a literal's: the
+    /// program's own data, which a JS object of its type
+    /// is taken to be, as a value given back through `Unknown` is (rd221;
+    /// ADR 1022, amended).
+    built: HashSet<DefId>,
     /// Each field of a `dyn Fn` of the crate's structs, and whether each
     /// write of it the crate makes, a literal's or an assignment's, is of
     /// a closure or a function of its own, `Box::new(move || ..)`, never
@@ -94,6 +106,34 @@ impl<'tcx> FnPointers<'tcx> {
             made.visit_body(tcx.hir_body_owned_by(owner));
         }
         found.rust_fields = found.fields_of_rust(recognition);
+        // A struct the program makes values of is its own data, whatever JS
+        // gives of its type, and so is what it holds: not one of a binding
+        // crate's, a dictionary, which only JS's objects are where a binding
+        // gives one (rd221).
+        let built = std::mem::take(&mut found.built);
+        let own = |adt: DefId| {
+            (adt.is_local() || recognition.foreign.in_library(adt))
+                && (built.contains(&adt) || recognition.foreign.built(adt))
+        };
+        // What a cast of the program's value is cast to is a JS object where
+        // that value may be one, until nothing more may be.
+        let mut made = JsMade::default();
+        let mut outside = std::mem::take(&mut found.outside);
+        let mut recast = std::mem::take(&mut found.recast);
+        while !outside.is_empty() {
+            for ty in outside.drain(..) {
+                made.walk(recognition, &own, ty, &mut HashSet::new());
+            }
+            let (js, program): (Vec<_>, Vec<_>) = recast.into_iter().partition(|&(of, _)| {
+                let mut of_it = JsMade::default();
+                of_it.walk(recognition, &own, of, &mut HashSet::new());
+                of_it.any || of_it.structs.iter().any(|adt| made.structs.contains(adt))
+            });
+            recast = program;
+            outside = js.into_iter().map(|(_, to)| to).collect();
+        }
+        found.js_made = made;
+        found.built = built;
         found
     }
 
@@ -189,7 +229,14 @@ impl<'tcx> FnPointers<'tcx> {
     /// decision; ADR 1022): one code that isn't the crate's made, `js::cast`'s
     /// or a binding's result.
     pub(in crate::lower) fn js_may_make(&self, adt: DefId) -> bool {
-        self.js_made_any || self.js_made.contains(&adt)
+        self.js_made.structs.contains(&adt) || (self.js_made.any && !self.built.contains(&adt))
+    }
+
+    /// The structs the crate's code makes a value of (`built`), which its
+    /// contract says, so a consumer takes them as the program's own data,
+    /// as the crate does (rd221; ADR 1022, amended).
+    pub(in crate::lower) fn built(&self) -> impl Iterator<Item = DefId> + '_ {
+        self.built.iter().copied()
     }
 
     /// A value of `ty` code that isn't the crate's made: each struct it is
@@ -197,77 +244,8 @@ impl<'tcx> FnPointers<'tcx> {
     /// be a JS object. What such a function is called with is the crate's,
     /// and so is what JS calls a function of the crate's with: its own
     /// objects, given back, a bound function's or a state's (ADR 1022).
-    fn made_outside(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) {
-        self.outside(recognition, ty, &mut HashSet::new());
-    }
-
-    fn outside(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) {
-        let tcx = recognition.tcx;
-        if !seen.insert(ty) {
-            return;
-        }
-        // What a pointer points at, as a reference's.
-        if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty) {
-            return self.outside(recognition, pointee, seen);
-        }
-        match *ty.kind() {
-            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => self.outside(recognition, inner, seen),
-            ty::Tuple(parts) => {
-                for part in parts {
-                    self.outside(recognition, part, seen);
-                }
-            }
-            ty::Adt(adt, args) => {
-                if adt.is_struct() {
-                    self.js_made.insert(adt.did());
-                }
-                // Std's types hold what their arguments say; another's, its
-                // fields.
-                match !adt.did().is_local() && recognition.in_sysroot(adt.did()) {
-                    true => {
-                        for part in args.types() {
-                            self.outside(recognition, part, seen);
-                        }
-                    }
-                    false => {
-                        for field in adt.all_fields() {
-                            self.outside(recognition, field.ty(tcx, args).skip_normalization(), seen);
-                        }
-                    }
-                }
-            }
-            // What a function gives.
-            ty::FnPtr(..) => {
-                let sig = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx));
-                self.outside(recognition, sig.output(), seen);
-            }
-            // A `dyn Fn(A) -> R`'s `R`; another trait's arguments, what it
-            // may give.
-            ty::Dynamic(predicates, ..) => {
-                for predicate in predicates.iter() {
-                    match predicate.skip_binder() {
-                        ty::ExistentialPredicate::Trait(t) if !tcx.is_fn_trait(t.def_id) => {
-                            for part in t.args.types() {
-                                self.outside(recognition, part, seen);
-                            }
-                        }
-                        ty::ExistentialPredicate::Projection(p) => {
-                            if let Some(part) = p.term.as_type() {
-                                self.outside(recognition, part, seen);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            ty::Alias(..) if !ty.has_param() => match tcx
-                .try_normalize_erasing_regions(ty::TypingEnv::fully_monomorphized(), ty::Unnormalized::new_wip(ty))
-            {
-                Ok(normal) if normal != ty => self.outside(recognition, normal, seen),
-                _ => self.js_made_any = true,
-            },
-            _ => {}
-        }
+    fn made_outside(&mut self, ty: Ty<'tcx>) {
+        self.outside.push(ty);
     }
 
     /// `f` made a fn pointer of type `ptr`.
@@ -287,6 +265,99 @@ impl<'tcx> FnPointers<'tcx> {
         self.all_open |= held.any;
         self.open.extend(held.keys);
         self.library_rust.extend(held.rust);
+    }
+}
+
+/// The structs a value code that isn't the crate's made may be or hold,
+/// and whether a value of any may be, one of a type rustc can't normalize
+/// (rd204, ADR 1022).
+#[derive(Default)]
+struct JsMade {
+    structs: HashSet<DefId>,
+    any: bool,
+}
+
+impl JsMade {
+    /// Each struct a value of `ty` code that isn't the crate's made may be or
+    /// hold, past a struct that's the program's own data (`own`), whose
+    /// values are the program's whatever their type says they hold.
+    fn walk<'tcx>(
+        &mut self,
+        recognition: &Recognition<'_, 'tcx>,
+        own: &dyn Fn(DefId) -> bool,
+        ty: Ty<'tcx>,
+        seen: &mut HashSet<Ty<'tcx>>,
+    ) {
+        let tcx = recognition.tcx;
+        if !seen.insert(ty) {
+            return;
+        }
+        // What a pointer points at, as a reference's.
+        if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty) {
+            return self.walk(recognition, own, pointee, seen);
+        }
+        match *ty.kind() {
+            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => self.walk(recognition, own, inner, seen),
+            ty::Tuple(parts) => {
+                for part in parts {
+                    self.walk(recognition, own, part, seen);
+                }
+            }
+            ty::Adt(adt, args) => {
+                // Std's types hold what their arguments say; another's, its
+                // fields.
+                let std = !adt.did().is_local() && recognition.in_sysroot(adt.did());
+                if adt.is_struct() && !std {
+                    if own(adt.did()) {
+                        return;
+                    }
+                    self.structs.insert(adt.did());
+                }
+                match std {
+                    true => {
+                        for part in args.types() {
+                            self.walk(recognition, own, part, seen);
+                        }
+                    }
+                    false => {
+                        for field in adt.all_fields() {
+                            self.walk(recognition, own, field.ty(tcx, args).skip_normalization(), seen);
+                        }
+                    }
+                }
+            }
+            // What a function gives.
+            ty::FnPtr(..) => {
+                let sig = tcx.instantiate_bound_regions_with_erased(ty.fn_sig(tcx));
+                self.walk(recognition, own, sig.output(), seen);
+            }
+            // A `dyn Fn(A) -> R`'s `R`; another trait's arguments, what it
+            // may give.
+            ty::Dynamic(predicates, ..) => {
+                for predicate in predicates.iter() {
+                    match predicate.skip_binder() {
+                        ty::ExistentialPredicate::Trait(t) if !tcx.is_fn_trait(t.def_id) => {
+                            for part in t.args.types() {
+                                self.walk(recognition, own, part, seen);
+                            }
+                        }
+                        ty::ExistentialPredicate::Projection(p) => {
+                            if let Some(part) = p.term.as_type() {
+                                self.walk(recognition, own, part, seen);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            ty::Alias(..) if !ty.has_param() => match tcx
+                .try_normalize_erasing_regions(ty::TypingEnv::fully_monomorphized(), ty::Unnormalized::new_wip(ty))
+            {
+                Ok(normal) if normal != ty => self.walk(recognition, own, normal, seen),
+                _ => self.any = true,
+            },
+            _ => {}
+        }
     }
 }
 
@@ -435,15 +506,73 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
         }
-        // What serde gives is the compiler's own, of JSON's data, and what a
-        // binding gives back the program's (`#[rust_js::gives_back]`).
-        if !crate::lower::recognition::lowered_serde(tcx, f) && !crate::lower::bindings::gives_back(tcx, f) {
-            self.found.made_outside(recognition, result);
+        // What a binding gives back is the program's (`#[rust_js::gives_back]`);
+        // what serde gives, a struct its `Deserialize` builds, is the
+        // program's own data (`built`).
+        if !crate::lower::bindings::gives_back(tcx, f) {
+            self.found.made_outside(result);
         }
     }
 }
 
 impl<'tcx> Made<'_, '_, 'tcx> {
+    /// Of a call of `f`, a binding that gives what it's given, `this` itself,
+    /// `js::cast`'s and `js::unknown`'s, of `args`: the type of the value the
+    /// program has that it's given, through `Some(..)`, a borrow, an `Rc`'s
+    /// clone and casts, `js::cast(Some(js::unknown_of(Rc::clone(queue))))`
+    /// of an `Rc<UpdateQueue>`, a struct of the program's (rd221). `None` of
+    /// another call, or of what may be anything, a `&Unknown`.
+    fn recast_of(&self, f: DefId, args: &'tcx [hir::Expr<'tcx>]) -> Option<Ty<'tcx>> {
+        let tcx = self.recognition.tcx;
+        let this = |f: DefId| {
+            is_binding(tcx, f)
+                && matches!(
+                    crate::lower::bindings::js_form(tcx, f),
+                    crate::lower::bindings::JsForm::This
+                )
+        };
+        if !this(f) {
+            return None;
+        }
+        let [given] = args else { return None };
+        let mut given: &'tcx hir::Expr<'tcx> = given;
+        loop {
+            given = match given.kind {
+                hir::ExprKind::AddrOf(_, _, inner) => inner,
+                hir::ExprKind::Call(callee, [inner]) => match *self.results.expr_ty(callee).kind() {
+                    ty::FnDef(id, _)
+                        if this(id)
+                            || (tcx.trait_of_assoc(id) == tcx.lang_items().clone_trait()
+                                && crate::lower::recognition::rc_pointee(
+                                    tcx,
+                                    self.results.expr_ty(inner).peel_refs(),
+                                )
+                                .is_some())
+                            || matches!(tcx.def_kind(id), DefKind::Ctor(..))
+                                && tcx.lang_items().option_some_variant() == Some(tcx.parent(id)) =>
+                    {
+                        inner
+                    }
+                    _ => break,
+                },
+                _ => break,
+            };
+        }
+        let of = self.results.expr_ty(given);
+        let mut peeled = of.peel_refs();
+        while let Some(pointee) = crate::lower::recognition::rc_pointee(tcx, peeled) {
+            peeled = pointee.peel_refs();
+        }
+        match peeled.kind() {
+            ty::Adt(adt, _)
+                if adt.is_struct() && (adt.did().is_local() || self.recognition.foreign.in_library(adt.did())) =>
+            {
+                Some(of)
+            }
+            _ => None,
+        }
+    }
+
     /// The field of the crate's struct `place` reads, `s.f`, of a `dyn Fn`'s.
     fn field_of(&self, place: &hir::Expr<'tcx>) -> Option<DefId> {
         let hir::ExprKind::Field(base, _) = place.kind else {
@@ -522,7 +651,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                         && !self.recognition.in_sysroot(adt.did()) =>
                 {
                     self.found.given_in(self.recognition, adjustment.target);
-                    self.found.made_outside(self.recognition, adjustment.target);
+                    self.found.made_outside(adjustment.target);
                 }
                 _ => {}
             }
@@ -545,7 +674,16 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                         }
                     }
                     let inputs: Vec<Ty<'tcx>> = args.iter().map(|arg| results.expr_ty_adjusted(arg)).collect();
-                    self.call(f, results.expr_ty(expr), &inputs);
+                    // A cast of a value the program has is that value (rd221).
+                    match self.recast_of(f, args) {
+                        Some(of) => {
+                            for &ty in inputs.iter().chain([&results.expr_ty(expr)]) {
+                                self.found.given_in(self.recognition, ty);
+                            }
+                            self.found.recast.push((of, results.expr_ty(expr)));
+                        }
+                        None => self.call(f, results.expr_ty(expr), &inputs),
+                    }
                 }
             }
             hir::ExprKind::MethodCall(_, receiver, args, _) => {
@@ -577,6 +715,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                 if let ty::Adt(adt, _) = results.expr_ty(expr).kind()
                     && adt.is_struct() =>
             {
+                self.found.built.insert(adt.did());
                 for field in fields.iter() {
                     let def = adt.non_enum_variant().fields[results.field_index(field.hir_id)].did;
                     self.field_written(def, Some(field.expr));
@@ -595,7 +734,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                     && !id.is_local()
                 {
                     self.found.given_in(self.recognition, results.expr_ty(expr));
-                    self.found.made_outside(self.recognition, results.expr_ty(expr));
+                    self.found.made_outside(results.expr_ty(expr));
                 }
             }
             _ => {}

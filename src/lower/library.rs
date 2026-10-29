@@ -74,6 +74,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// Its functions each call of which is what it's given (ADR 0584,
     /// amended).
     pub(super) gives_argument: &'a [DefId],
+    /// The structs its code makes values of (ADR 1022, amended).
+    pub(super) built: Vec<DefId>,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -187,6 +189,7 @@ pub(super) fn exports<'tcx>(
         identities,
         eq_by_address,
         gives_argument,
+        built,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -309,6 +312,11 @@ pub(super) fn exports<'tcx>(
                 .filter(|&&id| reachable(tcx, id))
                 .map(|&id| key(tcx, id))
                 .collect();
+            keys.sort();
+            keys
+        },
+        built: {
+            let mut keys: Vec<String> = built.iter().map(|&id| key(tcx, id)).collect();
             keys.sort();
             keys
         },
@@ -851,6 +859,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         !id.is_local()
             && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
                 .is_some_and(|library| library.gives_argument.contains(&key(self.tcx, id)))
+    }
+
+    /// Does a library's code make values of `id`, a struct, as its contract
+    /// says: the program's own data (ADR 1022, amended)?
+    pub(super) fn built(&self, id: DefId) -> bool {
+        let key = key(self.tcx, id);
+        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key))
     }
 
     /// Is `krate` a library's, one rust-js built for this crate to use, not

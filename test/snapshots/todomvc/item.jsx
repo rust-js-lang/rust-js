@@ -7,8 +7,7 @@ import { $trim } from "@rust-js/runtime";
 
 export function TodoItem({ todo, dispatch }) {
   const [editing, setEditing] = useState(false);
-  const captured = todo.title;
-  const [draft, setDraft] = useState(captured);
+  const [draft, setDraft] = useState(todo.title);
   // An edit that's ended, saved or cancelled: the blur of the field that
   // goes with it isn't another.
   const ended = useRef(false);
@@ -40,9 +39,8 @@ export function TodoItem({ todo, dispatch }) {
       setEditing(false);
     }
   }
-  const completed = todo.completed;
   let class$;
-  if (completed) {
+  if (todo.completed) {
     class$ = editing ? "completed editing" : "completed";
   } else if (editing) {
     class$ = "editing";

@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -60,9 +60,9 @@ gives:
 
 A struct the program builds and never takes from outside is its own data,
 read in place as before; so is what std makes of what it isn't given, a
-`transmute`'s, which is the program's bytes, not a JS object, and what
-serde and serde_json give, which rust-js lowers itself (ADR 0459), of
-JSON's data (`recognition::lowered_serde`).
+`transmute`'s, which is the program's bytes, not a JS object. (What serde
+gives was a third, amended below: a struct its `Deserialize` builds is one
+the program builds.)
 
 Three routes are left uncovered, the user's decision: each relies on JS
 giving an object of plain data, no getters.
@@ -139,3 +139,76 @@ What stays a JS object's is what JS made: `JSON.parse`'s, todomvc's
 stored todos and the playground's fetched manifest, whose fields keep
 their `const`s.
 
+
+## Amendment: a struct the program builds is its own data (rd221)
+
+rd204's rule asked, of each struct, whether code that isn't the crate's
+may make a value of it, and took any `js::cast` to it for a yes. React's
+port casts its own objects back from values of any shape everywhere:
+`getComponentNameFromOwner`'s `js::cast::<&Fiber>(Some(owner))` of an
+owner that's a fiber or a component's info, a fiber's `stateNode` cast to
+its root, a node's internal key cast to its fiber in React DOM, a hook's
+queue cast to the view `ConcurrentQueue` the update functions share. So the
+fiber, the root, every update, context and transition, and all they hold,
+became JS objects of getters: regenerating react-in-rust changed 41 files,
+some 1,500 lines more unlike upstream's, 231 of them dead reads, `const
+old = fiber.return;` before each `fiber.return = ..`, and a context's
+`current_value` written through a handle object, `({ get value() { .. },
+set value(v) { .. } }).value = currentValue`. The diff was the repro; a
+two-crate probe of no cast didn't show it.
+
+**A struct the program makes values of, by a literal in its code or a
+library's, is its own data, whatever JS gives of its type, and so is what
+it holds**: a JS object given back to the program through a value of any
+shape is one it made. Where a cast's JS object is one the program didn't
+make, reading it relies on its being plain data, as an exported
+function's parameters do (above). Three parts, each in
+`analysis/fn_pointers.rs`, the one owner:
+
+- **`built`**: each struct expression's struct, in any body, a
+  `Deserialize` impl's too; a struct of the crate's or of a rust-js
+  library's, never a binding crate's, a webapi or js dictionary, which a
+  binding gives as JS's own object. What JS may make is walked past such a
+  struct, so a fiber's never-built view of its updates is the program's
+  too. std's structs, an `Rc`, are walked through, never one JS made.
+- **A library's contract says its `built`** (`Library::built`, library
+  ABI 11, the tooling's validation too): React DOM takes the reconciler's
+  fiber for the program's, as the reconciler does.
+- **A cast of a value the program has is that value**: `js::cast(Some(
+  js::unknown_of(Rc::clone(queue))))`, through `Some`, a borrow, an `Rc`'s
+  clone and identity bindings, of a struct of the program's, is JS's only
+  where that value's type may be (`FnPointers::recast`, resolved until no
+  more may be). A view of a style prop JS gave is JS's still.
+
+What stays JS's is a struct no code builds that a binding, a `js::cast`
+of what may be anything, a library's static or `Deref` gives: React's
+props structs, `ViewTransitionProps` from `memoizedProps`, which a
+component's JSX made; a host config's result, `getSuspenseInstanceFallbackErrorDetails`'s;
+a class instance; a thenable; a dictionary `Object.getOwnPropertyDescriptor`
+gives. todomvc's stored todos, which the amendment above kept as JS's, are
+`Todo`s the program builds too, read in place again, `<TodoItem
+key={todo.id} ..>` in a `filter(..).map(..)` of the array, not a `const
+key = todo.id;` in an iterator's. serde's own exemption
+(`recognition::lowered_serde`) is gone: a
+struct its `Deserialize` builds is `built`, and nothing else serde gives
+is a struct of fields read.
+
+Regenerated on this, react-in-rust's diff from 5944f4d is the reads of
+those JS objects alone: about 150 lines in 9 files, where it was 2,500 in
+41.
+
+Held by `test/lowering-moves.test.ts`, "a struct the program builds is its
+own data, whatever JS gives of its type" (a fiber cast from an owner, set
+in place; its never-built view of updates; a view of a kept `Rc`; a view of
+a style prop JS gave, read once, run), and `test/cross-crate-items.test.ts`,
+"a struct a library builds is the program's own data in its consumer"
+(`fiber.parent = parent;` of a library's fiber, not `const old` first; a
+library's props JS gave read once). Mutations `built-struct-unrecorded`,
+`built-struct-holds-js-made`, `recast-taken-for-js`, `recast-of-js-made-plain`,
+`std-structs-js-made`, `library-built-unwritten`, `library-built-unread`.
+
+The cost: a struct the program builds and also casts from a JS object of
+getters reads that object's fields as plain data; no program has needed
+otherwise. This widens the user's rd204 follow-up (plain-data reliance for
+exported parameters, closures' parameters and generic casts) to a cast of
+any shape where the struct is the program's; it's a decision to confirm.

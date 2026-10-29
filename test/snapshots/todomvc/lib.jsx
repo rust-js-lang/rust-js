@@ -63,15 +63,11 @@ export function App() {
             />
             <label htmlFor="toggle-all">Mark all as complete</label>
             <ul className="todo-list">
-              {Array.from(
-                todos
-                  .values()
-                  .filter((todo) => Filter.shows(filter, todo))
-                  .map((todo) => {
-                    const key = todo.id;
-                    return <TodoItem key={key} todo={todo} dispatch={dispatch} />;
-                  }),
-              )}
+              {todos
+                .filter((todo) => Filter.shows(filter, todo))
+                .map((todo) => (
+                  <TodoItem key={todo.id} todo={todo} dispatch={dispatch} />
+                ))}
             </ul>
           </section>
         )}
