@@ -554,8 +554,10 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>, sw
 /// the block's end does, the block's statements in its place, so the arms
 /// break the loop as written and `switches` reads them so (#389c). Not one
 /// a `break l` of which is in a loop or a `switch` of its own, where a
-/// `break;` would leave that; nor a loop the program labeled, whose
-/// `break`s are its label's (`case_rests::loops_left_by_cases`). A name
+/// `break;` would leave that, but of a loop the program labeled, whose
+/// such `break` is of its label, `break 'rows` in an inner `while let`'s
+/// `break rows;` (uz3); a `switch` it ends, `case_rests::loops_left_by_cases`
+/// reads once `switches` has made it. A name
 /// the block declares that the turn's before it does too is the names
 /// stage's to tell apart, later.
 pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
@@ -563,10 +565,16 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
     loops: &[(js::Span, bool, Option<String>)],
 ) {
     for stmt in stmts {
-        if written_loop(loops, stmt.span).is_some_and(|(.., label)| label.is_some()) {
-            continue;
+        let named = written_loop(loops, stmt.span).and_then(|(.., label)| label.clone());
+        let (StmtKind::While {
+            body, label: looped, ..
         }
-        let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
+        | StmtKind::ForOf {
+            body, label: looped, ..
+        }
+        | StmtKind::For {
+            body, label: looped, ..
+        }) = &mut stmt.kind
         else {
             continue;
         };
@@ -579,11 +587,26 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
         if !block.span.is_none() || !crate::lower::mir::is_block_label(label) {
             continue;
         }
-        let (label, mut broken) = (label.clone(), inner.clone());
-        loop_breaks(&mut broken, &label);
+        let (block, mut broken) = (label.clone(), inner.clone());
+        loop_breaks(&mut broken, &block);
         let at = body.len() - 2;
-        if js::names_break(&broken, &label) {
+        // One in a loop of its own, of a loop the program labeled, `break
+        // 'rows` in an inner `while let`: of its label, as written (uz3).
+        // Else a loop the program labeled is `loops_left_by_cases`', whose
+        // cases it ends with leave by its label once `switches` has made
+        // them.
+        if !js::names_break(&broken, &block) && named.is_some() {
             continue;
+        }
+        if js::names_break(&broken, &block) {
+            let Some(named) = named
+                .as_ref()
+                .filter(|named| looped.as_ref().is_none_or(|l| l == *named))
+            else {
+                continue;
+            };
+            super::tails::relabeled(&mut broken, &block, named);
+            *looped = Some(named.clone());
         }
         body.splice(at..=at, broken);
         if body[..body.len() - 1].last().is_some_and(ends) {

@@ -7,7 +7,8 @@ Amended: a `while` that ends an `if`'s branch with code after the `if`
 is its test too; and an `if` of a `break` the program wrote first in a
 `while`'s body is that `if`, not the loop's test (#298); and what's written
 after a loop that `break`s is after it; and an inner loop's tail moves out
-before `decisions` (rd141c).
+before `decisions` (rd141c); and a `break 'rows` in an inner loop is the
+outer's, by its label (uz3).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -658,3 +659,40 @@ same jump either way.
 Held by `test/corpus/nested_loop_tails.rs` against native Rust;
 mutations `exits-after-past-decisions` (`mir/tidy/stages.ts`) and
 `exit-after-held-unwritten` (`mir/tidy/jumps/labels.ts`).
+
+## Amendment: a `break 'rows` in an inner loop is the outer's, by its label (uz3, 2026-10-29)
+
+```rust
+'rows: while let Some(row) = rows.get(r) {
+    while let Some(&n) = row.get(i) {
+        if n == 0 { ..; break 'rows; }
+        ..
+    }
+    r += 1;
+}
+```
+
+MIR's `break 'rows` goes to the end of a block it made of the outer turn,
+whose end is the outer loop's way out: `while (true) { const row = rows[r];
+bb22: { if (row != null) { .. break bb22; .. continue; } } break; }`.
+`blocks breaking loops` gave such a block's `break`s to the loop as
+`break;` only where none was in a loop of its own, and left a loop the
+program labeled to `loops_left_by_cases`, which reads one only once
+`switches` has made its cases. So the block stayed, `bb22:`, a label the
+Rust lacks, and the loop no test.
+
+**Of a loop the program labeled, a block's `break` in a loop of its own
+is the loop's `break` of the program's label**, the loop labeled so, and
+one outside any is `break;`: `let row; rows: while ((row = rows[r]) !=
+null) { .. break rows; .. r++; }`, as written. A loop the program labeled
+whose block's `break`s are each outside any loop of their own is
+`loops_left_by_cases`' still, as before (React's commitDeletionEffects'
+`findParent`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each `break` goes
+where it went.
+
+Held by `test/corpus/labeled_loop_left_from_inner.rs` against native
+Rust; mutation `blocks-breaking-loops-written-label-unnamed`
+(`mir/tidy/jumps/continues.ts`), and `blocks-breaking-loops-of-written-label`
+on its new line.
