@@ -213,21 +213,23 @@ export function App() {
     if (!modulePath.test(path)) {
       const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
       setStatus(say(text, "Bad"));
-    } else if (!Project.has(project, path)) {
-      setProject(Project.adding(project, path, live()));
-      const rsplitOnce = $rsplitOnce(path, "/");
-      let file;
-      if (rsplitOnce != null) {
-        file = rsplitOnce[1];
-      } else {
-        file = path;
-      }
-      const module = $stripSuffix(file, ".rs") ?? file;
-      const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
-      setStatus(say(text, "Plain"));
-    } else {
-      setStatus(say(`${path} already exists.`, "Bad"));
+      return;
     }
+    if (Project.has(project, path)) {
+      setStatus(say(`${path} already exists.`, "Bad"));
+      return;
+    }
+    setProject(Project.adding(project, path, live()));
+    const rsplitOnce = $rsplitOnce(path, "/");
+    let file;
+    if (rsplitOnce != null) {
+      file = rsplitOnce[1];
+    } else {
+      file = path;
+    }
+    const module = $stripSuffix(file, ".rs") ?? file;
+    const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
+    setStatus(say(text, "Plain"));
   }
   const openOutput = (path) => {
     if (output.TAG === "Files") {

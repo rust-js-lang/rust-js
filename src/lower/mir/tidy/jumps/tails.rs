@@ -161,26 +161,25 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
     }
     let mut i = 0;
     while i + 1 < stmts.len() {
-        let returned = stmts[i + 1].kind.clone();
+        let (returned, joined) = (stmts[i + 1].kind.clone(), stmts[i + 1].span);
         let StmtKind::Labeled(label, body) = &mut stmts[i].kind else {
             i += 1;
             continue;
         };
-        if !matches!(returned, StmtKind::Return(None))
-            || written.iter().any(|block| block.label == *label)
-            || !left_by_a_return(body, label, returns, false)
-        {
+        if !matches!(returned, StmtKind::Return(None)) || written.iter().any(|block| block.label == *label) {
+            i += 1;
+            continue;
+        }
+        // The returns the program wrote that MIR joined, where it did.
+        let joins = (joined.is_none())
+            .then(|| joined_returns(body, label, returns))
+            .flatten();
+        if joins.is_none() && !left_by_a_return(body, label, returns, false) {
             i += 1;
             continue;
         }
         let label = label.clone();
-        js::statement_lists(body, &mut |list| {
-            for stmt in list.iter_mut() {
-                if matches!(&stmt.kind, StmtKind::Break(Some(l)) if *l == label) {
-                    stmt.kind = returned.clone();
-                }
-            }
-        });
+        returned_as_written(body, &label, &returned, &joins.unwrap_or_default(), 0);
         let fits = matches!(&stmts[i].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, i, body));
         if fits {
             let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
@@ -191,6 +190,71 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
         }
         i += 1;
     }
+}
+
+/// The `return`s the program wrote in `body`, a block MIR made that a
+/// `return;` of no place of its own follows, where MIR joined them into
+/// that one, each branch's `break` of the block: `if (tag === 1) { ..;
+/// return; } else if (tag === 2) { ..; return; }` (rd100), a written
+/// `return` for each `break`. Not a `return` the program wrote once, which
+/// the block's ways go on to, a last arm's `_ => { // .. return; }`, whose
+/// place it has; nor a block more of whose ways go on to the function's end
+/// than the program wrote `return`s in it.
+fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span]) -> Option<Vec<js::Span>> {
+    let (mut lo, mut hi, mut breaks) = (u32::MAX, 0, 0);
+    js::each_list(body, &mut |list| {
+        for stmt in list.iter() {
+            if !stmt.span.is_none() {
+                (lo, hi) = (lo.min(stmt.span.lo), hi.max(stmt.span.hi));
+            }
+            breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label));
+        }
+    });
+    let written: Vec<_> = (returns.iter()).filter(|r| lo <= r.lo && r.hi <= hi).copied().collect();
+    (breaks > 0 && written.len() >= breaks).then_some(written)
+}
+
+/// Each `break label` of `stmts`, however deep, `returned`, at the place
+/// of the `return` the program wrote for that way out, of `written`: the
+/// first after what runs before it, from `at`, so what comes after sees a
+/// `return` written there (`tail_returns`). Where it went on to.
+fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, written: &[js::Span], mut at: u32) -> u32 {
+    for stmt in stmts {
+        if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label) {
+            stmt.kind = returned.clone();
+            if let Some(place) = (written.iter()).filter(|r| r.lo >= at).min_by_key(|r| r.lo) {
+                (stmt.span, at) = (*place, place.hi);
+            }
+            continue;
+        }
+        if !stmt.span.is_none() {
+            at = at.max(stmt.span.lo);
+        }
+        let mut inner = |list: &mut Vec<Stmt>| at = returned_as_written(list, label, returned, written, at);
+        match &mut stmt.kind {
+            StmtKind::If(_, a, b) => {
+                inner(a);
+                if let Some(b) = b {
+                    inner(b);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => inner(body),
+            StmtKind::Switch { cases, default, .. } => js::case_lists_mut(cases, default).for_each(inner),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                inner(a);
+                inner(b);
+            }
+            _ => {}
+        }
+        if !stmt.span.is_none() {
+            at = at.max(stmt.span.hi);
+        }
+    }
+    at
 }
 
 /// Where the first of `stmts` that says is written, inside a loop's or a
@@ -384,12 +448,20 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     }
     // Not a `let … else`'s, `if (c) { s; break l; } throw e;`: a guard.
     // Nor one before a loop that never goes on, as a `return` doesn't,
-    // `for (const k in props) { .. } return;` as MIR makes it (ADR 0805).
-    let exits = stmts.last().is_some_and(|last| match &last.kind {
-        StmtKind::Return(_) | StmtKind::Throw(_) => true,
-        StmtKind::While { .. } => ends(last),
-        _ => false,
-    });
+    // `for (const k in props) { .. } return;` as MIR makes it (ADR 0805);
+    // nor before an `if` each of whose branches returns so, the returns
+    // MIR joined past a block, each where it's written again (rd98).
+    fn exits(last: &Stmt) -> bool {
+        match &last.kind {
+            StmtKind::Return(_) | StmtKind::Throw(_) => true,
+            StmtKind::While { .. } => ends(last),
+            StmtKind::If(_, then, Some(otherwise)) => {
+                then.last().is_some_and(exits) && otherwise.last().is_some_and(exits)
+            }
+            _ => false,
+        }
+    }
+    let exits = stmts.last().is_some_and(exits);
     // And `if (c) { .. if (d) { s; break l; } ..; continue; } t`, a `then`
     // that never goes on but has a way out to the block's end inside: `if
     // (c) { .. } else { t }`, whose `then` then ends where the block does, to

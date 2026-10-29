@@ -278,6 +278,33 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     ending_returns(stmts, returns, false);
 }
 
+/// The `return;` MIR made at the end of each way through `stmts`, a body's
+/// last statement's, where the function ends: nothing, as `tail_returns`
+/// has it, of a body whose shape a `let … else` taken first changed since:
+/// its `then`'s end now the function's (rd98).
+pub(super) fn ended_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
+    match stmts.last_mut() {
+        Some(
+            last @ Stmt {
+                kind: StmtKind::Return(None),
+                ..
+            },
+        ) if !written(returns, last.span) => {
+            stmts.pop();
+        }
+        Some(Stmt {
+            kind: StmtKind::If(_, then, otherwise),
+            ..
+        }) => {
+            ended_returns(then, returns);
+            if let Some(otherwise) = otherwise {
+                ended_returns(otherwise, returns);
+            }
+        }
+        _ => {}
+    }
+}
+
 /// `tail_returns` of `stmts`, a branch of the `if` that ends the function
 /// where `branch`: there a `return undefined;` MIR made of a `None` or a
 /// `()` is nothing too, as falling off the end gives `undefined` (ADR 0237,

@@ -602,6 +602,8 @@ pub(super) const STAGES: &[Stage] = &[
                     if b.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {
                         b.pop();
                     }
+                } else {
+                    ended_returns(b, h.returns);
                 }
             }),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),

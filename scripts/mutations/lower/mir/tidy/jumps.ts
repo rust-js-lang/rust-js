@@ -160,4 +160,14 @@ export const mutations: Mutation[] = [
     replace: "    while stmts.last().is_some_and(unwritten) {\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "leaves no return"],
   },
+  {
+    name: "ended-returns-kept",
+    breaks: "a `return;` MIR made at a `let … else`'s `then`'s end, the function's end once the `let … else` is first, stays: `log.push(`Created ${path}, ${module}.`); return; }` (rd98)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        ) if !written(returns, last.span) => {\n",
+    replace: "        ) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^returns_joined_past_blocks.rs$"],
+    snapshots: true,
+  },
+
 ];

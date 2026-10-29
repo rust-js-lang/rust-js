@@ -2308,6 +2308,12 @@ export function untilTag(words) {
 - A labeled block, `'desc: { .. break 'desc v; .. }`, is a labeled block
   where its JS keeps one, by its label, `desc: { desc = v; break desc; }`
   ([ADR 0742](../../decisions/0742-a-label-the-program-wrote-is-its-name.md)).
+  A `return` written in each branch of an `if … else if` chain, or in
+  guards one after another, `if !ok { ..; return; } if exists { ..;
+  return; }`, which MIR joins into one past a block of its own, is each
+  where it's written, `} else if (tag === ActivityComponent) { ..; return;
+  }`, no label and no `else` of what follows, as React's
+  attemptExplicitHydrationTarget writes it (ADR 0742, amended).
 
 A `while` that counts its own variable last, `i += 1`, `at -= 2`, a `let`
 right before it and read nowhere after it, is the `for` that counts it, as

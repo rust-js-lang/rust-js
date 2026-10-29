@@ -92,3 +92,65 @@ joined past a block is a return", run; the mutations
 `loop-returns-past-block-kept` and `loop-end-returns-past-block`
 (`mir/tidy/jumps/tails.ts`, the latter caught by React's
 addValueToProperties, `test/port-performance-track.test.ts`).
+
+## Amendment: the returns a block's branches wrote, MIR joined past it, are each `return` (2026-10-29)
+
+React DOM's attemptExplicitHydrationTarget (rd100) returns in each branch
+of an `else if` chain, `if tag == SUSPENSE { .. if let Some(i) = .. { ..;
+return; } } else if tag == ACTIVITY { .. return; } else if tag == HOST_ROOT
+&& .. { ..; return; }`, then sets `blockedOn = null`; its
+dispatchEventForPluginEventSystem (rd98) returns from two loops inside
+`mainLoop`. MIR joins those `return`s into one `return;` of no place after
+a block of its own, each branch's `break` of the block, and no loop is
+left with one of them, so the rule above didn't take them: the port printed
+`bb41: { .. break bb41; .. } return;`, `bb110:` and `bb134:`, labels the
+program has none of. So did the playground's two guards one after another
+(`wasm/web/rust/components/app.rs`'s `new_file`): `} else if
+(!Project.has(..)) { .. } else { .. }` where it wrote `if
+project.has(&path) { ..; return; }`.
+
+**A block MIR made, followed by a `return;` of no place, that holds as
+many `return`s the program wrote (`Hints::returns`, within the spans of
+the block's statements) as it has `break`s, is that `return;` at each
+`break` too, each given the place of the written `return` that's its way
+out** (`tails::joined_returns`, `tails::returned_as_written`): the first
+written after what runs before the `break`. Then each is a `return` the
+program wrote to the passes after, which keep it where it is, as they keep
+any written `return` (`tail_returns`, `written_thens`). Not a block more of
+whose `break`s go on to the function's end than the program wrote
+`return`s in it, `if (a) { .. } else if (b) { ..; return; } else { .. }`
+(`while_let_at_end`); nor one a `return;` with a place follows, a last
+arm's written `_ => { // .. return; }`, which the block's ways go on to
+(`match_arm_guard_first`).
+
+Two passes after see that shape too:
+
+- `branch_ends` (`tails::ending`) doesn't make an `else` of `if (c) { s;
+  break l; } t` where `t` ends in an `if` each of whose branches returns
+  or throws, as it doesn't where `t` ends in a `return` or a `throw`: a
+  guard, written so. addValueToProperties' `if (ArrayBuffer.isView(value))
+  { ..; break; }` stays the case's guard, what follows it not nested in an
+  `else`.
+- `let else first`, where the body doesn't go on to its end, takes the
+  `return;` MIR made at the end of each way through its last statement
+  (`jumps::ended_returns`): a `let … else` taken first leaves its `then`'s
+  end the function's, `log.push(`Created ..`); return; }` of nothing.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: each `return;` is
+where the block's end would have taken it, the same jump.
+
+The readability ratchet's `return;` share grew (`docs/readability.txt`,
+9.9 to 10.7 in 10,000 lines), blessed for this reason: the new case,
+`test/corpus/returns_joined_past_blocks.rs`, is ten `return`s its program
+wrote and nothing else of the shape, which the shape counts as it counts
+MIR's; no other committed JS gained one (the playground's guards are
+`.jsx`, which it doesn't read).
+
+Held by `test/corpus/returns_joined_past_blocks.rs` (native-compared: the
+rd100 chain, rd98's loops, the playground's guards), the playground's
+snapshot, `test/port-performance-track.test.ts`'s addValueToProperties,
+and the mutations `returns-past-blocks-joined-unseen`,
+`returns-past-blocks-written-return-copied`,
+`returns-past-blocks-joined-anywhere`, `returns-past-blocks-unplaced`,
+`branch-ends-returning-if-not-an-exit` (`mir/tidy/jumps/tails.ts`) and
+`ended-returns-kept` (`mir/tidy/jumps.ts`).
