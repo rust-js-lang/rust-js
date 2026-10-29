@@ -585,9 +585,10 @@ test("declarations name a function as its JS does", () => {
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
   writeFileSync(join(dir, "lib.rs"), "pub fn new() -> u32 {\n    1\n}\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("export function new$()");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function new$(): number;");
-  writeFileSync(join(dir, "use.ts"), 'import { new$ } from "./lib.js";\nexport const one: number = new$();\n');
+  // Exported by its own name, a word JS keeps, as 179687614 (#338) has it.
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("function new$() {\n  return 1;\n}\n\nexport { new$ as new };");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("declare function new$(): number;\n\nexport { new$ as new };");
+  writeFileSync(join(dir, "use.ts"), 'import { new as make } from "./lib.js";\nexport const one: number = make();\n');
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
 
