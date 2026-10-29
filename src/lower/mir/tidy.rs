@@ -724,6 +724,7 @@ mod tests {
                 "appends",
                 "bound captures",
                 "nulled as they are",
+                "written jumps",
                 "commented jumps"
             ]
         );
