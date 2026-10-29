@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "btree-drops-unsorted",
-    breaks: "a `BTreeMap` drops its values in the order they went in",
+    breaks: "a `BTreeMap` JS gives drops its values in the order they went in (the crate's own are kept in order, ADR 0404, amended)",
     file: "src/lower/drops/parts.rs",
     find: "                        true => self.in_order_of(value, ty, span)?,\n",
     replace: "                        true => value,\n",
-    tests: ["test/corpus.test.ts", "-t", "map_drops"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a B-tree JS gives is dropped in its keys' order"],
   },
   {
     name: "guard-drop-unrun",

@@ -263,6 +263,37 @@ pub fn doubled(m: &mut BTreeMap<u32, u32>) -> Vec<u32> {
   expect([...m]).toEqual([[3, 4], [1, 0], [2, 2]]);
 });
 
+// And dropped, given by value, its values in its keys' order, as Rust
+// drops a B-tree's.
+test("a B-tree JS gives is dropped in its keys' order", async () => {
+  const dir = fixture("mir-tree-drop-order");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeMap;
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn loud(n: u32) -> Loud {
+    Loud(n)
+}
+pub fn consume(m: BTreeMap<u32, Loud>) -> usize {
+    m.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const printed: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => printed.push(line);
+  try {
+    expect(lib.consume(new Map([[3, lib.loud(3)], [1, lib.loud(1)], [2, lib.loud(2)]]))).toBe(3);
+  } finally {
+    console.log = log;
+  }
+  expect(printed).toEqual(["drop 1", "drop 2", "drop 3"]);
+});
+
 // Sets and maps from MIR made of arrays and read as arrays:
 // \`new Set([1, 2, 3])\`, a set's algebra and a sorted map's entries mapped.
 test("sets and maps from MIR are made of arrays and read as them", async () => {
