@@ -380,9 +380,14 @@ pub(super) fn spanned(value: &Expr, at: js::Span) -> Expr {
 
 /// Whether the function's value of two branches, `yes` and `no`, is one
 /// `return t ? yes : no`: not where one gives nothing, `undefined`, whose
-/// guard, `if (t) { return yes; }`, reads as one.
+/// guard, `if (t) { return yes; }`, reads as one (ADR 0575); but where the
+/// other is `null`, which JS tells `undefined` apart from, `undefined` is a
+/// value, `return e === undefined ? undefined : null;` (rd69, the user's
+/// decision).
 pub(super) fn folds_into_return(yes: &Expr, no: &Expr) -> bool {
-    [yes, no].iter().all(|value| !matches!(value.kind, ExprKind::Undefined))
+    let undefined = |e: &Expr| matches!(e.kind, ExprKind::Undefined);
+    let null = |e: &Expr| matches!(e.kind, ExprKind::Null);
+    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))
 }
 
 /// Whether `e` reads well as a branch of `c ? a : b`: not a conditional

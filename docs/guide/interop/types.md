@@ -1023,7 +1023,12 @@ export function ratio(a, b) {
   `Option` has one `None` key; a constant written of it is `null` there
   too, as the example below shows, and so is an array's or a tuple's,
   `[js::null(), js::null()]`'s `[null, null]`, React's `const result:
-  [Fiber | null, Fiber | null] = [null, null]`. A function returning
+  [Fiber | null, Fiber | null] = [null, null]`. A function's value of
+  an `if` of `None` and `js::null()`, the two JS tells apart, is one
+  conditional, `return expected === undefined ? undefined : null;`; a
+  `None` beside another value stays a guard, `if (..) { return; }`
+  ([ADR 0575](../../decisions/0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md),
+  amended, rd69). A function returning
   one isn't `#[rust_js::nullable]`, which is of an `Option` result: the
   error says its `None`s are written `js::null()`. A plain `Option` field
   it's written to, where it's made, assigned or lent to a call with it,

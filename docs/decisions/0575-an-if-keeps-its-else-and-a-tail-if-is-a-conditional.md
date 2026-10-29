@@ -62,7 +62,8 @@ an `else` (`returned_values`). Not:
 - of a two-arm `match`, which returns each arm as it did: no `if` the
   program wrote;
 - where a branch gives nothing, `undefined`, whose guard, `if (t) {
-  return a; }`, reads as one (`folds_into_return`);
+  return a; }`, reads as one (`folds_into_return`); not beside `null`,
+  where `undefined` is a value (amended below, rd69);
 - of a branch with statements or a comment, as `branch_values` keeps them.
 - And `if (t) { return a; } return;`, a lone jump each way, keeps no
   `else`: the `return;`, which the program didn't write, goes.
@@ -119,3 +120,31 @@ branches returned, goes with the rule it served.
 - Mutations: an `else` left a guard, each branch returned, a `match` made
   a conditional, an `undefined` branch made one, written `return`s folded,
   a lone jump given an `else`, a branch left unmapped.
+
+## Amendment: `undefined` beside `null` is a value (2026-10-29, rd69, the user's decision)
+
+React DOM's DOMPropertyOperations ends a function with `return expected
+=== undefined ? undefined : null;`, which the port writes `if
+matches!(js::classify(expected), Kind::Undefined) { None } else {
+js::null() }`, and rust-js printed `if (expected === undefined) { return;
+} return null;`: the guard this ADR makes of a branch that gives nothing.
+But beside `null`, which JS tells apart from it, `undefined` isn't
+nothing, it's the value the function answers.
+
+**A returned `if` whose branches give `undefined` and `null`, either way
+round, is one conditional, `return t ? undefined : null;`**
+(`branches::folds_into_return`). Everywhere else, `undefined` beside any
+other value, the guard stays: `if (expected === undefined) { return; }
+return other;`. The user chose this over keeping the guard (a difference
+from upstream) and over folding every `undefined` branch (which would undo
+this ADR's guards).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value each
+way.
+
+Held by `test/lowering-nullable-constants.test.ts`, "a returned if of
+undefined and null is one conditional" (`hint`, `flipped`, `given`, run),
+and the mutations `undefined-or-null-guarded` and
+`null-then-undefined-guarded` (`mir/tidy/branches.ts`);
+`undefined-branch-made-conditional`, which folds every `undefined`
+branch, now mutates the new rule.

@@ -345,7 +345,7 @@ export const mutations: Mutation[] = [
     name: "undefined-branch-made-conditional",
     breaks: "a tail `if` whose branch gives nothing is `return c ? x : undefined`, not its guard",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "    [yes, no].iter().all(|value| !matches!(value.kind, ExprKind::Undefined))\n",
+    find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
     replace: "    true\n",
     tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
   },
@@ -585,5 +585,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
     snapshots: true,
+  },
+  {
+    name: "undefined-or-null-guarded",
+    breaks: "a returned `if` of `None` and `js::null()` is a guard, `if (expected === undefined) { return; } return null;`, not upstream's `return expected === undefined ? undefined : null;` (rd69)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
+    replace: "    !undefined(yes) && !undefined(no)\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
+  },
+
+  {
+    name: "null-then-undefined-guarded",
+    breaks: "a returned `if` of `js::null()` first and `None` after is a guard, `return expected !== undefined ? null : undefined;` not made (rd69)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: " || (null(yes) && undefined(no))\n",
+    replace: "\n",
+    tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
   },
 ];

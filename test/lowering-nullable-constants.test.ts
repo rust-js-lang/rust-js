@@ -432,3 +432,38 @@ pub fn make(dev: bool) -> Shared {
   const dev = lib.make(true);
   expect(["queue" in prod, "transitions" in prod, dev.queue.length, dev.transitions]).toEqual([false, false, 1, 0]);
 });
+
+// A returned `if` of `None` and `js::null()`, the two JS tells apart, is
+// one conditional, `return expected === undefined ? undefined : null;`, as
+// React's DOMPropertyOperations writes it (rd69, the user's decision); an
+// `undefined` beside another value stays the guard ADR 0575 makes of it.
+test("a returned if of undefined and null is one conditional", async () => {
+  const dir = fixture("undefined-or-null");
+  const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn hint(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if js::truthy(expected) {
+        return expected;
+    }
+    if matches!(js::classify(expected), Kind::Undefined) { None } else { js::null() }
+}
+
+pub fn flipped(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if js::truthy(expected) { js::null() } else { None }
+}
+
+pub fn given(expected: Option<&'static Unknown>, other: &'static Unknown) -> Option<&'static Unknown> {
+    if matches!(js::classify(expected), Kind::Undefined) { None } else { Some(other) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("  return expected === undefined ? undefined : null;\n");
+  expect(out).toContain("  return expected ? null : undefined;\n");
+  expect(out).toContain("  if (expected === undefined) {\n    return;\n  }\n  return other;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.hint(undefined), lib.hint(null), lib.hint(0), lib.hint(5)]).toEqual([undefined, null, null, 5]);
+  expect([lib.flipped(1), lib.flipped(0)]).toEqual([null, undefined]);
+  expect([lib.given(undefined, 1), lib.given(null, 1)]).toEqual([undefined, 1]);
+});
