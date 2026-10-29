@@ -190,6 +190,19 @@ fn pass_name(stage: &str, pass: &stages::Pass) -> String {
 
 /// Each pass's name, in the order they run, a stage's run again after it
 /// where it is: what `--tidy-until` may name.
+/// `body`, a function's after tidy, with each `try` whose body can't throw,
+/// and whose `catch` only throws on, its body (`unwinds::unthrown_catches`,
+/// ADR 0873), and then its `let x; x = e;` a `const x = e;`
+/// (`declarations`): for what reads plainer only once its module is
+/// placed, a library's thread-local read as its `export let` (#408).
+pub(in crate::lower) fn settle_unthrown_catches(body: &mut Vec<Stmt>) {
+    let mut unthrown = false;
+    js::statement_lists(body, &mut |stmts| unthrown |= unwinds::unthrown_catches(stmts));
+    if unthrown {
+        bindings::declarations(body);
+    }
+}
+
 pub(crate) fn pass_names() -> Vec<String> {
     let mut names = Vec::new();
     for stage in stages::STAGES {

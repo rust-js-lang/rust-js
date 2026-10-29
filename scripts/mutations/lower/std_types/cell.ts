@@ -578,4 +578,12 @@ export const mutations: Mutation[] = [
     replace: "    if !named.is_empty() {\n        return;\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
   },
+  {
+    name: "placed-read-catch-kept",
+    breaks: "a library's thread-local read as its `export let`, `previous = current`, keeps the `try` its `$withBorrow(..)` had, `catch (error) { dropA0?.(arg0); throw error; }` (#408)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            crate::lower::mir::settle_unthrown_catches(&mut function.body);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "settles its cleanup"],
+  },
 ];

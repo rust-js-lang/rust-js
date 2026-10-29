@@ -782,6 +782,9 @@ test("a consumer's copy of a library's generic function settles its cleanup's dr
   const copy = app.slice(app.indexOf("function runWithFiberInDev("), app.indexOf("export function main("));
   expect(copy).not.toContain("if (");
   expect(copy.split("\n").length).toBeLessThan(30);
+  // Its thread-local read as its library's `export let`, which can't
+  // throw: no `try` of it, `const previous = current;` (#408).
+  expect(copy).toContain("  const previous = current;\n  try {\n    setCurrent(fiber);");
 }, 300_000);
 
 // A library's generic trait method is given a drop for its own type

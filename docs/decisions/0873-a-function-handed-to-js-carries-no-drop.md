@@ -258,3 +258,20 @@ mutations `unwrap-tested-made` and `unwrap-tested-drops-lost`
 (`mir/tidy/unwinds.ts`), `unwrap-tested-not` and
 `unwrap-tested-flags-unsettled` (`mir/tidy/stages.ts`) and
 `unwrap-tested-message-late` (`std_types/option.ts`).
+
+## Amendment: asked again once a module's reads are placed (#408)
+
+A consumer's copy of React's `runWithFiberInDEV` reads its library's
+thread-local, `CURRENT.with_borrow(|current| current.clone())`. At tidy's
+`scopes` stage that's still `$withBorrow(..)`, which may throw, so the
+drop of what the copy holds stayed in a `catch` around it; only after,
+where the module's imported variables are placed
+(`cell::imported_variables`), is it the plain read `current`, which
+can't: `let previous; try { previous = current; } catch (error) {
+dropA0?.(arg0); throw error; }`. **Where that placing reads a function's
+body anew, the one question, `unthrown_catches`', is asked again of it,
+and where a `try` went, its `let` and its one assignment are one
+`const`, `declarations`'** (`tidy::settle_unthrown_catches`): `const
+previous = current;`. Held by `test/crates.test.ts`'s
+`generic_flags_given` pair and the mutations `placed-read-catch-kept`
+(`std_types/cell.ts`) and `placed-read-declared-apart` (`mir/tidy.ts`).

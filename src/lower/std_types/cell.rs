@@ -894,6 +894,9 @@ fn applied_in_place(items: &mut [js::Item]) {
         }
         for function in item.functions_mut() {
             js::applied_blocks(&mut function.body, true);
+            // A `try` of a read that may have thrown, `$withBorrow(..)`, now
+            // a plain one, `previous = current`, that can't (#408).
+            crate::lower::mir::settle_unthrown_catches(&mut function.body);
         }
     }
     // What a nullable place stores, `x ?? null`, of what's now read in

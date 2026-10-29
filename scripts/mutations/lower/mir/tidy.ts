@@ -273,4 +273,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
     snapshots: true,
   },
+  {
+    name: "placed-read-declared-apart",
+    breaks: "a placed read's `try` gone, its variable stays `let previous; previous = current;`, not `const previous = current;` (#408)",
+    file: "src/lower/mir/tidy.rs",
+    find: "    if unthrown {\n        bindings::declarations(body);\n",
+    replace: "    if false {\n        bindings::declarations(body);\n",
+    tests: ["test/crates.test.ts", "-t", "settles its cleanup"],
+  },
 ];
