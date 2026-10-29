@@ -109,3 +109,41 @@ pub fn changed(a: u8, b: u8, c: bool, t: u8, u: u8) -> bool {
     did = true;`);
   expect([lib.changed(1 as never, 1 as never, false as never, 2 as never, 3 as never), lib.changed(1 as never, 1 as never, false as never, 2 as never, 2 as never)]).toEqual([true, false]);
 });
+
+// React's ReactDOMFormActions, `ReactDOMSharedInternals.d /*
+// ReactDOMCurrentDispatcher */\n .r(/* requestFormReset */ form);`: a block
+// comment ending a call chain's link's line is before the next link's `.`,
+// and one right after a call's `(` is before its argument, each where it's
+// written, as upstream has them (rd63).
+test("block comments in a call chain are where they're written", async () => {
+  const { js, lib } = await compiled("comments-in-a-chain", `use std::marker::PhantomData;
+
+pub struct Internals(PhantomData<js::JsObject>);
+pub struct Dispatcher(PhantomData<js::JsObject>);
+
+impl Internals {
+    #[cfg_attr(rust_js, rust_js::link_name = "get d")]
+    pub fn d(&self) -> &'static Dispatcher {
+        unreachable!()
+    }
+}
+
+impl Dispatcher {
+    #[cfg_attr(rust_js, rust_js::link_name = "r")]
+    pub fn r(&self, form: f64) {
+        let _ = form;
+        unreachable!()
+    }
+}
+
+pub fn reset(internals: &Internals, form: f64) {
+    internals
+        .d() /* CurrentDispatcher */
+        .r(/* requestFormReset */ form);
+}
+`);
+  expect(js).toContain("  internals.d /* CurrentDispatcher */\n    .r(/* requestFormReset */ form);\n");
+  const reset: number[] = [];
+  (lib.reset as (internals: unknown, form: number) => void)({ d: { r: (form: number) => reset.push(form) } }, 3);
+  expect(reset).toEqual([3]);
+});

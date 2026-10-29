@@ -166,3 +166,21 @@ Held by `test/lowering-comments-inside.test.ts`, "a block comment after
 an argument's comma is after the argument", and the mutations
 `comment-after-an-argument-trailing` and
 `line-comment-after-an-argument-inside` (`to_oxc.ts`).
+
+## Amendment: a call chain's comments (rd63)
+
+React's ReactDOMFormActions writes `ReactDOMSharedInternals.d /*
+ReactDOMCurrentDispatcher */\n .r(/* requestFormReset */ form);`. Its
+port's `.d() /* CurrentDispatcher */` lost its comment, as no JS is
+mapped to that line, and `.r(/* requestFormReset */ form)`'s went after
+the statement, as no code before it on its line has JS. **A block comment
+ending its line before a line that goes on with a call chain's link,
+`.r(..)`, is before that link's `.`, found back from the next line's
+first code past its `(` and its name; and one inside an expression with
+no code before it on its line is before the code nearest after it,
+`(/* requestFormReset */ form`** (`trailing::placed`'s `before_link` and
+`Inside::BeforeCode`). Case A: comments only. Held by
+`test/lowering-comments-inside.test.ts` ("block comments in a call chain
+are where they're written") and the mutations `comment-before-link-unseen`
+(`to_oxc.ts`) and `comment-before-code-at-line-end`
+(`to_oxc/trailing.ts`).

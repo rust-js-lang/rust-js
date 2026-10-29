@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    if !text[after..].starts_with('}') {",
     tests: ["test/lowering-comments-ends.test.ts"],
   },
+  {
+    name: "comment-before-code-at-line-end",
+    breaks: "a block comment right after a call's `(`, `.r(/* requestFormReset */ form)`, is moved after the statement, `form); /* requestFormReset */` (rd63)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                if comment.inside\n                    && let Some((line, column)) = next() =>\n",
+    replace: "                if false\n                    && let Some((line, column)) = next() =>\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "call chain"],
+  },
 ];

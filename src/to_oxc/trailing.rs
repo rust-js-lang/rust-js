@@ -24,6 +24,10 @@ pub(super) struct Trailing {
     /// it's after that parameter's JS, the list's rest on the next line
     /// (ADR 0708, amended).
     pub(super) after_param: Option<(u32, u32)>,
+    /// Of a block comment ending a line whose next line goes on with a
+    /// call chain's link, `.d() /* .. */` then `.r(form)`: that line, its
+    /// comment before the link's `.` (rd63).
+    pub(super) before_link: Option<u32>,
 }
 
 /// Where each function's parameter starts, by where it ends: a line
@@ -61,6 +65,9 @@ pub(super) enum Inside {
     /// After the `=` there, before the value it gives, `NoMode = /* .. */
     /// 0b0000000` (ADR 0630, amended).
     AfterEquals,
+    /// Before the code that starts there, of a comment that has none before
+    /// it on its line, `.r(/* requestFormReset */ form)` (rd63).
+    BeforeCode,
 }
 
 /// Where each comment after code on its line goes, by the generated code's
@@ -128,6 +135,28 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             ends.entry(found.0).or_default().push((found.1, &comment.text));
             continue;
         }
+        // One ending a call chain's link's line, before the `.` of the
+        // next's, found back from that line's first code, past its `(` and
+        // its name: `internals.d /* CurrentDispatcher */.r(form)` (rd63).
+        if let Some(next) = comment.before_link
+            && let Some(found) = (map.get_tokens())
+                .filter(|t| t.get_src_line() == next)
+                .min_by_key(|t| t.get_src_col())
+                .and_then(|t| {
+                    let text = generated_lines.get(t.get_dst_line() as usize)?;
+                    let head = text[..in_bytes(text, t.get_dst_col())].trim_end();
+                    let head = head.strip_suffix('(')?;
+                    let head = head.trim_end_matches(|c: char| c.is_alphanumeric() || c == '_' || c == '$');
+                    let dot = head.strip_suffix('.')?;
+                    Some((t.get_dst_line(), dot.strip_suffix('?').unwrap_or(dot).len() as u32))
+                })
+        {
+            inside
+                .entry(found.0)
+                .or_default()
+                .push((found.1, Inside::BeforeCode, &comment.text));
+            continue;
+        }
         if comment.inside
             && comment.before_value
             && let Some((line, column)) = equals()
@@ -166,12 +195,32 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .len();
             (cut > in_bytes(text, column)).then_some((line, cut as u32))
         });
+        // Of one inside with no such code before it on its line, the code
+        // nearest after it there, which it's before.
+        let next = || {
+            (map.get_tokens())
+                .filter(|t| t.get_src_line() == comment.line && t.get_src_col() > comment.column)
+                .min_by_key(|t| t.get_src_col())
+                .and_then(|t| {
+                    let text = generated_lines.get(t.get_dst_line() as usize)?;
+                    Some((t.get_dst_line(), in_bytes(text, t.get_dst_col()) as u32))
+                })
+        };
         match (before, end) {
             (Some((line, column)), _) if comment.inside => {
                 inside
                     .entry(line)
                     .or_default()
                     .push((column, Inside::AfterCode, &comment.text))
+            }
+            (None, _)
+                if comment.inside
+                    && let Some((line, column)) = next() =>
+            {
+                inside
+                    .entry(line)
+                    .or_default()
+                    .push((column, Inside::BeforeCode, &comment.text))
             }
             (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
             _ => {
@@ -219,19 +268,25 @@ fn word_end(line: &str, column: u32) -> Option<usize> {
 /// map's columns from there are moved by.
 pub(super) fn with_inside_comments(line: &str, comments: &[(u32, Inside, &str)]) -> (String, Vec<(u32, u32)>) {
     let mut out = line.to_string();
-    let mut at: Vec<(usize, &str)> = (comments.iter())
+    let mut at: Vec<(usize, &str, bool)> = (comments.iter())
         .filter_map(|&(column, inside, text)| match inside {
-            Inside::AfterCode => Some((word_end(line, column)?, text)),
+            Inside::AfterCode => Some((word_end(line, column)?, text, false)),
             Inside::AfterEquals => {
-                (line.get(column as usize..)?.starts_with('=')).then_some((column as usize + 1, text))
+                (line.get(column as usize..)?.starts_with('=')).then_some((column as usize + 1, text, false))
             }
+            // Before what's there: the comment, then a space, `(/* c */
+            // form`, `/* c */ .r(`, which the formatter writes `/* c */.r(`.
+            Inside::BeforeCode => line.get(column as usize..).map(|_| (column as usize, text, true)),
         })
         .collect();
     // From the last, so each column is still where it was.
-    at.sort_by_key(|&(end, _)| std::cmp::Reverse(end));
+    at.sort_by_key(|&(end, ..)| std::cmp::Reverse(end));
     let mut moved = Vec::new();
-    for (end, text) in at {
-        let inserted = format!(" {text}");
+    for (end, text, before) in at {
+        let inserted = match before {
+            true => format!("{text} "),
+            false => format!(" {text}"),
+        };
         moved.push((end as u32, inserted.encode_utf16().count() as u32));
         out.insert_str(end, &inserted);
     }

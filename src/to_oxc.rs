@@ -525,6 +525,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let block = written.starts_with("/*");
                 let after_argument = sources.text[line_start..c.lo as usize].trim_end().ends_with(',');
                 let inside = block && (!sources.text[c.hi as usize..line_end].trim().is_empty() || after_argument);
+                // One ending its line before a call chain's next link, `.d()
+                // /* .. */` then `.r(form)`, is before that link (rd63).
+                let before_link = (block && !inside)
+                    .then(|| sources.text.get(line_end + 1..)?.lines().next())
+                    .flatten()
+                    .filter(|next| next.trim_start().starts_with('.'))
+                    .map(|_| line + 1);
                 // One right after an `=`, an initializer's or an assignment's,
                 // not `==`'s, `<=`'s or `+=`'s, is before the value it gives,
                 // `= /* .. */ 0b0000000` (ADR 0630, amended).
@@ -541,6 +548,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_value,
                     text: crate::comments::in_js(written),
                     after_param,
+                    before_link,
                 });
             }
         }
@@ -566,6 +574,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_value: false,
                     text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
+                    before_link: None,
                 });
             }
         }
@@ -582,6 +591,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_value: true,
                     text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
+                    before_link: None,
                 });
             }
         }

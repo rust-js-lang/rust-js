@@ -678,4 +678,12 @@ export const mutations: Mutation[] = [
     replace: " || macro_opening(last))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "closure whose body"],
   },
+  {
+    name: "comment-before-link-unseen",
+    breaks: "a block comment ending a call chain's link's line, `.d() /* CurrentDispatcher */`, is lost (rd63)",
+    file: "src/to_oxc.rs",
+    find: "                    .map(|_| line + 1);\n",
+    replace: "                    .map(|_| line + 1)\n                    .filter(|_| false);\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "call chain"],
+  },
 ];
