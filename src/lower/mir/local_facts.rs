@@ -70,6 +70,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each `f64` or `Option<f64>` whose number is a whole one, as a
     /// `#[rust_js::whole]` binding's is (`mir_wholes`).
     wholes: HashSet<Local>,
+    /// Each local the program's own `Rc::new`, `Arc::new` or `Box::new`
+    /// gives, through the casts and moves MIR makes (`mir_made_pointers`).
+    made_pointers: HashSet<Local>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -175,6 +178,14 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         blocks.get(&block).map(|&local| (local, name))
     }
 
+    /// Whether `local` is what the program's own `Rc::new`, `Arc::new` or
+    /// `Box::new` gives, `let f: Rc<dyn Fn()> = Rc::new(|| ..)`'s: of a
+    /// closure, a function held as a value, a `const` of its arrow; not
+    /// a binding's `Box`, an event's `spawn`'s (ADR 0882, amended).
+    pub(super) fn made_pointer(&self, local: Local) -> bool {
+        self.made_pointers.contains(&local)
+    }
+
     /// `local`'s variable, `name`, read: of one whose number a
     /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
     /// `{}` JS's text of it (ADR 0994, amended).
@@ -273,8 +284,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unlowered: handles.unlowered(def_id),
             own,
             wholes: self.mir_wholes(body, locals),
+            made_pointers: self.mir_made_pointers(body),
         };
         (facts, bindings)
+    }
+
+    /// The locals `LocalFacts::made_pointer` says: each written only by a
+    /// call of `Rc::new`, `Arc::new` or `Box::new`, or by a move, a copy
+    /// or a cast of another such, the unsizing `as Rc<dyn Fn()>` MIR makes.
+    fn mir_made_pointers(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+        let tcx = self.tcx;
+        let made = |id: rustc_span::def_id::DefId| {
+            crate::lower::recognition::is_rc_new(tcx, id)
+                || crate::lower::recognition::is_std_def(tcx, id, crate::lower::recognition::StdItem::BoxNew)
+        };
+        // What each write gives: a pointer made, or another local's.
+        let mut writes: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
+        let mut unknown: HashSet<Local> = HashSet::new();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let of = match &assign.1 {
+                Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _)
+                | Rvalue::Cast(_, Operand::Copy(read) | Operand::Move(read), _)
+                    if read.projection.is_empty() =>
+                {
+                    Some(read.local)
+                }
+                _ => None,
+            };
+            match of {
+                Some(of) if assign.0.projection.is_empty() => writes.entry(assign.0.local).or_default().push(Some(of)),
+                _ => _ = unknown.insert(assign.0.local),
+            }
+        }
+        for block in body.basic_blocks.iter() {
+            if let TerminatorKind::Call { func, destination, .. } = &block.terminator().kind {
+                match func.const_fn_def().is_some_and(|(id, _)| made(id)) && destination.projection.is_empty() {
+                    true => writes.entry(destination.local).or_default().push(None),
+                    false => _ = unknown.insert(destination.local),
+                }
+            }
+        }
+        let mut found: HashSet<Local> = HashSet::new();
+        loop {
+            let more: Vec<Local> = (writes.iter())
+                .filter(|&(local, each)| {
+                    !found.contains(local)
+                        && !unknown.contains(local)
+                        && each.iter().all(|of| of.is_none_or(|of| found.contains(&of)))
+                })
+                .map(|(&local, _)| local)
+                .collect();
+            if more.is_empty() {
+                return found;
+            }
+            found.extend(more);
+        }
     }
 
     /// The locals `LocalFacts::wholes` says: an `f64` or an `Option<f64>`,

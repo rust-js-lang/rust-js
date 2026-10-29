@@ -717,11 +717,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             state.locals.declared[local] = true;
             let name = state.locals.names[local].clone();
-            // A variable of an `Rc` or a `Box` of a closure: a function held
-            // as a value, a `const` of its arrow (ADR 0882, amended).
+            // A variable of the program's own `Rc` or `Box` of a closure: a
+            // function held as a value, a `const` of its arrow (ADR 0882,
+            // amended).
             let mut expr = expr;
             if matches!(expr.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
                 && crate::lower::recognition::holds_a_function(self.tcx, state.body.local_decls[local].ty)
+                && state.facts.made_pointer(local)
             {
                 expr.facts = expr.facts.with(js::Known::Valued);
             }

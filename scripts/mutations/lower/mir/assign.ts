@@ -687,4 +687,12 @@ export const mutations: Mutation[] = [
     replace: "                    { let _ = nulled; held }\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
+  {
+    name: "valued-of-a-bindings-box",
+    breaks: "a `let` of the `Box` a binding gives, an event's `spawn`'s, is a `const` of its arrow, `const handleCopy = async () => ..`, where react.dev writes `async function handleCopy()` (ADR 0882, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "                && state.facts.made_pointer(local)\n",
+    replace: "",
+    tests: ["test/jsx-events.test.ts", "-t", "async event handler"],
+  },
 ];

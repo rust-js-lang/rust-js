@@ -4,7 +4,7 @@ Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
 to one an object's field holds. Amended below (the user's decision,
 2026-10-26): a closure of statements a `let` binds is a function declared,
 `function deleteChild(..) { .. }`. Amended again (the user's decision,
-2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow.
+2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow; narrowed (the user's decision, 2026-10-29) to the program's own `Rc::new`, `Arc::new` or `Box::new`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a method and an arrow differ in their `this` and their
@@ -212,3 +212,20 @@ their arrows. Held by `test/lowering-arrows.test.ts`'s "a let of an Rc or
 a Box of a closure is a const of its arrow", run, and the mutations
 `valued-arrow-unmarked` (`lower/mir/assign.ts`) and
 `valued-arrow-declared` (`prepare.ts`).
+
+## Amendment (the user's decision, 2026-10-29): the program's own pointer
+
+The rule above took a `let` by its type, so it also reached react.dev's
+`let handle_copy = event::MouseEvent::spawn(async move |_| ..)`, whose
+`Box<dyn Fn>` is the binding's: `const handleCopy = async () => { .. }`,
+where react.dev writes `async function handleCopy() { .. }`. **Only a
+`let` the program's own `Rc::new`, `Arc::new` or `Box::new` of a closure
+gives is a `const` of its arrow** (`LocalFacts::made_pointer`, through the
+moves and the unsizing cast MIR makes, `let f: Rc<dyn Fn()> = Rc::new(..)`);
+a binding's `Box` is a function declared again, `async function
+handleCopy() { .. }`. React's `const commitHook = () => ..` and
+`const eventHandle = (..) => ..` stay. Case: none, as above. Held by
+`test/jsx-events.test.ts`'s "JSX takes an async event handler as the async
+function it is", the corpus cases `dyn_fn_generic_closure_drops`,
+`rc_fn_ptr_eq` and `self_handle`, and the mutations
+`valued-of-a-bindings-box` and `made-pointer-cast-unfollowed`.

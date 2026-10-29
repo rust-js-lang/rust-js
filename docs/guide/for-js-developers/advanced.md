@@ -158,9 +158,11 @@ export function later(queue) {
 }
 ```
 
-A `let` of an `Rc` or a `Box` of a closure holds a function as a value,
-`let hook: Rc<dyn Fn()> = Rc::new(..)`: a `const` of its arrow, `const
-hook = () => { .. }`, as TypeScript writes a value of a function's type
+A `let` of your own `Rc::new`, `Arc::new` or `Box::new` of a closure
+holds a function as a value, `let hook: Rc<dyn Fn()> = Rc::new(..)`: a
+`const` of its arrow, `const hook = () => { .. }`, as TypeScript writes a
+value of a function's type; a binding's `Box`, an event's `spawn`'s, is
+a function declared, `async function handleCopy() { .. }`
 ([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md#amendment-a-function-held-as-a-value-is-a-const-of-its-arrow)).
 
 A closure that refers to itself is written as the Rust book teaches a

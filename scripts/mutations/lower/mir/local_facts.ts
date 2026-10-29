@@ -106,4 +106,13 @@ export const mutations: Mutation[] = [
     replace: "            ",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },
+  {
+    name: "made-pointer-cast-unfollowed",
+    breaks: "a `let f: Rc<dyn Fn()> = Rc::new(..)`, whose unsizing cast MIR makes, isn't the program's own `Rc`, so its closure is a function declared, not a `const` of its arrow (ADR 0882, amended)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                | Rvalue::Cast(_, Operand::Copy(read) | Operand::Move(read), _)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_generic_closure_drops|rc_fn_ptr_eq|self_handle).rs$"],
+    snapshots: true,
+  },
 ];
