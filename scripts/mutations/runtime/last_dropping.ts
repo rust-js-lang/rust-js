@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/last_dropping.js",
     find: "      if (seen) drop?.(last);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
   },
   {
     name: "last-fold-unwind-lost",

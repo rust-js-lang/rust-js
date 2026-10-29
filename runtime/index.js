@@ -2294,8 +2294,11 @@ export function $closing(it, drop, slices = true) {
       throw error;
     }
   };
-  closing.fold = (init, f) => {
-    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init)));
+  // Given `unwind`, what drops an accumulator a stage's panic strands, it
+  // passes it on, so a step of the crate's own iterator that panics drops
+  // a `last`'s kept item before what's left (#423, #426).
+  closing.fold = (init, f, unwind) => {
+    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)));
     if (it.ownFold) closed = true;
     close();
     return folded;
@@ -12205,25 +12208,38 @@ export function* $zipBack(a, b) {
 // `it.flat_map(f)`, or `flatten()`, of a source and inner iterators that
 // both hold what has a destructor: JS's `flatMap`, but closed as Rust drops
 // a `FlatMap`, its source first, then the inner iterator it's stepping,
-// each `f` made (ADR 0510).
-export function* $flatMap(it, f) {
+// each `f` made (ADR 0510). A `$Steps`, not a generator, which would close
+// both as a step throws, a panic in `f`: what takes it closes it, after
+// what it holds itself, a `last`'s kept item, as Rust's frames unwind
+// (#426).
+export function $flatMap(it, f) {
   let inner;
   let ended = false;
-  try {
-    while (true) {
-      const outer = it.next();
-      if (outer.done) {
-        ended = true;
-        return;
+  return new $Steps(
+    () => {
+      for (;;) {
+        if (inner !== undefined) {
+          const step = inner.next();
+          if (!step.done) return step;
+          inner = undefined;
+        }
+        const outer = it.next();
+        if (outer.done) {
+          ended = true;
+          return outer;
+        }
+        inner = f(outer.value);
       }
-      inner = f(outer.value);
-      for (let step = inner.next(); !step.done; step = inner.next()) yield step.value;
+    },
+    () => {
+      if (!ended) {
+        ended = true;
+        it.return?.();
+      }
+      inner?.return?.();
       inner = undefined;
-    }
-  } finally {
-    if (!ended) it.return?.();
-    inner?.return?.();
-  }
+    },
+  );
 }
 
 // `peek_mut()` of a `Peekable` of numbers or text: a handle on the item it

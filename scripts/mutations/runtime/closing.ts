@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "closing-fold-steps",
     breaks: "a closed iterator's fold steps it by `next`, not its source's own `fold`",
     file: "src/runtime/closing.js",
-    find: "  closing.fold = (init, f) => {\n",
-    replace: "  closing.unused = (init, f) => {\n",
+    find: "  closing.fold = (init, f, unwind) => {\n",
+    replace: "  closing.unused = (init, f, unwind) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
@@ -129,5 +129,13 @@ export const mutations: Mutation[] = [
     find: "      close();\n      throw error;\n",
     replace: "      throw error;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+  },
+  {
+    name: "closing-fold-unwind-lost",
+    breaks: "an owning source's `$closing` drops the `unwind` its fold is given, so the crate's own `next` that panics under `last` drops what's left before the kept item (#426)",
+    file: "src/runtime/closing.js",
+    find: "it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)",
+    replace: "it.fold(init, f) : $foldDropping(it, init, (a, x) => f(a, x))",
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
   },
 ];

@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/fold_of.js",
     find: "      try {\n        unwind(folded);\n      } finally {\n        it.return?.();\n      }\n",
     replace: "      it.return?.();\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
   },
   {
     name: "fold-dropping-given-to-own-fold-lost",

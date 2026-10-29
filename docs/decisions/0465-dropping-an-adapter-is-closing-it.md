@@ -602,3 +602,24 @@ No corpus case's JS changed. Held by `panic_mid_fold_drops.rs` and
 `last-fold-unwind-lost`, `extreme-fold-unwind-lost`, `reduce-unwind-lost`,
 `fold-acc-unwind-unseen` and `fold-stage-by-type-unseen`
 (`lower/mir/iter/collect.ts`).
+
+## Amendment: what takes a step that panics closes it (2026-10-30, #426)
+
+A step that panics under `last` or a fold, the crate's own `next` or a
+`flat_map`'s closure, dropped what's left before the item `last` kept: native
+drops 172, 171, 173, JS 172, 173, 171. Results change, so Rust's behavior is
+kept (ADR 0262):
+- **`$closing`'s fold passes on its `unwind`**, which `last`'s fold gives, to
+  its iterator's fold, or `$foldDropping`'s of `next` where it has none, so
+  the kept item is dropped first.
+- **`$flatMap` is a `$Steps`, not a generator.** A generator's `finally`
+  closed its source as a step threw, and then it couldn't be closed again
+  later. Now what takes it closes it, after what it holds itself, by its
+  `return()`, source first, as before. That also gives #423's `flatten`
+  order.
+
+Held by `panic_in_own_next_drops.rs` against native Rust and the mutations
+`closing-fold-unwind-lost` (`runtime/closing.ts`) and
+`flat-map-closed-as-it-throws` (`runtime/flat_map.ts`). It's also what now
+reaches `last-throw-keeps-last` and `fold-dropping-step-unwinds-nothing`,
+which survived on main.

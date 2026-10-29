@@ -65,8 +65,11 @@ function $closing(it, drop, slices = true) {
       throw error;
     }
   };
-  closing.fold = (init, f) => {
-    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f) : it.reduce((a, x) => f(a, x), init)));
+  // Given `unwind`, what drops an accumulator a stage's panic strands, it
+  // passes it on, so a step of the crate's own iterator that panics drops
+  // a `last`'s kept item before what's left (#423, #426).
+  closing.fold = (init, f, unwind) => {
+    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)));
     if (it.ownFold) closed = true;
     close();
     return folded;
