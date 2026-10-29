@@ -1113,3 +1113,33 @@ impl PartialEq for Other {
     expect(refused.stderr.toString()).toContain(`\`==\` on \`dep::${type}\``);
   }
 });
+
+// rd160: a dictionary's partial members, another spec's, are its fields:
+// web-animations-2's `EffectTiming` `delay` and `duration`, scroll-animations'
+// `rangeStart`, as React DOM animates a view transition's pseudo-element,
+// `{duration: 0, fill: 'forwards', pseudoElement: ..}`. Another spec's that
+// TypeScript's DOM doesn't declare are left out, as its members are (ADR 0281).
+test("a dictionary's fields are its partial dictionaries' too", () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-partial-dictionaries");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, KeyframeAnimationOptions};
+
+pub fn shown(el: &Element, name: &str) {
+    el.animate(
+        None,
+        Some(&KeyframeAnimationOptions {
+            duration: Some(0.0.into()),
+            fill: Some("forwards"),
+            pseudo_element: Some(name),
+            delay: Some(10.0),
+            range_start: Some("cover 0%".into()),
+            ..Default::default()
+        }),
+    );
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain(
+    '  el.animate(null, {\n    duration: 0,\n    fill: "forwards",\n    pseudoElement: name,\n    delay: 10,\n    rangeStart: "cover 0%",\n  });\n',
+  );
+});

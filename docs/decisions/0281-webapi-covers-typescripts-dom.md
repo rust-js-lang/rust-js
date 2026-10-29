@@ -183,3 +183,25 @@ so nothing said when it fell behind.
   each was its members, `Float32Array | List` of `Float32List`, a name no
   TypeScript has.) A module's `use super::*` is left out where it names
   only the prelude's types, `String`: it was a warning in every app.
+
+## Amendment: a dictionary's partial members are its fields (rd160)
+
+A dictionary's `partial dictionary`, another spec's, was left out: the
+generator kept the dictionary's own members alone, so
+`KeyframeAnimationOptions` had no `duration`, `delay` or `endDelay`
+(web-animations-2's `EffectTiming`) nor `rangeStart` and `rangeEnd`
+(scroll-animations'), and React DOM's `animate(.., {duration: 0, fill:
+'forwards', pseudoElement})` couldn't be written. Each partial's members
+are the dictionary's now, of the specs above all of them, of another those
+TypeScript's DOM declares of its interface (`coverage.ts`'s
+`typescriptInterfaces`), as another spec's members of a class are: a union
+member is its enum, as a field's is (ADR 0215), `duration:
+Some(0.0.into())`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: what JS is given
+is the object the struct is.
+
+Held by `test/webapi-bindings.test.ts`'s "a dictionary's fields are its
+partial dictionaries' too", and `test/webapi-coverage.test.ts`'s
+generator output.
+

@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 
 import idl from "@webref/idl";
-import { typescript } from "./coverage";
+import { typescript, typescriptInterfaces } from "./coverage";
 import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
@@ -331,6 +331,20 @@ const everywhere: Def[] = Object.values(all).flat();
 const enums = new Set(everywhere.filter((d) => d.type === "enum").map((d) => d.name));
 const typedefs = new Map(everywhere.filter((d) => d.type === "typedef").map((d) => [d.name, d.idlType!]));
 const dictionaries = new Map(everywhere.filter((d) => d.type === "dictionary" && !d.partial).map((d) => [d.name, d]));
+// A dictionary's partial members, another spec's, `EffectTiming`'s `delay`
+// and `duration` of web-animations-2, KeyframeAnimationOptions' `rangeStart`
+// of scroll-animations: the specs above have them all, any other those
+// TypeScript's DOM declares of its interface (ADR 0281, rd160).
+const typescriptDictionaries = await typescriptInterfaces();
+const partialMembers = new Map<string, Member[]>();
+for (const [spec, defs] of Object.entries(all)) {
+  for (const d of defs) {
+    if (d.type !== "dictionary" || !d.partial) continue;
+    const ts = typescriptDictionaries.get(d.name);
+    const kept = (d.members ?? []).filter((m) => SPECS.includes(spec) || (!!m.name && !!ts?.has(m.name)));
+    partialMembers.set(d.name, [...(partialMembers.get(d.name) ?? []), ...kept]);
+  }
+}
 const callbacks = new Map(everywhere.filter((d) => d.type === "callback").map((d) => [d.name, d]));
 const callbackInterfaces = new Set(everywhere.filter((d) => d.type === "callback interface").map((d) => d.name));
 // The callbacks that are a class, which `new` calls, as TypeScript's
@@ -638,7 +652,7 @@ const paramDictionaries = new Map<string, { fields: Field[]; borrows: boolean }>
 /** A dictionary's members, its parents' first: `AddEventListenerOptions` has `capture`. */
 function dictionaryMembers(d: Def): Member[] {
   const parent = d.inheritance ? dictionaries.get(d.inheritance) : undefined;
-  return [...(parent ? dictionaryMembers(parent) : []), ...((d.members ?? []) as Member[])];
+  return [...(parent ? dictionaryMembers(parent) : []), ...((d.members ?? []) as Member[]), ...(partialMembers.get(d.name) ?? [])];
 }
 
 /**

@@ -70449,7 +70449,7 @@ impl MediaDevices {
     #[cfg_attr(rust_js, rust_js::link_name = "getUserMedia")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_user_media(&self, constraints: Option<MediaStreamConstraints>) -> Promise<&'static MediaStream> {
+    pub fn get_user_media(&self, constraints: Option<MediaStreamConstraints<'_>>) -> Promise<&'static MediaStream> {
         unreachable!()
     }
 
@@ -101251,6 +101251,10 @@ pub struct EffectTiming {
     pub iterations: Option<f64>,
     pub direction: Option<String>,
     pub easing: Option<String>,
+    pub delay: Option<f64>,
+    pub end_delay: Option<f64>,
+    pub playback_rate: Option<f64>,
+    pub duration: Option<NumberOrCSSNumericValueOrStr<'static>>,
 }
 
 /// The `ComputedEffectTiming` dictionary: a JS object with these fields, a `None` one not there.
@@ -101261,8 +101265,16 @@ pub struct ComputedEffectTiming {
     pub iterations: Option<f64>,
     pub direction: Option<String>,
     pub easing: Option<String>,
+    pub delay: Option<f64>,
+    pub end_delay: Option<f64>,
+    pub playback_rate: Option<f64>,
+    pub duration: Option<NumberOrCSSNumericValueOrStr<'static>>,
     pub progress: Option<Option<f64>>,
     pub current_iteration: Option<Option<f64>>,
+    pub start_time: Option<CSSNumberish<'static>>,
+    pub end_time: Option<CSSNumberish<'static>>,
+    pub active_duration: Option<CSSNumberish<'static>>,
+    pub local_time: Option<Option<CSSNumberish<'static>>>,
 }
 
 /// The `AudioTimestamp` dictionary: a JS object with these fields, a `None` one not there.
@@ -101293,6 +101305,27 @@ pub struct AudioEncoderConfig {
     pub number_of_channels: f64,
     pub bitrate: Option<f64>,
     pub bitrate_mode: Option<String>,
+    pub aac: Option<AacEncoderConfig>,
+    pub opus: Option<OpusEncoderConfig>,
+}
+
+/// The `AacEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AacEncoderConfig {
+    pub format: Option<String>,
+}
+
+/// The `OpusEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct OpusEncoderConfig {
+    pub format: Option<String>,
+    pub signal: Option<String>,
+    pub application: Option<String>,
+    pub frame_duration: Option<f64>,
+    pub complexity: Option<f64>,
+    pub packetlossperc: Option<f64>,
+    pub useinbandfec: Option<bool>,
+    pub usedtx: Option<bool>,
 }
 
 /// The `AudioEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
@@ -101343,6 +101376,95 @@ pub struct CookieListItem {
 pub struct CookieStoreGetOptions {
     pub name: Option<String>,
     pub url: Option<String>,
+}
+
+/// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct PublicKeyCredentialRequestOptions {
+    pub timeout: Option<f64>,
+    pub rp_id: Option<String>,
+    pub allow_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    pub user_verification: Option<String>,
+    pub hints: Option<Vec<String>>,
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+/// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialDescriptor {
+    pub r#type: String,
+    pub transports: Option<Vec<String>>,
+}
+
+/// The `AuthenticationExtensionsClientInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticationExtensionsClientInputs {
+    pub credential_protection_policy: Option<String>,
+    pub enforce_credential_protection_policy: Option<bool>,
+    pub min_pin_length: Option<bool>,
+    pub hmac_create_secret: Option<bool>,
+    pub appid: Option<String>,
+    pub cred_props: Option<bool>,
+    pub prf: Option<AuthenticationExtensionsPRFInputs>,
+    pub large_blob: Option<AuthenticationExtensionsLargeBlobInputs>,
+}
+
+/// The `AuthenticationExtensionsPRFInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticationExtensionsPRFInputs {
+    pub eval: Option<AuthenticationExtensionsPRFValues>,
+}
+
+/// The `AuthenticationExtensionsPRFValues` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticationExtensionsPRFValues {
+}
+
+/// The `AuthenticationExtensionsLargeBlobInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticationExtensionsLargeBlobInputs {
+    pub support: Option<String>,
+    pub read: Option<bool>,
+}
+
+/// The `PublicKeyCredentialCreationOptions` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialCreationOptions {
+    pub rp: PublicKeyCredentialRpEntity,
+    pub user: PublicKeyCredentialUserEntity,
+    pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
+    pub timeout: Option<f64>,
+    pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
+    pub hints: Option<Vec<String>>,
+    pub attestation: Option<String>,
+    pub attestation_formats: Option<Vec<String>>,
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+}
+
+/// The `PublicKeyCredentialRpEntity` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialRpEntity {
+    pub name: String,
+    pub id: Option<String>,
+}
+
+/// The `PublicKeyCredentialUserEntity` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialUserEntity {
+    pub name: String,
+    pub display_name: String,
+}
+
+/// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
+pub struct PublicKeyCredentialParameters {
+    pub r#type: String,
+    pub alg: f64,
+}
+
+/// The `AuthenticatorSelectionCriteria` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AuthenticatorSelectionCriteria {
+    pub authenticator_attachment: Option<String>,
+    pub resident_key: Option<String>,
+    pub require_resident_key: Option<bool>,
+    pub user_verification: Option<String>,
 }
 
 /// The `GPUCanvasConfiguration` dictionary: a JS object with these fields, a `None` one not there.
@@ -101427,6 +101549,7 @@ pub struct MediaTrackCapabilities {
     pub device_id: Option<String>,
     pub group_id: Option<String>,
     pub background_blur: Option<Vec<bool>>,
+    pub display_surface: Option<String>,
 }
 
 /// The `ULongRange` dictionary: a JS object with these fields, a `None` one not there.
@@ -101551,6 +101674,7 @@ pub struct MediaTrackSupportedConstraints {
     pub device_id: Option<bool>,
     pub group_id: Option<bool>,
     pub background_blur: Option<bool>,
+    pub display_surface: Option<bool>,
 }
 
 /// The `MediaTrackConstraints` dictionary: a JS object with these fields, a `None` one not there.
@@ -101622,6 +101746,10 @@ pub struct MediaTrackSettings {
     pub device_id: Option<String>,
     pub group_id: Option<String>,
     pub background_blur: Option<bool>,
+    pub white_balance_mode: Option<String>,
+    pub zoom: Option<f64>,
+    pub torch: Option<bool>,
+    pub display_surface: Option<String>,
 }
 
 /// The `NavigationResult` dictionary: a JS object with these fields, a `None` one not there.
@@ -101681,69 +101809,32 @@ pub struct PayerErrors {
 /// The `AuthenticationExtensionsClientOutputs` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct AuthenticationExtensionsClientOutputs {
+    pub hmac_create_secret: Option<bool>,
+    pub appid: Option<bool>,
+    pub cred_props: Option<CredentialPropertiesOutput>,
+    pub prf: Option<AuthenticationExtensionsPRFOutputs>,
+    pub large_blob: Option<AuthenticationExtensionsLargeBlobOutputs>,
 }
 
-/// The `PublicKeyCredentialCreationOptions` dictionary: a JS object with these fields, a `None` one not there.
-pub struct PublicKeyCredentialCreationOptions {
-    pub rp: PublicKeyCredentialRpEntity,
-    pub user: PublicKeyCredentialUserEntity,
-    pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
-    pub timeout: Option<f64>,
-    pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
-    pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
-    pub hints: Option<Vec<String>>,
-    pub attestation: Option<String>,
-    pub attestation_formats: Option<Vec<String>>,
-    pub extensions: Option<AuthenticationExtensionsClientInputs>,
-}
-
-/// The `PublicKeyCredentialRpEntity` dictionary: a JS object with these fields, a `None` one not there.
-pub struct PublicKeyCredentialRpEntity {
-    pub name: String,
-    pub id: Option<String>,
-}
-
-/// The `PublicKeyCredentialUserEntity` dictionary: a JS object with these fields, a `None` one not there.
-pub struct PublicKeyCredentialUserEntity {
-    pub name: String,
-    pub display_name: String,
-}
-
-/// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
-pub struct PublicKeyCredentialParameters {
-    pub r#type: String,
-    pub alg: f64,
-}
-
-/// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
-pub struct PublicKeyCredentialDescriptor {
-    pub r#type: String,
-    pub transports: Option<Vec<String>>,
-}
-
-/// The `AuthenticatorSelectionCriteria` dictionary: a JS object with these fields, a `None` one not there.
+/// The `CredentialPropertiesOutput` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
-pub struct AuthenticatorSelectionCriteria {
-    pub authenticator_attachment: Option<String>,
-    pub resident_key: Option<String>,
-    pub require_resident_key: Option<bool>,
-    pub user_verification: Option<String>,
+pub struct CredentialPropertiesOutput {
+    pub rk: Option<bool>,
 }
 
-/// The `AuthenticationExtensionsClientInputs` dictionary: a JS object with these fields, a `None` one not there.
+/// The `AuthenticationExtensionsPRFOutputs` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
-pub struct AuthenticationExtensionsClientInputs {
+pub struct AuthenticationExtensionsPRFOutputs {
+    pub enabled: Option<bool>,
+    pub results: Option<AuthenticationExtensionsPRFValues>,
 }
 
-/// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
+/// The `AuthenticationExtensionsLargeBlobOutputs` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
-pub struct PublicKeyCredentialRequestOptions {
-    pub timeout: Option<f64>,
-    pub rp_id: Option<String>,
-    pub allow_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
-    pub user_verification: Option<String>,
-    pub hints: Option<Vec<String>>,
-    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+pub struct AuthenticationExtensionsLargeBlobOutputs {
+    pub supported: Option<bool>,
+    pub blob: Option<&'static ArrayBuffer>,
+    pub written: Option<bool>,
 }
 
 /// The `PushSubscriptionJSON` dictionary: a JS object with these fields, a `None` one not there.
@@ -101837,6 +101928,8 @@ pub struct RTCRtpEncodingParameters {
     pub max_bitrate: Option<f64>,
     pub max_framerate: Option<f64>,
     pub scale_resolution_down_by: Option<f64>,
+    pub priority: Option<String>,
+    pub network_priority: Option<String>,
 }
 
 /// The `RTCRtpCodec` dictionary: a JS object with these fields, a `None` one not there.
@@ -101911,6 +102004,7 @@ pub struct RTCRtpSendParameters {
     pub codecs: Vec<RTCRtpCodecParameters>,
     pub transaction_id: String,
     pub encodings: Vec<RTCRtpEncodingParameters>,
+    pub degradation_preference: Option<String>,
 }
 
 /// The `ReadableStreamReadResult` dictionary: a JS object with these fields, a `None` one not there.
@@ -102074,6 +102168,13 @@ pub struct VideoEncoderConfig {
     pub bitrate_mode: Option<String>,
     pub latency_mode: Option<String>,
     pub content_hint: Option<String>,
+    pub avc: Option<AvcEncoderConfig>,
+}
+
+/// The `AvcEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct AvcEncoderConfig {
+    pub format: Option<String>,
 }
 
 /// The `VideoEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
@@ -102101,6 +102202,7 @@ pub struct WebGLContextAttributes {
     pub power_preference: Option<String>,
     pub fail_if_major_performance_caveat: Option<bool>,
     pub desynchronized: Option<bool>,
+    pub xr_compatible: Option<bool>,
 }
 
 /// The `WebTransportConnectionStats` dictionary: a JS object with these fields, a `None` one not there.
@@ -102195,6 +102297,7 @@ pub struct AnimationEventInit<'a> {
     pub animation_name: Option<&'a str>,
     pub elapsed_time: Option<f64>,
     pub pseudo_element: Option<&'a str>,
+    pub animation: Option<&'a CSSAnimation>,
 }
 
 /// The [`AnimationPlaybackEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -102303,6 +102406,35 @@ pub struct AudioWorkletNodeOptions<'a> {
     pub number_of_inputs: Option<f64>,
     pub number_of_outputs: Option<f64>,
     pub output_channel_count: Option<&'a [f64]>,
+}
+
+/// The [`AuthenticationExtensionsClientInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsClientInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AuthenticationExtensionsClientInputsJSON<'a> {
+    pub appid: Option<&'a str>,
+    pub cred_props: Option<bool>,
+    pub prf: Option<AuthenticationExtensionsPRFInputsJSON<'a>>,
+    pub large_blob: Option<AuthenticationExtensionsLargeBlobInputsJSON<'a>>,
+}
+
+/// The [`AuthenticationExtensionsLargeBlobInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsLargeBlobInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
+    pub support: Option<&'a str>,
+    pub read: Option<bool>,
+    pub write: Option<&'a str>,
+}
+
+/// The [`AuthenticationExtensionsPRFInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
+    pub eval: Option<AuthenticationExtensionsPRFValuesJSON<'a>>,
+}
+
+/// The [`AuthenticationExtensionsPRFValuesJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFValuesJSON) dictionary: a JS object of these fields, a `None` one not given.
+pub struct AuthenticationExtensionsPRFValuesJSON<'a> {
+    pub first: &'a str,
+    pub second: Option<&'a str>,
 }
 
 /// The [`BiquadFilterOptions`](https://developer.mozilla.org/docs/Web/API/BiquadFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -102443,6 +102575,7 @@ pub struct CompositionEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub data: Option<&'a str>,
 }
 
@@ -102513,6 +102646,7 @@ pub struct CookieStoreDeleteOptions<'a> {
 pub struct CredentialCreationOptions<'a> {
     pub mediation: Option<&'a str>,
     pub signal: Option<&'a AbortSignal>,
+    pub public_key: Option<PublicKeyCredentialCreationOptions>,
 }
 
 /// The [`CredentialRequestOptions`](https://developer.mozilla.org/docs/Web/API/CredentialRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -102521,6 +102655,7 @@ pub struct CredentialRequestOptions<'a> {
     pub mediation: Option<&'a str>,
     pub ui_mode: Option<&'a str>,
     pub signal: Option<&'a AbortSignal>,
+    pub public_key: Option<PublicKeyCredentialRequestOptions>,
 }
 
 /// The [`CSSMatrixComponentOptions`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponentOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -102721,6 +102856,7 @@ pub struct DragEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -102742,6 +102878,8 @@ pub struct DragEventInit<'a> {
     pub button: Option<f64>,
     pub buttons: Option<f64>,
     pub related_target: Option<&'a EventTarget>,
+    pub movement_x: Option<f64>,
+    pub movement_y: Option<f64>,
     pub data_transfer: Option<&'a DataTransfer>,
 }
 
@@ -102883,6 +103021,7 @@ pub struct FocusEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub related_target: Option<&'a EventTarget>,
 }
 
@@ -103564,9 +103703,12 @@ pub struct InputEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub data: Option<&'a str>,
     pub is_composing: Option<bool>,
     pub input_type: Option<&'a str>,
+    pub data_transfer: Option<&'a DataTransfer>,
+    pub target_ranges: Option<&'a [&'a StaticRange]>,
 }
 
 /// The [`IntersectionObserverEntryInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntryInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -103600,6 +103742,7 @@ pub struct KeyboardEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -103619,6 +103762,8 @@ pub struct KeyboardEventInit<'a> {
     pub location: Option<f64>,
     pub repeat: Option<bool>,
     pub is_composing: Option<bool>,
+    pub char_code: Option<f64>,
+    pub key_code: Option<f64>,
 }
 
 /// The [`KeyframeAnimationOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeAnimationOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -103629,10 +103774,17 @@ pub struct KeyframeAnimationOptions<'a> {
     pub iterations: Option<f64>,
     pub direction: Option<&'a str>,
     pub easing: Option<&'a str>,
+    pub delay: Option<f64>,
+    pub end_delay: Option<f64>,
+    pub playback_rate: Option<f64>,
+    pub duration: Option<NumberOrCSSNumericValueOrStr<'a>>,
     pub composite: Option<&'a str>,
     pub pseudo_element: Option<&'a str>,
+    pub iteration_composite: Option<&'a str>,
     pub id: Option<&'a str>,
     pub timeline: Option<&'a AnimationTimeline>,
+    pub range_start: Option<TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a>>,
+    pub range_end: Option<TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a>>,
 }
 
 /// The [`KeyframeEffectOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeEffectOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -103643,8 +103795,13 @@ pub struct KeyframeEffectOptions<'a> {
     pub iterations: Option<f64>,
     pub direction: Option<&'a str>,
     pub easing: Option<&'a str>,
+    pub delay: Option<f64>,
+    pub end_delay: Option<f64>,
+    pub playback_rate: Option<f64>,
+    pub duration: Option<NumberOrCSSNumericValueOrStr<'a>>,
     pub composite: Option<&'a str>,
     pub pseudo_element: Option<&'a str>,
+    pub iteration_composite: Option<&'a str>,
 }
 
 /// The [`LockOptions`](https://developer.mozilla.org/docs/Web/API/LockOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -103750,9 +103907,11 @@ pub struct MediaStreamAudioSourceOptions<'a> {
 
 /// The [`MediaStreamConstraints`](https://developer.mozilla.org/docs/Web/API/MediaStreamConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
-pub struct MediaStreamConstraints {
+pub struct MediaStreamConstraints<'a> {
     pub video: Option<BoolOrMediaTrackConstraints>,
     pub audio: Option<BoolOrMediaTrackConstraints>,
+    pub prefer_current_tab: Option<bool>,
+    pub peer_identity: Option<&'a str>,
 }
 
 /// The [`MediaStreamTrackEventInit`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -103816,6 +103975,7 @@ pub struct MouseEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -103837,6 +103997,8 @@ pub struct MouseEventInit<'a> {
     pub button: Option<f64>,
     pub buttons: Option<f64>,
     pub related_target: Option<&'a EventTarget>,
+    pub movement_x: Option<f64>,
+    pub movement_y: Option<f64>,
 }
 
 /// The [`MultiCacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/MultiCacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -103970,6 +104132,7 @@ pub struct OptionalEffectTiming<'a> {
     pub duration: Option<NumberOrStr<'a>>,
     pub direction: Option<&'a str>,
     pub easing: Option<&'a str>,
+    pub playback_rate: Option<f64>,
 }
 
 /// The [`OscillatorOptions`](https://developer.mozilla.org/docs/Web/API/OscillatorOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -104178,6 +104341,7 @@ pub struct PointerEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -104199,6 +104363,8 @@ pub struct PointerEventInit<'a> {
     pub button: Option<f64>,
     pub buttons: Option<f64>,
     pub related_target: Option<&'a EventTarget>,
+    pub movement_x: Option<f64>,
+    pub movement_y: Option<f64>,
     pub pointer_id: Option<f64>,
     pub width: Option<f64>,
     pub height: Option<f64>,
@@ -104273,6 +104439,7 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
     pub hints: Option<&'a [&'a str]>,
     pub attestation: Option<&'a str>,
     pub attestation_formats: Option<&'a [&'a str]>,
+    pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
@@ -104290,6 +104457,7 @@ pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub allow_credentials: Option<&'a [PublicKeyCredentialDescriptorJSON<'a>]>,
     pub user_verification: Option<&'a str>,
     pub hints: Option<&'a [&'a str]>,
+    pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
 /// The [`PublicKeyCredentialUserEntityJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialUserEntityJSON) dictionary: a JS object of these fields, a `None` one not given.
@@ -104439,6 +104607,7 @@ pub struct RTCErrorInit<'a> {
     pub sctp_cause_code: Option<f64>,
     pub received_alert: Option<f64>,
     pub sent_alert: Option<f64>,
+    pub http_request_status_code: Option<f64>,
 }
 
 /// The [`RTCLocalIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -104463,6 +104632,8 @@ pub struct RTCLocalSessionDescriptionInit<'a> {
 #[derive(Default)]
 pub struct RTCOfferOptions {
     pub ice_restart: Option<bool>,
+    pub offer_to_receive_audio: Option<bool>,
+    pub offer_to_receive_video: Option<bool>,
 }
 
 /// The [`RTCPeerConnectionIceErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -104793,6 +104964,13 @@ pub struct TextDecoderOptions {
     pub ignore_bom: Option<bool>,
 }
 
+/// The [`TimelineRangeOffset`](https://developer.mozilla.org/docs/Web/API/TimelineRangeOffset) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct TimelineRangeOffset<'a> {
+    pub range_name: Option<&'a str>,
+    pub offset: Option<&'a CSSNumericValue>,
+}
+
 /// The [`ToggleEventInit`](https://developer.mozilla.org/docs/Web/API/ToggleEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ToggleEventInit<'a> {
@@ -104819,6 +104997,7 @@ pub struct TouchEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -104875,6 +105054,7 @@ pub struct TransitionEventInit<'a> {
     pub property_name: Option<&'a str>,
     pub elapsed_time: Option<f64>,
     pub pseudo_element: Option<&'a str>,
+    pub animation: Option<&'a CSSTransition>,
 }
 
 /// The [`UIEventInit`](https://developer.mozilla.org/docs/Web/API/UIEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -104885,6 +105065,7 @@ pub struct UIEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
 }
 
 /// The [`UnknownCredentialOptions`](https://developer.mozilla.org/docs/Web/API/UnknownCredentialOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -104924,6 +105105,13 @@ pub struct VideoDecoderInit<'a> {
 #[derive(Default)]
 pub struct VideoEncoderEncodeOptions {
     pub key_frame: Option<bool>,
+    pub avc: Option<VideoEncoderEncodeOptionsForAvc>,
+}
+
+/// The [`VideoEncoderEncodeOptionsForAvc`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptionsForAvc) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Default)]
+pub struct VideoEncoderEncodeOptionsForAvc {
+    pub quantizer: Option<f64>,
 }
 
 /// The [`VideoEncoderInit`](https://developer.mozilla.org/docs/Web/API/VideoEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -105061,6 +105249,7 @@ pub struct WheelEventInit<'a> {
     pub composed: Option<bool>,
     pub view: Option<&'a Window>,
     pub detail: Option<f64>,
+    pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
     pub shift_key: Option<bool>,
     pub alt_key: Option<bool>,
@@ -105082,6 +105271,8 @@ pub struct WheelEventInit<'a> {
     pub button: Option<f64>,
     pub buttons: Option<f64>,
     pub related_target: Option<&'a EventTarget>,
+    pub movement_x: Option<f64>,
+    pub movement_y: Option<f64>,
     pub delta_x: Option<f64>,
     pub delta_y: Option<f64>,
     pub delta_z: Option<f64>,
@@ -116356,6 +116547,116 @@ impl<'a> NodeOrStr<'a> {
     }
 }
 
+/// `number | CSSNumericValue | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum NumberOrCSSNumericValueOrStr<'a> {
+    Number(f64),
+    CSSNumericValue(&'a CSSNumericValue),
+    Str(&'a str),
+}
+
+impl<'a> From<f64> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: f64) -> Self {
+        NumberOrCSSNumericValueOrStr::Number(value)
+    }
+}
+
+impl<'a> From<&'a CSSNumericValue> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSNumericValue) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathClamp> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathClamp) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathInvert> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathInvert) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMax> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathMax) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMin> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathMin) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathNegate> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathNegate) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathProduct> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathProduct) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathSum> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathSum) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathValue> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSMathValue) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSUnitValue> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a CSSUnitValue) -> Self {
+        NumberOrCSSNumericValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a str> for NumberOrCSSNumericValueOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        NumberOrCSSNumericValueOrStr::Str(value)
+    }
+}
+
+/// What a `number | CSSNumericValue | string` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoNumberOrCSSNumericValueOrStr>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `number | CSSNumericValue | string`", note = "an optional one, `Option<&dyn IntoNumberOrCSSNumericValueOrStr>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "number | CSSNumericValue | string")]
+pub trait IntoNumberOrCSSNumericValueOrStr: sealed::Sealed {}
+impl IntoNumberOrCSSNumericValueOrStr for f64 {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSNumericValue {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathClamp {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathInvert {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathMax {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathMin {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathNegate {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathProduct {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathSum {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSMathValue {}
+impl IntoNumberOrCSSNumericValueOrStr for &CSSUnitValue {}
+impl IntoNumberOrCSSNumericValueOrStr for &str {}
+impl IntoNumberOrCSSNumericValueOrStr for NumberOrCSSNumericValueOrStr<'_> {}
+/// A rest parameter of `number | CSSNumericValue | string`s takes each member (ADR 0640).
+impl<A: IntoNumberOrCSSNumericValueOrStr> Takes<A> for dyn IntoNumberOrCSSNumericValueOrStr {}
+
+impl<'a> NumberOrCSSNumericValueOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoNumberOrCSSNumericValueOrStr + 'a) -> NumberOrCSSNumericValueOrStr<'a> {
+        unreachable!()
+    }
+}
+
 /// `number | DOMPointInit`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum NumberOrDOMPointInit {
@@ -118703,6 +119004,124 @@ impl<'a> TexImageSource<'a> {
     }
 }
 
+/// `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    TimelineRangeOffset(TimelineRangeOffset<'a>),
+    CSSNumericValue(&'a CSSNumericValue),
+    CSSKeywordValue(&'a CSSKeywordValue),
+    Str(&'a str),
+}
+
+impl<'a> From<TimelineRangeOffset<'a>> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: TimelineRangeOffset<'a>) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::TimelineRangeOffset(value)
+    }
+}
+
+impl<'a> From<&'a CSSNumericValue> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSNumericValue) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathClamp> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathClamp) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathInvert> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathInvert) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMax> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathMax) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathMin> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathMin) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathNegate> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathNegate) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathProduct> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathProduct) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathSum> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathSum) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSMathValue> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSMathValue) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSUnitValue> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSUnitValue) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSNumericValue(value)
+    }
+}
+
+impl<'a> From<&'a CSSKeywordValue> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a CSSKeywordValue) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::CSSKeywordValue(value)
+    }
+}
+
+impl<'a> From<&'a str> for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    fn from(value: &'a str) -> Self {
+        TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr::Str(value)
+    }
+}
+
+/// What a `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string`", note = "an optional one, `Option<&dyn IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string")]
+pub trait IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr: sealed::Sealed {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for TimelineRangeOffset<'_> {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSNumericValue {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathClamp {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathInvert {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathMax {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathMin {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathNegate {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathProduct {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathSum {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathValue {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSUnitValue {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSKeywordValue {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &str {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'_> {}
+/// A rest parameter of `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string`s takes each member (ADR 0640).
+impl<A: IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr> Takes<A> for dyn IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr {}
+
+impl<'a> TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr + 'a) -> TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
+        unreachable!()
+    }
+}
+
 /// `TogglePopoverOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum TogglePopoverOptionsOrBool<'a> {
@@ -119295,6 +119714,7 @@ mod sealed {
     impl Sealed for MediaTrackConstraints {}
     impl Sealed for MessageEventSource<'_> {}
     impl Sealed for NodeOrStr<'_> {}
+    impl Sealed for NumberOrCSSNumericValueOrStr<'_> {}
     impl Sealed for NumberOrDOMPointInit {}
     impl Sealed for NumberOrDOMPointInitOrList<'_> {}
     impl Sealed for NumberOrKeyframeAnimationOptions<'_> {}
@@ -119333,6 +119753,8 @@ mod sealed {
     impl Sealed for StrOrSharedWorkerOptions<'_> {}
     impl Sealed for StrOrTaskSignal<'_> {}
     impl Sealed for TexImageSource<'_> {}
+    impl Sealed for TimelineRangeOffset<'_> {}
+    impl Sealed for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'_> {}
     impl Sealed for TogglePopoverOptions<'_> {}
     impl Sealed for TogglePopoverOptionsOrBool<'_> {}
     impl Sealed for URLPatternInit {}

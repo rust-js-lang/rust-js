@@ -300,7 +300,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0278 A variable nothing sets again is a `const`](0278-unset-lets-are-consts.md)
 - [0279 A callback that passes on what it's given is the function](0279-callbacks-passed-on.md) *(amended: a function of rest arguments keeps its arrow)*
 - [0280 A field that's `undefined` is no key](0280-undefined-fields-left-out.md) *(amended: a field that holds a cell keeps its key, `destroy: undefined`)*
-- [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md) *(extended by 0891: a window's constructors)*
+- [0281 The webapi crate covers TypeScript's DOM, and a test holds it](0281-webapi-covers-typescripts-dom.md) *(extended by 0891: a window's constructors; amended: a dictionary's partial members, rd160)*
 - [0282 One method API for event listeners](0282-event-listener-methods.md)
 - [0283 The js crate covers TypeScript's ES library, and a test holds it](0283-js-crate-covers-typescripts-es-library.md) *(amended by 0666: descriptors and handlers are dictionaries, `Object` measured; by 0677: a weak collection is typed as TypeScript's; by 0698: `catch`'s handler gives a value or a promise; by 0699: `js::Map` of weak keys; by 0741: an `ArrayBufferView` each view derefs to; extended by 0887: `Math` is std's items as values too)*
 - [0284 An enum tagged by a property of its own is a discriminated union](0284-discriminated-unions.md)

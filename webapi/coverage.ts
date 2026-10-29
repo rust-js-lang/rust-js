@@ -67,6 +67,22 @@ function listed(member: any): string | undefined {
   return named?.kind === "reference" ? named.name : undefined;
 }
 
+/** The members TypeScript's DOM declares of each interface, a class's or a
+ * dictionary's, `EffectTiming`'s `delay`: its own, not its parents'. */
+export async function typescriptInterfaces(): Promise<Map<string, Set<string>>> {
+  const session = await open([dom]);
+  const { declarations } = await session.read(dom);
+  await session.close();
+  const interfaces = new Map<string, Set<string>>();
+  for (const d of declarations as any[]) {
+    if (d.kind !== "interface") continue;
+    const members = interfaces.get(d.name) ?? new Set<string>();
+    for (const member of d.members) if (member.kind === "method" || member.kind === "property") members.add(member.name);
+    interfaces.set(d.name, members);
+  }
+  return interfaces;
+}
+
 export async function typescript(): Promise<Map<string, Members>> {
   const session = await open([dom]);
   const { declarations } = await session.read(dom);
