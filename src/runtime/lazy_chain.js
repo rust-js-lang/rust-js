@@ -24,17 +24,20 @@ function $lazyChain(a, b) {
       second.return?.();
     },
   );
-  chained.fold = (init, f) => {
-    let folded = init;
-    if (first !== undefined) {
-      folded = first.reduce(f, folded);
-      first.return?.();
-      first = undefined;
-    }
-    folded = second.reduce(f, folded);
-    second.return?.();
-    return folded;
-  };
+  // Closed though a fold throws, a panic, `b` with what's left of `a`, as
+  // std's `Chain::fold` drops itself as it unwinds (#423).
+  chained.fold = (init, f, unwind) =>
+    $consumed(chained, () => {
+      let folded = init;
+      if (first !== undefined) {
+        folded = $foldDropping(first, folded, f, unwind);
+        first.return?.();
+        first = undefined;
+      }
+      folded = $foldDropping(second, folded, f, unwind);
+      second.return?.();
+      return folded;
+    });
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
   // it has one.
   chained.last = () => {

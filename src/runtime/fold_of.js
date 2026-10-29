@@ -5,6 +5,38 @@ function $foldOf(it, init, f) {
   return it.fold(init, f);
 }
 
+// `it.fold(init, f)` of an accumulator with a destructor that a stage's
+// panic may strand, `unwind` its drop: its own `fold`, given it, which
+// passes it on to each stage; else stepped by `next`, where a step's throw
+// drops what's folded, then what's left is closed, as std's adapter's fold
+// closure drops the accumulator it holds, then its fold what it took
+// (#423). Of an array, or given no `unwind`, its `reduce`.
+function $foldDropping(it, init, f, unwind) {
+  if (unwind === undefined || Array.isArray(it)) return it.reduce(f, init);
+  if (typeof it.fold === "function") return it.fold(init, f, unwind);
+  let folded = init;
+  for (;;) {
+    let step;
+    try {
+      step = it.next();
+    } catch (error) {
+      try {
+        unwind(folded);
+      } finally {
+        it.return?.();
+      }
+      throw error;
+    }
+    if (step.done) return folded;
+    try {
+      folded = f(folded, step.value);
+    } catch (error) {
+      it.return?.();
+      throw error;
+    }
+  }
+}
+
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's
 // `extend_trusted` does it: each item through its `fold`, std's compiled one
 // where it's std's struct, a zip's `SpecFold` say, which steps no item past

@@ -40,8 +40,16 @@ function $lastDropping(it, drop, boxed) {
   // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end, and where a
   // stage throws, a panic, before the one kept is dropped here (#423).
   try {
+    // The one kept dropped where a stage throws, as std's fold closure
+    // drops the accumulator it holds, before what's left (#423).
+    const unwind = () => {
+      if (seen) {
+        seen = false;
+        drop?.(last);
+      }
+    };
     if (Object.hasOwn(it, "fold")) {
-      it.fold(undefined, (_, item) => keep(item));
+      it.fold(undefined, (_, item) => keep(item), drop && unwind);
       return seen ? some(last) : undefined;
     }
     for (const item of it) keep(item);

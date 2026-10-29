@@ -28,8 +28,14 @@ function $extremeBy(items, compare, max, boxed, drop) {
   }
   let held = first.value;
   let holding = drop !== undefined;
+  // The one kept dropped where a stage throws, as std's fold closure drops
+  // the accumulator it holds, before what's left (#423).
+  const unwind = (kept) => {
+    holding = false;
+    drop(kept);
+  };
   try {
-    held = it.reduce((kept, item) => {
+    const keep = (kept, item) => {
       let later;
       try {
         later = (compare(kept, item) > 0) !== max;
@@ -45,7 +51,8 @@ function $extremeBy(items, compare, max, boxed, drop) {
       }
       drop?.(item);
       return kept;
-    }, first.value);
+    };
+    held = $foldDropping(it, first.value, keep, drop && unwind);
   } catch (error) {
     if (holding) drop(held);
     throw error;

@@ -18,15 +18,23 @@ function $lazyTakeWhile(items, keep) {
     () => source.return?.(),
   );
   taking.from = [source];
-  taking.tryFold = (init, f, broke) => {
+  // Where `keep` throws, a panic, the accumulator dropped by `unwind`
+  // (#423).
+  taking.tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
-    const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
+    const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
+    const folded = $lent(source).tryFold(
+      init,
+      (a, x) => (kept(x, a) ? f(a, x) : ((ended = true), a)),
+      (a) => ended || broke(a),
+      unwind,
+    );
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
   // folded as std folds it, then dropped with it (#214).
-  taking.fold = (init, f) => {
-    const folded = taking.tryFold(init, f, () => false);
+  taking.fold = (init, f, unwind) => {
+    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind));
     taking.return();
     return folded;
   };
@@ -50,24 +58,25 @@ function $lazyMapWhile(items, f, present) {
     () => source.return?.(),
   );
   mapping.from = [source];
-  mapping.tryFold = (init, g, broke) => {
+  mapping.tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
       (a, x) => {
-        const value = f(x);
+        const value = unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind);
         if (present(value)) return g(a, value);
         stopped = true;
         return a;
       },
       (a) => stopped || broke(a),
+      unwind,
     );
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
   // (#214).
-  mapping.fold = (init, g) => {
-    const folded = mapping.tryFold(init, g, () => false);
+  mapping.fold = (init, g, unwind) => {
+    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind));
     mapping.return();
     return folded;
   };

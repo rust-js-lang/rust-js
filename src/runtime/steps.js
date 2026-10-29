@@ -39,12 +39,15 @@ class $Steps extends Iterator {
   // Std's `fold`: `f` of each item, given what it gave. Consuming it, it
   // closes it, as Rust's `fold` drops what it takes at its end: what a held
   // source has left, one a variable moved here held (#206).
-  fold(init, f) {
+  fold(init, f, unwind) {
     let folded = init;
     // Closed though `f` throws, a panic, as Rust's `fold` drops what it
-    // took, what's left of it, as it unwinds (#422).
+    // took, what's left of it, as it unwinds (#422); where a step throws, a
+    // stage's of an adapter it steps, what it holds dropped first by
+    // `unwind`, the consumer's (#423).
+    const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
     try {
-      for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+      for (let step = next(); !step.done; step = next()) folded = f(folded, step.value);
     } catch (error) {
       this.return();
       throw error;
@@ -111,9 +114,10 @@ class $Steps extends Iterator {
   }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
   // says what it gave stops it, as `?` would, which it gives back.
-  tryFold(init, f, broke) {
+  tryFold(init, f, broke, unwind) {
     let folded = init;
-    for (let step = this.next(); !step.done; step = this.next()) {
+    const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
+    for (let step = next(); !step.done; step = next()) {
       folded = f(folded, step.value);
       if (broke(folded)) return folded;
     }
@@ -162,9 +166,17 @@ class $Steps extends Iterator {
       () => this.return(),
     );
     mapped.from = [this];
-    // Std's `Map::fold`, its source's of each mapped.
-    mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
-    mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
+    // Std's `Map::fold`, its source's of each mapped; where `f` throws, the
+    // accumulator dropped by `unwind`, as its closure drops it (#423).
+    mapped.fold = (init, g, unwind) =>
+      this.fold(init, unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)), unwind);
+    mapped.tryFold = (init, g, broke, unwind) =>
+      this.tryFold(
+        init,
+        unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
+        broke,
+        unwind,
+      );
     // Std's `Map::size_hint`, its source's.
     mapped.hint = () => $sizeHint(this);
     return mapped;
@@ -182,7 +194,8 @@ class $Steps extends Iterator {
     );
     kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
-    kept.fold = (init, g) => this.fold(init, (a, x) => (keep(x, i++) ? g(a, x) : a));
+    kept.fold = (init, g, unwind) =>
+      this.fold(init, (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a), unwind);
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -216,20 +229,21 @@ class $Steps extends Iterator {
       },
     );
     flat.from = [this];
-    flat.fold = (init, g) => {
+    flat.fold = (init, g, unwind) => {
       let folded = init;
-      if (inner !== undefined) folded = inner.reduce(g, folded);
+      if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
       inner = undefined;
       if (ended) return folded;
       ended = true;
-      return this.fold(folded, (a, x) => Iterator.from(f(x, i++)).reduce(g, a));
+      const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
+      return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind);
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
-    flat.tryFold = (init, g, broke) => {
+    flat.tryFold = (init, g, broke, unwind) => {
       let folded = init;
       if (inner !== undefined) {
-        folded = $lent(inner).tryFold(folded, g, broke);
+        folded = $lent(inner).tryFold(folded, g, broke, unwind);
         if (broke(folded)) return folded;
         inner = undefined;
       }
@@ -237,12 +251,13 @@ class $Steps extends Iterator {
       folded = this.tryFold(
         folded,
         (a, x) => {
-          inner = Iterator.from(f(x, i++));
-          const made = $lent(inner).tryFold(a, g, broke);
+          inner = Iterator.from(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind));
+          const made = $lent(inner).tryFold(a, g, broke, unwind);
           if (!broke(made)) inner = undefined;
           return made;
         },
         broke,
+        unwind,
       );
       if (!broke(folded)) ended = true;
       return folded;
@@ -291,7 +306,7 @@ class $Steps extends Iterator {
     // asked again there, or stopped there by its limit, not by what it
     // gave, which its caller still steps, its source done with, as its
     // `next` closes it (ADR 0570, #225, #242).
-    taken.tryFold = (init, g, broke) => {
+    taken.tryFold = (init, g, broke, unwind) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
@@ -306,6 +321,7 @@ class $Steps extends Iterator {
           return g(a, x);
         },
         (a) => (stopped = broke(a)) || full,
+        unwind,
       );
       if (full && !stopped && !taken.held) this.return();
       return folded;
@@ -313,8 +329,8 @@ class $Steps extends Iterator {
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
     // (#213).
-    taken.fold = (init, g) => {
-      const folded = taken.tryFold(init, g, () => false);
+    taken.fold = (init, g, unwind) => {
+      const folded = $consumed(this, () => taken.tryFold(init, g, () => false, unwind));
       this.return();
       return folded;
     };
@@ -352,7 +368,7 @@ class $Steps extends Iterator {
     skipped.from = [this];
     // Its `fold`, then closed where its `nth(n - 1)` found none, as
     // `fold(self)` drops what it has left at its end (#242).
-    skipped.fold = (init, g) => {
+    skipped.fold = (init, g, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -361,15 +377,15 @@ class $Steps extends Iterator {
           return init;
         }
       }
-      return this.fold(init, g);
+      return this.fold(init, g, unwind);
     };
-    skipped.tryFold = (init, g, broke) => {
+    skipped.tryFold = (init, g, broke, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
         if (this.nth(k - 1).done) return init;
       }
-      return this.tryFold(init, g, broke);
+      return this.tryFold(init, g, broke, unwind);
     };
     skipped.nth = (k) => {
       const skip = n;
@@ -403,4 +419,29 @@ class $Steps extends Iterator {
 // held chain's `b` is its owner's to drop (#243); else its iterator.
 function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
+}
+
+// `f(x, i)`, what a stage runs of an item inside a fold that holds `a`:
+// where it throws, a panic, `a` dropped by `unwind`, the consumer's, as
+// std's adapter's fold closure drops the accumulator it was given as it
+// unwinds, before the fold closes what's left (#423).
+function $staged(f, x, i, a, unwind) {
+  try {
+    return f(x, i);
+  } catch (error) {
+    unwind(a);
+    throw error;
+  }
+}
+
+// What an adapter's fold runs, `run`, consuming `it`: closed though it
+// throws, a panic, as Rust's `fold(self)` drops what it took as it unwinds
+// (#422, #423).
+function $consumed(it, run) {
+  try {
+    return run();
+  } catch (error) {
+    it.return();
+    throw error;
+  }
 }

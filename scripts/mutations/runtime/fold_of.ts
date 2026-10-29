@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "  } catch (error) {\n    throw error;\n  }\n}",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "fold-dropping-step-unwinds-nothing",
+    breaks: "a fold of a JS iterator with no fold of its own, a `flat_map`'s, whose step panics leaves the accumulator undropped (#423)",
+    file: "src/runtime/fold_of.js",
+    find: "      try {\n        unwind(folded);\n      } finally {\n        it.return?.();\n      }\n",
+    replace: "      it.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
+  {
+    name: "fold-dropping-given-to-own-fold-lost",
+    breaks: "a fold of an iterator with its own fold gives it no `unwind` (#423)",
+    file: "src/runtime/fold_of.js",
+    find: "  if (typeof it.fold === \"function\") return it.fold(init, f, unwind);",
+    replace: "  if (typeof it.fold === \"function\") return it.fold(init, f);",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
 ];

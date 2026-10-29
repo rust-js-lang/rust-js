@@ -140,8 +140,13 @@ function $mapEnds(it, f) {
   if (it.len !== undefined) map.len = () => it.len();
   // Std's `Map::rfold` and `try_rfold`, its source's of each mapped, the
   // crate's own where it reaches it (#220).
-  if (it.rfold !== undefined) map.rfold = (init, g) => it.rfold(init, (a, x) => g(a, f(x)));
-  if (it.tryRfold !== undefined) map.tryRfold = (init, g, broke) => it.tryRfold(init, (a, x) => g(a, f(x)), broke);
+  // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
+  const folding = (g, unwind) =>
+    unwind === undefined ? (a, x) => g(a, f(x)) : (a, x) => g(a, $staged(f, x, undefined, a, unwind));
+  if (it.rfold !== undefined) map.rfold = (init, g, unwind) => it.rfold(init, folding(g, unwind), unwind);
+  if (it.tryRfold !== undefined) {
+    map.tryRfold = (init, g, broke, unwind) => it.tryRfold(init, folding(g, unwind), broke, unwind);
+  }
   map.from = [it];
   return map;
 }
@@ -259,25 +264,29 @@ function $stepBy(it, step, drop) {
     }
     return skip((n + 1) * step - 1, "next");
   };
-  stepped.tryFold = (init, f, broke) => {
+  // Where a step throws, a stage's panic, what it folded dropped by
+  // `unwind` (#423).
+  stepped.tryFold = (init, f, broke, unwind) => {
     let folded = init;
+    const stepping = (run) => (unwind === undefined ? run() : $staged(run, undefined, undefined, folded, unwind));
     if (stepped.first) {
       stepped.first = false;
-      const head = it.next();
+      const head = stepping(() => it.next());
       if (head.done) return folded;
       folded = f(folded, head.value);
       if (broke(folded)) return folded;
     }
-    for (let at = skip(step - 1, "next"); !at.done; at = skip(step - 1, "next")) {
+    const next = () => stepping(() => skip(step - 1, "next"));
+    for (let at = next(); !at.done; at = next()) {
       folded = f(folded, at.value);
       if (broke(folded)) return folded;
     }
     return folded;
   };
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
-  // drops what it has left at its end (#242).
-  stepped.fold = (init, f) => {
-    const folded = stepped.tryFold(init, f, () => false);
+  // drops what it has left at its end (#242), and though it throws.
+  stepped.fold = (init, f, unwind) => {
+    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind));
     stepped.return();
     return folded;
   };
@@ -310,9 +319,22 @@ function $stepByEnds(it, step) {
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
 function $filterEnds(it, p, drop) {
+  // Where `p` throws, a panic, the item it was asked of dropped, as std's
+  // `Filter` holds it as it unwinds (#423).
+  const ask =
+    drop === undefined
+      ? p
+      : (x) => {
+          try {
+            return p(x);
+          } catch (error) {
+            drop(x);
+            throw error;
+          }
+        };
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) {
-      if (p(at.value)) return at;
+      if (ask(at.value)) return at;
       drop?.(at.value);
     }
     return { done: true, value: undefined };
@@ -327,14 +349,19 @@ function $filterEnds(it, p, drop) {
   if (it.tryRfold !== undefined) {
     filter.back = () => {
       let hit;
-      const hits = it.tryRfold(false, (_, x) => (p(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
+      const hits = it.tryRfold(false, (_, x) => (ask(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
       return hits ? { done: false, value: hit } : { done: true, value: undefined };
     };
   }
   // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
-  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)));
+  // Where `p` throws, a panic, the accumulator dropped by `unwind` (#423).
+  const folding = (f, unwind) => {
+    const asked = unwind === undefined ? (x) => ask(x) : (x, a) => $staged(ask, x, undefined, a, unwind);
+    return (a, x) => (asked(x, a) ? f(a, x) : (drop?.(x), a));
+  };
+  if (it.rfold !== undefined) filter.rfold = (init, f, unwind) => it.rfold(init, folding(f, unwind), unwind);
   if (it.tryRfold !== undefined) {
-    filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)), broke);
+    filter.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, folding(f, unwind), broke, unwind);
   }
   filter.from = [it];
   return filter;

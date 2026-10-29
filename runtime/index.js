@@ -799,13 +799,21 @@ export function $memchrIter(haystack, needles, at = 0, end = haystack.length) {
 // `it.reduce(f)`: its first item, folded with each after it by `f`, or
 // `None` of none, where JS's `reduce` throws, closed, as std's `next()?`
 // drops it (#242); boxed where it may look like `None` (ADRs 0051, 0479).
-export function $reduce(it, f, boxed = false) {
-  const first = it.next();
+// Given `unwind`, what drops what it folded where a stage throws, a panic,
+// passed to its fold (#423); and closed where its first step throws.
+export function $reduce(it, f, boxed = false, unwind = undefined) {
+  let first;
+  try {
+    first = it.next();
+  } catch (error) {
+    it.return?.();
+    throw error;
+  }
   if (first.done) {
     it.return?.();
     return undefined;
   }
-  const value = it.reduce(f, first.value);
+  const value = $foldDropping(it, first.value, f, unwind);
   return boxed ? $some(value) : value;
 }
 
@@ -1404,12 +1412,15 @@ export class $Steps extends Iterator {
   // Std's `fold`: `f` of each item, given what it gave. Consuming it, it
   // closes it, as Rust's `fold` drops what it takes at its end: what a held
   // source has left, one a variable moved here held (#206).
-  fold(init, f) {
+  fold(init, f, unwind) {
     let folded = init;
     // Closed though `f` throws, a panic, as Rust's `fold` drops what it
-    // took, what's left of it, as it unwinds (#422).
+    // took, what's left of it, as it unwinds (#422); where a step throws, a
+    // stage's of an adapter it steps, what it holds dropped first by
+    // `unwind`, the consumer's (#423).
+    const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
     try {
-      for (let step = this.next(); !step.done; step = this.next()) folded = f(folded, step.value);
+      for (let step = next(); !step.done; step = next()) folded = f(folded, step.value);
     } catch (error) {
       this.return();
       throw error;
@@ -1476,9 +1487,10 @@ export class $Steps extends Iterator {
   }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
   // says what it gave stops it, as `?` would, which it gives back.
-  tryFold(init, f, broke) {
+  tryFold(init, f, broke, unwind) {
     let folded = init;
-    for (let step = this.next(); !step.done; step = this.next()) {
+    const next = () => (unwind === undefined ? this.next() : $staged(() => this.next(), undefined, undefined, folded, unwind));
+    for (let step = next(); !step.done; step = next()) {
       folded = f(folded, step.value);
       if (broke(folded)) return folded;
     }
@@ -1527,9 +1539,17 @@ export class $Steps extends Iterator {
       () => this.return(),
     );
     mapped.from = [this];
-    // Std's `Map::fold`, its source's of each mapped.
-    mapped.fold = (init, g) => this.fold(init, (a, x) => g(a, f(x, i++)));
-    mapped.tryFold = (init, g, broke) => this.tryFold(init, (a, x) => g(a, f(x, i++)), broke);
+    // Std's `Map::fold`, its source's of each mapped; where `f` throws, the
+    // accumulator dropped by `unwind`, as its closure drops it (#423).
+    mapped.fold = (init, g, unwind) =>
+      this.fold(init, unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)), unwind);
+    mapped.tryFold = (init, g, broke, unwind) =>
+      this.tryFold(
+        init,
+        unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
+        broke,
+        unwind,
+      );
     // Std's `Map::size_hint`, its source's.
     mapped.hint = () => $sizeHint(this);
     return mapped;
@@ -1547,7 +1567,8 @@ export class $Steps extends Iterator {
     );
     kept.from = [this];
     // Std's `Filter::fold`, its source's of each kept.
-    kept.fold = (init, g) => this.fold(init, (a, x) => (keep(x, i++) ? g(a, x) : a));
+    kept.fold = (init, g, unwind) =>
+      this.fold(init, (a, x) => ((unwind === undefined ? keep(x, i++) : $staged(keep, x, i++, a, unwind)) ? g(a, x) : a), unwind);
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -1581,20 +1602,21 @@ export class $Steps extends Iterator {
       },
     );
     flat.from = [this];
-    flat.fold = (init, g) => {
+    flat.fold = (init, g, unwind) => {
       let folded = init;
-      if (inner !== undefined) folded = inner.reduce(g, folded);
+      if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
       inner = undefined;
       if (ended) return folded;
       ended = true;
-      return this.fold(folded, (a, x) => Iterator.from(f(x, i++)).reduce(g, a));
+      const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
+      return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind);
     };
     // Its `try_fold`, std's: the rest of the one it's in, then its source's
     // of each one's, the one it stops in kept for its next step.
-    flat.tryFold = (init, g, broke) => {
+    flat.tryFold = (init, g, broke, unwind) => {
       let folded = init;
       if (inner !== undefined) {
-        folded = $lent(inner).tryFold(folded, g, broke);
+        folded = $lent(inner).tryFold(folded, g, broke, unwind);
         if (broke(folded)) return folded;
         inner = undefined;
       }
@@ -1602,12 +1624,13 @@ export class $Steps extends Iterator {
       folded = this.tryFold(
         folded,
         (a, x) => {
-          inner = Iterator.from(f(x, i++));
-          const made = $lent(inner).tryFold(a, g, broke);
+          inner = Iterator.from(unwind === undefined ? f(x, i++) : $staged(f, x, i++, a, unwind));
+          const made = $lent(inner).tryFold(a, g, broke, unwind);
           if (!broke(made)) inner = undefined;
           return made;
         },
         broke,
+        unwind,
       );
       if (!broke(folded)) ended = true;
       return folded;
@@ -1656,7 +1679,7 @@ export class $Steps extends Iterator {
     // asked again there, or stopped there by its limit, not by what it
     // gave, which its caller still steps, its source done with, as its
     // `next` closes it (ADR 0570, #225, #242).
-    taken.tryFold = (init, g, broke) => {
+    taken.tryFold = (init, g, broke, unwind) => {
       if (n === 0) {
         if (!taken.held) this.return();
         return init;
@@ -1671,6 +1694,7 @@ export class $Steps extends Iterator {
           return g(a, x);
         },
         (a) => (stopped = broke(a)) || full,
+        unwind,
       );
       if (full && !stopped && !taken.held) this.return();
       return folded;
@@ -1678,8 +1702,8 @@ export class $Steps extends Iterator {
     // Its `fold`, std's: its `try_fold`, never stopped, so a `Skip`'s
     // inside asks its source's `nth(n - 1)`, then its source dropped with it
     // (#213).
-    taken.fold = (init, g) => {
-      const folded = taken.tryFold(init, g, () => false);
+    taken.fold = (init, g, unwind) => {
+      const folded = $consumed(this, () => taken.tryFold(init, g, () => false, unwind));
       this.return();
       return folded;
     };
@@ -1717,7 +1741,7 @@ export class $Steps extends Iterator {
     skipped.from = [this];
     // Its `fold`, then closed where its `nth(n - 1)` found none, as
     // `fold(self)` drops what it has left at its end (#242).
-    skipped.fold = (init, g) => {
+    skipped.fold = (init, g, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
@@ -1726,15 +1750,15 @@ export class $Steps extends Iterator {
           return init;
         }
       }
-      return this.fold(init, g);
+      return this.fold(init, g, unwind);
     };
-    skipped.tryFold = (init, g, broke) => {
+    skipped.tryFold = (init, g, broke, unwind) => {
       if (n > 0) {
         const k = n;
         n = 0;
         if (this.nth(k - 1).done) return init;
       }
-      return this.tryFold(init, g, broke);
+      return this.tryFold(init, g, broke, unwind);
     };
     skipped.nth = (k) => {
       const skip = n;
@@ -1768,6 +1792,31 @@ export class $Steps extends Iterator {
 // held chain's `b` is its owner's to drop (#243); else its iterator.
 export function $stepsOf(items) {
   return items instanceof $Steps ? items : items[Symbol.iterator]();
+}
+
+// `f(x, i)`, what a stage runs of an item inside a fold that holds `a`:
+// where it throws, a panic, `a` dropped by `unwind`, the consumer's, as
+// std's adapter's fold closure drops the accumulator it was given as it
+// unwinds, before the fold closes what's left (#423).
+export function $staged(f, x, i, a, unwind) {
+  try {
+    return f(x, i);
+  } catch (error) {
+    unwind(a);
+    throw error;
+  }
+}
+
+// What an adapter's fold runs, `run`, consuming `it`: closed though it
+// throws, a panic, as Rust's `fold(self)` drops what it took as it unwinds
+// (#422, #423).
+export function $consumed(it, run) {
+  try {
+    return run();
+  } catch (error) {
+    it.return();
+    throw error;
+  }
 }
 
 export function $sortedEntries(map, cmp) {
@@ -1961,8 +2010,16 @@ export function $lastDropping(it, drop, boxed) {
   // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end, and where a
   // stage throws, a panic, before the one kept is dropped here (#423).
   try {
+    // The one kept dropped where a stage throws, as std's fold closure
+    // drops the accumulator it holds, before what's left (#423).
+    const unwind = () => {
+      if (seen) {
+        seen = false;
+        drop?.(last);
+      }
+    };
     if (Object.hasOwn(it, "fold")) {
-      it.fold(undefined, (_, item) => keep(item));
+      it.fold(undefined, (_, item) => keep(item), drop && unwind);
       return seen ? some(last) : undefined;
     }
     for (const item of it) keep(item);
@@ -1998,6 +2055,38 @@ export function $count(it, drop) {
 // (#214).
 export function $foldOf(it, init, f) {
   return it.fold(init, f);
+}
+
+// `it.fold(init, f)` of an accumulator with a destructor that a stage's
+// panic may strand, `unwind` its drop: its own `fold`, given it, which
+// passes it on to each stage; else stepped by `next`, where a step's throw
+// drops what's folded, then what's left is closed, as std's adapter's fold
+// closure drops the accumulator it holds, then its fold what it took
+// (#423). Of an array, or given no `unwind`, its `reduce`.
+export function $foldDropping(it, init, f, unwind) {
+  if (unwind === undefined || Array.isArray(it)) return it.reduce(f, init);
+  if (typeof it.fold === "function") return it.fold(init, f, unwind);
+  let folded = init;
+  for (;;) {
+    let step;
+    try {
+      step = it.next();
+    } catch (error) {
+      try {
+        unwind(folded);
+      } finally {
+        it.return?.();
+      }
+      throw error;
+    }
+    if (step.done) return folded;
+    try {
+      folded = f(folded, step.value);
+    } catch (error) {
+      it.return?.();
+      throw error;
+    }
+  }
 }
 
 // `collect()` into a `Vec` of a `TrustedLen` iterator, as std's
@@ -2765,8 +2854,13 @@ export function $mapEnds(it, f) {
   if (it.len !== undefined) map.len = () => it.len();
   // Std's `Map::rfold` and `try_rfold`, its source's of each mapped, the
   // crate's own where it reaches it (#220).
-  if (it.rfold !== undefined) map.rfold = (init, g) => it.rfold(init, (a, x) => g(a, f(x)));
-  if (it.tryRfold !== undefined) map.tryRfold = (init, g, broke) => it.tryRfold(init, (a, x) => g(a, f(x)), broke);
+  // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
+  const folding = (g, unwind) =>
+    unwind === undefined ? (a, x) => g(a, f(x)) : (a, x) => g(a, $staged(f, x, undefined, a, unwind));
+  if (it.rfold !== undefined) map.rfold = (init, g, unwind) => it.rfold(init, folding(g, unwind), unwind);
+  if (it.tryRfold !== undefined) {
+    map.tryRfold = (init, g, broke, unwind) => it.tryRfold(init, folding(g, unwind), broke, unwind);
+  }
   map.from = [it];
   return map;
 }
@@ -2884,25 +2978,29 @@ export function $stepBy(it, step, drop) {
     }
     return skip((n + 1) * step - 1, "next");
   };
-  stepped.tryFold = (init, f, broke) => {
+  // Where a step throws, a stage's panic, what it folded dropped by
+  // `unwind` (#423).
+  stepped.tryFold = (init, f, broke, unwind) => {
     let folded = init;
+    const stepping = (run) => (unwind === undefined ? run() : $staged(run, undefined, undefined, folded, unwind));
     if (stepped.first) {
       stepped.first = false;
-      const head = it.next();
+      const head = stepping(() => it.next());
       if (head.done) return folded;
       folded = f(folded, head.value);
       if (broke(folded)) return folded;
     }
-    for (let at = skip(step - 1, "next"); !at.done; at = skip(step - 1, "next")) {
+    const next = () => stepping(() => skip(step - 1, "next"));
+    for (let at = next(); !at.done; at = next()) {
       folded = f(folded, at.value);
       if (broke(folded)) return folded;
     }
     return folded;
   };
   // Its `fold`, its `try_fold` never stopped, then closed, as `fold(self)`
-  // drops what it has left at its end (#242).
-  stepped.fold = (init, f) => {
-    const folded = stepped.tryFold(init, f, () => false);
+  // drops what it has left at its end (#242), and though it throws.
+  stepped.fold = (init, f, unwind) => {
+    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind));
     stepped.return();
     return folded;
   };
@@ -2935,9 +3033,22 @@ export function $stepByEnds(it, step) {
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
 export function $filterEnds(it, p, drop) {
+  // Where `p` throws, a panic, the item it was asked of dropped, as std's
+  // `Filter` holds it as it unwinds (#423).
+  const ask =
+    drop === undefined
+      ? p
+      : (x) => {
+          try {
+            return p(x);
+          } catch (error) {
+            drop(x);
+            throw error;
+          }
+        };
   const kept = (step) => () => {
     for (let at = step(); !at.done; at = step()) {
-      if (p(at.value)) return at;
+      if (ask(at.value)) return at;
       drop?.(at.value);
     }
     return { done: true, value: undefined };
@@ -2952,14 +3063,19 @@ export function $filterEnds(it, p, drop) {
   if (it.tryRfold !== undefined) {
     filter.back = () => {
       let hit;
-      const hits = it.tryRfold(false, (_, x) => (p(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
+      const hits = it.tryRfold(false, (_, x) => (ask(x) ? ((hit = x), true) : (drop?.(x), false)), (hits) => hits);
       return hits ? { done: false, value: hit } : { done: true, value: undefined };
     };
   }
   // Std's `Filter::rfold` and `try_rfold`, its source's of each kept (#220).
-  if (it.rfold !== undefined) filter.rfold = (init, f) => it.rfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)));
+  // Where `p` throws, a panic, the accumulator dropped by `unwind` (#423).
+  const folding = (f, unwind) => {
+    const asked = unwind === undefined ? (x) => ask(x) : (x, a) => $staged(ask, x, undefined, a, unwind);
+    return (a, x) => (asked(x, a) ? f(a, x) : (drop?.(x), a));
+  };
+  if (it.rfold !== undefined) filter.rfold = (init, f, unwind) => it.rfold(init, folding(f, unwind), unwind);
   if (it.tryRfold !== undefined) {
-    filter.tryRfold = (init, f, broke) => it.tryRfold(init, (a, x) => (p(x) ? f(a, x) : (drop?.(x), a)), broke);
+    filter.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, folding(f, unwind), broke, unwind);
   }
   filter.from = [it];
   return filter;
@@ -3282,24 +3398,26 @@ export function $lazyScan(items, init, f, handle = true) {
     () => source.return?.(),
   );
   // Its `try_fold`, its source's, stopped at a `None`.
-  scanning.tryFold = (init, g, broke) => {
+  // Where `f` throws, a panic, the accumulator dropped by `unwind` (#423).
+  scanning.tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
       (a, x) => {
-        const next = f(state, x);
+        const next = unwind === undefined ? f(state, x) : $staged((x) => f(state, x), x, undefined, a, unwind);
         if (next !== undefined) return g(a, next);
         stopped = true;
         return a;
       },
       (a) => stopped || broke(a),
+      unwind,
     );
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped but by a `None`, then
   // dropped with what it steps (#214).
-  scanning.fold = (init, g) => {
-    const folded = scanning.tryFold(init, g, () => false);
+  scanning.fold = (init, g, unwind) => {
+    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind));
     scanning.return();
     return folded;
   };
@@ -11901,17 +12019,20 @@ export function $lazyChain(a, b) {
       second.return?.();
     },
   );
-  chained.fold = (init, f) => {
-    let folded = init;
-    if (first !== undefined) {
-      folded = first.reduce(f, folded);
-      first.return?.();
-      first = undefined;
-    }
-    folded = second.reduce(f, folded);
-    second.return?.();
-    return folded;
-  };
+  // Closed though a fold throws, a panic, `b` with what's left of `a`, as
+  // std's `Chain::fold` drops itself as it unwinds (#423).
+  chained.fold = (init, f, unwind) =>
+    $consumed(chained, () => {
+      let folded = init;
+      if (first !== undefined) {
+        folded = $foldDropping(first, folded, f, unwind);
+        first.return?.();
+        first = undefined;
+      }
+      folded = $foldDropping(second, folded, f, unwind);
+      second.return?.();
+      return folded;
+    });
   // Std's `Chain::last`: `a`'s `last`, then `b`'s, both asked, `b`'s where
   // it has one.
   chained.last = () => {
@@ -12150,7 +12271,7 @@ export function $rev(it) {
     }
     return m;
   };
-  if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);
+  if (it.rfold !== undefined) rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);
   if (it.nthBack !== undefined) rev.nth = (k) => it.nthBack(k);
   // One that drops what it passes over itself, a `Vec`'s `IntoIter`'s, from
   // either end (#234, #250).
@@ -12184,15 +12305,23 @@ export function $lazyTakeWhile(items, keep) {
     () => source.return?.(),
   );
   taking.from = [source];
-  taking.tryFold = (init, f, broke) => {
+  // Where `keep` throws, a panic, the accumulator dropped by `unwind`
+  // (#423).
+  taking.tryFold = (init, f, broke, unwind) => {
     if (ended) return init;
-    const folded = $lent(source).tryFold(init, (a, x) => (keep(x) ? f(a, x) : ((ended = true), a)), (a) => ended || broke(a));
+    const kept = unwind === undefined ? (x) => keep(x) : (x, a) => $staged(keep, x, undefined, a, unwind);
+    const folded = $lent(source).tryFold(
+      init,
+      (a, x) => (kept(x, a) ? f(a, x) : ((ended = true), a)),
+      (a) => ended || broke(a),
+      unwind,
+    );
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, never stopped, so its source is
   // folded as std folds it, then dropped with it (#214).
-  taking.fold = (init, f) => {
-    const folded = taking.tryFold(init, f, () => false);
+  taking.fold = (init, f, unwind) => {
+    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind));
     taking.return();
     return folded;
   };
@@ -12216,24 +12345,25 @@ export function $lazyMapWhile(items, f, present) {
     () => source.return?.(),
   );
   mapping.from = [source];
-  mapping.tryFold = (init, g, broke) => {
+  mapping.tryFold = (init, g, broke, unwind) => {
     let stopped = false;
     const folded = $lent(source).tryFold(
       init,
       (a, x) => {
-        const value = f(x);
+        const value = unwind === undefined ? f(x) : $staged(f, x, undefined, a, unwind);
         if (present(value)) return g(a, value);
         stopped = true;
         return a;
       },
       (a) => stopped || broke(a),
+      unwind,
     );
     return folded;
   };
   // Its `fold`, std's: its `try_fold`, then dropped with what it steps
   // (#214).
-  mapping.fold = (init, g) => {
-    const folded = mapping.tryFold(init, g, () => false);
+  mapping.fold = (init, g, unwind) => {
+    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind));
     mapping.return();
     return folded;
   };
@@ -12260,31 +12390,44 @@ export function $lazySkipWhile(items, skip) {
     },
     () => source.return?.(),
   );
-  skipped.tryFold = (init, f, broke) => {
+  // Where its first step's `skip` throws, a panic, what it's given dropped
+  // by `unwind`, as std's `fold(self, init)` drops its own (#423).
+  const first = (init, unwind) => {
+    if (unwind === undefined) return skipped.next();
+    try {
+      return skipped.next();
+    } catch (error) {
+      unwind(init);
+      throw error;
+    }
+  };
+  skipped.tryFold = (init, f, broke, unwind) => {
     let folded = init;
     if (skipping) {
-      const step = skipped.next();
+      const step = first(folded, unwind);
       if (step.done) return folded;
       folded = f(folded, step.value);
       if (broke(folded)) return folded;
     }
-    return $lent(source).tryFold(folded, f, broke);
+    return $lent(source).tryFold(folded, f, broke, unwind);
   };
   // Its `fold`, std's: its first step, then its source's own fold, the
   // crate's where it writes one (#214); then closed, as `fold(self)` drops
   // what it has left at its end, though its first step found none (#242).
-  skipped.fold = (init, f) => {
-    let folded = init;
-    if (skipping) {
-      const step = skipped.next();
-      if (step.done) {
-        skipped.return();
-        return folded;
+  // Closed though it throws, a panic (#423).
+  skipped.fold = (init, f, unwind) =>
+    $consumed(skipped, () => {
+      let folded = init;
+      if (skipping) {
+        const step = first(folded, unwind);
+        if (step.done) {
+          skipped.return();
+          return folded;
+        }
+        folded = f(folded, step.value);
       }
-      folded = f(folded, step.value);
-    }
-    return source.fold !== undefined ? source.fold(folded, f) : source.reduce(f, folded);
-  };
+      return source.fold !== undefined ? source.fold(folded, f, unwind) : source.reduce(f, folded);
+    });
   skipped.from = [source];
   return skipped;
 }
@@ -13093,8 +13236,14 @@ export function $extremeBy(items, compare, max, boxed, drop) {
   }
   let held = first.value;
   let holding = drop !== undefined;
+  // The one kept dropped where a stage throws, as std's fold closure drops
+  // the accumulator it holds, before what's left (#423).
+  const unwind = (kept) => {
+    holding = false;
+    drop(kept);
+  };
   try {
-    held = it.reduce((kept, item) => {
+    const keep = (kept, item) => {
       let later;
       try {
         later = (compare(kept, item) > 0) !== max;
@@ -13110,7 +13259,8 @@ export function $extremeBy(items, compare, max, boxed, drop) {
       }
       drop?.(item);
       return kept;
-    }, first.value);
+    };
+    held = $foldDropping(it, first.value, keep, drop && unwind);
   } catch (error) {
     if (holding) drop(held);
     throw error;

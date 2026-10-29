@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "chain-fold-steps",
     breaks: "`chain`'s fold steps each side by `next`, not by its own `fold`, `a`'s then `b`'s",
     file: "src/runtime/lazy_chain.js",
-    find: "  chained.fold = (init, f) => {\n",
-    replace: "  chained.unused = (init, f) => {\n",
+    find: "  chained.fold = (init, f, unwind) =>\n",
+    replace: "  chained.unused = (init, f, unwind) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
@@ -97,5 +97,21 @@ export const mutations: Mutation[] = [
     find: "  chained.advanceBy = (m, drop) => {",
     replace: "  chained.advanceByUnused = (m, drop) => {",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "chain-fold-unwind-lost",
+    breaks: "a `chain` drops the `unwind` its fold is given (#423)",
+    file: "src/runtime/lazy_chain.js",
+    find: "        folded = $foldDropping(first, folded, f, unwind);",
+    replace: "        folded = $foldDropping(first, folded, f);",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
+  {
+    name: "chain-fold-unclosed",
+    breaks: "a `chain` whose first side's stage panics inside a fold leaves its second side undropped (#423)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  chained.fold = (init, f, unwind) =>\n    $consumed(chained, () => {",
+    replace: "  chained.fold = (init, f, unwind) =>\n    ((run) => run())(() => {",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
 ];

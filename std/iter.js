@@ -12,6 +12,7 @@ import {
   $findBack,
   $findDropping,
   $foldBack,
+  $foldDropping,
   $foldOf,
   $fromFn,
   $getUnchecked,
@@ -8329,7 +8330,7 @@ export function stepByStepByImplI_specFold(
   const { iter, stepMinusOne } = stepBy;
   const f$1 = () =>
     $nthDropping($lent($given(iter, IIterator, true)), stepMinusOne, dropIItem, true);
-  const value = $fromFn(f$1, true).reduce((a, b) => f(a, b), acc);
+  const value = $foldDropping($fromFn(f$1, true), acc, (a, b) => f(a, b), dropAcc);
   dropF?.(f);
   result = value;
   stepBy.return();
@@ -8450,7 +8451,7 @@ export function stepByStepByBackImplI_specRfold(
     const { iter, stepMinusOne } = stepBy;
     const f$1 = () =>
       $nthBack($given(iter, IIterator, true, IDoubleEndedIterator), stepMinusOne, $some, dropIItem);
-    const value = $fromFn(f$1, true).reduce((a, b) => f(a, b), acc);
+    const value = $foldDropping($fromFn(f$1, true), acc, (a, b) => f(a, b), dropAcc);
     dropF?.(f);
     result = value;
   }

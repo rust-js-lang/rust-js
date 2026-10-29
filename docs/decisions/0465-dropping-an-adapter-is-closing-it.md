@@ -543,3 +543,62 @@ Rust and the mutations `discarded-throw-keeps-item` (`lower/iterators/ends.ts`),
 (`lower/mir/iter/collect.ts`), `fallible-rest-first-dropped`
 (`lower/iterators/stepping.ts`) and `never-unwinding-predicate-may-throw`
 (`lower/iterators/in_place.ts`).
+
+## Amendment: a fold's accumulator a stage strands (2026-10-30, #423)
+
+When a stage panics inside a fold, the accumulator is in the adapter's
+fold callback, given to it and not yet passed on. Std's closure frame drops
+it as it unwinds, before the fold drops what's left. In JS it was lost: a
+user `fold`'s never dropped, and a `last`'s or a `max_by_key`'s dropped
+after what's left. Results change, so Rust's behavior is kept (ADR 0262):
+- **Each runtime fold takes an `unwind` after its arguments**:
+  `fold(init, f, unwind)`, `tryFold(init, f, broke, unwind)`, and the same
+  for `rfold` and `tryRfold`. It is what drops an accumulator a stage's
+  panic strands. An adapter whose stage runs code runs that code through
+  `$staged(f, x, i, a, unwind)`, so `unwind(a)` runs first where it throws:
+  `map`, `filter` and `flat_map` (`$Steps`), `take_while` and `map_while`,
+  `skip_while`'s first step, `scan`, `step_by`'s steps, and `$mapEnds` and
+  `$filterEnds` from the back. The rest pass it on: `take`, `skip`,
+  `chain` and `rev`. The base `$Steps.fold` and `tryFold` guard their own
+  `next()`, which steps an adapter with no fold of its own.
+- **A fold built on `try_fold` is closed though it throws** (`$consumed`),
+  as `fold(self)` drops what it took: `take`'s, `take_while`'s,
+  `map_while`'s, `skip_while`'s, `scan`'s, `step_by`'s and `chain`'s. And
+  `$filterEnds` drops the item its predicate panicked on.
+- **A consumer gives its own drop:** a user `fold` or `reduce` whose
+  accumulator has a destructor, where a stage may panic (`chain_may_throw`,
+  or the receiver's type, whose JS is still a variable at lowering, any
+  closure or function but one of the crate's that never unwinds:
+  `steps_may_panic`), is `$foldDropping(it, init, f, drop)` and
+  `$reduce(it, f, boxed, drop)`. `$foldDropping` uses the iterator's own
+  fold, which passes the drop on; an iterator without one, a generator's
+  `$flatMap`, it steps by `next`, dropping what it folded where a step
+  throws. `$lastDropping` and `$extremeBy` give theirs. `$extremeBy` and
+  `$reduce` close what's left where their first step throws.
+
+Still open in #423 are three things:
+- a stage under a native JS iterator helper, a `flatten`'s generator
+  `$flatMap`'s `map`, which closes its source before the accumulator;
+- a stage a variable holds, which a collect's `chain_may_throw` can't see;
+- std's compiled structs, `Fuse`, `Peekable` and a compiled `Inspect`,
+  whose bodies drop nothing as a panic unwinds through them.
+
+No corpus case's JS changed. Held by `panic_mid_fold_drops.rs` and
+`panic_in_own_rfold_drops.rs` against native Rust and the mutations
+`staged-unwinds-nothing`, `map-fold-unguarded`, `filter-fold-unguarded`,
+`base-fold-step-unguarded`, `take-fold-unclosed`, `take-fold-unwind-lost`,
+`skip-fold-unwind-lost` and `flat-fold-unguarded` (`runtime/steps.ts`),
+`chain-fold-unwind-lost` and `chain-fold-unclosed` (`runtime/lazy_chain.ts`),
+`take-while-fold-unguarded`, `take-while-fold-unclosed`,
+`map-while-fold-unguarded` and `map-while-fold-unclosed`
+(`runtime/lazy_take_while.ts`), `skip-while-first-unguarded`,
+`skip-while-fold-unclosed` and `skip-while-fold-unwind-lost`
+(`runtime/lazy_skip_while.ts`), `scan-fold-unguarded` (`runtime/scan.ts`),
+`back-map-fold-unguarded`, `back-filter-throw-keeps-item`,
+`back-filter-fold-unguarded`, `step-by-fold-unclosed` and
+`step-by-try-fold-unguarded` (`runtime/back_steps.ts`), `rev-fold-unwind-lost`
+(`runtime/rev.ts`), `fold-dropping-step-unwinds-nothing` and
+`fold-dropping-given-to-own-fold-lost` (`runtime/fold_of.ts`),
+`last-fold-unwind-lost`, `extreme-fold-unwind-lost`, `reduce-unwind-lost`,
+`fold-acc-unwind-unseen` and `fold-stage-by-type-unseen`
+(`lower/mir/iter/collect.ts`).

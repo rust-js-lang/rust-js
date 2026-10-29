@@ -272,6 +272,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(UnwindingCollect { drop, rest_first }))
     }
 
+    /// Whether stepping an iterator of `iter_ty` may panic by what it runs,
+    /// as its type shows where its JS is still a variable: a closure or a
+    /// function of its type's, each but one of the crate's functions that
+    /// never unwinds (ADR 0902) or a constructor (#423).
+    fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+        iter_ty
+            .walk()
+            .filter_map(|part| part.as_type())
+            .any(|part| match *part.kind() {
+                ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
+                    !self.krate.never_unwinding.contains(&def_id)
+                        && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))
+                }
+                _ => false,
+            })
+    }
+
     /// `$foldToArray`'s arguments, `it` folded into a `Vec` of `item`s:
     /// of items with a destructor, from a type that runs a closure or a
     /// `fn` as it's stepped, which may panic, their drop, which what it
@@ -504,20 +521,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         it: Expr,
         (init, f): (Option<Expr>, Expr),
         (arg_tys, item): (&[Ty<'tcx>], Option<Ty<'tcx>>),
-    ) -> Expr {
+        span: Span,
+    ) -> R<Expr> {
         let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));
         let callback = self.binary_callback(f, own);
+        // Of an accumulator with a destructor, where a stage may throw, a
+        // panic, what drops the one it strands, as std's adapter's fold
+        // closure drops it (#423).
+        let acc = match init {
+            Some(_) => arg_tys.get(1).copied(),
+            None => item,
+        };
+        let receiver = arg_tys.first().copied();
+        let may_throw =
+            crate::lower::iterators::chain_may_throw(&it) || receiver.is_some_and(|ty| self.steps_may_panic(ty));
+        let unwind = match acc {
+            Some(acc) if may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing => {
+                self.drop_function(acc, span)?
+            }
+            _ => None,
+        };
         let Some(init) = init else {
             // `reduce(f)`: from its first item, `None` of none (ADR 0479).
             let mut args = vec![it, callback];
-            if item.is_some_and(|item| self.boxed_payload(item)) {
-                args.push(Expr::bool(true));
+            let boxed = item.is_some_and(|item| self.boxed_payload(item));
+            if boxed || unwind.is_some() {
+                args.push(Expr::bool(boxed));
             }
-            return Expr::call_helper("$reduce", args);
+            args.extend(unwind);
+            return Ok(Expr::call_helper("$reduce", args));
         };
         let mut args = vec![callback, init];
         crate::lower::calls::given_to_js(&mut args);
-        Expr::call(Expr::member(it, "reduce"), args)
+        // `$foldDropping(it, init, f, drop)`, which passes it on (#423).
+        if let Some(unwind) = unwind {
+            args.swap(0, 1);
+            return Ok(Expr::call_helper(
+                "$foldDropping",
+                [vec![it], args, vec![unwind]].concat(),
+            ));
+        }
+        Ok(Expr::call(Expr::member(it, "reduce"), args))
     }
 
     /// `it.try_fold(init, f)` into `output`, an `Option` or a `Result`: each

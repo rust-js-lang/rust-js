@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "last-fold-unwind-lost",
+    breaks: "a `last` gives its fold no `unwind`, so a stage's panic drops what's left before the one it kept (#423)",
+    file: "src/runtime/last_dropping.js",
+    find: "      it.fold(undefined, (_, item) => keep(item), drop && unwind);",
+    replace: "      it.fold(undefined, (_, item) => keep(item));",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
 ];

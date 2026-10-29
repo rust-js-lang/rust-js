@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  if (first.done) {\n    return undefined;",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
+  {
+    name: "reduce-unwind-lost",
+    breaks: "a `reduce` of items with a destructor gives its fold no `unwind` (#423)",
+    file: "src/runtime/reduce.js",
+    find: "  const value = $foldDropping(it, first.value, f, unwind);",
+    replace: "  const value = $foldDropping(it, first.value, f);",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
 ];

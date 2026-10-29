@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "  const it = Iterator.from(items);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "extreme-fold-unwind-lost",
+    breaks: "a `max_by_key` gives its fold no `unwind`, so a key's panic drops what's left before the one it kept (#423)",
+    file: "src/runtime/max_by.js",
+    find: "    held = $foldDropping(it, first.value, keep, drop && unwind);",
+    replace: "    held = $foldDropping(it, first.value, keep);",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+  },
 ];

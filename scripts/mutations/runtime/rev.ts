@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "rev-fold-by-next",
     breaks: "a `rev()`'s fold steps its source by `next_back`, not the crate's own `rfold` it reaches (#220)",
     file: "src/runtime/rev.js",
-    find: "  if (it.rfold !== undefined) rev.fold = (init, f) => it.rfold(init, f);\n",
+    find: "  if (it.rfold !== undefined) rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
@@ -73,5 +73,13 @@ export const mutations: Mutation[] = [
     find: "    if (it.advanceBackBy !== undefined) return it.advanceBackBy(m);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "rev-fold-unwind-lost",
+    breaks: "a `rev` drops the `unwind` its fold is given (#423)",
+    file: "src/runtime/rev.js",
+    find: "rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);",
+    replace: "rev.fold = (init, f, unwind) => it.rfold(init, f);",
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
   },
 ];
