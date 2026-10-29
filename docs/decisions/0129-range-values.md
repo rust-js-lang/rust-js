@@ -109,3 +109,19 @@ skipped, a `for` over it) and the mutations `range-from-unwrapped` and
 `range-from-bounds-dropped` (`lower/std_types/range.ts`). A
 `RangeInclusive` stepped past its type's last, `127i8..=127`, whose
 start Rust wraps and marks exhausted, is #414's other half.
+
+## Amendment: a range lent to `count()` or `last()` is used up (2026-10-29, #414)
+
+A range's own `count()` and `last()`, of its bounds (#163), left it as it
+was: right of a range by value, which nothing reads after, but of one lent,
+`r.by_ref().count()`, `(&mut r).last()`, which std's `fold` of a `&mut`
+steps to its end, the next `r.next()` gave a number where Rust's gives
+`None`. Results change, so Rust's behavior is kept (ADR 0262): **of a
+range lent, `range_own_step` asks `$rangeCountOut` and `$rangeLastOut`, and
+their inclusive forms, which give what `$rangeLen` and `$rangeLast` give
+and move its start to its end, past it of `a..=b`.** Held by
+`range_lent_used_up.rs` against native Rust and the mutations
+`range-lent-count-kept` (`lower/std_types/range.ts`),
+`range-count-out-kept` and `range-inclusive-last-out-kept`
+(`runtime/range_len.ts`). An inclusive one's `{:?}` after it, `3..=3
+(exhausted)` where JS has `4..=3`, is #414's other half.

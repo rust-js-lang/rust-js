@@ -114,18 +114,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iterator`'s bounds, `.of`, or of a held one, std's `Rev`'s,
     /// `.iter`, as the call's `span` says (ADR 0871). `None` of another
     /// method, or of a range of `char`s, which steps by code point, or a
-    /// count of BigInts, which isn't a `usize`.
+    /// count of BigInts, which isn't a `usize`. Of one `lent`, `by_ref()`'s,
+    /// a `count()` and a `last()` use it up, its start moved to its end, as
+    /// std's `fold` of a `&mut` leaves it: `$rangeCountOut` (#414).
     pub(in crate::lower) fn range_own_step(
         &self,
         method: Option<IterMethod>,
-        range: Ty<'tcx>,
+        (range, lent): (Ty<'tcx>, bool),
         values: &[Expr],
         span: rustc_span::Span,
     ) -> Option<Expr> {
         let reversed = self.recognition().reversed(range);
         let kind = self.range_kind(reversed.unwrap_or(range))?;
         let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;
+        let lent = lent && reversed.is_none();
         let name = match (method?, kind, reversed.is_some()) {
+            (IterMethod::Last, RangeKind::Exclusive, false) if lent => "$rangeLastOut",
+            (IterMethod::Last, RangeKind::Inclusive, false) if lent => "$rangeInclusiveLastOut",
+            (IterMethod::Count, RangeKind::Exclusive, _) if lent && !num.big() => "$rangeCountOut",
+            (IterMethod::Count, RangeKind::Inclusive, _) if lent && !num.big() => "$rangeInclusiveCountOut",
             (IterMethod::Nth, RangeKind::Exclusive, false) => "$rangeNth",
             (IterMethod::Nth, RangeKind::Exclusive, true) => "$rangeNthBack",
             (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeInclusiveNth",

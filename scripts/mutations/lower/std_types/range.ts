@@ -249,4 +249,12 @@ export const mutations: Mutation[] = [
     replace: "            (RangeKind::From, Some(num)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_from_wraps.rs$"],
   },
+  {
+    name: "range-lent-count-kept",
+    breaks: "a range lent to `count()` or `last()`, `r.by_ref().count()`, isn't used up, its next after a number where Rust's is `None` (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "        let lent = lent && reversed.is_none();\n",
+    replace: "        let lent = false && reversed.is_none();\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
+  },
 ];

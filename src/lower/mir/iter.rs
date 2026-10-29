@@ -464,7 +464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.value_into_iter(value, receiver_ty, output));
         }
         // A range's own `nth`, `last` and `count`, of its bounds (#163).
-        if let Some(stepped) = self.range_own_step(std_method, iter_ty, &values, span) {
+        if let Some(stepped) = self.range_own_step(std_method, (iter_ty, receiver_ty.is_mutable_ptr()), &values, span) {
             return Ok(Some(stepped));
         }
         // `B::from_iter(items)`, which `items.collect()` is (ADR 0160).

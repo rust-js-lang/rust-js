@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "      : false\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
   },
+  {
+    name: "range-count-out-kept",
+    breaks: "`count()` of a lent `a..b` leaves its start where it was, so it steps again (#414)",
+    file: "src/runtime/range_len.js",
+    find: "  if (range.start < range.end) range.start = range.end;\n  return left;\n",
+    replace: "  return left;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
+  },
+  {
+    name: "range-inclusive-last-out-kept",
+    breaks: "`last()` of a lent `a..=b` leaves its start where it was, so it steps again (#414)",
+    file: "src/runtime/range_len.js",
+    find: "  const last = $rangeInclusiveLast(range);\n  if (range.start <= range.end) range.start = typeof range.end === \"bigint\" ? range.end + 1n : range.end + 1;\n",
+    replace: "  const last = $rangeInclusiveLast(range);\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_lent_used_up.rs$"],
+  },
 ];

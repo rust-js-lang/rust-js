@@ -3052,6 +3052,36 @@ export function $rangeInclusiveFirst(range) {
   return range.start <= range.end ? range.start : undefined;
 }
 
+// `count()` of `a..b` lent, `r.by_ref().count()`: how many numbers it has
+// left, its start then its end, as std's `fold` of a `&mut` leaves it
+// (#414).
+export function $rangeCountOut(range) {
+  const left = $rangeLen(range);
+  if (range.start < range.end) range.start = range.end;
+  return left;
+}
+
+// `count()` of `a..=b` lent: how many, its start then past its end.
+export function $rangeInclusiveCountOut(range) {
+  const left = $rangeInclusiveLen(range);
+  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  return left;
+}
+
+// `last()` of `a..b` lent: its last number, or none, its start then its end.
+export function $rangeLastOut(range) {
+  const last = $rangeLast(range);
+  if (range.start < range.end) range.start = range.end;
+  return last;
+}
+
+// `last()` of `a..=b` lent: its end, or none, its start then past its end.
+export function $rangeInclusiveLastOut(range) {
+  const last = $rangeInclusiveLast(range);
+  if (range.start <= range.end) range.start = typeof range.end === "bigint" ? range.end + 1n : range.end + 1;
+  return last;
+}
+
 // How many numbers `a..=b` has left, as `$rangeLen` of `a..b`.
 export function $rangeInclusiveLen(range) {
   return range.start <= range.end ? range.end - range.start + 1 : 0;
