@@ -669,3 +669,42 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N.
 
 Held by `test/corpus/match_breaks_its_loop.rs` (`shadowed`) against native
 Rust and the mutation `switch-missing-an-arm` (`mir/tidy/switches.ts`).
+
+## Amendment: a name a guard compares with a read is a case of it (rd113, the user's decision)
+
+React DOM's SimpleEventPlugin writes `case ANIMATION_END: case
+ANIMATION_ITERATION: case ANIMATION_START:` of module constants that
+`getVendorPrefixedEventName` makes at load. The Rust is a thread-local and
+a guarded arm, `name if ANIMATION_END.with(|e| e == name) => ..`, an arm of
+no constant, so the whole `match` was an `if` chain, and with a guarded arm
+falling to the next (ADR 0905), a labeled block, `bb27: { .. }` (rd118).
+
+The user decided (2026-10-29): a guard comparing what's matched with a
+plain thread-local or `static` read, with no call, is a `case` of that
+value; guards with calls stay guards. `hints::written_switches` makes such
+an arm, a name alone whose guard is `X.with(|x| x == name)`,
+`X.with_borrow(..)`, `X.get() == name` or `name == STATIC`
+(`compares_a_read`), one case of `Constant::Read`, written where its guard
+is. tidy's chain takes its test's value where it's a read, a name or a
+thread-local cell's `X.value`, calling nothing, compared by `===` with
+what the tests before it compare: `switch (name) { .. case ANIMATION_END:
+.. }`. A guard that calls something, `e.trim() == name`, or compares a
+local or a parameter, `n if n == limit`, leaves the `match` the `if` chain
+it was.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
+can observe. A JS `switch` evaluates its cases' expressions in order,
+each only where none before it matched, and compares each with `===`, as
+Rust tries each arm in order and the guard's `==` was `===`. The cases
+before the read are constants, so the read is made exactly where Rust
+reads it, and a thread-local that changes between matches is read as it
+is then. A guarded constant arm whose failed guard goes past later arms
+(ADR 0636) can't be a case where such an arm follows, as that arm may
+match its value: it stays a chain.
+
+Held by `test/corpus/switch_case_of_a_read.rs` (a `RefCell` thread-local
+changed between matches, to a value an earlier arm names too, a `Cell`
+one's `get()`, a `static`, a guard of a call and one of a parameter)
+against native Rust, and the mutations `guard-read-not-a-case`,
+`guard-read-of-a-local`, `guard-read-of-any-cell` (`mir/hints.ts`), `case-read-of-a-call` and
+`case-read-of-a-cell-unread` (`mir/tidy/switches.ts`).

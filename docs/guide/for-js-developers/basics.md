@@ -1526,7 +1526,8 @@ falls through`
 or where it's a last `_` that does something, a case that falls through
 to the `default`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended). Any other `match`, of a range, a binding of a
-pattern's part or before the last arm, a guard a later arm goes on from, or
+pattern's part or before the last arm (but a name a guard compares with a
+read, below), a guard a later arm goes on from, or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
@@ -1805,6 +1806,50 @@ export function frame(tag, viewTransitions) {
     // Fallthrough
     default:
       return "";
+  }
+}
+```
+
+A name compared, in its guard, with a thread-local or a `static` read
+with no call, `name if ANIMATION_END.with(|e| e == name)`, `n if
+LIMIT.get() == n`, `name if name == FIXED`, is a case of that value,
+`case ANIMATION_END:`, as React's SimpleEventPlugin writes it: a JS
+`switch` reads each case's value in order until one matches, as Rust tries
+each guard, so a thread-local that changes is read where Rust reads it. A
+guard that calls something, `e.trim() == name`, or compares a local, `n
+if n == limit`, stays the `if` chain it is
+([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md),
+amended, rd113):
+
+```rust
+thread_local! {
+    static ANIMATION_END: String = String::from("animationend");
+}
+
+pub fn event_kind(name: &str) -> u32 {
+    match name {
+        "click" | "auxclick" => 1,
+        "focusin" => 2,
+        name if ANIMATION_END.with(|event_name| event_name == name) => 3,
+        _ => 0,
+    }
+}
+```
+
+```js
+const ANIMATION_END = "animationend";
+
+export function eventKind(name) {
+  switch (name) {
+    case "click":
+    case "auxclick":
+      return 1;
+    case "focusin":
+      return 2;
+    case ANIMATION_END:
+      return 3;
+    default:
+      return 0;
   }
 }
 ```

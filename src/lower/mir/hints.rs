@@ -141,6 +141,9 @@ pub(super) enum Constant {
     Variant(js::Expr),
     Value(js::Span),
     Kind(crate::lower::untagged::TypeofCase),
+    /// What a guard reads and compares with what's matched, `END.with(|e|
+    /// e == name)`'s: a name's, `case END:`, its test says (rd113).
+    Read,
 }
 
 /// A constant a pattern names (`Constant`), and the value it is, where
@@ -635,6 +638,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             });
                         }
                         let guard = guards[i];
+                        // A name compared, in its guard, with a value read
+                        // there, `name if END.with(|e| e == name)`: a case
+                        // of that value, `case END:`, written where its test
+                        // is (rd113, the user's decision).
+                        if let thir::PatKind::Binding {
+                            subpattern: None, var, ..
+                        } = arm.pattern.kind
+                            && let Some(guard) = guard
+                            && self.compares_a_read(guard, var)
+                        {
+                            return Some(SwitchArm {
+                                span: self.js_span(arm.span),
+                                pattern: self.js_span(self.frame.thir[guard].span),
+                                guard: None,
+                                constants: vec![Constant::Read],
+                                falls: false,
+                            });
+                        }
                         let constants = match &arm.pattern.kind {
                             thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }
                                 if i == last && guard.is_none() =>
@@ -720,6 +741,76 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && arm.guard.is_none()
                     && self.does_nothing(arm.body))
         })
+    }
+
+    /// Whether `guard` compares what's matched with a value it reads with no
+    /// call of the program's, a thread-local's, `END.with(|e| e == name)`,
+    /// `END.with_borrow(..)`, `LIMIT.get() == n`, or a `static`'s, `name ==
+    /// FIXED` (rd113, the user's decision): its arm is a case of that value,
+    /// which a JS `switch` reads where Rust tries the guard, each case's in
+    /// order until one matches. Which value, and that it's a read, its test
+    /// says (`Constant::Read`).
+    fn compares_a_read(&self, guard: thir::ExprId, name: thir::LocalVarId) -> bool {
+        let thir = self.frame.thir;
+        // What a call is, of the standard library's.
+        let called = |e: &thir::Expr<'tcx>| match e.kind {
+            thir::ExprKind::Call { fun, .. } => {
+                (fn_def(thir[fun].ty)).and_then(|(f, args)| self.recognition().classify(f, args))
+            }
+            _ => None,
+        };
+        // Through its borrows, `&*FIXED`'s `FIXED`.
+        let peeled = |mut e: thir::ExprId| {
+            while let thir::ExprKind::Scope { value: inner, .. }
+            | thir::ExprKind::Use { source: inner }
+            | thir::ExprKind::Deref { arg: inner }
+            | thir::ExprKind::Borrow { arg: inner, .. } = thir[e].kind
+            {
+                e = inner;
+            }
+            &thir[e]
+        };
+        // The name, and a value read: a `static`'s, or a thread-local's
+        // `get()`, not another cell's.
+        let named = |e: thir::ExprId| matches!(peeled(e).kind, thir::ExprKind::VarRef { id } if id == name);
+        let read = |e: thir::ExprId| {
+            let e = peeled(e);
+            match e.kind {
+                thir::ExprKind::StaticRef { .. } => true,
+                thir::ExprKind::Call { ref args, .. } => {
+                    matches!(called(e), Some(Std::CellGet))
+                        && (args.first()).is_some_and(|&key| {
+                            self.recognition()
+                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey)
+                        })
+                }
+                _ => false,
+            }
+        };
+        let compared = |lhs, rhs| (named(lhs) && read(rhs)) || (read(lhs) && named(rhs));
+        let e = &thir[body_queries::strip(thir, guard)];
+        match e.kind {
+            thir::ExprKind::Binary {
+                op: rustc_middle::mir::BinOp::Eq,
+                lhs,
+                rhs,
+            } => compared(lhs, rhs),
+            // `==` of what's compared by reference, `PartialEq::eq(&a, &b)`.
+            thir::ExprKind::Call {
+                fun,
+                ref args,
+                from_hir_call: false,
+                ..
+            } if let [lhs, rhs] = args[..]
+                && (fn_def(thir[fun].ty)).is_some_and(|(f, _)| {
+                    (self.tcx.trait_of_assoc(f)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::PartialEq))
+                }) =>
+            {
+                compared(lhs, rhs)
+            }
+            // A thread-local's value, given to a closure that compares it.
+            _ => matches!(called(e), Some(Std::LocalWith | Std::LocalBorrow { mutable: false })),
+        }
     }
 
     /// Whether an arm of `pattern` whose guard fails may fall to the case of

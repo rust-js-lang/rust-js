@@ -201,7 +201,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Function contexts, assembly and source capture, and which module may load before another | `bodies.rs`, `pipeline.rs`, `pipeline/`, `reexports.rs`, `sources.rs`, `library.rs`, `load_order.rs` |
 | Which of a library's functions and impls the crate compiles itself, from the MIR its metadata keeps, and where (ADR 0914, amended) | `instances.rs` |
 | MIR lowering, control flow, calls, places, temporaries and drops | `mir.rs`, `mir/`, `mir/iter/` |
-| Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/` |
+| Body readability passes | `mir/tidy.rs`, `mir/tidy/`, `mir/tidy/jumps/`, `mir/tidy/switches/` |
 | Value shape, copy policy, support and diagnostics | `representation.rs`, `representation/`, `copies.rs`, `support.rs`, `refusal.rs` |
 | Values, patterns, calls and places, and an arrow that only passes on its call (ADR 0605) | `aggregates.rs`, `literals.rs`, `patterns.rs`, `calls.rs`, `loops.rs`, `places.rs`, `passed_on.rs` |
 | Mutable references, pointers, plain-data layout and unions | `mut_refs.rs`, `pointers.rs`, `plain.rs`, `unions.rs` |
