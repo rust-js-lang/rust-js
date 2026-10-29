@@ -4,8 +4,18 @@
 // upstream's `case ANIMATION_END:` (rd113, the user's decision). A JS
 // `switch` evaluates each case in order until one matches, as Rust tries
 // each guard, so a thread-local that changes between matches is read
-// where Rust reads it. A guard with a call stays the guard it is.
+// where Rust reads it. A guard with a call stays the guard it is. A
+// thread-local of another module, `use`d, as React DOM's DOMEventNames'
+// are, too (rd123).
 use std::cell::{Cell, RefCell};
+
+mod names {
+    thread_local! {
+        pub static SELECTED: String = String::from("select");
+    }
+}
+
+use names::SELECTED;
 
 thread_local! {
     static ANIMATION_END: String = String::from("animationend");
@@ -44,6 +54,16 @@ fn limit(n: i32) -> &'static str {
         n if LIMIT.with(|limit| limit.get() == n) => "limit",
         1 => "one",
         _ => "other",
+    }
+}
+
+/// Another module's thread-local, `use`d.
+fn imported(name: &str) -> u32 {
+    match name {
+        "a" => 1,
+        name if SELECTED.with(|selected| selected == name) => 2,
+        "b" => 3,
+        _ => 0,
     }
 }
 
@@ -138,6 +158,9 @@ fn main() {
     let cell = Cell::new(2);
     for n in 0..4 {
         println!("{n} {} {} {} {}", against(n, 1), against(n, 3), against_cell(n, &cell), got(n));
+    }
+    for name in ["a", "select", "b", "c"] {
+        println!("{name} {}", imported(name));
     }
     println!("{:?}", log.borrow());
 }

@@ -685,8 +685,9 @@ value; guards with calls stay guards. `hints::written_switches` makes such
 an arm, a name alone whose guard is `X.with(|x| x == name)`,
 `X.with_borrow(..)`, `X.get() == name` or `name == STATIC`
 (`reads_compared`), one case of `Constant::Read`, written where its guard
-is. tidy's chain takes its test's value where it's a read, a name or a
-thread-local cell's `X.value`, calling nothing, compared by `===` with
+is. tidy's chain takes its test's value where it's a read, a name, another
+module's export, `use names::ANIMATION_END` as React DOM's DOMEventNames'
+are (rd123), or a thread-local cell's `X.value`, calling nothing, compared by `===` with
 what the tests before it compare: `switch (name) { .. case ANIMATION_END:
 .. }`. A guard that calls something, `e.trim() == name`, or compares a
 local or a parameter, `n if n == limit`, leaves the `match` the `if` chain
@@ -706,8 +707,9 @@ Held by `test/corpus/switch_case_of_a_read.rs` (a `RefCell` thread-local
 changed between matches, to a value an earlier arm names too, a `Cell`
 one's `get()`, a `static`, a guard of a call and one of a parameter)
 against native Rust, and the mutations `guard-read-not-a-case`,
-`guard-read-of-a-local`, `guard-read-of-any-cell` (`mir/hints.ts`), `case-read-of-a-call` and
-`case-read-of-a-cell-unread` (`mir/tidy/switches.ts`).
+`guard-read-of-a-local`, `guard-read-of-any-cell` (`mir/hints.ts`), `case-read-of-a-call`,
+`case-read-of-a-cell-unread` and `case-read-of-an-import-unread` (`mir/tidy/switches.ts`;
+the case's `imported`, a thread-local of another module, rd123).
 
 ## Amendment: an inner loop's way out MIR shares with the outer's (#389, `rows_until`)
 

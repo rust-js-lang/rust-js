@@ -1137,11 +1137,11 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
     })
 }
 
-/// Whether `e` reads a name, or a field of one, `X.value`, and calls
-/// nothing.
+/// Whether `e` reads a name, another module's export too, or a field of
+/// one, `X.value`, and calls nothing.
 fn read(e: &Expr) -> bool {
     match &e.kind {
-        ExprKind::Var(_) | ExprKind::ItemHole(_) => true,
+        ExprKind::Var(_) | ExprKind::ItemHole(_) | ExprKind::Symbol(_) => true,
         ExprKind::Member(of, _) => read(of),
         _ => false,
     }

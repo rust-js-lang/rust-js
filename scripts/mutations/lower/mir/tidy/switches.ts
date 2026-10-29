@@ -487,4 +487,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guards_fall_twice.rs$"],
     snapshots: true,
   },
+  {
+    name: "case-read-of-an-import-unread",
+    breaks: "a thread-local `use`d from another module, React DOM's DOMEventNames' `ANIMATION_END`, isn't a read, so `name if ANIMATION_END.with(|e| e == name)` leaves SimpleEventPlugin's `match` an `if` chain, `bb180:` (rd123, ADR 0629 amended)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        ExprKind::Var(_) | ExprKind::ItemHole(_) | ExprKind::Symbol(_) => true,\n",
+    replace: "        ExprKind::Var(_) | ExprKind::ItemHole(_) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_case_of_a_read.rs$"],
+    snapshots: true,
+  },
 ];
