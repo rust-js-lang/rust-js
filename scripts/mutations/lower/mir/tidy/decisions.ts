@@ -5,6 +5,24 @@ const chain = ["test/lowering-matches.test.ts", "-t", "arms of more than one pat
 
 export const mutations: Mutation[] = [
   {
+    name: "decisions-failed-arm-kept",
+    breaks: "a path past an arm before it in the chain keeps that arm's failing, `row.length >= 1 && !(a || b) && row.length === 2`, more tests than the tree's, so a slice pattern's `match` keeps MIR's `bb11:` block (#221)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                    if !prefix.is_empty()\n",
+    replace: "                    if false && !prefix.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "decisions-shared-tests-repeated",
+    breaks: "an arm's paths that test alike first repeat it, `n >= 1 && a === 1 || n >= 1 && b === 1`, more tests than the tree's, so `observed_rows` keeps MIR's `bb22:` block (#221)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();\n",
+    replace: "        let before: Vec<Expr> = Vec::new();\n        let shared = 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
+    snapshots: true,
+  },
+  {
     name: "decisions-tail-copied",
     breaks: "what the program wrote after a `match`, an `if`, is copied into the arm that goes on to it, and the `else` of the leaves its tests make, `case 1: ..; if (x > 5) { .. } break; default: if (x > 5) { .. }`, not once after the `switch` (kj-switch)",
     file: "src/lower/mir/tidy/decisions.rs",

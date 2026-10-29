@@ -236,20 +236,13 @@ function continuedRows(rows) {
   let hit = false;
   for (const row of rows) {
     seen.push(hit);
-    if (row.length >= 1) {
-      if (row[0] === 1 || row[row.length - 1] === 1) {
-        hit = true;
-        continue;
-      }
-      if (row.length === 2) {
-        if (row[0] === 2) {
-          if (row[1] === 2) {
-            continue;
-          }
-        }
-      }
+    if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+      hit = true;
+    } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+      continue;
+    } else {
+      hit = false;
     }
-    hit = false;
   }
   seen.push(hit);
   return seen;
@@ -261,18 +254,11 @@ function returnedRows(rows) {
   const seen = [];
   for (const row of rows) {
     function step() {
-      bb11: {
-        if (row.length >= 1) {
-          if (row[0] === 1 || row[row.length - 1] === 1) {
-            hit = true;
-            break bb11;
-          }
-          if (row.length === 2) {
-            if (row[0] === 2 && row[1] === 2) {
-              return;
-            }
-          }
-        }
+      if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+        hit = true;
+      } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+        return;
+      } else {
         hit = false;
       }
       console.log(`stepped [${row.join(", ")}]`);
@@ -289,18 +275,11 @@ function unwoundRows(rows) {
   const seen = [];
   for (const row of rows) {
     const caught = $catchUnwind(() => {
-      bb12: {
-        if (row.length >= 1) {
-          if (row[0] === 1 || row[row.length - 1] === 1) {
-            hit = true;
-            break bb12;
-          }
-          if (row.length === 2) {
-            if (row[0] === 2 && row[1] === 2) {
-              throw new Error("two twos");
-            }
-          }
-        }
+      if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+        hit = true;
+      } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+        throw new Error("two twos");
+      } else {
         hit = false;
       }
       console.log(`matched [${row.join(", ")}]`);
@@ -317,21 +296,11 @@ function observedRows(rows) {
   for (const row of rows) {
     let level = 0;
     const look = () => (level * 10) >>> 0;
-    bb22: {
-      if (row.length >= 1) {
-        if (row[0] === 1 || row[row.length - 1] === 1) {
-          level = 1;
-          break bb22;
-        }
-        if (row.length === 2) {
-          if (row[0] === 2) {
-            if (row[1] === 2) {
-              level = 2;
-              break bb22;
-            }
-          }
-        }
-      }
+    if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+      level = 1;
+    } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+      level = 2;
+    } else {
       seen.push(look());
       level = 3;
     }

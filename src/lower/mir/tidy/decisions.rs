@@ -88,9 +88,13 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt]) -> Opt
             arm.out == leaf.out && arm.leaves_loop == leaf.leaves_loop && same_body(&arm.body, &leaf.body)
         };
         match arms.iter_mut().find(alike) {
-            Some(arm) => arm.tests.push(tests),
+            Some(arm) => {
+                arm.tests.push(tests);
+                arm.made.push(leaf.tests);
+            }
             None => arms.push(Arm {
                 tests: vec![tests],
+                made: vec![leaf.tests],
                 body: leaf.body,
                 out: leaf.out,
                 leaves_loop: leaf.leaves_loop,
@@ -168,6 +172,44 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt]) -> Opt
     };
     let mut order: Vec<usize> = (0..arms.len()).filter(|&i| i != otherwise).collect();
     order.sort_by_key(|&i| (written(i), i));
+    // What an arm before it in the chain says of each path to it, where
+    // it failed: a path through that arm's own tests up to its last, then
+    // that last failing, `n >= 1 && !(a || b) && n === 2`, needs no more of
+    // that last than that the chain got past that arm, `n === 2` once its
+    // run of tests of `n` reads as one (#221). Of the tests as the tree
+    // makes them, each path's then `simplified`.
+    for k in 0..order.len() {
+        let (before, at) = order.split_at(k);
+        let i = at[0];
+        let mut made = arms[i].made.clone();
+        let mut changed = false;
+        for path in &mut made {
+            // Each earlier path's own failing, as long as one says more:
+            // `(a, b)`'s paths `[n >= 1, x !== 1, y === 1]` and `[n >= 1, x
+            // === 1]` leave `x !== 1` and `y !== 1` to say nothing more.
+            let mut more = true;
+            while more {
+                more = false;
+                for earlier in before.iter().flat_map(|&j| &arms[j].made) {
+                    let Some((last, prefix)) = earlier.split_last() else {
+                        continue;
+                    };
+                    let failed = last.clone().negated_test();
+                    if !prefix.is_empty()
+                        && path.len() > prefix.len() + 1
+                        && (path[..prefix.len()].iter().zip(prefix)).all(|(a, b)| a.written_alike(b))
+                        && path[prefix.len()].written_alike(&failed)
+                    {
+                        path.remove(prefix.len());
+                        (changed, more) = (true, true);
+                    }
+                }
+            }
+        }
+        if changed && let Some(tests) = made.iter().map(|path| simplified(path)).collect::<Option<Vec<_>>>() {
+            arms[i].tests = tests;
+        }
+    }
     let mut chain: Option<Vec<Stmt>> = match std::mem::take(&mut bodies[otherwise]) {
         body if body.is_empty() => None,
         body => Some(body),
@@ -183,8 +225,30 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt]) -> Opt
             let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
             (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
         });
+        // What each path tests first alike, once, before the rest of
+        // each: `n >= 1 && (a === 1 || b === 1)`, not `n >= 1 && a === 1
+        // || n >= 1 && b === 1`, as the tests are pure (#221).
+        let shared = match paths.split_first() {
+            Some((first, others)) if !others.is_empty() => (0..first.len())
+                .take_while(|&t| {
+                    (others.iter()).all(|path| path.len() > t + 1 && path[t].written_alike(&first[t]))
+                        && first.len() > t + 1
+                })
+                .count(),
+            _ => 0,
+        };
+        let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();
+        for path in &mut paths {
+            path.drain(..shared);
+        }
         alternatives(&mut paths);
-        let test = any(paths.into_iter().map(all).collect());
+        let test = match before.is_empty() {
+            true => any(paths.into_iter().map(all).collect()),
+            false => all(before
+                .into_iter()
+                .chain([any(paths.into_iter().map(all).collect())])
+                .collect()),
+        };
         tests_made += atoms(&test);
         let then = std::mem::take(&mut bodies[i]);
         // The chain's first `if` where the block is, of one MIR made where
@@ -260,6 +324,8 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>) {
 /// Leaves that do one thing, and the tests of each path to them.
 struct Arm<'s> {
     tests: Vec<Vec<Expr>>,
+    /// Each path's tests as the tree makes them, before `simplified`.
+    made: Vec<Vec<Expr>>,
     body: Vec<&'s Stmt>,
     out: bool,
     leaves_loop: bool,

@@ -14,7 +14,8 @@ a guarded arm's guard reads isn't written in the arm. Amended by
 nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
-arms; no arm holds a copy of what follows the `match` (kj-switch). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+arms; no arm holds a copy of what follows the `match` (kj-switch); a
+chain's arm needs no more than that the arms before it failed (#221). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -320,3 +321,38 @@ the same order, each statement run as often.
 
 Held by `test/corpus/match_arm_continues.rs` against native Rust;
 mutation `decisions-tail-copied` (`mir/tidy/decisions.ts`).
+
+## Amendment: a chain's arm needs no more than that the arms before it failed (#221, 2026-10-29)
+
+A slice's `match`, `[1, ..] | [.., 1] => hit = true, [2, 2] => return, _
+=> hit = false`, is a tree MIR tests in parts: `row.length >= 1`, then
+`row[0] === 1`, then the last, then `row.length === 2` and each `2`.
+`decisions` gave each arm every test on the way to it, `[2, 2]`'s
+`row.length >= 1 && row[0] !== 1 && row[row.length - 1] !== 1 &&
+row.length === 2 && ..`, and the `|`'s two paths each their own `row.length
+>= 1`, more tests than the tree has, so it kept MIR's block, `bb11: { ..
+break bb11; .. }`.
+
+**In the chain, an arm needs no test that says only that an arm before
+it failed**: a path through an earlier arm's path's tests but its last,
+then that last failing, needs no more of that last, as the chain got past
+that arm, each earlier path in turn while one says more; what's left is
+read as before, `row.length >= 1` and `row.length === 2` one test. **And
+what each of an arm's paths tests first alike is tested once**, `n >= 1 &&
+(a === 1 || b === 1)`; the tests are pure, so neither changes what's
+read or found. Not of an earlier arm of one test, `a === 1 | ..`, whose
+failing the tree's order of tests says already as written, `a === 2 && b
+=== 2`. React's slice matches read as written: `if (row.length >= 1 &&
+(row[0] === 1 || row[row.length - 1] === 1)) { .. } else if (row.length
+=== 2 && row[0] === 2 && row[1] === 2) { .. } else { .. }`.
+
+A guard that calls, `[n, ..] if below(*n)`, is no test the tree can move
+and still keeps the block (`guarded_rows`, `odd_ones`); so does a `match`
+of symbols tested inside an `if` of their `Some`, the rest of #221.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same pure tests,
+the same arm taken.
+
+Held by `test/corpus/default_value_exits.rs` against native Rust;
+mutations `decisions-failed-arm-kept` and `decisions-shared-tests-repeated`
+(`mir/tidy/decisions.ts`).
