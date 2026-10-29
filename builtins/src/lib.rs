@@ -499,7 +499,7 @@ pub mod function {
         message = "`{Self}` isn't a tuple of the parameters a JS function takes",
         note = "a function `with_this` makes is given its `this` and a tuple of its parameters: `|this, (a, b)|`, `|this, (a,)|` of one, `|this, ()|` of none"
     )]
-    pub trait Parameters<'l, R> {
+    pub trait Parameters<'l, R>: crate::sealed::Tuple {
         /// The JS function.
         type Function;
     }
@@ -511,6 +511,7 @@ pub mod function {
                 impl<'l, R, $($a),*> Parameters<'l, R> for ($($a,)*) {
                     type Function = Box<dyn Fn($($a),*) -> R + 'l>;
                 }
+                impl<$($a),*> crate::sealed::Tuple for ($($a,)*) {}
             )*
         };
     }
@@ -1503,6 +1504,11 @@ impl IntoStrOrNumberOrBool for bool {}
 
 mod sealed {
     pub trait Sealed {}
+    /// What [`function::Parameters`](crate::function::Parameters) is of: a
+    /// tuple alone, so what `with_this` makes is a `Box<dyn Fn>`, never a
+    /// fn pointer, which a call through what holds it gives no `this` of
+    /// its own (ADR 0972, amended).
+    pub trait Tuple {}
     impl Sealed for &str {}
     impl Sealed for &String {}
     impl Sealed for f64 {}

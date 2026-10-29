@@ -538,3 +538,16 @@ pub fn read() -> u32 {
 `);
   expect(generic.js).toContain("  const f = s.f;\n  return f();\n");
 });
+
+// What with_this makes is a `Box<dyn Fn>`, as `Parameters` is of a tuple
+// alone, sealed: never a fn pointer, whose call through what holds it is
+// never held first (ADR 0972, amended).
+test("with_this's Parameters is of a tuple alone", () => {
+  const said = refused("with-this-parameters-sealed", `pub struct Mine;
+
+impl<'l, R> js::function::Parameters<'l, R> for Mine {
+    type Function = fn() -> R;
+}
+`);
+  expect(said).toContain("js::sealed::Tuple");
+});

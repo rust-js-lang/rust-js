@@ -225,4 +225,10 @@ function is a `Box<dyn Fn>`, which no fn pointer can be, so
 `ReactStrictModeWarnings.discardPendingWarnings()` and
 `dispatcher.useHostTransitionStatus()` are called through what holds
 them, though the crate makes a with_this function of their signature.
-`test/js-functions.test.ts`'s `t.g()` holds it.
+`test/js-functions.test.ts`'s `t.g()` holds it. What makes it so is the
+types: `with_this` gives `<A as Parameters>::Function`, and **`Parameters`
+is sealed, of a tuple alone** (`js::sealed::Tuple`), each a `Box<dyn
+Fn(..)>`; an impl of another crate's, `type Function = fn() -> R`, is
+rustc's error (`test/js-functions.test.ts`, "with_this's Parameters is of
+a tuple alone"). A JS function given where a fn pointer goes is JS's own,
+called through what holds it, as the user decided.
