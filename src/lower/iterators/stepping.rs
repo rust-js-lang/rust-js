@@ -22,6 +22,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Expr,
         target: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
+        rest_first: bool,
         span: Span,
     ) -> R<Expr> {
         let ty::Adt(_, target_args) = target.kind() else {
@@ -63,6 +64,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, Some(_)) => Some(Expr::undefined()),
             (into, _) => into,
         };
+        // Of values with a destructor alone, what drops them first (#423).
+        let rest_first = rest_first && drop.is_some();
         Ok(if self.option_of(target).is_some() {
             let mut list = vec![items];
             let boxed = item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner)));
@@ -71,11 +74,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             list.extend(into);
             list.extend(drop);
+            if rest_first {
+                list.push(Expr::bool(true));
+            }
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
             let mut list = vec![items];
             list.extend(into);
             list.extend(drop);
+            if rest_first {
+                list.push(Expr::bool(true));
+            }
             Expr::call(Expr::helper("$collectResults"), list)
         })
     }

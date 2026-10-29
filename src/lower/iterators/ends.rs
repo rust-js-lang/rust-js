@@ -5,7 +5,9 @@ use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `test`, a stage's predicate, as one that drops the `item` it
-    /// discards: one `filter` doesn't keep, or one `skip_while` skips.
+    /// discards: one `filter` doesn't keep, or one `skip_while` skips. Of a
+    /// test that may throw, a panic, the item it was asked of too, which
+    /// std's stage holds as it unwinds, first (#423).
     pub(in crate::lower) fn dropping_discarded(
         &mut self,
         test: Expr,
@@ -14,6 +16,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let throws = crate::lower::iterators::may_throw(&test);
         let test = if matches!(test.kind, js::ExprKind::Var(_)) {
             test
         } else {
@@ -23,6 +26,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut drop = Vec::new();
         self.drop_value(Expr::var("item"), item, span, &mut drop)?;
         let asked = Expr::call(test, vec![Expr::var("item")]);
+        // `let kept = false; try { kept = keep(item); } finally { if (!kept)
+        // drop(item); } return kept;`, or `skipped`, first `true`.
+        if throws {
+            let answer = if discard_when { "skipped" } else { "kept" };
+            let dropped = match discard_when {
+                true => Expr::var(answer),
+                false => Expr::unary(js::UnaryOp::Not, Expr::var(answer)),
+            };
+            let body = vec![
+                StmtKind::Let(answer.into(), Some(Expr::bool(discard_when))).at(js_span),
+                StmtKind::Try(
+                    vec![StmtKind::Assign(Expr::var(answer), asked).at(js_span)],
+                    vec![StmtKind::If(dropped, drop, None).at(js_span)],
+                )
+                .at(js_span),
+                StmtKind::Return(Some(Expr::var(answer))).at(js_span),
+            ];
+            return Ok(Expr::arrow(vec!["item".into()], body));
+        }
         let answer = |b: bool| StmtKind::Return(Some(Expr::bool(b))).at(js_span);
         let body = if discard_when {
             drop.push(answer(true));

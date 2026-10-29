@@ -24,6 +24,7 @@ function innerLeft() {
       .flatMap((i) => $closing($iter([[i], [(i + 10) & 255]]), $dropEach(loudDrop_drop)))
       .take(1),
     loudDrop_drop,
+    true,
   );
   console.log(`inner left ${first.length}`);
   const counts = [1, 2];
@@ -34,6 +35,7 @@ function innerLeft() {
         .flatMap((n) => $lazyRange(0, n).map((value) => [value]))
         .take(1),
       loudDrop_drop,
+      true,
     );
     console.log(`made ${made.length}`);
     for (const item of made) {
@@ -70,6 +72,7 @@ function sourceLeft() {
       (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
     ).take(2),
     loudDrop_drop,
+    true,
   );
   console.log(`flat ${flat.length}`);
   for (const item of flat) {
@@ -132,6 +135,7 @@ function options() {
       .filter((item) => item != null)
       .take(1),
     loudDrop_drop,
+    true,
   );
   try {
     console.log(`[${big.join(", ")}] ${opts.length}`);

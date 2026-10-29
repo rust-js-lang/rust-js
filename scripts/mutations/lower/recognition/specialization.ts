@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "const OPTIMIZING_BY_TYPE: &[&str] = &[\"SpecAssumeCount\"];\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "in-place-collect-any-size",
+    breaks: "a `Vec` collect of items bigger than its source's, which std collects otherwise than in place, drops what it collected first where a panic stops it (#423)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "&& src.align.abi == dest.align.abi && src.size >= dest.size",
+    replace: "&& src.align.abi == dest.align.abi",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];

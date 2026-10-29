@@ -33,6 +33,7 @@ function main() {
       w = $collectDropping(
         strs.values().map((x) => $downgrade(x)),
         $weakDrop,
+        true,
       );
     } catch (error) {
       for (const item of strs) {

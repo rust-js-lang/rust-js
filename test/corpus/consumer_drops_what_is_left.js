@@ -17,6 +17,7 @@ import {
   $lazyTakeWhile,
   $lazyZip,
   $lent,
+  $mapFrom,
   $max,
   $next,
   $reduce,
@@ -188,7 +189,8 @@ function consume(n) {
   );
   console.log(`order ${["Less", "Equal", "Greater"][order + 1]}`);
   const keep$2 = (l) => l[0] > 99;
-  const set = new Set(
+  const set = $mapFrom(
+    new Set(),
     $closing($iter(three()), $dropEach(loudDrop_drop))
       .take(n)
       .filter((item) => {
@@ -203,6 +205,7 @@ function consume(n) {
         loudDrop_drop(l);
         return result;
       }),
+    true,
   );
   console.log(`set ${set.size}`);
   const value$3 = $iter(three());

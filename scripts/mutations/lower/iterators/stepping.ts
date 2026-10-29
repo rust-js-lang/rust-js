@@ -246,4 +246,12 @@ export const mutations: Mutation[] = [
     replace: "                fold: folded(\"fold\", false)?,\n                nth: own(\"nth\", false)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
+  {
+    name: "fallible-rest-first-dropped",
+    breaks: "a `collect` into a `Result` of a `Vec` std does otherwise than in place, a panic stopping it, drops what it collected before what's left (#423)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        let rest_first = rest_first && drop.is_some();",
+    replace: "        let rest_first = false;",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];

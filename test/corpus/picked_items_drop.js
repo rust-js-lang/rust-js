@@ -73,7 +73,7 @@ function main() {
           console.log(`found ${g?.[0] ?? "none"}`);
           const value$1 = [["j"], ["kk"], ["l"]];
           try {
-            const [kept, rest] = $partition(value$1, (n) => $byteLen(n[0]) === 1);
+            const [kept, rest] = $partition(value$1, (n) => $byteLen(n[0]) === 1, noisyDrop_drop);
             console.log(`${kept.length} ${rest.length}`);
             console.log("end");
             try {

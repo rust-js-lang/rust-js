@@ -185,22 +185,51 @@ function $isDisjoint(a, b) {
 // or each item added; of values with a destructor, the one replaced dropped
 // by `drop`, as `insert` gives it back (ADR 0321), and of keys or items with
 // one, the one given where an equal's there by `dropKey` (ADR 0467).
+//
+// Where stepping `items` throws, a panic in a closure, what's left of them
+// closed, as Rust drops the iterator `extend` took as it unwinds (#423).
 function $extendMap(m, items, set, drop, dropKey) {
-  for (const item of items) {
-    if (set) {
-      if (m.has(item)) dropKey?.(item);
-      else m.add(item);
-      continue;
+  const it = items[Symbol.iterator]();
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) {
+      const item = step.value;
+      if (set) {
+        if (m.has(item)) dropKey?.(item);
+        else m.add(item);
+        continue;
+      }
+      const replaced = m.has(item[0]);
+      const old = m.get(item[0]);
+      m.set(item[0], item[1]);
+      if (replaced) {
+        dropKey?.(item[0]);
+        drop?.(old);
+      }
     }
-    const replaced = m.has(item[0]);
-    const old = m.get(item[0]);
-    m.set(item[0], item[1]);
-    if (replaced) {
-      dropKey?.(item[0]);
-      drop?.(old);
-    }
+  } catch (error) {
+    it.return?.();
+    throw error;
   }
   return m;
+}
+
+// `collect()` into a new hash map or set, `m`, of `items` a panic may stop
+// as they're stepped: `$extendMap`'s, and where it throws, what's left
+// closed, then each entry `m` holds dropped, its key then its value, as
+// std's `from_iter` drops its `extend`'s iterator, then its map (#423).
+function $mapFrom(m, items, set, drop, dropKey) {
+  try {
+    return $extendMap(m, items, set, drop, dropKey);
+  } catch (error) {
+    for (const [key, value] of m.entries()) {
+      try {
+        dropKey?.(key);
+      } finally {
+        if (!set) drop?.(value);
+      }
+    }
+    throw error;
+  }
 }
 
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or

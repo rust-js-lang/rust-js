@@ -226,6 +226,84 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.collected_into(it, output, item, Some(collected), span)
     }
 
+    /// Whether std collects an iterator of `iter_ty`, into a `Vec` of
+    /// `item`s, in place, `recognition::collects_in_place`'s, where rustc
+    /// knows both whole (#423).
+    fn collects_in_place(&self, iter_ty: Option<Ty<'tcx>>, item: Option<Ty<'tcx>>) -> Option<bool> {
+        let (iter_ty, item) = iter_ty.zip(item)?;
+        let whole = |ty: Ty<'tcx>| !ty.has_param() && !ty.has_aliases();
+        (whole(iter_ty) && whole(item)).then(|| crate::lower::recognition::collects_in_place(self.tcx, iter_ty, item))
+    }
+
+    /// Whether what's left of a collect's iterator, of `iter_ty`, is
+    /// dropped before what it collected into `output` of `item`s, where a
+    /// panic stops it: of a hash map or set, or a `LinkedList`, which std
+    /// extends as each comes; of another, which it collects as a `Vec`,
+    /// where it doesn't collect it in place (#423).
+    fn rest_dropped_first(&self, output: Ty<'tcx>, iter_ty: Option<Ty<'tcx>>, item: Ty<'tcx>) -> bool {
+        (self.is_map(output) && !self.is_sorted(output))
+            || self.is_std_type(output, StdItem::LinkedList)
+            || self.collects_in_place(iter_ty, Some(item)) == Some(false)
+    }
+
+    /// Of a collect into `output` of `item`s a panic may stop, `it` a
+    /// chain whose stages may throw, from an owning source or of items with
+    /// a destructor: how what it holds is dropped as std's unwinds (#422,
+    /// #423). `None` where it holds nothing a panic would leave.
+    fn unwinding_collect(
+        &mut self,
+        it: &Expr,
+        output: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Option<UnwindingCollect>> {
+        if !crate::lower::iterators::chain_may_throw(it) {
+            return Ok(None);
+        }
+        let drop = match item {
+            Some(item) if self.drops(item) != crate::lower::drops::Drops::Nothing => self.drop_function(item, span)?,
+            _ => None,
+        };
+        if drop.is_none() && !crate::lower::iterators::closes_a_source(it) {
+            return Ok(None);
+        }
+        let rest_first = drop.is_some() && item.is_some_and(|item| self.rest_dropped_first(output, iter_ty, item));
+        Ok(Some(UnwindingCollect { drop, rest_first }))
+    }
+
+    /// `$foldToArray`'s arguments, `it` folded into a `Vec` of `item`s:
+    /// of items with a destructor, from a type that runs a closure or a
+    /// `fn` as it's stepped, which may panic, their drop, which what it
+    /// collected is dropped by as std's unwinds, and whether what's left
+    /// is first (#423).
+    fn folded_unwinding(
+        &mut self,
+        it: Expr,
+        output: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        iter_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Vec<Expr>> {
+        let runs_code = iter_ty
+            .walk()
+            .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()));
+        let drop = match item {
+            Some(item) if runs_code && self.drops(item) != crate::lower::drops::Drops::Nothing => {
+                self.drop_function(item, span)?
+            }
+            _ => None,
+        };
+        let mut args = vec![it];
+        if let (Some(drop), Some(item)) = (drop, item) {
+            args.push(drop);
+            if self.rest_dropped_first(output, Some(iter_ty), item) {
+                args.push(Expr::bool(true));
+            }
+        }
+        Ok(args)
+    }
+
     pub(in crate::lower) fn collected_into(
         &mut self,
         it: Expr,
@@ -255,7 +333,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::member(dictionary, from_iter), vec![it]));
         }
         Ok(if self.is_std_type(output, StdItem::BinaryHeap) {
-            self.heap_values(HeapOp::From, vec![items(it)], (output, false), span)?
+            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {
+                Some(unwinding) => unwinding.collected(it),
+                None => items(it),
+            };
+            self.heap_values(HeapOp::From, vec![items], (output, false), span)?
         // A `Vec`, or a `Box<[T]>`, an array too (ADR 0530).
         } else if self.is_vec_like(output) || output.boxed_ty().is_some_and(|inner| inner.is_slice()) {
             let Some(iter_ty) = iter_ty else { return Ok(it) };
@@ -290,39 +372,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // exhausted at its last (#414).
             let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
-            // Of one a panic may stop, from an owning source or of items
-            // with a destructor: what it collected dropped, then its
-            // source closed, as std's unwinds (#422).
-            let dropped = match item {
-                Some(item) if self.drops(item) != crate::lower::drops::Drops::Nothing => {
-                    self.drop_function(item, span)?
-                }
-                _ => None,
-            };
-            let unwinds = crate::lower::iterators::chain_may_throw(&it)
-                && (dropped.is_some() || crate::lower::iterators::closes_a_source(&it));
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
-                None if unwinds => Expr::call_helper("$collectDropping", std::iter::once(it).chain(dropped).collect()),
-                None if folded && self.steps_lent_inclusive(iter_ty) => Expr::call_helper("$foldToArray", vec![it]),
+                None if let Some(unwinding) = self.unwinding_collect(&it, output, item, Some(iter_ty), span)? => {
+                    unwinding.collected(it)
+                }
+                None if folded && self.steps_lent_inclusive(iter_ty) => {
+                    let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
+                    Expr::call_helper("$foldToArray", args)
+                }
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
-                    None if folded => Expr::call_helper("$foldToArray", vec![it]),
+                    None if folded => {
+                        let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
+                        Expr::call_helper("$foldToArray", args)
+                    }
                     None => Expr::collected(it),
                 },
             }
         } else if self.is_lang_adt(output, LangItem::String) {
-            method("join", items(it), vec![Expr::str("")])
+            let items = match self.unwinding_collect(&it, output, item, iter_ty, span)? {
+                Some(unwinding) => unwinding.collected(it),
+                None => items(it),
+            };
+            method("join", items, vec![Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
             // What's left of what it steps, dropped where it stops: closed.
             let it = match iter_ty {
                 Some(iter_ty) => self.closing(it, iter_ty, span)?,
                 None => it,
             };
-            self.collect_fallible(it, output, item, span)?
+            // What's left first, where std collects it otherwise than in
+            // place, of values with a destructor (#423).
+            let ty::Adt(_, args) = output.kind() else {
+                unreachable!("a `Result` or an `Option`")
+            };
+            let value = item.and_then(|item| match item.kind() {
+                ty::Adt(_, args) => args.types().next(),
+                _ => None,
+            });
+            let rest_first = value.is_some_and(|value| self.rest_dropped_first(args.type_at(0), iter_ty, value));
+            self.collect_fallible(it, output, item, rest_first, span)?
         } else if self.is_map(output) {
             let set = self.is_set(output);
-            self.made_of(set, self.tcx.mk_args(&[output.into()]), it, span)?
+            // A panic that may stop it: a B-tree's, which std collects as a
+            // `Vec` first, collected so; another's, which extends a new one,
+            // `$mapFrom`, what's left then what it holds dropped (#423).
+            let unwinding = self.unwinding_collect(&it, output, item, iter_ty, span)?;
+            let (it, unwinds) = match unwinding {
+                Some(unwinding) if self.is_sorted(output) => (unwinding.collected(it), false),
+                unwinding => (it, unwinding.is_some()),
+            };
+            self.made_of(set, self.tcx.mk_args(&[output.into()]), it, unwinds, span)?
         } else if let Some(made) = self.made_by_own_from_iter(it.clone(), output, item, span)? {
             made
         // Into `()`: each item stepped and dropped, as std's body,
@@ -466,5 +567,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::calls::given_to_js(&mut args);
         args.extend(tried);
         Ok(Expr::call_helper(helper, args))
+    }
+}
+
+/// How a collect a panic may stop drops what it holds: what it collected,
+/// by `drop`, and what's left of what it steps, closed, that first where
+/// `rest_first` (#422, #423).
+struct UnwindingCollect {
+    drop: Option<Expr>,
+    rest_first: bool,
+}
+
+impl UnwindingCollect {
+    /// `it` collected so, an array: `$collectDropping(it, drop)`.
+    fn collected(self, it: Expr) -> Expr {
+        let mut args = vec![it];
+        args.extend(self.drop);
+        if self.rest_first {
+            args.push(Expr::bool(true));
+        }
+        Expr::call_helper("$collectDropping", args)
     }
 }

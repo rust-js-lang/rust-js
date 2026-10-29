@@ -474,32 +474,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Expr::index(Expr::collected(first), Expr::int(0))
             }
+            // Of items with a destructor and an `f` that may throw, a panic,
+            // the item it was given dropped as it unwinds, as std's
+            // `Inspect` holds it (#423).
             IterComb::Inspect => {
                 let f = next();
+                let throws = crate::lower::iterators::may_throw(&f);
                 let f = if matches!(f.kind, js::ExprKind::Var(_)) {
                     f
                 } else {
                     self.spill("inspect", f, out)
                 };
                 let item = Expr::var("item");
+                let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
+                if throws && let Some(drop) = self.item_drop_of(receiver_ty, span)? {
+                    let error = self.fresh("error");
+                    let handler = vec![
+                        StmtKind::Expr(Expr::call(drop, vec![item.clone()])).at(js::Span::NONE),
+                        StmtKind::Throw(Expr::var(&error)).at(js::Span::NONE),
+                    ];
+                    inspected = StmtKind::TryCatch(vec![inspected], Some(error), handler).at(js::Span::NONE);
+                }
                 let each = Expr::arrow(
                     vec!["item".into()],
-                    vec![
-                        StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE),
-                        StmtKind::Return(Some(item)).at(js::Span::NONE),
-                    ],
+                    vec![inspected, StmtKind::Return(Some(item)).at(js::Span::NONE)],
                 );
                 method(items, "map", vec![each])
             }
             // Of `&T`s, each a copy where it needs one (`copied_into`), into
-            // `partition::<B, F>`'s `B`, after `Self`.
+            // `partition::<B, F>`'s `B`, after `Self`; of items with a
+            // destructor, given their drop, which a panic in `keep` drops
+            // them by (#423).
             IterComb::Partition => {
                 let into = generic_args.types().nth(1).and_then(|into| self.slice_item(into));
                 let items = match self.iterator_item(receiver_ty.peel_refs()) {
                     Some(from) => self.copied_into(items, from, into, span)?,
                     None => items,
                 };
-                Expr::call(Expr::helper("$partition"), vec![items, next()])
+                let mut args = vec![items, next()];
+                args.extend(self.item_drop_of(receiver_ty, span)?);
+                Expr::call(Expr::helper("$partition"), args)
             }
             // Each side a `Vec`, or a map or a set made empty and extended
             // by its items, as std's `unzip` does: `unzip::<A, B, FromA,

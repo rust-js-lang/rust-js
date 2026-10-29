@@ -49,6 +49,7 @@ function main() {
       return false;
     }),
     loudDrop_drop,
+    true,
   );
   console.log(`taken ${taken.length}`);
   for (const item of taken) {

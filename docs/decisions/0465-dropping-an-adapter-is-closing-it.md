@@ -486,3 +486,60 @@ mutations `closing-fold-unclosed-on-throw` (`runtime/closing.ts`),
 `$iter` share went from 82.1 to 82.4 in 10,000 lines, blessed: each a
 source that keeps its `$closing`, `$closing($iter(v), ..)`, where a closure
 may panic, and the new case's own.
+
+## Amendment: each frame a panic unwinds drops its own (2026-10-30, #423)
+
+#422 left the shapes past a `Vec`'s collect, a `fold` and an `extend`.
+Native, the panicking closure's own item comes first, as its frame
+unwinds, a borrowing predicate's too. Of a `Vec` std collects in place,
+what it collected comes next, then what's left; otherwise what's left
+comes before what it collected, the fold's own frame inside the `Vec`'s.
+Results change, so Rust's behavior is kept (ADR 0262):
+- **A predicate that may throw drops the item it was asked of:**
+  `filter`, `take_while` and `skip_while` (`dropping_discarded`'s
+  `let kept = false; try { kept = keep(item); } finally { if (!kept)
+  drop(item); }`), and `inspect`. Not one of the crate's functions that
+  never unwinds, whose reference is `Known::NeverThrows` (ADR 0902).
+- **A runtime consumer's callback that throws drops what it was given,**
+  then its fold closes what's left: `$extremeBy`'s comparison drops the
+  item, then the one kept; `$extremeByKey`'s key the item; `$partition`'s
+  predicate the item, then `no`, then `yes`. Each takes a `Vec`'s items it's
+  given closed. `$lastDropping` drops the one it kept.
+- **A collect a panic stops drops what it collected and what's left in
+  std's order:** `recognition::collects_in_place` is alloc's
+  `in_place_collectible`, read by trait selection (`InPlaceIterable` and
+  `SourceIter` of an `AsVecIntoIter`) and the items' layouts. Where it's
+  false, of types rustc knows whole, `$collectDropping(it, drop, true)`
+  drops what's left first (`$collectUnwound`). A hash map or set, or a
+  `LinkedList`, extends one as each comes, so what's left comes first too.
+  `$collectResults`, `$collectOptions` and `$foldToArray` (a compiled std
+  struct's, a `zip`'s) do the same. A B-tree, a `BinaryHeap` and a
+  `String` collect by `$collectDropping`. A new hash map or set is
+  `$mapFrom`, whose map is dropped after what's left, and `$extendMap`
+  closes what it's given where stepping it throws.
+
+Still open in #423 are three things:
+- a consumer's accumulator held inside an adapter's fold when a stage
+  throws: a `fold`'s, a `last`'s, a `max_by_key`'s;
+- the order JS gives those, what's left before the accumulator;
+- a stage a variable holds, which `chain_may_throw` can't see.
+
+7 corpus cases read so, 29 lines more: a `true` where what's left drops
+first, a drop given to `$partition`, a `$mapFrom`, and a predicate that may
+throw in its `try` form. Held by `panic_part_way_drops.rs` against native
+Rust and the mutations `discarded-throw-keeps-item` (`lower/iterators/ends.ts`),
+`inspect-throw-keeps-item` and `partition-given-no-drop`
+(`lower/combinators/adapters.ts`), `extreme-compare-throw-keeps-both`,
+`extreme-key-throw-keeps-item` and `extreme-array-rest-kept`
+(`runtime/max_by.ts`), `partition-throw-keeps-sides`, `last-throw-keeps-last`,
+`collect-rest-first-ignored` and `fold-to-array-unwinds-nothing`
+(`runtime/fold_of.ts`), `map-from-keeps-entries` and
+`extend-map-unclosed-on-throw` (`runtime/map_ops.ts`),
+`collect-results-unwinds-nothing`, `collect-options-unwinds-nothing`,
+`in-place-collect-any-size` (`lower/recognition/specialization.ts`),
+`rest-first-never`, `map-collect-unwinding-unseen`,
+`sorted-collect-unwinding-unseen`, `string-collect-unwinding-unseen`,
+`heap-collect-unwinding-unseen` and `folded-collect-given-no-drop`
+(`lower/mir/iter/collect.ts`), `fallible-rest-first-dropped`
+(`lower/iterators/stepping.ts`) and `never-unwinding-predicate-may-throw`
+(`lower/iterators/in_place.ts`).

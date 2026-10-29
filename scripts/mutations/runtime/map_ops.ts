@@ -202,8 +202,8 @@ export const mutations: Mutation[] = [
     name: "retain-key-undropped",
     breaks: "`retain` drops none of the keys it doesn't keep",
     file: "src/runtime/map_ops.js",
-    find: "        dropKey?.(key);\n      } finally {\n",
-    replace: "      } finally {\n",
+    find: "        dropKey?.(key);\n      } finally {\n        drop?.(value);\n",
+    replace: "      } finally {\n        drop?.(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
   {
@@ -301,5 +301,21 @@ export const mutations: Mutation[] = [
     find: "      try {\n        dropKey?.(key);\n      } finally {\n        drop?.(value);\n      }\n",
     replace: "      dropKey?.(key);\n      drop?.(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_parts_past_a_panic.rs$"],
+  },
+  {
+    name: "map-from-keeps-entries",
+    breaks: "a `collect` into a hash map a panic stops leaves what it held undropped (#423)",
+    file: "src/runtime/map_ops.js",
+    find: "      try {\n        dropKey?.(key);\n      } finally {\n        if (!set) drop?.(value);\n      }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
+  {
+    name: "extend-map-unclosed-on-throw",
+    breaks: "a `collect` into a hash map or set a panic stops leaves what's left of its iterator undropped (#423)",
+    file: "src/runtime/map_ops.js",
+    find: "  } catch (error) {\n    it.return?.();\n    throw error;\n  }\n  return m;",
+    replace: "  } catch (error) {\n    throw error;\n  }\n  return m;",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];

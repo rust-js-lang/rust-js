@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "inspect-skipped",
     breaks: "`inspect(f)` doesn't call `f`",
     file: "src/lower/combinators/adapters.rs",
-    find: "                        StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE),\n",
-    replace: "",
+    find: "                let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);\n",
+    replace: "                let mut inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
     tests: ["test/corpus.test.ts","-t","std_methods"],
   },
   {
@@ -357,5 +357,21 @@ export const mutations: Mutation[] = [
       "-t",
       "^into_iter_of_items.rs$"
     ]
+  },
+  {
+    name: "inspect-throw-keeps-item",
+    breaks: "an `inspect` whose closure panics leaves the item it was given undropped (#423)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                if throws && let Some(drop) = self.item_drop_of(receiver_ty, span)? {",
+    replace: "                if false && let Some(drop) = self.item_drop_of(receiver_ty, span)? {",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
+  {
+    name: "partition-given-no-drop",
+    breaks: "a `partition` whose predicate panics drops none of what it held, given no drop (#423)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                let mut args = vec![items, next()];\n                args.extend(self.item_drop_of(receiver_ty, span)?);\n",
+    replace: "                let args = vec![items, next()];\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];

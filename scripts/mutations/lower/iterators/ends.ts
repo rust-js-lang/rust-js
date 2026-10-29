@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_function.rs$"],
   },
+  {
+    name: "discarded-throw-keeps-item",
+    breaks: "a `filter`, `take_while` or `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
+    file: "src/lower/iterators/ends.rs",
+    find: "        if throws {\n            let answer =",
+    replace: "        if false {\n            let answer =",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];

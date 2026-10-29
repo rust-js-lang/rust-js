@@ -1958,12 +1958,24 @@ export function $lastDropping(it, drop, boxed) {
   };
   // Std's default `last`, its `fold`: an adapter's own, a `take_while`'s of
   // a `skip`'s `try_fold`, which asks `nth(n - 1)` where its `next` asks
-  // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end.
-  if (Object.hasOwn(it, "fold")) {
-    it.fold(undefined, (_, item) => keep(item));
-    return seen ? some(last) : undefined;
+  // `nth(n)` (#299). A `$Steps`' `fold` closes it at its end, and where a
+  // stage throws, a panic, before the one kept is dropped here (#423).
+  try {
+    if (Object.hasOwn(it, "fold")) {
+      it.fold(undefined, (_, item) => keep(item));
+      return seen ? some(last) : undefined;
+    }
+    for (const item of it) keep(item);
+  } catch (error) {
+    // The one kept, then what's left, as std's `fold` drops its own as it
+    // unwinds, then what it took.
+    try {
+      if (seen) drop?.(last);
+    } finally {
+      it.return?.();
+    }
+    throw error;
   }
-  for (const item of it) keep(item);
   it.return?.();
   return seen ? some(last) : undefined;
 }
@@ -1992,33 +2004,59 @@ export function $foldOf(it, init, f) {
 // `extend_trusted` does it: each item through its `fold`, std's compiled one
 // where it's std's struct, a zip's `SpecFold` say, which steps no item past
 // its shorter side's (#380).
-export function $foldToArray(it) {
-  return it.fold([], (items, x) => {
-    items.push(x);
-    return items;
-  });
+//
+// Where its fold throws, a panic in a closure, what it collected dropped
+// by `drop`, of items with a destructor, and what's left of it closed, as
+// std's unwinds, what's left first, `restFirst`, where it doesn't collect
+// in place (#423).
+export function $foldToArray(it, drop, restFirst = false) {
+  const items = [];
+  try {
+    return it.fold(items, (items, x) => {
+      items.push(x);
+      return items;
+    });
+  } catch (error) {
+    $collectUnwound(it, items, drop, restFirst);
+    throw error;
+  }
 }
 
 // `collect()` into a `Vec` of what may throw as it's stepped, a panic in a
 // closure, of items with a destructor, `drop`, or from an owning source: as
 // std's unwinds, what it collected dropped, then what's left of what it
-// steps, closed (#422).
-export function $collectDropping(it, drop) {
+// steps, closed (#422); or, `restFirst`, what's left first, where std
+// collects it otherwise than in place, the fold's own dropped before the
+// `Vec` (#423).
+export function $collectDropping(it, drop, restFirst = false) {
   const items = [];
   try {
     for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
   } catch (error) {
-    try {
-      if (drop !== undefined) $dropItems(items, drop);
-    } finally {
-      it.return?.();
-    }
+    $collectUnwound(it, items, drop, restFirst);
     throw error;
   }
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570).
   it.return?.();
   return items;
+}
+
+// What a collect a panic stopped holds, dropped as std's unwinds: `items`,
+// what it collected, by `drop`, and what's left of `it`, closed; what's
+// left first, `restFirst`, where std's fold drops it before its `Vec`
+// (#422, #423).
+export function $collectUnwound(it, items, drop, restFirst) {
+  const collected = () => {
+    if (drop !== undefined) $dropItems(items, drop);
+  };
+  const rest = () => it.return?.();
+  const [first, then] = restFirst ? [rest, collected] : [collected, rest];
+  try {
+    first();
+  } finally {
+    then();
+  }
 }
 
 // `it`, an iterator a variable or a temporary holds, which its owner drops
@@ -5729,22 +5767,51 @@ export function $isDisjoint(a, b) {
 // or each item added; of values with a destructor, the one replaced dropped
 // by `drop`, as `insert` gives it back (ADR 0321), and of keys or items with
 // one, the one given where an equal's there by `dropKey` (ADR 0467).
+//
+// Where stepping `items` throws, a panic in a closure, what's left of them
+// closed, as Rust drops the iterator `extend` took as it unwinds (#423).
 export function $extendMap(m, items, set, drop, dropKey) {
-  for (const item of items) {
-    if (set) {
-      if (m.has(item)) dropKey?.(item);
-      else m.add(item);
-      continue;
+  const it = items[Symbol.iterator]();
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) {
+      const item = step.value;
+      if (set) {
+        if (m.has(item)) dropKey?.(item);
+        else m.add(item);
+        continue;
+      }
+      const replaced = m.has(item[0]);
+      const old = m.get(item[0]);
+      m.set(item[0], item[1]);
+      if (replaced) {
+        dropKey?.(item[0]);
+        drop?.(old);
+      }
     }
-    const replaced = m.has(item[0]);
-    const old = m.get(item[0]);
-    m.set(item[0], item[1]);
-    if (replaced) {
-      dropKey?.(item[0]);
-      drop?.(old);
-    }
+  } catch (error) {
+    it.return?.();
+    throw error;
   }
   return m;
+}
+
+// `collect()` into a new hash map or set, `m`, of `items` a panic may stop
+// as they're stepped: `$extendMap`'s, and where it throws, what's left
+// closed, then each entry `m` holds dropped, its key then its value, as
+// std's `from_iter` drops its `extend`'s iterator, then its map (#423).
+export function $mapFrom(m, items, set, drop, dropKey) {
+  try {
+    return $extendMap(m, items, set, drop, dropKey);
+  } catch (error) {
+    for (const [key, value] of m.entries()) {
+      try {
+        dropKey?.(key);
+      } finally {
+        if (!set) drop?.(value);
+      }
+    }
+    throw error;
+  }
 }
 
 // A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
@@ -12380,12 +12447,36 @@ export function $unzip(pairs) {
 // `partition(keep)` of `items`, an array or an iterator: `[yes, no]`, each
 // item put in one as it comes, by std's `for_each`, which an iterator
 // rust-js makes routes through the crate's own `fold` (#162, #179).
-export function $partition(items, keep) {
+//
+// Of items with a destructor, `drop`: where `keep` throws, a panic, the item
+// it was asked of dropped, then what's left of `items`, an array's too, as
+// std's `fold` drops what it took, then `no`'s, then `yes`'s, as
+// `partition`'s own unwind in reverse (#423).
+export function $partition(items, keep, drop) {
   const yes = [];
   const no = [];
-  Iterator.from(items).forEach((item) => {
-    (keep(item) ? yes : no).push(item);
-  });
+  const it = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : Iterator.from(items);
+  try {
+    it.forEach((item) => {
+      let kept;
+      try {
+        kept = keep(item);
+      } catch (error) {
+        drop?.(item);
+        throw error;
+      }
+      (kept ? yes : no).push(item);
+    });
+  } catch (error) {
+    if (drop !== undefined) {
+      try {
+        $dropItems(no, drop);
+      } finally {
+        $dropItems(yes, drop);
+      }
+    }
+    throw error;
+  }
   return [yes, no];
 }
 
@@ -12851,17 +12942,28 @@ export function $replaceBy(s, test, to, n = Infinity) {
 // does, or `Ok` of all the values, made `into` the collection where it's
 // one but an array. Stopped, what it steps is closed, dropping what's left
 // of it, then each value collected is dropped by `drop`, as std's are.
-export function $collectResults(items, into, drop) {
+// Where stepping it throws, a panic in a closure, what it collected and
+// what's left are dropped as std's unwinds, what's left first,
+// `restFirst`, where it doesn't collect in place (#423).
+export function $collectResults(items, into, drop, restFirst = false) {
   const values = [];
   let failed;
-  for (const item of items) {
-    if (item.TAG === "Err") {
-      failed = item;
-      break;
+  const it = items[Symbol.iterator]();
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) {
+      const item = step.value;
+      if (item.TAG === "Err") {
+        failed = item;
+        break;
+      }
+      values.push(item._0);
     }
-    values.push(item._0);
+  } catch (error) {
+    $collectUnwound(it, values, drop, restFirst);
+    throw error;
   }
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
+  it.return?.();
   if (drop) $dropItems(values, drop);
   return failed;
 }
@@ -12870,18 +12972,29 @@ export function $collectResults(items, into, drop) {
 // as Rust's does, or all the values, each out of its box where it has one
 // (ADR 0051), made `into` the collection where it's one but an array.
 // Stopped, what it steps is closed, dropping what's left of it, then each
-// value collected is dropped by `drop`, as std's are.
-export function $collectOptions(items, boxed = false, into, drop) {
+// value collected is dropped by `drop`, as std's are. Where stepping it
+// throws, a panic in a closure, what it collected and what's left are
+// dropped as std's unwinds, what's left first, `restFirst`, where it
+// doesn't collect in place (#423).
+export function $collectOptions(items, boxed = false, into, drop, restFirst = false) {
   const values = [];
   let failed = false;
-  for (const item of items) {
-    if (item == null) {
-      failed = true;
-      break;
+  const it = items[Symbol.iterator]();
+  try {
+    for (let step = it.next(); !step.done; step = it.next()) {
+      const item = step.value;
+      if (item == null) {
+        failed = true;
+        break;
+      }
+      values.push(boxed ? $someValue(item) : item);
     }
-    values.push(boxed ? $someValue(item) : item);
+  } catch (error) {
+    $collectUnwound(it, values, drop, restFirst);
+    throw error;
   }
   if (!failed) return into ? into(values) : values;
+  it.return?.();
   if (drop) $dropItems(values, drop);
   return undefined;
 }
@@ -12957,23 +13070,52 @@ export function $thenCmp(...orders) {
 // equal for `max`, the earlier for `min`; each passed over given to `drop`
 // as it's passed, of items with a destructor (ADR 0098); boxed where it may
 // look like `None` (ADR 0051).
+//
+// Where `compare` throws, a panic, the item it was asked of dropped, then
+// the one kept, as std's `max_by(v1, v2)` drops its own as it unwinds,
+// then what's left of `items`, an array's too, as its `fold` drops what it
+// took; where stepping them throws, a stage's panic, the one kept (#423).
 export function $extremeBy(items, compare, max, boxed, drop) {
-  const it = Iterator.from(items);
-  const first = it.next();
+  const it = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : Iterator.from(items);
+  let first;
+  // What's left closed where its first step throws, as `reduce` drops
+  // what it took.
+  try {
+    first = it.next();
+  } catch (error) {
+    it.return?.();
+    throw error;
+  }
   // None, `reduce`'s `next()?`, which drops it (#242).
   if (first.done) {
     it.return?.();
     return undefined;
   }
-  const kept = it.reduce((kept, item) => {
-    if ((compare(kept, item) > 0) === max) {
+  let held = first.value;
+  let holding = drop !== undefined;
+  try {
+    held = it.reduce((kept, item) => {
+      let later;
+      try {
+        later = (compare(kept, item) > 0) !== max;
+      } catch (error) {
+        holding = false;
+        drop?.(item);
+        drop?.(kept);
+        throw error;
+      }
+      if (later) {
+        drop?.(kept);
+        return (held = item);
+      }
       drop?.(item);
       return kept;
-    }
-    drop?.(kept);
-    return item;
-  }, first.value);
-  return boxed ? $some(kept) : kept;
+    }, first.value);
+  } catch (error) {
+    if (holding) drop(held);
+    throw error;
+  }
+  return boxed ? $some(held) : held;
 }
 export function $maxBy(items, compare, boxed = false, drop = undefined) {
   return $extremeBy(items, compare, true, boxed, drop);
@@ -12983,8 +13125,18 @@ export function $minBy(items, compare, boxed = false, drop = undefined) {
 }
 // `max_by_key(key)` and `min_by_key(key)`: each item's key made once, as it
 // comes, as std pairs them, and the keys compared by `compare`.
+// Where `key` throws, the item it was asked of dropped, as std's pairing
+// closure holds it (#423).
 export function $extremeByKey(items, key, compare, max, boxed, drop) {
-  const keyed = Iterator.from(items).map((item) => [key(item), item]);
+  const owned = Array.isArray(items) && drop !== undefined ? $closing($iter(items), $dropEach(drop)) : items;
+  const keyed = Iterator.from(owned).map((item) => {
+    try {
+      return [key(item), item];
+    } catch (error) {
+      drop?.(item);
+      throw error;
+    }
+  });
   const pair = $extremeBy(keyed, (a, b) => compare(a[0], b[0]), max, false, drop && ((pair) => drop(pair[1])));
   return pair === undefined ? undefined : boxed ? $some(pair[1]) : pair[1];
 }

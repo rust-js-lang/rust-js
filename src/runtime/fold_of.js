@@ -9,31 +9,57 @@ function $foldOf(it, init, f) {
 // `extend_trusted` does it: each item through its `fold`, std's compiled one
 // where it's std's struct, a zip's `SpecFold` say, which steps no item past
 // its shorter side's (#380).
-function $foldToArray(it) {
-  return it.fold([], (items, x) => {
-    items.push(x);
-    return items;
-  });
+//
+// Where its fold throws, a panic in a closure, what it collected dropped
+// by `drop`, of items with a destructor, and what's left of it closed, as
+// std's unwinds, what's left first, `restFirst`, where it doesn't collect
+// in place (#423).
+function $foldToArray(it, drop, restFirst = false) {
+  const items = [];
+  try {
+    return it.fold(items, (items, x) => {
+      items.push(x);
+      return items;
+    });
+  } catch (error) {
+    $collectUnwound(it, items, drop, restFirst);
+    throw error;
+  }
 }
 
 // `collect()` into a `Vec` of what may throw as it's stepped, a panic in a
 // closure, of items with a destructor, `drop`, or from an owning source: as
 // std's unwinds, what it collected dropped, then what's left of what it
-// steps, closed (#422).
-function $collectDropping(it, drop) {
+// steps, closed (#422); or, `restFirst`, what's left first, where std
+// collects it otherwise than in place, the fold's own dropped before the
+// `Vec` (#423).
+function $collectDropping(it, drop, restFirst = false) {
   const items = [];
   try {
     for (let step = it.next(); !step.done; step = it.next()) items.push(step.value);
   } catch (error) {
-    try {
-      if (drop !== undefined) $dropItems(items, drop);
-    } finally {
-      it.return?.();
-    }
+    $collectUnwound(it, items, drop, restFirst);
     throw error;
   }
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570).
   it.return?.();
   return items;
+}
+
+// What a collect a panic stopped holds, dropped as std's unwinds: `items`,
+// what it collected, by `drop`, and what's left of `it`, closed; what's
+// left first, `restFirst`, where std's fold drops it before its `Vec`
+// (#422, #423).
+function $collectUnwound(it, items, drop, restFirst) {
+  const collected = () => {
+    if (drop !== undefined) $dropItems(items, drop);
+  };
+  const rest = () => it.return?.();
+  const [first, then] = restFirst ? [rest, collected] : [collected, rest];
+  try {
+    first();
+  } finally {
+    then();
+  }
 }

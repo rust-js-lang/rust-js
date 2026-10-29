@@ -233,6 +233,61 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
     }
 }
 
+/// Whether std collects `iter`, an iterator, into a `Vec` of `dest`s in
+/// place, in the buffer of the `vec::IntoIter` or `BinaryHeap`'s it steps:
+/// through adapters that keep it, each `InPlaceIterable` and `SourceIter` of
+/// one that's `AsVecIntoIter`, its items as aligned as `dest`s and no
+/// smaller, neither zero-sized, as alloc's `in_place_collectible` asks of
+/// one item a step. Where a panic stops it, what it collected is dropped
+/// before what's left, its guard the fold's; otherwise what's left first,
+/// the fold's own, then the `Vec` (#423). Of types rustc knows whole.
+pub(crate) fn collects_in_place<'tcx>(tcx: TyCtxt<'tcx>, iter: Ty<'tcx>, dest: Ty<'tcx>) -> bool {
+    let typing_env = ty::TypingEnv::fully_monomorphized();
+    let (Some(in_place), Some(source_iter), Some(as_vec)) = (
+        registry::by_path(tcx, "core", &["iter", "InPlaceIterable"]),
+        registry::by_path(tcx, "core", &["iter", "SourceIter"]),
+        alloc_trait(tcx, "AsVecIntoIter"),
+    ) else {
+        return false;
+    };
+    let holds = |ty: Ty<'tcx>, tr: DefId| {
+        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
+        tcx.codegen_select_candidate(typing_env.as_query_input(tr)).is_ok()
+    };
+    let projected = |assoc: DefId, of: Ty<'tcx>| {
+        let ty = Ty::new_projection(tcx, ty::IsRigid::No, assoc, [of]);
+        tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .ok()
+    };
+    if !holds(iter, in_place) || !holds(iter, source_iter) {
+        return false;
+    }
+    let Some(source) = projected(trait_method(tcx, source_iter, "Source"), iter) else {
+        return false;
+    };
+    if !holds(source, as_vec) {
+        return false;
+    }
+    let Some(src) = projected(trait_method(tcx, as_vec, "Item"), source) else {
+        return false;
+    };
+    let layout = |ty: Ty<'tcx>| tcx.layout_of(typing_env.as_query_input(ty)).ok();
+    let (Some(src), Some(dest)) = (layout(src), layout(dest)) else {
+        return false;
+    };
+    !src.is_zst() && !dest.is_zst() && src.align.abi == dest.align.abi && src.size >= dest.size
+}
+
+/// One of alloc's own traits, crate-private, by its name.
+fn alloc_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
+    let alloc = tcx
+        .crates(())
+        .iter()
+        .copied()
+        .find(|&krate| tcx.crate_name(krate) == sym::alloc)?;
+    (tcx.traits(alloc).iter().copied()).find(|&id| tcx.item_name(id).as_str() == name)
+}
+
 /// std's `OneShot`, private to `flatten`'s module: an iterator of one item
 /// at most, `option::IntoIter`'s (ADR 0899).
 pub(crate) fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {

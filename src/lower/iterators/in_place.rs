@@ -117,8 +117,9 @@ pub(super) fn counts(f: &Expr) -> bool {
 }
 
 /// Whether calling `f` may throw, a panic: anything but an arrow none of
-/// whose statements may, as an owning chain's stage it runs over each item
-/// of then, which a panic stops early (#422).
+/// whose statements may, or one of the crate's functions that never
+/// unwinds (`Known::NeverThrows`, ADR 0902), as an owning chain's stage it
+/// runs over each item of then, which a panic stops early (#422, #423).
 pub(in crate::lower) fn may_throw(f: &Expr) -> bool {
     fn stmts_may_throw(stmts: &[Stmt]) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
@@ -135,7 +136,7 @@ pub(in crate::lower) fn may_throw(f: &Expr) -> bool {
     }
     match &f.kind {
         js::ExprKind::Arrow(_, body) => stmts_may_throw(body),
-        _ => true,
+        _ => !f.facts.has(js::Known::NeverThrows),
     }
 }
 

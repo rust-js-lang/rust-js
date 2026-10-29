@@ -62,4 +62,13 @@ export const mutations: Mutation[] = [
     replace: "                true\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "where order can't be told"],
   },
+  {
+    name: "never-unwinding-predicate-may-throw",
+    breaks: "a predicate that's one of the crate's functions that never unwinds is judged one that may panic, its `filter` the `try` form",
+    file: "src/lower/iterators/in_place.rs",
+    find: "        _ => !f.facts.has(js::Known::NeverThrows),",
+    replace: "        _ => true,",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+    snapshots: true,
+  },
 ];

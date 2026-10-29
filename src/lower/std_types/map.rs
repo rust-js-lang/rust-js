@@ -459,11 +459,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dropped as std drops it: a B-tree's the earlier of equal ones, in its
     /// keys' order, by `$treeFrom`, another's the key it's given and the
     /// value it replaces, each as it's inserted, by `$extendMap` (ADR 0506).
+    /// Of one not a B-tree that a panic may stop as it's stepped, `unwinds`,
+    /// `$mapFrom`, which drops what's left then what it holds (#423).
     pub(in crate::lower) fn made_of(
         &mut self,
         set: bool,
         generic_args: ty::GenericArgsRef<'tcx>,
         items: Expr,
+        unwinds: bool,
         span: Span,
     ) -> R<Expr> {
         let map = generic_args.types().find(|&t| self.is_map(t.peel_refs()));
@@ -491,9 +494,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect();
                 Expr::call(Expr::helper("$treeFrom"), list)
             }
-            _ if !drops.is_empty() => {
+            _ if unwinds || !drops.is_empty() => {
                 let list = vec![made, items, Expr::bool(set)].into_iter().chain(drops).collect();
-                Expr::call(Expr::helper("$extendMap"), list)
+                Expr::call(Expr::helper(if unwinds { "$mapFrom" } else { "$extendMap" }), list)
             }
             // A class's constructor steps what it's given once, in order, a
             // plain `Set`'s and a caller's `TSet` alike: an array's `$iter`
@@ -670,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             MapOp::From { set } => {
                 let items = arg();
-                self.made_of(set, generic_args, items, span)?
+                self.made_of(set, generic_args, items, false, span)?
             }
             MapOp::ByPlace(op) => match op {
                 PlaceOp::Of => helper("$indexOf", vec![arg(), arg()]),

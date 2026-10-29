@@ -66,11 +66,15 @@ function endedByASide() {
   let takeWhile;
   try {
     takeWhile = $lazyTakeWhile($closing(tmp$1, $dropEach(loudDrop_drop)), (item) => {
-      if (odd(item)) {
-        return true;
+      let kept = false;
+      try {
+        kept = odd(item);
+      } finally {
+        if (!kept) {
+          loudDrop_drop(item);
+        }
       }
-      loudDrop_drop(item);
-      return false;
+      return kept;
     });
   } catch (error) {
     map.return();
@@ -219,11 +223,15 @@ function endedByASide() {
   let filter;
   try {
     filter = $closing(tmp$11, $dropEach(loudDrop_drop)).filter((item) => {
-      if (odd(item)) {
-        return true;
+      let kept = false;
+      try {
+        kept = odd(item);
+      } finally {
+        if (!kept) {
+          loudDrop_drop(item);
+        }
       }
-      loudDrop_drop(item);
-      return false;
+      return kept;
     });
   } catch (error) {
     tmp$10.return();
@@ -283,11 +291,15 @@ function endedByASide() {
   let tmp$16;
   try {
     tmp$16 = $lazyTakeWhile($closing(tmp$15, $dropEach(loudDrop_drop)), (item) => {
-      if (odd(item)) {
-        return true;
+      let kept = false;
+      try {
+        kept = odd(item);
+      } finally {
+        if (!kept) {
+          loudDrop_drop(item);
+        }
       }
-      loudDrop_drop(item);
-      return false;
+      return kept;
     });
   } catch (error) {
     tmp$14.return();
@@ -329,11 +341,15 @@ function heldToItsEnd() {
   let filter;
   try {
     filter = $closing(tmp, $dropEach(loudDrop_drop)).filter((item) => {
-      if (odd(item)) {
-        return true;
+      let kept = false;
+      try {
+        kept = odd(item);
+      } finally {
+        if (!kept) {
+          loudDrop_drop(item);
+        }
       }
-      loudDrop_drop(item);
-      return false;
+      return kept;
     });
   } catch (error) {
     for (const item of b) {
@@ -352,11 +368,15 @@ function heldToItsEnd() {
   let tmp$2;
   try {
     tmp$2 = $closing(tmp$1, $dropEach(loudDrop_drop)).filter((item) => {
-      if (odd(item)) {
-        return true;
+      let kept = false;
+      try {
+        kept = odd(item);
+      } finally {
+        if (!kept) {
+          loudDrop_drop(item);
+        }
       }
-      loudDrop_drop(item);
-      return false;
+      return kept;
     });
   } catch (error) {
     filter.return();

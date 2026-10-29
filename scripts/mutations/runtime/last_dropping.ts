@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "last-dropping-drops-none",
     breaks: "`last()` of items with a destructor drops none it passes",
     file: "src/runtime/last_dropping.js",
-    find: "    if (seen) drop?.(last);\n",
-    replace: "",
+    find: "  const keep = (item) => {\n    if (seen) drop?.(last);\n",
+    replace: "  const keep = (item) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.skipped !== undefined) {",
     replace: "  if (false) {",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
+  },
+  {
+    name: "last-throw-keeps-last",
+    breaks: "a `last` whose stage panics leaves the one it kept undropped (#423)",
+    file: "src/runtime/last_dropping.js",
+    find: "      if (seen) drop?.(last);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];
