@@ -208,9 +208,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(match self.is_handle_pointer(c.ty()) {
                     true => Value::Expr(Expr::call(
                         Expr::helper("$ptr"),
-                        vec![self.fn_ref(def_id), Expr::str(js::HELD), Expr::int(0)],
+                        vec![
+                            self.named_fn_ref(def_id, None, c.span),
+                            Expr::str(js::HELD),
+                            Expr::int(0),
+                        ],
                     )),
-                    false => Value::Ref(Expr::held(self.fn_ref(def_id))),
+                    false => Value::Ref(Expr::held(self.named_fn_ref(def_id, None, c.span))),
                 })
             }
             // A closure that captures nothing, which optimized MIR names as a
@@ -297,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.is_rust_fn(named.def)
                 && referred.ty().is_freeze(tcx, self.typing_env)
             {
-                return Ok(self.item_read(named.def));
+                return Ok(self.item_read(named.def, referred.span));
             }
             return self.mir_const(state, &referred);
         }
@@ -361,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let referred = match tcx.is_foreign_item(def_id) {
                 true => Some(self.js_global(def_id, c.span)),
-                false => self.is_rust_fn(def_id).then(|| self.fn_ref(def_id)),
+                false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),
             };
             if let Some(referred) = referred {
                 // A raw pointer to one, a handle on it (ADR 0407): of what isn't

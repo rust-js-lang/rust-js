@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && c.ty().is_freeze(self.tcx, self.typing_env)
             && only_read(state.body, place.local)
         {
-            let constant = self.fn_ref(uv.def);
+            let constant = self.named_fn_ref(uv.def, None, c.span);
             return self.mir_store(state, *place, Value::Expr(constant), span, out);
         }
         // A `&mut` a variable keeps to a variable that's a `&mut` itself,

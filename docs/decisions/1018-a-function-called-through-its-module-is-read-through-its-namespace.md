@@ -69,8 +69,8 @@ function run() {
   function another module has that the named one re-exports; not a
   type's method, `plugin::Plugin::new()`, which its type's object has;
   not a function its module exports as its default, which is what the
-  module is; and not a thread-local, a `static` or a `const`, which are
-  read by their names as before (the user's decision covers calls).
+  module is. A thread-local, a `static` and a `const` read through its
+  module are too (amended below, rd114a).
   `analysis/namespaces.rs`'s `module_paths` finds them in HIR, by the
   path's span and its call's, which a call's MIR is at; lowering asks it
   (`FnCx::named_fn_ref`) and makes the read `Plugin.f`, a member of the
@@ -115,16 +115,20 @@ function run() {
   too, but one with an acronym differs, `DomPluginEventSystem`. The
   name is chosen as the linker names imports, before artifact planning
   places files. Not taken; a port that meets one asks.
-- **A thread-local, `static` or `const` read through its module too.**
-  `fiber::CURRENT.get()` stays `import { current }` beside `import * as
-  Fiber`. Left for the user: the namespace read is live, so it would be
-  correct, but it changes what the decision covers.
+- **A thread-local, `static` or `const` read through its module by its
+  name**, `import { current }` beside `import * as Fiber`. Taken at
+  first, then rejected by the user (rd114a, below).
 
 ## Consequences
 
 - Every corpus case and guide example that calls `module::f()` reads
   through the module's namespace; the readability ratchet's renamed
   imports fall with them.
+- **A value of a function a `let` names through its module**, `let
+  Selected = ui::Empty;`, is `import * as Ui` and `const Selected =
+  Ui.Empty;`, what a JS author with a namespace import writes, where it
+  was folded into `import { Empty as Selected }`. Accepted by the user
+  (2026-10-29), held by the JSX snapshot `spreads-and-paths`.
 - Bindings keep their own forms: a binding's `link_name` says its JS,
   `#*` its namespace (ADR 0256), which this doesn't touch.
 
@@ -149,3 +153,57 @@ and `import * as People from "./people.js"`, as the decision makes it.
 - Held by `test/crates.test.ts`, "a library's function returned past a
   guard's drop is returned after its finally", run: mutation
   `namespace-fn-value-arrowed` (`lower/passed_on.ts`).
+
+## Amendment: any value read through its module (rd114a)
+
+The user's decision (2026-10-29). A file read `fiber::f()` through
+`import * as Fiber` and `fiber::CURRENT.get()` through `import {
+current }` of the same module: two import forms of one module, for one
+way of writing the Rust.
+
+**Any value a path names through the module that has it is read through
+the module's namespace: a function, a `const` rust-js prints by its
+name, a `static`, a `static mut` and a thread-local**, which
+`thread_local!` makes a `const`. `fiber::CURRENT.get()` is
+`Fiber.current`, `counter::LINES` is `Counter.LINES`, `dep::NAME` of a
+library's root `Dep.name`. One the program `use`s is its named import,
+as a function is. A `const` written as its value, `5`, names nothing.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. A namespace
+object's property is the export's live binding, as its named import is:
+a thread-local or a `static mut` its module sets, `export let`, read
+through `Fiber.current` after `Fiber.setCurrent(3)`, is 3, as ES
+specifies and as `exported_cells` and `module_path_namespace` check
+against native Rust. Only its module writes it, as before
+(`outside_writes`).
+
+- **Not a value that may hold a function a call of it runs**, a `dyn
+  Fn`, a `fn` pointer or a closure, `REPORT: Box<dyn Fn() -> bool>`:
+  read by its name, `report()`, as before. Through the namespace its
+  call would be `Report.report()`, which gives the function the
+  namespace object as its `this`, where Rust gives a `with_this`
+  function `None` (ADR 0972): a wrong answer (case: results change, so
+  Rust's behavior, by the named import). Its module's other values are
+  read through the namespace still (`namespaces::holds_a_callable`, by
+  the type's generic arguments, a thread-local's by its key's `T`). A
+  field's function called as a member, `(s.f)()` as `s.f()`, gives `s`
+  as its `this` the same way, filed as #402.
+- **Where it's read**: lowering asks for each item by the span of the
+  path that names it (`FnCx::item_read`, and `named_fn_ref` of a static's
+  reference), as it asks for a call's.
+- **Its module's variable read through the namespace is the variable**,
+  `Fiber.current`, not its cell's `.value`: `cell::imported_variables`
+  sees `Fiber.current` as it sees `current`, of the crate's
+  (`js::Symbol` of `*`, by what the module exports it as) and of a
+  library's (the namespace's import, `Dep.name`).
+
+Held by `test/corpus/module_path_namespace.rs` (a thread-local read
+before and after its module sets it, a `static`, a `const` array), the
+re-blessed `exported_cells` and `atomics`, and
+`test/lowering-module-variables.test.ts`'s library and `static mut`
+tests and its thread-local of a `with_this` function, which run the JS,
+and `test/crates.test.ts`'s pairs, which run against native Rust; the
+mutations `namespace-of-functions-alone`, `namespace-of-a-callable-value`,
+`namespaced-variable-held`, `namespaced-library-variable-held`,
+`static-read-by-name-through-its-module` and
+`item-read-by-name-through-its-module`.

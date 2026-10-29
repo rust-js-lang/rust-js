@@ -269,4 +269,13 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && copy.is_none()\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "read through its namespace"],
   },
+  {
+    name: "item-read-by-name-through-its-module",
+    breaks: "a thread-local or a `const` read through its module's path, `plugin::CALLS.get()`, is its named import, `import { calls }`, beside the module's namespace (rd114a, ADR 1018)",
+    file: "src/lower/items.rs",
+    find: "        let place = self.named_fn_ref(def_id, None, named);\n",
+    replace: "        let place = {\n            let _ = named;\n            self.fn_ref(def_id)\n        };\n",
+    tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
+    snapshots: true,
+  },
 ];

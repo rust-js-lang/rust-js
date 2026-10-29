@@ -299,7 +299,8 @@ thread_local! {
   writeFileSync(join(dir, "editor.rs"), "pub fn open() -> u32 {\n    1\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await Bun.file(join(dir, "lib.js")).text();
-  expect(lib).toContain('import { SIZE, count } from "./util.js";');
+  // Through their modules' namespaces, as their paths name them (ADR 1018).
+  expect(lib).toContain('import * as Util from "./util.js";');
   expect(lib).not.toContain("editor.js");
   expect(lib).toContain("export function doubled(editor) {");
   const module = await import(join(dir, "lib.js"));
@@ -623,8 +624,10 @@ pub fn to_array() -> [u32; 2] {
   expect(js).toContain("\nfunction currentTime() {\n");
   expect(js).toContain("\nexport function toArray() {\n");
   expect(js).toContain("export { currentTime as unstable_now, LIMIT as MAX_LIMIT, currentTime as timeNow };");
-  // The module reads them by their own names, not the names it exports them by.
-  expect(js).toContain('import { IDLE, IMMEDIATE } from "./priorities.js";');
+  // The module reads them through their module's namespace, by their own
+  // names, not the names it exports them by (ADR 1018).
+  expect(js).toContain('import * as Priorities from "./priorities.js";');
+  expect(js).toContain("return (Priorities.IMMEDIATE + Priorities.IDLE) >>> 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unstable_now(), lib.timeNow(), lib.MAX_LIMIT, lib.unstable_ImmediatePriority, lib.IDLE]).toEqual([6, 6, 9, 1, 5]);
   expect([lib.currentTime, lib.LIMIT, lib.toArray()]).toEqual([undefined, undefined, [6, 9]]);
@@ -699,11 +702,11 @@ pub fn to_array() -> f64 {
   // module's `use` names it so, else by its own name.
   // A function called through its module, its namespace's, by what it
   // exports it as (ADR 1018).
-  expect(read("lib.js")).toContain('import { MAX as LIMIT, unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
+  expect(read("lib.js")).toContain('import { unstable_now } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";\n');
   expect(read("lib.js")).toContain("return unstable_now() + Scheduler.toArray();");
-  expect(read("lib.js")).toContain("return Report.report() + unstable_now() + LIMIT;");
-  expect(read("report.js")).toContain('import { MAX as LIMIT } from "./scheduler.js";\nimport * as Scheduler from "./scheduler.js";');
-  expect(read("report.js")).toContain("return Scheduler.unstable_now() * 10 + LIMIT;");
+  expect(read("lib.js")).toContain("return Report.report() + unstable_now() + Scheduler.MAX;");
+  expect(read("report.js")).toContain('import * as Scheduler from "./scheduler.js";\n\nexport');
+  expect(read("report.js")).toContain("return Scheduler.unstable_now() * 10 + Scheduler.MAX;");
   expect(read("index.js")).toContain('export { unstable_now as getCurrentTime } from "./scheduler.js";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.byAlias(), lib.byPath()]).toEqual([13, 266]);

@@ -730,7 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
-            let place = self.item_read(def_id);
+            let place = self.item_read(def_id, span);
             let copied = self.const_use_copied(ty)
                 // One whose value JS holds as itself, `undefined` of one with
                 // no byte written, `MaybeUninit::uninit()`'s, which nothing

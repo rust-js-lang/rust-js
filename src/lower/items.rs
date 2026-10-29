@@ -18,11 +18,13 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A read of an item `fn_ref` names: a thread-local made where it's
-    /// first used, the crate's or a library's, is its call, `START()`
-    /// (ADR 0037, amended); anything else, its name.
-    pub(super) fn item_read(&self, def_id: DefId) -> Expr {
-        let place = self.fn_ref(def_id);
+    /// A read of an item `fn_ref` names, as the path at `named` names it,
+    /// through its module's namespace where it's written so, `Fiber.current`
+    /// (`named_fn_ref`, rd114a): a thread-local made where it's first used,
+    /// the crate's or a library's, is its call, `START()` (ADR 0037,
+    /// amended); anything else, its name.
+    pub(super) fn item_read(&self, def_id: DefId, named: Span) -> Expr {
+        let place = self.named_fn_ref(def_id, None, named);
         match self.made_where_used(def_id) {
             true => Expr {
                 facts: js::Facts::of(js::Known::LocalRead),
@@ -105,11 +107,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
     }
 
-    /// The crate's function `def_id` where the path at `named` names it, a
-    /// call's or the path's own, as `fn_ref` names it, or by its index a
-    /// copy, as `own_fn_ref` does; but through the module that has it where
-    /// the path names it so, `plugin::extract_events(..)`, read through its
-    /// namespace, `Plugin.extractEvents` (rd114, ADR 1018).
+    /// The crate's function, `const` or `static` `def_id` where the path at
+    /// `named` names it, a call's or the path's own, as `fn_ref` names it,
+    /// or by its index a copy, as `own_fn_ref` does; but through the module
+    /// that has it where the path names it so, `plugin::extract_events(..)`
+    /// and `fiber::CURRENT`, read through its namespace,
+    /// `Plugin.extractEvents` and `Fiber.current` (rd114, rd114a, ADR 1018).
     pub(super) fn named_fn_ref(&self, def_id: DefId, copy: Option<usize>, named: Span) -> Expr {
         let through = (self.krate.module_paths.get(&named)).is_some_and(|through| through.function == def_id);
         // A library's, its module's namespace's, imported from where the

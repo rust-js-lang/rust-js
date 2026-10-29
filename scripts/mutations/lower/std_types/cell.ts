@@ -562,4 +562,20 @@ export const mutations: Mutation[] = [
     replace: "                let next = match false && js::taken_place(&place) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
+  {
+    name: "namespaced-variable-held",
+    breaks: "another module's thread-local read through its module's namespace, `fiber::IS_RENDERING.get()`, is read as its cell, `Fiber.isRendering.value`, where it's its module's variable, `Fiber.isRendering`, which has no `value` (rd114a, ADR 1018)",
+    file: "src/lower/std_types/cell.rs",
+    find: "if namespace.export == js::NAMESPACE\n",
+    replace: "if namespace.export == js::NAMESPACE && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
+  },
+  {
+    name: "crate-variable-read-as-cell",
+    breaks: "another of the crate's modules reads an exported variable's `value`, `enabled.value` (ADR 0270, amended)",
+    file: "src/lower/std_types/cell.rs",
+    find: "    if named.is_empty() {\n        return;\n",
+    replace: "    if !named.is_empty() {\n        return;\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+  },
 ];

@@ -111,15 +111,18 @@ export function page() {
 }
 ```
 
-A function called through its module's path, with no `use` of the
-function, is read through the module's namespace, `import * as Format`
-and `Format.shout(..)`, as JS names a module it calls into; one the
-module `use`s, `hello` above, is its named import. The namespace is the
-module's name camelCase with a capital first letter, given apart where
-the file has that name already; a library's module's alike, its root's
-by its crate's name. `crate::f()`, `self::f()` and `super::f()` name no
-module of their own, and a thread-local, `static` or `const` read
-through a module is imported by its name
+A function, `const`, `static` or thread-local named through its
+module's path, with no `use` of it, is read through the module's
+namespace, `import * as Format` and `Format.shout(..)`, `Fiber.current`
+of `fiber::CURRENT.get()`, as JS names a module it reads from; one the
+module `use`s, `hello` above, is its named import. A thread-local's or a
+`static mut`'s read through the namespace is its live binding, as its
+named import is. The namespace is the module's name camelCase with a
+capital first letter, given apart where the file has that name already;
+a library's module's alike, its root's by its crate's name.
+`crate::f()`, `self::f()` and `super::f()` name no module of their own,
+and a value that may hold a function, `Box<dyn Fn()>`, is read by its
+name, so a call of it gives the function no `this`
 ([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
 
 Imports are one block, in the order a person writes them: packages, then

@@ -319,7 +319,8 @@ pub fn logged(quiet: bool) -> bool {
     "--", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return ENABLED && count > 0;\n");
-  expect(js).toContain("  return (LOGGED && !quiet) || TRACED;\n");
+  // Through their modules' namespaces, as their paths name them (ADR 1018).
+  expect(js).toContain("  return (Flags.LOGGED && !quiet) || Dep.TRACED;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.hasWarnings(), lib.logged(false), lib.logged(true)]).toEqual([false, true, false]);
   lib.bump();

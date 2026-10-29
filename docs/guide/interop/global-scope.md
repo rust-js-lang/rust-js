@@ -883,12 +883,11 @@ pub fn set_lines(lines: usize) {
 
 ```js
 // src/lib.js
-import { LINES } from "./counter.js";
 import * as Counter from "./counter.js";
 
 export function restart() {
   Counter.setLines(10);
-  return LINES;
+  return Counter.LINES;
 }
 ```
 
@@ -911,8 +910,11 @@ export function setLines(lines) {
 - **A `let`, `export let` where it's `pub`**, or another module reads it,
   `const` where nothing writes it whole; its `.d.ts` is its type, `export
   let LINES: number;`.
-- **Another module reads it by its name**, as it is now, ES's live
-  binding, a library's consumer too. **Only its module writes it**:
+- **Another module reads it as it is now**, ES's live binding, a
+  library's consumer too: by its name where its `use` names it, `use
+  counter::LINES;`, or through its module's namespace where its path
+  does, `Counter.LINES` of `counter::LINES`, which reads the same binding
+  ([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)). **Only its module writes it**:
   another's write of it, whole, a field or an item, or a pointer taken to
   it, `&raw mut counter::LINES`, is refused, so its module writes a `pub
   fn` that sets it, as `set_lines` does.

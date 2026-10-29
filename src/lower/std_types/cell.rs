@@ -832,6 +832,53 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
     }
 }
 
+/// `imported_variables` of each variable `named` says of, by its name, and
+/// each read through its module's namespace, `Fiber.current`, which
+/// `through` says of the namespace and the member (rd114a, ADR 1018).
+pub(in crate::lower) fn imported_variables_through(
+    items: &mut [js::Item],
+    named: &dyn Fn(&Expr) -> bool,
+    through: &dyn Fn(&Expr, &str) -> bool,
+) {
+    imported_variables(items, &|e| match &e.kind {
+        js::ExprKind::Member(namespace, export) if through(namespace, export) => true,
+        _ => named(e),
+    });
+}
+
+/// What each of the crate's modules reads of another's `variables`, its
+/// thread-locals and `static mut`s that are its variables (ADR 0270,
+/// amended): by their names, `Symbol`s of their modules, or through their
+/// modules' namespaces by what those export them as, `Fiber.current`
+/// (rd114a, ADR 1018).
+pub(in crate::lower) fn crate_imported_variables(
+    tcx: rustc_middle::ty::TyCtxt<'_>,
+    fns: &std::collections::HashMap<rustc_span::def_id::DefId, crate::lower::FnInfo>,
+    variables: &std::collections::HashSet<rustc_span::def_id::DefId>,
+    lowered: &mut [crate::program::UnlinkedModule],
+) {
+    let symbol = |id: &rustc_span::def_id::DefId, export: &str| crate::lower::module_symbol(fns[id].module, export);
+    let named: std::collections::HashSet<js::Symbol> = (variables.iter())
+        .map(|id| symbol(id, fns[id].owner.as_ref().unwrap_or(&fns[id].name)))
+        .collect();
+    let namespaced: std::collections::HashSet<js::Symbol> = (variables.iter())
+        .map(|id| symbol(id, &crate::lower::default_exports::exported_as(tcx, *id, &fns[id].name)))
+        .collect();
+    if named.is_empty() {
+        return;
+    }
+    for unlinked in lowered {
+        imported_variables_through(
+            &mut unlinked.module.items,
+            &|e| matches!(&e.kind, js::ExprKind::Symbol(symbol) if named.contains(symbol)),
+            &|namespace, export| {
+                matches!(&namespace.kind, js::ExprKind::Symbol(namespace) if namespace.export == js::NAMESPACE
+                    && namespaced.contains(&js::Symbol { module: namespace.module, export: export.to_string() }))
+            },
+        );
+    }
+}
+
 /// Each closure called where it's made, its body (ADRs 0581, 0840), in a
 /// function, in what the module runs when it's loaded, which no `return`
 /// ends, or in a closure a constant's value makes (ADR 0581, amended).

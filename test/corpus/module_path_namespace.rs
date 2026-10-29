@@ -5,10 +5,23 @@
 // `EnterLeaveEventPlugin.extractEvents(..)`; one the program `use`s is
 // its named import. A namespace another name of the module's takes is
 // given apart, and a path through `crate`, `self` or `super` alone names
-// no module of its own (rd114).
+// no module of its own (rd114). So is a value read through its module
+// path, a thread-local, a `static` and a `const`, live: a read after the
+// module sets its thread-local sees what it's set to (rd114a).
 
 mod plugin {
+    use std::cell::Cell;
+
+    thread_local! {
+        pub static CALLS: Cell<u32> = const { Cell::new(0) };
+    }
+
+    pub static LIMIT: u32 = 7;
+
+    pub const LABELS: [&str; 2] = ["click", "focus"];
+
     pub fn extract_events(n: u32) -> u32 {
+        CALLS.set(CALLS.get() + 1);
         n * 2
     }
 
@@ -60,4 +73,8 @@ fn main() {
         doubled,
         plugin::nested::depth(),
     );
+    let before = plugin::CALLS.get();
+    plugin::extract_events(1);
+    let after = plugin::CALLS.get();
+    println!("{before} {after} {} {:?}", plugin::LIMIT, plugin::LABELS);
 }

@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "mir-static-mut-not-a-place",
     breaks: "a pointer to a `static mut` is a handle on another place than its `{ value }`'s, so writes to it are lost",
     file: "src/lower/mir/operands.rs",
-    find: "                        vec![self.fn_ref(def_id), Expr::str(js::HELD), Expr::int(0)],\n",
-    replace: "                        vec![self.fn_ref(def_id), Expr::str(\"held\"), Expr::int(0)],\n",
+    find: "                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str(js::HELD),\n",
+    replace: "                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str(\"held\"),\n",
     tests: ["test/corpus.test.ts", "-t", "static_mut_shared"],
   },
   {
@@ -169,5 +169,14 @@ export const mutations: Mutation[] = [
     find: "            .is_bool()\n",
     replace: "            .is_bool()\n            && false\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
+  },
+  {
+    name: "static-read-by-name-through-its-module",
+    breaks: "a `static` read through its module's path, `plugin::LIMIT`, is its named import, `import { LIMIT }`, beside the module's namespace (rd114a, ADR 1018)",
+    file: "src/lower/mir/operands.rs",
+    find: "                false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),\n",
+    replace: "                false => (self.is_rust_fn(def_id)).then(|| self.fn_ref(def_id)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
+    snapshots: true,
   },
 ];

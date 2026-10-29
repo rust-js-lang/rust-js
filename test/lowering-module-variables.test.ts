@@ -243,7 +243,10 @@ pub fn mark() {
   const reads = app("reads", "dep::HAS_BAD_MAP_POLYFILL.get() && dep::NAME.with_borrow(|name| !name.is_empty())");
   expect([reads.code, reads.stderr]).toEqual([0, ""]);
   const readsJs = readFileSync(join(dir, "reads", "lib.js"), "utf8");
-  expect(readsJs).toContain("  return hasBadMapPolyfill && !!name;\n");
+  // Read through its module's namespace, as its path names it, live
+  // (rd114a, ADR 1018).
+  expect(readsJs).toContain('import * as Dep from "../dep/lib.js";\n');
+  expect(readsJs).toContain("  return Dep.hasBadMapPolyfill && !!Dep.name;\n");
   const { bad } = await import(join(dir, "reads", "lib.js"));
   const { mark } = await import(join(dir, "dep", "lib.js"));
   expect(bad()).toBe(false);
@@ -729,7 +732,7 @@ pub fn told() -> (usize, u32, u8, u32) {
   expect(counterJs).toContain("  LINES = 0;\n  STATS = { calls: 0 };\n");
   expect(counterJs).not.toContain(".value");
   const usersJs = readFileSync(join(dir, "users.js"), "utf8");
-  expect(usersJs).toContain("  return [LINES, STATS.calls, SLOTS[1], LIMIT];\n");
+  expect(usersJs).toContain("  return [Counter.LINES, Counter.STATS.calls, Counter.SLOTS[1], Counter.LIMIT];\n");
   expect(usersJs).not.toContain(".value");
   expect(readFileSync(join(dir, "counter.d.ts"), "utf8")).toContain("export let LINES: number;\n\nexport let STATS: Stats;\n\nexport const SLOTS: number[];\n\nexport const LIMIT: number;\n");
   // A JS module of the program's imports it and reads what it is now.
@@ -836,7 +839,7 @@ pub fn line() -> usize {
   };
   const reads = app("reads", "dep::LINES");
   expect([reads.code, reads.stderr]).toEqual([0, ""]);
-  expect(readFileSync(join(dir, "reads", "lib.js"), "utf8")).toContain("  return LINES;\n");
+  expect(readFileSync(join(dir, "reads", "lib.js"), "utf8")).toContain("  return Dep.LINES;\n");
   const { lines } = await import(join(dir, "reads", "lib.js"));
   const { line } = await import(join(dir, "dep", "lib.js"));
   expect(lines()).toBe(0);
@@ -1200,4 +1203,34 @@ pub fn mount() -> (Option<u32>, u32) {
   (globalThis as any).__DEV__ = true;
   const lib = await import(join(dir, "lib.js"));
   expect(lib.mount()).toEqual([1, 12]);
+});
+
+// A thread-local of a function read through its module path is read by
+// its name, so a call of it gives the function no `this`, as Rust gives a
+// `with_this` function `None` (ADR 0972); through its namespace,
+// `Report.report()` would give it the namespace object (rd114a, ADR 1018).
+// Its module's other values are read through the namespace still.
+test("a thread-local of a function read through its module is called with no this", async () => {
+  const dir = fixture("namespace-callable");
+  writeFileSync(join(dir, "lib.rs"), `pub mod report;
+
+pub fn told() -> (bool, u32) {
+    (report::REPORT.with(|report| report()), report::COUNT.get())
+}
+`);
+  writeFileSync(join(dir, "report.rs"), `use js::Unknown;
+use std::cell::Cell;
+
+thread_local! {
+    pub static REPORT: Box<dyn Fn() -> bool> =
+        js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
+    pub static COUNT: Cell<u32> = const { Cell::new(3) };
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const lib = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(lib).toContain('import { report } from "./report.js";\nimport * as Report from "./report.js";\n');
+  expect(lib).toContain("  return [report(), Report.count];\n");
+  const { told } = await import(join(dir, "lib.js"));
+  expect(told()).toEqual([false, 3]);
 });

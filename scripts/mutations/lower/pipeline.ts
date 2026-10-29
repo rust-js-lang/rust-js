@@ -496,14 +496,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
   },
   {
-    name: "crate-variable-read-as-cell",
-    breaks: "another of the crate's modules reads an exported variable's `value`, `enabled.value` (ADR 0270, amended)",
-    file: "src/lower/pipeline.rs",
-    find: "    if !symbols.is_empty() {\n",
-    replace: "    if symbols.is_empty() {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
-  },
-  {
     name: "const-of-consts-folded",
     breaks: "a const written of other consts, `SyncLane | InputContinuousLane | DefaultLane`, is rustc's value of it, `42`, its names lost",
     file: "src/lower/pipeline.rs",
@@ -598,5 +590,13 @@ export const mutations: Mutation[] = [
     find: "        targets.entry(from).or_default().insert(target);",
     replace: "        let _ = (from, target);",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
+  },
+  {
+    name: "namespaced-library-variable-held",
+    breaks: "a library's thread-local read through its namespace, `dep::NAME.with_borrow(..)`, is read as its cell, `Dep.name.value`, where it's the library's variable (rd114a, ADR 1018)",
+    file: "src/lower/pipeline.rs",
+    find: "                        js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.as_str(), export)))\n",
+    replace: "                        js::ExprKind::Var(namespace) if false && namespaced.contains(&(namespace.as_str(), export)))\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "library's exported cell"],
   },
 ];

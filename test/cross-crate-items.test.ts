@@ -43,8 +43,9 @@ pub fn memo() -> (SymbolFor<'static>, u32, &'static str) {
 }
 `);
   expect(dep).toContain("  return [REACT_MEMO_TYPE, LIMIT];\n");
-  expect(app).toContain('import { LIMIT, NAME, REACT_MEMO_TYPE } from "../dep/lib.js";\n');
-  expect(app).toContain("  return [REACT_MEMO_TYPE, LIMIT, NAME];\n");
+  // Through the library's namespace, as their paths name them (ADR 1018).
+  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
+  expect(app).toContain("  return [Dep.REACT_MEMO_TYPE, Dep.LIMIT, Dep.NAME];\n");
   const { memo } = await import(join(dir, "app", "lib.js"));
   expect(memo()).toEqual([Symbol.for("react.memo"), 5, "memo"]);
 });
@@ -316,8 +317,8 @@ pub fn local() -> f64 {
   const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library;
   const aliased = manifest.items.filter((item: any) => item.exported_as).map((item: any) => [item.export, item.exported_as]);
   expect(aliased.sort()).toEqual([["LIMIT", "MAX"], ["getCurrentTime", "unstable_now"]]);
-  expect(app).toContain('import { MAX as LIMIT } from "../dep/scheduler.js";\nimport * as Scheduler from "../dep/scheduler.js";\n');
-  expect(app).toContain("  return Scheduler.unstable_now() + Scheduler.unstable_now() + LIMIT;\n");
+  expect(app).toContain('import * as Scheduler from "../dep/scheduler.js";\n');
+  expect(app).toContain("  return Scheduler.unstable_now() + Scheduler.unstable_now() + Scheduler.MAX;\n");
   const { called } = await import(join(dir, "app", "lib.js"));
   expect(called()).toBe(112);
 });

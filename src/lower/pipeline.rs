@@ -1283,16 +1283,25 @@ pub fn lower_crate<'tcx>(
             variables.extend(module_variables.keys().copied());
             // A library's, by the name the module imports it as.
             let names = import_names.get(&module);
-            let foreign_variables: HashSet<&str> = (foreign.all())
+            // Or through its module's namespace, `Fiber.current` (rd114a, ADR
+            // 1018), by what that exports it as.
+            let exports: Vec<(String, String)> = (foreign.all())
                 .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())
                 .flat_map(|item| std::iter::once((item.from.clone(), item.export.clone())).chain(item.rooted.clone()))
-                .filter_map(|export| names?.get(&export))
-                .map(String::as_str)
                 .collect();
-            if !foreign_variables.is_empty() {
-                super::std_types::cell::imported_variables(
+            let local = |export: &(String, String)| names?.get(export).map(String::as_str);
+            let foreign_variables: HashSet<&str> = exports.iter().filter_map(local).collect();
+            let namespaced: HashSet<(&str, &str)> = (exports.iter())
+                .filter_map(|(from, export)| Some((local(&(from.clone(), js::NAMESPACE.into()))?, export.as_str())))
+                .collect();
+            if !foreign_variables.is_empty() || !namespaced.is_empty() {
+                super::std_types::cell::imported_variables_through(
                     &mut lowered.items,
                     &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.as_str())),
+                    &|namespace, export| {
+                        matches!(&namespace.kind,
+                        js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.as_str(), export)))
+                    },
                 );
             }
             lowered.declarations = super::declarations::module(
@@ -1374,22 +1383,8 @@ pub fn lower_crate<'tcx>(
             }
         })
         .collect();
-    // What each module reads of another's variables, by their names (ADR
-    // 0270, amended).
-    let symbols: HashSet<js::Symbol> = (variables.iter())
-        .map(|id| {
-            let target = &fns[id];
-            module_symbol(target.module, target.owner.as_ref().unwrap_or(&target.name))
-        })
-        .collect();
-    if !symbols.is_empty() {
-        for unlinked in &mut lowered {
-            super::std_types::cell::imported_variables(
-                &mut unlinked.module.items,
-                &|e| matches!(&e.kind, js::ExprKind::Symbol(symbol) if symbols.contains(symbol)),
-            );
-        }
-    }
+    // What each module reads of another's variables (ADR 0270, amended).
+    super::std_types::cell::crate_imported_variables(tcx, &fns, &variables, &mut lowered);
     // A library's trait method without a default whose entries take its
     // caller's location, which its manifest, of functions, can't say to its
     // consumers' calls through them (ADR 0427).

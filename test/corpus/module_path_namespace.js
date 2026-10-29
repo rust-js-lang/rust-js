@@ -4,6 +4,7 @@ import * as Other$1 from "./other.js";
 import { name } from "./plugin.js";
 import * as Plugin from "./plugin.js";
 import * as Nested from "./plugin/nested.js";
+import { $debugStr } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -24,6 +25,12 @@ function main() {
   const doubled = [1, 2, 3].map(Plugin.doubled);
   console.log(
     `${extractEvents(Other.seen(other))} ${name()} ${Plugin.name()} [${doubled.join(", ")}] ${Nested.depth()}`,
+  );
+  const before = Plugin.calls;
+  Plugin.extractEvents(1);
+  const after = Plugin.calls;
+  console.log(
+    `${before} ${after} ${Plugin.LIMIT} [${Plugin.LABELS.map((item) => $debugStr(item)).join(", ")}]`,
   );
 }
 //# sourceMappingURL=case.js.map

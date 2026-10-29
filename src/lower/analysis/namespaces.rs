@@ -1,15 +1,17 @@
-//! Which paths of the crate's bodies name one of its functions through the
-//! module that has it, `plugin::extract_events(..)`, with no `use` of the
-//! function: read through that module's namespace, `import * as Plugin
-//! from "./plugin.js"` and `Plugin.extractEvents(..)`, as React DOM's
-//! DOMPluginEventSystem writes `EnterLeaveEventPlugin.extractEvents(..)`
-//! (the user's decision, rd114, ADR 1018). A `use` of the function, `use
+//! Which paths of the crate's bodies name one of its functions, `const`s
+//! or `static`s through the module that has it, `plugin::extract_events(..)`
+//! and `fiber::CURRENT`, with no `use` of it: read through that module's
+//! namespace, `import * as Plugin from "./plugin.js"` and
+//! `Plugin.extractEvents(..)`, as React DOM's DOMPluginEventSystem writes
+//! `EnterLeaveEventPlugin.extractEvents(..)` (the user's decisions, rd114
+//! and rd114a, ADR 1018). A `use` of the function, `use
 //! plugin::extract_events;`, and a path through `crate`, `self` or `super`
 //! alone, name the function, its named import.
 
+use crate::lower::recognition::StdItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, intravisit};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::HashMap;
@@ -98,7 +100,9 @@ fn through(
     let hir::QPath::Resolved(None, path) = qpath else {
         return None;
     };
-    let Res::Def(DefKind::Fn, function) = path.res else {
+    // A function, a `const` or a `static`, a thread-local's too, which
+    // `thread_local!` makes a `const` (rd114a).
+    let Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, function) = path.res else {
         return None;
     };
     let [.., module, _] = path.segments else {
@@ -108,6 +112,35 @@ fn through(
         return None;
     };
     let listed = function.is_local() || foreign.item(function).is_some_and(|item| item.member.is_none());
-    let through = listed && !module.ident.is_path_segment_keyword() && tcx.parent(function) == named;
+    let through = listed
+        && !module.ident.is_path_segment_keyword()
+        && tcx.parent(function) == named
+        && !holds_a_callable(tcx, function);
     through.then_some((function, named))
+}
+
+/// Whether `value`, a `const` or a `static`, a thread-local's by what its
+/// key holds, may hold a function a call of it runs, a `dyn Fn` or a `fn`
+/// pointer: read by its name, so a call of what it holds is `report()`,
+/// its `this` `undefined`, as Rust gives a `with_this` function `None`
+/// (ADR 0972). Through its namespace, `Report.report()` would give it the
+/// namespace object (rd114a, ADR 1018). A function's own item calls none.
+fn holds_a_callable(tcx: TyCtxt<'_>, value: DefId) -> bool {
+    if tcx.def_kind(value) == DefKind::Fn {
+        return false;
+    }
+    let ty = tcx.type_of(value).instantiate_identity().skip_normalization();
+    // A thread-local's key, `LocalKey<T>`, by its `T`: the key's own `fn`
+    // pointer is std's, which no read calls.
+    let held = match ty.kind() {
+        ty::Adt(adt, args) if crate::lower::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => {
+            args.type_at(0)
+        }
+        _ => ty,
+    };
+    held.walk().filter_map(|arg| arg.as_type()).any(|ty| match ty.kind() {
+        ty::FnPtr(..) | ty::Closure(..) => true,
+        ty::Dynamic(predicates, ..) => predicates.principal_def_id().is_some_and(|id| tcx.is_fn_trait(id)),
+        _ => false,
+    })
 }

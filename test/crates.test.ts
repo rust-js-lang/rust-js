@@ -599,7 +599,8 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
 test("a thread-local of a library's flag is made as its module loads", () => {
   const out = chain(pairs, "thread_local_reads_library", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("const SUPPORTS_USER_TIMING = ENABLE_PROFILER_TIMER;\nconst SEEN = $local(() => count);\n");
+  // Through the library's namespace, as their paths name them (ADR 1018).
+  expect(app).toContain("const SUPPORTS_USER_TIMING = Dep.ENABLE_PROFILER_TIMER;\nconst SEEN = $local(() => Dep.count);\n");
 }, 300_000);
 
 // ADR 0330, amended (React port gap rd56): a library's struct field whose
@@ -611,7 +612,7 @@ test("a thread-local of a library's flag is made as its module loads", () => {
 test("a library's field of its own functions is called as the crate's own", () => {
   const out = chain(pairs, "fn_pointer_of_a_library", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain('  children.forEach("ab", (i) => {\n');
+  expect(app).toContain('  Dep.children.forEach("ab", (i) => {\n');
   expect(app).toContain(".onEach(1, undefined)");
   expect(contract(out).fields.map((field: { facts: string[] }) => field.facts)).toEqual([["rust_functions"], ["rust_functions"]]);
 }, 300_000);
