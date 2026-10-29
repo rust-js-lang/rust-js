@@ -57,27 +57,19 @@ function main() {
   console.log("after loop");
   const w = $range(6, 10).map((value) => [value]);
   iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
-  let tmp;
-  while (true) {
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
-    if (tmp != null) {
-      const n = tmp;
+  try {
+    let n;
+    while ((n = $next(iter)) != null) {
       if (n[0] === 7) {
         console.log("break");
         nDrop_drop(n);
-      } else {
-        console.log(`got ${n[0]}`);
-        nDrop_drop(n);
-        continue;
+        break;
       }
+      console.log(`got ${n[0]}`);
+      nDrop_drop(n);
     }
+  } finally {
     iter.return();
-    break;
   }
   console.log("after break");
   const x = $range(10, 13).map((value) => [value]);

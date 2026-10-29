@@ -58,6 +58,24 @@ pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
 /// The step of an `Iterator` dictionary, `IIterator.next(it)` (ADR 0411).
 const DICTIONARY: &str = "dictionary";
 
+/// Of a call's `callee`, the step `loops` makes a `for` of: a helper's,
+/// `$next`, `$nextSome`, `$rangeNext` or `$rangeInclusiveNext`, or an
+/// `Iterator` dictionary's, `IIterator.next(it)`, of one given as it is
+/// (ADR 0411).
+pub(super) fn step_of(callee: &Expr) -> Option<&'static str> {
+    match callee.helper_name() {
+        Some("$next") => Some("$next"),
+        Some("$nextSome") => Some("$nextSome"),
+        Some("$rangeNext") => Some("$rangeNext"),
+        Some("$rangeInclusiveNext") => Some("$rangeInclusiveNext"),
+        Some(_) => None,
+        None => {
+            matches!(&callee.kind, ExprKind::Member(of, name) if name == "next" && matches!(of.kind, ExprKind::Var(_)))
+                .then_some(DICTIONARY)
+        }
+    }
+}
+
 pub(super) fn for_of(
     made: &Stmt,
     looped: &Stmt,
@@ -92,10 +110,7 @@ pub(super) fn for_of(
     let ExprKind::Call(callee, args) = &next.kind else {
         return None;
     };
-    // A helper's step, or an `Iterator` dictionary's, `IIterator.next(it)`,
-    // of one given as it is (ADR 0411).
-    let given = |d: &Expr| matches!(&d.kind, ExprKind::Member(of, name) if name == "next" && matches!(of.kind, ExprKind::Var(_)));
-    let step = match (callee.helper_name(), args.as_slice()) {
+    let step = match (step_of(callee), args.as_slice()) {
         (
             Some(f),
             [
@@ -105,23 +120,9 @@ pub(super) fn for_of(
                 },
             ],
         ) if it == iter => f,
-        (
-            None,
-            [
-                Expr {
-                    kind: ExprKind::Var(it),
-                    ..
-                },
-            ],
-        ) if it == iter && given(callee) => DICTIONARY,
         _ => return None,
     };
-    if !matches!(
-        step,
-        "$next" | "$nextSome" | "$rangeNext" | "$rangeInclusiveNext" | DICTIONARY
-    ) || js::mentions_in(std::slice::from_ref(looped), iter) != 1
-        || js::mentions_in(after, iter) != 0
-    {
+    if js::mentions_in(std::slice::from_ref(looped), iter) != 1 || js::mentions_in(after, iter) != 0 {
         return None;
     }
     // The other shape inside a block, `l: { if (t != null) { body } } exit`,

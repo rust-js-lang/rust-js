@@ -27,17 +27,14 @@ function builderDrop_drop(builder, N, dropT) {
 
 function filled(word, N) {
   const builder = Builder.new(N);
-  for (let i = 0; i < N; i++) {
-    try {
+  try {
+    for (let i = 0; i < N; i++) {
       Builder.push(builder, word, N);
-    } catch (error) {
-      builderDrop_drop(builder, N);
-      throw error;
     }
+    return builder.len;
+  } finally {
+    builderDrop_drop(builder, N);
   }
-  const result = builder.len;
-  builderDrop_drop(builder, N);
-  return result;
 }
 
 function main() {

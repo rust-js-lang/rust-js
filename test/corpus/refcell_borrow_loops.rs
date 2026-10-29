@@ -20,6 +20,19 @@ impl List {
         None
     }
 
+    // A range over the borrow, which it changes: React Float's
+    // hydrateHoistable, its `for (let i = 0; ..)` in one `try` (rd200).
+    fn take_first(&self, f: &dyn Fn(u32) -> bool) -> Option<u32> {
+        let mut items = self.items.borrow_mut();
+        for i in 0..items.len() {
+            if !f(items[i]) {
+                continue;
+            }
+            return Some(items.remove(i));
+        }
+        None
+    }
+
     fn any(&self, f: &dyn Fn(u32) -> bool) -> bool {
         for &item in self.items.borrow().iter() {
             if f(item) {
@@ -65,6 +78,8 @@ fn main() {
     println!("{:?}", list.find_last(&|x| x % 2 == 0));
     println!("{:?}", list.find_last(&|x| x > 9));
     println!("{}", list.any(&|x| x == 2));
+    println!("{:?} {:?}", list.take_first(&|x| x == 8), list.take_first(&|x| x > 99));
+    list.items.borrow_mut().push(8);
     println!("{}", list.any(&|x| x == 7 || list.items.borrow().len() > 9));
     list.items.borrow_mut().push(7);
     let pushed = panic::catch_unwind(AssertUnwindSafe(|| {

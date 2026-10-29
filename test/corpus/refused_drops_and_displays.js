@@ -173,35 +173,20 @@ function matched() {
   } else {
     console.log("none");
   }
-  for (let n = 0; n < 3; n++) {
-    let e;
-    try {
-      e = pick(n);
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
+  try {
+    for (let n = 0; n < 3; n++) {
+      const e = pick(n);
+      if (e.TAG === "A") {
+        console.log("a");
+      } else if (e === "B") {
+        console.log("b");
+      } else {
+        console.log("c");
       }
-      throw error;
-    }
-    if (e.TAG === "A") {
-      console.log("a");
-    } else if (e === "B") {
-      console.log("b");
-    } else {
-      console.log("c");
-    }
-    try {
       if (e.TAG === "A") {
         ddDrop_drop(e._0);
       }
-    } catch (error) {
-      if (w[0] != null) {
-        ddDrop_drop(w[0]);
-      }
-      throw error;
     }
-  }
-  try {
     const value = pick(0);
     const label = value.TAG === "A" ? "a" : "other";
     if (value.TAG === "A") {

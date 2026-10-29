@@ -52,17 +52,7 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, 
             };
             let rest = stmts.split_off(i + 1);
             stmts.truncate(i);
-            // What a `try` of the run declared before it, `let x;`, and only
-            // the run reads: in it.
-            while let Some(Stmt {
-                kind: StmtKind::Let(name, None),
-                ..
-            }) = stmts.last()
-                && js::mentions_in(&rest, name) == 0
-                && js::mentions_in(std::slice::from_ref(&drop), name) == 0
-            {
-                body.insert(0, stmts.pop().expect("a `let`"));
-            }
+            gathered_lets(stmts, &mut body, &rest, &drop);
             let hoisted = hoist_read_after(&mut body, &rest);
             stmts.extend(hoisted);
             i = stmts.len();
@@ -505,15 +495,19 @@ fn hoist_read_after(body: &mut Vec<Stmt>, after: &[Stmt]) -> Vec<Stmt> {
 /// as a `for` over a `RefCell`'s borrow drops it at the loop's end, or as
 /// it's left (rd191). Each run is `tidied`, its loop made a `for` of what
 /// it steps as MIR's would be, and the `break` that left the loop, now
-/// after it, at the `try`'s end, gone. Whether it made one.
-pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, tidied: &mut dyn FnMut(&mut Vec<Stmt>)) -> bool {
+/// after it, at the `try`'s end, gone. Where `for_made`, as the early
+/// "drop scopes" stage asks, before `jumps` has read MIR's blocks: only of
+/// a loop that steps what `loops` makes a `for` of, its blocks and its own
+/// label read (rd200). Whether it made one.
+pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut dyn FnMut(&mut Vec<Stmt>)) -> bool {
     let mut made = false;
     let mut k = 0;
     while k < stmts.len() {
-        let StmtKind::While { cond, .. } = &stmts[k].kind else {
+        let StmtKind::While { cond, label: own, .. } = &stmts[k].kind else {
             k += 1;
             continue;
         };
+        let own = own.clone();
         let Some(drop) = (matches!(cond.kind, ExprKind::Bool(true)))
             .then(|| first_drop(std::slice::from_ref(&stmts[k])).cloned())
             .flatten()
@@ -523,10 +517,18 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, tidied: &mut dyn FnMut(&mut Ve
         };
         // From the first of the `try`s before it that drop it, past what
         // can't throw between.
+        // And what can't throw that only it reads, a range's `iter = {
+        // start: 0, end: nodes.length }`, which `loops` makes a `for` of.
+        let only_it_reads = |stmt: &Stmt| match &stmt.kind {
+            StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(name)
+                if stmt.cannot_throw() && js::mentions_in(&stmts[k + 1..], name) == 0),
+            _ => false,
+        };
         let mut start = k;
         while start > 0
             && (dropping_catch(&stmts[start - 1], &drop).is_some()
-                || matches!(stmts[start - 1].kind, StmtKind::Let(_, None)))
+                || matches!(stmts[start - 1].kind, StmtKind::Let(_, None))
+                || only_it_reads(&stmts[start - 1]))
         {
             start -= 1;
         }
@@ -544,12 +546,70 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, tidied: &mut dyn FnMut(&mut Ve
         let StmtKind::While { body, .. } = &mut looped.kind else {
             unreachable!("a loop")
         };
-        if !dropped_at_each_exit(&mut run, &drop, (0, false)) || !dropped_at_each_exit(body, &drop, (0, false)) {
+        // The blocks it labels, whose `break`s go on in it.
+        let mut labels = Vec::new();
+        js::statement_lists(body, &mut |list| {
+            labels.extend(list.iter().filter_map(|stmt| match &stmt.kind {
+                StmtKind::Labeled(label, _) => Some(label.clone()),
+                _ => None,
+            }))
+        });
+        // What follows a block that never falls out, MIR's `bb34: { ..
+        // continue bb5; } return result;`, never runs: one whose last
+        // statement leaves and that nothing in it breaks.
+        js::statement_lists(body, &mut super::jumps::unreachable_after);
+        js::statement_lists(body, &mut |list| {
+            let left = list.iter().position(|stmt| {
+                matches!(&stmt.kind, StmtKind::Labeled(label, inner)
+                    if inner.last().is_some_and(js::ends) && !js::breaks(inner, Some(label)))
+            });
+            if let Some(at) = left {
+                list.truncate(at + 1);
+            }
+        });
+        // Its own label, MIR's `bb5: while (true)`: its `break bb5` is a way
+        // out, its `continue bb5` a turn's, as unlabeled.
+        if let Some(own) = &own {
+            js::statement_lists(body, &mut |list| {
+                for stmt in list.iter_mut() {
+                    match &stmt.kind {
+                        StmtKind::Break(Some(l)) if l == own => stmt.kind = StmtKind::Break(None),
+                        StmtKind::Continue(Some(l)) if l == own => stmt.kind = StmtKind::Continue(None),
+                        _ => {}
+                    }
+                }
+            });
+        }
+        if !dropped_at_each_exit(&mut run, &drop, (0, false, &[]))
+            || !dropped_at_each_exit(body, &drop, (0, false, &labels))
+        {
+            k += 1;
+            continue;
+        }
+        // Where it's asked, `for_made`, only of a loop whose first statement
+        // past `let`s is a step `loops` makes a `for` of, `const t =
+        // $rangeNext(iter)`, or as MIR holds it in a `try` of the drop, `try
+        // { t = $next(iter); } ..`: what reading it early is for. Another's
+        // left to the scope it's in.
+        let step =
+            |value: &Expr| matches!(&value.kind, ExprKind::Call(callee, _) if super::loops::step_of(callee).is_some());
+        let steps = |stmt: &Stmt| match &stmt.kind {
+            StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) => step(value),
+            StmtKind::TryCatch(inner, ..) => {
+                matches!(inner.as_slice(), [Stmt { kind: StmtKind::Assign(_, value), .. }] if step(value))
+            }
+            _ => false,
+        };
+        let first = body.iter().find(|stmt| !matches!(stmt.kind, StmtKind::Let(_, None)));
+        if for_made && !first.is_some_and(steps) {
             k += 1;
             continue;
         }
         let span = looped.span;
         run.push(looped);
+        let rest = stmts.split_off(k + 1);
+        stmts.truncate(start);
+        gathered_lets(stmts, &mut run, &rest, &drop);
         tidied(&mut run);
         if let [
             ..,
@@ -563,11 +623,35 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, tidied: &mut dyn FnMut(&mut Ve
         {
             run.pop();
         }
-        stmts.splice(start..=k, [StmtKind::Try(run, vec![drop]).at(span)]);
+        stmts.push(StmtKind::Try(run, vec![drop]).at(span));
+        k = stmts.len();
+        stmts.extend(rest);
         made = true;
-        k = start + 1;
     }
     made
+}
+
+/// Each `let x;` of `before` that the run `body` a `try` is made of alone
+/// reads: neither what's after it, `rest`, nor its `drop`, nor the rest of
+/// `before`, as MIR declares a body's variables at its top: in the `try`,
+/// first, where `declarations` gives it its value (`scoped_drops`,
+/// `looped_drops`).
+fn gathered_lets(before: &mut Vec<Stmt>, body: &mut Vec<Stmt>, rest: &[Stmt], drop: &Stmt) {
+    let mut taken = Vec::new();
+    let mut i = before.len();
+    while i > 0 {
+        i -= 1;
+        let StmtKind::Let(name, None) = &before[i].kind else {
+            continue;
+        };
+        let elsewhere = js::mentions_in(&before[..i], name) + js::mentions_in(&before[i + 1..], name);
+        if elsewhere == 0 && js::mentions_in(rest, name) == 0 && js::mentions_in(std::slice::from_ref(drop), name) == 0
+        {
+            taken.push(before.remove(i));
+        }
+    }
+    taken.reverse();
+    body.splice(0..0, taken);
 }
 
 /// Of `try { .. } catch (error) { drop; throw error; }`, its body.
@@ -588,7 +672,7 @@ fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
 /// only as it throws its body; whether each way out dropped it, each
 /// `return`, `throw` and `break` of the loop, and nothing else may throw,
 /// but in such a `try`, `caught`, or drop it, nor leave it by a label.
-fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught): (usize, bool)) -> bool {
+fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labels): (usize, bool, &[String])) -> bool {
     let mut out = Vec::with_capacity(stmts.len());
     let mut dropped = false;
     for mut stmt in std::mem::take(stmts) {
@@ -606,7 +690,7 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught): (us
             if leaves(&inner, depth) || js::stmts_alike(&inner, std::slice::from_ref(drop)) {
                 return false;
             }
-            if !dropped_at_each_exit(&mut inner, drop, (depth, true)) {
+            if !dropped_at_each_exit(&mut inner, drop, (depth, true, labels)) {
                 return false;
             }
             if dropped {
@@ -618,6 +702,9 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught): (us
         let exit = match &stmt.kind {
             StmtKind::Return(_) | StmtKind::Throw(_) => true,
             StmtKind::Break(None) => depth == 0,
+            // A block's of its own, `bb25: { .. break bb25; }`, goes on in
+            // it; another label's leaves it.
+            StmtKind::Break(Some(label)) if labels.contains(label) => false,
             StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => return false,
             _ => false,
         };
@@ -636,12 +723,17 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught): (us
         let ok = match &mut stmt.kind {
             StmtKind::If(test, a, b) => {
                 (caught || !test.may_throw())
-                    && dropped_at_each_exit(a, drop, (depth, caught))
+                    && dropped_at_each_exit(a, drop, (depth, caught, labels))
                     && b.as_mut()
-                        .is_none_or(|b| dropped_at_each_exit(b, drop, (depth, caught)))
+                        .is_none_or(|b| dropped_at_each_exit(b, drop, (depth, caught, labels)))
             }
             StmtKind::While { cond, body, .. } => {
-                (caught || !cond.may_throw()) && dropped_at_each_exit(body, drop, (depth + 1, caught))
+                (caught || !cond.may_throw()) && dropped_at_each_exit(body, drop, (depth + 1, caught, labels))
+            }
+            // What goes on in it, a block's own `break`, a turn's `continue`.
+            StmtKind::Break(_) | StmtKind::Continue(None) => true,
+            StmtKind::Labeled(label, body) if labels.contains(label) => {
+                dropped_at_each_exit(body, drop, (depth, caught, labels))
             }
             StmtKind::Labeled(..)
             | StmtKind::Switch { .. }

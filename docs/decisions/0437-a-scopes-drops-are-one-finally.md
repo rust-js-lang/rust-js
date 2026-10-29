@@ -113,3 +113,35 @@ loop, and none is taken. Case A: the same drops at the same times. Held
 by `test/corpus/refcell_borrow_loops.rs` against native Rust, 8 corpus
 cases that read so, and the mutations `looped-drops-never` and
 `looped-drops-break-kept` (`mir/tidy/unwinds.ts`).
+
+## Amendment: a loop's drops read before MIR's blocks are (2026-10-29, rd200)
+
+React Float's `hydrateHoistable` loops over a range of a `RefCell`'s
+borrow, which it changes, `for i in 0..nodes.len() { .. nodes.remove(i)
+.. }`. "looped drops" ran in the late `scopes` stage, after `jumps`,
+`values` and `loops` had read the loop with a `catch` of the drop around
+each step: no `for` of the range, `while ((i = $rangeNext(iter)) !=
+null)`, a value's `if`/`else` not folded into its `||`, and a block MIR
+made kept, `bb93:`. The same function without the borrow reads as
+written. **The loop's drops are read first too, in the "drop scopes"
+stage right after "flags", before `jumps`** (ADR 0659, amended), of a loop
+whose first step is one `loops` makes a `for` of (`loops::step_of`), as
+MIR leaves it: its own label, `bb5: while (true)`, its `break bb5` a way
+out and `continue bb5` a turn's; a block it labels, `bb25:`, whose
+`break`s go on in it, no way out; what follows a block that never falls
+out never runs, so it goes. What can't throw before it and only it reads,
+the range's `iter = { start: 0, end: nodes.length }`, and the `let`s only
+its run reads, are in the `try`, by the one rule `scoped_drops` has
+(`gathered_lets`). The late pass stays for the loops a stage after reads
+so. A `try` ending the function is its end too, so its body's last
+`return;` MIR made goes, as `tail returns` drops the function's own
+(`jumps::ending_returns`). Case A: the same drops at the same times, the
+corpus against native Rust, `refcell_borrow_loops.rs`'s `take_first` the
+React shape; 7 corpus cases read so, `refused_drops_and_displays.rs`'s
+`catch` around each step of its loop now one `try`. Held by the mutations
+`drop-scopes-stage-empty` (`mir/tidy/stages.ts`),
+`early-looped-drops-of-any-loop`, `looped-drops-own-label-unread`,
+`scope-lets-left-before` (`mir/tidy/unwinds.ts`) and
+`ending-try-return-kept` (`mir/tidy/jumps.ts`). `docs/readability.txt`'s
+renamed share went from 654.2 to 654.6 in 10,000 lines, blessed: no name
+is renamed that wasn't, the cases are fewer lines.

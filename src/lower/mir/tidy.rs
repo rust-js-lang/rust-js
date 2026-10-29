@@ -703,6 +703,17 @@ mod tests {
         assert!(matches!(&elsewhere[0].kind, StmtKind::If(test, ..) if matches!(test.kind, ExprKind::Unary(..))));
     }
 
+    /// A loop's drops at each way out are one `finally` before the stages
+    /// that read what's in it, `jumps`, `values` and `loops`: "drop scopes"
+    /// right after "flags" (rd200, ADR 0659, amended).
+    #[test]
+    fn drop_scopes_come_before_what_reads_them() {
+        let names: Vec<&str> = super::stages::STAGES.iter().map(|stage| stage.name).collect();
+        assert_eq!(names[..3], ["flags", "drop scopes", "jumps"]);
+        let at = |name: &str| names.iter().position(|n| *n == name).expect("a stage");
+        assert!(at("drop scopes") < at("values") && at("drop scopes") < at("loops"));
+    }
+
     /// What finishes a body, after the stages that tidy it, in the order it
     /// ran when it was a function of its own, `named`: the last passes
     /// `--tidy-until` may stop after, and the contracts checked after them

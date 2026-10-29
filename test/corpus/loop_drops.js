@@ -42,34 +42,28 @@ function firstLong(items) {
 function main() {
   const v = [["a"], ["b"], ["c"], ["d"]];
   let iter = $iter(v);
-  let noisy;
-  while (true) {
-    try {
-      noisy = $next(iter);
-    } catch (error) {
-      for (const item of iter) {
-        noisyDrop_drop(item);
+  try {
+    while (true) {
+      const n = $next(iter);
+      if (n != null) {
+        if (n[0] === "b") {
+          noisyDrop_drop(n);
+          continue;
+        }
+        if (n[0] === "c") {
+          noisyDrop_drop(n);
+        } else {
+          console.log(`got ${n[0]}`);
+          noisyDrop_drop(n);
+          continue;
+        }
       }
-      throw error;
+      break;
     }
-    if (noisy != null) {
-      const n = noisy;
-      if (n[0] === "b") {
-        noisyDrop_drop(n);
-        continue;
-      }
-      if (n[0] === "c") {
-        noisyDrop_drop(n);
-      } else {
-        console.log(`got ${n[0]}`);
-        noisyDrop_drop(n);
-        continue;
-      }
-    }
+  } finally {
     for (const item of iter) {
       noisyDrop_drop(item);
     }
-    break;
   }
   console.log("after vec");
 
@@ -113,10 +107,10 @@ function main() {
   }
   iter = $iter([["unnamed"]]);
   try {
-    let value;
-    while ((value = $next(iter)) != null) {
+    let noisy;
+    while ((noisy = $next(iter)) != null) {
       console.log("body before the drop");
-      noisyDrop_drop(value);
+      noisyDrop_drop(noisy);
     }
   } finally {
     for (const item of iter) {

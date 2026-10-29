@@ -44,6 +44,16 @@ pub(super) const STAGES: &[Stage] = &[
         ensures: &[contracts::NOTHING_AFTER_A_JUMP],
         again: &[],
     },
+    // A loop that drops a value before each way out of it, a `for` over a
+    // `RefCell`'s borrow: one `try` of it whose `finally` drops it, before
+    // `jumps`, `values` and `loops` read what's in it, a value's branches
+    // then a conditional, a range's loop a `for` (rd200, ADR 0659, amended).
+    Stage {
+        name: "drop scopes",
+        passes: &[pass("looped drops", looped_drops_of)],
+        ensures: &[contracts::NOTHING_AFTER_A_JUMP],
+        again: &[],
+    },
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     Stage {
@@ -781,15 +791,7 @@ pub(super) const STAGES: &[Stage] = &[
             // over a `RefCell`'s borrow: one `try` of it whose `finally`
             // drops it (rd191).
             pass("looped drops", |b, h| {
-                let mut looped = false;
-                let mut taken = mentions(b);
-                // Its loop as MIR has it, its steps' `try`s gone: a `for`
-                // of what it steps, as `loops` makes one.
-                let mut tidied = |run: &mut Vec<Stmt>| {
-                    bindings::declarations(run);
-                    bottom_up(run, &mut |stmts| loops(stmts, &mut taken, h.numbers));
-                };
-                js::statement_lists(b, &mut |stmts| looped |= unwinds::looped_drops(stmts, &mut tidied));
+                let looped = looped_drops_of_made(b, h, false);
                 h.again.set(h.again.get() || looped);
             }),
             pass("drop scopes", |b, h| {
@@ -960,6 +962,26 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |s| {
         branch_values(s, hints.returns, hints.booleans, made, hints.written)
     });
+}
+
+/// `looped_drops` of each of `body`'s lists, each loop's run made as MIR's
+/// would be once its steps' `try`s are gone, a `for` of what it steps, as
+/// `loops` makes one; whether it made any.
+fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
+    let mut looped = false;
+    let mut taken = mentions(body);
+    let mut tidied = |run: &mut Vec<Stmt>| {
+        bindings::declarations(run);
+        bottom_up(run, &mut |stmts| loops(stmts, &mut taken, hints.numbers));
+    };
+    js::statement_lists(body, &mut |stmts| {
+        looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)
+    });
+    looped
+}
+
+fn looped_drops_of(body: &mut Vec<Stmt>, hints: &Hints) {
+    looped_drops_of_made(body, hints, true);
 }
 
 fn decided_tests_of(body: &mut Vec<Stmt>, hints: &Hints) {

@@ -214,4 +214,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
     snapshots: true,
   },
+  {
+    name: "ending-try-return-kept",
+    breaks: "a `try` that ends the function keeps the `return;` MIR made at its body's end, `for (..) { .. } return; } finally { $unborrow(items); }` (rd200)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        Some(StmtKind::Try(body, _)) => ending_returns(body, returns, true),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
+    snapshots: true,
+  },
 ];

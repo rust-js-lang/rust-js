@@ -26,37 +26,23 @@ function loudDrop_drop(loud) {
 
 function firstOver(map, limit) {
   const iter = $iter($sortedEntries(map, $cmp));
-  let tmp;
-  while (true) {
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      for (const item of iter) {
-        loudDrop_drop(item[1]);
+  try {
+    let value$1;
+    while ((value$1 = $next(iter)) != null) {
+      const key = value$1[0];
+      const value = value$1[1];
+      if (!(value[0] > limit)) {
+        loudDrop_drop(value);
+        continue;
       }
-      throw error;
-    }
-    if (tmp == null) {
-      for (const item of iter) {
-        loudDrop_drop(item[1]);
-      }
-      break;
-    }
-    const key = tmp[0];
-    const value = tmp[1];
-    if (!(value[0] > limit)) {
+      const result = key;
       loudDrop_drop(value);
-      continue;
+      return result;
     }
-    const result = key;
-    loudDrop_drop(value);
-    try {
-    } finally {
-      for (const item of iter) {
-        loudDrop_drop(item[1]);
-      }
+  } finally {
+    for (const item of iter) {
+      loudDrop_drop(item[1]);
     }
-    return result;
   }
 }
 

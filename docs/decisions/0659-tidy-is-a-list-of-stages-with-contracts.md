@@ -360,3 +360,14 @@ a handle's `.value = v` the place it's of, `item.sibling = v`
 and two reads `cursor.current` (`nullable_generic_fields.rs`). Its
 mutation, `mir-tidy-handle-in-place-kept` (`lower/mir/tidy/stages.ts`),
 drops the pass and is caught by those three cases' snapshots.
+
+## Amendment: "drop scopes", before `jumps` (2026-10-29, rd200)
+
+A stage "drop scopes", its one pass "looped drops", runs right after
+"flags" and before `jumps`: a loop's drops at each way out, one `try { ..
+} finally { drop }` before the stages that read its body, so `values`
+and `loops` read it as they would without the drop (ADR 0437, amended).
+It ensures nothing follows a jump; it doesn't ensure each label is named,
+as `flags` doesn't: MIR's blocks are `jumps`' to settle. The tidy unit
+test `drop_scopes_come_before_what_reads_them` holds its place, and
+`test/tidy-stages.test.ts` runs the corpus to its end.

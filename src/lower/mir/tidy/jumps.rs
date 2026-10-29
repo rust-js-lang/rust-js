@@ -527,6 +527,10 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             }
         }
         Some(StmtKind::Labeled(_, body)) => ending_returns(body, returns, branch),
+        // A `try` that ends the function, its `finally` run as it ends: its
+        // body's end is the function's too, a borrow's around a loop, and a
+        // `return undefined;` there nothing, as a branch's (rd200).
+        Some(StmtKind::Try(body, _)) => ending_returns(body, returns, true),
         _ => {}
     }
 }

@@ -43,31 +43,25 @@ function louds(items, by) {
 
 function until(by) {
   const iter = $lazyZip($lazyRange(0, 10), $closing($iter(by), $dropEach(loudDrop_drop)));
-  let tmp;
-  while (true) {
-    try {
-      tmp = $next(iter);
-    } catch (error) {
-      iter.return();
-      throw error;
-    }
-    if (tmp != null) {
-      const n = tmp[0];
-      const l = tmp[1];
-      if (l[0] > 20) {
-        console.log(`stop at ${n}`);
-        loudDrop_drop(l);
-      } else {
-        console.log(`${n} ${l[0]}`);
-        loudDrop_drop(l);
-        continue;
+  try {
+    while (true) {
+      const value = $next(iter);
+      if (value != null) {
+        const n = value[0];
+        const l = value[1];
+        if (l[0] > 20) {
+          console.log(`stop at ${n}`);
+          loudDrop_drop(l);
+        } else {
+          console.log(`${n} ${l[0]}`);
+          loudDrop_drop(l);
+          continue;
+        }
       }
+      return;
     }
-    try {
-    } finally {
-      iter.return();
-    }
-    return;
+  } finally {
+    iter.return();
   }
 }
 

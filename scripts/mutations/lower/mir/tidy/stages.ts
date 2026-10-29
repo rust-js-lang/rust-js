@@ -741,4 +741,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_mut_index_loops.rs$"],
     snapshots: true,
   },
+  {
+    name: "drop-scopes-stage-empty",
+    breaks: "a loop that drops a value before each way out of it keeps a `catch` of the drop around each step until the late `scopes` stage, after `values` and `loops` have read it, so no range's `for` is made of it (rd200)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: '        passes: &[pass("looped drops", looped_drops_of)],\n',
+    replace: "        passes: &[],\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|const_param_drop_cells).rs$"],
+    snapshots: true,
+  },
 ];
