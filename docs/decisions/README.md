@@ -609,7 +609,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0746 A length held in a variable shows the slice at least so long, and a `push` makes one long](0746-a-length-held-in-a-variable-shows-the-slice-so-long.md)
 - [0747 `unwrap()` of a throwing call each branch makes is each call](0747-unwrap-of-a-throwing-call-each-branch-makes.md)
 - [0748 A `for` of a slice's first items is of its part, `xs.slice(0, n)`](0748-a-for-of-a-slices-first-items-is-of-its-part.md)
-- [0750 A temporary is read past a method, and in the block after it](0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's)*
+- [0750 A temporary is read past a method, and in the block after it](0750-a-temporary-is-read-past-a-method-and-into-a-block.md) *(amended: not past a binding's method of a JS value; a getter's read does something, a declared type's method its class's; a value that's the same anywhere is read past what a target does)*
 - [0751 A binding only an arm's guard reads isn't written in the arm](0751-a-binding-only-a-guard-reads-isnt-written.md)
 - [0752 An `Option`'s function unwrapped and called panics before the call](0752-an-unwrapped-function-called-panics-first.md)
 - [0753 A branch of only comments keeps them](0753-a-branch-of-only-comments-keeps-them.md) *(extended by 0862: after a block's last code, and before a function's `None` at its end; amended: a `break;` rust-js writes after them is after them; amended: a last arm of only comments keeps them in its clause)*

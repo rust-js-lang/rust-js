@@ -185,7 +185,11 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         true => js::mentions_in(&rest[..=at], name) == 1,
         false => js::mentions_in(rest, name) == 1,
     };
-    let read = read_of(&rest[at], name)?;
+    // What does nothing, of variables nothing changes, gives the same
+    // wherever it's read.
+    let mut stable = !value.has_effects();
+    value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
+    let read = read_of(&rest[at], name, stable)?;
     let expr = read.of(&rest[at]);
     let single = once && js::mentions_in(&rest[at..=at], name) == 1;
     // Or tested more than once there and nowhere else, an or-pattern's
@@ -209,8 +213,6 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
             return None;
         }
     }
-    let mut stable = !value.has_effects();
-    value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
     // One made where a test holds, `t ? e : undefined`, may be read where
     // that test holds.
     let guard = match &value.kind {
@@ -276,8 +278,11 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
 /// it may be moved: its value, an `if`'s test, or an assignment's target
 /// whose object it is, `_25[k] = v`: JS reads a target's object first,
 /// then its key, then the value, so the temporary runs where it ran, whatever it
-/// does, `window.document.title = t` (#188).
-fn read_of(stmt: &Stmt, name: &str) -> Option<Read> {
+/// does, `window.document.title = t` (#188). A value of a target that does
+/// something, a setter's of a getter's object, only where it's `stable`,
+/// read the same after what the target does as before it, a closure given
+/// to a setter, `channel.port1.onmessage = () => { .. }` (#393).
+fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
     match &stmt.kind {
         StmtKind::Const(..)
         | StmtKind::Let(_, Some(_))
@@ -285,7 +290,7 @@ fn read_of(stmt: &Stmt, name: &str) -> Option<Read> {
         | StmtKind::Return(Some(_))
         | StmtKind::Throw(_)
         | StmtKind::Destructure { .. } => Some(Read::Value),
-        StmtKind::Assign(target, _) if !target.has_effects() => {
+        StmtKind::Assign(target, _) if stable || !target.has_effects() => {
             let mut in_target = false;
             target.visit_vars(&mut |v| in_target |= v == name);
             let mut root = target;
@@ -477,7 +482,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
         1 if own_name
             && let Some(first) = then.first()
             && js::mentions_in(std::slice::from_ref(first), name) == 1
-            && let Some(read) = read_of(first, name)
+            && let Some(read) = read_of(first, name, false)
             && matches!(&read.of(first).kind, ExprKind::Var(v) if v == name) =>
         {
             Some((read, substituted(read.of(first))?))
@@ -563,7 +568,7 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     if js::mentions_in(&stmts[at + 1..], name) != 1 {
         return false;
     }
-    let Some(read) = read_of(next, name) else {
+    let Some(read) = read_of(next, name, false) else {
         return false;
     };
     if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {

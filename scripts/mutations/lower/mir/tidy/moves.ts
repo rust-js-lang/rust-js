@@ -4,6 +4,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stable-value-held-past-target",
+    breaks: "a closure given to a setter under a drop guard stays a temporary, `function value() { .. } channel.port1.onmessage = value;`, as the setter's target reads a getter first (#393)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        StmtKind::Assign(target, _) if stable || !target.has_effects() => {\n",
+    replace: "        StmtKind::Assign(target, _) if !target.has_effects() => {\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "under a drop guard"],
+  },
+  {
     name: "ended-borrow-by-js-names",
     breaks: "a `let` that ends a borrow is read in place only where its JS name is the property's, so `const return$ = node.return;` and `const debugHookTypes = current._debugHookTypes;` stay, though each is named as its field in Rust (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",

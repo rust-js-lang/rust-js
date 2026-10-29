@@ -188,12 +188,11 @@ function eitherSides() {
     { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
     wrapperDerefMut,
   ).value.push(2);
-  const value = [3, 4];
   eitherDerefMut_derefMut(
     left,
     { Deref: () => ({ deref: (x) => x }), derefMut: (cell) => cell },
     wrapperDerefMut,
-  ).value = value;
+  ).value = [3, 4];
   const right = { TAG: "Right", _0: [[5]] };
   eitherDerefMut_derefMut(
     right,

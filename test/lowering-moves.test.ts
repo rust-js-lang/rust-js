@@ -301,6 +301,65 @@ pub fn by_nothing(channel: &Unknown) {
   expect(events).toEqual(["port1", "callback"]);
 });
 
+// Under a drop guard each call is in its own `try`, and the closure a
+// temporary MIR made: what does nothing, of variables nothing changes, is
+// read where it's given past what the assignment's target does, the
+// getter, as it would be read there anywhere (#393).
+test("a closure given to a setter under a drop guard is written where it's given", async () => {
+  const { js, lib } = await compiled(
+    "closure-to-a-setter-guarded",
+    `use js::Unknown;
+
+pub struct Loud(pub u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get port1")]
+fn port1(this: &Unknown) -> &'static Unknown {
+    let _ = this;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set onmessage")]
+#[cfg_attr(rust_js, rust_js::nullable(value))]
+fn set_onmessage(this: &Unknown, value: Option<Box<dyn FnMut(&Unknown)>>) {
+    let _ = (this, value);
+    unreachable!()
+}
+
+pub fn guarded(channel: &Unknown, callback: &'static dyn Fn()) {
+    let _guard = Loud(1);
+    set_onmessage(port1(channel), Some(Box::new(move |_| callback())));
+}
+`,
+  );
+  expect(js).toContain("  try {\n    channel.port1.onmessage = () => {\n      callback();\n    };\n  } finally {\n");
+  expect(js).not.toMatch(/function value|const (value|_\d+)/);
+  // The getter runs, then the closure is given, then the guard drops, as
+  // Rust runs them.
+  const events: string[] = [];
+  const port: { onmessage?: () => void } = {};
+  const channel = {
+    get port1() {
+      events.push("port1");
+      return port;
+    },
+  };
+  const log = console.log;
+  console.log = (text: string) => events.push(text);
+  try {
+    lib.guarded(channel as never, (() => events.push("callback")) as never);
+  } finally {
+    console.log = log;
+  }
+  port.onmessage?.();
+  expect(events).toEqual(["port1", "drop 1", "callback"]);
+});
+
 // An import's member is one JS's modules never change: `tags.link`, made
 // before a branch whose arm calls, is read where it's given, past the
 // branch, not held, `const link = tags.link` (`Body::plain_names`).

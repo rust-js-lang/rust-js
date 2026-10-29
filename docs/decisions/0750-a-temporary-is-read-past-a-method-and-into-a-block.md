@@ -1,7 +1,7 @@
 # 0750. A temporary is read past a method, and in the block after it
 
 Status: Accepted. Extends [0689](0689-a-moves-decision-is-apart-from-the-move.md):
-two more places `moves.rs` reads a temporary in its place.
+two more places `moves.rs` reads a temporary in its place. Amended below: a value that's the same anywhere is read past what a target does (#393).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 JS runs the same code in the same order.
@@ -149,3 +149,33 @@ what it holds where it's read, put the read inside the call.
   `getter-pending-past-lookup`, `typed-receiver-method-a-getters`,
   `and-then-chain-held`, `getter-read-in-place` and
   `target-root-acting-held`.
+
+## Amendment: a value that's the same anywhere is read past what a target does (#393)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: what's moved does nothing, and reads only variables nothing
+replaces, so it gives the same before the target's object is read as
+after.
+
+React's enqueueTask sets `channel.port1.onmessage = () => { callback(); }`.
+Under a drop guard each of MIR's calls is in a `try` of its own, so the
+closure is a temporary MIR made apart from the setter, and `read_of`
+moved nothing into the value of an assignment whose target does
+something, a getter's object: `channel.port1` is read first, so a value
+that does something must stay where it ran. The closure stayed, and was
+declared a function, `function value() { .. } channel.port1.onmessage =
+value;`, which nobody writes.
+
+**A `stable` value, one that does nothing and reads only variables
+nothing in the body replaces, is read in an assignment's value whatever
+its target does**, as it's read anywhere else in the statement that
+reads it (`Why::Stable`): `channel.port1.onmessage = () => { .. }`,
+`right[$at(right, 2)] = left.length | 0`, `f(left).value = [3, 4]`. What
+does something stays where it ran, as before.
+
+Four corpus snapshots read their value in place
+(`generic_deref_mut`, `mut_assoc_through_dictionary`, `slice_views`,
+`untagged_enums`). Held by `test/lowering-moves.test.ts`'s "a closure
+given to a setter under a drop guard is written where it's given", which
+runs it, the getter, then the guard's drop, then the closure, and the
+mutation `stable-value-held-past-target`.

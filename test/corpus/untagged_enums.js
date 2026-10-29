@@ -101,11 +101,10 @@ function main() {
   }
   const value = $index(values, 8);
   const copy = Array.isArray(value) ? value.slice() : value;
-  const value$1 = [];
-  values[$at(values, 8)] = value$1;
-  const value$2 = $index(values, 8);
+  values[$at(values, 8)] = [];
+  const value$1 = $index(values, 8);
   const arg = $eq(copy, [1, 2, 3]);
-  console.log(`${valueDebug_fmt(copy)} ${valueDebug_fmt(value$2)} ${arg}`);
+  console.log(`${valueDebug_fmt(copy)} ${valueDebug_fmt(value$1)} ${arg}`);
 
   const counts = [4, 5];
   const texts = values.filter((v) => typeof v === "string").length;

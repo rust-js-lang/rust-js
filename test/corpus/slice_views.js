@@ -68,8 +68,7 @@ function main() {
   const [left, right] = $splitAtMut(v, 3);
   const value$1 = $index(right, 0);
   left[$at(left, 0)] = value$1;
-  const length = left.length;
-  right[$at(right, 2)] = length | 0;
+  right[$at(right, 2)] = left.length | 0;
   console.log(`[${v.join(", ")}]`);
   console.log(`${$splitAtMut(v, 7, true) == null}`);
   const [a, b] = $sliceSplitAt(v, 4);
@@ -80,8 +79,7 @@ function main() {
   if (splitAtMutChecked != null) {
     const a = splitAtMutChecked[0];
     const b = splitAtMutChecked[1];
-    const value = b.length;
-    a[$at(a, 0)] = value | 0;
+    a[$at(a, 0)] = b.length | 0;
   }
   console.log(`[${v.join(", ")}]`);
 
@@ -200,9 +198,9 @@ function main() {
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
   const [head$1, tail$1] = $splitAtMut(points, 1);
   const value$2 = $index(tail$1, 1).x;
-  const value$3 = head$1.length;
-  if (0 >= value$3) {
-    throw new Error(`index out of bounds: the len is ${value$3} but the index is 0`);
+  const length = head$1.length;
+  if (0 >= length) {
+    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
   }
   head$1[0].x = value$2;
   tail$1[$at(tail$1, 0)] = { x: 0 };
