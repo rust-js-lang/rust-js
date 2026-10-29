@@ -100793,6 +100793,19 @@ pub mod console {
     }
 }
 
+/// The [`CSS`](https://developer.mozilla.org/docs/Web/API/CSS) namespace.
+
+pub mod css {
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/escape)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.escape")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn escape(ident: &str) -> String {
+        unreachable!()
+    }
+}
+
 /// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.
 
 pub mod global {

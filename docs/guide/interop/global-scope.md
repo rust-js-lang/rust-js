@@ -147,6 +147,8 @@ The crates bind the standard ones, called bare:
 - `webapi::global`: what every global scope has, a window's and a worker's,
   `fetch`, `queue_microtask`, `atob`, `report_error`.
 - `webapi::window_global`: a window's own, `confirm`, `alert`.
+- `webapi::console`, `webapi::css` and `webapi::web_assembly`: a namespace's
+  functions, `console.log`, `CSS.escape(name)`.
 
 ## A global some hosts lack
 

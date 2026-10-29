@@ -205,3 +205,8 @@ Held by `test/webapi-bindings.test.ts`'s "a dictionary's fields are its
 partial dictionaries' too", and `test/webapi-coverage.test.ts`'s
 generator output.
 
+And `CSS`'s namespace is webapi's `css` module, `webapi::css::escape(name)`,
+`CSS.escape(name)` (rd162): cssom's members, another spec's partial ones
+left out where TypeScript's DOM doesn't say, as an interface's are; its
+MDN pages are the Web API's.
+

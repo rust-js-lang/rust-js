@@ -1143,3 +1143,23 @@ pub fn shown(el: &Element, name: &str) {
     '  el.animate(null, {\n    duration: 0,\n    fill: "forwards",\n    pseudoElement: name,\n    delay: 10,\n    rangeStart: "cover 0%",\n  });\n',
   );
 });
+
+// rd162: CSS's namespace, `CSS.escape(name)`, as React DOM escapes a view
+// transition's name: cssom's; another spec's partial members of it, css-typed-om's
+// `CSS.px`, are left out, as an interface's are (ADR 0281).
+test("webapi's css module is CSS's namespace", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-css-namespace");
+  writeFileSync(join(dir, "lib.rs"), `pub fn selector(name: &str) -> String {
+    format!("::view-transition-group({})", webapi::css::escape(name))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return `::view-transition-group(${CSS.escape(name)})`;");
+  (globalThis as any).CSS = { escape: (s: string) => s.replace(/ /g, "\\\\ ") };
+  try {
+    expect((await import(join(dir, "lib.js"))).selector("a b")).toBe("::view-transition-group(a\\\\ b)");
+  } finally {
+    delete (globalThis as any).CSS;
+  }
+});

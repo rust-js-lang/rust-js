@@ -212,7 +212,7 @@ const TYPES_BY_HAND: Record<string, string[]> = {
 };
 
 // Namespaces: a module of functions, like `web_assembly::compile`.
-const NAMESPACES = ["WebAssembly", "console"];
+const NAMESPACES = ["WebAssembly", "console", "CSS"];
 
 // JS's own types that WebIDL uses, the js crate's: its buffers and typed
 // arrays, each element a Rust number of its kind (ADR 0283).
@@ -402,7 +402,9 @@ for (const d of read) {
     interfaces.set(d.name, i);
   } else if (d.type === "namespace" && NAMESPACES.includes(d.name)) {
     const n = namespaces.get(d.name) ?? { name: d.name, members: [], constructible: false, isNamespace: true };
-    n.members.push(...(d.members ?? []).map((member) => ({ member, from: d.name })));
+    // Of another spec's partial, as its interfaces' are: CSS's `escape` is
+    // cssom's, its `px` css-typed-om's, left out (rd162).
+    n.members.push(...(d.members ?? []).filter((m) => !leftOut.has(m)).map((member) => ({ member, from: d.name })));
     namespaces.set(d.name, n);
   } else if (d.type === "interface mixin") {
     mixins.set(d.name, [...(mixins.get(d.name) ?? []), ...(d.members ?? []).filter((m) => !leftOut.has(m))]);
@@ -1057,7 +1059,9 @@ function root(name: string): string {
 
 function mdn(iface: string, member?: string) {
   const ns = interfaces.get(iface)?.legacyNamespace;
-  const page = ns ? `JavaScript/Reference/Global_Objects/${ns}/${iface}` : NAMESPACES.includes(iface) ? `JavaScript/Reference/Global_Objects/${iface}` : `API/${iface}`;
+  // MDN files `CSS` with the Web API's pages, the other namespaces with JS's.
+  const js = NAMESPACES.includes(iface) && iface !== "CSS";
+  const page = ns ? `JavaScript/Reference/Global_Objects/${ns}/${iface}` : js ? `JavaScript/Reference/Global_Objects/${iface}` : `API/${iface}`;
   return `https://developer.mozilla.org/docs/Web/${page}${member ? `/${member}` : ""}`;
 }
 
