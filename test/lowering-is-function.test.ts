@@ -345,14 +345,32 @@ pub fn set_offsets(selection: &Selection, node: &Node, start: f64, end: f64) -> 
 pub fn has_extend(selection: &Selection) -> bool {
     js::is_defined((selection, Selection::extend))
 }
+
+/// React DOM's hideInstance: \`typeof style.setProperty === 'function'\`.
+/// A method no turbofish names, of an \`impl IntoUnknown\`, is the one its
+/// \`fn\` pointer is cast from (rd154).
+pub fn hide(style: &webapi::CSSStyleDeclaration) {
+    if js::is_function((style, webapi::CSSStyleDeclaration::set_property as fn(_, _, &'static str, _))) {
+        style.set_property("display", "none", Some("important"));
+    } else {
+        style.set_css_text("display: none");
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('if (typeof selection.extend !== "function" && start > end) {');
   expect(js).toContain('return typeof selection.extend !== "undefined";');
+  expect(js).toContain('  if (typeof style.setProperty === "function") {\n    style.setProperty("display", "none", "important");\n  } else {\n    style.cssText = "display: none";\n  }');
   const lib = await import(join(dir, "lib.js"));
   const extended: unknown[] = [];
   const modern = { extend: (node: unknown, offset: unknown) => void extended.push([node, offset]) };
   expect([lib.setOffsets(modern, "n", 5, 2), lib.setOffsets({}, "n", 5, 2), lib.hasExtend(modern), lib.hasExtend({})]).toEqual([true, false, true, false]);
   expect(extended).toEqual([["n", 2]]);
+  const set: unknown[] = [];
+  const modernStyle = { cssText: "", setProperty: (...args: unknown[]) => void set.push(args) };
+  const oldStyle = { cssText: "" };
+  lib.hide(modernStyle);
+  lib.hide(oldStyle);
+  expect([set, modernStyle.cssText, oldStyle.cssText]).toEqual([[["display", "none", "important"]], "", "display: none"]);
 });

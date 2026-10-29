@@ -9,7 +9,8 @@ Amended: a chain of its tests reads as written, a comment before it kept;
 and of a value of a function's type JS gives, it asks the value; and of a
 path it asks the last part alone, not each before it; and a path may start
 from a value; and whether a global is a number is the family's third
-question, `js::is_number` (below).
+question, `js::is_number`; and a step may be a `fn` pointer cast of a
+method (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for `is_function`:
 what's asked of the host, as JS asks it. N for the globals not asked of:
@@ -356,3 +357,26 @@ static, run without the global, with a string, `null` and a number) and
 `is-number-form-called`, `is-number-asked-as-function` (`bindings.ts`),
 `is-number-of-a-function-asked`, `is-number-of-an-option-refused` and
 `is-number-of-a-getter-refused` (`mir/calls.ts`).
+
+## Amendment: a step may be a method cast to a `fn` pointer (rd154)
+
+React DOM's `hideInstance` asks `typeof style.setProperty === 'function'`
+before calling it. webapi's `set_property` takes its value as `impl
+IntoUnknown` (the user's decision for any-valued CSS setters), so
+`(style, CSSStyleDeclaration::set_property)` is E0282, and no turbofish
+names an `impl Trait` parameter (E0632).
+
+**A step may be the method cast to a `fn` pointer**, which rustc infers
+the parameter of: `js::is_function((style,
+CSSStyleDeclaration::set_property as fn(_, _, &'static str, _)))` is
+`typeof style.setProperty === "function"`. The step's type is a `fn`
+pointer, which names no binding, so the path reads the function it's cast
+from in the tuple MIR builds, through the copies MIR makes of the cast
+(`steps_named`). A `fn` pointer step cast from no binding is refused as
+before. `&'static str`: a `fn` pointer of any lifetime, `&str`, is more
+general than the one instance of `impl IntoUnknown` it's cast from.
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_function of a path
+from a value asks its member" (`hide`, run of a style with and without
+`setProperty`); mutations `fn-pointer-step-unnamed` and
+`fn-pointer-step-copy-unfollowed` (`mir/calls.ts`).

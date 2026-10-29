@@ -554,6 +554,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()
             && !steps.is_empty()
         {
+            let steps = &self.steps_named(body, &arg.node, steps)[..];
             if let Some(value_ty) = value_first(steps) {
                 let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked, span)?;
                 self.asked_of_number(asked, read, span)?;
@@ -616,6 +617,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.asked_of_number(asked, read, span)?;
         }
         self.mir_defined_parts(global, None, asked, span)
+    }
+
+    /// The type of each step of a path `tuple` is, a binding's function's;
+    /// of one cast to a `fn` pointer, the function it's cast from, read of
+    /// the tuple MIR builds: `CSSStyleDeclaration::set_property as fn(_, _,
+    /// &'static str, _)`, whose `impl IntoUnknown` no turbofish names
+    /// (rd154).
+    fn steps_named(&self, body: &mir::Body<'tcx>, tuple: &Operand<'tcx>, steps: &[Ty<'tcx>]) -> Vec<Ty<'tcx>> {
+        let assigned = |local: mir::Local| {
+            let mut found = (body.basic_blocks.iter())
+                .flat_map(|block| &block.statements)
+                .filter_map(|s| match &s.kind {
+                    StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+                    _ => None,
+                });
+            match (found.next(), found.next()) {
+                (Some(rvalue), None) => Some(rvalue),
+                _ => None,
+            }
+        };
+        let items = match tuple.place().and_then(|place| place.as_local()).and_then(assigned) {
+            Some(Rvalue::Aggregate(kind, items)) if matches!(**kind, mir::AggregateKind::Tuple) => Some(items),
+            _ => None,
+        };
+        // Through the copies MIR makes of the cast, `_5 = copy _6`.
+        let cast_from = |k: usize| {
+            let mut item = items?.get(rustc_abi::FieldIdx::from_usize(k))?;
+            loop {
+                match assigned(item.place()?.as_local()?)? {
+                    Rvalue::Use(copied, _) => item = copied,
+                    Rvalue::Cast(
+                        mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::ReifyFnPointer(_), _),
+                        from,
+                        _,
+                    ) => {
+                        let from = from.ty(&body.local_decls, self.tcx);
+                        return crate::lower::fn_def(from).map(|_| from);
+                    }
+                    _ => return None,
+                }
+            }
+        };
+        (steps.iter().enumerate())
+            .map(|(k, &step)| match step.kind() {
+                ty::FnPtr(..) => cast_from(k).unwrap_or(step),
+                _ => step,
+            })
+            .collect()
     }
 
     /// `js::is_number` of what's a number in Rust, `f64`, or an `Option`

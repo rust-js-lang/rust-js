@@ -351,6 +351,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-is-function.test.ts", "-t", "is whether a binding's global is a function"],
   },
   {
+    name: "fn-pointer-step-unnamed",
+    breaks: "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))`, a method no turbofish names, is refused as a step of no method (rd154)",
+    file: "src/lower/mir/calls.rs",
+    find: "                ty::FnPtr(..) => cast_from(k).unwrap_or(step),\n",
+    replace: "                ty::FnPtr(..) if false => cast_from(k).unwrap_or(step),\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
+  },
+  {
+    name: "fn-pointer-step-copy-unfollowed",
+    breaks: "a step's `fn` pointer MIR copies, `_5 = copy _6`, isn't followed to its cast, so hideInstance's test is refused (rd154)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    Rvalue::Use(copied, _) => item = copied,\n",
+    replace: "                    Rvalue::Use(..) => return None,\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
+  },
+  {
     name: "is-number-of-a-function-asked",
     breaks: "`js::is_number(callable)`, a function's binding, is `typeof rustJsCallable === \"number\"`, always false, not refused (rd195)",
     file: "src/lower/mir/calls.rs",
