@@ -465,3 +465,38 @@ pub fn both(reason: u8, tag: u8) -> bool {
   expect([lib.tested(5, true), lib.tested(null, true), lib.tested(6, false)]).toEqual([1, 4, 5]);
   expect([lib.nested(5, 5, 0), lib.nested(5, 6, 0), lib.both(5, 5), lib.both(5, 6)]).toEqual([1, 2, true, false]);
 });
+
+// A `pub use` of a binding re-exports from its JS module, `export { scale }
+// from "./scale.js"`: an import, so a cycle through that file is one (#295).
+// `z`'s load reads `a`'s `K`; `a` re-exports `scale`, whose file imports `z`
+// back. Where `a` loads first, `z` loads before `a` makes `K`, so `z` reads
+// its value, `[7]`, not `K` by its name.
+test("a module re-exporting a binding imports its JS module, a cycle through it", async () => {
+  const dir = fixture("reexported-binding-cycle");
+  writeFileSync(join(dir, "lib.rs"), `pub mod a {
+    pub use super::b::scale;
+
+    pub const K: u32 = 7;
+}
+
+pub mod b {
+    #[cfg_attr(rust_js, rust_js::link_name = "./scale.js#scale")]
+    pub fn scale() -> u32 {
+        unreachable!()
+    }
+}
+
+pub mod z {
+    pub static S: [u32; 1] = [super::a::K];
+
+    pub fn one() -> u32 {
+        S[0]
+    }
+}
+`);
+  writeFileSync(join(dir, "scale.js"), "import { one } from './z.js';\n\nexport const scale = () => one() * 2;\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "z.js"), "utf8")).toContain("[7]");
+  const a = await import(join(dir, "a.js"));
+  expect(a.scale()).toBe(14);
+});

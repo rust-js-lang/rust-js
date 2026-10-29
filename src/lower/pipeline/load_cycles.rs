@@ -205,6 +205,7 @@ pub(super) struct ModuleJs {
 /// imports, a binding's, as `imported` says of each too, and those it
 /// imports for their effects.
 pub(super) fn module_imports<'d>(
+    tcx: TyCtxt<'_>,
     places: &[ModuleJs],
     fns: &HashMap<DefId, FnInfo>,
     (references, held, package_uses): (
@@ -220,10 +221,38 @@ pub(super) fn module_imports<'d>(
         .collect();
     let referenced = references.map(|&(from, id)| (from, fns[&id].module));
     let held = held.map(|&(from, holder, ..)| (from, holder));
+    // And what each module re-exports of another of the crate's, `pub use
+    // super::a::one`, `export { one } from "./a.js"`: an import of it, so
+    // a cycle through it is one (#295).
+    // Of a binding, its JS module, `export { x } from "./file.js"`.
+    let reexports: Vec<(LocalModId, rustc_span::def_id::LocalDefId)> = (places.iter())
+        .flat_map(|js| {
+            (tcx.module_children_local(js.module.to_local_def_id()).iter())
+                .filter(|child| !child.reexport_chain.is_empty())
+                .filter_map(|child| child.res.opt_def_id()?.as_local())
+                .map(move |id| (js.module, id))
+        })
+        .collect();
+    let reexported: Vec<(LocalModId, LocalModId)> = (reexports.iter())
+        .map(|&(from, id)| (from, tcx.parent_module_from_def_id(id)))
+        .filter(|(from, to)| from != to)
+        .collect();
+    let reexported_bindings: Vec<(LocalModId, String)> = (reexports.iter())
+        .filter(|&&(_, id)| crate::lower::bindings::is_binding(tcx, id.to_def_id()))
+        .filter_map(|&(from, id)| {
+            let name = crate::lower::bindings::js_name(tcx, id.to_def_id());
+            let ((module, _), _) = crate::lower::bindings::js_import(&name)?;
+            Some((from, module))
+        })
+        .collect();
     let used = package_uses.map(|(from, (module, _))| (*from, module.as_str()));
     let users =
         (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
     let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
-    let bound = used.chain(users).chain(effects);
-    crate::lower::load_order::ModuleImports::new(&laid_out, referenced.chain(held), bound, js_modules)
+    let bound = (used.chain(users).chain(effects)).chain(
+        reexported_bindings
+            .iter()
+            .map(|(from, module)| (*from, module.as_str())),
+    );
+    crate::lower::load_order::ModuleImports::new(&laid_out, referenced.chain(held).chain(reexported), bound, js_modules)
 }

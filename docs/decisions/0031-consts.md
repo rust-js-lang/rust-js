@@ -410,3 +410,23 @@ or `false` alone, so `!!` of it is itself.
 Tested by `test/lowering-constants.test.ts`'s "a bool constant read by its
 name", run; its mutations are `bool-const-unknown` and
 `known-boolean-unread`.
+
+## Amendment: a re-export is an import (#295)
+
+A `pub use` re-export, `pub use super::z::one`, is `export { one } from
+"./z.js"`: an import of `z`. The graph of what each module imports, which
+decides whether a module's load reads another's `const` by its name, had
+no edge for one. So `z`'s `S = [K]` read `a`'s `K` by name though `a`
+re-exports `z`, and where `a` loaded first, `z` ran before `a` made `K`:
+`ReferenceError: Cannot access 'K' before initialization`.
+
+`module_imports` now adds an edge from a module to the module of each item
+it re-exports, read from rustc's module children. A re-export of a binding
+adds one to the binding's JS module, `export { scale } from "./scale.js"`.
+
+- `test/corpus/reexport_in_a_load_cycle.rs` checks a module's re-export
+  against native Rust.
+- lowering-constants' "a module re-exporting a binding imports its JS
+  module, a cycle through it" checks the binding's.
+- The mutations are `reexport-not-an-import` and
+  `reexported-binding-not-an-import`.

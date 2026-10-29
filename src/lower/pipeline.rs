@@ -507,7 +507,7 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.held),
                     lowered().flat_map(|d| &d.package_uses),
                 );
-                let imports = module_imports(&places, &fns, edges, &imported, js_modules);
+                let imports = module_imports(tcx, &places, &fns, edges, &imported, js_modules);
                 // A thread-local made as its module loads, of a function of a
                 // module that may load after it: made where it's first used,
                 // the crate lowered again so, a `pub` one refused (ADR 1006).
@@ -1009,7 +1009,7 @@ pub fn lower_crate<'tcx>(
         pass.held.iter(),
         pass.package_uses.iter(),
     );
-    let imports = module_imports(&places, &fns, edges, &imported, js_modules);
+    let imports = module_imports(tcx, &places, &fns, edges, &imported, js_modules);
     load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
     // The exported thread-locals and `static mut`s their modules made
     // their variables.

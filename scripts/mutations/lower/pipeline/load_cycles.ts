@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "reexport-not-an-import",
+    breaks: "a module that re-exports another's function, `pub use super::z::one`, has no import of it in the load-order graph, so `z`'s load reads `a`'s `K` by its name before it's made: `ReferenceError` (#295)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "        .filter(|(from, to)| from != to)\n        .collect();\n",
+    replace: "        .filter(|_| false)\n        .collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^reexport_in_a_load_cycle.rs$"],
+  },
+  {
+    name: "reexported-binding-not-an-import",
+    breaks: "a module that re-exports a binding has no import of its JS module in the load-order graph, so a cycle through that file isn't seen and `z` reads `K` by its name (#295)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "            Some((from, module))\n",
+    replace: "            None::<(LocalModId, String)>.or(Some((from, module))).filter(|_| false)\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "a module re-exporting a binding imports its JS module"],
+  },
+  {
     name: "dictionary-load-cycle-allowed",
     breaks: "a dictionary in an import cycle with a module whose load runs code compiles, and that code may read it before it's made",
     file: "src/lower/pipeline/load_cycles.rs",
@@ -46,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "effects-import-nothing",
     breaks: "a module's `js::import!(\"./setup.js\")` imports none of the crate's modules that file does, so a cycle through it is unseen and the module loaded first reads a constant before it's made",
     file: "src/lower/pipeline/load_cycles.rs",
-    find: "    let bound = used.chain(users).chain(effects);\n",
-    replace: "    let bound = used.chain(users).chain(effects.take(0));\n",
+    find: "    let bound = (used.chain(users).chain(effects)).chain(\n",
+    replace: "    let bound = (used.chain(users).chain(effects.take(0))).chain(\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
   {
