@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { validate } from "../../models/src/lib.js";
+//! A new contact: checked as the server will check it (`models::validate`)
+//! before it's sent, then the server's answer, its errors by field.
 import { Failure, create } from "./api.js";
 import { go } from "./route.js";
 import { $debugStr, $parseInt, $retain, $trim } from "@rust-js/runtime";
