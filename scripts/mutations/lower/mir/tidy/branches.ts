@@ -440,8 +440,8 @@ export const mutations: Mutation[] = [
     name: "written-returns-made-a-conditional",
     breaks: "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(one.target == result && written_returns((then, otherwise), returns, span)) =>\n",
-    replace: "                    && true =>\n",
+    find: "                    && !(one.target == result && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
+    replace: "                    && true\n                    // Not an `if` the program wrote as a statement",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
   },
   {
@@ -584,5 +584,21 @@ export const mutations: Mutation[] = [
     find: " || (null(yes) && undefined(no))\n",
     replace: "\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
+  },
+  {
+    name: "statement-if-made-a-conditional",
+    breaks: "a late `let` the program assigns in an `if` it wrote, `let n; if flag { n = 1 } else { n = 2 }`, is `const n = flag ? 1 : 2;`, not as it's written (rd187)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && (is_temporary(&one.target) || !program.statement_elses.iter().any(|c| {",
+    replace: "                    && (true || !program.statement_elses.iter().any(|c| {",
+    tests: ["test/lowering-names.test.ts", "-t", "nothing sets again"],
+  },
+  {
+    name: "statement-if-of-a-temporary-kept",
+    breaks: "a temporary's `if` MIR makes inside a written `if`'s condition, a `matches!`'s, stays `let tmp; if (..) { tmp = true; } else { tmp = false; }`, not its test (rd187)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && (is_temporary(&one.target) || !program.statement_elses.iter().any(|c| {",
+    replace: "                    && (false || !program.statement_elses.iter().any(|c| {",
+    tests: ["test/port-performance-track.test.ts", "-t", "holds no temporary"],
   },
 ];

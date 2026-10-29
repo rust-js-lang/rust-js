@@ -125,21 +125,37 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
     fn acts(e: &Expr) -> bool {
         e.has_effects()
     }
-    fn body_does(stmts: &[Stmt]) -> bool {
+    // Of what it declares, `declared`, an assignment sets nothing outside
+    // it: `let sign; if (x < 0) { sign = "-"; } else { sign = "+"; }`, as
+    // the program wrote it (rd187).
+    fn body_does(stmts: &[Stmt], declared: &mut Vec<String>) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
-            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Expr(e) => {
+            StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) => {
+                declared.push(name.clone());
                 acts(e)
             }
+            StmtKind::Return(Some(e)) | StmtKind::Expr(e) => acts(e),
             StmtKind::Destructure { value, .. } => acts(value),
-            StmtKind::Let(_, None) | StmtKind::Return(None) => false,
+            StmtKind::Let(name, None) => {
+                declared.push(name.clone());
+                false
+            }
+            StmtKind::Return(None) => false,
+            StmtKind::Assign(target, e) => {
+                !matches!(&target.kind, js::ExprKind::Var(name) if declared.contains(name)) || acts(e)
+            }
             StmtKind::If(test, then, otherwise) => {
-                acts(test) || body_does(then) || otherwise.as_deref().is_some_and(body_does)
+                acts(test)
+                    || body_does(then, &mut declared.clone())
+                    || otherwise
+                        .as_deref()
+                        .is_some_and(|o| body_does(o, &mut declared.clone()))
             }
             _ => true,
         })
     }
     match &f.kind {
-        js::ExprKind::Arrow(_, body) => body_does(body),
+        js::ExprKind::Arrow(_, body) => body_does(body, &mut Vec::new()),
         js::ExprKind::Var(_) => !f.helper_name().is_some_and(crate::runtime::is_pure),
         _ => true,
     }

@@ -23,6 +23,10 @@ pub(super) struct Written {
     /// Each `if` written with an `else`: its condition, its `then` and its
     /// `else`, which MIR's structure may make a guard of (`written_elses`).
     pub elses: Vec<(js::Span, js::Span, js::Span)>,
+    /// Of them, each a statement, of no value, `if c { x = a; } else { x =
+    /// b; }`, its condition: an `if` the program wrote of a late `let`,
+    /// which stays one, not a value's conditional (rd187).
+    pub statement_elses: Vec<js::Span>,
     /// Where each `else if` is written, an `else` that's an `if`: a link
     /// of a chain, which an `if let`'s binding, its JS `const`, keeps from
     /// being an `else if` (`written_elses`).
@@ -266,6 +270,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let statement_elses: Vec<js::Span> = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If {
+                    cond,
+                    else_opt: Some(_),
+                    ..
+                } if e.ty.is_unit() => Some(self.js_span(self.frame.thir[cond].span)),
+                _ => None,
+            })
+            .collect();
         let else_ifs: Vec<js::Span> = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If {
@@ -451,6 +465,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ifs,
             thens,
             elses,
+            statement_elses,
             else_ifs,
             links,
             let_elses,

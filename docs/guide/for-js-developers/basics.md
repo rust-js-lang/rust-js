@@ -1201,7 +1201,12 @@ constants that's a `switch` is a `switch` first; to have no `else`,
 write `let … else` or an `if let` without one. A function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..
 } else { .. }`, with no `return;` at their ends
-([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended):
+([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).
+A `let` you declare and then assign in each arm of an `if` you wrote stays
+that `if`, `let label; if (..) { label = ..; } else { label = ..; }`; a
+value's `if`, `let label = if .. { .. } else { .. };`, is a conditional
+([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md),
+amended):
 
 ```rust
 pub fn describe(kind: u32, ready: bool, dev: bool) -> String {
@@ -1237,8 +1242,10 @@ export function describe(kind, ready, dev) {
     label = "element";
   } else if (kind === 2) {
     return "client";
+  } else if (dev && ready) {
+    label = "<jsx>";
   } else {
-    label = dev && ready ? "<jsx>" : "{...}";
+    label = "{...}";
   }
   return label;
 }

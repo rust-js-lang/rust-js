@@ -300,7 +300,14 @@ pub(super) fn branch_values(
                     // `return` the program wrote, `if c { return a; }
                     // return b;`, MIR's one `return`: an `if` of `return`s
                     // (ADR 0657, amended).
-                    && !(one.target == result && written_returns((then, otherwise), returns, span)) =>
+                    && !(one.target == result && written_returns((then, otherwise), returns, span))
+                    // Not an `if` the program wrote as a statement, of a late
+                    // `let`, `let error; if c { error = a; } else { error =
+                    // b; }`, which stays as it's written (rd187).
+                    && (is_temporary(&one.target) || !program.statement_elses.iter().any(|c| {
+                        let within = |s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+                        within(test.span) || within(span)
+                    })) =>
             {
                 // A value the program wrote with an `if`, not `&&` or `||`.
                 let written_if = written_branches(span, then, otherwise, elses);

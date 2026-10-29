@@ -395,7 +395,9 @@ pub fn handled() -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const list = [];\n  list.push(1);");
   expect(js).toContain("  let n = 0;\n  n++;");
-  expect(js).toContain("  const n = flag ? 1 : 2;");
+  // A late `let` the program assigns in an `if` it wrote, as it's written
+  // (rd187, the user's decision).
+  expect(js).toContain("  let n;\n  if (flag) {\n    n = 1;\n  } else {\n    n = 2;\n  }");
   expect(js).toContain("  let n = 0;\n  const n$1 = { value: n };");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.pushed(), lib.counted(), lib.later(true), lib.later(false), lib.handled()]).toEqual([[1], 1, 1, 2, 1]);

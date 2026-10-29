@@ -186,3 +186,25 @@ downcast's, is the names owner's, written up (S/decisions-pending.md). `catch_un
 is the chain's `else if`. Held by `test/lowering-returned-chains.test.ts`'
 "the rest of a returned chain after an else if let's binding is a chain of
 its own" and mutation `returned-chain-bound-rest-headless`.
+
+## Amendment: a late `let`'s `if`, as it's written (rd187, the user's decision)
+
+`let n; if flag { n = 1 } else { n = 2 }` was `const n = flag ? 1 : 2;`,
+tidy's `branch values` folding any `if` of one assignment each way; since
+#121 read React's updateDehydratedSuspenseComponent's binding in place,
+its `let error; if (__DEV__ && message) { error = new Error(message); }
+else { error = new Error(..); }`, upstream's and the Rust's, was a
+conditional too. **An `if` with an `else` the program wrote as a
+statement, of type `()`, of a variable it declared, stays that `if`**
+(`hints::Written::statement_elses`, `branches::branch_values`); a value's,
+`let n = if flag { 1 } else { 2 };`, and a temporary's MIR makes, a
+`matches!`'s, are conditionals as before. The user's decision of
+2026-10-29, "keep as written". A closure that only sets what it
+declares, as `let sign; if (x < 0) { sign = "-"; } ..` does, does
+nothing a chain's order shows (`iterators::in_place::does`), so its chain
+is an array's still, `xs.map(..)`. Case N: the same value. Held by
+`test/lowering-names.test.ts` ("a variable nothing sets again is a
+const"), `test/corpus/bindings_before_branch.rs`, the guide's `describe`,
+the mutations `statement-if-made-a-conditional` and
+`statement-if-of-a-temporary-kept` (`mir/tidy/branches.ts`), and
+`closure-own-assignment-does` (`lower/iterators/in_place.ts`).
