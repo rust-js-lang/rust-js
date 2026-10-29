@@ -109,14 +109,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
   },
   {
-    name: "mir-assign-op-handle-refused",
-    breaks: "MIR's `*m.entry(k).or_insert(10) += &v`, through a handle a call gave, is refused",
-    file: "src/lower/mir/calls.rs",
-    find: "            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))\n",
-    replace: "            && matches!(place, Value::Ref(_))\n",
-    tests: ["test/corpus.test.ts", "-t", "prepared_places"],
-  },
-  {
     name: "mir-binding-component-called",
     breaks: "a component a JS module exports is its binding's value, not the tag JSX imports",
     file: "src/lower/mir/calls.rs",
@@ -509,5 +501,13 @@ export const mutations: Mutation[] = [
     find: "                Expr::text_joined(place.clone(), rhs)\n",
     replace: "                Expr::bin(Op::Add, place.clone(), rhs)\n",
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+  },
+  {
+    name: "mir-assign-op-call-place-twice",
+    breaks: "`*first(&mut v) += &five` is `first(v).value = (first(v).value + five) | 0`: the call that gives the place runs twice, a wrong answer",
+    file: "src/lower/mir/calls.rs",
+    find: "            let place = match !super::queries::fixed_place(place) && place.has_effects() {\n",
+    replace: "            let place = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^assign_op_through_a_call.rs$"],
   },
 ];

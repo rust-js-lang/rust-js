@@ -1,6 +1,6 @@
 # 0099. A `&mut` held in a variable names its place; one kept elsewhere is a handle
 
-Status: Accepted in part: a `&mut` in a variable, the index loop, a
+Status: Accepted in part (amended 2026-10-29: a compound assignment through a call's `&mut` reads the call once): a `&mut` in a variable, the index loop, a
 generic `&mut T`, a `&mut` to a closure, a `&mut dyn Trait` of the
 crate's, and handles of a `&mut` to a value JS can't change in place, and
 to a temporary. A generic `&mut T` to
@@ -463,3 +463,26 @@ addTo(place, 5); item.x = place.value;`.
   array's and a field's against native Rust.
 - The mutations are `flushed-mut-ref-a-handle` and
   `flushed-mut-ref-unfixed`.
+
+## Amendment: a compound assignment through the `&mut` a call gives (2026-10-29)
+
+`*first(&mut v) += &five`, an operator of a borrowed operand, which MIR
+calls, `AddAssign::add_assign(&mut *first(v), &five)`, read and wrote the
+place the call gave as written: `first(v).value = (first(v).value + five)
+| 0`, so `first` ran twice, printing twice where Rust prints once. A
+wrong answer, so ADR 0262's "results change" case: Rust's behavior is
+kept. The primitive `*first(&mut v) += five` named the handle already.
+
+What holds such a place, where it isn't fixed and its reading has effects,
+is now named where it's reached (`fixed_place_of`), before the operand:
+`const item = first(v); item.value = (item.value + five()) | 0;`. A
+handle's arm beside it, of a `&mut` given as a value rather than a place,
+reached nothing: MIR reborrows every `&mut` it gives the operator, `&mut
+*x`, so its place is a reference's; the arm went, with its mutation
+`mir-assign-op-handle-refused` (the corpus, with snapshots, and React's
+port compiled with a probe in it reached it nowhere).
+
+- `test/corpus/assign_op_through_a_call.rs` checks an `i32`'s `+=`, `-=`
+  and `*=` and a `String`'s `+=` of a `&str` and a `&String` through a
+  call's `&mut`, a held one and a parameter, against native Rust.
+- The mutation is `mir-assign-op-call-place-twice`.

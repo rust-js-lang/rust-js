@@ -91,23 +91,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (self.is_lang_adt(ty, LangItem::String)
                 || crate::lower::representation::Num::of(ty).is_some()
                 || ty.is_bool())
-            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))
+            && let Value::Ref(place) = place
         {
-            // Through a handle a call gave, `or_insert(10)`'s: its `value`,
-            // the handle held where it's made, before what's added is.
-            let place = match place.clone() {
-                Value::Ref(place) => place,
-                cell => {
-                    let cell = self.value_expr(cell, span)?;
-                    let cell = match cell.reads_same() {
-                        true => cell,
-                        false => {
-                            self.flush(state, out)?;
-                            self.spill("cell", cell, out)
-                        }
-                    };
-                    Expr::held(cell)
+            // A place reached through a call, `*first(&mut v) += &five`'s
+            // `first(v).value`, or `or_insert(10)`'s handle's `value`, read
+            // and then written: what holds it named where it's reached,
+            // before what's added is, so the call runs once. MIR gives the
+            // operator a reborrow, `&mut *x`, a place, of every `&mut`.
+            let place = match !super::queries::fixed_place(place) && place.has_effects() {
+                true => {
+                    self.flush(state, out)?;
+                    self.fixed_place_of(place.clone(), out)
                 }
+                false => place.clone(),
             };
             let place = &place;
             let rhs = self.value_expr(rhs.clone(), span)?;
