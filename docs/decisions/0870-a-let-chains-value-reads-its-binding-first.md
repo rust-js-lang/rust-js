@@ -233,3 +233,39 @@ compiler, port or tidy-stage suites', nor React's port's JS, built from
 a copy (`createTask` among it), as another rule now makes those `if`s one.
 The arm went with its mutation; a chain it would have joined stays two
 `if`s, which run as the one did.
+
+## Amendment: a thread-local's `const`s stay in its closure (#407)
+
+The coordinator's decision (2026-10-29), following rd120 (ADR 1006,
+amended), which makes more private thread-locals as their modules load.
+A thread-local's closure of `const`s and then its value made those
+`const`s the module's, named apart from what the module names,
+`const k$2 = flag("scale", true) ? .. : undefined;`, its item's comment
+after them, above the value's `const`.
+
+**A thread-local made as its module loads whose initializer is
+`const`s and then its value stays its closure, called where it's made**:
+
+```js
+// Of the crate's code, made as its module loads too.
+const scale = (() => {
+  const k = flag("scale", true) ? lookup("scale", 3) : undefined;
+  return k != null ? (x) => Math.imul(x, k) >>> 0 : (x) => x;
+})();
+```
+
+Its names are its own, no `$N`, and its comment stays above it, as a
+person writes one that needs a scope. One of its value alone is still
+that value (`declared_at_top`), and one an `if` gives is still `let x;`
+and the branches that assign it (ADR 0601). React's `createTask` is
+`const createTask = (() => { const createTask = DEV ? console.createTask
+: undefined; return ..; })();`. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, the same code run once
+in the same order where the module loads.
+
+The readability ratchet's `renamed x$1` fell, 8,406 to 8,398. Held by corpus `let_chain_values`,
+`thread_local_made_where_used`, `thread_local_reads_another_set`;
+`test/lowering-bindings.test.ts`'s two let chain tests and
+`test/lowering-cells.test.ts`'s "a thread-local an if makes"; mutation
+`declared-consts-dropped`, which replaces `declared-at-top-not-apart`.
+

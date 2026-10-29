@@ -903,10 +903,11 @@ pub fn pick() -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('let PICK;\nif (typeof rustJsFast !== "undefined") {\n  PICK = () => rustJsFast();\n} else if');
   expect(js).toContain("} else if (Math.random() < 2) {\n  const n = 2;\n");
-  // Its `const`s and then its value are the module's (ADR 0870).
-  expect(js).toContain("const at = Math.random();\nconst SEEN = at < 2 ? 1 : 2;\n");
-  // What else it declares at its top would be the module's, and a loop's
-  // `return` no branch's: each stays a closure called where it's made.
+  // Its `const`s and then its value stay its closure's, their names its
+  // own (#407, ADR 0870 amended); so does what else it declares at its
+  // top, and a loop's `return`, no branch's: each a closure called where
+  // it's made.
+  expect(js).toContain("const SEEN = (() => {\n  const at = Math.random();\n  return at < 2 ? 1 : 2;\n})();\n");
   expect(js).toContain("const KEPT = (() => {\n  let twice = Math.random();\n");
   expect(js).toContain("const FOUND = (() => {\n  while (true) {\n");
   const lib = await import(join(dir, "lib.js"));

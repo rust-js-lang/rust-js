@@ -1067,10 +1067,11 @@ export function checked(tag) {
 
 A let chain of one value each, React's `if __DEV__ && let
 Some(create_task) = console::create_task()`, reads what it binds first,
-once, where the tests before it hold, and is then a conditional of it,
-each the module's `const`; the binding's is named apart from the
-thread-local's own
-([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md)):
+once, where the tests before it hold, and is then a conditional of it.
+Both stay in the thread-local's own closure, called where it's made, so
+the binding keeps its name and the thread-local's comment stays above it
+([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md),
+amended):
 
 ```rust
 use webapi::{ConsoleTask, console};
@@ -1103,9 +1104,10 @@ function noTask(name) {
   return null;
 }
 
-const createTask$1 = DEV ? console.createTask : undefined;
-
-const createTask = createTask$1 !== undefined ? (name) => createTask$1(name) : noTask;
+const createTask = (() => {
+  const createTask = DEV ? console.createTask : undefined;
+  return createTask !== undefined ? (name) => createTask(name) : noTask;
+})();
 
 export function task(name) {
   return createTask(name);

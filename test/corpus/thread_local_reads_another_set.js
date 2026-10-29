@@ -30,14 +30,16 @@ const BASED = (BASE * 2) >>> 0;
 let PRINTED;
 console.log("printed");
 PRINTED = 3;
-const n$1 = 2;
 
-const map = (n) => {
-  console.log(`mapped ${n}`);
-  return (n * 2) >>> 0;
-};
+const mapped = (() => {
+  const n = 2;
+  function map(n) {
+    console.log(`mapped ${n}`);
+    return (n * 2) >>> 0;
+  }
+  return n != null ? map(n) : undefined;
+})();
 
-const mapped = n$1 != null ? map(n$1) : undefined;
 // Reads `PRINTED`, made before it.
 const AFTER_PRINTED = (PRINTED + 1) >>> 0;
 const LATER = 7;

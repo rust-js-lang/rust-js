@@ -9,18 +9,26 @@ export function entry() {
 const DEBUG = true;
 
 let calls = 0;
-const offset$1 = DEBUG ? $find("x40", "4") : undefined;
 // Made where the module loads: std's code alone. Its binding the
 // module's, named apart from the thread-local of its name.
-const offset = offset$1 != null ? (x) => (x + offset$1) >>> 0 : (x) => x;
-const limit$1 = DEBUG ? $find("limit", "m") : undefined;
-const LIMIT = limit$1 ?? 9;
+const offset = (() => {
+  const offset = DEBUG ? $find("x40", "4") : undefined;
+  return offset != null ? (x) => (x + offset) >>> 0 : (x) => x;
+})();
+const LIMIT = (() => {
+  const limit = DEBUG ? $find("limit", "m") : undefined;
+  return limit ?? 9;
+})();
 // Of a name another's made the module's already.
-const limit = DEBUG ? $find("lim", "i") : undefined;
-const LOWER = limit ?? 8;
+const LOWER = (() => {
+  const limit = DEBUG ? $find("lim", "i") : undefined;
+  return limit ?? 8;
+})();
 // Of a global's name, which the module's other code reads.
-const console$ = DEBUG ? $find("log", "g") : undefined;
-const LOGGED = console$ ?? 0;
+const LOGGED = (() => {
+  const console = DEBUG ? $find("log", "g") : undefined;
+  return console ?? 0;
+})();
 // A test of what's no `Option`, `Ok`'s, which `undefined` can't be
 // asked: the chain's two `if`s.
 const base = (() => {
@@ -37,10 +45,12 @@ const base = (() => {
   return tmp;
 })();
 
-const k$2 = flag("scale", true) ? lookup("scale", 3) : undefined;
 // Of the crate's code, made as its module loads too (ADR 1006,
 // amended): `main` reads it first.
-const scale = k$2 != null ? (x) => Math.imul(x, k$2) >>> 0 : (x) => x;
+const scale = (() => {
+  const k = flag("scale", true) ? lookup("scale", 3) : undefined;
+  return k != null ? (x) => Math.imul(x, k) >>> 0 : (x) => x;
+})();
 
 function flag(name, on) {
   console.log(`flag ${name} ${on}`);

@@ -19,10 +19,13 @@ function guardDrop_drop(guard) {
 
 let loud = noisy(7);
 const plain = 3;
-const made = noisy;
 // A fn pointer's call runs what it may be, the crate's `noisy` here
 // (ADR 0907).
-const POINTED = made(9);
+const POINTED = (() => {
+  const made = noisy;
+  return made(9);
+})();
+
 // Another module's `const`, read by its name, as written.
 const FROM_LIMITS = $local(() => noisy(Limits.LIMIT));
 // What it drops runs the crate's code too.

@@ -2,7 +2,6 @@
 //! thread-local's initializer of statements: the module's own statements,
 //! as JS writes a module's top (ADRs 0601 and 0870).
 
-use super::reclaim;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// A module's `const` a closure called where it's made makes, a
@@ -57,130 +56,40 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
     }
 }
 
-/// A module's `const` a closure called where it's made makes, not
-/// exported, whose body is `const`s and then the value it returns, a
-/// thread-local's of a let chain's value (ADR 0870): those `const`s the
-/// module's, where the closure was, and the value the `const`'s, as a
-/// person writes a module's top:
+/// A module's `const` a closure called where it's made makes, whose body
+/// is its value alone, of a test too, `if (t) { return a; }`: that value,
+/// `export const jsxDEV = __DEV__ ? _jsxDev : undefined;`, as `then_some`'s
+/// is (ADR 0870, amended). One of `const`s before its value stays the
+/// closure, its names its own, the item's comment above it (#407):
 ///
 /// ```js
-/// const createTask$1 = __DEV__ ? console.createTask : undefined;
-/// const createTask = createTask$1 ? (name) => createTask$1(name) : noTask;
+/// // Scaled where the module loads.
+/// const scale = (() => {
+///   const k = flag("scale", true) ? lookup("scale", 3) : undefined;
+///   return k != null ? (x) => Math.imul(x, k) >>> 0 : (x) => x;
+/// })();
 /// ```
-///
-/// The same code, run once, in its order, where the module loads. Each is
-/// named apart from what the module names elsewhere, `createTask$1` of the
-/// `const`'s own `createTask`, as JS can't declare a name twice, and as a
-/// module's top-level `const` would otherwise be what another item reads
-/// of a global; and from what the closure names, so each of its names,
-/// deeper ones too, given the new name, reads what it read.
-///
-/// An exported one of nothing but its value is that value, of a test too,
-/// `if (t) { return a; }`, `t ? a : undefined` (`valued`), as no `let`
-/// assigned under the `if` is exported (ADR 0870, amended).
 pub(super) fn declared_at_top(module: &mut js::Module) {
-    let mut i = 0;
-    while i < module.items.len() {
-        let js::Item::Const(constant) = &module.items[i] else {
-            i += 1;
+    for item in &mut module.items {
+        let js::Item::Const(constant) = item else { continue };
+        let ExprKind::Call(callee, args) = &constant.value.kind else {
             continue;
         };
-        let body = match &constant.value.kind {
-            ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
-                ExprKind::Arrow(params, body) if params.is_empty() => body,
-                _ => {
-                    i += 1;
-                    continue;
-                }
-            },
-            _ => {
-                i += 1;
-                continue;
-            }
+        let ExprKind::Arrow(params, body) = &callee.kind else {
+            continue;
         };
+        if !params.is_empty() || !args.is_empty() {
+            continue;
+        }
         // An exported one's value of a test, which no `let` the test
         // assigns can be (`assigned_in_place`), a conditional.
-        let Some((consts, value)) = valued(body, constant.export) else {
-            i += 1;
+        let Some(([], value)) = valued(body, constant.export) else {
             continue;
         };
-        // Of nothing before its value, the value itself, `export const
-        // jsxDEV = __DEV__ ? _jsxDev : undefined;`, as `then_some`'s is.
-        if consts.is_empty() {
-            let js::Item::Const(constant) = &mut module.items[i] else {
-                unreachable!("matched")
-            };
-            constant.value = Expr {
-                span: constant.value.span,
-                ..value
-            };
-            i += 1;
-            continue;
-        }
-        if constant.export {
-            i += 1;
-            continue;
-        }
-        let Some(names) = (consts.iter())
-            .map(|s| match &s.kind {
-                StmtKind::Const(name, _) => Some(name.clone()),
-                _ => None,
-            })
-            .collect::<Option<Vec<String>>>()
-        else {
-            i += 1;
-            continue;
+        constant.value = Expr {
+            span: constant.value.span,
+            ..value
         };
-        let mut item = js::Item::Statements(body.clone());
-        let mut named = Vec::new();
-        reclaim::names_mut(&mut item, true, &mut |name| named.push(name.clone()));
-        let (name, span, mutable) = (constant.name.clone(), constant.span, constant.mutable);
-        let consts = consts.to_vec();
-        // What the module names, but in this closure.
-        let own = std::mem::replace(&mut module.items[i], js::Item::Statements(Vec::new()));
-        let mut taken = reclaim::mentions(module);
-        module.items[i] = own;
-        taken.insert(name.clone());
-        // And what it names itself, but what it declares at its top: a
-        // name given apart, `x$1`, which the new names are told apart from.
-        taken.extend(named.into_iter().filter(|n| !names.contains(n)));
-        let renames: Vec<(String, String)> = (names.iter())
-            .map(|n| (n.clone(), crate::names::fresh_apart(&mut taken, n)))
-            .collect();
-        let renamed = |name: &mut String| {
-            if let Some((_, to)) = renames.iter().find(|(from, _)| from == name) {
-                name.clone_from(to);
-            }
-        };
-        let mut made: Vec<js::Item> = (consts.into_iter())
-            .map(|stmt| {
-                let StmtKind::Const(mut name, value) = stmt.kind else {
-                    unreachable!("matched")
-                };
-                renamed(&mut name);
-                js::Item::Const(js::Const {
-                    name,
-                    value,
-                    export: false,
-                    mutable: false,
-                    span: stmt.span,
-                })
-            })
-            .collect();
-        // The module's `const`, by its own name, of what it read.
-        made.push(js::Item::Const(js::Const {
-            name,
-            value,
-            export: false,
-            mutable,
-            span,
-        }));
-        for item in &mut made {
-            reclaim::names_mut(item, true, &mut |name| renamed(name));
-        }
-        let n = made.len();
-        module.items.splice(i..=i, made);
-        i += n;
     }
 }
 

@@ -1396,9 +1396,9 @@ pub fn text_of(value: &Unknown) -> String {
 // ADR 0870: React's `createTask`, a thread-local of a let chain's value,
 // `if __DEV__ && let Some(create_task) = console::create_task() { .. } else
 // { .. }`: the getter read once, where `__DEV__` holds, then a conditional
-// of it, each the module's `const`, not a closure called where it's made
-// of a `let tmp` its branches set.
-test("a thread-local of a let chain's value is the module's consts", async () => {
+// of it, not a `let tmp` its branches set; both in the thread-local's own
+// closure, its names its own (#407, ADR 0870 amended).
+test("a thread-local of a let chain's value is its closure's const and value", async () => {
   const dir = fixture("chain-value-thread-local");
   writeFileSync(join(dir, "lib.rs"), `use webapi::{ConsoleTask, console};
 
@@ -1427,13 +1427,13 @@ pub fn task(name: &str) -> Option<&'static ConsoleTask> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`// eslint-disable-next-line react-internal/no-production-logging
-const createTask$1 = DEV ? console.createTask : undefined;
-
-const createTask = createTask$1 !== undefined ? (name) => createTask$1(name) : noTask;
+  expect(js).toContain(`const createTask = (() => {
+  // eslint-disable-next-line react-internal/no-production-logging
+  const createTask = DEV ? console.createTask : undefined;
+  return createTask !== undefined ? (name) => createTask(name) : noTask;
+})();
 `);
   expect(js).not.toContain("tmp");
-  expect(js).not.toContain("(() =>");
   const reads: string[] = [];
   const own = Object.getOwnPropertyDescriptor(console, "createTask");
   Object.defineProperty(console, "createTask", {
@@ -1457,10 +1457,10 @@ const createTask = createTask$1 !== undefined ? (name) => createTask$1(name) : n
   }
 });
 
-// ADR 0870: a thread-local's `const` made the module's is named apart from
-// what the module's other code reads, a global of a binding's too, which
-// the `const` would otherwise be.
-test("a thread-local of a let chain's value is the module's consts, named apart", async () => {
+// #407 (ADR 0870 amended): a thread-local's `const` is its closure's, so a
+// global of a binding's of its name that the module's other code reads is
+// still the global, and neither is renamed.
+test("a thread-local's const is its closure's, apart from a global of its name", async () => {
   const dir = fixture("chain-value-named-apart");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "rustJsLabel")]
 fn label() -> u32 {
@@ -1483,8 +1483,8 @@ pub fn first() -> usize {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`const rustJsLabel$1 = DEV ? $find("ab", "b") : undefined;\n`);
-  expect(js).toContain(`const FIRST = rustJsLabel$1 ?? 0;\n`);
+  expect(js).toContain(`const FIRST = (() => {\n  const rustJsLabel = DEV ? $find("ab", "b") : undefined;\n  return rustJsLabel ?? 0;\n})();\n`);
+  expect(js).toContain("  return rustJsLabel();\n");
   const globals = globalThis as { rustJsLabel?: () => number };
   globals.rustJsLabel = () => 7;
   try {
