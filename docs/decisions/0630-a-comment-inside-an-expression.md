@@ -184,3 +184,19 @@ no code before it on its line is before the code nearest after it,
 are where they're written") and the mutations `comment-before-link-unseen`
 (`to_oxc.ts`) and `comment-before-code-at-line-end`
 (`to_oxc/trailing.ts`).
+
+## Amendment: an argument given by reference is where it's written (2026-10-30, rd205)
+
+A call chain's comment before an argument, `.r(/* requestFormReset */
+form)` (rd63), was printed after it, `.r(form /* requestFormReset */)`,
+where the argument is a reference, `form: &HTMLFormElement`: MIR gives
+the call a reborrow, `_4 = &(*_2)`, whose JS, `form`, had no place in the
+source map, so the comment went after the code before it. **A reborrow of
+a variable the program names that's a call's argument, moved into the
+call that ends its block (`given_to_call`), is where its statement is,
+the argument as written.** Not of another reborrow: one of a constant,
+`&*"context"`, or one returned, `tag`, whose spans tidy reads where a
+`match` is written (`Switch::valued`). Held by `lowering-comments-inside`'s
+"a block comment before an argument given by reference is before it" and
+the mutation `reborrow-argument-unplaced` (`lower/mir/rvalues.ts`); no
+corpus case changes.

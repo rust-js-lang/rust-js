@@ -638,4 +638,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,
   },
+  {
+    name: "reborrow-argument-unplaced",
+    breaks: "an argument given by reference, `&*form`, has no place in the source map, so a block comment before it is printed after it, `.r(form /* requestFormReset */)` (rd205)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            match reborrow && given_to_call(state) {\n",
+    replace: "                            match reborrow && false && given_to_call(state) {\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "argument given by reference"],
+  },
 ];

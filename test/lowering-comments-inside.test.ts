@@ -147,3 +147,38 @@ pub fn reset(internals: &Internals, form: f64) {
   (lib.reset as (internals: unknown, form: number) => void)({ d: { r: (form: number) => reset.push(form) } }, 3);
   expect(reset).toEqual([3]);
 });
+
+// And of an argument given by reference, `&str`, a reborrow MIR makes of
+// it, which is where it's written too (rd205).
+test("a block comment before an argument given by reference is before it", async () => {
+  const { js, lib } = await compiled("comments-before-a-reference", `use std::marker::PhantomData;
+
+pub struct Internals(PhantomData<js::JsObject>);
+pub struct Dispatcher(PhantomData<js::JsObject>);
+
+impl Internals {
+    #[cfg_attr(rust_js, rust_js::link_name = "get d")]
+    pub fn d(&self) -> &'static Dispatcher {
+        unreachable!()
+    }
+}
+
+impl Dispatcher {
+    #[cfg_attr(rust_js, rust_js::link_name = "r")]
+    pub fn r(&self, form: &str) {
+        let _ = form;
+        unreachable!()
+    }
+}
+
+pub fn reset(internals: &Internals, form: &str) {
+    internals
+        .d() /* CurrentDispatcher */
+        .r(/* requestFormReset */ form);
+}
+`);
+  expect(js).toContain("  internals.d /* CurrentDispatcher */\n    .r(/* requestFormReset */ form);\n");
+  const reset: string[] = [];
+  (lib.reset as (internals: unknown, form: string) => void)({ d: { r: (form: string) => reset.push(form) } }, "f");
+  expect(reset).toEqual(["f"]);
+});

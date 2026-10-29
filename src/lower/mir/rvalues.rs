@@ -178,10 +178,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // Of what can't change meanwhile, the body's own locals: read
                         // where it's used. A temporary's read of what can, a
                         // static's, is made where it's made.
+                        // Of a reborrow of a variable the program names,
+                        // `&*form`, a call's argument say, where it's
+                        // written, for the source map: a comment before it
+                        // there before it, `.r(/* .. */ form)` (rd205).
                         (BorrowKind::Shared, Value::Expr(e))
                             if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>
                         {
-                            Value::Place(e)
+                            let reborrow =
+                                place.projection.as_slice() == [PlaceElem::Deref] && state.locals.user[place.local];
+                            match reborrow && given_to_call(state) {
+                                true => Value::Place(e.or_at(self.js_span(span))),
+                                false => Value::Place(e),
+                            }
                         }
                         // Through `outer`, a `&mut` to `list`, a `&mut` to what
                         // isn't a cell: what `list` is.
@@ -1297,4 +1306,22 @@ fn overflow_read(body: &mir::Body<'_>, at: mir::Location) -> bool {
     };
     reads.visit_body(body);
     reads.read
+}
+
+/// Whether the statement being lowered makes a call's argument: what it
+/// assigns, moved into the call that ends its block (rd205).
+fn given_to_call(state: &State<'_, '_>) -> bool {
+    let data = &state.body.basic_blocks[state.at];
+    let Some(mir::Statement {
+        kind: StatementKind::Assign(assign),
+        ..
+    }) = data.statements.get(state.statement)
+    else {
+        return false;
+    };
+    let mir::TerminatorKind::Call { args, .. } = &data.terminator().kind else {
+        return false;
+    };
+    args.iter()
+        .any(|arg| matches!(arg.node, Operand::Move(given) if given == assign.0))
 }
