@@ -180,9 +180,11 @@ where the function's next statement is written past its own
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same `return`.
 
-The readability ratchet's `return;` share is blessed (10.6 to 10.7 in
-10,000 lines): the two are the new case's, each a `return;` its program
-writes, which no other case changed.
+The readability ratchet's `return;` share is blessed (10.6 to 10.8 in
+10,000 lines): two are the new case's, each a `return;` its program
+writes, which no other case changed; the third is
+`local_borrow_nested_option`'s, landed beside it, its written `return
+None`.
 
 Held by `test/corpus/returns_joined_keep_comments.rs` against native Rust
 and the mutation `joined-returns-end-at-last-statement`
