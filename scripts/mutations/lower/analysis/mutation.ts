@@ -84,11 +84,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-macro-pointee-copied",
-    breaks: "a thread-local's value, which std's `thread_local!` points to, is copied where it's read, `half == null ? half : half`",
+    breaks: "a thread-local's value, which std's `thread_local!` points to, is taken for one the crate changes in place, so a library's function that makes one, `Cell::new(None)` of a `Cell<Option<&str>>`, is compiled here, and refused for reading its library's private `NEXT_ID`",
     file: "src/lower/analysis/mutation.rs",
     find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
     replace: "",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "constant element is rendered where"],
+    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_beside_a_made_cell"],
   },
   {
     name: "part-borrow-unchanged",
