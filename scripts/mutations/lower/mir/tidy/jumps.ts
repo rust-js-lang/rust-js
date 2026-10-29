@@ -119,6 +119,23 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "tail-returns-branch-else-after",
+    breaks: "an arm whose branches each return, made the `if`'s, runs what the other arm does after it, as its `else` isn't made (rd93)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        if !rest.is_empty() {\n            *otherwise = Some(rest);\n        }\n",
+    replace: "        stmts.extend(rest);\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
+  },
+  {
+    name: "tail-returns-of-branches-only-at-the-top",
+    breaks: "a function's last `match`, an `if` chain of a guarded arm, keeps MIR's `return;`s in an arm whose branches each end so, `} else { if (tag === 3) { if (r) { ..; return; } else { ..; return; } } if (tag === 22) ..`, a comment of the next arm moved into it (rd93)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),\n",
+    replace: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
+    snapshots: true,
+  },
+  {
     name: "branch-undefined-return-kept",
     breaks: "the playground's outcome, `} else if (report.tested) { return ..; } else { return; }`, keeps the `return undefined;` MIR made of a `None` at the function's end",
     file: "src/lower/mir/tidy/jumps.rs",

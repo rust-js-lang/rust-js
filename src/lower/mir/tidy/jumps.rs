@@ -288,6 +288,18 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),
         _ => false,
     };
+    // Whether each way through `list` ends in such a `return;`.
+    fn returns_at_end(list: &[Stmt], unwritten: &dyn Fn(&Stmt) -> bool) -> bool {
+        list.last().is_some_and(|last| {
+            unwritten(last)
+                || match &last.kind {
+                    StmtKind::If(_, then, Some(otherwise)) => {
+                        returns_at_end(then, unwritten) && returns_at_end(otherwise, unwritten)
+                    }
+                    _ => false,
+                }
+        })
+    }
     // A copy MIR made of a `return;` the program wrote before it in the
     // list, a `let … else`'s, its span that `return`'s, is one too: the
     // program wrote it once, there (rd73).
@@ -303,6 +315,22 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
     };
     while stmts.last().is_some_and(unwritten) || copied(stmts) {
         stmts.pop();
+    }
+    // A `then` that ends so only in its branches, an arm's `if (r) { ..;
+    // return; } else { ..; return; }` of a `match` whose arms MIR tests
+    // apart, `if (tag === 3) { .. } if (tag === 22) { .. }`: those, the
+    // `if`'s after it its `else`, the chain as written (rd93).
+    if let Some(at) = (stmts.iter()).position(
+        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),
+    ) {
+        let rest = stmts.split_off(at + 1);
+        let StmtKind::If(_, then, otherwise) = &mut stmts[at].kind else {
+            unreachable!("found")
+        };
+        ending_returns(then, returns, branch);
+        if !rest.is_empty() {
+            *otherwise = Some(rest);
+        }
     }
     if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|last| &mut last.kind) {
         ending_returns(then, returns, true);

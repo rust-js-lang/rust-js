@@ -691,3 +691,22 @@ still holds the decision. The pass goes, and its two mutations with it.
 survived too. Their test, "strings from MIR is the", no longer reaches
 the `if` they change, though three tests of `lowering-matches.test.ts`
 do. They now name those three, and each is caught.
+
+## Amendment: the first pass was reached after all (rd93, 2026-10-29)
+
+The pass the amendment above removed as never taken is taken by a
+function's last `match` of a guarded arm, which is an `if` chain, not a
+`switch`, whose middle arms are each an `if … else` that gives `()`:
+React's accumulateSuspenseyCommitOnFiber. MIR tests its arms apart, `if
+(tag === 3 || tag === 4) { if (r) { ..; return; } else { ..; return; } } if
+(tag === 22) { .. }`, and neither later pass writes that shape: the `then`
+ends in its branches, not in a `return;` of its own. Without it the port
+printed each arm as its own `if` inside an `else`, and the comment of arm
+22's empty `then`, "Don't suspend in hidden trees", in arm 3's, misleading
+a reader. Restored as it was: `} else if (tag === 3 || tag === 4) { .. }
+else if (tag === 22) { if (hidden) { // Don't suspend in hidden trees }
+else { .. } } else if ..`. The sweep missed it as nothing in the corpus,
+the snapshots or the suites reached it; now
+`test/corpus/guarded_match_ends_function.rs` does, against native Rust,
+and holds its two mutations again, `tail-returns-branch-else-after` and
+`tail-returns-of-branches-only-at-the-top`.
