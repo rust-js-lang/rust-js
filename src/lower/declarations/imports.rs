@@ -32,12 +32,10 @@ pub(super) fn imports(
         declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
     }
     for (from, names, default) in of_modules(libraries) {
-        declarations
-            .push(json!({ "kind": "import", "specifier": from, "names": names, "default": default, "typeOnly": true }));
+        declarations.extend(type_imports(json!({ "specifier": from }), names, default));
     }
     for (path, names, default) in of_modules(modules) {
-        declarations
-            .push(json!({ "kind": "import", "module": path, "names": names, "default": default, "typeOnly": true }));
+        declarations.extend(type_imports(json!({ "module": path }), names, default));
     }
     for reexport in reexports {
         let from = match &reexport.from {
@@ -54,8 +52,24 @@ pub(super) fn imports(
     declarations
 }
 
+/// The type-only imports of a module, `from`, of its default and `names`:
+/// one of each, `import type Complex from ..;` and `import type { Parts }
+/// from ..;`, as TypeScript allows a type-only import a default or named
+/// bindings, not both (#373).
+fn type_imports(from: Value, names: Vec<&str>, default: Option<&str>) -> Vec<Value> {
+    let import = |names: Vec<&str>, default: Option<&str>| {
+        let mut import = json!({ "kind": "import", "names": names, "default": default, "typeOnly": true });
+        (import.as_object_mut().expect("an object")).extend(from.as_object().expect("an object").clone());
+        import
+    };
+    match default {
+        Some(default) if !names.is_empty() => vec![import(Vec::new(), Some(default)), import(names, None)],
+        _ => vec![import(names, default)],
+    }
+}
+
 /// Each module of `imported`, in order, the names imported from it, and
-/// its default, `import type Complex, { Parts } from ..`.
+/// its default, `Complex` and `Parts` of `Complex, { Parts }`.
 fn of_modules<K: Ord>(imported: &ModuleImports<K>) -> Vec<(&K, Vec<&str>, Option<&str>)> {
     let modules: BTreeSet<&K> = imported.iter().map(|(module, ..)| module).collect();
     (modules.into_iter())

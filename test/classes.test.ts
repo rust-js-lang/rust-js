@@ -384,13 +384,18 @@ impl Counter {
 // A class is its module's default, `js::export_default!(Complex)`, as JS's
 // `export default class Complex` (#345): its constructor function exported
 // as the default alone, declared a class, and imported as the default by
-// a module that uses it.
+// a module that uses it; beside another of its types, each its own
+// type-only import, as TypeScript allows no default beside names (#373).
 test("a class is its module's default export", async () => {
   const dir = fixture("class-default");
   writeFileSync(join(dir, "complex.rs"), `#[cfg_attr(rust_js, rust_js::class)]
 pub struct Complex {
     pub re: f64,
     pub im: f64,
+}
+
+pub struct Parts {
+    pub re: f64,
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
@@ -408,14 +413,14 @@ js::export_default!(Complex);
 `);
   writeFileSync(join(dir, "lib.rs"), `mod complex;
 
-use complex::Complex;
+use complex::{Complex, Parts};
 
 pub fn unit(turn: f64) -> f64 {
     Complex::new(turn.cos(), turn.sin()).radius()
 }
 
-pub fn real(re: f64) -> Complex {
-    Complex::new(re, 0.0)
+pub fn real(parts: Parts) -> Complex {
+    Complex::new(parts.re, 0.0)
 }
 `);
   run([compiler, ...flags(dir)]);
@@ -429,7 +434,7 @@ pub fn real(re: f64) -> Complex {
   const lib = readFileSync(join(dir, "lib.js"), "utf8");
   expect(lib).toContain('import Complex from "./complex.js";');
   expect(lib).toContain("new Complex(");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain('import type Complex from "./complex.js";');
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain('import type Complex from "./complex.js";\nimport type { Parts } from "./complex.js";\n');
   const { default: Default } = await import(join(dir, "complex.js"));
   expect(new Default(3, 4).radius()).toBe(5);
   const { unit } = await import(join(dir, "lib.js"));

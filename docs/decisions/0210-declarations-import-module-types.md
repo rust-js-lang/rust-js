@@ -1,6 +1,6 @@
 # 0210. A module's declarations import another's types
 
-Status: Accepted. Amends [0196](0196-typescript-declarations.md). Amended: a library crate's type is imported from its declarations too.
+Status: Accepted. Amends [0196](0196-typescript-declarations.md). Amended: a library crate's type is imported from its declarations too. Amended (2026-10-29): a default and named types are two type-only imports.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -84,3 +84,24 @@ caller's wrong value; a library's default class is imported as its
 default; a library without declarations stays `any`. Its mutations are
 `library-type-declared-any`, `library-type-without-declarations-imported`
 and `library-default-type-imported-by-name`.
+
+## Amendment: a default and named types are two type-only imports (2026-10-29, #373)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a declaration
+file's form.
+
+A module's declarations that used another module's default class and one
+of its other types, `use complex::{Complex, Parts};` beside
+`js::export_default!(Complex)`, imported both in one declaration, `import
+type Complex, { Parts } from "./complex.js";`. TypeScript refuses it ("A
+type-only import can specify a default import or named bindings, but not
+both"), so the build failed: rust-js can't read the declarations it wrote.
+
+**They are two imports, the default's first, `import type Complex from
+"./complex.js";` then `import type { Parts } from "./complex.js";`**, of
+the crate's modules and a library's alike (`declarations/imports.rs`'s
+`type_imports`). A JS import of values may hold both, and does.
+
+- Held by `test/classes.test.ts`, "a class is its module's default
+  export", run: mutation `type-import-default-beside-names`
+  (`lower/declarations/imports.ts`).

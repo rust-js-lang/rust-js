@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    for reexport in reexports.iter().take(0) {",
     tests: ["test/declarations.test.ts", "-t", "re-export what a module"],
   },
+  {
+    name: "type-import-default-beside-names",
+    breaks: "a module's declarations import another's default class and one of its other types as one, `import type Complex, { Parts } from \"./complex.js\";`, which TypeScript refuses, so the build fails (#373)",
+    file: "src/lower/declarations/imports.rs",
+    find: "        Some(default) if !names.is_empty() => vec![import(Vec::new(), Some(default)), import(names, None)],\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+  },
 ];
