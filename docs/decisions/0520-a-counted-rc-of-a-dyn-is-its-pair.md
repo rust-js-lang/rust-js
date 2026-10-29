@@ -66,3 +66,21 @@ kept on the `Rc`, so two upcasts of it are the same box, as `Rc::ptr_eq`
 finds them. Held by `test/corpus/rc_dyn_upcast_counted.rs` against native
 Rust, two levels of supertraits too, and the mutations
 `counted-rc-upcast-refused` and `rc-upcast-view-uncached`.
+
+## Amendment: a counted `Rc` of a `Box<dyn T>`'s pair (#399)
+
+`Rc::from(b)` of a `Box<dyn T>`, `b.into()` and `Arc::from(b)` made a
+counted `Rc<dyn T>` of the box held whole: `{ value: b, strong: 1, weak: 0
+}`. Its calls read `r.impl`, as a counted `dyn`'s pair is the `Rc` itself,
+and threw `TypeError`, where Rust runs. A wrong answer, so ADR 0262's
+"results change" case: Rust's behavior is kept.
+
+`counted_same` now makes a counted `Rc` of a pair `dyn` of the pair's own
+fields, with the counts: `{ ...b, strong: 1, weak: 0 }`, or the fields
+themselves where the pair is made there. That's what `Rc::new(x)` unsized
+to `Rc<dyn T>` is, so clones, counts and the drop read it the same way.
+
+- `test/corpus/counted_rc_of_boxed_dyn.rs` checks `Rc::from`, `into()`
+  and `Arc::from`, a clone, and a `Drop` run through the `dyn`, against
+  native Rust.
+- The mutation is `counted-rc-of-boxed-dyn-nested`.

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "counted-rc-of-boxed-dyn-nested",
+    breaks: "`Rc::from(b)` of a `Box<dyn T>`, counted, holds the box whole, `{ value: b, strong: 1 }`, so a call reads `r.impl` of nothing: `TypeError` (#399)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            true if pair => Self::new_counted_pair(value),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^counted_rc_of_boxed_dyn.rs$"],
+  },
+  {
     name: "weak-every-counted",
     breaks: "a `Weak` nothing upgrades is lowered counted, `$downgrade`, while its `Rc` is the object itself (ADR 0843)",
     file: "src/lower/std_types/rc.rs",

@@ -133,6 +133,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ])
     }
 
+    /// A counted `Rc` of a `dyn` made of its pair, `{ value, impl }`: the
+    /// pair with its counts, `{ value, impl, strong: 1, weak: 0 }`, the
+    /// pair's own fields where it's made here, else `{ ...pair, .. }`.
+    fn new_counted_pair(pair: Expr) -> Expr {
+        let mut props = match pair.kind {
+            crate::js::ExprKind::Object(props, ..) => props,
+            _ => vec![Prop::Spread(pair)],
+        };
+        props.push(Prop::Field("strong".into(), Expr::int(1)));
+        props.push(Prop::Field("weak".into(), Expr::int(0)));
+        Expr::object(props)
+    }
+
     /// `Rc::make_mut(&mut place)` of an `Rc` of `item`: the place given the
     /// one `$makeMut` gives, and what it points to (ADR 0364).
     pub(in crate::lower) fn make_mut_values(
@@ -254,7 +267,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value: Expr,
     ) -> Option<Expr> {
         let (new, pointee) = self.recognition().rc_same(def_id, generic_args)?;
+        let pair = matches!(pointee.kind(), ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates));
         self.krate.counted.counts(self.tcx, pointee).then(|| match new {
+            // Of a `Box<dyn T>`'s pair, `Rc::from(b)`: that pair counted,
+            // `{ ...b, strong: 1, weak: 0 }`, as `counted_pointee` reads it
+            // (ADR 0520), not the box held whole (#399).
+            true if pair => Self::new_counted_pair(value),
             true => Self::new_rc(value),
             false => self.counted_pointee(value, pointee),
         })
