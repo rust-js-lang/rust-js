@@ -134,3 +134,21 @@ two ways in one `match`; and the mutations
 `-of-any-part`, `-of-another-expansion`, `if-let-constants-unnamed`,
 `let-else-constants-unnamed` and `constant-written-two-ways-named`
 (`body_queries.ts`).
+
+## Amendment: a comment above a `_` arm that opens a block is before its `default` (2026-10-30, rd214)
+
+A comment above a match arm is its body's (above), which holds of an arm
+that's a value, `// Not useful descriptors.` above `_ => String::new()`,
+upstream's `default: // Not useful descriptors.`, the Rust having no other
+place for it. Above an arm that opens a block, `_ => {`, the program could
+have written it in the block and didn't: React's BeginWork `// The default
+is now forwards.` above `_ => {`, which stands for upstream's `case
+'forwards': default:`, the comment above both labels. **In a `switch`, a
+comment above a `_` arm that opens a block is before its `default:`**,
+which is printed where its first statement is where the source opens such
+an arm there (`Cx::opens_block_default`, `cases::opens_default`'s test,
+which a `default` fallen to asked already, ADR 0905, amended); a case of
+one value keeps its comment in its body, the scheduler's. Held by
+`lowering-comments-inside`'s "a comment above a _ arm that opens a block
+is before its default" and the mutation `block-default-comment-in-body`
+(`to_oxc/statements.ts`); no corpus case changes.

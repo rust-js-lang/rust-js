@@ -549,7 +549,17 @@ impl<'a> Cx<'a> {
                 if let Some(default) = default {
                     // Where the last case falls through to it, where its
                     // comment says so is (ADR 0636, amended).
-                    let at = super::default_fallen_to(cases, Some(default)).map_or(SPAN, |lo| Span::new(lo, lo));
+                    // And of a `_` arm that opens a block, `_ => {`, where
+                    // its first statement is, so a comment above the arm is
+                    // before it, as above the labels a `_` stands for,
+                    // `case 'forwards': default:` (rd214); not of one that's
+                    // a value, `_ => String::new()`, whose comment above it
+                    // is its body's, there being no other (ADR 0590).
+                    let at = (super::default_fallen_to(cases, Some(default)))
+                        .or_else(|| {
+                            super::cases::default_start(Some(default)).filter(|&lo| self.opens_block_default(lo))
+                        })
+                        .map_or(SPAN, |lo| Span::new(lo, lo));
                     let at = commented_clause(at, default);
                     clauses.push(SwitchCase::new(at, None, self.case_body(default, false, true), b));
                 }
@@ -830,6 +840,17 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
 /// `break` nor a next clause, it ends past them, so oxc prints them in it,
 /// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
 /// mapped there.
+impl Cx<'_> {
+    /// Whether the source before `lo`, a `default`'s first statement, is a
+    /// `_` arm's opening, `_ => {` (`cases::opens_default`).
+    fn opens_block_default(&self, lo: u32) -> bool {
+        let before = self.source.get(..lo as usize).unwrap_or("");
+        before
+            .rfind("_ =>")
+            .is_some_and(|at| super::cases::opens_default(&before[at..]))
+    }
+}
+
 fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
     // Its `break` left out, as the last clause's is (`case_body`), a guarded
     // fall-through's `default: // .. break;` too (rd138).

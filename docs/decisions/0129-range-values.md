@@ -219,3 +219,8 @@ by name), and `range_state`, `{:?}` and a clone read them as they are,
 and `range_lent_used_up.js` read as they did before #414. Held by the
 mutation `fresh-ranges-none` (`lower/mir/locals.ts`), against the
 snapshots.
+
+`docs/readability.txt`'s renamed share went from 650.2 to 651.1 in 10,000
+lines with #414's cases, blessed: `range_inclusive_exhausted.rs`'s 23 and
+`range_lent_used_up.rs`'s 8 are a test's many printed `value$n`s, as
+`integer_bits.rs`'s 4 new ones are another change's.

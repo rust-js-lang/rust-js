@@ -339,4 +339,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
   },
+  {
+    name: "block-default-comment-in-body",
+    breaks: "a comment above a `_` arm that opens a block, `// The default is now forwards.`, is in its `default`'s body, not before its label (rd214)",
+    file: "src/to_oxc/statements.rs",
+    find: "                            super::cases::default_start(Some(default)).filter(|&lo| self.opens_block_default(lo))\n",
+    replace: "                            super::cases::default_start(Some(default)).filter(|_| false)\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "_ arm that opens a block"],
+  },
 ];

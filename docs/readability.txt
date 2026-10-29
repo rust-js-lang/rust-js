@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1346
-lines	129402
+files	1349
+lines	129758
 temporaries	1	0.1
 labeled blocks	15	1.2
 while (true)	115	8.9
-$iter	1062	82.1
+$iter	1062	81.8
 Iterator.from	119	9.2
-return;	138	10.7
-renamed x$1	8414	650.2
+return;	138	10.6
+renamed x$1	8449	651.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1975	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	186	0	0	0	6	0	0	29
@@ -99,7 +99,7 @@ test/corpus/btree_range_excluded_panic.js	29	0	0	0	0	0	0	0
 test/corpus/btree_range_mut.js	146	0	0	0	2	0	0	2
 test/corpus/btree_range_panic.js	30	0	0	0	0	0	0	0
 test/corpus/by_ref_chains.js	60	0	0	0	4	0	0	6
-test/corpus/by_ref_steps.js	40	0	0	1	1	1	0	2
+test/corpus/by_ref_steps.js	41	0	0	1	1	1	0	2
 test/corpus/byte_ascii.js	71	0	0	0	0	0	0	0
 test/corpus/byte_escape.js	56	0	0	0	3	0	0	0
 test/corpus/byte_strings.js	50	0	0	0	0	0	0	0
@@ -567,7 +567,7 @@ test/corpus/int_div_sign_methods.js	36	0	0	0	0	0	0	3
 test/corpus/int_error_kind.js	44	0	0	0	0	0	0	4
 test/corpus/int_overflow_sign_methods.js	114	0	0	0	0	0	0	28
 test/corpus/int_shift_multiple_methods.js	57	0	0	0	0	0	0	14
-test/corpus/integer_bits.js	86	0	0	0	0	0	0	2
+test/corpus/integer_bits.js	97	0	0	0	0	0	0	6
 test/corpus/integer_families.js	114	0	0	0	0	0	0	23
 test/corpus/integer_truth.js	89	0	0	0	0	0	0	0
 test/corpus/integers_128.js	172	0	0	0	0	0	0	14
@@ -777,6 +777,7 @@ test/corpus/option_constants_switch.js	102	0	0	0	0	0	0	0
 test/corpus/option_destructors.js	135	0	0	0	0	0	0	12
 test/corpus/option_falsy_payloads.js	187	0	0	0	0	0	4	6
 test/corpus/option_map_drops.js	213	0	0	0	0	0	0	24
+test/corpus/option_match_leaves_loop.js	49	0	0	0	0	0	0	0
 test/corpus/option_none_kinds.js	74	0	0	0	0	0	0	5
 test/corpus/option_rest_pattern.js	22	0	0	0	0	0	0	0
 test/corpus/option_result_methods.js	232	0	0	0	0	0	0	38
@@ -854,12 +855,14 @@ test/corpus/question_drops.js	203	0	0	0	0	0	1	19
 test/corpus/question_early_returns.js	51	0	0	0	0	0	1	10
 test/corpus/radix_negative.js	22	0	0	0	0	0	0	0
 test/corpus/radix_out_of_range.js	18	0	0	0	0	0	0	0
-test/corpus/range_bounds_generic.js	82	0	0	0	0	0	0	0
+test/corpus/range_bounds_generic.js	85	0	0	0	0	0	0	0
 test/corpus/range_from_wraps.js	104	0	0	0	0	0	0	21
 test/corpus/range_hints_given.js	87	0	0	0	1	0	0	7
-test/corpus/range_inclusive_next.js	23	0	0	0	0	0	0	0
+test/corpus/range_inclusive_exhausted.js	198	0	0	0	0	0	0	23
+test/corpus/range_inclusive_next.js	25	0	0	0	0	0	0	0
 test/corpus/range_inclusive_next_back.js	20	0	0	0	0	0	0	0
 test/corpus/range_into_set.js	37	0	0	0	0	0	0	0
+test/corpus/range_lent_used_up.js	64	0	0	0	0	0	0	8
 test/corpus/range_map_collected.js	48	0	0	0	0	0	0	3
 test/corpus/range_mapped_by_a_function.js	77	0	0	0	1	0	0	2
 test/corpus/range_own_steps.js	161	0	0	0	0	0	0	59
@@ -867,7 +870,7 @@ test/corpus/range_searches.js	20	0	0	0	0	0	0	2
 test/corpus/range_size_hint.js	42	0	0	0	0	0	0	11
 test/corpus/range_steps_anywhere.js	49	0	0	0	0	1	0	4
 test/corpus/range_steps_known.js	73	0	0	0	0	0	0	13
-test/corpus/range_values.js	212	0	0	0	1	1	0	0
+test/corpus/range_values.js	226	0	0	0	1	1	0	0
 test/corpus/raw_pointers.js	190	0	0	0	0	0	0	11
 test/corpus/raw_string_escapes.js	40	0	0	0	0	0	0	0
 test/corpus/rc_as_ptr.js	95	0	0	0	0	0	0	2
@@ -1326,7 +1329,7 @@ test/snapshots/modules/util.js	15	0	0	0	0	0	0	0
 test/snapshots/numbers/numbers.js	201	0	0	0	0	0	0	2
 test/snapshots/options/options.js	207	0	0	1	0	0	0	6
 test/snapshots/playground/codemirror.js	93	0	0	0	0	0	0	2
-test/snapshots/playground/compiler.js	323	0	0	0	0	0	0	0
+test/snapshots/playground/compiler.js	322	0	0	0	0	0	0	0
 test/snapshots/playground/dark_mode.js	29	0	0	0	0	0	0	0
 test/snapshots/playground/listen.js	12	0	0	0	0	0	0	0
 test/snapshots/playground/programs.js	233	0	0	0	1	0	0	2
@@ -1352,6 +1355,6 @@ test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0
 test/snapshots/values/values.js	263	0	0	0	0	0	4	25
 test/snapshots/versions/versions.js	215	0	0	0	3	0	2	4
 test/snapshots/web_forms/web_forms.js	289	0	0	0	0	2	0	6
-test/snapshots/webapi_events/webapi-events.js	209	0	0	0	0	0	0	3
+test/snapshots/webapi_events/webapi-events.js	224	0	0	0	0	0	0	3
 test/snapshots/wide/wide.js	248	0	0	0	0	0	0	7
 test/snapshots/wire/wire.js	539	0	0	0	0	0	0	2

@@ -182,3 +182,33 @@ pub fn reset(internals: &Internals, form: &str) {
   (lib.reset as (internals: unknown, form: string) => void)({ d: { r: (form: string) => reset.push(form) } }, "f");
   expect(reset).toEqual(["f"]);
 });
+
+
+// A comment above a `_` arm that opens a block is before its `default`, as
+// above the labels a `_` stands for, React's BeginWork `// The default is
+// now forwards.` above `case 'forwards': default:`; above one that's a value
+// it's its body's, as getIODescription's is (rd214, ADR 0590 amended).
+test("a comment above a _ arm that opens a block is before its default", async () => {
+  const { js, lib } = await compiled("default-comment-above", `pub fn tail_mode(mode: &str, set: &dyn Fn(u32)) {
+    match mode {
+        "backwards" => {
+            set(1);
+        }
+        "together" => {
+            set(2);
+        }
+        // The default is now forwards.
+        _ => {
+            set(3);
+        }
+    }
+}
+`);
+  expect(js).toContain("      break;\n    // The default is now forwards.\n    default:\n      set(3);\n");
+  const seen: number[] = [];
+  const set = (n: number) => seen.push(n);
+  const tailMode = lib.tailMode as (mode: string, set: (n: number) => void) => void;
+  tailMode("together", set);
+  tailMode("forwards", set);
+  expect(seen).toEqual([2, 3]);
+});

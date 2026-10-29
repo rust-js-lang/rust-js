@@ -103,8 +103,19 @@ pub(crate) fn default_fallen_to(cases: &[js::Case], default: Option<&[js::Stmt]>
 /// scheduler's are (ADR 0590).
 pub(super) fn case_starts(module: &Module) -> Vec<u32> {
     let mut starts = fallthrough_starts(module);
+    // And each `default`'s, a comment above whose `_` arm is before it, as
+    // above a case of the labels a `_` stands for, React's `// The default
+    // is now forwards.` above `case 'forwards': default:` (rd214).
+    each_switch(module, &mut |_, default| starts.extend(default_start(default)));
     starts.sort_unstable();
+    starts.dedup();
     starts
+}
+
+/// Where a `switch`'s `default` is printed: its first statement's start.
+pub(crate) fn default_start(default: Option<&[js::Stmt]>) -> Option<u32> {
+    let first = default?.first()?;
+    (!first.span.is_none()).then_some(first.span.lo)
 }
 
 /// What's asked of each `switch`: its cases, and its `default`.
