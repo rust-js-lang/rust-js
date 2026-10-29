@@ -200,7 +200,7 @@ pub mod map {
     /// nothing, `None`, as TypeScript's `new Map(entries?)` (ADR 0875).
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn new<K: ?Sized, V>(entries: Option<&[(&K, V)]>) -> &'static Map<K, V> {
+    pub fn new<'a, K: ?Sized, V>(entries: Option<&dyn crate::Iterable<(&'a K, V)>>) -> &'static Map<K, V> {
         unreachable!()
     }
 }
@@ -306,7 +306,7 @@ pub mod set {
     /// TypeScript's `new Set(values?)`.
     #[cfg_attr(rust_js, rust_js::link_name = "new Set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn new<T: ?Sized>(values: Option<&[&T]>) -> &'static Set<T> {
+    pub fn new<'a, T: ?Sized>(values: Option<&dyn crate::Iterable<&'a T>>) -> &'static Set<T> {
         unreachable!()
     }
 }

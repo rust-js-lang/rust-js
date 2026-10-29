@@ -35,3 +35,18 @@ pub struct IteratorResult<T> {
     pub done: Option<bool>,
     pub value: T,
 }
+
+/// [An iterable](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_iterable_protocol)
+/// of `T`, TypeScript's `Iterable<T>`: what a JS constructor that takes one,
+/// `new Set(values)`, `new Map(entries)`, steps, given as it is: a
+/// [`Set`](crate::Set) or a [`Map`](crate::Map) of JS's, an array, a slice, a `Vec`,
+/// or a `Box<dyn Iterator>` JS steps itself (the user's decision, bw8).
+#[cfg_attr(rust_js, rust_js::types = "Iterable<T>")]
+pub trait Iterable<T> {}
+
+impl<T, const N: usize> Iterable<T> for [T; N] {}
+impl<T> Iterable<T> for &[T] {}
+impl<T> Iterable<T> for Vec<T> {}
+impl<T> Iterable<T> for Box<dyn core::iter::Iterator<Item = T> + '_> {}
+impl<T: ?Sized> Iterable<&'static T> for crate::Set<T> {}
+impl<K: ?Sized, V> Iterable<(&'static K, V)> for crate::Map<K, V> {}

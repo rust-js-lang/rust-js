@@ -323,10 +323,13 @@ export const cache = typeof WeakMap !== "undefined" ? new WeakMap() : new Map();
 - **A `js::Set` is JS's `Set` of any value**, as TypeScript's `Set<T>`
   is, each the one `SameValueZero` says, as a `js::Map`'s key. A set of
   what Rust hashes, the program's own types by value or by themselves, is
-  a `HashSet`, a JS `Set` too. Each is made of what it starts with,
-  `js::set::new(Some(&[frozen]))` `new Set([frozen])` and
-  `js::map::new(Some(&[(key, value)]))` `new Map([[key, value]])`, or of
-  nothing, `None`, as TypeScript's constructors take an optional array.
+  a `HashSet`, a JS `Set` too. Each is made of what it starts with, any
+  JS iterable of it, a `js::Iterable<T>`, TypeScript's `Iterable<T>`, given
+  as it is: an array, `js::set::new(Some(&[frozen]))` `new Set([frozen])`
+  and `js::map::new(Some(&[(key, value)]))` `new Map([[key, value]])`; a
+  slice or a `Vec`, `Some(&v)`; another set or map, `js::set::new(Some(s))`
+  `new Set(s)`; or a `Box<dyn Iterator>`, `Some(&it)`; or of nothing,
+  `None`, as TypeScript's constructors take an optional iterable.
   A set's `for_each(f)` is its `forEach`, `f` of each value, which may
   borrow what's around it as JS runs it at once; its `values()`, `keys()`
   and `entries()` are JS iterators. A map's are alike, its `for_each(f)`'s

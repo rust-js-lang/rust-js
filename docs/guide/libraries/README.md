@@ -188,7 +188,8 @@ What it has:
   instanceof DataView`
   ([ADR 0878](../../decisions/0878-instanceof-of-a-constructor-value.md)).
   A `Set` holds any value, as a `Map` keys one; each is made of what it
-  starts with, `set::new(Some(&[a, b]))`, or `None`
+  starts with, any iterable of it, `set::new(Some(&[a, b]))`,
+  `set::new(Some(other))`, or `None`
   ([ADR 0875](../../decisions/0875-a-js-set-holds-any-value.md)). A
   `Map`'s or a `WeakMap`'s value is any value too, an `Option` whose
   `get` is `Some(None)` of a key whose value is `None`, as its `has` tells,

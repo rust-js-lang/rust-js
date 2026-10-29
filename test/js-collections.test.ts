@@ -533,3 +533,51 @@ const grown = grow(log0);
 console.log(JSON.stringify([Array.from(log0.subarray(0, 6)), grown.length, Array.from(grown.subarray(0, 6)), made([9, 4.7, -1.2]).map(Number)]));`);
   expect(out).toBe(`${JSON.stringify([[0, 0, 1, 3e9 | 0, 7, 0], 32, [0, 0, 1, 3e9 | 0, 7, 0], [3, -1, -2]])}\n`);
 });
+
+// bw8b, the user's decision of bw8: `js::set::new` and `js::map::new` take
+// any JS iterable of what they hold, `Option<&dyn js::Iterable<T>>`: a
+// `Set` or a `Map` of JS's, an array, a `Vec`, or a `Box<dyn Iterator>`,
+// given as it is, `new Set(s)`, as JS writes a copy of a set.
+test("a set and a map are made of any iterable, given as it is", () => {
+  const { dir, js } = compiled("js-set-of-iterable", `use js::{Map, Set};
+
+pub fn copied(s: &Set<str>) -> &'static Set<str> {
+    js::set::new(Some(s))
+}
+
+pub fn of_vec(v: Vec<&str>) -> &'static Set<str> {
+    js::set::new(Some(&v))
+}
+
+pub fn long(s: &Set<str>) -> &'static Set<str> {
+    let it: Box<dyn Iterator<Item = &'static str>> = Box::new(s.values().filter(|v| v.len() > 1));
+    js::set::new(Some(&it))
+}
+
+pub fn non_empty(v: &[&'static str]) -> u32 {
+    let it: Box<dyn Iterator<Item = &'static str>> = Box::new(v.iter().copied().filter(|s| !s.is_empty()));
+    js::set::new(Some(&it)).size()
+}
+
+pub fn of_slice(v: &[&str]) -> &'static Set<str> {
+    js::set::new(Some(&v))
+}
+
+pub fn map_copied(m: &Map<str, u32>) -> &'static Map<str, u32> {
+    js::map::new(Some(m))
+}
+`);
+  expect(js).toContain("  return new Set(s);\n");
+  expect(js).toContain("  return new Set(v);\n");
+  expect(js).toContain("export function ofSlice(v) {\n  return new Set(v);\n");
+  expect(js).toContain("  return new Map(m);\n");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const s = new Set(["a", "bb", "ccc", "a"]);
+const copy = lib.copied(s);
+copy.add("d");
+const m = new Map([["x", 1]]);
+const mapCopy = lib.mapCopied(m);
+mapCopy.set("y", 2);
+console.log(JSON.stringify([[...copy], s.size, [...lib.ofVec(["b", "a", "b"])], [...lib.long(s)], lib.nonEmpty(["", "a", "a", "b"]), [...mapCopy], m.size, [...lib.ofSlice(["c", "c"])]]));`);
+  expect(JSON.parse(out)).toEqual([["a", "bb", "ccc", "d"], 3, ["b", "a"], ["bb", "ccc"], 2, [["x", 1], ["y", 2]], 1, ["c"]]);
+});

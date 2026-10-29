@@ -202,3 +202,33 @@ collected is Array.from of it", which runs the JS, and mutations
 `receiver-iteration-unmarked` and `receiver-iteration-collected-as-call`.
 `js::set::new` of an iterable, the decision's other half, is written up
 separately (its `None` and its slice form).
+
+## Amendment: a set and a map are made of any iterable (bw8b)
+
+The decision's other half (the user's of bw8, the coordinator's form):
+`js::set::new` and `js::map::new` take any JS iterable of what they hold,
+`Option<&dyn js::Iterable<T>>`, given as it is: `js::set::new(Some(s))` of
+a `&Set<str>` is `new Set(s)`, React's copy of a set, where the port wrote
+`new Set(Array.from(s))` by way of a slice. Case
+([0262](0262-when-rust-and-js-disagree.md)): None, as JS's constructor
+steps any iterable the same way.
+
+- **`js::Iterable<T>`, TypeScript's `Iterable<T>`**, a marker trait of the
+  item, as `WeakKey` is one of a key (ADR 0677): what JS's iteration of it
+  steps. Implemented for `[T; N]`, `&[T]`, `Vec<T>`, `Box<dyn Iterator<Item = T>>`
+  (a Rust iterator, which JS steps by its own protocol), a `Set<T>` of
+  `&'static T` and a `Map<K, V>` of `(&'static K, V)`. A `&dyn Iterable`
+  binding argument is its value, as any binding's reference is: no
+  lowering changes.
+- **What callers write**: `Some(&[a, b])` as before, `Some(&v)` of a
+  `Vec` or of a slice it holds, `v: &[&str]` (`&[T]` is the slice's
+  reference, a `[T]` being unsized, no `dyn` value), `Some(s)` of a set or
+  a map, `Some(&it)` of a boxed iterator. One parameter type for each
+  constructor; no slice overload beside it (one way).
+- Considered: `values: Option<impl js::Iterable<T>>`, by value, which
+  makes `None` need its type named (`None::<&[&str; 0]>`), and `&[&T]` as
+  before beside a second constructor for a set: two ways.
+
+Held by `test/js-collections.test.ts`' "a set and a map are made of any
+iterable, given as it is", which runs the JS against copies, a `Vec` and
+boxed iterators; rustc holds the signatures.

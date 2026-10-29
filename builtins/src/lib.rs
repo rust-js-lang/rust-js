@@ -21,7 +21,7 @@ pub mod date;
 pub use date::Date;
 pub mod intl;
 mod iterator;
-pub use iterator::{Iterator, IteratorResult};
+pub use iterator::{Iterable, Iterator, IteratorResult};
 pub mod promise;
 pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
