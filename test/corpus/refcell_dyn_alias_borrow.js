@@ -12,9 +12,7 @@ function circleShape_grow(circle, by) {
 }
 
 function radius(circle) {
-  const borrow = $borrow(circle, true);
-  $unborrow(borrow);
-  return borrow.value.r;
+  return $borrow(circle).value.r;
 }
 
 function main() {

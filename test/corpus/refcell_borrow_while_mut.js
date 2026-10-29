@@ -7,12 +7,7 @@ export function entry() {
 }
 
 function total(cell) {
-  const borrow = $borrow(cell, true);
-  try {
-    return borrow.reduce((a, b) => (a + b) | 0, 0);
-  } finally {
-    $unborrow(borrow);
-  }
+  return $borrow(cell).reduce((a, b) => (a + b) | 0, 0);
 }
 
 function main() {
@@ -23,11 +18,6 @@ function main() {
   } finally {
     $unborrow(borrowMut);
   }
-  const borrow = $borrow(cell, true);
-  try {
-    console.log(`[${borrow.join(", ")}]`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`[${$borrow(cell).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

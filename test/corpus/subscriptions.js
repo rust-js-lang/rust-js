@@ -69,12 +69,7 @@ const Component = {
         const bus = $upgrade(first.bus);
         if (bus != null) {
           try {
-            const borrowMut = $borrowMut(bus.value, true);
-            try {
-              borrowMut.handlers.delete(first.id);
-            } finally {
-              $unborrow(borrowMut);
-            }
+            $borrowMut(bus.value).handlers.delete(first.id);
             console.log(`unsubscribed ${first.id}`);
           } finally {
             $rcDrop(bus);
@@ -112,12 +107,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -137,12 +127,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -157,12 +142,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -181,12 +161,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -202,12 +177,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -227,12 +197,7 @@ function main() {
           const bus = $upgrade(item.bus);
           if (bus != null) {
             try {
-              const borrowMut = $borrowMut(bus.value, true);
-              try {
-                borrowMut.handlers.delete(item.id);
-              } finally {
-                $unborrow(borrowMut);
-              }
+              $borrowMut(bus.value).handlers.delete(item.id);
               console.log(`unsubscribed ${item.id}`);
             } finally {
               $rcDrop(bus);
@@ -255,12 +220,7 @@ function main() {
               const bus = $upgrade(item.bus);
               if (bus != null) {
                 try {
-                  const borrowMut = $borrowMut(bus.value, true);
-                  try {
-                    borrowMut.handlers.delete(item.id);
-                  } finally {
-                    $unborrow(borrowMut);
-                  }
+                  $borrowMut(bus.value).handlers.delete(item.id);
                   console.log(`unsubscribed ${item.id}`);
                 } finally {
                   $rcDrop(bus);
@@ -273,9 +233,7 @@ function main() {
         },
       );
       publish(bus, "empty");
-      const borrow = $borrow(bus.value, true);
-      console.log(`left ${borrow.handlers.size}`);
-      $unborrow(borrow);
+      console.log(`left ${$borrow(bus.value).handlers.size}`);
     } finally {
       $dropItems(comps, (item) => {
         $dropItems(item.subs, (item) => {
@@ -283,12 +241,7 @@ function main() {
             const bus = $upgrade(item.bus);
             if (bus != null) {
               try {
-                const borrowMut = $borrowMut(bus.value, true);
-                try {
-                  borrowMut.handlers.delete(item.id);
-                } finally {
-                  $unborrow(borrowMut);
-                }
+                $borrowMut(bus.value).handlers.delete(item.id);
                 console.log(`unsubscribed ${item.id}`);
               } finally {
                 $rcDrop(bus);

@@ -9,7 +9,6 @@ import {
   $rcClone,
   $rcDrop,
   $take,
-  $unborrow,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -118,30 +117,14 @@ function metersDebug_fmt(meters) {
 function newtypes() {
   const lines = ["one"];
   const alias = lines;
-  const borrowMut = $borrowMut(alias, true);
-  try {
-    borrowMut.push("two");
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(alias).push("two");
   let old = $take($borrowMut(lines), ["three"]);
-  const borrow = $borrow(lines, true);
-  try {
-    console.log(`${linesDebug_fmt(old)} ${linesDebug_fmt(borrow)} ${lines === alias}`);
-  } finally {
-    $unborrow(borrow);
-  }
-  const value$1 = [];
-  const value = $borrowMut(alias, true);
-  $assign(value, value$1);
-  $unborrow(value);
+  const borrow = $borrow(lines);
+  console.log(`${linesDebug_fmt(old)} ${linesDebug_fmt(borrow)} ${lines === alias}`);
+  $assign($borrowMut(alias), []);
   const taken = $take($borrowMut(lines), []);
-  const value$2 = $borrow(alias, true);
-  try {
-    console.log(`${linesDebug_fmt(taken)} ${linesDebug_fmt(value$2)}`);
-  } finally {
-    $unborrow(value$2);
-  }
+  const value = $borrow(alias);
+  console.log(`${linesDebug_fmt(taken)} ${linesDebug_fmt(value)}`);
   let length = 1.5;
   const before = length;
   length += 2;

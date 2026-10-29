@@ -30,6 +30,10 @@ pub(super) struct Call<'c, 'tcx> {
     /// guard of one, whether it's a struct's field's no borrow of which can
     /// meet another, never checked (ADR 0863, amended).
     pub(super) quiet: bool,
+    /// Of a borrow of a `RefCell`, whether its guard is held only while
+    /// nothing can ask whether its cell is borrowed: checked, not counted
+    /// (ADR 0328, rd218).
+    pub(super) momentary: bool,
     /// Of a call that writes a thread-local's cell, whether the thread-local
     /// is `#[rust_js::nullable]`, its `None` stored `null` (ADR 0586,
     /// amended).
@@ -38,11 +42,12 @@ pub(super) struct Call<'c, 'tcx> {
 }
 
 /// What MIR says of a call's arguments that their values don't, as `Call`
-/// carries it: `nulled`, `quiet` and `null_for_none`.
+/// carries it: `nulled`, `quiet`, `momentary` and `null_for_none`.
 #[derive(Clone, Copy, Default)]
 pub(super) struct Given<'c> {
     pub(super) nulled: &'c [bool],
     pub(super) quiet: bool,
+    pub(super) momentary: bool,
     pub(super) null_for_none: bool,
 }
 

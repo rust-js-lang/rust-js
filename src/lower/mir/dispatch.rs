@@ -1171,6 +1171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tys: arg_tys,
             nulled: given.nulled,
             quiet: given.quiet,
+            momentary: given.momentary,
             null_for_none: given.null_for_none,
             span,
         };

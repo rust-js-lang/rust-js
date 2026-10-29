@@ -8,12 +8,7 @@ export function entry() {
 
 export const peekClone = { clone: peekClone_clone };
 function peekClone_clone(peek) {
-  const borrowMut = $borrowMut(peek[0], true);
-  try {
-    borrowMut.push(0);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(peek[0]).push(0);
   return [peek[0]];
 }
 
@@ -21,19 +16,17 @@ function main() {
   const cell = [1];
   const peeks = [[cell]];
   const cloned = peeks.map((item) => peekClone_clone(item));
-  const borrow = $borrow(cell, true);
-  console.log(`${cloned.length} ${borrow.length}`);
-  $unborrow(borrow);
+  console.log(`${cloned.length} ${$borrow(cell).length}`);
   const holders = [{ peek: [cell] }];
-  const value = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   let n;
   try {
     n =
-      (value.length +
+      (borrow.length +
         holders.map((item) => ({ ...item, peek: peekClone_clone(item.peek) })).length) >>>
       0;
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
   console.log(`${n}`);
 }

@@ -78,25 +78,11 @@ function settle(queue, stop) {
  * holds it, then drains to it.
  */
 function settleTask(queue, at, task) {
-  const borrow = $borrow(queue, true);
-  if (at < borrow.length) {
-    $unborrow(borrow);
-    const borrowMut = $borrowMut(queue, true);
-    borrowMut[at] = task;
-    $unborrow(borrowMut);
-    const value = $borrowMut(queue, true);
-    try {
-      value.splice(0, at);
-    } finally {
-      $unborrow(value);
-    }
-  } else {
-    $unborrow(borrow);
+  if (at < $borrow(queue).length) {
+    $borrowMut(queue)[at] = task;
+    $borrowMut(queue).splice(0, at);
   }
-  const value = $borrow(queue, true);
-  const result = value.length;
-  $unborrow(value);
-  return result;
+  return $borrow(queue).length;
 }
 
 /**

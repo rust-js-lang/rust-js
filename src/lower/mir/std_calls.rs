@@ -19,6 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::calls::Given {
             nulled,
             quiet: cells.calls.contains(&state.at),
+            momentary: cells.momentary.contains(&state.at),
             null_for_none: cells.nullable.contains(&state.at),
         }
     }

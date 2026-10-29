@@ -52,18 +52,14 @@ function main() {
   const list = $newCyclic((me) => [{ list: $weakClone(me) }]);
   try {
     flip(list.value);
-    const borrow = $borrow(list.value, true);
-    console.log(`${borrow.length}`);
-    $unborrow(borrow);
+    console.log(`${$borrow(list.value).length}`);
     const copy = $withBorrow(
       list.value,
       (value) => value.map((item) => nodeClone_clone(item)),
       true,
     );
     try {
-      const value = $borrow(copy, true);
-      console.log(`${value.length}`);
-      $unborrow(value);
+      console.log(`${$borrow(copy).length}`);
     } finally {
       for (const item of copy) {
         $weakDrop(item.list);

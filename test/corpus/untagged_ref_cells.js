@@ -23,27 +23,12 @@ function track(state, item) {
   if (!Array.isArray(state)) {
     state.warned = true;
   }
-  const borrowMut = $borrowMut(items(state), true);
-  try {
-    borrowMut.push(item);
-  } finally {
-    $unborrow(borrowMut);
-  }
-  const borrow = $borrow(items(state), true);
-  $unborrow(borrow);
-  return borrow.length;
+  $borrowMut(items(state)).push(item);
+  return $borrow(items(state)).length;
 }
 
 function total(shared) {
-  if (Array.isArray(shared)) {
-    const borrow = $borrow(shared, true);
-    try {
-      return borrow.reduce((a, b) => a + b, -0);
-    } finally {
-      $unborrow(borrow);
-    }
-  }
-  return shared;
+  return Array.isArray(shared) ? $borrow(shared).reduce((a, b) => a + b, -0) : shared;
 }
 
 function main() {
@@ -61,12 +46,7 @@ function main() {
   }
   const shared = [1, 2.5];
   if (Array.isArray(shared)) {
-    const borrowMut = $borrowMut(shared, true);
-    try {
-      borrowMut.push(3);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(shared).push(3);
   }
   console.log(`${$displayF64(total(shared))} ${$displayF64(total(4))}`);
 }

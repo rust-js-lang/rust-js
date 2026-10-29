@@ -242,9 +242,7 @@ function main() {
             });
           });
         }
-        const value = $borrow(counter.value, true);
-        console.log(`${counterSink_total(value.value)} ${counter.strong}`);
-        $unborrow(value);
+        console.log(`${counterSink_total($borrow(counter.value).value)} ${counter.strong}`);
       } finally {
         $rcDrop(counter);
       }

@@ -172,9 +172,7 @@ function main() {
         noisyDrop_drop(item);
       }
     });
-    const borrow = $borrow(other.value, true);
-    console.log(`${borrow.length}`);
-    $unborrow(borrow);
+    console.log(`${$borrow(other.value).length}`);
     const value = $borrowMut(other.value, true);
     let last;
     try {

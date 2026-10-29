@@ -124,4 +124,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
     snapshots: true,
   },
+  {
+    name: "momentary-borrow-held",
+    breaks: "a borrow of a counted `RefCell` held only while nothing can ask, `queue.borrow_mut().push(x)`, is counted and released in a `finally`, `const b = $borrowMut(queue, true); try { b.push(x); } finally { $unborrow(b); }`, not checked alone, `$borrowMut(queue).push(x)` (rd218)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    quiet.momentary.insert(block);\n                    quiet.guards.insert(destination.local);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+    snapshots: true,
+  },
 ];

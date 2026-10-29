@@ -17,9 +17,7 @@ function hold(cell, f) {
 }
 
 function bump(wrap) {
-  const borrow = $borrow($fieldCell(wrap, "n"), true);
-  const n = borrow.value;
-  $unborrow(borrow);
+  const { value: n } = $borrow($fieldCell(wrap, "n"));
   $cellReplace($borrowMut($fieldCell(wrap, "n")), (n + 1) & 65535);
 }
 

@@ -89,6 +89,11 @@ pub(super) struct LocalFacts<'m, 'tcx> {
 #[derive(Default)]
 pub(super) struct QuietCells {
     pub(super) calls: HashSet<BasicBlock>,
+    /// Each borrow of a counted `RefCell` whose guard is held only while
+    /// nothing can ask whether its cell is borrowed: checked, not counted,
+    /// its guard among `guards`, whose drop releases nothing (ADR 0328,
+    /// rd218).
+    pub(super) momentary: HashSet<BasicBlock>,
     pub(super) guards: HashSet<Local>,
     /// Each call that writes a `#[rust_js::nullable]` thread-local's cell,
     /// whose `None` is `null` (ADR 0586, amended).
@@ -444,6 +449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> QuietCells {
         let tcx = self.tcx;
         let mut quiet = QuietCells::default();
+        let momentary = self.momentary_borrows();
         // Each local assigned once, and what it's assigned.
         let mut assigned: HashMap<Local, Option<&Rvalue<'tcx>>> = HashMap::new();
         for data in body.basic_blocks.iter() {
@@ -574,6 +580,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if matches!(known, Std::Borrow { .. }) && destination.projection.is_empty() {
                         quiet.guards.insert(destination.local);
                     }
+                }
+                // One held only while nothing can ask, of a cell another
+                // borrow is counted of: checked, and not counted (rd218).
+                Some(Std::Borrow { lock: false, .. })
+                    if destination.projection.is_empty()
+                        && matches!(func, Operand::Constant(c) if momentary.contains(&c.span)) =>
+                {
+                    quiet.momentary.insert(block);
+                    quiet.guards.insert(destination.local);
                 }
                 _ => {}
             }

@@ -125,12 +125,7 @@ export function main() {
     let title = input.value;
     title = $trim(title);
     if (e.key === "Enter" && title) {
-      const borrowMut = $borrowMut(adding, true);
-      try {
-        add(borrowMut, title);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      add($borrowMut(adding), title);
       input.value = "";
       render(adding, view);
     }

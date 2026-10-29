@@ -14,51 +14,24 @@ function main() {
   try {
     v = $borrow(cell, true);
   } catch (error) {
-    const borrowMut = $borrowMut(p[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
-    const borrowMut$1 = $borrowMut(q[0], true);
-    try {
-      borrowMut$1.push(0);
-    } finally {
-      $unborrow(borrowMut$1);
-    }
+    $borrowMut(p[0]).push(0);
+    $borrowMut(q[0]).push(0);
     throw error;
   }
   console.log(`${v.length}`);
   try {
     try {
       try {
-        const borrowMut = $borrowMut(p[0], true);
-        try {
-          borrowMut.push(0);
-        } finally {
-          $unborrow(borrowMut);
-        }
+        $borrowMut(p[0]).push(0);
       } finally {
         p = q;
       }
     } finally {
       $unborrow(v);
     }
-    const borrow = $borrow(cell, true);
-    try {
-      const value = $borrow(p[0], true);
-      console.log(`${borrow.length} ${value.length}`);
-      $unborrow(value);
-    } finally {
-      $unborrow(borrow);
-    }
+    console.log(`${$borrow(cell).length} ${$borrow(p[0]).length}`);
   } finally {
-    const borrowMut = $borrowMut(p[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(p[0]).push(0);
   }
 }
 //# sourceMappingURL=case.js.map

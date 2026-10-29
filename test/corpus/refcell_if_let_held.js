@@ -8,26 +8,21 @@ export function entry() {
 
 function main() {
   const next = { value: 1 };
-  const borrow = $borrow(next, true);
+  const borrow = $borrow(next);
   if (borrow.value != null) {
     console.log(`tested ${borrow.value}`);
   }
-  $unborrow(borrow);
-  const value = $borrow(next, true);
+  const value = $borrow(next);
   console.log(`${value.value == null ? "None" : `Some(${value.value})`}`);
-  $unborrow(value);
   const value$1 = $borrow(next, true);
   try {
     if (value$1.value != null) {
-      const borrowMut = $borrowMut(next, true);
-      borrowMut.value = (value$1.value + 1) | 0;
-      $unborrow(borrowMut);
+      $borrowMut(next).value = (value$1.value + 1) | 0;
     }
   } finally {
     $unborrow(value$1);
   }
-  const value$2 = $borrow(next, true);
+  const value$2 = $borrow(next);
   console.log(`${value$2.value == null ? "None" : `Some(${value$2.value})`}`);
-  $unborrow(value$2);
 }
 //# sourceMappingURL=case.js.map

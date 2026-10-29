@@ -158,18 +158,12 @@ function readApart() {
   try {
     let tmp;
     try {
-      tmp = $borrow(this$.value, true);
+      tmp = $borrow(this$.value);
     } catch (error) {
       $rcDrop(probe, $dispose);
       throw error;
     }
     const before = tmp.value != null;
-    try {
-      $unborrow(tmp);
-    } catch (error) {
-      $rcDrop(probe, $dispose);
-      throw error;
-    }
     let tmp$1;
     try {
       tmp$1 = $downgrade(probe);

@@ -5,7 +5,6 @@ import {
   $borrowMut,
   $newCyclic,
   $rcDrop,
-  $unborrow,
   $upgrade,
   $weakClone,
   $weakDrop,
@@ -27,9 +26,8 @@ function nodeClone_clone(node) {
   const me = $upgrade(node.me);
   if (me != null) {
     try {
-      const borrowMut = $borrowMut(me.value, true);
+      const borrowMut = $borrowMut(me.value);
       borrowMut.visits = (borrowMut.visits + 1) >>> 0;
-      $unborrow(borrowMut);
     } finally {
       $rcDrop(me, (value) => {
         $weakDrop(value.me);
@@ -45,17 +43,12 @@ function nodeClone_clone(node) {
 function main() {
   const node = $newCyclic((me) => ({ me: $weakClone(me), visits: 0 }));
   try {
-    const borrowMut = $borrowMut(node.value, true);
+    const borrowMut = $borrowMut(node.value);
     borrowMut.visits = (borrowMut.visits + 1) >>> 0;
-    $unborrow(borrowMut);
-    const borrow = $borrow(node.value, true);
-    console.log(`${borrow.visits}`);
-    $unborrow(borrow);
+    console.log(`${$borrow(node.value).visits}`);
     const copy = $withBorrow(node.value, (value) => nodeClone_clone(value), true);
     try {
-      const value = $borrow(copy, true);
-      console.log(`${value.visits}`);
-      $unborrow(value);
+      console.log(`${$borrow(copy).visits}`);
     } finally {
       $weakDrop(copy.me);
     }

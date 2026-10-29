@@ -11,9 +11,7 @@ function main() {
   const kept = $borrowMut(cell, true);
   console.log(`${kept.length}`);
   try {
-    const borrow = $borrow(cell, true);
-    console.log(`${borrow.length}`);
-    $unborrow(borrow);
+    console.log(`${$borrow(cell).length}`);
   } finally {
     $unborrow(kept);
   }

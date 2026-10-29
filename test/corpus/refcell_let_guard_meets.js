@@ -12,17 +12,10 @@ function main() {
   const n = v.length;
   console.log(`${n}`);
   try {
-    const borrowMut = $borrowMut(cell, true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(cell).push(0);
   } finally {
     $unborrow(v);
   }
-  const borrow = $borrow(cell, true);
-  console.log(`${borrow.length}`);
-  $unborrow(borrow);
+  console.log(`${$borrow(cell).length}`);
 }
 //# sourceMappingURL=case.js.map

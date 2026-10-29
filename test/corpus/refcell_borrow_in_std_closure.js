@@ -10,29 +10,17 @@ function main() {
   const log = {
     items: [1, 2],
   };
-  const value = $borrowMut(log.items, true);
-  try {
-    value.push(3);
-  } finally {
-    $unborrow(value);
-  }
+  $borrowMut(log.items).push(3);
+  console.log(`${$borrow(log.items).length}`);
   const borrow = $borrow(log.items, true);
-  console.log(`${borrow.length}`);
-  $unborrow(borrow);
-  const value$1 = $borrow(log.items, true);
   let found;
   try {
-    found = value$1.some((item) => {
-      const borrowMut = $borrowMut(log.items, true);
-      try {
-        borrowMut.push(item);
-      } finally {
-        $unborrow(borrowMut);
-      }
+    found = borrow.some((item) => {
+      $borrowMut(log.items).push(item);
       return false;
     });
   } finally {
-    $unborrow(value$1);
+    $unborrow(borrow);
   }
   console.log(`${found}`);
 }

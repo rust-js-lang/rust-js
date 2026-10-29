@@ -13,28 +13,16 @@ function main() {
   try {
     v = $borrow(cell, true);
   } catch (error) {
-    const borrowMut = $borrowMut(p[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(p[0]).push(0);
     throw error;
   }
   console.log(`${v.length}`);
   const _q = p;
   try {
-    const borrowMut = $borrowMut(_q[0], true);
-    try {
-      borrowMut.push(0);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(_q[0]).push(0);
   } finally {
     $unborrow(v);
   }
-  const borrow = $borrow(cell, true);
-  console.log(`${borrow.length}`);
-  $unborrow(borrow);
+  console.log(`${$borrow(cell).length}`);
 }
 //# sourceMappingURL=case.js.map

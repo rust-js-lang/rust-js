@@ -69,12 +69,7 @@ function main() {
       } finally {
         $unborrow(borrow);
       }
-      const value$1 = $borrow(logger, true);
-      try {
-        console.log(`${loggerListener_count(value$1.value)} ${leaf.value.name} ${parent}`);
-      } finally {
-        $unborrow(value$1);
-      }
+      console.log(`${loggerListener_count($borrow(logger).value)} ${leaf.value.name} ${parent}`);
     } finally {
       $rcDrop(leaf, (value) => {
         $weakDrop(value.parent);

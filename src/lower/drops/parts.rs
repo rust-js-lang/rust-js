@@ -349,6 +349,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// Where each of this body's momentary borrows is called, its call's
+    /// `fun`'s span: a guard held only while nothing can ask whether its
+    /// cell is borrowed (ADR 0328), of the facts found already, which MIR's
+    /// lowering asks, found here where they aren't yet.
+    pub(in crate::lower) fn momentary_borrows(&self) -> HashSet<Span> {
+        let key = std::ptr::from_ref(self.frame.thir) as usize;
+        let spans =
+            |facts: &Facts| -> HashSet<Span> { facts.momentary.iter().map(|&fun| self.frame.thir[fun].span).collect() };
+        match self.drop_state.facts.get(&key) {
+            Some(facts) => spans(facts),
+            None => spans(&find_facts(
+                &self.drop_query(),
+                self.krate.cell_borrows,
+                self.frame.thir,
+                self.frame.owner,
+            )),
+        }
+    }
+
     /// This body's facts, found the first time they're asked for; what it
     /// does that isn't supported is an error then.
     pub(in crate::lower) fn drop_facts(&mut self) -> R<Rc<Facts>> {

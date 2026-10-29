@@ -20,19 +20,10 @@ function main() {
   const root = {
     log: [],
   };
-  function counted(root) {
-    const borrow = $borrow(root.log, true);
-    $unborrow(borrow);
-    return borrow.length;
-  }
+  const counted = (root) => $borrow(root.log).length;
   const constant = () => 7;
   record(root, constant);
-  const value = $borrow(root.log, true);
-  try {
-    console.log(`[${value.join(", ")}]`);
-  } finally {
-    $unborrow(value);
-  }
+  console.log(`[${$borrow(root.log).join(", ")}]`);
   console.log(`${counted(root)}`);
   record(root, counted);
 }

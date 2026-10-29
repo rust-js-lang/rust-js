@@ -586,4 +586,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup"],
   },
+  {
+    name: "momentary-borrow-counted",
+    breaks: "a momentary borrow of a counted `RefCell` is counted though its guard's drop releases nothing, so the cell stays borrowed and the next borrow panics `RefCell already borrowed` (rd218)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                if !call.momentary || lock {\n",
+    replace: "                if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+  },
 ];

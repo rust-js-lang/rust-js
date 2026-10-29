@@ -10,12 +10,7 @@ function main() {
   const cell = [1];
   const reading = $borrow(cell, true);
   try {
-    const borrowMut = $borrowMut(cell, true);
-    try {
-      borrowMut.push(2);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(cell).push(2);
     console.log(`${reading.length}`);
   } finally {
     $unborrow(reading);

@@ -11,12 +11,7 @@ function quiet(root) {
 }
 
 function touch(root) {
-  const borrowMut = $borrowMut(root.log, true);
-  try {
-    borrowMut.push(1);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(root.log).push(1);
   return 1;
 }
 
@@ -34,12 +29,7 @@ function main() {
     log: [],
   };
   function pushed(root) {
-    const borrowMut = $borrowMut(root.log, true);
-    try {
-      borrowMut.push(2);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(root.log).push(2);
     return 2;
   }
   console.log(`${(touch(root) + pushed(root)) >>> 0}`);

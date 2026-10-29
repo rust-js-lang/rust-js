@@ -44,24 +44,14 @@ function holderDeref_deref(holder) {
 
 function holderDrop_drop(holder) {
   holder.items.length = 0;
-  const borrowMut = $borrowMut(holder.log, true);
-  try {
-    borrowMut.push("dropped");
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(holder.log).push("dropped");
 }
 
 function main() {
   const cell = [1, 2];
   take($borrow(cell, true), $unborrow);
   console.log(`${length($borrow(cell, true), { deref: (x) => x }, $unborrow)}`);
-  const borrowMut = $borrowMut(cell, true);
-  try {
-    borrowMut.push(3);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(cell).push(3);
   console.log(`${length($borrowMut(cell, true), { deref: (x) => x }, $unborrow)}`);
   shown($borrow(cell, true), { deref: (x) => x }, $unborrow);
   console.log(`${firstOr($borrow(cell, true), 0, { deref: (x) => x }, $unborrow)}`);

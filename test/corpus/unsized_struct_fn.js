@@ -21,8 +21,6 @@ function main() {
       $unborrow(borrowMut);
     }
   }
-  const borrow = $borrow(total, true);
-  console.log(`${borrow.value}`);
-  $unborrow(borrow);
+  console.log(`${$borrow(total).value}`);
 }
 //# sourceMappingURL=case.js.map

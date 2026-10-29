@@ -80,9 +80,7 @@ function main() {
   console.log(`${$displayF64(total(shapes))}`);
   growAll(shapes, 1);
   // Through the concrete `Rc`, the same cell.
-  const borrowMut = $borrowMut(circle, true);
-  borrowMut.value.r = 10;
-  $unborrow(borrowMut);
+  $borrowMut(circle).value.r = 10;
   for (const s of shapes) {
     const receiver = $borrow(s, true);
     try {
@@ -97,26 +95,24 @@ function main() {
       $unborrow(receiver);
     }
   }
-  const value = $borrowMut(circle, true);
-  value.value = { r: 0.5 };
-  $unborrow(value);
-  const value$1 = $borrow($index(shapes, 0), true);
+  $borrowMut(circle).value = { r: 0.5 };
+  const value = $borrow($index(shapes, 0), true);
   try {
-    console.log(`${value$1.impl.name(value$1.value)}`);
+    console.log(`${value.impl.name(value.value)}`);
   } finally {
-    $unborrow(value$1);
+    $unborrow(value);
   }
   // The same cell, a `dyn` of another trait too.
   const labeled = $dynCell(circle, circleLabeled);
-  const value$2 = $borrowMut($index(shapes, 0), true);
+  const value$1 = $borrowMut($index(shapes, 0), true);
   try {
-    value$2.impl.grow(value$2, 1);
+    value$1.impl.grow(value$1, 1);
   } finally {
-    $unborrow(value$2);
+    $unborrow(value$1);
   }
-  const value$3 = $borrow(labeled, true);
+  const value$2 = $borrow(labeled, true);
   try {
-    const label = value$3.impl.label(value$3.value);
+    const label = value$2.impl.label(value$2.value);
     const value = $borrow($index(shapes, 0), true);
     try {
       console.log(`${label} ${$displayF64(value.impl.area(value.value))}`);
@@ -124,22 +120,22 @@ function main() {
       $unborrow(value);
     }
   } finally {
-    $unborrow(value$3);
+    $unborrow(value$2);
   }
   // Its `impl` isn't one of its fields: it's equal to a cell of its value.
   console.log(`${$eq(circle, { value: { r: 1.5 } }, true)}`);
   const boxed = { value: { side: 1 }, impl: squareShape };
-  const value$4 = $borrowMut(boxed, true);
+  const value$3 = $borrowMut(boxed, true);
   try {
-    value$4.impl.grow(value$4, 2);
+    value$3.impl.grow(value$3, 2);
+  } finally {
+    $unborrow(value$3);
+  }
+  const value$4 = $borrow(boxed, true);
+  try {
+    console.log(`${value$4.impl.name(value$4.value)}`);
   } finally {
     $unborrow(value$4);
-  }
-  const value$5 = $borrow(boxed, true);
-  try {
-    console.log(`${value$5.impl.name(value$5.value)}`);
-  } finally {
-    $unborrow(value$5);
   }
   const again = $tryBorrow($index(shapes, 1), true);
   console.log(`${again.TAG === "Ok"}`);

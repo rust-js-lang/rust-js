@@ -22,7 +22,6 @@ import {
   $restStr,
   $retainMut,
   $slice,
-  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -41,17 +40,11 @@ function main() {
   list.push(2);
   const more = [9];
   $refCellSwap(list, more, true);
-  const borrow = $borrow(list, true);
-  try {
-    const value = $borrow(more, true);
-    try {
-      console.log(`[${borrow.join(", ")}] [${value.join(", ")}]`);
-    } finally {
-      $unborrow(value);
-    }
-  } finally {
-    $unborrow(borrow);
-  }
+  const borrow = $borrow(list);
+  const value = $borrow(more);
+  console.log(`[${borrow.join(", ")}] [${value.join(", ")}]`);
+  let lock = 1;
+  let rw = 2;
   console.log("false false");
 
   const deque = $range(1, 7);
@@ -63,16 +56,16 @@ function main() {
   if (x != null) {
     x.value = (x.value + 100) | 0;
   }
-  const value = $unwrap($mutAt(deque, 0));
-  value.value = (value.value + 1) | 0;
-  const value$1 = $unwrap($mutAt(deque, -1));
-  value$1.value = (value$1.value * 10) | 0;
+  const value$1 = $unwrap($mutAt(deque, 0));
+  value$1.value = (value$1.value + 1) | 0;
+  const value$2 = $unwrap($mutAt(deque, -1));
+  value$2.value = (value$2.value * 10) | 0;
   const arg = $slice(deque, 1, 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
-  const value$2 = $dequeSwapRemove(deque, 3, true);
+  const value$3 = $dequeSwapRemove(deque, 3, true);
   console.log(
-    `${swapRemoveBack == null ? "None" : `Some(${swapRemoveBack})`} ${value$2 == null ? "None" : `Some(${value$2})`} [${deque.join(", ")}]`,
+    `${swapRemoveBack == null ? "None" : `Some(${swapRemoveBack})`} ${value$3 == null ? "None" : `Some(${value$3})`} [${deque.join(", ")}]`,
   );
   $retainMut(
     deque,
@@ -85,12 +78,12 @@ function main() {
   const arg$1 = $partitionPoint(deque, (x) => x < 50);
   console.log(`[${deque.join(", ")}] ${arg$1}`);
   const popFrontIf = $popFrontIf(deque, (x) => x.value > 100, true);
-  const value$3 = $popIfCell(deque, (x) => x.value > 100);
+  const value$4 = $popIfCell(deque, (x) => x.value > 100);
   console.log(
-    `${popFrontIf == null ? "None" : `Some(${popFrontIf})`} ${value$3 == null ? "None" : `Some(${value$3})`} [${deque.join(", ")}]`,
+    `${popFrontIf == null ? "None" : `Some(${popFrontIf})`} ${value$4 == null ? "None" : `Some(${value$4})`} [${deque.join(", ")}]`,
   );
-  const value$4 = $popFrontIf(deque, (x) => x.value < 100, true);
-  console.log(`${value$4 == null ? "None" : `Some(${value$4})`} [${deque.join(", ")}]`);
+  const value$5 = $popFrontIf(deque, (x) => x.value < 100, true);
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`} [${deque.join(", ")}]`);
 
   for (const c of ["a", "\n", "'", "é", "😀", "\x7f"]) {
     const escapeDefault = $iter(Array.from($escapeDefault(c)));

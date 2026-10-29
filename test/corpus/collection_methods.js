@@ -17,7 +17,6 @@ import {
   $sortedKeys,
   $take,
   $totalCmp,
-  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -143,8 +142,6 @@ function main() {
   console.log(`[${before.join(", ")}] [${after.join(", ")}] [${log.join(", ")}]`);
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);
-  const borrow = $borrow(name, true);
-  console.log(`${previous} ${borrow.value}`);
-  $unborrow(borrow);
+  console.log(`${previous} ${$borrow(name).value}`);
 }
 //# sourceMappingURL=case.js.map

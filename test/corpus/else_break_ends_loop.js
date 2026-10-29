@@ -46,14 +46,10 @@ function firstLong(words) {
 }
 
 function walk(root, log) {
-  const borrow = $borrow($fieldCell(root, "child"), true);
-  let fiber = borrow.value;
-  $unborrow(borrow);
+  let { value: fiber } = $borrow($fieldCell(root, "child"));
   while (fiber != null) {
     log.push(fiber.id);
-    const value = $borrow($fieldCell(fiber, "child"), true);
-    let nextFiber = value.value;
-    $unborrow(value);
+    let { value: nextFiber } = $borrow($fieldCell(fiber, "child"));
     if (nextFiber != null) {
       nextFiber.parent = fiber;
     } else {

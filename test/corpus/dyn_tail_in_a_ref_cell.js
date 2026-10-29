@@ -139,7 +139,7 @@ function main() {
     }
     let tmp;
     try {
-      tmp = $borrow(circle.value, true);
+      tmp = $borrow(circle.value);
     } catch (error) {
       $rcDrop(shape, (value) => {
         value.impl.$drop?.(value.shape);
@@ -148,32 +148,14 @@ function main() {
     }
     let tmp$1;
     try {
-      tmp$1 = $borrow(circle.value, true);
+      tmp$1 = $borrow(circle.value);
     } catch (error) {
-      $unborrow(tmp);
       $rcDrop(shape, (value) => {
         value.impl.$drop?.(value.shape);
       });
       throw error;
     }
     console.log(`${$displayF64(tmp.shape.r + tmp$1.label)}`);
-    try {
-      $unborrow(tmp$1);
-    } catch (error) {
-      $unborrow(tmp);
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
-      });
-      throw error;
-    }
-    try {
-      $unborrow(tmp);
-    } catch (error) {
-      $rcDrop(shape, (value) => {
-        value.impl.$drop?.(value.shape);
-      });
-      throw error;
-    }
     const square = {
       value: {
         label: 1,
@@ -248,7 +230,7 @@ function main() {
     }
     let tmp$3;
     try {
-      tmp$3 = $borrowMut($index(shapes, 1).value, true);
+      tmp$3 = $borrowMut($index(shapes, 1).value);
     } catch (error) {
       $dropItems(shapes, (item) => {
         $rcDrop(item, (value) => {
@@ -261,19 +243,6 @@ function main() {
       throw error;
     }
     tmp$3.label = (tmp$3.label + 1) >>> 0;
-    try {
-      $unborrow(tmp$3);
-    } catch (error) {
-      $dropItems(shapes, (item) => {
-        $rcDrop(item, (value) => {
-          value.impl.$drop?.(value.shape);
-        });
-      });
-      $rcDrop(square, (value) => {
-        squareDrop_drop(value.shape);
-      });
-      throw error;
-    }
     let tmp$4;
     try {
       tmp$4 = total(shapes);

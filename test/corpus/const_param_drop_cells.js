@@ -39,12 +39,7 @@ function filled(word, N) {
 
 function main() {
   const h = { cell: [] };
-  const borrowMut = $borrowMut(h.cell, true);
-  try {
-    borrowMut.push(1);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $borrowMut(h.cell).push(1);
   const borrow = $borrow(h.cell, true);
   try {
     console.log(`[${borrow.join(", ")}] ${filled("a", 3)}`);

@@ -30,12 +30,7 @@ function main() {
   const seen = peek(
     cursor,
     () => {
-      const borrowMut = $borrowMut(captured, true);
-      try {
-        borrowMut.value.push(2);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      $borrowMut(captured).value.push(2);
     },
     vecClone,
   );

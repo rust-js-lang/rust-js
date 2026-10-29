@@ -46,8 +46,7 @@ function insert(root, word) {
     let next;
     let c;
     while ((c = $next(iter)) != null) {
-      const borrow = $borrow(cur.value, true);
-      $unborrow(borrow);
+      const borrow = $borrow(cur.value);
       label$live = true;
       const label = [borrow.label[0] + c];
       let borrowMut;

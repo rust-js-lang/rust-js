@@ -158,3 +158,24 @@ too: `(value) => { const value = $borrow(value).value; .. }`, JS that
 doesn't parse (#200). Its parameter is a fresh name, `value` where none
 is taken, as the names in its body are (`refcell_clone_nested_parts`,
 `refcell-clone-param-named-alone`).
+
+## Amendment: a momentary borrow of a counted cell is checked alone (2026-10-30, rd218)
+
+A guard held only while nothing can ask whether its cell is borrowed is
+checked and not counted, the facts' `momentary`. That answer went into
+whether a `RefCell` type is counted at all (ADR 0863), but where another
+borrow of the type is counted, held while a callback runs, MIR's
+lowering counted every borrow of it, the momentary ones too:
+`queue.borrow_mut().push(x)` was `const b = $borrowMut(queue, true); try
+{ b.push(x); } finally { $unborrow(b); }`. **A momentary borrow of a
+counted cell is checked alone, `$borrowMut(queue).push(x)`, its guard's
+drop releasing nothing**: MIR's borrow call whose callee is where THIR's
+momentary one is (`QuietCells::momentary`, `momentary_borrows`), its guard
+among `QuietCells::guards`, its call `Call::momentary`. The check stays:
+one already borrowed panics where Rust's does. 49 corpus cases read so,
+679 lines fewer, each as native Rust. Held by the mutations
+`momentary-borrow-held` (`lower/mir/local_facts.ts`) and
+`momentary-borrow-counted` (`lower/std_types/cell.ts`). The guide's
+exceptions page reads `$borrowMut(log).push(..)` so; `docs/readability.txt`'s
+`$iter` share went from 81.8 to 82 in 10,000 lines, blessed: none more, in
+679 lines fewer.

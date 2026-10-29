@@ -82,9 +82,7 @@ function main() {
         });
       });
     }
-    const borrow = $borrow(counter.value, true);
-    console.log(`${counterSink_total(borrow.value)}`);
-    $unborrow(borrow);
+    console.log(`${counterSink_total($borrow(counter.value).value)}`);
   } finally {
     $rcDrop(counter);
   }

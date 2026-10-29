@@ -411,12 +411,7 @@ import { $borrow, $borrowMut, $unborrow } from "@rust-js/runtime";
 export function record(log) {
   const entries = $borrow(log, true);
   try {
-    const borrowMut = $borrowMut(log, true);
-    try {
-      borrowMut.push(`${entries.length} entries`);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    $borrowMut(log).push(`${entries.length} entries`);
   } finally {
     $unborrow(entries);
   }

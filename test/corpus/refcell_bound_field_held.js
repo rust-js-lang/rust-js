@@ -7,26 +7,21 @@ export function entry() {
 }
 
 function bump(cell) {
-  const borrowMut = $borrowMut(cell, true);
-  borrowMut.value = (borrowMut.value + 1) & 65535;
-  $unborrow(borrowMut);
+  const value = $borrowMut(cell);
+  value.value = (value.value + 1) & 65535;
 }
 
 function main() {
   const wrap = { n: 1 };
-  const borrowMut = $borrowMut($fieldCell(wrap, "n"), true);
-  borrowMut.value = (borrowMut.value + 1) & 65535;
-  $unborrow(borrowMut);
+  const value = $borrowMut($fieldCell(wrap, "n"));
+  value.value = (value.value + 1) & 65535;
   const lent = $fieldCell(wrap, "n");
   bump(lent);
-  const borrow = $borrow($fieldCell(wrap, "n"), true);
-  console.log(`${borrow.value}`);
-  $unborrow(borrow);
+  console.log(`${$borrow($fieldCell(wrap, "n")).value}`);
   const held = $borrow(lent, true);
   try {
-    const value = $borrowMut($fieldCell(wrap, "n"), true);
-    value.value = (value.value + 1) & 65535;
-    $unborrow(value);
+    const borrowMut = $borrowMut($fieldCell(wrap, "n"));
+    borrowMut.value = (borrowMut.value + 1) & 65535;
     console.log(`${held.value}`);
   } finally {
     $unborrow(held);

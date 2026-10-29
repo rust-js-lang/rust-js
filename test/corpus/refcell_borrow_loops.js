@@ -59,12 +59,7 @@ const List = {
           $unborrow(items);
         }
       }
-      const borrowMut = $borrowMut(list.items, true);
-      try {
-        borrowMut.push(made);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      $borrowMut(list.items).push(made);
       taken = made;
     }
     return taken;
@@ -127,57 +122,22 @@ function main() {
   console.log(
     `${takeFirst == null ? "None" : `Some(${takeFirst})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const value$3 = $borrowMut(list.items, true);
-  try {
-    value$3.push(8);
-  } finally {
-    $unborrow(value$3);
-  }
+  $borrowMut(list.items).push(8);
   console.log(
     `${List.takeOrPush(list, (x) => x === 8, 5)} ${List.takeOrPush(list, (x) => x === 99, 6)}`,
   );
   console.log(`${List.takeOrPush(list, (x) => x === 6, 0)}`);
-  console.log(
-    `${List.any(list, (x) => {
-      if (x === 7) {
-        return true;
-      }
-      const borrow = $borrow(list.items, true);
-      const result = borrow.length > 9;
-      $unborrow(borrow);
-      return result;
-    })}`,
-  );
-  const value$4 = $borrowMut(list.items, true);
-  try {
-    value$4.push(7);
-  } finally {
-    $unborrow(value$4);
-  }
+  console.log(`${List.any(list, (x) => x === 7 || $borrow(list.items).length > 9)}`);
+  $borrowMut(list.items).push(7);
   const pushed = $catchUnwind(() =>
     List.any(list, (x) => {
-      const borrowMut = $borrowMut(list.items, true);
-      try {
-        borrowMut.push(x);
-      } finally {
-        $unborrow(borrowMut);
-      }
+      $borrowMut(list.items).push(x);
       return false;
     }),
   );
   console.log(`pushed while borrowed: ${pushed.TAG === "Err"}`);
   // Released as the panic left the loop: it's borrowed again.
-  const value$5 = $borrowMut(list.items, true);
-  try {
-    value$5.push(9);
-  } finally {
-    $unborrow(value$5);
-  }
-  const value$6 = $borrow(list.items, true);
-  try {
-    console.log(`[${value$6.join(", ")}]`);
-  } finally {
-    $unborrow(value$6);
-  }
+  $borrowMut(list.items).push(9);
+  console.log(`[${$borrow(list.items).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

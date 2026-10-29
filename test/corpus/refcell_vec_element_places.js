@@ -92,12 +92,8 @@ function movedRoot(root, other) {
 }
 
 function count(root, index) {
-  const borrowMut = $borrowMut(root.counts, true);
-  try {
-    borrowMut[$at(borrowMut, index)] = (borrowMut[index] + 1) & 255;
-  } finally {
-    $unborrow(borrowMut);
-  }
+  const borrowMut = $borrowMut(root.counts);
+  borrowMut[$at(borrowMut, index)] = (borrowMut[index] + 1) & 255;
 }
 
 function meets(root) {
@@ -139,12 +135,6 @@ function main() {
   console.log(`${out.TAG === "Err"}`);
   out = $catchUnwind(() => meets(r));
   count(r, 1);
-  const isErr = out.TAG === "Err";
-  const borrow = $borrow(r.counts, true);
-  try {
-    console.log(`${isErr} [${borrow.join(", ")}]`);
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(`${out.TAG === "Err"} [${$borrow(r.counts).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

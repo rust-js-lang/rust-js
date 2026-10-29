@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1349
-lines	129760
+lines	129076
 temporaries	1	0.1
 labeled blocks	15	1.2
-while (true)	115	8.9
-$iter	1062	81.8
+while (true)	112	8.7
+$iter	1059	82
 Iterator.from	119	9.2
-return;	138	10.6
-renamed x$1	8445	650.8
+return;	135	10.5
+renamed x$1	8378	649.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1975	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	186	0	0	0	6	0	0	29
@@ -127,7 +127,7 @@ test/corpus/catch_unwind_typed_payloads.js	82	0	0	0	0	0	0	2
 test/corpus/cell_alias_in_a_closure.js	41	0	0	0	0	0	0	0
 test/corpus/cell_clone_read_in_place.js	49	0	0	0	0	0	0	0
 test/corpus/cell_const.js	26	0	0	0	0	0	0	0
-test/corpus/cell_deque_char_methods.js	127	0	0	0	2	1	0	10
+test/corpus/cell_deque_char_methods.js	120	0	0	0	2	1	0	12
 test/corpus/cell_drops.js	107	0	0	0	0	0	0	13
 test/corpus/cell_from_mut.js	53	0	0	0	0	0	0	0
 test/corpus/cell_of_a_boxed_option.js	62	0	0	0	0	0	0	10
@@ -183,7 +183,7 @@ test/corpus/collect_into_unit.js	39	0	0	0	0	0	0	0
 test/corpus/collected_counts_ask_room.js	142	0	0	0	0	0	1	3
 test/corpus/collection_capacity.js	65	0	0	0	0	1	0	2
 test/corpus/collection_from_drops.js	40	0	0	0	0	0	0	0
-test/corpus/collection_methods.js	151	0	0	0	0	0	0	7
+test/corpus/collection_methods.js	148	0	0	0	0	0	0	7
 test/corpus/combinators_owned_drops.js	233	0	0	0	0	0	0	107
 test/corpus/compound_assignment_order.js	66	0	0	0	0	0	0	17
 test/corpus/conditional_move_drops.js	30	0	0	0	0	0	0	0
@@ -197,7 +197,7 @@ test/corpus/const_fn_in_patterns.js	38	0	0	0	0	0	0	0
 test/corpus/const_generic_traits.js	78	0	0	0	0	0	0	3
 test/corpus/const_generic_values.js	27	0	0	0	0	0	0	0
 test/corpus/const_generics.js	122	0	0	0	0	0	0	0
-test/corpus/const_param_drop_cells.js	56	0	0	0	0	0	0	0
+test/corpus/const_param_drop_cells.js	51	0	0	0	0	0	0	0
 test/corpus/const_param_drops.js	49	0	0	0	0	0	0	0
 test/corpus/const_returned_copied.js	31	0	0	0	0	0	0	0
 test/corpus/const_too_large.js	13	0	0	0	0	0	0	0
@@ -205,9 +205,9 @@ test/corpus/consumed_adapter_drops.js	33	0	0	0	3	0	0	0
 test/corpus/consumer_drops_what_is_left.js	631	0	0	0	20	1	0	59
 test/corpus/consumers_step_each.js	58	0	0	0	0	0	0	0
 test/corpus/contains_guarded_borrow.js	27	0	0	0	0	0	0	0
-test/corpus/contains_guarded_float.js	94	0	0	1	1	0	1	6
-test/corpus/contains_guarded_other.js	96	0	0	1	1	0	1	6
-test/corpus/contains_guarded_set_again.js	97	0	0	1	1	0	1	6
+test/corpus/contains_guarded_float.js	30	0	0	0	0	0	0	0
+test/corpus/contains_guarded_other.js	30	0	0	0	0	0	0	0
+test/corpus/contains_guarded_set_again.js	34	0	0	0	0	0	0	0
 test/corpus/continue_arms_of_else_if.js	102	0	0	0	0	0	0	2
 test/corpus/continues_before_break.js	74	0	0	0	0	0	0	0
 test/corpus/continues_in_arms.js	74	0	0	0	0	0	0	5
@@ -325,14 +325,14 @@ test/corpus/dyn_mut.js	125	0	0	0	0	0	0	4
 test/corpus/dyn_pointers.js	89	0	0	0	0	0	0	0
 test/corpus/dyn_ref_cell_drop.js	57	0	0	0	0	0	0	0
 test/corpus/dyn_ref_cell_supertrait.js	50	0	0	0	0	0	0	6
-test/corpus/dyn_ref_cells.js	151	0	0	0	0	0	0	15
+test/corpus/dyn_ref_cells.js	147	0	0	0	0	0	0	12
 test/corpus/dyn_shapes_shared.js	495	0	0	1	1	0	0	43
 test/corpus/dyn_std_destructors.js	82	0	0	0	0	0	0	4
 test/corpus/dyn_struct_tails.js	59	0	0	0	0	0	0	0
-test/corpus/dyn_tail_in_a_ref_cell.js	336	0	0	0	0	0	0	23
+test/corpus/dyn_tail_in_a_ref_cell.js	305	0	0	0	0	0	0	21
 test/corpus/dyn_to_string.js	37	0	0	0	0	0	0	0
 test/corpus/early_bound_method_lifetime.js	28	0	0	0	0	0	0	0
-test/corpus/else_break_ends_loop.js	128	0	0	0	0	0	0	3
+test/corpus/else_break_ends_loop.js	124	0	0	0	0	0	0	3
 test/corpus/empty_pattern.js	26	0	0	0	0	0	0	0
 test/corpus/encode_utf8_written.js	24	0	0	0	0	0	0	0
 test/corpus/entry_and_modify.js	72	0	0	0	0	0	0	0
@@ -420,9 +420,9 @@ test/corpus/fn_compared_by_its_pointer.js	45	0	0	0	0	0	0	0
 test/corpus/fn_item_converting_argument.js	25	0	0	0	0	0	0	0
 test/corpus/fn_item_referenced.js	19	0	0	0	0	0	0	0
 test/corpus/fn_items_as_values.js	23	0	0	0	0	0	0	0
-test/corpus/fn_pointer_borrows_held.js	52	0	0	0	0	0	0	0
+test/corpus/fn_pointer_borrows_held.js	42	0	0	0	0	0	0	0
 test/corpus/fn_pointer_borrows_nothing.js	55	0	0	0	0	0	0	0
-test/corpus/fn_pointer_closure_borrows_held.js	40	0	0	0	0	0	0	0
+test/corpus/fn_pointer_closure_borrows_held.js	31	0	0	0	0	0	0	0
 test/corpus/fn_pointer_eq.js	28	0	0	0	0	0	0	0
 test/corpus/fn_pointer_of_borrowed_struct.js	18	0	0	0	0	0	0	0
 test/corpus/fold_back_drops_what_it_takes.js	95	0	0	0	0	0	0	0
@@ -463,7 +463,7 @@ test/corpus/generic_chain_of_into.js	126	0	0	0	2	0	0	0
 test/corpus/generic_collect.js	59	0	0	0	1	1	0	0
 test/corpus/generic_compound_assign.js	144	0	0	0	1	0	0	3
 test/corpus/generic_deref.js	41	0	0	0	0	0	0	0
-test/corpus/generic_deref_mut.js	222	0	0	0	0	0	0	16
+test/corpus/generic_deref_mut.js	220	0	0	0	0	0	0	16
 test/corpus/generic_double_ended.js	142	0	0	1	7	1	2	10
 test/corpus/generic_drops_nothing.js	108	0	0	0	0	0	1	0
 test/corpus/generic_extend.js	84	0	0	0	1	0	0	6
@@ -471,7 +471,7 @@ test/corpus/generic_fmt_traits.js	57	0	0	0	0	0	0	0
 test/corpus/generic_from.js	53	0	0	0	0	0	0	0
 test/corpus/generic_from_str.js	95	0	0	0	0	0	0	8
 test/corpus/generic_guard_deref.js	41	0	0	0	0	0	0	0
-test/corpus/generic_guard_drop.js	82	0	0	0	0	0	0	0
+test/corpus/generic_guard_drop.js	72	0	0	0	0	0	0	0
 test/corpus/generic_impl_consts.js	55	0	0	0	0	0	0	0
 test/corpus/generic_into.js	48	0	0	0	0	0	0	0
 test/corpus/generic_into_iter_values.js	46	0	0	0	2	0	0	0
@@ -501,7 +501,7 @@ test/corpus/given_iterator_extensions.js	192	0	0	0	5	0	1	21
 test/corpus/given_last_closure_after.js	58	0	0	0	0	0	0	4
 test/corpus/given_last_unwinds.js	117	0	0	1	1	0	0	13
 test/corpus/guard_decided_by_outer_if.js	35	0	0	0	0	0	0	0
-test/corpus/guard_deref_dictionary.js	87	0	0	0	0	0	0	0
+test/corpus/guard_deref_dictionary.js	82	0	0	0	0	0	0	0
 test/corpus/guard_statements.js	78	0	0	0	0	0	0	3
 test/corpus/guarded_arm_breaks_before_its_fall.js	59	0	0	0	0	0	0	0
 test/corpus/guarded_arm_chains.js	217	0	0	0	0	0	2	0
@@ -637,7 +637,7 @@ test/corpus/let_chain_else_inside_if.js	150	0	1	0	0	0	0	0
 test/corpus/let_chain_else_of_reads.js	31	0	0	0	0	0	0	0
 test/corpus/let_chain_temporary_drop.js	32	0	0	0	0	0	0	0
 test/corpus/let_chain_values.js	212	0	0	0	0	0	0	4
-test/corpus/let_else_guard_released.js	79	0	0	0	0	0	0	3
+test/corpus/let_else_guard_released.js	75	0	0	0	0	0	0	4
 test/corpus/let_else_guard_returns.js	60	0	0	0	0	0	0	0
 test/corpus/let_else_read_truth.js	70	0	0	0	0	0	0	0
 test/corpus/linked_list_clone.js	29	0	0	0	0	0	0	0
@@ -881,11 +881,11 @@ test/corpus/rc_count_through_generic.js	25	0	0	0	0	0	0	0
 test/corpus/rc_counted_per_type.js	101	0	0	0	0	0	0	0
 test/corpus/rc_counted_uses.js	811	0	0	2	3	0	0	67
 test/corpus/rc_counts.js	296	0	0	0	0	0	0	30
-test/corpus/rc_destructors.js	229	0	0	0	0	0	0	3
+test/corpus/rc_destructors.js	227	0	0	0	0	0	0	3
 test/corpus/rc_dyn_auto_trait_dropped.js	34	0	0	0	0	0	0	0
 test/corpus/rc_dyn_destructors.js	93	0	0	0	0	0	0	0
-test/corpus/rc_dyn_listeners.js	90	0	0	0	0	0	0	3
-test/corpus/rc_dyn_sinks.js	93	0	0	0	1	0	0	0
+test/corpus/rc_dyn_listeners.js	85	0	0	0	0	0	0	0
+test/corpus/rc_dyn_sinks.js	91	0	0	0	1	0	0	0
 test/corpus/rc_dyn_struct_tail.js	116	0	0	0	0	0	0	9
 test/corpus/rc_dyn_upcast_counted.js	256	0	0	0	0	0	0	18
 test/corpus/rc_fn_ptr_eq.js	79	0	0	0	0	0	0	0
@@ -900,7 +900,7 @@ test/corpus/rc_identity_set_counted.js	37	0	0	0	0	0	0	0
 test/corpus/rc_make_mut_clone_panics.js	32	0	0	0	0	0	0	0
 test/corpus/rc_of_borrowed_param.js	25	0	0	0	0	0	0	0
 test/corpus/rc_of_param_unnamed.js	42	0	0	0	0	0	0	0
-test/corpus/rc_refcell_dyn_shared.js	263	0	0	0	0	0	0	19
+test/corpus/rc_refcell_dyn_shared.js	261	0	0	0	0	0	0	19
 test/corpus/rc_shared_by_closures.js	55	0	0	0	0	0	0	0
 test/corpus/rchunks_remainder.js	28	0	0	0	2	0	0	0
 test/corpus/read_before_short_circuit.js	69	0	0	0	0	0	0	0
@@ -910,52 +910,52 @@ test/corpus/reexport_in_a_load_cycle.js	14	0	0	0	0	0	0	0
 test/corpus/ref_cell_field_const.js	32	0	0	0	0	0	0	0
 test/corpus/ref_mut_bindings_copied.js	58	0	0	0	1	0	0	3
 test/corpus/ref_mut_of_mut_payload.js	139	0	0	0	0	0	0	19
-test/corpus/refcell_borrow_in_std_clone.js	41	0	0	0	0	0	0	0
-test/corpus/refcell_borrow_in_std_closure.js	40	0	0	0	0	0	0	3
-test/corpus/refcell_borrow_loops.js	184	0	0	1	0	0	0	16
-test/corpus/refcell_borrow_while_mut.js	34	0	0	0	0	0	0	0
-test/corpus/refcell_borrows.js	299	0	0	0	0	0	0	32
-test/corpus/refcell_bound_field_held.js	36	0	0	0	0	0	0	0
-test/corpus/refcell_clone_borrows_itself.js	69	0	0	0	0	0	0	0
+test/corpus/refcell_borrow_in_std_clone.js	34	0	0	0	0	0	0	0
+test/corpus/refcell_borrow_in_std_closure.js	28	0	0	0	0	0	0	0
+test/corpus/refcell_borrow_loops.js	144	0	0	1	0	0	0	4
+test/corpus/refcell_borrow_while_mut.js	24	0	0	0	0	0	0	0
+test/corpus/refcell_borrows.js	254	0	0	0	0	0	0	23
+test/corpus/refcell_bound_field_held.js	31	0	0	0	0	0	0	0
+test/corpus/refcell_clone_borrows_itself.js	62	0	0	0	0	0	0	0
 test/corpus/refcell_clone_nested_parts.js	39	0	0	0	0	0	0	2
 test/corpus/refcell_clone_number_while_mut.js	23	0	0	0	0	0	0	0
 test/corpus/refcell_clone_through_rc.js	100	0	0	0	0	0	0	3
 test/corpus/refcell_clone_while_mut.js	22	0	0	0	0	0	0	0
-test/corpus/refcell_const_object.js	44	0	0	0	0	0	0	0
-test/corpus/refcell_double_borrow.js	25	0	0	0	0	0	0	0
-test/corpus/refcell_dyn_alias_borrow.js	39	0	0	0	0	0	0	0
+test/corpus/refcell_const_object.js	39	0	0	0	0	0	0	0
+test/corpus/refcell_double_borrow.js	20	0	0	0	0	0	0	0
+test/corpus/refcell_dyn_alias_borrow.js	37	0	0	0	0	0	0	0
 test/corpus/refcell_eq_through_guard.js	64	0	0	0	0	0	0	0
 test/corpus/refcell_eq_while_mut.js	21	0	0	0	0	0	0	0
 test/corpus/refcell_field_cells.js	42	0	0	0	0	0	0	0
-test/corpus/refcell_field_derive_meets.js	59	0	0	0	0	0	0	6
-test/corpus/refcell_field_lent_held.js	33	0	0	0	0	0	0	0
+test/corpus/refcell_field_derive_meets.js	49	0	0	0	0	0	0	6
+test/corpus/refcell_field_lent_held.js	31	0	0	0	0	0	0	0
 test/corpus/refcell_field_places.js	84	0	0	0	0	0	0	4
-test/corpus/refcell_generic_borrow_meets_held.js	81	0	0	0	0	0	0	0
-test/corpus/refcell_generic_field_held.js	45	0	0	0	0	0	0	0
+test/corpus/refcell_generic_borrow_meets_held.js	77	0	0	0	0	0	0	0
+test/corpus/refcell_generic_field_held.js	40	0	0	0	0	0	0	0
 test/corpus/refcell_generic_field_made.js	34	0	0	0	0	0	0	0
-test/corpus/refcell_generic_mut_method.js	73	0	0	0	0	0	0	0
+test/corpus/refcell_generic_mut_method.js	69	0	0	0	0	0	0	0
 test/corpus/refcell_held_while_asked.js	200	0	0	0	0	0	0	19
 test/corpus/refcell_identity_set.js	38	0	0	0	0	0	0	0
-test/corpus/refcell_if_let_held.js	34	0	0	0	0	0	0	7
-test/corpus/refcell_let_guard_drops_moved.js	41	0	0	0	0	0	0	0
-test/corpus/refcell_let_guard_kept.js	22	0	0	0	0	0	0	0
-test/corpus/refcell_let_guard_meets.js	29	0	0	0	0	0	0	0
+test/corpus/refcell_if_let_held.js	29	0	0	0	0	0	0	6
+test/corpus/refcell_let_guard_drops_moved.js	29	0	0	0	0	0	0	0
+test/corpus/refcell_let_guard_kept.js	20	0	0	0	0	0	0	0
+test/corpus/refcell_let_guard_meets.js	22	0	0	0	0	0	0	0
 test/corpus/refcell_let_guard_quiet.js	60	0	0	0	0	0	0	2
-test/corpus/refcell_let_guard_writes_over.js	65	0	0	0	0	0	0	3
+test/corpus/refcell_let_guard_writes_over.js	38	0	0	0	0	0	0	0
 test/corpus/refcell_let_named_as_its_field.js	46	0	0	0	0	0	0	0
 test/corpus/refcell_let_read_in_place.js	115	0	0	0	0	0	0	0
 test/corpus/refcell_let_taken_apart.js	83	0	0	0	0	0	0	0
 test/corpus/refcell_listeners_momentary.js	42	0	0	0	0	0	0	6
-test/corpus/refcell_objects.js	144	0	0	0	0	0	0	19
+test/corpus/refcell_objects.js	103	0	0	0	0	0	0	8
 test/corpus/refcell_plain_field_drops.js	97	0	0	0	0	0	0	0
 test/corpus/refcell_quiet_borrows.js	64	0	0	0	0	0	0	0
 test/corpus/refcell_replace_while_borrowed.js	20	0	0	0	0	0	0	0
-test/corpus/refcell_swap_itself.js	28	0	0	0	0	0	0	0
-test/corpus/refcell_transparent.js	153	0	0	0	0	0	0	5
+test/corpus/refcell_swap_itself.js	21	0	0	0	0	0	0	0
+test/corpus/refcell_transparent.js	136	0	0	0	0	0	0	0
 test/corpus/refcell_unwind_releases.js	32	0	0	0	0	0	0	0
 test/corpus/refcell_value_copies.js	28	0	0	0	0	0	0	0
-test/corpus/refcell_vec_bounds.js	237	0	0	0	0	0	1	3
-test/corpus/refcell_vec_element_places.js	151	0	0	0	0	0	0	6
+test/corpus/refcell_vec_bounds.js	223	0	0	0	0	0	1	3
+test/corpus/refcell_vec_element_places.js	141	0	0	0	0	0	0	6
 test/corpus/references_given_to_generics.js	133	0	0	0	0	1	0	2
 test/corpus/refused_drops_and_displays.js	378	0	0	1	1	0	0	3
 test/corpus/remainder_operands.js	55	0	0	0	0	0	0	0
@@ -1013,7 +1013,7 @@ test/corpus/search_by_ord.js	132	0	0	0	0	0	0	14
 test/corpus/self_given_on_as_into_iter.js	62	0	0	0	1	0	0	8
 test/corpus/self_handle.js	48	0	0	0	0	0	0	0
 test/corpus/self_handle_called_early.js	126	0	0	0	0	0	0	3
-test/corpus/self_handle_counted.js	233	0	0	0	0	0	0	9
+test/corpus/self_handle_counted.js	227	0	0	0	0	0	0	9
 test/corpus/self_handle_maker_borrows.js	140	0	0	0	0	0	0	0
 test/corpus/self_handle_reads_mutably.js	133	0	0	0	0	0	0	4
 test/corpus/set_field_drops_in_a_cycle.js	71	0	0	0	0	0	0	0
@@ -1126,7 +1126,7 @@ test/corpus/string_slice_boundary.js	15	0	0	0	0	0	0	0
 test/corpus/string_slice_bounds.js	15	0	0	0	0	0	0	0
 test/corpus/struct_fields_as_written.js	63	0	0	0	0	0	0	0
 test/corpus/struct_update_drops.js	136	0	0	0	0	0	0	4
-test/corpus/subscriptions.js	308	0	0	0	1	0	0	3
+test/corpus/subscriptions.js	261	0	0	0	1	0	0	3
 test/corpus/successors_drops.js	42	0	0	0	0	0	0	0
 test/corpus/sum_fallible.js	64	0	0	0	2	0	0	0
 test/corpus/supertraits_by_reference.js	48	0	0	0	0	0	0	3
@@ -1190,7 +1190,7 @@ test/corpus/trait_param_drops.js	135	0	0	0	0	0	0	0
 test/corpus/transparent_constructor_value.js	35	0	0	0	0	0	0	0
 test/corpus/transparent_ord.js	33	0	0	0	0	0	0	4
 test/corpus/transparent_transmute.js	85	0	0	0	0	0	0	4
-test/corpus/trie_of_counted_rcs.js	415	0	0	2	2	0	0	13
+test/corpus/trie_of_counted_rcs.js	414	0	0	2	2	0	0	13
 test/corpus/tried_loop_jumps.js	120	0	0	1	0	0	1	0
 test/corpus/try_fold.js	94	0	0	0	5	2	1	10
 test/corpus/try_for_each.js	64	0	0	0	3	1	1	6
@@ -1225,12 +1225,12 @@ test/corpus/unread_collected_chain.js	32	0	0	0	1	0	0	2
 test/corpus/unread_mut_through_deref.js	31	0	0	0	0	0	0	0
 test/corpus/unrun_function_drops.js	363	0	0	0	0	0	0	179
 test/corpus/unsized_struct_dyn.js	131	0	0	0	0	0	0	0
-test/corpus/unsized_struct_fn.js	29	0	0	0	0	0	0	0
+test/corpus/unsized_struct_fn.js	27	0	0	0	0	0	0	0
 test/corpus/unsized_struct_slice.js	18	0	0	0	0	0	0	0
 test/corpus/untagged_enums.js	432	0	0	2	2	0	0	25
 test/corpus/untagged_eq_by_value.js	50	0	0	0	0	0	0	0
 test/corpus/untagged_null_undefined.js	81	0	0	0	0	0	0	2
-test/corpus/untagged_ref_cells.js	74	0	0	0	0	0	0	0
+test/corpus/untagged_ref_cells.js	54	0	0	0	0	0	0	0
 test/corpus/untagged_written_through_mut.js	89	0	0	1	1	0	1	12
 test/corpus/unused_value_drops.js	297	0	0	0	0	0	0	71
 test/corpus/unwrap_dropping.js	153	0	0	0	0	0	0	6
@@ -1349,7 +1349,7 @@ test/snapshots/structs/structs.js	189	0	0	0	0	0	0	4
 test/snapshots/text/text.js	158	0	0	0	0	0	0	2
 test/snapshots/thread_locals/thread_locals.js	26	0	0	0	0	0	0	0
 test/snapshots/throws/throws.js	93	0	0	0	1	0	1	0
-test/snapshots/todo/todo.js	163	0	0	0	1	0	0	0
+test/snapshots/todo/todo.js	158	0	0	0	1	0	0	0
 test/snapshots/todomvc/model.js	111	0	0	0	0	0	1	2
 test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0
 test/snapshots/values/values.js	263	0	0	0	0	0	4	25

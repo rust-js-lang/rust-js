@@ -49,26 +49,22 @@ function main() {
     $unborrow(borrow);
     console.log(`${x} ${free}`);
     const empty = {};
-    const value = $borrow(empty, true);
+    const value = $borrow(empty);
     if (value.value != null) {
-      $unborrow(value);
       console.log(`${value.value}`);
     } else {
-      $unborrow(value);
-      const borrowMut = $borrowMut(empty, true);
-      borrowMut.value = 5;
-      $unborrow(borrowMut);
-      const value$1 = $borrow(empty, true);
+      $borrowMut(empty).value = 5;
+      const value = $borrow(empty, true);
       try {
-        const value = $tryBorrow(empty, true);
+        const value$1 = $tryBorrow(empty, true);
         console.log(
-          `${value$1.value == null ? "None" : `Some(${value$1.value})`} ${value.TAG === "Ok"}`,
+          `${value.value == null ? "None" : `Some(${value.value})`} ${value$1.TAG === "Ok"}`,
         );
-        if (value.TAG === "Ok") {
-          $unborrow(value._0);
+        if (value$1.TAG === "Ok") {
+          $unborrow(value$1._0);
         }
       } finally {
-        $unborrow(value$1);
+        $unborrow(value);
       }
     }
   } else {

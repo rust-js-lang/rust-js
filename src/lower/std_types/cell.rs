@@ -339,7 +339,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, false) => "$lockRead",
                     (true, true) => "$lock",
                 };
-                let guard = Expr::call(Expr::helper(name), vec![arg(), Expr::bool(true)]);
+                // Held only while nothing can ask: checked, not counted
+                // (rd218).
+                let mut given = vec![arg()];
+                if !call.momentary || lock {
+                    given.push(Expr::bool(true));
+                }
+                let guard = Expr::call(Expr::helper(name), given);
                 if lock { result::ok(guard) } else { guard }
             }
             Std::TryBorrow { mutable, lock } => {
