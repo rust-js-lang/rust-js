@@ -183,11 +183,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-block-not-last",
-    breaks: "a block's first statement taken for what it ends with, its loop's `break bb97` kept",
+    breaks: "a block's first statement taken for what it ends with, its loop's `break bb29` kept, loop_ends_branch's `bb29: { .. }`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        let Some(last) = stmts.last_mut() else {\n            return;\n        };\n",
     replace: "        let Some(last) = stmts.first_mut() else {\n            return;\n        };\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+    tests: ["test/corpus.test.ts", "-t", "^(loop_ends_branch|loop_value_after_loop)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "loop-ending-branch-breaks-unnested",
