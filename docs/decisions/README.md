@@ -731,7 +731,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)
 - [0946 An `if` of `&&`, `||` and `!` mixed is its one test, not `if`s that leave a block MIR made](0946-an-if-of-mixed-logicals-is-its-one-test.md) *(amended: only the chain's tests are asked whether they call)*
-- [0947 A `return` of a logical the program wrote is that `return`, wherever its tests' `false` goes on](0947-a-returned-logical-is-returned-as-written.md)
+- [0947 A `return` of a logical the program wrote is that `return`, wherever its tests' `false` goes on](0947-a-returned-logical-is-returned-as-written.md) *(amended: a returned chain in an arm the function goes on past)*
 - [0948 A value read and then stepped by one is `x++` where it's read, `const id = counter++`](0948-a-value-read-then-stepped-is-plus-plus.md)
 - [0949 A nullable place's read, a field's or a thread-local's, is returned as it is from a nullable function](0949-a-nullable-places-read-is-returned-as-it-is.md)
 - [0950 A JS map's `get` flattened is its `get`, not `$someValue($someGet(..))`](0950-a-maps-get-flattened-is-its-get.md)

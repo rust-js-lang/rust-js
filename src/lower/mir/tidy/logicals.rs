@@ -17,26 +17,61 @@ pub(super) fn logical_returns(
     booleans: &HashSet<String>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+    // The `then`'s `if`s of no `else`, each the one before's only
+    // statement, of the same logical, ending in `return true;`, `if (a) {
+    // if (b) { return true; } }` of `(a && b) || c`: their tests joined, `a
+    // && b` (rd95). Not of another value, which `returned_values` gives its
+    // written order.
+    fn joined<'s>(test: &Expr, mut then: &'s [Stmt], within: &dyn Fn(js::Span) -> bool) -> (Expr, &'s [Stmt]) {
+        let mut test = test.clone();
+        let ends_true = |mut list: &[Stmt]| loop {
+            match list {
+                [
+                    Stmt {
+                        kind: StmtKind::If(_, inner, None),
+                        ..
+                    },
+                ] => list = inner,
+                [
+                    Stmt {
+                        kind: StmtKind::Return(Some(v)),
+                        ..
+                    },
+                ] => break matches!(v.kind, ExprKind::Bool(true)),
+                _ => break false,
+            }
+        };
+        while let [
+            inner @ Stmt {
+                kind: StmtKind::If(t, held, None),
+                ..
+            },
+        ] = then
+            && within(inner.span)
+            && ends_true(held)
+        {
+            test = Expr::bin(Op::And, test, t.clone());
+            then = held;
+        }
+        (test, then)
+    }
     while let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
         && let StmtKind::If(test, then, None) = &last_if.kind
-        && let [
-            Stmt {
-                kind: StmtKind::Return(Some(yes)),
-                span: yes_span,
-            },
-        ] = then.as_slice()
+        && let (
+            test,
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(yes)),
+                    span: yes_span,
+                },
+            ],
+        ) = joined(test, then, &within)
         && within(last_if.span)
         && returned_as_written(returns, last.span, last_if.span)
         && returned_as_written(returns, *yes_span, last_if.span)
     {
-        let returned = StmtKind::Return(Some(conditional(
-            test.clone(),
-            yes.clone(),
-            no.clone(),
-            booleans,
-            false,
-        )));
+        let returned = StmtKind::Return(Some(conditional(test, yes.clone(), no.clone(), booleans, false)));
         let span = last_if.span;
         stmts.splice(stmts.len() - 2.., [returned.at(span)]);
     }

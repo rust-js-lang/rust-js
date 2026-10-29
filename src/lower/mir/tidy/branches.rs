@@ -1035,7 +1035,11 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
         });
         if let Some((test, body)) = made {
             let span = stmts[i].span;
-            let rest: Vec<Stmt> = stmts.drain(i + 1..).collect();
+            // What follows, the arm's now, its own or-patterns too, a
+            // `return tag == "tr" || tag == "style" || ..` of its own of
+            // the `true` MIR shares with the function's end (rd95).
+            let mut rest: Vec<Stmt> = stmts.drain(i + 1..).collect();
+            or_tests(&mut rest);
             stmts[i] = StmtKind::If(test, rest, None).at(span);
             stmts.extend(body);
             return;

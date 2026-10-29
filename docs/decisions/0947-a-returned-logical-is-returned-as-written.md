@@ -95,3 +95,31 @@ JS was unchanged everywhere: the corpus with its snapshots, and the
 lowering, snapshot, JSX, port, compiler and tidy-stage suites. Its one
 test, "a typeof test after a null check", passes either way. The refusal
 and its mutation went.
+
+## Amendment: a returned chain in an arm the function goes on past (rd95)
+
+React DOM's validateDOMNesting returns `||` and `&&` chains from arms of a
+`match` the function goes on past, `true` after it. MIR shares that
+`true` with the function's end, so two rules missed it. Case
+([0262](0262-when-rust-and-js-disagree.md)): N each, the same tests in the
+same order.
+
+- **An or-pattern's arm made of what follows it is tidied too**
+  (`branches::or_tests`): of `if (p !== "a") { if (p !== "b") { return true;
+  } } if (tag !== "tr") { .. } return true;`, the arm `if (p === "a" || p
+  === "b") { .. }` holds what followed, whose own `tag !== ..` tests, which
+  `bottom_up` had passed by as no list's yet, are taken the same way. Then
+  `logical_returns` makes `return tag === "tr" || tag === "style" ||
+  tag === "script" || tag === "template";`.
+- **`logical_returns` joins a `then`'s nested `if`s of the same logical
+  that end in `return true;`**: `if (a) { if (b) { return true; } } return
+  c;`, MIR's of `(a && b) || c`, is `return (a && b) || c;`, each inner
+  `if` written in the logical the outer one is. Not of another value,
+  `return "same"`, `return b`, which `returned_values` gives the written
+  order and `?:` (tried: `lane_bits`' `a === 0 || a > b ? a : b` turned
+  around).
+
+Held by `test/corpus/returned_chains_in_cases.rs` against native Rust,
+and mutations `or-tests-rest-not-again`,
+`logical-returns-nested-tests-apart` and
+`logical-returns-nested-test-dropped`.

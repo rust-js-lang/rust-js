@@ -577,4 +577,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^arm_returns_as_written.rs$"],
     snapshots: true,
   },
+  {
+    name: "or-tests-rest-not-again",
+    breaks: "an or-pattern's arm made of what follows it keeps its own or-pattern as MIR tests it, `if (tag !== \"tr\") { if (tag !== \"style\") { .. } } return true;` (rd95)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            or_tests(&mut rest);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
+    snapshots: true,
+  },
 ];

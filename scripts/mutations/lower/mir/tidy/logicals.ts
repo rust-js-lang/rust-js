@@ -485,4 +485,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-written-elses.test.ts", "-t", "keeps its if's written else"],
   },
+  {
+    name: "logical-returns-nested-tests-apart",
+    breaks: "a returned `(a && b) || c` in an arm keeps MIR's `if (a) { if (b) { return true; } } return c;` (rd95)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            && within(inner.span)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "logical-returns-nested-test-dropped",
+    breaks: "a returned `(a && b) || c` of MIR's nested `if`s loses the inner test, `return a || c` (rd95)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "            test = Expr::bin(Op::And, test, t.clone());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
+  },
 ];
