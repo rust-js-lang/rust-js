@@ -71,6 +71,19 @@ pub(super) struct Written {
     /// `matches!`'s too: a test of what's matched against its constant, not
     /// of its truth (ADR 0896, amended).
     pub patterns: Vec<js::Span>,
+    /// Each arm's guard of each `match` the program wrote, and where that
+    /// `match` tests: what rustc keeps from changing while it runs (#221).
+    pub guards: Vec<Guard>,
+}
+
+/// A `match` arm's guard (`Written::guards`): where it's written, and where
+/// its `match`'s scrutinee and each arm's pattern are, what MIR's tests of
+/// that `match` read. rustc keeps a guard from changing its scrutinee, as
+/// it borrows each place the `match` tests while the guard runs (E0510):
+/// a test of a pattern after it reads what it would have before.
+pub(super) struct Guard {
+    pub span: js::Span,
+    pub tested: Vec<js::Span>,
 }
 
 /// A block the program labeled, `'desc: { .. }`: where it's written, its
@@ -391,6 +404,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .flatten()
             .map(|&arm| self.js_span(self.frame.thir[arm].pattern.span))
             .collect();
+        let match_guards = (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Match {
+                    scrutinee, ref arms, ..
+                } => Some((e.span, scrutinee, arms)),
+                _ => None,
+            })
+            .flat_map(|(span, scrutinee, arms)| {
+                let tested: Vec<js::Span> = std::iter::once(js::Span {
+                    lo: self.js_span(span).lo,
+                    hi: self.js_span(self.frame.thir[scrutinee].span).hi,
+                })
+                .chain((arms.iter()).map(|&arm| self.js_span(self.frame.thir[arm].pattern.span)))
+                .collect();
+                (arms.iter())
+                    .filter_map(|&arm| self.frame.thir[arm].guard)
+                    .map(move |guard| Guard {
+                        span: self.js_span(self.frame.thir[guard].span),
+                        tested: tested.clone(),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
         // Each `if`'s condition alone, as written, not a desugaring's.
         let ifs = (self.frame.thir.exprs.iter())
             .filter_map(|e| match e.kind {
@@ -480,6 +516,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             blocks: self.labeled_blocks(),
             switches,
             patterns,
+            guards: match_guards,
         }
     }
 

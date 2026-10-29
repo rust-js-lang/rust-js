@@ -3,7 +3,45 @@ import type { Mutation } from "../../../../mutations";
 
 const chain = ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"];
 
+const CALLS = ["test/corpus.test.ts", "-t", "^(default_value_exits|guards_that_call|guarded_arm_chains).rs$"];
+
 export const mutations: Mutation[] = [
+  {
+    name: "decisions-guard-call-a-leaf",
+    breaks: "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                pure(part)\n                    || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span) && !switched(g))\n",
+    replace: "                pure(part)\n",
+    tests: CALLS,
+    snapshots: true,
+  },
+  {
+    name: "decisions-guard-binding-not-given",
+    breaks: "a guard's `const n = row[0];` is what an arm does, not given in the guard's place, `below(row[0])`, so `guarded_rows` keeps its block (#221)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, true),\n",
+    replace: "            StmtKind::Const(..) | StmtKind::Let(..) => return None,\n",
+    tests: CALLS,
+    snapshots: true,
+  },
+  {
+    name: "decisions-switch-guard-chained",
+    breaks: "a `match` of constants whose guard calls, React's finishConcurrentRender's `case 4: if (!onlyTransitions(lanes) && ..) { break; }`, is an `if` chain, not its `switch` (#221, ADR 0629)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: " && !switched(g))\n",
+    replace: ")\n",
+    tests: CALLS,
+    snapshots: true,
+  },
+  {
+    name: "decisions-call-tree-tests-repeated",
+    breaks: "a chain of a tree that calls counts `row.length >= 1` of each arm that reads it, more than the tree's, so `guarded_rows` keeps its block (#221)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        Some(_) => distinct(tests),\n",
+    replace: "        Some(_) => tests.map(atoms).sum::<usize>(),\n",
+    tests: CALLS,
+    snapshots: true,
+  },
   {
     name: "decisions-failed-arm-kept",
     breaks: "a path past an arm before it in the chain keeps that arm's failing, `row.length >= 1 && !(a || b) && row.length === 2`, more tests than the tree's, so a slice pattern's `match` keeps MIR's `bb11:` block (#221)",
@@ -17,8 +55,8 @@ export const mutations: Mutation[] = [
     name: "decisions-shared-tests-repeated",
     breaks: "an arm's paths that test alike first repeat it, `n >= 1 && a === 1 || n >= 1 && b === 1`, more tests than the tree's, so `observed_rows` keeps MIR's `bb22:` block (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "        let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();\n",
-    replace: "        let before: Vec<Expr> = Vec::new();\n        let shared = 0;\n",
+    find: "    let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();\n",
+    replace: "    let before: Vec<Expr> = Vec::new();\n    let shared = 0;\n",
     tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
     snapshots: true,
   },

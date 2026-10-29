@@ -146,14 +146,7 @@ function guarded(pairs) {
   for (const [a, b] of pairs) {
     let level = 4;
     const below = (n) => n < level;
-    if (a === 1 || b === 1) {
-      level = 1;
-    } else if (a === 2 && b === 2) {
-      level = 2;
-    } else {
-      const n = a;
-      level = below(n) ? 3 : 5;
-    }
+    level = a === 1 || b === 1 ? 1 : a === 2 && b === 2 ? 2 : below(a) ? 3 : 5;
     seen.push(level);
   }
   return seen;
@@ -168,30 +161,14 @@ function odd(n) {
 function oddOnes(pairs) {
   const seen = [];
   for (const [a, b] of pairs) {
-    let level = 1;
-    bb30: {
-      let x;
-      if (a === 1) {
-        x = b;
-        if (odd(x)) {
-          break bb30;
-        }
-      }
-      if (b === 1) {
-        x = a;
-        if (odd(x)) {
-          break bb30;
-        }
-      } else if (b === 2 && a === 2) {
-        level = 2;
-        break bb30;
-      }
-      if (a !== 3 && b !== 3) {
-        level = 5;
-      } else {
-        level = 3;
-      }
-    }
+    const level =
+      (a === 1 && odd(b)) || (b === 1 && odd(a))
+        ? 1
+        : a === 2 && b === 2
+          ? 2
+          : a === 3 || b === 3
+            ? 3
+            : 5;
     seen.push(level);
   }
   return seen;
@@ -315,24 +292,14 @@ function guardedRows(rows) {
   for (const row of rows) {
     let level = 4;
     const below = (n) => n < level;
-    bb25: {
-      if (row.length >= 1) {
-        if (row[0] === 1 || row[row.length - 1] === 1) {
-          level = 1;
-          break bb25;
-        }
-        if (row.length === 2 && row[0] === 2 && row[1] === 2) {
-          level = 2;
-          break bb25;
-        }
-        const n = row[0];
-        if (below(n)) {
-          level = 3;
-          break bb25;
-        }
-      }
-      level = 5;
-    }
+    level =
+      row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)
+        ? 1
+        : row.length === 2 && row[0] === 2 && row[1] === 2
+          ? 2
+          : row.length >= 1 && below(row[0])
+            ? 3
+            : 5;
     seen.push(level);
   }
   return seen;

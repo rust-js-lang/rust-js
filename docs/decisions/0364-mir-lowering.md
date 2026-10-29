@@ -356,3 +356,66 @@ the same arm taken.
 Held by `test/corpus/default_value_exits.rs` against native Rust;
 mutations `decisions-failed-arm-kept` and `decisions-shared-tests-repeated`
 (`mir/tidy/decisions.ts`).
+
+## Amendment: a guard that calls is a test of the chain (#221, 2026-10-29)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same calls, in
+the same order, the same arm taken.
+
+`decisions` read a tree of pure tests only, whose arms it may try in any
+order. A guard that calls, `[n, ..] if below(*n) => level = 3`, was what
+an arm did, so the tree kept MIR's block, `bb25: { if (row.length >= 1) {
+.. const n = row[0]; if (below(n)) { level = 3; break bb25; } } level = 5;
+}` (`guarded_rows`), and `(1, x) | (x, 1) if odd(x)` its `bb30:`
+(`odd_ones`).
+
+**A test of a guard the program wrote is a test of the tree too**
+(`Written::guards`), with the binding MIR gives it just before, `const n
+= row[0];` or `x = b;`, in its place, `below(row[0])`, where only that
+test reads it (`bound`, `binds`): a value of the scrutinee, which nothing
+changes before the call reads it. A guard's own bindings are its, `n$1`
+beside its arm's `n`, so the arm reads what it reads as before. Not of a
+`match` that's a `switch` (ADR 0629), whose cases test their guards.
+
+**A tree that calls is tried each way its tests come out**
+(`decisions/calls.rs`, `Model`): each value it tests, apart from the
+others, over the values its tests tell apart, and each call true or
+false, at most 4,096 ways. Of each, the tree reaches one arm, making its
+calls in order; the chain must too. Each arm's test, after the arms
+before it, starts from the paths the tree takes to it, less each test
+what's tried before says (`x !== 1` once `x === 1` failed, a call's
+`!odd(b)` once `odd(b)` was made and failed), then one at a time each test
+that can go with the paths it then says all of, each step tried each way:
+the arm passes where the tree reaches it with the calls the tree makes,
+and fails otherwise having made only the calls the tree makes first; and
+the whole chain does what the tree does. A test read after a call reads
+what rustc keeps a guard from changing, a value its `match` tests of its
+scrutinee (E0510, `Guard::tested`), or the tree stays: `[n, ..] if mark(*n)
+&& done.get()`, whose call sets `done`. Two calls written alike, the same
+guard of each `|` alternative of no binding, `(1, _) | (_, 1) if odd(a +
+b)`, the model can't tell apart, and the tree stays. Its tests are counted
+once each alike, `row.length >= 1` of `[1, ..]`'s arm and of `[n, ..]`'s,
+against the tree's as read.
+
+`guarded_rows` is `row.length >= 1 && (row[0] === 1 || row[row.length -
+1] === 1) ? 1 : row.length === 2 && row[0] === 2 && row[1] === 2 ? 2 :
+row.length >= 1 && below(row[0]) ? 3 : 5`, and `odd_ones` `(a === 1 &&
+odd(b)) || (b === 1 && odd(a)) ? 1 : ..`; test/corpus/default_value_exits.js
+has no label.
+
+Alternatives: a guard's test kept in place, the rest of the tree a chain
+around it, which reads as MIR's tree does; and the rules the pure tree's
+chain is made by, which say nothing of when a call is made. A model of
+each way is what tells, whatever the tree's shape, and refuses where it
+can't.
+
+Held by `test/corpus/guards_that_call.rs` and
+`test/corpus/default_value_exits.rs` against native Rust, each guard's
+calls printed; mutations `decisions-guard-call-a-leaf`,
+`decisions-guard-binding-not-given`, `decisions-switch-guard-chained` and
+`decisions-call-tree-tests-repeated` (`mir/tidy/decisions.ts`), and
+`calls-read-after-unkept`, `calls-nothing-said` and `calls-no-fewer`
+(`mir/tidy/decisions/calls.ts`). What reads a binding but its guard, the
+alike calls and the last check of the whole chain have none: MIR makes no
+such tree the corpus has found, and each arm's own check says what the
+last does of each tree it has.

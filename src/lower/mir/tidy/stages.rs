@@ -113,7 +113,15 @@ pub(super) const STAGES: &[Stage] = &[
             pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
             // A match's tree of tests, its arms reached through a block MIR
             // made: the chain of its arms, now that the loops are made.
-            pass("decisions", |b, _| bottom_up(b, &mut decisions::decisions)),
+            pass("decisions", |b, h| {
+                let bound = decisions::bound(b);
+                let told = decisions::Told {
+                    guards: &h.written.guards,
+                    switches: &h.written.switches,
+                    bound: &bound,
+                };
+                bottom_up(b, &mut |s| decisions::decisions(s, &told))
+            }),
             pass("early returns", |b, h| {
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),

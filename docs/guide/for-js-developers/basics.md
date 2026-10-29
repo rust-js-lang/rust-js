@@ -1561,7 +1561,11 @@ follows the `match` where other arms leave, `"LINK" if keep => continue,
 _ => {}` and then `remove(node)` in a loop whose other arms `continue`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended), or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
-0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)); and one
+0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)), a guard
+that calls made where Rust makes it and no other time, `[n, ..] if
+below(*n)`'s `row.length >= 1 && below(row[0])`, `(1, x) | (x, 1) if
+odd(x)`'s `(a === 1 && odd(b)) || (b === 1 && odd(a))`
+([ADR 0364](../../decisions/0364-mir-lowering.md), amended); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,
 where its `match` or `let` writes it, so two constants of one value, a
