@@ -97,15 +97,12 @@ export const Project = {
 
   /** Without `path`; if it was open, the root is. */
   removing(project, path) {
-    const files = Array.from(
-      project.files
-        .values()
-        .filter((f) => f.path !== path)
-        .map((f) => ({
-          path: f.path,
-          state: f.state,
-        })),
-    );
+    const files = project.files
+      .filter((f) => f.path !== path)
+      .map((f) => ({
+        path: f.path,
+        state: f.state,
+      }));
     const current = project.current === path ? project.root : project.current;
     return {
       root: project.root,

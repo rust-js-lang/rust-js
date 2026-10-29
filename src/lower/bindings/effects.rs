@@ -1,6 +1,7 @@
 //! What a binding says of what it runs, which nothing of its JS shows:
 //! that it can't throw (ADR 0301), that it runs nothing (ADR 0867), or
-//! only what it's given (ADR 0898).
+//! only what it's given (ADR 0898), or gives back what it was given (ADR
+//! 1022).
 
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
@@ -39,5 +40,14 @@ pub(in crate::lower) fn runs_only_given(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
 /// bw8).
 pub(in crate::lower) fn iterates_receiver(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("iterates_receiver")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// `#[rust_js::gives_back]`: a binding that gives back what the program
+/// gave it, React's state, a ref's `current`, a context's value, never an
+/// object of JS's own: a struct it gives is the program's, its fields read
+/// as plain data (ADR 1022, amended, the user's decision).
+pub(in crate::lower) fn gives_back(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("gives_back")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }

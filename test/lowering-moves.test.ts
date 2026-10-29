@@ -481,6 +481,29 @@ pub fn restore(style: &Unknown, props: &Unknown) {
     }
 }
 
+pub struct Kept {
+    pub margin: Option<&'static Unknown>,
+    pub padding: Option<&'static Unknown>,
+}
+
+// What the program stored, given back, React's state: its own object.
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.stored")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
+fn stored() -> &'static Kept {
+    unreachable!()
+}
+
+pub fn kept(style: &Unknown) {
+    let kept = stored();
+    let margin = kept.margin;
+    if margin.is_some() {
+        set_margin(style, margin);
+    } else {
+        let padding = kept.padding;
+        set_padding(style, padding);
+    }
+}
+
 struct Own {
     margin: Option<&'static Unknown>,
     padding: Option<&'static Unknown>,
@@ -501,8 +524,10 @@ pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
 }
 `);
   expect(js).toContain("  const margin = styleProp.margin;\n  if (margin != null) {\n    style.margin = margin;\n");
-  // The program's own struct's field is read in place.
+  // The program's own struct's field is read in place, and so is one a
+  // binding gives back (\`#[rust_js::gives_back]\`).
   expect(js).toContain("  if (own.margin != null) {\n    style.margin = own.margin;\n");
+  expect(js).toContain("  if (kept.margin != null) {\n    style.margin = kept.margin;\n");
   let reads = 0;
   const styleProp = {
     get margin() {

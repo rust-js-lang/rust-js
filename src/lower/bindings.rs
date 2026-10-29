@@ -19,7 +19,7 @@ mod nullable;
 mod rest_values;
 mod whole;
 
-pub(super) use effects::{cannot_throw, iterates_receiver, runs_nothing, runs_only_given};
+pub(super) use effects::{cannot_throw, gives_back, iterates_receiver, runs_nothing, runs_only_given};
 pub(in crate::lower) use given_names::alias_cased;
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, stem_binding};

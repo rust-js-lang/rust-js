@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204). Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -116,3 +116,26 @@ native Rust. Mutations take away each route and the fact.
   parameter reads what any caller gives, so it must ask the type anyway.
 - Every struct: the program's own data, read in place today, would keep a
   `const` of each field read.
+
+## Amendment: what a binding gives back is the program's
+
+The user's decision, rd204's follow-up. React's `useState`, `useReducer`
+and the other hooks give back what the program gave them, its state, a
+ref's `current`, a context's value: the program's own objects, which
+React keeps and never makes. Taken for JS's, a component's every read of
+its state's fields was held, `const className = t.done ? "done" : "";`
+before the JSX it was written in.
+
+**A binding marked `#[rust_js::gives_back]` gives the program's own
+object**, so a struct it gives isn't one JS may make: one fact on the
+binding (`bindings::gives_back`), which `FnPointers` asks where it
+follows a call's result, not a list of them. The react crate marks its
+hooks, `use_state`, `use_reducer`, `use_reducer_with`, `use_optimistic`,
+`use_optimistic_with`, `use_action_state`, `use_async_action_state`,
+`use_context`, `use_memo`, `use_callback`, `use_effect_event`,
+`use_deferred_value`, `use_sync_external_store` and `RefObject::current`.
+
+What stays a JS object's is what JS made: `JSON.parse`'s, todomvc's
+stored todos and the playground's fetched manifest, whose fields keep
+their `const`s.
+

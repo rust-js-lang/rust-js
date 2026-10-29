@@ -435,8 +435,9 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
         }
-        // What serde gives is the compiler's own, of JSON's data.
-        if !crate::lower::recognition::lowered_serde(tcx, f) {
+        // What serde gives is the compiler's own, of JSON's data, and what a
+        // binding gives back the program's (`#[rust_js::gives_back]`).
+        if !crate::lower::recognition::lowered_serde(tcx, f) && !crate::lower::bindings::gives_back(tcx, f) {
             self.found.made_outside(recognition, result);
         }
     }

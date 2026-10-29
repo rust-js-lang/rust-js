@@ -377,10 +377,9 @@ export function TodoList() {
         <button type="submit">Add</button>
       </form>
       <ul>
-        {todos.items.map((todo) => {
-          const key = todo.id;
-          return <TodoItem key={key} todo={{ ...todo }} dispatch={dispatch} />;
-        })}
+        {todos.items.map((todo) => (
+          <TodoItem key={todo.id} todo={{ ...todo }} dispatch={dispatch} />
+        ))}
       </ul>
       <p>
         {left}

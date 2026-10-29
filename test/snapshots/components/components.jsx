@@ -76,18 +76,15 @@ export function Todos() {
           Add
         </button>
         <ul>
-          {todos.map((t) => {
-            const className = t.done ? "done" : "";
-            return (
-              <li
-                key={t.id}
-                className={className}
-                onClick={() => dispatch({ TAG: "Toggle", _0: t.id })}
-              >
-                {t.text}
-              </li>
-            );
-          })}
+          {todos.map((t) => (
+            <li
+              key={t.id}
+              className={t.done ? "done" : ""}
+              onClick={() => dispatch({ TAG: "Toggle", _0: t.id })}
+            >
+              {t.text}
+            </li>
+          ))}
         </ul>
         {todos.length === 0 && <p className="empty">Nothing to do</p>}
         {t != null && <p className="latest">{t.text}</p>}

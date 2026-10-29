@@ -751,6 +751,7 @@ macro_rules! handle {
 /// holds: `use_state(|| todo.title.clone())`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
 #[cfg_attr(rust_js, rust_js::lazy(initial))]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_state<T>(initial: impl FnOnce() -> T) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
@@ -804,6 +805,7 @@ pub type TransitionFunction<R = ()> = Box<dyn FnOnce() -> R>;
 /// [`useReducer`](https://react.dev/reference/react/useReducer): the state,
 /// and what sends it actions, which `reducer` turns into the next state.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useReducer")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_reducer<S, A>(reducer: impl Fn(&S, A) -> S + 'static, initial: S) -> (&'static S, Dispatch<A>) {
     unreachable!()
 }
@@ -811,6 +813,7 @@ pub fn use_reducer<S, A>(reducer: impl Fn(&S, A) -> S + 'static, initial: S) -> 
 /// `useReducer(reducer, arg, init)`: the first state is `init(arg)`, computed
 /// on the first render only.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useReducer")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_reducer_with<S, A, I>(
     reducer: impl Fn(&S, A) -> S + 'static,
     arg: I,
@@ -840,6 +843,7 @@ impl<A> Dispatch<A> {
 /// [`Element::action_dispatch`], or call it in a Transition.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useActionState")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_action_state<S, P>(
     action: impl Fn(&S, P) -> S + 'static,
     initial: S,
@@ -851,6 +855,7 @@ pub fn use_action_state<S, P>(
 /// future gives, and it's pending until then.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useActionState")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_async_action_state<S, P, F: Future<Output = S>>(
     action: impl Fn(&S, P) -> F + 'static,
     initial: S,
@@ -862,6 +867,7 @@ pub fn use_async_action_state<S, P, F: Future<Output = S>>(
 /// `value`, or what [`SetOptimistic`] set while an action is pending.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useOptimistic")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_optimistic<S>(value: S) -> (&'static S, SetOptimistic<S>) {
     unreachable!()
 }
@@ -870,6 +876,7 @@ pub fn use_optimistic<S>(value: S) -> (&'static S, SetOptimistic<S>) {
 /// from the actions sent to it.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useOptimistic")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_optimistic_with<S, A>(value: S, reducer: impl Fn(&S, A) -> S + 'static) -> (&'static S, Dispatch<A>) {
     unreachable!()
 }
@@ -899,6 +906,7 @@ impl<S> SetOptimistic<S> {
 /// [`useContext`](https://react.dev/reference/react/useContext): the value of
 /// the nearest provider above, or the context's default.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useContext")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_context<T>(context: &'static LocalKey<Context<T>>) -> &'static T {
     unreachable!()
 }
@@ -920,6 +928,7 @@ impl<T> RefObject<T> {
     /// `ref.current`: a data property, which a read can't throw.
     #[cfg_attr(rust_js, rust_js::link_name = "get current")]
     #[cfg_attr(rust_js, rust_js::cannot_throw)]
+    #[cfg_attr(rust_js, rust_js::gives_back)]
     pub fn current(&self) -> T {
         unreachable!()
     }
@@ -997,6 +1006,7 @@ pub fn use_insertion_effect<C: Cleanup>(effect: impl Fn() -> C + 'static, deps: 
 #[cfg(react = "19.2")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#useEffectEvent")]
 #[cfg_attr(rust_js, rust_js::named_callback)]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_effect_event<F: 'static>(f: F) -> &'static F {
     unreachable!()
 }
@@ -1007,6 +1017,7 @@ pub fn use_effect_event<F: 'static>(f: F) -> &'static F {
 /// again only when `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useMemo")]
 #[cfg_attr(rust_js, rust_js::named_callback)]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl DependencyList) -> &'static T {
     unreachable!()
 }
@@ -1015,6 +1026,7 @@ pub fn use_memo<T>(f: impl Fn() -> T + 'static, deps: impl DependencyList) -> &'
 /// function across renders, until `deps` change.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useCallback")]
 #[cfg_attr(rust_js, rust_js::named_callback)]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_callback<F: 'static>(f: F, deps: impl DependencyList) -> &'static F {
     unreachable!()
 }
@@ -1050,6 +1062,7 @@ impl TransitionStartFunction {
 /// `value`, which lags behind while more urgent updates render; from React
 /// 19, `initial`, given, on the first render.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useDeferredValue")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_deferred_value<T>(value: T, #[cfg(react = "19.0")] initial: Option<T>) -> &'static T {
     unreachable!()
 }
@@ -1087,6 +1100,7 @@ impl Notify {
 /// change, and returns what unsubscribes; `snapshot` reads the value, and
 /// `server_snapshot`, given, on the server and while hydrating.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useSyncExternalStore")]
+#[cfg_attr(rust_js, rust_js::gives_back)]
 pub fn use_sync_external_store<T, U: Cleanup>(
     subscribe: impl Fn(Notify) -> U + 'static,
     snapshot: impl Fn() -> T + 'static,
