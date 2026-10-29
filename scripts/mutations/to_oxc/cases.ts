@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
   },
+  {
+    name: "pattern-comment-in-body",
+    breaks: "a comment between a match arm's patterns, `\"keydown\" // .. | \"keyup\"`, is in the case's body, not before `case \"keyup\":`",
+    file: "src/to_oxc/cases.rs",
+    find: "        starts.extend(later.filter(|v| !v.span.is_none()).map(|v| v.span.lo));\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
+  },
 ];

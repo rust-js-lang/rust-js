@@ -518,9 +518,15 @@ impl<'a> Cx<'a> {
                     // Where a case falls through to it, where its comment
                     // says so is (ADR 0905).
                     let mut at = super::fallen_to(cases, k).map_or(SPAN, |lo| Span::new(lo, lo));
-                    for value in stacked {
+                    // Each value after the first where it's written, which a
+                    // comment between an arm's patterns is before, `"mouseup"
+                    // // TODO: .. | "mouseout"`'s (rd139, `cases::pattern_starts`).
+                    for (value, next) in stacked.iter().zip(&case.values[1..]) {
                         clauses.push(SwitchCase::new(at, Some(self.expr(value)), ArenaVec::new_in(b), b));
-                        at = SPAN;
+                        at = match next.span.is_none() {
+                            true => SPAN,
+                            false => Span::new(next.span.lo, next.span.lo),
+                        };
                     }
                     // One that falls through to the next case goes on to it,
                     // no `break` (ADR 0905).
@@ -817,6 +823,12 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
 /// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
 /// mapped there.
 fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
+    // Its `break` left out, as the last clause's is (`case_body`), a guarded
+    // fall-through's `default: // .. break;` too (rd138).
+    let body = match body.split_last() {
+        Some((end, before)) if matches!(end.kind, StmtKind::Break(None)) => before,
+        _ => body,
+    };
     match body.last() {
         Some(end) if at == SPAN && matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {
             Span::new(end.span.lo + 1, end.span.lo + 1)

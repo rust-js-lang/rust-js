@@ -50,6 +50,20 @@ pub(super) fn says_fallthrough(comment: &str) -> bool {
         .any(|said| text.contains(said))
 }
 
+/// Where each value of a case after its first starts, of `module`'s
+/// `switch`es: a start a comment between a `match` arm's patterns is
+/// before, `"mouseup" // TODO: .. | "mouseout"`'s, as React writes it
+/// between its `case`s (rd139). One before the arm, code between, is its
+/// body's still (ADR 0590).
+pub(super) fn pattern_starts(module: &Module) -> Vec<u32> {
+    let mut starts = Vec::new();
+    each_switch(module, &mut |cases, _| {
+        let later = cases.iter().flat_map(|case| case.values.iter().skip(1));
+        starts.extend(later.filter(|v| !v.span.is_none()).map(|v| v.span.lo));
+    });
+    starts
+}
+
 /// Where each case a case falls through to starts, of `module`'s
 /// `switch`es: its first value's, which the case is printed at
 /// (`fallen_to`), its comment `FALLTHROUGH` before it.

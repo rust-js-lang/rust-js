@@ -675,3 +675,52 @@ Held by `test/corpus/switch_guard_skips_its_case.rs` against native Rust
 and the mutations `arm-opening-not-an-opening` (`to_oxc.ts`),
 `receiver-not-only` (`to_oxc/openings.ts`) and `emptied-default-kept`
 (`mir/tidy/case_rests.ts`).
+
+## Amendment: comments between an arm's patterns, and in a last `_` (rd138, rd139, 2026-10-29)
+
+React DOM's SimpleEventPlugin writes a comment between two `case`s of one
+arm, and a `default` of only comments:
+
+```rust
+"keypress" if get_event_char_code(event) == 0 => return,
+"keypress" | "keydown"
+// ..
+| "keyup" => { .. }
+// ..
+_ => {
+    // Unknown event. This is used by createEventHandle.
+}
+```
+
+The comment between the patterns was in the case's body, after its last
+`case`, as no clause but the first of a case's values had a place; and
+the `_`'s comments, which a guarded fall-through's `switch` ends with
+tidy's `break;` (left out of the last clause), were after the `switch`'s
+`}`, as the printer looked for them last in the clause, before the
+`break`.
+
+**Each value of a case after the first is printed where it's written**, a
+start a comment between the arm's patterns is before
+(`cases::pattern_starts`), **and a last clause's `break` the printer leaves
+out is left out where it finds its comments too** (`commented_clause`):
+
+```js
+    // Fallthrough
+    case "keydown":
+    // ..
+    case "keyup":
+      kind = 1;
+      break;
+    ..
+    default:
+    // Unknown event. This is used by createEventHandle.
+  }
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Comments only.
+
+Held by `test/lowering-comments-jumps.test.ts` ("a comment between an
+arm's patterns or in a last _ of a guarded switch is in its clause"), run,
+and the mutations `pattern-comment-in-body` (`to_oxc/cases.ts`),
+`pattern-case-unplaced` and `default-comments-after-switch`
+(`to_oxc/statements.ts`).

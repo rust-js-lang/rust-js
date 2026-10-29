@@ -439,6 +439,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let else_ifs = else_if_starts(module);
     // And each `switch`'s case, which a comment before its arm is before.
     let case_starts = cases::case_starts(module);
+    // And each value of a case after its first, which a comment between an
+    // arm's patterns is before (rd139).
+    let pattern_starts = cases::pattern_starts(module);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);
@@ -453,6 +456,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     statement_starts.sort_unstable();
     starts.extend(parts.keys().copied());
     starts.extend(case_starts.iter().copied());
+    starts.extend(pattern_starts);
     // Each import's `use`, which the comments before it are above the
     // import of, in the header (rd92).
     let import_starts: std::collections::HashSet<u32> = (module.imports.iter().map(|i| i.span))

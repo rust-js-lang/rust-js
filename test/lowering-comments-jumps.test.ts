@@ -1,7 +1,8 @@
-// Where the compiler writes a comment before a `break` or a `continue` the
-// program wrote that tidy takes or turns: where it's written, inside its
-// branch, not above the loop (rd109). Each test is a program of its own,
-// compiled and run.
+// Where the compiler writes a comment of control flow MIR has no statement
+// of: before a `break` or a `continue` the program wrote that tidy takes,
+// inside its branch, not above the loop (rd109); and in a `switch`, between
+// an arm's patterns and in a last `_` of only comments (rd138, rd139). Each
+// test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -97,4 +98,52 @@ pub fn replay_uncommented(queue: &[i32], seen: &mut Vec<i32>) {
     return seen;
   };
   expect([seen([1, -2, 0, 0, 3, -20, 1]), seen([-1, 2, 3, 4])]).toEqual([[1, 3], [4]]);
+});
+
+// React DOM's SimpleEventPlugin: a guarded arm that falls through to the
+// next, a comment between that arm's patterns, `"mouseup" // TODO: ..
+// | "mouseout"`, and a last `_` of only comments. The first comment between
+// the two `case`s, as upstream writes it, not in the case's body (rd139);
+// the last in the `default`, which tidy ends with a `break` the printer
+// leaves out, not after the switch's `}` (rd138).
+test("a comment between an arm's patterns or in a last _ of a guarded switch is in its clause", async () => {
+  const { js, lib } = await compiled("comments-of-a-switch", `pub fn extract(name: &str, log: &mut Vec<String>) {
+    let mut kind = 0;
+    match name {
+        "keypress" if log.is_empty() => {
+            return;
+        }
+        "keypress" | "keydown"
+        // A comment between patterns.
+        | "keyup" => {
+            kind = 1;
+        }
+        "click" => {
+            kind = 2;
+        }
+        "drag" | "drop" => {
+            kind = 3;
+        }
+        _ => {
+            // Unknown event. Nothing to do.
+        }
+    }
+    log.push(format!("{name} {kind}"));
+}
+`);
+  expect(js).toContain(`    // Fallthrough
+    case "keydown":
+    // A comment between patterns.
+    case "keyup":
+      kind = 1;
+      break;
+`);
+  expect(js).toContain(`    default:
+    // Unknown event. Nothing to do.
+  }
+  log.push(\`\${name} \${kind}\`);
+`);
+  const log: string[] = [];
+  for (const name of ["keypress", "click", "keypress", "keyup", "drop", "blur"]) lib.extract(name as never, log as never);
+  expect(log).toEqual(["click 2", "keypress 1", "keyup 1", "drop 3", "blur 0"]);
 });

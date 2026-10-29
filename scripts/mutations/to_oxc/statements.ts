@@ -166,8 +166,8 @@ export const mutations: Mutation[] = [
     name: "switch-or-pattern-unstacked",
     breaks: "an or-pattern's constants but the last aren't cases, `1 | 2 | 3` only `case 3:`",
     file: "src/to_oxc/statements.rs",
-    find: "                    for value in stacked {\n",
-    replace: "                    for value in stacked.iter().take(0) {\n",
+    find: "                    for (value, next) in stacked.iter().zip(&case.values[1..]) {\n",
+    replace: "                    for (value, next) in stacked.iter().zip(&case.values[1..]).take(0) {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
   {
@@ -314,5 +314,21 @@ export const mutations: Mutation[] = [
     find: "            Span::new(end.span.lo + 1, end.span.lo + 1)\n",
     replace: "            at\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "last arm of only comments"],
+  },
+  {
+    name: "pattern-case-unplaced",
+    breaks: "a case's values after its first have no place, so a comment between an arm's patterns is in the case's body",
+    file: "src/to_oxc/statements.rs",
+    find: "                            false => Span::new(next.span.lo, next.span.lo),\n",
+    replace: "                            false => SPAN,\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
+  },
+  {
+    name: "default-comments-after-switch",
+    breaks: "a last `_` of only comments that tidy ends with a `break`, a guarded switch's, prints an empty `default:` and its comments after the `switch`",
+    file: "src/to_oxc/statements.rs",
+    find: "        Some((end, before)) if matches!(end.kind, StmtKind::Break(None)) => before,\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
   },
 ];
