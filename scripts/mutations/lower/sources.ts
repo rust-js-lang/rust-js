@@ -60,10 +60,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "commented-jump-uncommented",
-    breaks: "a `break` with no comment before it MIR made the function's `return;` is placed where it's written, which turns `if (!c) { return; } a` into an `else`",
+    breaks: "a `break` or `continue` with no comment before it is taken for a commented one, its MIR jump placed where it's written, so a `switch` of a match whose arm breaks its loop isn't written as before (#389)",
     file: "src/lower/sources.rs",
     find: "    commented_before(jump.lo).then_some(jump)\n",
     replace: "    Some(jump)\n",
-    tests: ["test/lowering-comments-jumps.test.ts"],
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "a match whose arm breaks its loop has no label the program didn't write"],
   },
 ];

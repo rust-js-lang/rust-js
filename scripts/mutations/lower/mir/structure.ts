@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "commented-break-unplaced",
-    breaks: "a `break` with comments before it that MIR made the function's `return;` has no place, so its comments are above the loop",
+    breaks: "a `break` with comments before it that MIR made the function's `return;` has no place, so the comments of a match arm's `break` are lost",
     file: "src/lower/mir/structure.rs",
     find: "                Some(jump) if at.lo == done.lo && js::ends(jump) && jump.span.is_none() => jump.span = at,\n",
     replace: "",

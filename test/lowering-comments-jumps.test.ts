@@ -143,6 +143,30 @@ pub fn arm(xs: &[i32], out: &mut Vec<i32>) {
   ]);
 });
 
+// A `break` the program wrote as all of a match arm, its comments before
+// it, in the loop the function ends with, which MIR makes the function's
+// `return;`: the comments where it's written, in that branch, not lost.
+test("a comment before a match arm's break MIR made a return is in its branch", async () => {
+  const { js, lib } = await compiled("comment-before-an-arms-break", `pub fn doubled(xs: &[i32], out: &mut Vec<i32>) {
+    let mut i = 0;
+    while i < xs.len() {
+        match xs[i] {
+            0 => {
+                // Zero: no more.
+                break;
+            }
+            x => out.push(x * 2),
+        }
+        i += 1;
+    }
+}
+`);
+  expect(js).toContain("    if (xs[i] === 0) {\n      // Zero: no more.\n");
+  const out: number[] = [];
+  lib.doubled([1, 2, 0, 3] as never, out as never);
+  expect(out).toEqual([2, 4]);
+});
+
 // React DOM's SimpleEventPlugin: a guarded arm that falls through to the
 // next, a comment between that arm's patterns, `"mouseup" // TODO: ..
 // | "mouseout"`, and a last `_` of only comments. The first comment between
