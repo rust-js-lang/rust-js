@@ -275,13 +275,17 @@ pub fn all() -> Vec<String> {
         format!("{} {}", buffer::is_utf8(hi), buffer::is_ascii(hi)),
         buffer::transcode(&Buffer::from_with_str("€", None), TranscodeEncoding::Utf8, TranscodeEncoding::Utf16le).length().to_string(),
         buffer::INSPECT_MAX_BYTES.to_string(),
+        // Whether the host has \`Buffer\`, then its \`from\`: React DOM's
+        // readAsDataURL's test, each part asked (ADR 0942).
+        (js::is_function(Buffer::new) && js::is_function(Buffer::from)).to_string(),
     ]
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   // Each optional argument a `None` is left out, as a person writes the
   // call; a union's `Some(&value)` is the value (ADR 0443).
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('String(typeof Buffer === "function" && typeof Buffer.from === "function")');
   for (const call of ['Buffer.from("héllo")', 'Buffer.alloc(4)', 'Buffer.alloc(5, "ab")', "filled.fill(0, 3)", "numbers.writeDoubleBE(1.5, 4)", "numbers.readInt32LE()", 'hex.toString("base64")', "hi.subarray(0, 1).toString()"]) {
     expect(js).toContain(call);
   }
@@ -293,7 +297,7 @@ console.log(JSON.stringify(all()));
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual([
     "héllo", "6", "6", Buffer.from("ff00ab", "hex").toString("base64"), "010203ff00ab", "00beef00", "-5 1.5 7", "3 66051", "ababa".slice(0, 3) + "\u0000\u0000",
-    "3 4 false", "-1 true", "h", "3", "true true", "true false", "2", "50",
+    "3 4 false", "-1 true", "h", "3", "true true", "true false", "2", "50", "true",
   ]);
 });
 

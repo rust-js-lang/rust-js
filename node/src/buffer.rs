@@ -79,6 +79,16 @@ impl Buffer {
         unreachable!()
     }
 
+    /// [`new Buffer(size)`](https://nodejs.org/api/buffer.html#new-buffersize):
+    /// Node's deprecated form of `Buffer.alloc(size)`. What asks whether the
+    /// host has `Buffer` at all, `js::is_function(Buffer::new)`, `typeof
+    /// Buffer === "function"`, as React DOM's readAsDataURL asks before it
+    /// reads `Buffer.from` (ADR 0942).
+    #[cfg_attr(rust_js, rust_js::link_name = "new Buffer")]
+    pub fn new(size: u32) -> &'static Buffer {
+        unreachable!()
+    }
+
     /// [`Buffer.alloc(size, fill, encoding)`](https://nodejs.org/api/buffer.html#static-method-bufferallocsize-fill-encoding):
     /// `size` bytes, `fill`'s repeated, a text one read as `encoding`, or
     /// zeros.
