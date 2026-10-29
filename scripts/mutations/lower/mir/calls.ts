@@ -5,6 +5,14 @@ const isFunctionValue = ["test/lowering-is-function.test.ts", "-t", "value of a 
 
 export const mutations: Mutation[] = [
   {
+    name: "nullable-any-given-its-pair",
+    breaks: "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
+    file: "src/lower/mir/calls.rs",
+    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n",
+    replace: "                js::Storage::NullForNone.written(value, nulled)\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+  },
+  {
     name: "bool-assign-by-ref-refused",
     breaks: "a `bool`'s `op=` given a `&bool` from MIR, `*s ^= c`, is refused (#319)",
     file: "src/lower/mir/calls.rs",
@@ -136,8 +144,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-some-coalesced",
     breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                js::Storage::NullForNone.written(value, nulled)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
-    replace: "                js::Storage::NullForNone.written(value, false)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
+    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
+    replace: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
     tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
   },
   {

@@ -99,3 +99,31 @@ initializer's, as a `String`'s is: its type's key, a string, which every
 use shares (`copies::shareable`). A constant of one, a tuple of them too,
 was already. The `type_id_statics` corpus case compares them; rustc's
 `consts/const-typeid-of-rpass.rs` passes.
+
+## Amendment: a nullable parameter's `&dyn Any` is its value too (rd170)
+
+A WRONG ANSWER: webapi's `animate(keyframes: Option<&dyn Any>, ..)` and
+`KeyframeEffect`'s `set_keyframes`, whose `keyframes` is
+`#[rust_js::nullable]`, were given the pair, `element.animate({ value: {
+opacity: [0, 0] }, impl: { typeId: () => ".." } })`, as `binding_arg`'s
+nullable rule wrote `null` for `None` and took the value as it was, never
+asking `any_given_to_js`. Now it does, `element.animate({ opacity: [0,
+0] })`; of an `Option`'s `map` to one, `o != null ? { value: o, impl } :
+null`, each arm's value, `o != null ? o : null`; and a `None` already
+`null` is itself, not `null?.value`.
+
+`&dyn Any` stays WebIDL's `object`, a parameter of any object (35 of
+webapi's, Node's `captureStackTrace`'s target): any `'static` value, as
+`any`'s `impl IntoUnknown` is any value, each given as it is. TypeScript's
+`object` excludes primitives, which no Rust bound can say of every type, so
+`Any` is as close as Rust gets; a cast of an `&Unknown` to it, `k as &dyn
+Any`, is its value too.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS is given the
+value it was given.
+
+Held by corpus `any_given_to_a_nullable_parameter` against native Rust, and
+the mutations `nullable-any-given-its-pair` (`lower/mir/calls.ts`),
+`any-pair-of-a-conditional-kept` and `any-none-null-read`
+(`lower/std_types/any.ts`).
+

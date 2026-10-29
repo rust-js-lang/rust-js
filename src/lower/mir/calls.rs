@@ -494,9 +494,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A parameter it names `#[rust_js::nullable(..)]`: its
             // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
             // type parameter, where it's given an `Option` (ADR 0586,
-            // amended).
+            // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
             () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_some() => {
-                js::Storage::NullForNone.written(value, nulled)
+                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)
             }
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing

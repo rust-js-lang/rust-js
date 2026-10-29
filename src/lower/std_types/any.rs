@@ -159,14 +159,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and of an `Option` of one, of each in a slice, an array or a `Vec`.
     pub(in crate::lower) fn any_given_to_js(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         let pointee = ty.peel_refs();
-        // A pair made here, `{ value: v, impl }`: `v`.
-        let made = |value: &Expr| match &value.kind {
-            js::ExprKind::Object(props, ..) => match props.as_slice() {
-                [Prop::Field(name, inside), _] if name == js::HELD => Some(inside.clone()),
+        // A pair made here, `{ value: v, impl }`: `v`; of each of a
+        // conditional's values, `o != null ? { value: o, impl } : null`, an
+        // `Option`'s `map` of one, `o != null ? o : null`, each made.
+        fn made(value: &Expr) -> Option<Expr> {
+            match &value.kind {
+                js::ExprKind::Object(props, ..) => match props.as_slice() {
+                    [Prop::Field(name, inside), _] if name == js::HELD => Some(inside.clone()),
+                    _ => None,
+                },
+                js::ExprKind::Cond(test, then, otherwise) => {
+                    let made_or_none = |e: &Expr| match e.kind {
+                        js::ExprKind::Null | js::ExprKind::Undefined => Some(e.clone()),
+                        _ => made(e),
+                    };
+                    let (then, otherwise) = (made_or_none(then)?, made_or_none(otherwise)?);
+                    Some(Expr::cond((**test).clone(), then, otherwise))
+                }
                 _ => None,
-            },
-            _ => None,
-        };
+            }
+        }
         if self.given_as_value(pointee) {
             return made(&value).unwrap_or_else(|| Expr::held(value));
         }
@@ -174,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.given_as_value(inner.peel_refs())
         {
             return match value.kind {
-                js::ExprKind::Undefined => value,
+                js::ExprKind::Undefined | js::ExprKind::Null => value,
                 _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),
             };
         }

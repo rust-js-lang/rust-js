@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "any-pair-of-a-conditional-kept",
+    breaks: "a `map` of an `Option` to a `&dyn Any` given to a binding is the pair it made, `o != null ? { value: o, impl } : null`, so JS gets `{value, impl}` (rd170)",
+    file: "src/lower/std_types/any.rs",
+    find: "                    Some(Expr::cond((**test).clone(), then, otherwise))\n",
+    replace: "                    None\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+  },
+  {
+    name: "any-none-null-read",
+    breaks: "a `None` given as `null` to a binding's `Option<&dyn Any>` is read for its value, `null?.value`, `undefined` (rd170)",
+    file: "src/lower/std_types/any.rs",
+    find: "                js::ExprKind::Undefined | js::ExprKind::Null => value,\n",
+    replace: "                js::ExprKind::Undefined => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+  },
+  {
     name: "js-error-downcast-of-panic-unseen",
     breaks: "a downcast to `&JsError` of a `dyn Any` an unwind's payload was widened to finds none",
     file: "src/lower/std_types/any.rs",

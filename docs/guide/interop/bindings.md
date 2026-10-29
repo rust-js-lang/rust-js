@@ -845,13 +845,17 @@ export async function open(other) {
   TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
   `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
   ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
+- **An object of any kind, WebIDL's `object`, is a `&dyn Any`**, given
+  its value, not the pair that downcasts it, of an `Option` and a `null`
+  one too: `element.animate(Some(&Keyframes { opacity: [0.0, 1.0] }),
+  None)` is `element.animate({ opacity: [0, 1] })`
+  ([ADR 0331](../../decisions/0331-dyn-any.md), amended).
 - **What may throw returns `Result<T, &JsError>`**: the call runs in a `try`,
   and what JS threw is the `Err`. A binding that doesn't say so lets a throw
   through, as a panic ([Errors, panics and exceptions](exceptions.md)).
 - **A promise is a `Promise<T>`**, to `.await` ([Promises and async](async.md)).
 - **A callback is a closure**: `Box<dyn Fn(..)>` for one JS may call again,
-  `Box<dyn FnOnce()>` for one it calls once, as the js crate's
-  `set_timeout` and webapi's `queue_microtask` and
+  `Box<dyn FnOnce()>` for one it calls once, as webapi's `queue_microtask` and
   `request_animation_frame` take, so it may move out what it holds. JS
   calls it with its parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md),
   [ADR 0869](../../decisions/0869-a-web-callback-called-once-is-fn-once.md)).
