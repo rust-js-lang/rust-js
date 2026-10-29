@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "type-reexport-an-import",
+    breaks: "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
+    file: "src/lower/pipeline.rs",
+    find: "        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |r| (module, r.from.clone())))\n",
+    replace: "        .flat_map(|(&module, _)| (tcx.module_children_local(module.to_local_def_id()).iter()).filter(|c| !c.reexport_chain.is_empty()).filter_map(|c| c.res.opt_def_id()?.as_local()).filter_map(|id| Some((module, js::ImportFrom::Module(paths.get(&tcx.parent_module_from_def_id(id))?.clone())))).collect::<Vec<_>>())\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_reexport_in_no_load_cycle.rs$"],
+  },
+  {
     name: "types-only-root-unwritten",
     breaks: "a crate whose root has no JS, `pub trait Marker {} impl Marker for u32 {}`, writes no `lib.js`, the entry a host and a package import (ADR 1005)",
     file: "src/lower/pipeline.rs",
@@ -219,14 +227,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
-    name: "default-export-unwritten",
-    breaks: "a Rust route's module has no default export, which Next.js takes as its page",
-    file: "src/lower/pipeline.rs",
-    find: "                        default_export = Some(function);\n                        default_declared",
-    replace: "                        let _ = function;\n                        default_declared",
-    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
-  },
-  {
     name: "default-imported-by-name",
     breaks: "a module's default export is imported by its name, `import { Memoized as Label }`",
     file: "src/lower/pipeline.rs",
@@ -265,14 +265,6 @@ export const mutations: Mutation[] = [
     find: "        let key = thread_local_inits.get(&def_id).copied();\n",
     replace: "        let key = thread_local_inits.get(&def_id).copied().filter(|_| false);\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
-  },
-  {
-    name: "default-of-another-refused",
-    breaks: "`js::export_default!` of another module's function is an error",
-    file: "src/lower/pipeline.rs",
-    find: "                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
-    replace: "                    Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
-    tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
   {
     name: "unshown-debug-kept",
@@ -437,14 +429,6 @@ export const mutations: Mutation[] = [
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
-  },
-  {
-    name: "bound-global-default-refused",
-    breaks: "`js::export_default!(assign)` of a global binding is refused as no function of its module's",
-    file: "src/lower/pipeline.rs",
-    find: "                    Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {\n",
-    replace: "                    Some(function) if false && unset && super::bindings::held_path(tcx, function).is_some() => {\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
   },
   {
     name: "const-number-unplaced",

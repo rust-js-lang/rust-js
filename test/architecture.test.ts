@@ -1069,9 +1069,12 @@ test("what a module exports an item as is exported_as's alone", () => {
   const lowering = files("src/lower").filter((file) => file.endsWith(".rs") && file !== "src/lower/default_exports.rs");
   expect(lowering.filter((file) => /Symbol::intern\("export_default"\)/.test(read(file)))).toEqual([]);
   // Of the rest, what's a module's default asks it for whether a module
-  // has one, the binding it holds, and the module's own made.
+  // has one and the binding it holds; the module's own made, its
+  // `module_default`, once, with what it re-exports (rd116).
   const asking = lowering.filter((file) => /default_exports::default_exports\(/.test(read(file)));
-  expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs", "src/lower/pipeline.rs"]);
+  expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs"]);
+  const made = lowering.filter((file) => /default_exports::module_default\(/.test(read(file)));
+  expect(made).toEqual(["src/lower/pipeline.rs"]);
   expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, &info.name))");
   // A module's `pub use`s of its own items by other names are found
   // there alone; the module's JS lists them, and exports them by no other.

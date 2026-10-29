@@ -199,13 +199,16 @@ pub(super) struct ModuleJs {
     pub(super) effects: Vec<String>,
 }
 
+/// A module and where a `pub use` of it re-exports from, as `reexports`
+/// writes it.
+pub(super) type ReexportFrom = (LocalModId, js::ImportFrom);
+
 /// What the crate's modules import of each other (`load_order`), of what
 /// their bodies import: another module's items each reads, the bindings it
 /// reads through another that holds them (ADR 0633), and the JS modules it
 /// imports, a binding's, as `imported` says of each too, and those it
-/// imports for their effects.
+/// imports for their effects, and what each re-exports, `reexports`'s.
 pub(super) fn module_imports<'d>(
-    tcx: TyCtxt<'_>,
     places: &[ModuleJs],
     fns: &HashMap<DefId, FnInfo>,
     (references, held, package_uses): (
@@ -213,7 +216,7 @@ pub(super) fn module_imports<'d>(
         impl Iterator<Item = &'d (LocalModId, LocalModId, String, bool, DefId)>,
         impl Iterator<Item = &'d (LocalModId, Export)>,
     ),
-    imported: &BTreeMap<Export, HashSet<LocalModId>>,
+    (imported, reexports): (&BTreeMap<Export, HashSet<LocalModId>>, &[ReexportFrom]),
     js_modules: &dyn crate::program::JsModules,
 ) -> crate::lower::load_order::ModuleImports {
     let laid_out: Vec<_> = (places.iter())
@@ -221,38 +224,23 @@ pub(super) fn module_imports<'d>(
         .collect();
     let referenced = references.map(|&(from, id)| (from, fns[&id].module));
     let held = held.map(|&(from, holder, ..)| (from, holder));
-    // And what each module re-exports of another of the crate's, `pub use
-    // super::a::one`, `export { one } from "./a.js"`: an import of it, so
-    // a cycle through it is one (#295).
-    // Of a binding, its JS module, `export { x } from "./file.js"`.
-    let reexports: Vec<(LocalModId, rustc_span::def_id::LocalDefId)> = (places.iter())
-        .flat_map(|js| {
-            (tcx.module_children_local(js.module.to_local_def_id()).iter())
-                .filter(|child| !child.reexport_chain.is_empty())
-                .filter_map(|child| child.res.opt_def_id()?.as_local())
-                .map(move |id| (js.module, id))
-        })
-        .collect();
-    let reexported: Vec<(LocalModId, LocalModId)> = (reexports.iter())
-        .map(|&(from, id)| (from, tcx.parent_module_from_def_id(id)))
-        .filter(|(from, to)| from != to)
-        .collect();
-    let reexported_bindings: Vec<(LocalModId, String)> = (reexports.iter())
-        .filter(|&&(_, id)| crate::lower::bindings::is_binding(tcx, id.to_def_id()))
-        .filter_map(|&(from, id)| {
-            let name = crate::lower::bindings::js_name(tcx, id.to_def_id());
-            let ((module, _), _) = crate::lower::bindings::js_import(&name)?;
-            Some((from, module))
-        })
-        .collect();
+    // And what each module re-exports, as `reexports` writes it, `export {
+    // one } from "./z.js"`: an import of that module, or of a binding's JS
+    // file, so a cycle through it is one (#295). A type's, which has no JS,
+    // is none.
+    let module_of = |path: &[String]| (places.iter()).find(|js| js.path == path).map(|js| js.module);
+    let reexported = (reexports.iter()).filter_map(|(from, of)| match of {
+        js::ImportFrom::Module(path) => Some((*from, module_of(path)?)),
+        js::ImportFrom::Specifier(_) => None,
+    });
+    let reexported_files = (reexports.iter()).filter_map(|(from, of)| match of {
+        js::ImportFrom::Specifier(specifier) => Some((*from, specifier.as_str())),
+        js::ImportFrom::Module(_) => None,
+    });
     let used = package_uses.map(|(from, (module, _))| (*from, module.as_str()));
     let users =
         (imported.iter()).flat_map(|((module, _), users)| users.iter().map(move |&from| (from, module.as_str())));
     let effects = (places.iter()).flat_map(|js| js.effects.iter().map(|from| (js.module, from.as_str())));
-    let bound = (used.chain(users).chain(effects)).chain(
-        reexported_bindings
-            .iter()
-            .map(|(from, module)| (*from, module.as_str())),
-    );
+    let bound = used.chain(users).chain(effects).chain(reexported_files);
     crate::lower::load_order::ModuleImports::new(&laid_out, referenced.chain(held).chain(reexported), bound, js_modules)
 }

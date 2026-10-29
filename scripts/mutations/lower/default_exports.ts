@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "default-export-unwritten",
+    breaks: "a Rust route's module has no default export, which Next.js takes as its page",
+    file: "src/lower/default_exports.rs",
+    find: "                default.export = Some(function);\n                default.declared",
+    replace: "                let _ = function;\n                default.declared",
+    tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
+  },
+  {
+    name: "default-of-another-refused",
+    breaks: "`js::export_default!` of another module's function is an error",
+    file: "src/lower/default_exports.rs",
+    find: "            Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
+    replace: "            Some(function) if false && unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {\n",
+    tests: ["test/modules.test.ts", "-t", "default of another module"],
+  },
+  {
+    name: "bound-global-default-refused",
+    breaks: "`js::export_default!(assign)` of a global binding is refused as no function of its module's",
+    file: "src/lower/default_exports.rs",
+    find: "            Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {\n",
+    replace: "            Some(function) if false && unset && super::bindings::held_path(tcx, function).is_some() => {\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
+  },
+  {
     name: "default-class-refused",
     breaks: "`js::export_default!(Complex)` of a class is refused, not `export default Complex;`",
     file: "src/lower/default_exports.rs",

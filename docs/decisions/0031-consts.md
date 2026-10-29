@@ -430,3 +430,25 @@ adds one to the binding's JS module, `export { scale } from "./scale.js"`.
   module, a cycle through it" checks the binding's.
 - The mutations are `reexport-not-an-import` and
   `reexported-binding-not-an-import`.
+
+## Amendment: only what `reexports` writes is an import (rd116)
+
+The first fix for #295 read its edges from rustc's module children: every
+re-export, a type's too. A type has no JS, but a `pub use` of one was
+counted as an import anyway. So React's port stopped building:
+ReactFiberHiddenContext's exported cursors, `create_cursor(..)` of
+ReactFiberStack, were refused as in an import cycle that a type's
+re-export alone made.
+
+What a module re-exports is now decided once, before any module is
+lowered. `reexports`, with the module's default (`module_default`, moved
+into `default_exports.rs`), runs once per module. Assembly writes its
+`export { .. } from` lines from that answer, and `module_imports` takes an
+edge from each one, to the crate's module or to a binding's JS file. The
+two can't disagree: only what's written is an import.
+
+- `test/corpus/type_reexport_in_no_load_cycle.rs` has a `pub use` of a
+  type and a `pub` thread-local made of the re-exporting module's
+  function. It was refused on fdec315a7.
+- The mutation `type-reexport-an-import` brings back the derivation from
+  rustc's children.

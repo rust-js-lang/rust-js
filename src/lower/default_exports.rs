@@ -181,3 +181,56 @@ pub(super) fn default_exports(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(Optio
         })
         .collect()
 }
+
+/// What a module's `js::export_default!` makes its default: its own
+/// function or thread-local, `export`, declared as the default or not,
+/// `declared`; or another module's function, `from`, re-exported as it
+/// (ADR 0240). A binding's is its own `const` (ADRs 0622, 0633), unless it
+/// names one held through another module, re-exported. Any other is
+/// refused.
+#[derive(Default)]
+pub(super) struct ModuleDefault {
+    pub(super) export: Option<DefId>,
+    pub(super) declared: bool,
+    pub(super) from: Option<(DefId, Span)>,
+}
+
+pub(super) fn module_default(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    fns: &std::collections::HashMap<DefId, super::FnInfo>,
+    module_held: &[super::bindings::HeldBinding],
+) -> ModuleDefault {
+    let mut default = ModuleDefault::default();
+    for (function, span) in default_exports(tcx, module) {
+        let unset = default.export.is_none() && default.from.is_none();
+        match function {
+            Some(function)
+                if unset
+                    && function
+                        .as_local()
+                        .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
+            {
+                default.export = Some(function);
+                default.declared = default_declared(tcx, function);
+            }
+            Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
+                default.from = Some((function, span));
+            }
+            Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {
+                let reexported =
+                    (module_held.iter()).any(|held| held.binding == function && held.default && held.through.is_some());
+                if !reexported {
+                    default.export = Some(function);
+                }
+            }
+            _ => {
+                tcx.dcx().span_err(
+                    span,
+                    "rust-js: `js::export_default!` names one function or thread-local of its own module, once",
+                );
+            }
+        }
+    }
+    default
+}

@@ -361,6 +361,21 @@ pub fn lower_crate<'tcx>(
                 .collect(),
         })
         .collect();
+    // What each module re-exports, decided once, before any is lowered: what
+    // its JS writes, `export { one } from "./z.js"`, and its imports in the
+    // load-order graph (`module_imports`, #295).
+    let mut reexported: HashMap<LocalModId, _> = (modules.iter())
+        .map(|&module| {
+            let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
+            let default = super::default_exports::module_default(tcx, module, &fns, module_held);
+            let from = (default.from, module_held);
+            let reexports = super::reexports::reexports(tcx, module, (&fns, &foreign), &paths, from, &sources);
+            (module, (default, reexports))
+        })
+        .collect();
+    let reexports_from: Vec<load_cycles::ReexportFrom> = (reexported.iter())
+        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |r| (module, r.from.clone())))
+        .collect();
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
     let keeps_capacity = asks_capacity || foreign.keeps_capacity();
@@ -507,7 +522,7 @@ pub fn lower_crate<'tcx>(
                     lowered().flat_map(|d| &d.held),
                     lowered().flat_map(|d| &d.package_uses),
                 );
-                let imports = module_imports(tcx, &places, &fns, edges, &imported, js_modules);
+                let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
                 // A thread-local made as its module loads, of a function of a
                 // module that may load after it: made where it's first used,
                 // the crate lowered again so, a `pub` one refused (ADR 1006).
@@ -1009,7 +1024,7 @@ pub fn lower_crate<'tcx>(
         pass.held.iter(),
         pass.package_uses.iter(),
     );
-    let imports = module_imports(tcx, &places, &fns, edges, &imported, js_modules);
+    let imports = module_imports(&places, &fns, edges, (&imported, &reexports_from), js_modules);
     load_cycles::refuse_dictionaries_in_load_cycles(tcx, &pass, &const_items, (&modules, &imports));
     // The exported thread-locals and `static mut`s their modules made
     // their variables.
@@ -1099,50 +1114,14 @@ pub fn lower_crate<'tcx>(
             }
             // What it holds of a binding as a value of its own (ADRs 0622, 0633).
             let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
-            let mut default_export = None;
-            let mut default_declared = false;
-            // Another module's function, re-exported as the default (ADR 0240).
-            let mut default_from = None;
-            for (function, span) in super::default_exports::default_exports(tcx, module) {
-                let unset = default_export.is_none() && default_from.is_none();
-                match function {
-                    Some(function)
-                        if unset
-                            && function
-                                .as_local()
-                                .is_some_and(|local| tcx.parent_module_from_def_id(local) == module) =>
-                    {
-                        default_export = Some(function);
-                        default_declared = super::default_exports::default_declared(tcx, function);
-                    }
-                    Some(function) if unset && fns.get(&function).is_some_and(|info| info.owner.is_none()) => {
-                        default_from = Some((function, span));
-                    }
-                    // A binding, its `const` (ADRs 0622, 0633), or one it names
-                    // through another module that holds it, re-exported.
-                    Some(function) if unset && super::bindings::held_path(tcx, function).is_some() => {
-                        let reexported = (module_held.iter())
-                            .any(|held| held.binding == function && held.default && held.through.is_some());
-                        if !reexported {
-                            default_export = Some(function);
-                        }
-                    }
-                    _ => {
-                        tcx.dcx().span_err(
-                            span,
-                            "rust-js: `js::export_default!` names one function or thread-local of its own module, once",
-                        );
-                    }
-                }
-            }
-            let reexports = super::reexports::reexports(
-                tcx,
-                module,
-                (&fns, &foreign),
-                &paths,
-                (default_from, module_held),
-                &sources,
-            );
+            let (
+                super::default_exports::ModuleDefault {
+                    export: default_export,
+                    declared: default_declared,
+                    ..
+                },
+                reexports,
+            ) = reexported.remove(&module).expect("each module's re-exports");
             let aliased_items = aliases(tcx, module, &fns);
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
