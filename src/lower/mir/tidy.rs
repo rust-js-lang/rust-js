@@ -750,6 +750,7 @@ mod tests {
                 "bound captures",
                 "nulled as they are",
                 "written jumps",
+                "written ors",
                 "commented jumps"
             ]
         );
