@@ -536,7 +536,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0650 A `let` that shadows a binding read no more is that binding, assigned](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md) *(extended by 0853: a binding the variable it shadows is given last; amended: an `if` branch that does more than give the binding is set in place; amended: an `if` branch that's its own value, of a test that it's there, is its other way)*
 - [0651 A `let`, then its fallback where it's falsy, is `||`](0651-a-let-then-its-fallback-is-or.md)
 - [0652 Consecutive appends to a `String` are one `+=`](0652-consecutive-appends-are-one.md)
-- [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`)*
+- [0653 A JS function value is a `dyn Fn` of its signature](0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md) *(amended by 0700: TypeScript's `Function` gives any value; extended by 0740: its members, `js::function`; amended: an event handler's setter takes what its getter gives)*
 - [0654 A dictionary's member of any value is a `dyn IntoUnknown`](0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)
 - [0655 A binding of `any` as a value is a `fn` of `Option<&'static Unknown>`](0655-an-any-binding-as-a-value-is-a-fn-of-a-static-unknown.md)
 - [0656 An event's `emit` arguments are what TypeScript's `emit` takes](0656-an-events-emit-arguments-are-typescripts-emits.md)

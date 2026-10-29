@@ -963,21 +963,25 @@ const NAMED: Record<string, string> = {
   "Document.createElementNS": "create_element_ns_named",
 };
 
-/** What an event handler property's closure is, by its type, given its
- * event: `onclick`'s takes it; `onbeforeunload`'s gives the text that
+/** What an event handler property holds, by its type, given its event:
+ * `onclick`'s function takes it; `onbeforeunload`'s gives the text that
  * asks whether to leave, or none; `onerror`'s is given an error's event,
- * or on a window its message, where it was, and what was thrown, and gives
- * whether it's handled, `true` not reported, as TypeScript's are. `set`'s
- * is the closure Rust gives; `get`'s, the JS function it holds, a `dyn Fn`
- * of TypeScript's signature, its `any` result an `Unknown` (ADR 0653). */
+ * or on a window its message, where it was, and what was thrown. Its
+ * setter takes the function as its getter gives it, a `&'static dyn Fn`,
+ * as `remove_event_listener` does, so a handler read back is compared with
+ * the function set by `std::ptr::eq`, `node.onclick === noop` (ADR 0653,
+ * amended). Of `onclick`'s, TypeScript's `any` result is nothing a caller
+ * reads; `onerror`'s setter's function gives whether the error is handled,
+ * `true` not reported, while its getter's gives what JS's gave, any value,
+ * an `Unknown`: one a JS program set may give none. */
 const HANDLERS: Record<string, { set: (event: string) => string; get: (event: string) => string }> = {
-  EventHandler: { set: (event) => `FnMut(&${event})`, get: (event) => `Fn(&${event}) -> Option<&'static Unknown>` },
+  EventHandler: { set: (event) => `Fn(&${event})`, get: (event) => `Fn(&${event})` },
   OnBeforeUnloadEventHandler: {
-    set: (event) => `FnMut(&${event}) -> Option<String>`,
+    set: (event) => `Fn(&${event}) -> Option<String>`,
     get: (event) => `Fn(&${event}) -> Option<String>`,
   },
   OnErrorEventHandler: {
-    set: () => "FnMut(EventOrStr<'_>, Option<String>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool",
+    set: () => "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> bool",
     get: () => "Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> Option<&'static Unknown>",
   },
 };
@@ -1277,7 +1281,7 @@ function functionsOf(declared: Interface): Fn[] {
         fns.push({
           name: `set_${name}`,
           jsName: `set ${m.name}`,
-          params: [...self, `value: Option<Box<dyn ${handler.set(typeName(event))}>>`],
+          params: [...self, `value: Option<&'static dyn ${handler.set(typeName(event))}>`],
           result: "()",
           doc,
           nullable: ["value"],
@@ -1856,7 +1860,8 @@ for (const [name, js, callback, extra] of [
 line("}");
 line("impl<T: IsA<EventTarget>> EventTargetExt for T {}");
 line();
-line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove_event_listener.",
+line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove_event_listener",
+  "and an event handler property's setter, set_onclick(Some(listener(..))).",
   "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
   "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..)."], "this",
   "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));

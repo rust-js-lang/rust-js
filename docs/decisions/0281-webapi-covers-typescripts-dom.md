@@ -83,7 +83,8 @@ so nothing said when it fell behind.
   function or none, and a setter of a closure**, given the event its name
   is on the target, as `add_event_listener`'s is (ADR 0223): a button's
   `set_onclick` takes `Option<Box<dyn FnMut(&PointerEvent)>>`, whose `None`
-  is `null` (`rust_js::nullable`, ADR 0275). Members: 75.0% to 83.5%.
+  is `null` (`rust_js::nullable`, ADR 0275). (ADR 0653, amended: it takes
+  what its getter gives, `Option<&'static dyn Fn(&PointerEvent)>`.) Members: 75.0% to 83.5%.
 - **A constructor counts where WebIDL has one JS can call**: not where
   TypeScript declares `new()` and WebIDL has none, `new Node()`, nor an
   `[HTMLConstructor]` element's, which only a custom element's `super()`

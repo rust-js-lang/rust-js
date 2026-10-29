@@ -92,7 +92,7 @@ export function kinds(el, blob, param, bytes) {
 }
 
 /**
- * An event handler property, `onclick`: a closure given the event its name
+ * An event handler property, `onclick`: a function given the event its name
  * is on the target, a button's click a `PointerEvent`, or `None`, `null`.
  */
 export function handlers(button) {

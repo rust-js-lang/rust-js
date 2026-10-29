@@ -1019,7 +1019,7 @@ js::export_default! {
                     }
                 }
                 let channel = webapi::message_channel::new();
-                channel.port1().set_onmessage(Some(Box::new(move |_| callback())));
+                channel.port1().set_onmessage(Some(webapi::listener(move |_| callback())));
                 channel.port2().post_message((), None);
             }));
         }

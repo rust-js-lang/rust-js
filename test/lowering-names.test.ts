@@ -879,14 +879,14 @@ pub fn make(immediate: bool) -> Box<dyn Fn()> {
     } else {
         let channel = webapi::message_channel::new();
         let port = channel.port2();
-        channel.port1().set_onmessage(Some(Box::new(|_| work())));
+        channel.port1().set_onmessage(Some(&|_| work()));
         Box::new(move || port.post_message(None::<u8>, None))
     }
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = \(\) => work\(\);\n/);
+  expect(js).toMatch(/ const port = channel\.port2;\n +channel\.port1\.onmessage = work;\n/);
 });
 
 // ADR 0619: a thread-local of a primitive, never written, keeps its name as a

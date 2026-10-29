@@ -64,7 +64,7 @@ is `Option<&Unknown>`, a value of any shape, and an `any` result
   (ADR 0298 amended: `button.onclick != null`, as of any `Option`.)
 - **An event handler's setter keeps its closure**, `Option<Box<dyn
   FnMut(&E)>>`: a callback Rust gives JS to own (ADR 0260), not a value it
-  reads.
+  reads. (Amended below, rd128: it takes what its getter gives.)
 - **Held by a test, not a type**: `JsObject` is still the type of a JS
   object. `test/webapi-coverage.test.ts`, "a function the webapi crate
   reads is a dyn Fn of its signature, not a JsObject", fails on any
@@ -119,3 +119,56 @@ is `Option<&Unknown>`, a value of any shape, and an `any` result
   `callSite.getFunction()`.
 - `test/snapshots.test.ts`, `web_forms`: `!!button.onclick`, as before.
 - Mutations `dyn-fn-pointer-refused`, `dyn-fn-falsy`.
+
+## Amendment: an event handler's setter takes what its getter gives (rd128)
+
+The user's decision (2026-10-29, React port gap rd128). A handler's setter
+took a closure for JS to own, `set_onclick(Option<Box<dyn
+FnMut(&PointerEvent)>>)`, and its getter gave a function of TypeScript's
+signature, `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static
+Unknown>>`: two types of one property's value, so what was set couldn't be
+compared with what's read. React's ReactDOMComponent sets `node.onclick =
+noop` and later clears it only where it's still its own, `if (node.onclick
+=== noop) { node.onclick = null; }`; the port could write neither, and
+wrote `js::set(node, "onclick", noop as fn())`.
+
+**A handler's setter takes the function as its getter gives it, an
+`Option<&'static dyn Fn(&E)>`, `remove_event_listener`'s form** (ADR
+0282): `node.set_onclick(Some(&noop))` of `fn noop(_event:
+&PointerEvent) {}` is `node.onclick = noop;`, and
+`node.onclick().is_some_and(|onclick| std::ptr::eq(onclick, &noop))` is
+`node.onclick === noop` (ADR 0562, amended: a fn item's pointer is the
+function). A closure that captures nothing is lent as it is, `Some(&|_|
+work())`; one that captures is `webapi::listener(move |event| ..)`'s,
+which is the closure itself.
+
+| Handler | Setter and getter |
+|---|---|
+| `EventHandler`, `onclick` and 760 more | `Option<&'static dyn Fn(&E)>` |
+| `onbeforeunload` | `Option<&'static dyn Fn(&BeforeUnloadEvent) -> Option<String>>` |
+| `onerror` | `Option<&'static dyn Fn(EventOrStr<'_>, Option<&str>, Option<f64>, Option<f64>, Option<&Unknown>) -> R>` |
+
+- **`onclick`'s getter gives no result**: TypeScript's `any` of `(ev) =>
+  any` is what no caller reads, as a handler's result is never read but
+  `onerror`'s and `onbeforeunload`'s; a JS handler's result is dropped,
+  as a call of a `dyn Fn(&E)` drops it.
+- **`onerror`'s setter's `R` is `bool`, its getter's `Option<&'static
+  Unknown>`**: what Rust sets says whether the error is handled, `true` not
+  reported; what JS set may give any value, or none, which a `bool` would
+  claim it can't. Its other parameters are one type in both, `Option<&str>`
+  the source, not the setter's `Option<String>`. Comparing a Rust function
+  with what `onerror` holds is the one comparison left without a type; no
+  program has needed it.
+- **A handler that keeps its own state captures a `Cell`**, as a listener
+  does: a `dyn Fn` can't change what it captures.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
+function it is, set, read and compared as JS does.
+
+Held by `test/bindings.test.ts`, "a function JS gives is a dyn Fn of its
+signature": an `onclick` set to a fn item, read back and compared, cleared
+where it's still that function, kept in a thread-local, called and set to
+a closure that captures, each as JS and run; `test/web_forms.rs`'s
+handlers, `onerror` and `onbeforeunload` too, and its snapshot;
+`test/webapi-coverage.test.ts`, "the webapi crate is what its generator
+writes".

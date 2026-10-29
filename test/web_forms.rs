@@ -81,12 +81,12 @@ pub fn kinds(
     (names, languages.len(), blob.size(), param.value(), node::ELEMENT_NODE, into.written)
 }
 
-/// An event handler property, `onclick`: a closure given the event its name
+/// An event handler property, `onclick`: a function given the event its name
 /// is on the target, a button's click a `PointerEvent`, or `None`, `null`.
 pub fn handlers(button: &webapi::HTMLButtonElement) -> bool {
-    button.set_onclick(Some(Box::new(|e: &webapi::PointerEvent| {
-            e.prevent_default();
-        })));
+    button.set_onclick(Some(&|e: &webapi::PointerEvent| {
+        e.prevent_default();
+    }));
     let set = button.onclick().is_some();
     button.set_onclick(None);
     set
@@ -159,8 +159,8 @@ pub fn statics_read() -> (String, &'static webapi::Response) {
 /// message, and gives whether it's handled; `onbeforeunload`'s gives the
 /// text that asks whether to leave, or none.
 pub fn on_errors(button: &webapi::HTMLButtonElement) -> bool {
-    button.set_onerror(Some(Box::new(|e, _, _, _, _| matches!(e, webapi::EventOrStr::Str(_)))));
-    webapi::window.set_onbeforeunload(Some(Box::new(|_| None)));
+    button.set_onerror(Some(&|e, _, _, _, _| matches!(e, webapi::EventOrStr::Str(_))));
+    webapi::window.set_onbeforeunload(Some(&|_| None));
     button.onerror().is_some()
 }
 

@@ -862,10 +862,16 @@ export async function open(other) {
   never is; and one a binding gives back, as `widen` does, is Rust's
   again ([ADR 0873](../../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
-  `any` an `Option<&Unknown>`: `button.onclick()` is an
-  `Option<&'static dyn Fn(&PointerEvent) -> Option<&'static Unknown>>`, to
-  call, keep, or compare by `std::ptr::eq`, which is `===`
+  `any` an `Option<&Unknown>`, to call, keep, or compare by
+  `std::ptr::eq`, which is `===`
   ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
+  An event handler property is set to what it gives, an
+  `Option<&'static dyn Fn(&PointerEvent)>` of `button.onclick()`:
+  `button.set_onclick(Some(&noop))` of `fn noop(_event: &PointerEvent) {}`
+  is `button.onclick = noop`, `button.onclick().is_some_and(|f|
+  std::ptr::eq(f, &noop))` is `button.onclick === noop`, and a closure
+  that captures is `webapi::listener(move |event| ..)`'s, the closure
+  itself (ADR 0653, amended).
   TypeScript's `Function`, of whatever it takes, is `&dyn Fn() ->
   Option<&'static Unknown>`, called of nothing for any value, as
   `js::Kind::Function` holds it
