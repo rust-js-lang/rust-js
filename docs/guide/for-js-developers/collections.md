@@ -736,11 +736,17 @@ export function at(b, row, col) {
   ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).
   A `PartialEq` of `ptr::eq` alone, with no `Hash`, is `===` too, React's
   update, `a != b` of two `Option<Rc<Update>>` `a != b`; only a set or a
-  map of it asks for the `Hash` (ADR 0864, amended):
+  map of it asks for the `Hash` (ADR 0864, amended). What holds one, an
+  `Option`, a tuple, a `Vec` or a derived struct, compares it by `===`
+  too, never by `$eq`, which would walk its fields: two fibers alike are
+  told apart, and a fiber's `alternate`, a cycle, is never walked, in
+  its crate or another's
+  ([ADR 1015](../../decisions/1015-what-holds-an-identity-is-never-eq-of-its-contents.md)):
 
 ```rust
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
 pub struct Fiber {
     pub lanes: u32,
@@ -773,6 +779,16 @@ pub fn updated(fibers: &[&'static Fiber]) -> usize {
 pub fn same(a: &Fiber, b: &Fiber) -> bool {
     a == b
 }
+
+#[derive(PartialEq)]
+pub struct Listener {
+    pub instance: Option<Rc<Fiber>>,
+    pub name: String,
+}
+
+pub fn same_listener(a: &Listener, b: &Listener) -> bool {
+    a == b
+}
 ```
 
 ```js
@@ -788,6 +804,10 @@ export function updated(fibers) {
 
 export function same(a, b) {
   return a === b;
+}
+
+export function sameListener(a, b) {
+  return a.instance == b.instance && a.name === b.name;
 }
 ```
 

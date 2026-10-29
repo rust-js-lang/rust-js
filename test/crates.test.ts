@@ -474,6 +474,19 @@ test("a library's type equal only to itself keys its consumer's Set by itself", 
   expect(app).not.toContain("$borrow");
 }, 300_000);
 
+// rd104 (#397): what a consumer compares that holds a library's type equal
+// only to itself, React's `previous_instance != Some(instance)` of an
+// `Option<&Option<Rc<Fiber>>>`, compares the fibers by `===`, never by
+// `$eq`, which walks their fields and overflows the stack on a cycle; and
+// a derived struct of the library's holding one, by its parts.
+test("a consumer's == of what holds a library's type equal only to itself is never $eq", () => {
+  const out = chain(pairs, "library_eq", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("function sameInstance(previous, instance) {\n  const right = $some(instance);\n  return previous == null || right == null\n    ? previous == right\n    : $someValue(previous) == $someValue(right);\n}");
+  expect(app).toContain("dispatch.instance == right$8.instance && dispatch.name === right$8.name");
+  expect(app.match(/\$eq\([^)]*\)/g)).toEqual(["$eq(p, q)", "$eq(p, r)", "$eq(p, q)"]);
+}, 300_000);
+
 // ADR 0863: a library's `RefCell`s, as React's `Transition` holds its
 // types: a plain field the value it holds, an `Rc`'s `RefCell<Vec<String>>`
 // the array, an `Option`'s `RefCell<HashSet<u32>>` the `Set`, none of whose

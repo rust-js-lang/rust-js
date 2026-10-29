@@ -1,6 +1,8 @@
 # 0053. `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md).
+Amended by [1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md):
+an object `===` compares, one equal only to itself, is a custom part too.
 Amended: `==` of two types, `PartialEq<Rhs>`'s, is `eq_values`': of items
 of two types, `[A::Item] == [B::Item]`, each by its own, and of two types
 a bound compares, `A::Item: PartialEq<B::Item>`, its dictionary's, as

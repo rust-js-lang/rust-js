@@ -4,7 +4,9 @@ Status: Accepted. Amended: `==` of two values of one is `===` too, and
 its `PartialEq`'s dictionary is written only where it's reached; and a
 library's contract lists its, which its consumers key by themselves;
 and an `Rc` of one is equal only to itself too; and a `PartialEq` of
-`ptr::eq` alone is `===`, whatever its `Hash`.
+`ptr::eq` alone is `===`, whatever its `Hash`. Amended by
+[1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md):
+what holds one compares it by `===`, never by `$eq`.
 Extends [0463](0463-hashing-is-stds.md) (`ptr::hash`
 writes its pointer's address) and [0582](0582-ptr-eq-of-an-object-is-its-identity.md)
 (`ptr::eq` of objects is `===`) to a set's and a map's keys, and

@@ -909,6 +909,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(self.tcx, adt.did()))
     }
 
+    /// Of a `ty` that `===` compares as `==` does (`js_eq`), whether it
+    /// may be an object, which `===` compares by itself and `$eq` by what's
+    /// in it: a value of any shape (ADR 0612, amended), one equal only to
+    /// itself, a library's too, and an `Rc` of one (ADR 0864), and an
+    /// untagged enum with a payload of one, which is its value (ADR 0214).
+    fn eq_of_objects(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        let of_one = |(adt, args): (ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>)| {
+            (adt.variants().iter().flat_map(|variant| variant.fields.iter()))
+                .any(|field| self.eq_of_objects(self.field_ty(field, args)))
+        };
+        self.any_shape(ty) || self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)
+    }
+
     /// Does `==` on `ty` run code of its own anywhere in it: a hand-written
     /// `eq`, or a `T`'s, which might be one? If not, it compares field by
     /// field, element by element, which `$eq` does.
@@ -918,13 +932,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn custom_eq_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
-        // A value of any shape is compared by `===`, not by what's in it,
-        // as `$eq` would (ADR 0612, amended).
-        if self.any_shape(ty) {
-            return true;
-        }
-        if seen.contains(&ty) || self.js_eq(ty).is_some() {
+        if seen.contains(&ty) {
             return false;
+        }
+        // What `===` compares as `==` does: custom where it's an object,
+        // which `===` compares by itself and `$eq` by what's in it (ADRs
+        // 0612, amended, and 0864, amended).
+        if self.js_eq(ty).is_some() {
+            return self.eq_of_objects(ty);
         }
         seen.push(ty);
         let custom = match ty.kind() {
