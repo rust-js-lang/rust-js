@@ -710,3 +710,20 @@ the snapshots or the suites reached it; now
 `test/corpus/guarded_match_ends_function.rs` does, against native Rust,
 and holds its two mutations again, `tail-returns-branch-else-after` and
 `tail-returns-of-branches-only-at-the-top`.
+
+## Amendment: no `return;` follows the last loop where its jumps are kept (2026-10-29, #410)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a pass's dead
+branch removed; the JS is unchanged.
+
+The mutation `last-loop-before-return-unseen` survived every check:
+`kept_jumps` (`tidy/jumps/continues.rs`) looked past a `return;` MIR left
+after the loop a function ends with, but by `finish` none is there. The
+`let … else` guard first of this amendment's predecessor moved the rest
+out of the `if`, and `tail returns` takes the `return;` after it. Each of
+the corpus's 1,290 cases compiled with a probe at that line met one
+trailing `return;` (`guarded_arm_chains.rs`, after a `switch`), and no
+loop before one. The look is removed with its mutation; the loop the
+function ends with is its last statement. A body that ends `loop; return;`
+there again would print the loop's written `break` as MIR's `return;`,
+which does the same, and the corpus case's `break` would show it.

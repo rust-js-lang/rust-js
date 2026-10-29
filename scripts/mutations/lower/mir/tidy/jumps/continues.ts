@@ -331,15 +331,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
   },
   {
-    name: "last-loop-before-return-unseen",
-    breaks: "a loop the function ends with, before MIR's `return;`, prints the program's `break` as `return;` (ag6, ADR 0684, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "    let end = body.len() - usize::from(body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))));\n",
-    replace: "    let end = body.len();\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
-    snapshots: true,
-  },
-  {
     name: "blocks-breaking-loops-kept",
     breaks: "a block MIR made that a loop's turn ends with, then the loop's `break;`, stays, its arms' `break bb22;` of it: `bb22: { switch (codes[value]) { case 97: break bb22; .. } .. continue; } break;` (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",

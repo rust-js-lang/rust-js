@@ -125,12 +125,12 @@ pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards:
 /// the program wrote without one, which now never goes on, preparation's
 /// `unelsed` puts after it again (ADR 0237).
 pub(in crate::lower::mir::tidy) fn kept_jumps(body: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Written) {
-    // The loop before the `return;` the function ends with, MIR's, too (ag6).
-    let end = body.len() - usize::from(body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))));
+    // The loop the function ends with: no `return;` of MIR's follows it
+    // here, as `tail returns` took it (#410).
     if let Some(Stmt {
         kind: StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. },
         ..
-    }) = body[..end].last_mut()
+    }) = body.last_mut()
     {
         kept_in_turn(body, written, Kept::Breaks, true);
     }
