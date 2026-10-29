@@ -261,3 +261,40 @@ import { lane } from "./lanes.js";
 `);
   expect((tree.lib.named as () => string)()).toBe("App 3");
 });
+
+// The pilot's modules start with what each is for, `//! Where the app is:
+// ..`, above their `use`s: a plain comment above the imports (ADR 0444's
+// rule 3), but JS has no doc comment of what it's in, so it's JS's plain
+// one, `// Where the app is: ..`, and a `/*! .. */` a `/* .. */`, above
+// the imports or, with none, the code.
+test("a module's inner doc comment is a plain JS comment", async () => {
+  const dir = fixture("inner-doc-above-imports");
+  writeFileSync(join(dir, "lib.rs"), `//! Where the app is: its URL's hash,
+//! followed as it changes.
+
+use crate::lanes::lane;
+
+pub mod lanes {
+    /*! The lanes. */
+
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn named() -> u32 {
+    lane()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`// Where the app is: its URL's hash,
+// followed as it changes.
+import { lane } from "./lanes.js";
+`);
+  expect(js).not.toContain("//!");
+  const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
+  expect(lanes).toContain("/* The lanes. */\n\nexport function lane() {");
+  expect(lanes).not.toContain("/*!");
+  expect((await import(join(dir, "lib.js"))).named()).toBe(1);
+});

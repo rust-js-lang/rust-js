@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-10-29): a comment above a `use` is above the import it makes. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -637,3 +637,27 @@ now keep theirs.
   `type-use-is-code` (`to_oxc/openings.ts`), `use-tree-at-its-leaf`,
   `binding-use-makes-no-import` and `module-use-makes-no-import`
   (`lower/analysis/naming.ts`).
+
+## Amendment: an inner doc comment is written as JS's plain one (2026-10-29)
+
+The coordinator's decision. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, no observable difference: a comment.
+
+Rule 3 made `//!` a plain comment, but it was printed as Rust writes it,
+`//! Where the app is: ..`, above the pilot's imports, which no JS file
+writes: JS has no doc comment of the module or block it's in, and a
+`/*! */` is a minifier's "keep this", a license's.
+
+**An inner doc comment, `//!` or `/*!`, is written as JS's plain comment,
+`// Where the app is: ..` and `/* .. */`**, wherever it's printed: above
+the imports (`to_oxc/header.rs`), before a statement (oxc, which prints a
+comment's text from its span, so its JS form is written past the source,
+as a case's `// falls through` is), and after code or a value. One
+function says it, `comments::in_js`. The pilot's committed JS and the
+`builtins`, `todomvc` `item` and `web_forms` snapshots are re-blessed.
+
+- Held by `test/lowering-comments-items.test.ts`, "a module's inner doc
+  comment is a plain JS comment", run: a module's `//!` lines above its
+  import, and an inline module's `/*!` above its code. Mutations
+  `inner-doc-kept-in-js` (`comments.ts`) and
+  `inner-doc-printed-from-source` (`to_oxc.ts`).

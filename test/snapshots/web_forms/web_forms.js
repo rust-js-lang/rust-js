@@ -2,8 +2,8 @@
 
 import { $byteLen, $next, $unwrap } from "@rust-js/runtime";
 
-//! Every JS form the webapi crate's bindings use (ADR 0024), for the test to
-//! check in the generated JS.
+// Every JS form the webapi crate's bindings use (ADR 0024), for the test to
+// check in the generated JS.
 
 export function forms() {
   const input = document.createElement("input");

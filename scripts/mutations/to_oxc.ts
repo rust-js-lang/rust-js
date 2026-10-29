@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inner-doc-printed-from-source",
+    breaks: "a `/*!` a statement's comment is printed by oxc from the source as written, not as `in_js` writes it, `/* The lanes. */` (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                let (lo, hi) = match js != text[lo as usize..hi as usize] {\n",
+    replace: "                let (lo, hi) = match false && js != text[lo as usize..hi as usize] {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment"],
+  },
+  {
     name: "object-end-comment-a-line-of-nothing-before",
     breaks: "a comment before an object's `}` first on its line has a line of nothing before it, which oxfmt keeps",
     file: "src/to_oxc.rs",
@@ -247,8 +255,8 @@ export const mutations: Mutation[] = [
     name: "value-comment-after-declaration",
     breaks: "`NoMode = /* .. */ 0b0000000`'s comment is after `export`, `export /* .. */ const NoMode = 0b0000000`, not before its value (ADR 0630, amended)",
     file: "src/to_oxc.rs",
-    find: "                    before_value,\n                    text: written.to_string(),\n",
-    replace: "                    before_value: false,\n                    text: written.to_string(),\n",
+    find: "                    before_value,\n                    text: crate::comments::in_js(written),\n",
+    replace: "                    before_value: false,\n                    text: crate::comments::in_js(written),\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
   },
   {

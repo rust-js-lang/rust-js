@@ -530,7 +530,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     column: (c.lo as usize - line_start) as u32,
                     inside,
                     before_value,
-                    text: written.to_string(),
+                    text: crate::comments::in_js(written),
                     after_param,
                 });
             }
@@ -555,7 +555,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     column,
                     inside: false,
                     before_value: false,
-                    text: sources.text[c.lo as usize..c.hi as usize].to_string(),
+                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                 });
             }
@@ -571,7 +571,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     column,
                     inside: true,
                     before_value: true,
-                    text: sources.text[c.lo as usize..c.hi as usize].to_string(),
+                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                 });
             }
@@ -843,7 +843,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             if import_starts.contains(&at) {
                 let texts = own
                     .iter()
-                    .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                    .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                 imports.entry(at).or_default().extend(texts);
                 continue;
             }
@@ -866,7 +866,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 if !inside.is_empty() {
                     let texts = inside
                         .iter()
-                        .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                        .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                     arm_comments.push((at, hi, operator, texts.collect()));
                 }
                 own = before;
@@ -889,7 +889,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             {
                 let texts = own
                     .iter()
-                    .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                    .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                 arm_comments.push((at, hi, "}", texts.collect()));
                 continue;
             }
@@ -900,7 +900,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 if !own.is_empty() {
                     let texts = own
                         .iter()
-                        .map(|c| sources.text[c.lo as usize..c.hi as usize].to_string());
+                        .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
                     arm_comments.push((at, hi, operator, texts.collect()));
                 }
                 continue;
@@ -999,6 +999,18 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 *top = (*top).min(first.lo);
             }
             for (lo, hi) in pieces {
+                // An inner doc comment, as JS writes it, `//` (`in_js`):
+                // oxc prints a comment's text from where its span is, so
+                // it's written past the source, as `FALLTHROUGH` is.
+                let js = crate::comments::in_js(&text[lo as usize..hi as usize]);
+                let (lo, hi) = match js != text[lo as usize..hi as usize] {
+                    true => {
+                        let at = text.len() as u32;
+                        text.push_str(&js);
+                        (at, text.len() as u32)
+                    }
+                    false => (lo, hi),
+                };
                 let written = &text[lo as usize..hi as usize];
                 if case.is_some() && cases::says_fallthrough(written) {
                     said_fallen.insert(attached_to);

@@ -60,6 +60,17 @@ pub fn leading_comments(text: &str) -> &str {
     &text[..end]
 }
 
+/// A Rust comment as JS writes it: an inner doc comment, a module's or a
+/// block's, `//!` or `/*!`, is plain in JS, which has no doc comment of
+/// what it's in, `//` or `/*` (ADR 0444, amended); every other as written.
+pub fn in_js(comment: &str) -> String {
+    match (comment.strip_prefix("//!"), comment.strip_prefix("/*!")) {
+        (Some(rest), _) => format!("//{rest}"),
+        (_, Some(rest)) => format!("/*{rest}"),
+        _ => comment.to_string(),
+    }
+}
+
 /// Whether a Rust comment, as written, without a CRLF's `\r`, is one comment
 /// in JS too, and so can be written there: JS ends a block comment at its
 /// first `*/`, where Rust nests them, and a line comment at a carriage

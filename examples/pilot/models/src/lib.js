@@ -2,8 +2,8 @@
 
 import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/runtime";
 
-//! What the client and the server agree on: the JSON each sends, and the
-//! rules a contact must keep, checked on both sides.
+// What the client and the server agree on: the JSON each sends, and the
+// rules a contact must keep, checked on both sides.
 
 /** A contact the server has stored. */
 export function contactSerialize_serialize(contact, json) {

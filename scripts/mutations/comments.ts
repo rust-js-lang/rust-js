@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inner-doc-kept-in-js",
+    breaks: "a module's `//!` above its imports, and a `/*!` above its code, print as Rust writes them, `//! Where the app is: ..`, not JS's plain `// ..` (ADR 0444, amended)",
+    file: "src/comments.rs",
+    find: "        (Some(rest), _) => format!(\"//{rest}\"),\n        (_, Some(rest)) => format!(\"/*{rest}\"),\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment"],
+  },
+  {
     name: "head-comment-cut-inside-a-comment",
     breaks: "a file's leading block comment with a blank line in it is cut at that line, and rust-js writes an unterminated `/*` (#312)",
     file: "src/comments.rs",
