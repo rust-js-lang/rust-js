@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "valued-arrow-declared",
+    breaks: "a function held as a value, an `Rc`'s or a `Box`'s of a closure, is declared, `function commitHook(n) { .. }` (ADR 0882, amended)",
+    file: "src/prepare.rs",
+    find: "        if value.facts.has(js::Known::Valued) {\n            continue;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-arrows.test.ts", "-t", "a let of an Rc or a Box"],
+  },
+  {
     name: "let-else-guard-a-loop-head",
     breaks: "a `let … else`'s guard first in a loop is the loop's test, `while ((parentA = a.return) != null)`, not the guard written (ADR 0879, amended)",
     file: "src/prepare.rs",

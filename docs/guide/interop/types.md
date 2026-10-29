@@ -2136,9 +2136,9 @@ pub fn update_transition(hook: &Hook) -> Rc<dyn Fn(bool)> {
 
 ```js
 export function mountTransition(hook, pending) {
-  function start(value) {
+  const start = (value) => {
     pending.value = value;
-  }
+  };
   hook.memoizedState = start;
   return start;
 }

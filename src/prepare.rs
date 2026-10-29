@@ -84,6 +84,11 @@ fn declared_functions(stmts: &mut [Stmt]) {
         let (ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body)) = &value.kind else {
             continue;
         };
+        // A function held as a value, an `Rc`'s or a `Box`'s of a closure,
+        // stays a `const` of its arrow (ADR 0882, amended).
+        if value.facts.has(js::Known::Valued) {
+            continue;
+        }
         let mut own = js::reads_this(body);
         js::each_expr(body, &mut |e| {
             own |= matches!(&e.kind, ExprKind::Var(v) if v == "arguments")

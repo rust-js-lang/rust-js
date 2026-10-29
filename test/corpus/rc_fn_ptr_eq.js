@@ -28,9 +28,9 @@ function onCommitRoot() {
 }
 
 function observe(n) {
-  function commitHook() {
+  const commitHook = () => {
     console.log(`hook ${n}`);
-  }
+  };
   $withBorrowMut(
     commitHooks,
     (commitHooks) => {

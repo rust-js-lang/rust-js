@@ -729,6 +729,12 @@ pub enum Known {
     /// collected, `Array.from(set)`, as JS writes it (`Expr::collected`,
     /// the user's decision, bw8).
     ReceiverIterated,
+    /// A function the program holds as a value, a variable's of an `Rc` or
+    /// a `Box` of a closure, `let commit_hook: Rc<dyn Fn()> = Rc::new(..)`:
+    /// a `const` of its arrow, `const commitHook = () => { .. }`, as
+    /// TypeScript writes a value of a function's type, never a function
+    /// declared, which a closure a `let` binds is (ADR 0882, amended).
+    Valued,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

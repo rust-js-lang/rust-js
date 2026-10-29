@@ -688,3 +688,107 @@ pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) 
         .iter()
         .position(|field| holds_value(tcx, field))
 }
+
+/// Is `ty` an `Rc`, an `Arc` or a `Box` of a function, a closure or a
+/// `dyn Fn`: a function held as a value (`js::Known::Valued`)?
+pub(crate) fn holds_a_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let held = match ty.kind() {
+        ty::Adt(adt, _) if adt.is_box() => ty.boxed_ty(),
+        _ => rc_pointee(tcx, ty),
+    };
+    held.is_some_and(|held| match held.kind() {
+        ty::Closure(..) => true,
+        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),
+        _ => false,
+    })
+}
+
+/// What a call of std's does in a closure's handle on itself, an `Rc` of a
+/// `RefCell` of the `Weak` its own `Rc` was made of (ADR 0843, amended):
+/// each step of making the cell, setting it and reading it back.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum HandleStep {
+    /// `Rc::new` or `Arc::new`.
+    RcNew,
+    /// `RefCell::new`.
+    CellNew,
+    /// An `Rc`'s `Clone::clone`.
+    RcClone,
+    /// An `Rc`'s `Deref::deref`.
+    RcDeref,
+    /// `Rc::downgrade`.
+    Downgrade,
+    /// `RefCell::borrow_mut`.
+    BorrowMut,
+    /// A `RefMut`'s `DerefMut::deref_mut`.
+    GuardDerefMut,
+    /// `RefCell::borrow`.
+    Borrow,
+    /// A `Ref`'s `Deref::deref`.
+    GuardDeref,
+    /// `Option::as_ref`.
+    AsRef,
+    /// `Option::and_then`.
+    AndThen,
+    /// `Option::unwrap`.
+    Unwrap,
+    /// `Weak::upgrade`, given as a function.
+    Upgrade,
+}
+
+/// Which `HandleStep` a call of `id`, of `args`, is, if any.
+pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<HandleStep> {
+    let self_ty = || args.types().next();
+    let adt_of = |ty: Option<Ty<'tcx>>| match ty.map(|ty| *ty.kind()) {
+        Some(ty::Adt(adt, _)) => Some(adt.did()),
+        _ => None,
+    };
+    if tcx.is_lang_item(id, LangItem::CloneFn) {
+        return self_ty()
+            .and_then(|ty| rc_pointee(tcx, ty))
+            .map(|_| HandleStep::RcClone);
+    }
+    if tcx.is_diagnostic_item(Symbol::intern("deref_method"), id) {
+        let of = self_ty()?;
+        if rc_pointee(tcx, of).is_some() {
+            return Some(HandleStep::RcDeref);
+        }
+        return adt_of(Some(of))
+            .filter(|&adt| is_std_def(tcx, adt, StdItem::RefCellRef))
+            .map(|_| HandleStep::GuardDeref);
+    }
+    if tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), id) {
+        return adt_of(self_ty())
+            .filter(|&adt| is_std_def(tcx, adt, StdItem::RefCellRefMut))
+            .map(|_| HandleStep::GuardDerefMut);
+    }
+    if is_rc_new(tcx, id) {
+        return Some(HandleStep::RcNew);
+    }
+    let imp = tcx.inherent_impl_of_assoc(id)?;
+    let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
+    let name = tcx.item_name(id);
+    match name.as_str() {
+        "downgrade" if rc_pointee(tcx, owner).is_some() => Some(HandleStep::Downgrade),
+        "upgrade" if weak_pointee(tcx, owner).is_some() => Some(HandleStep::Upgrade),
+        "new" | "borrow" | "borrow_mut"
+            if adt_of(Some(owner)).is_some_and(|adt| is_std_def(tcx, adt, StdItem::RefCell)) =>
+        {
+            Some(match name.as_str() {
+                "new" => HandleStep::CellNew,
+                "borrow" => HandleStep::Borrow,
+                _ => HandleStep::BorrowMut,
+            })
+        }
+        "as_ref" | "and_then" | "unwrap"
+            if adt_of(Some(owner)).is_some_and(|adt| tcx.is_lang_item(adt, LangItem::Option)) =>
+        {
+            Some(match name.as_str() {
+                "as_ref" => HandleStep::AsRef,
+                "and_then" => HandleStep::AndThen,
+                _ => HandleStep::Unwrap,
+            })
+        }
+        _ => None,
+    }
+}

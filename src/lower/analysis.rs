@@ -24,6 +24,8 @@ mod naming;
 mod only_called;
 mod plain_locals;
 mod rc_counts;
+mod self_handles;
+pub(super) use self_handles::SelfHandles;
 mod throwing;
 mod unwinding;
 
@@ -512,6 +514,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
+    /// Each closure's handle on itself, of those uncounted (ADR 0843,
+    /// amended).
+    pub self_handles: SelfHandles<'tcx>,
     /// What each body may borrow, of its cells (ADR 0580).
     pub cell_borrows: CellBorrows<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
@@ -862,12 +867,15 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // counts none of, which that library's contract decides for every
     // consumer, refusing one that would count it: only what the crate's
     // own calls give (ADR 0852, amended).
+    // Each closure's handle on itself, whose upgrades ask no count (ADR
+    // 0843, amended).
+    let mut self_handles = SelfHandles::new(tcx, all_bodies);
     let counted_with = |closure_facts: &ClosureFacts| {
         let mut given: HashSet<(DefId, u32)> = HashSet::new();
         loop {
             let counted = counted_rcs(
                 tcx,
-                all_bodies,
+                (all_bodies, &self_handles),
                 (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {
                     library && !foreign.counts_no_rc_of_its_type(pointee) || given.contains(&(owner, index))
                 }),
@@ -956,6 +964,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     if !told {
         return None;
     }
+    // A handle on itself is no JS where nothing counts its `Rc`.
+    self_handles.uncounted(|pointee| counted.counts(tcx, pointee));
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
@@ -1243,6 +1253,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         paths,
         mutated,
         counted,
+        self_handles,
         cell_borrows,
         closure_facts,
         cloned,

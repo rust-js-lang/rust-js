@@ -664,7 +664,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0877 A set's `for_each` is the set's own `forEach`](0877-a-sets-for-each-is-its-own.md)
 - [0878 `instanceof` of a constructor held as a value is `js::instance_of`](0878-instanceof-of-a-constructor-value.md)
 - [0879 An `if` reads as written, and a closure's captures are read in place](0879-an-if-and-a-closures-captures-read-as-written.md) *(amended: a returned value of branches MIR turned is as written; a written negation of a chain stays one; an `if` without an `else` keeps its body inside; a `let … else` before a written `return` is a guard first; a `!` of a chain the program didn't write is De Morgan's; an `else` after a branch that returns stays where statements follow; a function's last `match` of arms that give `()` is its arms; amended: `let … else`s that each `break` a loop are each its guard; amended: `if`s written without an `else` that each `break` a loop end with it; amended: a unit function's early `return`s MIR joined to its end are each a guard; amended: a last `match` of a guarded arm whose arms are each an `if … else` is its chain)*
-- [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md) *(amended: the comments and blank line before it are before the method; a `let`'s closure of statements is a function declared; in an object with a method, each function field is one)*
+- [0882 A field that's a closure of statements is a method](0882-a-field-of-statements-is-a-method.md) *(amended: the comments and blank line before it are before the method; a `let`'s closure of statements is a function declared; in an object with a method, each function field is one; amended: a function held as a value is a `const` of its arrow)*
 - [0883 A closure written as its call's value is an arrow of that value](0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)
 - [0885 A closure value is given to a JS helper as it is](0885-a-closure-value-is-given-as-it-is.md)
 - [0886 A function's evidence is one ordered list](0886-a-functions-evidence-is-one-ordered-list.md)
@@ -800,7 +800,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`)*
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md)
-- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md)
+- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)

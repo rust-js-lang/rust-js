@@ -60,6 +60,13 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// What it does with struct's `RefCell` fields no borrow of which can
     /// meet another (`quiet_cells`).
     quiet_cells: QuietCells,
+    /// What it writes nothing of, a closure's handle on itself, its cell
+    /// (`analysis/self_handles.rs`, ADR 0843, amended).
+    unlowered: HashSet<mir::Location>,
+    /// Of a closure that reads its handle on itself: each block whose
+    /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
+    /// name, which that local is.
+    own: Option<(HashMap<BasicBlock, Local>, Expr)>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -151,6 +158,19 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     pub(super) fn quiet_cells(&self) -> &QuietCells {
         &self.quiet_cells
     }
+
+    /// Whether the statement or terminator `at` is no JS, of a handle on
+    /// itself's cell.
+    pub(super) fn unlowered(&self, at: mir::Location) -> bool {
+        self.unlowered.contains(&at)
+    }
+
+    /// Of a block whose call gives the closure's own `Rc`, the local it's
+    /// given to and the closure's own name.
+    pub(super) fn own(&self, block: BasicBlock) -> Option<(Local, &Expr)> {
+        let (blocks, name) = self.own.as_ref()?;
+        blocks.get(&block).map(|&local| (local, name))
+    }
 }
 
 /// What naming a body's locals settles, before the first statement is
@@ -204,9 +224,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         mir: &'m Mir<'tcx>,
         (locals, drops, captures): (&Locals, Option<drops::Elaboration<'tcx>>, Vec<(Expr, bool)>),
-        seed: Option<&offsets::Seed>,
+        (seed, own): (Option<&offsets::Seed>, Option<Expr>),
     ) -> (LocalFacts<'m, 'tcx>, Vec<(Local, Local)>) {
         let body = &mir.body;
+        let def_id = body.source.def_id();
+        let handles = self.krate.self_handles;
+        let own = own.and_then(|name| Some((handles.read_by(def_id)?.own.clone(), name)));
         let options = self.mir_option_writes(body, &mir.promoted, locals);
         let bindings = self.mir_held_bindings(body, &options.held);
         let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
@@ -233,6 +256,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             drops,
             captures,
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
+            unlowered: handles.unlowered(def_id),
+            own,
         };
         (facts, bindings)
     }

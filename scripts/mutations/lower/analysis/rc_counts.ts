@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "self-handle-upgrade-counts",
+    breaks: "a closure's upgrade of its handle on itself counts its `Rc`, `{ value, strong, weak }`, where it always gives that `Rc` (ADR 0843, amended)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    && !self_handles.asks_no_count(body.def_id, expr.span)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^self_handle.rs$"],
+    snapshots: true,
+  },
+  {
     name: "library-counts-every-rc",
     breaks: "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",

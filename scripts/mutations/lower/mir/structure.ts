@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "self-handle-own-unnamed",
+    breaks: "a closure's upgrade of its handle on itself is written nowhere, the local it gives read undeclared, not the closure's own name",
+    file: "src/lower/mir/structure.rs",
+    find: "            if let Some((own, name)) = state.facts.own(block) {\n                state.in_place.insert(own, name.clone());\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^self_handle.rs$"],
+  },
+  {
+    name: "self-handle-cell-written",
+    breaks: "a handle's cell's statements are written though its calls aren't, `const this$ = ..` of nothing",
+    file: "src/lower/mir/structure.rs",
+    find: "            if state.facts.unlowered(at) {\n                out.extend(made);\n",
+    replace: "            if false && state.facts.unlowered(at) {\n                out.extend(made);\n",
+    tests: ["test/corpus.test.ts", "-t", "^self_handle.rs$"],
+    snapshots: true,
+  },
+  {
     name: "settle-before-branches-skipped",
     breaks: "a value read in place before a `match` whose one arm drops is assigned in that arm alone, and the others compare `undefined`: `*e > match .. { .. }` (#274)",
     file: "src/lower/mir/structure.rs",

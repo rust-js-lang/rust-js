@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "self-handle-counted-lowered",
+    breaks: "a closure's handle on itself whose `Rc` the program counts, `Rc::strong_count`, is written as no JS too, its upgrade its own name, where its counts must be kept",
+    file: "src/lower/analysis.rs",
+    find: "    self_handles.uncounted(|pointee| counted.counts(tcx, pointee));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^self_handle_counted.rs$"],
+  },
+  {
     name: "types-only-module-unlisted",
     breaks: "a module of only `pub type`s and structs writes no `.d.ts`, so TypeScript importing its types finds no module (ADR 1005)",
     file: "src/lower/analysis.rs",

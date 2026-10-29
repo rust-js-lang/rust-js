@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0320](0320-counted-rcs.md), whose every `Weak`
 counted the `Rc` it was made of; and fixes its counted `Weak::new()`, two
-of which weren't `Weak::ptr_eq`.
+of which weren't `Weak::ptr_eq`. Amended below (the user's decision, rd96):
+a closure's handle on itself is its own name.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for a `Weak` nothing
 asks whether it's alive; C for a counted one's `Weak::new()`.
@@ -138,3 +139,91 @@ context.consumer = { context };
   (`uncounted-weak-never-nullish`), `scripts/mutations/lower/drops/types.ts`
   (`uncounted-weak-drops`) and `scripts/mutations/lower/std_impls.ts`
   (`uncounted-weak-cloned`).
+
+## Amendment: a closure's handle on itself is its own name
+
+The user's decision (rd96, 2026-10-29). Case
+([0262](0262-when-rust-and-js-disagree.md)): A, no observable difference,
+under the proof below; where it doesn't hold, counted as before.
+
+React's createEventHandle makes a handle that adds itself to its target's
+set of handles: `const eventHandle = (target, callback) => { ..
+addEventHandleToTarget(target, eventHandle); .. }`. The Rust a person
+writes for a closure that refers to itself is the Rust book's for any
+value that does: its `Rc`'s `Weak` in a cell it captured, set right after,
+and upgraded where it names itself:
+
+```rust
+let this_handle = Rc::new(RefCell::new(None));
+let event_handle: Rc<ReactDOMEventHandle> = Rc::new({
+    let this_handle = Rc::clone(&this_handle);
+    move |target, callback| {
+        let event_handle = this_handle.borrow().as_ref().and_then(Weak::upgrade).unwrap();
+        ..
+    }
+});
+*this_handle.borrow_mut() = Some(Rc::downgrade(&event_handle));
+```
+
+Its `upgrade` counted every `Rc` of the handle's type: `{ value, strong,
+weak }`, the cell a checked `RefCell`, a `try`/`finally` of each, and in
+react-dom-bindings ADR 0626's refusal, as its `dyn Fn`s then held what
+drops.
+
+**An `upgrade` inside the closure whose own `Rc` the `Weak` was made of
+always succeeds, and asks no count.** The closure runs only borrowed from
+an `Rc` of it, so the strong count is one at least while it runs: an
+`Rc<dyn Fn>` can't give its closure up by value, and borrowck keeps the
+`Rc` it's called through. The cell is set before anything can call the
+closure, and never again. So where nothing else counts the handle's `Rc`,
+the cell is no JS, its making, its clone, its setting and its drop, and
+the upgrade is the closure's own name:
+
+```js
+const eventHandle = (target, callback) => {
+  ..
+  if (!doesTargetHaveEventHandle(target, eventHandle)) {
+    addEventHandleToTarget(target, eventHandle);
+    ..
+```
+
+What proves it, one owner, `analysis/self_handles.rs`, read of each body's
+MIR as borrowck reads it, the one it's lowered from:
+
+- a variable `Rc::new(RefCell::new(None))` of an `Option<Weak<D>>`;
+- used only to clone it for a closure, given `Rc::new` (made an `Rc<D>`),
+  and to set it, `*cell.borrow_mut() = Some(Rc::downgrade(&handle))`, of
+  that `Rc`'s variable, and dropped;
+- nothing between the handle's `Rc` and the cell's setting but the steps
+  of setting it, so nothing can call the closure before;
+- in the closure, the cell read only as `cell.borrow().as_ref()
+  .and_then(Weak::upgrade).unwrap()`, to a variable of its own.
+
+`counted_rcs` asks it which upgrades ask no count (`asks_no_count`); once
+counting settles, a handle whose `Rc` is counted anyway, its counts read
+or its drop running a destructor, is dropped from the facts, and lowered
+as written (`uncounted`). Lowering writes nothing of the found statements
+and calls, and the `unwrap`'s variable is the handle's variable's name.
+Anything else, the cell read apart, a borrow held across its setting,
+the closure called before it's set, `expect` for `unwrap`, is counted, as
+before.
+
+`Rc::new_cyclic(|me: &Weak<T>| ..)`, the other form, can't hold the
+closure itself: `T` is sized and the closure would have to name its own
+type. It's a struct's, `Rc::new_cyclic(|me| Handle { f: Box::new(..) })`,
+which is ADR 0843's create-then-assign alternative, still deferred.
+
+- `test/corpus/self_handle.rs`: a countdown that calls itself through its
+  handle and React's handle that adds itself to a list once, with native
+  Rust; `self_handle_counted.rs` (its count read; its cell read before
+  it's set), `self_handle_called_early.rs` (called before its cell is set,
+  its `unwrap` panics), `self_handle_maker_borrows.rs` (its maker holds a
+  borrow as it sets it, `borrow_mut` panics) and
+  `self_handle_reads_mutably.rs` (it borrows its cell mutably as it
+  upgrades it, `borrow` panics), each counted, with native Rust.
+- React's ReactDOMEventHandle in react-dom-bindings, ADR 0626's refusal
+  gone: `const eventHandle = (target, callback) => { .. }`.
+- Mutations in `scripts/mutations/lower/analysis/self_handles.ts`,
+  `rc_counts.ts` (`self-handle-upgrade-counts`), `lower/analysis.ts`
+  (`self-handle-counted-lowered`) and `lower/mir/structure.ts`
+  (`self-handle-own-unnamed`, `self-handle-cell-written`).

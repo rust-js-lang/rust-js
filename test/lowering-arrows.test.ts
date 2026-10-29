@@ -130,6 +130,49 @@ impl Counter {
   expect([lib.make(true)(1), lib.make(false)(1), await lib.later(2), new lib.Counter(4).twice(1)]).toEqual([2, 1, 6, 20]);
 });
 
+// ADR 0882, amended again: a `let` of an `Rc` or a `Box` of a closure holds
+// a function as a value, as React's ReactTestSelectors writes `const
+// commitHook = () => { .. }` of the port's `let commit_hook: Rc<dyn Fn()>`:
+// a `const` of its arrow, as TypeScript writes a value of a function's
+// type; a closure the `let` binds itself is a function declared.
+test("a let of an Rc or a Box of a closure is a const of its arrow", async () => {
+  const dir = fixture("let-held-closures");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::rc::Rc;
+
+pub fn hooks(seen: Rc<std::cell::RefCell<Vec<u32>>>) -> u32 {
+    let commit_hook: Rc<dyn Fn(u32)> = Rc::new({
+        let seen = Rc::clone(&seen);
+        move |n| {
+            let m = n + 1;
+            seen.borrow_mut().push(m);
+        }
+    });
+    let boxed: Box<dyn Fn(u32) -> u32> = Box::new(|n| {
+        let m = n * 2;
+        m + 1
+    });
+    let plain = |n: u32| {
+        let m = n * 3;
+        m + 1
+    };
+    commit_hook(1);
+    boxed(2) + plain(3)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const commitHook = (n) => {\n");
+  expect(js).toContain("  const boxed = (n) => {\n");
+  expect(js).toContain("  function plain(n) {\n");
+  const seen: number[] = [];
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.hooks(seen)).toBe(15);
+  expect(seen).toEqual([2]);
+});
+
 // ADR 0882, amended: a comment before a statement of a function declared
 // in a body is before that statement, not inside a closure it's given.
 test("a comment in a let's function declared is where it's written", async () => {

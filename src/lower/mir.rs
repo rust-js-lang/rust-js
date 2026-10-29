@@ -701,7 +701,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, bool)> {
         let def_id = body.def_id;
         let span = self.tcx.def_span(def_id);
-        let (mut params, mut out) = self.lowered_from_mir(mir, None, None)?;
+        let (mut params, mut out) = self.lowered_from_mir(mir, None, (None, None))?;
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
         // An `on_load!` body is its module's top, where JS has no `return`:
@@ -842,11 +842,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `mir`'s function, of a closure's `captures`, given what's known of
+    /// its places, `seed`, and its own name where it reads its handle on
+    /// itself, `own` (`analysis/self_handles.rs`).
     fn lowered_from_mir(
         &mut self,
         mir: &Mir<'tcx>,
         captures: Option<Vec<(Expr, bool)>>,
-        seed: Option<offsets::Seed>,
+        seed: (Option<offsets::Seed>, Option<Expr>),
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         // Its dictionaries of types known whole, each written twice
         // declared once at its top (ADR 0979); the enclosing body's back
@@ -889,7 +892,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mir: &Mir<'tcx>,
         captures: Option<Vec<(Expr, bool)>>,
-        seed: Option<offsets::Seed>,
+        (seed, own): (Option<offsets::Seed>, Option<Expr>),
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         // What THIR's drop facts refuse of its closures holding what has a
@@ -911,7 +914,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.reads[local] += 2;
         }
         let given = captures.clone().unwrap_or_default();
-        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), seed.as_ref());
+        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), (seed.as_ref(), own));
         let mut state = State {
             body: mir_body,
             facts,

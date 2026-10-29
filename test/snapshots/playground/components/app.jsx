@@ -63,11 +63,11 @@ export function App() {
   // StrictMode runs this twice; the first run's results are dropped.
   useEffect(() => {
     let cancelled = false;
-    function stat(label, value) {
+    const stat = (label, value) => {
       if (!cancelled) {
         setStats((rows) => appended(rows, label, value));
       }
-    }
+    };
     (async () => {
       const loaded = await load(stat);
       const e = loaded.examples[0];
@@ -124,7 +124,7 @@ export function App() {
   }
 
   // Compile the crate, or with `test`, its tests too, and run it.
-  function onCompile(test) {
+  const onCompile = (test) => {
     const loaded$1 = loaded;
     if (loaded$1 == null) {
       return;
@@ -161,10 +161,10 @@ export function App() {
       // For automated checks.
       window.lastResult = r;
     });
-  }
+  };
 
   // What the Result frame reports.
-  function onOutcome(outcome) {
+  const onOutcome = (outcome) => {
     if (outcome.TAG === "Failed") {
       setStatus(say(`Runtime error: ${outcome._0}`, "Bad"));
     } else if (outcome === "Ran") {
@@ -176,9 +176,9 @@ export function App() {
         "The Result frame didn't run. Is something blocking its script? See the console.";
       setStatus(say(text, "Bad"));
     }
-  }
+  };
 
-  function onExample(name) {
+  const onExample = (name) => {
     const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen != null) {
       const { root } = chosen;
@@ -192,14 +192,14 @@ export function App() {
         setStatus(say("Ready.", "Plain"));
       })();
     }
-  }
+  };
 
   const openFile = (path) => setProject(Project.opening(project, path, live()));
-  function deleteFile(path) {
+  const deleteFile = (path) => {
     if (window.confirm(`Delete ${path}?`)) {
       setProject(Project.removing(project, path));
     }
-  }
+  };
   function newFile() {
     const answer = window.prompt("New file, e.g. math.rs or geometry/shape.rs:");
     if (answer === null) {
@@ -229,12 +229,12 @@ export function App() {
       setStatus(say(`${path} already exists.`, "Bad"));
     }
   }
-  function openOutput(path) {
+  const openOutput = (path) => {
     if (output.TAG === "Files") {
       const files = output.files.map(([p, t]) => [p, t]);
       setOutput({ TAG: "Files", files, shown: path });
     }
-  }
+  };
 
   // What the editors show. A state is made once for each output, so the
   // editor only changes when it does.

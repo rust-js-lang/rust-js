@@ -158,6 +158,55 @@ export function later(queue) {
 }
 ```
 
+A `let` of an `Rc` or a `Box` of a closure holds a function as a value,
+`let hook: Rc<dyn Fn()> = Rc::new(..)`: a `const` of its arrow, `const
+hook = () => { .. }`, as TypeScript writes a value of a function's type
+([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md#amendment-a-function-held-as-a-value-is-a-const-of-its-arrow)).
+
+A closure that refers to itself is written as the Rust book teaches a
+value that refers to itself: its `Rc`'s `Weak` in a cell it captured,
+set right after it's made, and upgraded where it calls or names itself.
+It runs only borrowed from its `Rc`, so the upgrade always gives it: where
+nothing counts it, the cell is no JS and the upgrade is its own name
+([ADR 0843](../../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md#amendment-a-closures-handle-on-itself-is-its-own-name)).
+One whose counts are read, or whose cell is read otherwise, is counted,
+as written.
+
+```rust
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+
+pub type Countdown = dyn Fn(u32) -> u32;
+
+pub fn countdown(step: u32) -> Rc<Countdown> {
+    let this: Rc<RefCell<Option<Weak<Countdown>>>> = Rc::new(RefCell::new(None));
+    let countdown: Rc<Countdown> = Rc::new({
+        let this = Rc::clone(&this);
+        move |n| {
+            if n < step {
+                return n;
+            }
+            let countdown = this.borrow().as_ref().and_then(Weak::upgrade).unwrap();
+            1 + countdown(n - step)
+        }
+    });
+    *this.borrow_mut() = Some(Rc::downgrade(&countdown));
+    countdown
+}
+```
+
+```js
+export function countdown(step) {
+  const countdown = (n) => {
+    if (n < step) {
+      return n;
+    }
+    return (1 + countdown(n - step)) >>> 0;
+  };
+  return countdown;
+}
+```
+
 ## Classes
 
 A class is a `struct` for its fields and an `impl` block for its methods.

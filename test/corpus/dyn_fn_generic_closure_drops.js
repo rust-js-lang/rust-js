@@ -12,10 +12,10 @@ function guardDrop_drop(guard) {
 
 function listened(result) {
   const listeners = [];
-  function add(listener) {
+  const add = (listener) => {
     listeners.push(listener);
     return listeners.length;
-  }
+  };
   return [result, add];
 }
 

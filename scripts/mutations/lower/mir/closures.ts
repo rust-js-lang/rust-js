@@ -2,6 +2,7 @@
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
+
   {
     name: "local-const-after-its-read",
     breaks: "a `const` written in a function's body is where it's written though a closure before that reads it, which JS's `const` isn't yet",

@@ -275,6 +275,10 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   A `Weak` nothing upgrades or counts is what it points at, `Rc::downgrade`
   the object and `Weak::new()` `null`: what's alive is asked of no `Weak`,
   so none needs a count ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md)).
+  A closure's upgrade of the `Weak` its own `Rc` was made of, held in a
+  cell it captured and set right after it's made, always gives that `Rc`,
+  as the closure runs only borrowed from it: it asks no count, and is the
+  closure's own name ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md#amendment-a-closures-handle-on-itself-is-its-own-name)).
 - **A `&mut` std gives to a number or a string in a collection is a
   handle on it,** where it's used as a value: `iter_mut()`, `values_mut()`,
   `get_mut`, `last_mut()` and a `for` over `&mut m`, each writing the slot

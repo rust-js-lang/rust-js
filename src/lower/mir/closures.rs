@@ -102,6 +102,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => mir,
         };
+        // Its handle on itself, where it reads one: its `Rc`'s variable, its
+        // own name, and the cell it captured no JS (`analysis/self_handles.rs`,
+        // ADR 0843, amended).
+        let mut captured = captured;
+        let own = match self.krate.self_handles.made_of(state.body.source.def_id(), def_id) {
+            Some(handle) => {
+                if let Some(cell) = captured.get_mut(handle.capture) {
+                    *cell = Value::Expr(Expr::undefined());
+                }
+                Some(Expr::var(&state.locals.names[handle.handle]))
+            }
+            None => None,
+        };
         let mut captures = Vec::new();
         // What it took by value and never changes, by its name: what a
         // `bind` of it may bind (`passed_on::binds`). What it borrows is
@@ -168,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer_owner = std::mem::replace(&mut self.frame.owner, def_id);
         // Given a place found, what it's told of it (ADR 0642).
         let seed = state.facts.offsets().seed(def_id).cloned();
-        let lowered = self.lowered_from_mir(mir, Some(captures), seed);
+        let lowered = self.lowered_from_mir(mir, Some(captures), (seed, own));
         self.frame.thir = outer;
         self.frame.facts = outer_facts;
         self.frame.owner = outer_owner;

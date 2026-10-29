@@ -4,7 +4,7 @@ Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
 to one an object's field holds. Amended below (the user's decision,
 2026-10-26): a closure of statements a `let` binds is a function declared,
 `function deleteChild(..) { .. }`. Amended again (the user's decision,
-2026-10-27): in an object that has a method, each function field is one.
+2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a method and an arrow differ in their `this` and their
@@ -189,3 +189,26 @@ before.
 - Held by `test/lowering-arrows.test.ts`, "an object with a method has
   each function field a method", and the guide's `thenable`/`doubler`;
   mutations `field-method-beside-unseen` and `field-method-beside-any`.
+
+## Amendment: a function held as a value is a `const` of its arrow
+
+The user's decision for React's createEventHandle (rd96, 2026-10-29),
+`const eventHandle = (..) => { .. }`, of the port's `let event_handle:
+Rc<ReactDOMEventHandle> = Rc::new(..)`; ReactTestSelectors writes `const
+commitHook = () => { .. }` of the port's `let commit_hook: Rc<dyn Fn()>`
+too. Case N, as before.
+
+**A `let` of an `Rc`, an `Arc` or a `Box` of a closure holds a function as
+a value: a `const` of its arrow, as TypeScript writes a value of a
+function's type, `const hook: Hook = () => { .. }`.** A closure the `let`
+binds itself is a function declared, as before. MIR's lowering says so of
+the variable's arrow, `js::Known::Valued`, by its type
+(`recognition::holds_a_function`); `prepare::declared_functions` keeps it
+a `const`.
+
+The corpus's `dyn_fn_generic_closure_drops` and `rc_fn_ptr_eq`, the
+playground's `stat` and the guide's `mountTransition` are `const`s of
+their arrows. Held by `test/lowering-arrows.test.ts`'s "a let of an Rc or
+a Box of a closure is a const of its arrow", run, and the mutations
+`valued-arrow-unmarked` (`lower/mir/assign.ts`) and
+`valued-arrow-declared` (`prepare.ts`).

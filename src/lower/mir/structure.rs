@@ -227,6 +227,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             state.statement = index;
             self.flag_sets(state, at, &mut made)?;
+            // A closure's handle on itself, its cell: no JS
+            // (`analysis/self_handles.rs`).
+            if state.facts.unlowered(at) {
+                out.extend(made);
+                state.unwind = unwind;
+                continue;
+            }
             match &statement.kind {
                 StatementKind::Assign(assign) => {
                     let (place, rvalue) = &**assign;
@@ -281,6 +288,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.flag_sets(state, state.body.terminator_loc(block), &mut out)?;
         let span = terminator.source_info.span;
+        // A closure's handle on itself: its cell's calls and drops no JS, and
+        // the call that gives the closure its own `Rc`, its name
+        // (`analysis/self_handles.rs`, ADR 0843, amended).
+        if tested == block
+            && state.facts.unlowered(state.body.terminator_loc(block))
+            && let TerminatorKind::Call {
+                target: Some(target), ..
+            }
+            | TerminatorKind::Drop { target, .. } = &terminator.kind
+        {
+            if let Some((own, name)) = state.facts.own(block) {
+                state.in_place.insert(own, name.clone());
+            }
+            out.extend(self.mir_branch(state, block, *target)?);
+            return Ok(out);
+        }
         match &terminator.kind {
             TerminatorKind::Goto { target } => out.extend(self.mir_branch(state, block, *target)?),
             TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {

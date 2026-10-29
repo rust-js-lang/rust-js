@@ -697,6 +697,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             state.locals.declared[local] = true;
             let name = state.locals.names[local].clone();
+            // A variable of an `Rc` or a `Box` of a closure: a function held
+            // as a value, a `const` of its arrow (ADR 0882, amended).
+            let mut expr = expr;
+            if matches!(expr.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
+                && crate::lower::recognition::holds_a_function(self.tcx, state.body.local_decls[local].ty)
+            {
+                expr.facts = expr.facts.with(js::Known::Valued);
+            }
             // A part borrowed mutably, `ref mut n` of an `Option<i32>`, may be
             // the variable itself in JS, written through the borrow: a `let`,
             // which tidy makes a `const` where nothing assigns it.

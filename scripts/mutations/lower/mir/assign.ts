@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "valued-arrow-unmarked",
+    breaks: "a `let` of an `Rc` or a `Box` of a closure is a function declared, `function commitHook(n) { .. }`, not a `const` of its arrow (ADR 0882, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "                expr.facts = expr.facts.with(js::Known::Valued);\n",
+    replace: "",
+    tests: ["test/lowering-arrows.test.ts", "-t", "a let of an Rc or a Box"],
+  },
+  {
     name: "compiled-std-maker-callee-unseen",
     breaks: "a function given to std's compiled `scan`, of a state that's an object here, isn't given generic code's box of it, so `*pair = (..)` writes the box's `value`, `Cannot convert NaN to a BigInt` (ADR 0933)",
     file: "src/lower/mir/assign.rs",

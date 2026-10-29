@@ -130,7 +130,7 @@ pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
 /// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, self_handles): (&[&Body<'tcx>], &super::SelfHandles<'tcx>),
     (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &DropGiven<'_, 'tcx>),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
 ) -> Counted<'tcx> {
@@ -205,7 +205,11 @@ pub(super) fn counted_rcs<'tcx>(
                 {
                     cloned.insert(erased(of));
                 }
-                if reads_rc_count(tcx, def_id, args.types().next()) {
+                // A closure's upgrade of the handle on itself always gives
+                // its `Rc`, and asks no count (ADR 0843, amended).
+                if reads_rc_count(tcx, def_id, args.types().next())
+                    && !self_handles.asks_no_count(body.def_id, expr.span)
+                {
                     counted.insert(erased(args.type_at(0)));
                 } else if compares_fn_identity(tcx, def_id, args.types().next()) {
                     asked.insert(erased(args.type_at(0)));
