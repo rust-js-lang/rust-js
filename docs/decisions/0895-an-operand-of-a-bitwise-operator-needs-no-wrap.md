@@ -119,3 +119,18 @@ is the value as it is**, `n & 1`, `n & 0xff`. A mask with bit 31, `n &
 0x8000_0000`, or one of two variables, keeps its `>>> 0` (ADR 0262's case
 A). Held by `test/corpus/u32_masks.rs` and the mutations
 `u32-mask-with-bit-31-unwrapped` and `u32-mask-wrapped`.
+
+## Amendment: a 32-bit rotate by a constant is JS's shifts
+
+`k1.rotate_left(15)` of a `u32`, MurmurHash3's in react-server's
+createFastHashJS, was `$rotateBits(k1, 15, 32, true)`, where upstream's
+JS writes `(k1 << 15) | (k1 >>> 17)`. **A 32-bit integer's `rotate_left`
+or `rotate_right` by a constant is JS's shifts, `(x << n) | (x >>> 32 -
+n)`, of its remainder of 32, a `u32`'s made unsigned, `>>> 0`, and by 0
+`x` itself** (`std_types/number.rs`): JS's bit operators are of its 32
+bits, the sign bit among them, and an operand of them needs no wrap of
+its own (this ADR). By a variable, and of another width, `$rotateBits`
+as before. Case N: the same bits. Held by `test/corpus/rotate_32_shifts.rs`
+against native Rust, `integer_bits.rs`, `matrix_integers.rs` and
+`tagged_pointers.rs`, and the mutations `rotate-32-*`
+(`std_types/number.ts`).

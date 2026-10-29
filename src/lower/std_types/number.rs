@@ -736,6 +736,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::array(vec![num.wrap(Expr::unary(UnaryOp::Neg, x)), overflowed])
             }
+            // A 32-bit integer's by a constant, as JS writes it, `(x << 15)
+            // | (x >>> 17)` (createFastHashJS): JS's bit operators are of its
+            // 32 bits, the sign bit among them; a `u32`'s made unsigned.
+            NumOp::RotateBits { left } if matches!(num, Num::I32 | Num::U32) => {
+                let (x, n) = (arg(), arg());
+                let Some(by) = n.as_int().map(|n| n.rem_euclid(32)) else {
+                    let x = match num {
+                        Num::I32 => Expr::bin(Op::UShr, x, Expr::int(0)),
+                        _ => x,
+                    };
+                    let rotated = helper("$rotateBits", vec![x, n, Expr::int(32), Expr::bool(left)]);
+                    return Ok(if num.signed() { num.wrap(rotated) } else { rotated });
+                };
+                if by == 0 {
+                    return Ok(x);
+                }
+                let x = if x.reads_same() { x } else { self.spill("x", x, out) };
+                let (up, down) = match left {
+                    true => (by, 32 - by),
+                    false => (32 - by, by),
+                };
+                let rotated = Expr::bin(
+                    Op::BitOr,
+                    Expr::bin(Op::Shl, x.clone(), Expr::int(up)),
+                    Expr::bin(Op::UShr, x, Expr::int(down)),
+                );
+                match num {
+                    Num::U32 => Expr::bin(Op::UShr, rotated, Expr::int(0)),
+                    _ => rotated,
+                }
+            }
             // Of its unsigned bits, the sign bit among them.
             NumOp::RotateBits { left } => {
                 let x = match num {

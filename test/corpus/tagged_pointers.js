@@ -9,7 +9,6 @@ import {
   $ptrFrom,
   $ptrRetyped,
   $ptrTo,
-  $rotateBits,
   $toBytes,
 } from "@rust-js/runtime";
 
@@ -35,7 +34,8 @@ function untagged(queue) {
 // semver: a 1 rotated into the top bit of a 2-aligned heap pointer, so the
 // representation is never ASCII, and back.
 function ptrToRepr(original) {
-  const modified = $rotateBits(($addr(original, 1) | 1) >>> 0, 1, 32, false);
+  const x = ($addr(original, 1) | 1) >>> 0;
+  const modified = ((x << 31) | (x >>> 1)) >>> 0;
   const diff = (modified - $addr(original, 1)) >>> 0;
   return $ptrAt(original, $addr(original, 1) + diff * 1, 1);
 }

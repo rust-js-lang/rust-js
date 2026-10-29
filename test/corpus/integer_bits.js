@@ -35,10 +35,10 @@ function xorshift(x) {
 function main() {
   // Rotated, by less and more than the width, signed and unsigned.
   console.log(
-    `${$rotateBits(1, 31, 32, true)} ${$rotateBits(0x80000001, 1, 32, false)} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(0x81, 4, 8, false)}`,
+    `${((1 << 31) | (1 >>> 1)) >>> 0} ${((0x80000001 << 31) | (0x80000001 >>> 1)) >>> 0} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(0x81, 4, 8, false)}`,
   );
   console.log(
-    `${$rotateBits(-2 >>> 0, 1, 32, true) | 0} ${($rotateBits(-128 & 255, 7, 8, false) << 24) >> 24} ${($rotateBits(-1 & 65535, 3, 16, true) << 16) >> 16}`,
+    `${(-2 << 1) | (-2 >>> 31)} ${($rotateBits(-128 & 255, 7, 8, false) << 24) >> 24} ${($rotateBits(-1 & 65535, 3, 16, true) << 16) >> 16}`,
   );
   console.log(
     `${$rotateBits(BigInt.asUintN(64, 1n), 63, 64, true)} ${$rotateBits(BigInt.asUintN(64, 9223372036854775809n), 4, 64, false)}`,
