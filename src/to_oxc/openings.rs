@@ -74,6 +74,26 @@ pub(super) fn match_opening(head: &str) -> bool {
         .is_some_and(|scrutinee| scrutinee.starts_with(char::is_whitespace))
 }
 
+/// Whether `head`'s last line ends a `match` arm's pattern, `"focusin" =>`,
+/// whose block's first statement is where the arm's own starts: a case's
+/// body's, a comment before the arm before it (ADR 0630, rd119).
+pub(super) fn arm_opening(head: &str) -> bool {
+    let line = head[head.rfind('\n').map_or(0, |i| i + 1)..].trim();
+    line.strip_suffix("=>")
+        .is_some_and(|pattern| !pattern.trim().is_empty())
+}
+
+/// Whether `code`, before a statement's start, is nothing, or the receiver
+/// of a method call its span starts after, `DOWN.` of `DOWN.set(true)`.
+pub(super) fn receiver_only(code: &str) -> bool {
+    let code = code.trim();
+    code.is_empty()
+        || (code.strip_suffix('.')).is_some_and(|path| {
+            path.chars()
+                .all(|c| c.is_alphanumeric() || c == '_' || c == ':' || c == '.')
+        })
+}
+
 /// Whether `line`, to its end, opens a macro's body on a line of its own,
 /// `thread_local! {`, `jsx! {`: a path, `!` and `{`, whose code is the
 /// program's text (ADR 0621).

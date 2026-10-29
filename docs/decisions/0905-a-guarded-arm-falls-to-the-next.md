@@ -653,3 +653,25 @@ Held by `test/corpus/switch_guards_fall_twice.rs` (a thread-local changed
 to a value an earlier arm names) against native Rust and the mutations
 `second-fall-unabsorbed`, `or-guard-parts-untried` (`mir/tidy/switches.ts`)
 and `or-guard-of-reads-no-case` (`mir/hints.ts`).
+
+## Amendment: an arm's block's comment, and a `default` left of nothing (rd119)
+
+React DOM's SelectEventPlugin's `match` of blocks, `"focusin" => {
+construct(..); }`, `"selectionchange" if SKIP.with(..) => {}`, then
+`"selectionchange" | "keydown" | "keyup" => { .. }` and `_ => {}`, was its
+`switch` with each comment written before an arm of a block moved above
+the `switch`, and an empty `default:`. The comment's code before its
+statement, `"focusin" => {`, opened nothing a comment is read past; now an
+arm's opening does, and a method call's receiver, `DOWN.` of
+`DOWN.set(true)`, whose span starts at `set`, so the comment is before the
+case's first statement, as one before an arm of an expression is (ADR
+0630). And a last `_ => {}` of a `switch` that ends a function, MIR's
+`return;`, which `breaks_of_ending_switch` leaves empty, is left out, as
+`breaks_past_switches` leaves out one that does nothing.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by `test/corpus/switch_guard_skips_its_case.rs` against native Rust
+and the mutations `arm-opening-not-an-opening` (`to_oxc.ts`),
+`receiver-not-only` (`to_oxc/openings.ts`) and `emptied-default-kept`
+(`mir/tidy/case_rests.ts`).

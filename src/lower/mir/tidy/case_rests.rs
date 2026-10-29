@@ -302,9 +302,14 @@ pub(super) fn breaks_of_ending_switch(stmts: &mut [Stmt], returns: &[js::Span]) 
         broken(&mut case.body, returns);
         ended(&mut case.body, !case.falls);
     }
-    if let Some(default) = default {
-        broken(default, returns);
-        ended(default, true);
+    if let Some(body) = default {
+        broken(body, returns);
+        ended(body, true);
+        // A `default` that then does nothing, a last `_ => {}`'s of MIR's
+        // `return;`, left out, as `breaks_past_switches` leaves one (rd119).
+        if body.is_empty() {
+            *default = None;
+        }
     }
 }
 

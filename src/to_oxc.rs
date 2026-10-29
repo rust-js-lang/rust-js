@@ -38,7 +38,9 @@ pub(crate) use self::expressions::*;
 use self::header::header;
 pub use self::header::import_line;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
-use self::openings::{leading_statements, macro_opening, match_opening, type_alias, unsafe_opening, use_item};
+use self::openings::{
+    arm_opening, leading_statements, macro_opening, match_opening, receiver_only, type_alias, unsafe_opening, use_item,
+};
 
 use std::path::PathBuf;
 
@@ -731,6 +733,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                                 || macro_opening(&rest[..=i])
                                 || unsafe_opening(head)
                                 || match_opening(head) && rest[i + 1..].trim().is_empty()
+                                || arm_opening(head) && receiver_only(&rest[i + 1..])
                         }) || default;
                         // And a type alias's, an item with no JS, `pub type
                         // ActivityInstance = Unknown;` (ADR 0444, amended);

@@ -653,4 +653,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
+  {
+    name: "arm-opening-not-an-opening",
+    breaks: "a comment before an arm whose body is a block, `// Track the input node that has focus.` before `\"focusin\" => {`, moves above the `switch`, not into its case before its first statement, React DOM's SelectEventPlugin (rd119, ADR 0905 amended)",
+    file: "src/to_oxc.rs",
+    find: "                                || arm_opening(head) && receiver_only(&rest[i + 1..])\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
+  },
 ];

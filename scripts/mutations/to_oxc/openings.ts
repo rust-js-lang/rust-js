@@ -26,4 +26,13 @@ export const mutations: Mutation[] = [
     replace: "    false\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
+  {
+    name: "receiver-not-only",
+    breaks: "a comment before an arm whose first statement is a method call, `DOWN.set(true)`, whose span starts at `set`, moves above the `switch` (rd119, ADR 0905 amended)",
+    file: "src/to_oxc/openings.rs",
+    find: "        || (code.strip_suffix('.')).is_some_and(|path| {\n",
+    replace: "        || (code.strip_suffix('.')).filter(|_| false).is_some_and(|path| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
+  },
 ];

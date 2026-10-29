@@ -111,4 +111,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },
+  {
+    name: "emptied-default-kept",
+    breaks: "a last `_ => {}` of a function's ending `switch`, MIR's `return;`, is an empty `default:` (rd119, ADR 0905 amended)",
+    file: "src/lower/mir/tidy/case_rests.rs",
+    find: "        if body.is_empty() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
+  },
 ];
