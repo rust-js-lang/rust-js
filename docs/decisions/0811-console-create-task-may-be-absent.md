@@ -206,7 +206,8 @@ debugTask?: {
   are the Rust type's arguments, would be substituted in text.
 - **Keeping `import("m").T`**: a second way to name a module's type.
 - **Intersections, `A & B`, and `typeof x`**: no binding writes one; one is
-  the error saying what it reads, until a binding needs one.
+  the error saying what it reads, until a binding needs one. (Amended: an
+  intersection is read, `RegExpMatch`'s, below.)
 
 ### What holds it
 
@@ -220,3 +221,15 @@ debugTask?: {
   `node/build.sh`, and `next`'s, which each read every value they hold.
 - `scripts/mutations/lower/declarations.ts`'s mutations of the reader and
   its use.
+
+## Amendment: an intersection is read (#303)
+
+`js::RegExpMatch` is an array with more of its own, TypeScript's
+`RegExpExecArray`, which is no runtime class to name: **`#[rust_js::types]`
+reads an intersection, `string[] & { index: number }`**, binding before
+`|` as TypeScript's does, `Written::Intersection`, declared as written,
+`(string[] & { .. }) | null | undefined`. `typeof x` is still the error
+saying what it reads. Held by `test/declarations.test.ts`, "a
+#[rust_js::types] intersection is declared as written", and `A &` among
+the errors; mutations `intersection-unread` (`declarations/written.ts`) and
+`intersection-declared-union` (`declarations.ts`).

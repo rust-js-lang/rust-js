@@ -1694,6 +1694,12 @@ impl RegExp {
 }
 
 /// What [`exec`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec) finds: the match, its groups, where it is.
+/// An array of the match and its groups, with its own `index`, `input`
+/// and `groups`, TypeScript's `RegExpExecArray`.
+#[cfg_attr(
+    rust_js,
+    rust_js::types = "string[] & { index: number; input: string; groups?: { [key: string]: string } }"
+)]
 pub struct RegExpMatch(PhantomData<JsObject>);
 
 impl RegExpMatch {

@@ -354,3 +354,24 @@ behavior is kept, or the program refused.
 The case is compiler.test.ts's "an untagged enum's js::Class is a
 function, and a timeout id is refused". The mutation is
 `untagged-class-a-tuple`.
+
+## Amendment: a `RegExpMatch` is an array (#303, part 2)
+
+`js::RegExpMatch`, what `exec` finds, declared no TypeScript, so it was
+an object, `typeof value === "object" && !Array.isArray(value)`, beside an
+array's variant: false of a match, which is an array, a wrong answer. Its
+`types = "RegExpExecArray"` would test `instanceof RegExpExecArray`, a
+TypeScript interface no host has, a `ReferenceError`. The user's decision,
+"array shape": **it declares what it is, `string[] & { index: number;
+input: string; groups?: { [key: string]: string } }`**, as TypeScript's
+`RegExpExecArray` is, an intersection `#[rust_js::types]` now reads (ADR
+0811, amended). **An intersection with an array among it is an array**
+(`untagged_kind`), `Array.isArray(value)`; one of a `Vec`'s beside it is
+refused, two arrays; another intersection tells nothing, refused. Its
+`.d.ts` is the intersection, not `any`.
+
+Case R: the test was false of what it holds. Held by
+`test/compiler.test.ts`, "an untagged enum's js::RegExpMatch is an
+array", run in JS: a match and a string told apart, the `.d.ts`, and one
+beside a `Vec` refused. Mutation `intersected-array-unknown`
+(`untagged.ts`).

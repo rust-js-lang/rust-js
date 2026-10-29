@@ -311,8 +311,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),
                 Some(Written::Keyword(keyword)) if keyword == "object" => Some(Kind::Object),
                 Some(Written::Array { .. }) => Some(Kind::Array),
+                // An array's with more of its own, `string[] & { index:
+                // number }`, a `RegExpMatch`'s: an array, `Array.isArray`,
+                // as JS's is (#303).
+                Some(Written::Intersection(types)) if types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {
+                    Some(Kind::Array)
+                }
                 Some(Written::Function(_)) => Some(Kind::Function),
-                Some(Written::Keyword(_) | Written::Literal(_) | Written::Union(_)) => None,
+                Some(Written::Keyword(_) | Written::Literal(_) | Written::Union(_) | Written::Intersection(_)) => None,
             };
         }
         let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();

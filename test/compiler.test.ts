@@ -1387,3 +1387,59 @@ pub fn is_id(timer: Timer<'_>) -> bool {
   expect(refused.exitCode).not.toBe(0);
   expect(refused.stderr.toString()).toContain("JS can't tell a `&'a js::TimeoutId` from another variant's value");
 });
+
+// #303: a `RegExpMatch` is an array with its own `index`, `input` and
+// `groups`, `string[] & { .. }`, TypeScript's `RegExpExecArray`: an untagged
+// variant of one is an array, `Array.isArray`, told apart from a string,
+// and refused beside a `Vec`'s, another array; its `.d.ts` is the
+// intersection, not `any`.
+test("an untagged enum's js::RegExpMatch is an array", async () => {
+  buildReact();
+  const dir = fixture("untagged-regexp-match");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::RegExpMatch;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Found<'a> {
+    Match(&'a RegExpMatch),
+    Text(&'a str),
+}
+
+pub fn is_match(found: Found<'_>) -> bool {
+    matches!(found, Found::Match(_))
+}
+
+pub fn first(m: &RegExpMatch) -> String {
+    m.full_match()
+}
+`,
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return Array.isArray(found);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.isMatch(/b(c)/.exec("abc")), lib.isMatch("abc")]).toEqual([true, false]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain(
+    "export function first(m: string[] & {\n    index: number;\n    input: string;\n    groups?: {\n        [key: string]: string;\n    };\n}): string;",
+  );
+  const both = fixture("untagged-regexp-match-and-vec");
+  writeFileSync(
+    join(both, "lib.rs"),
+    `use js::RegExpMatch;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Found<'a> {
+    Match(&'a RegExpMatch),
+    Words(Vec<String>),
+}
+
+pub fn is_match(found: Found<'_>) -> bool {
+    matches!(found, Found::Match(_))
+}
+`,
+  );
+  const refused = Bun.spawnSync([compiler, join(both, "lib.rs"), "-o", join(both, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(refused.exitCode).not.toBe(0);
+  expect(refused.stderr.toString()).toContain("`Words` and `Match` both hold an array, which JS can't tell apart in an untagged enum");
+});

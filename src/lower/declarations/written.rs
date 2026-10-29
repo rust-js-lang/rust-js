@@ -25,6 +25,8 @@ pub(in crate::lower) enum Written {
     },
     /// `string | URL`.
     Union(Vec<Written>),
+    /// `string[] & { index: number }`, a `RegExpExecArray`'s (#303).
+    Intersection(Vec<Written>),
     /// `T[]`, `readonly T[]`.
     Array { element: Box<Written>, readonly: bool },
     /// `<T>(f: () => T) => T`.
@@ -101,10 +103,10 @@ const KEYWORDS: [&str; 12] = [
 ];
 
 /// What the reader reads, for an error that says so: a type no binding
-/// writes yet, `A & B` or `typeof x`, isn't (ADR 0811).
+/// writes yet, `typeof x`, isn't (ADR 0811, amended).
 const READS: &str = "it reads a name, `Element`, of a module, `react#ReactNode`, or of a namespace, \
     `NodeJS.TypedArray`, with its arguments, `Map<string, T>`, none, `ReactNode<>`; a keyword, `string`; \
-    a string, `\"auto\"`; a union, `string | URL`; an array, `T[]`, `readonly T[]`; a function, \
+    a string, `\"auto\"`; a union, `string | URL`; an intersection, `string[] & { index: number }`; an array, `T[]`, `readonly T[]`; a function, \
     `(f: () => T) => T`; and an object, `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`";
 
 /// The attribute's path.
@@ -229,13 +231,25 @@ impl<'a> Reader<'a> {
     /// `A | B`, `| A | B`.
     fn ty(&mut self) -> Result<Written, String> {
         self.eat("|");
-        let mut types = vec![self.array()?];
+        let mut types = vec![self.intersection()?];
         while self.eat("|") {
-            types.push(self.array()?);
+            types.push(self.intersection()?);
         }
         Ok(match types.len() {
             1 => types.pop().expect("a type"),
             _ => Written::Union(types),
+        })
+    }
+
+    /// `A & B`, which binds before `|`, as TypeScript's does.
+    fn intersection(&mut self) -> Result<Written, String> {
+        let mut types = vec![self.array()?];
+        while self.eat("&") {
+            types.push(self.array()?);
+        }
+        Ok(match types.len() {
+            1 => types.pop().expect("a type"),
+            _ => Written::Intersection(types),
         })
     }
 

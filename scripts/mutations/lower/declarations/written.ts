@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "            (true, Written::Array { .. }) => {}",
     tests: ["test/declarations.test.ts", "-t", "a binding's object type"],
   },
+  {
+    name: "intersection-unread",
+    breaks: "`#[rust_js::types = \"string[] & { .. }\"]` is an error, `&` unread, so the js crate's `RegExpMatch` doesn't build (#303)",
+    file: "src/lower/declarations/written.rs",
+    find: "        while self.eat(\"&\") {\n",
+    replace: "        while false && self.eat(\"&\") {\n",
+    tests: ["test/declarations-written.test.ts", "-t", "intersection is declared as written"],
+  },
 ];

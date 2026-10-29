@@ -790,4 +790,12 @@ export const mutations: Mutation[] = [
     replace: " == Some(export)\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "intersection-declared-union",
+    breaks: "a `RegExpMatch`'s `.d.ts` is `string[] | { .. }`, a union, not the intersection it's declared (#303)",
+    file: "src/lower/declarations.rs",
+    find: "                json!({ \"kind\": \"intersection\", \"types\": types })\n",
+    replace: "                union(types)\n",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum's js::RegExpMatch is an array"],
+  },
 ];

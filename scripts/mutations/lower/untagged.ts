@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "an untagged enum's variant of what JS threw"],
   },
+  {
+    name: "intersected-array-unknown",
+    breaks: "an untagged variant of a `RegExpMatch`, `string[] & { .. }`, is refused as JS can't tell it, not an array, `Array.isArray` (#303)",
+    file: "src/lower/untagged.rs",
+    find: "                Some(Written::Intersection(types)) if types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
+    replace: "                Some(Written::Intersection(types)) if false && types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
+    tests: ["test/compiler.test.ts", "-t", "an untagged enum's js::RegExpMatch is an array"],
+  },
 ];

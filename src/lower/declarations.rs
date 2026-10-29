@@ -513,6 +513,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     .collect::<Option<Vec<_>>>()?;
                 union(types)
             }
+            Written::Intersection(types) => {
+                let types = (types.iter())
+                    .map(|ty| self.written_value(ty, param, bound))
+                    .collect::<Option<Vec<_>>>()?;
+                json!({ "kind": "intersection", "types": types })
+            }
             Written::Array { element, readonly } => {
                 let element = self.written_value(element, param, bound)?;
                 json!({ "kind": "array", "element": element, "readonly": readonly })
