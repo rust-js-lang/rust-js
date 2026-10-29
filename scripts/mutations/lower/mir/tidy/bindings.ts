@@ -357,8 +357,8 @@ export const mutations: Mutation[] = [
     name: "given-last-of-a-captured",
     breaks: "a closure reading `node`, run before `node` is given what's made, reads what's made, not what `node` was",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "    if !kin(x, y) || !declared.contains(x) || captured.contains(x) || captured.contains(y) {\n",
-    replace: "    if !kin(x, y) || !declared.contains(x) {\n",
+    find: "    if early(x) || early(y) {\n",
+    replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
   },
   {
@@ -382,8 +382,8 @@ export const mutations: Mutation[] = [
     name: "given-last-of-a-capture",
     breaks: "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "    if !kin(x, y) || !declared.contains(x) || captured.contains(x) || captured.contains(y) {\n",
-    replace: "    if !kin(x, y) || captured.contains(x) || captured.contains(y) {\n",
+    find: "    if !kin(x, y) || !declared.contains(x) {\n",
+    replace: "    if !kin(x, y) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {
@@ -476,5 +476,21 @@ export const mutations: Mutation[] = [
     find: "                let named = given.contains(a.as_str()) && !given.contains(&b);\n",
     replace: "                let named = given.contains(a.as_str()) && false;\n",
     tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
+  },
+  {
+    name: "given-last-made-before-in-its-block-unseen",
+    breaks: "a closure made before in the block, `const read = () => seen`, called between, reads what `seen` is given, not what it was (rd105, ADR 0853)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "    let captured = captured(&stmts[..given]);\n",
+    replace: "    let captured = HashSet::<String>::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+  },
+  {
+    name: "given-last-made-around-unseen",
+    breaks: "a closure made before the `if` the variable's given in, called between, reads what it's given, not what it was (rd105, ADR 0853)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        made.extend(captured(std::slice::from_ref(&*stmt)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^given_last_closure_after.rs$"],
   },
 ];

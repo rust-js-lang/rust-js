@@ -1,6 +1,7 @@
 # 0853. A variable set again is read, and given what's made, where it is
 
-Status: Accepted. Narrows the handle held for a `Cell` reached through a
+Status: Accepted; amended (a closure made after the variable is given,
+below). Narrows the handle held for a `Cell` reached through a
 reference written again (MIR's lowering, ADR 0364); extends
 [0650](0650-a-shadow-of-a-binding-read-no-more-is-that-binding.md)'s
 shadows to a binding the variable it shadows is given last; and extends
@@ -195,3 +196,54 @@ coercion or a clone, in a closure or not, and no corpus case's shadow was
 decided by one, so `closure-declared-shadow-kept` survived every run.
 Shadows ask a pattern's names no more; the test of the cast keeps a call
 between it and its read, so a shadow made again would show as `arg$1`.
+
+## Amendment: a closure made after it's given
+
+React DOM's `ReactDOMEventHandle` fills a target's set of listeners the
+first time it's asked for, then returns what takes one out again:
+
+```rust
+let target_listeners = match get_event_handler_listeners(target) {
+    Some(listeners) => listeners,
+    None => {
+        let listeners = js::set::new(None);
+        set_event_handler_listeners(target, listeners);
+        listeners
+    }
+};
+target_listeners.add(listener);
+Box::new(move || target_listeners.delete(listener))
+```
+
+The returned closure captures `targetListeners`, so the variable wasn't
+given what's made where it's made:
+
+```js
+let targetListeners = getEventHandlerListeners(target);
+if (targetListeners == null) {
+  const targetListeners$1 = new Set();
+  setEventHandlerListeners(target, targetListeners$1);
+  targetListeners = targetListeners$1;
+}
+```
+
+**Only a closure or a `&mut`'s handle made before the variable is given
+keeps it apart**: one that exists while what's between runs, which may
+call it, or may throw to what calls it later. One made after can't be
+called before it's made, and isn't made where what's between throws.
+`given_last` passes each block the captures of what's made before it,
+its own statements' before `x = y;`, and of each statement around it,
+whole, so a loop's, made again before its body runs again, and a
+`switch`'s earlier cases', which one may fall into the next from, count.
+So upstream's `targetListeners = new Set();
+setEventHandlerListeners(target, targetListeners);`. Case: none; what
+runs between reads the variable through no closure that exists.
+
+- `test/corpus/given_last_closure_after.rs`: the listeners filled
+  lazily and a closure made after, given where made; a closure made
+  before the `if` around it, called between, reading what the variable
+  was, with native Rust. `cache_node_walk`'s closure before, in the
+  block.
+- Mutations `given-last-made-before-in-its-block-unseen`,
+  `given-last-made-around-unseen`; `given-last-of-a-captured` and
+  `given-last-of-a-capture` moved.

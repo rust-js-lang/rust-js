@@ -1023,16 +1023,16 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> HashSet<String> {
 
 /// What `body`'s closures, the functions it declares and its `&mut`s'
 /// handles read or set: not where they're written, but whenever they run.
-pub(super) fn captured(body: &mut Vec<Stmt>) -> HashSet<String> {
+pub(super) fn captured(body: &[Stmt]) -> HashSet<String> {
     let mut captured = HashSet::new();
     let mut insert = |name: &str| _ = captured.insert(name.to_string());
-    js::each_expr_mut(body, &mut |e| match &e.kind {
+    js::each_expr(body, &mut |e| match &e.kind {
         ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
         ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
         ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),
         _ => {}
     });
-    js::statement_lists(body, &mut |stmts| {
+    js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Function(function) = &stmt.kind {
                 js::visit_stmts(&function.body, &mut insert);
@@ -1052,12 +1052,14 @@ pub(super) fn captured(body: &mut Vec<Stmt>) -> HashSet<String> {
 /// as it was, by what called the closure. Not where a `break` or a
 /// `continue` between may leave before the variable's given it, nor in a
 /// `try`, whose `catch` or `finally` may read the variable as it was, nor
-/// of what a closure or a `&mut`'s handle reads, which may run between.
+/// of what a closure or a `&mut`'s handle reads that's made before it's
+/// given, which may run between: one made after can't, as it isn't yet,
+/// `return () => listeners.delete(l)` after `listeners = new Set()`
+/// (rd105), unless a loop around both makes it again first.
 pub(super) fn given_last(params: &[js::Pattern], body: &mut Vec<Stmt>) {
-    let captured = captured(body);
     let mut declared: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     declared_in(body, &mut declared);
-    given_last_in(body, false, (&captured, &declared));
+    given_last_in(body, false, (&HashSet::new(), &declared));
 }
 
 /// What `stmts` declare, in their blocks too: not their closures', which
@@ -1098,11 +1100,16 @@ fn declared_in(stmts: &[Stmt], declared: &mut HashSet<String>) {
 }
 
 /// `given_last` of `stmts`, and of each block in them: in a `try`'s, none.
-fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, names: (&HashSet<String>, &HashSet<String>)) {
+/// `made` is what's captured by what's made before `stmts` run, and of the
+/// statements around them, a loop's again before them.
+fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&HashSet<String>, &HashSet<String>)) {
     if !in_try {
-        given_first(stmts, names);
+        given_first(stmts, (made, declared));
     }
+    let mut made = made.clone();
     for stmt in stmts.iter_mut() {
+        made.extend(captured(std::slice::from_ref(&*stmt)));
+        let names = (&made, declared);
         match &mut stmt.kind {
             StmtKind::If(_, a, b) => {
                 given_last_in(a, in_try, names);
@@ -1130,10 +1137,10 @@ fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, names: (&HashSet<String>, 
 
 /// `given_last` of the block `stmts` itself: each variable given a binding
 /// made before it in the block, the binding named nowhere after.
-fn given_first(stmts: &mut Vec<Stmt>, (captured, declared): (&HashSet<String>, &HashSet<String>)) {
+fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&HashSet<String>, &HashSet<String>)) {
     let mut given = 0;
     while given < stmts.len() {
-        let Some((at, x, y)) = given_from(stmts, given, (captured, declared)) else {
+        let Some((at, x, y)) = given_from(stmts, given, (made, declared)) else {
             given += 1;
             continue;
         };
@@ -1152,11 +1159,11 @@ fn given_first(stmts: &mut Vec<Stmt>, (captured, declared): (&HashSet<String>, &
 }
 
 /// Of `stmts[given]`, `x = y;`, `given_first`'s: where `y` is made, `x`
-/// and `y`.
+/// and `y`. What's captured is `made`'s, and what the block makes before.
 fn given_from(
     stmts: &[Stmt],
     given: usize,
-    (captured, declared): (&HashSet<String>, &HashSet<String>),
+    (made, declared): (&HashSet<String>, &HashSet<String>),
 ) -> Option<(usize, String, String)> {
     let StmtKind::Assign(target, value) = &stmts[given].kind else {
         return None;
@@ -1164,7 +1171,12 @@ fn given_from(
     let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
         return None;
     };
-    if !kin(x, y) || !declared.contains(x) || captured.contains(x) || captured.contains(y) {
+    if !kin(x, y) || !declared.contains(x) {
+        return None;
+    }
+    let captured = captured(&stmts[..given]);
+    let early = |name: &str| made.contains(name) || captured.contains(name);
+    if early(x) || early(y) {
         return None;
     }
     let at = (stmts[..given].iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == y))?;
