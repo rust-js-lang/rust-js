@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "blank-before-attributes-lost",
     breaks: "a blank line before `#[cfg_attr(..)] pub const D` is lost",
     file: "src/to_oxc.rs",
-    find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last))\n",
-    replace: "                && macro_opening(last)\n",
+    find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last) || closure_opening(last))\n",
+    replace: "                && (macro_opening(last) || closure_opening(last))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a blank line before an item's attributes"],
   },
   {
@@ -215,8 +215,8 @@ export const mutations: Mutation[] = [
     name: "item-macro-blank-lost",
     breaks: "the blank line between a comment and `thread_local! {` is lost before its first item's comment",
     file: "src/to_oxc.rs",
-    find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last))\n",
-    replace: "                && last.trim_start().starts_with(\"#[\")\n",
+    find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last) || closure_opening(last))\n",
+    replace: "                && (last.trim_start().starts_with(\"#[\") || closure_opening(last))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
   },
   {
@@ -669,5 +669,13 @@ export const mutations: Mutation[] = [
     find: "    statement_starts.extend(pattern_starts.iter().copied());\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
+  },
+  {
+    name: "blank-before-closure-opening-unseen",
+    breaks: "a blank line before `NAMES.with(|names| {`, whose body is in its place, is dropped, its statement taken to follow the opening's line (rd44)",
+    file: "src/to_oxc.rs",
+    find: " || macro_opening(last) || closure_opening(last))\n",
+    replace: " || macro_opening(last))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "closure whose body"],
   },
 ];

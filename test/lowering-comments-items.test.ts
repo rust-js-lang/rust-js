@@ -298,3 +298,35 @@ import { lane } from "./lanes.js";
   expect(lanes).not.toContain("/*!");
   expect((await import(join(dir, "lib.js"))).named()).toBe(1);
 });
+
+// React's EventRegistry.registerDirectEvent: a blank line, then
+// `NAMES.with(|names| { .. })`, whose body is in its place: the blank line
+// before its statement, as the Rust and upstream have it (rd44). A closure
+// that stays one, `move || {`, takes none inside it.
+test("a blank line before a closure whose body is in its place is before its body", async () => {
+  const { js, lib } = await compiled("blank-before-a-closure-body", `use std::cell::RefCell;
+
+thread_local! {
+    static SEEN: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn register(n: u32) -> usize {
+    if n > 9 {
+        println!("big");
+    }
+
+    SEEN.with(|seen| {
+        seen.borrow_mut().push(n);
+    });
+    let count = SEEN.with(|seen| seen.borrow().len());
+
+    let shown = move || {
+        println!("{n}");
+    };
+    shown();
+    count
+}
+`);
+  expect(js).toContain('    console.log("big");\n  }\n\n  seen.push(n);\n  const count = seen.length;\n\n  function shown() {\n    console.log(`${n}`);\n  }');
+  expect((lib.register as (n: number) => number)(3)).toBe(1);
+});

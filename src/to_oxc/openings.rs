@@ -94,6 +94,14 @@ pub(super) fn receiver_only(code: &str) -> bool {
         })
 }
 
+/// Whether `line` ends opening a closure's body, `NAMES.with(|names| {`,
+/// `move || {`: its parameters' `|`, then `{`.
+pub(super) fn closure_opening(line: &str) -> bool {
+    line.trim_end()
+        .strip_suffix('{')
+        .is_some_and(|head| head.trim_end().ends_with('|'))
+}
+
 /// Whether `line`, to its end, opens a macro's body on a line of its own,
 /// `thread_local! {`, `jsx! {`: a path, `!` and `{`, whose code is the
 /// program's text (ADR 0621).

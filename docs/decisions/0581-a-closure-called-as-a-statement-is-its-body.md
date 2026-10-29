@@ -163,3 +163,18 @@ didWarn;`, `didWarn = new Set([name]);`. The corpus's `unsubscribe` of
 Held by `test/corpus/returned_closure_body.rs`, against native Rust, and
 `test/lowering-cells.test.ts`'s `capped`; mutation
 `returned-closure-called` (`js/applied.ts`).
+
+## Amendment: the blank line before such a closure (rd44)
+
+React's EventRegistry.registerDirectEvent writes a blank line, then
+`NAMES.with(|names| { dict::set(names, name, n); });`, whose body is in
+its place, `names[name] = n;`. The blank line was lost: the statement's
+span starts inside the closure, and the line before it, the closure's
+opening, isn't blank. **A blank line before a statement is looked for
+past a closure's opening, `NAMES.with(|names| {`, as past a macro's
+(ADR 0621) and its attributes' (ADR 0606)** (`to_oxc::blank_before`,
+`openings::closure_opening`). A closure that stays one starts a block of
+its own, which starts with no blank line, so it takes none. Held by
+`test/lowering-comments-items.test.ts` ("a blank line before a closure
+whose body is in its place is before its body") and the mutation
+`blank-before-closure-opening-unseen` (`to_oxc.ts`).

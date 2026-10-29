@@ -39,7 +39,8 @@ use self::header::header;
 pub use self::header::import_line;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
 use self::openings::{
-    arm_opening, leading_statements, macro_opening, match_opening, receiver_only, type_alias, unsafe_opening, use_item,
+    arm_opening, closure_opening, leading_statements, macro_opening, match_opening, receiver_only, type_alias,
+    unsafe_opening, use_item,
 };
 
 use std::path::PathBuf;
@@ -771,10 +772,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
             // Its attributes' lines, `#[cfg_attr(..)]`, are its own: what's
             // before them (ADR 0606); and a macro's opening, `thread_local! {`,
-            // its code's (ADR 0621).
+            // its code's (ADR 0621); and a closure's, `NAMES.with(|names| {`,
+            // whose body is in its place, what's before it (ADR 0581, rd44):
+            // one that stays a closure starts a block of its own, which
+            // starts with no blank line.
             while let Some(body) = before.strip_suffix('\n')
                 && let last = &body[body.rfind('\n').map_or(0, |i| i + 1)..]
-                && (last.trim_start().starts_with("#[") || macro_opening(last))
+                && (last.trim_start().starts_with("#[") || macro_opening(last) || closure_opening(last))
             {
                 before = &body[..body.len() - last.len()];
             }
