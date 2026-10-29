@@ -311,4 +311,28 @@ export const mutations: Mutation[] = [
     replace: "            js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,\n            js::ExprKind::Var(_) if own => f,\n",
     tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
   },
+  {
+    name: "counted-range-from-any-start",
+    breaks: "`(1..4).map(f).collect()` is `Array.from({ length: 4 }, ..)`, its items from 0, not 1 (#361)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "|| range.start.as_int() != Some(0) ",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
+  },
+  {
+    name: "counted-range-inclusive",
+    breaks: "`(0..=3).map(f).collect()` is `Array.from({ length: 3 }, ..)`, one item short (#361)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "|| range.inclusive ",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
+  },
+  {
+    name: "counted-range-reversed",
+    breaks: "`(0..4).rev().map(f).collect()` is `Array.from({ length: 4 }, ..)`, its items from the front (#361)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "if name != \"map\" || range.back ",
+    replace: "if name != \"map\" ",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
+  },
 ];

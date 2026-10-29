@@ -240,6 +240,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `(0..n).map(f)` collected, of one arrow `f`: `Array.from({ length: n
+    /// }, (_, i) => ..)`, as a person makes `n` items, room for them asked
+    /// first, `$roomFor(n, size)`, as `$range` would (ADR 0774, amended),
+    /// in `made` (#361). `None` of another, `mapped_range`'s.
+    pub(super) fn counted_range(
+        &mut self,
+        it: &Expr,
+        iter_ty: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> Option<Expr> {
+        let js::ExprKind::Call(callee, args) = &it.kind else {
+            return None;
+        };
+        let js::ExprKind::Member(source, name) = &callee.kind else {
+            return None;
+        };
+        let (range, [f]) = (stepped_range(source)?, args.as_slice()) else {
+            return None;
+        };
+        let js::ExprKind::Arrow(params, body) = &f.kind else {
+            return None;
+        };
+        if name != "map" || range.back || range.inclusive || range.start.as_int() != Some(0) || params.len() > 1 {
+            return None;
+        }
+        self.mapped_range(it, iter_ty, item)?;
+        let count = match range.end.reads_same() {
+            true => range.end.clone(),
+            false => self.spill("n", range.end.clone(), made),
+        };
+        if let Some(size) = item.and_then(|item| self.room_size_of(&count, item)) {
+            self.room_for((None, count.clone()), size, span, made);
+        }
+        let mut given = vec![js::Pattern::Name("_".to_string())];
+        given.extend(params.iter().cloned());
+        let given = match params.is_empty() {
+            true => Vec::new(),
+            false => given,
+        };
+        let length = Expr::object(vec![js::Prop::Field("length".to_string(), count)]);
+        let array_from = Expr::member(Expr::var("Array"), "from");
+        Some(Expr::call(array_from, vec![length, Expr::arrow(given, body.clone())]))
+    }
+
     /// `$iterator({ start: a, end: b }, $rangeNext).map(f)`, a range of
     /// numbers `iter_ty` steps, each item mapped, all collected: its array's,
     /// `$range(a, b).map(f)`, made as big as what's collected

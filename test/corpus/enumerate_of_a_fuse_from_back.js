@@ -17,12 +17,12 @@ import {
   $next,
   $nextBack,
   $nthDropping,
-  $range,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
   $rev,
+  $roomFor,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -35,7 +35,8 @@ function loudDrop_drop(loud) {
 }
 
 function louds(n) {
-  return $range(0, n, 4).map((value) => [value]);
+  $roomFor(n, 4);
+  return Array.from({ length: n }, (_, value) => [value]);
 }
 
 function main() {

@@ -9,6 +9,7 @@ import {
   $rangeFromNext,
   $resize,
   $resizeWith,
+  $roomFor,
   $roomForHint,
   $tableRoomFor,
   $unwound,
@@ -95,7 +96,11 @@ function main() {
     console.log(`[${madeOnes.join(", ")}]`);
 
     check("collect", () => $range(0, 4294967295, 1).map(made).length);
-    check("collect u16", () => $range(0, pastHalf(), 2).map((i) => i & 65535).length);
+    check("collect u16", () => {
+      const n = pastHalf();
+      $roomFor(n, 2);
+      return Array.from({ length: n }, (_, i) => i & 65535).length;
+    });
     check("collect inclusive", () => $range(0, 4294967296, 4).length);
     check("collect rev", () => $range(0, 4294967295, 1).toReversed().map(made).length);
     // Of what has no end, a `RangeFrom`'s, a `TrustedLen` of no upper

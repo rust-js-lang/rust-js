@@ -8,8 +8,8 @@ import {
   $iter,
   $mapEnds,
   $next,
-  $range,
   $rev,
+  $roomFor,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -21,7 +21,8 @@ function loudDrop_drop(loud) {
 }
 
 function louds(n) {
-  return $range(0, n, 4).map((value) => [value]);
+  $roomFor(n, 4);
+  return Array.from({ length: n }, (_, value) => [value]);
 }
 
 function main() {

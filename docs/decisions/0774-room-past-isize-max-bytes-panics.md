@@ -273,3 +273,20 @@ The guide's difference 26 no longer lists these forms.
   `step-by-uncounted`, `take-of-endless-uncounted`,
   `repeating-n-unhinted`, `range-count-unfolded` and
   `step-by-count-unfolded`.
+
+## Amendment: a range from 0 mapped into a `Vec` is `Array.from` (#361)
+
+`(0..queens_count).map(|_| None).collect()` was `$range(0, queensCount,
+12).map(() => undefined)`, an array of its indices made only to be mapped
+away. **`(0..n).map(f)` collected into a `Vec`, of one arrow `f`, is
+`Array.from({ length: n }, (_, i) => ..)`**, its room asked first,
+`$roomFor(n, size)`, where `$range` asked it, so it panics capacity
+overflow before `f` runs, as std's `collect` does
+(`sources::counted_range`, from `collected_counted`, which has the
+statements). Each item is its own `f`'s, a fresh `[]` each. Not of a range
+from another start, an inclusive one, a reversed one, more than one map,
+nor into a heap, whose `$heapFrom` is made of the array: `$range` as
+before. Case N: the same items in the same order, the same check first.
+Held by `test/corpus/range_map_collected.rs` against native Rust, 13
+other corpus cases reading so, and the mutations `counted-range-*`
+(`mir/iter/sources.ts`, `mir/iter/collect.ts`).

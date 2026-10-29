@@ -4,10 +4,20 @@
 // are the array's methods, and `Ordering` is -1, 0 or 1, as a comparator
 // returns it.
 
-import { $byteLen, $cmp, $lazyRange, $max, $min, $position, $range } from "@rust-js/runtime";
+import {
+  $byteLen,
+  $cmp,
+  $lazyRange,
+  $max,
+  $min,
+  $position,
+  $range,
+  $roomFor,
+} from "@rust-js/runtime";
 
 export function squares(n) {
-  return $range(0, n, 4).map((i) => Math.imul(i, i) >>> 0);
+  $roomFor(n, 4);
+  return Array.from({ length: n }, (_, i) => Math.imul(i, i) >>> 0);
 }
 
 export function evens(v) {

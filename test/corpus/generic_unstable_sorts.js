@@ -6,7 +6,6 @@ import {
   $given,
   $iter,
   $next,
-  $range,
   $selectNthUnstable,
   $slice,
   $sortUnstable,
@@ -44,13 +43,13 @@ function iSorted(IIterator) {
 }
 
 function main() {
-  const tags = $range(0, 40).map((i) => [
+  const tags = Array.from({ length: 40 }, (_, i) => [
     ((((i * 7) | 0) % 5) | 0) & 255,
     String.fromCharCode((97 + (((i % 26) | 0) & 255)) & 255),
   ]);
   const by = sorted(tags.slice(), byKey, "network");
   console.log(`${$debugStr(by.map((t) => t[1]).join(""))}`);
-  let wide = $range(0, 30).map((i) => [
+  let wide = Array.from({ length: 30 }, (_, i) => [
     BigInt.asUintN(64, BigInt((((i * 3) | 0) % 4) | 0)),
     0n,
     0n,

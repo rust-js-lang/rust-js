@@ -298,4 +298,21 @@ export const mutations: Mutation[] = [
     replace: "            if self.knows_its_back(iter_ty) == self.knows_its_back(iter_ty) { return Err(self.unsupported(span, \"`rposition`\")); }\n",
     tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
   },
+  {
+    name: "counted-range-into-a-heap",
+    breaks: "`(0..5).map(f).collect()` into a `BinaryHeap` is the array of them, `Array.from(..)`, not the heap made of it (#361)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if self.is_std_type(output, crate::lower::recognition::StdItem::Vec)\n",
+    replace: "        if self.is_vec_like(output)\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
+  },
+  {
+    name: "counted-range-never",
+    breaks: "`(0..n).map(f).collect()` is `$range(0, n, size).map(f)`, an array of its indices made to be mapped away (#361)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            && let Some(items) = self.counted_range(&it, iter_ty, item, span, made)\n",
+    replace: "            && let Some(items) = None::<Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
+    snapshots: true,
+  },
 ];

@@ -58,7 +58,10 @@ function isEqualRaw(x, y, n) {
 function main() {
   const bytes = $range(1, 13);
   const p = $ptr(bytes, 0);
-  const words = $range(0, 3).map((i) => $ptrRetyped($ptrAdd(p, (i * 4) >>> 0), 4, false).value);
+  const words = Array.from(
+    { length: 3 },
+    (_, i) => $ptrRetyped($ptrAdd(p, (i * 4) >>> 0), 4, false).value,
+  );
   const unaligned = $ptrRetyped($ptrAdd(p, 1), 4, false).value;
   const half = $ptrRetyped($ptrAdd(p, 5), 2, false).value;
   const three = $ptrRetyped($ptrAdd(p, 9), 3, "bytes").value;

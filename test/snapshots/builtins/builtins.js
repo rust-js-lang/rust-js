@@ -3,7 +3,7 @@
 import {
   $f64Max,
   $f64Min,
-  $range,
+  $roomFor,
   $round,
   $settle,
   $signum,
@@ -137,7 +137,9 @@ export function splitParts(text) {
 
 /** Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves. */
 export function units(text) {
-  return $range(0, text.length, 12).map((i) => text.charAt(i));
+  const n = text.length;
+  $roomFor(n, 12);
+  return Array.from({ length: n }, (_, i) => text.charAt(i));
 }
 
 /** A JS object of these keys and values, as an API taking a dictionary wants. */

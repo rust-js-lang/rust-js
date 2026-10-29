@@ -25,8 +25,8 @@ import {
   $next,
   $nextBack,
   $nthDropping,
-  $range,
   $rev,
+  $roomFor,
   $tryOf,
 } from "@rust-js/runtime";
 
@@ -38,7 +38,8 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function louds(n) {
-  return $range(0, n, 4).map((value) => [value]);
+  $roomFor(n, 4);
+  return Array.from({ length: n }, (_, value) => [value]);
 }
 function firsts(it, dropI) {
   const map = $held(

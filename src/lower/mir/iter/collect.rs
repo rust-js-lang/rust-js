@@ -206,6 +206,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => it,
         };
+        // Into a `Vec` alone, the array itself: a heap's is made of it.
+        if self.is_std_type(output, crate::lower::recognition::StdItem::Vec)
+            && let Some(items) = self.counted_range(&it, iter_ty, item, span, made)
+        {
+            return Ok(items);
+        }
         self.collected_into(it, output, item, Some(iter_ty), span)
     }
 
