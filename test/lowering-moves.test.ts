@@ -543,6 +543,67 @@ pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
   expect(style.margin).toBe("1px");
 });
 
+// What JS builds fresh of data properties alone, JSON.parse's object and
+// Object.getOwnPropertyDescriptor's descriptor, has no getter, so its
+// fields are read in place, as the program's own are: a binding that gives
+// it says so, \`#[rust_js::gives_plain_data]\` (#411; ADR 1022, amended).
+// React DOM's trackValueOnNode reads \`descriptor.get\` and \`.set\` so.
+test("a field of fresh plain data a binding gives is read in place", async () => {
+  const { js, lib } = await compiled("plain-data-fields", `use js::Unknown;
+
+pub struct Manifest {
+    pub tests: Option<String>,
+    pub root: String,
+}
+
+// JSON.parse makes a fresh object of data properties.
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
+#[allow(unused_variables)]
+fn manifest_of(text: &str) -> Manifest {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
+#[allow(unused_variables)]
+fn log(text: &str) {
+    unreachable!()
+}
+
+pub fn runner(text: &str) -> usize {
+    let manifest = manifest_of(text);
+    let mut n = manifest.root.len();
+    if let Some(tests) = &manifest.tests {
+        log(tests);
+        n += tests.len();
+    }
+    n
+}
+
+/// inputValueTracking's trackValueOnNode.
+pub fn tracked(node: &Unknown) -> bool {
+    let Some(descriptor) = js::object::get_own_property_descriptor(Some(node), "value") else {
+        return false;
+    };
+    let (Some(get), Some(set)) = (descriptor.get, descriptor.set) else {
+        return false;
+    };
+    set(get());
+    descriptor.configurable.unwrap_or(false)
+}
+`);
+  expect(js).toContain("  let n = $byteLen(manifest.root);\n  if (manifest.tests != null) {\n    console.log(manifest.tests);\n");
+  expect(js).toContain("  if (descriptor.get == null || descriptor.set == null) {\n    return false;\n  }\n  const get = descriptor.get;\n  const set = descriptor.set;\n");
+  expect(lib.runner('{"root": "ab", "tests": "cde"}' as never)).toBe(5);
+  expect(lib.runner('{"root": "ab"}' as never)).toBe(2);
+  let value = 1;
+  const node = {};
+  Object.defineProperty(node, "value", { get: () => value, set: (v: number) => void (value = v + 1), configurable: true });
+  expect([lib.tracked(node as never), value]).toEqual([true, 2]);
+  expect(lib.tracked({ value: 3 } as never)).toBe(false);
+  expect(lib.tracked({} as never)).toBe(false);
+});
+
 // A struct the program makes values of is its own data, whatever JS gives
 // of its type: React's fiber, which a cast of an owner of any shape gives
 // too, `js::cast::<&Fiber>(Some(owner))`, and what it holds, a never-built

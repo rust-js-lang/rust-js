@@ -56,21 +56,25 @@ fn file_data(this: &WasiFile) -> &'static Uint8Array {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 fn names_json(this: &Response) -> Promise<Vec<String>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 fn examples_json(this: &Response) -> Promise<Vec<Example>> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "json")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 fn packages_json(this: &Response) -> Promise<Packages> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 fn manifest_of(text: &str) -> Manifest {
     unreachable!()
 }

@@ -51,3 +51,14 @@ pub(in crate::lower) fn gives_back(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("gives_back")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
+
+/// `#[rust_js::gives_plain_data]`: a binding that gives fresh plain data, an
+/// object JS builds of data properties alone, no getter, as `JSON.parse`
+/// and `Object.getOwnPropertyDescriptor` do: a struct it gives, and each it
+/// holds, is read as plain data, as one the program builds is (#411; ADR
+/// 1022, amended, the user's decision). What it holds JS didn't build is
+/// typed as no struct, a descriptor's `value` a `dyn IntoUnknown`.
+pub(in crate::lower) fn gives_plain_data(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("gives_plain_data")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}

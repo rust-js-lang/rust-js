@@ -181,7 +181,7 @@ export function App() {
   const onExample = (name) => {
     const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen != null) {
-      const root = chosen.root;
+      const { root } = chosen;
       const files = chosen.files.slice();
       setExample(name);
       (async () => {

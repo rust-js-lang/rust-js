@@ -2429,6 +2429,7 @@ pub mod object {
     /// value, as TypeScript's `any`, `js::get(node, "constructor")`'s too;
     /// JS throws a `TypeError` of `None` (ADR 0666, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.getOwnPropertyDescriptor")]
+    #[cfg_attr(rust_js, rust_js::gives_plain_data)]
     pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(o: Option<&Unknown>, key: &K) -> Option<PropertyDescriptor<'static>> {
         unreachable!()
     }

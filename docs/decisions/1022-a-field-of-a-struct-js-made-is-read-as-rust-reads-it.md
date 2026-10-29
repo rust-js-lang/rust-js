@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -212,3 +212,57 @@ getters reads that object's fields as plain data; no program has needed
 otherwise. This widens the user's rd204 follow-up (plain-data reliance for
 exported parameters, closures' parameters and generic casts) to a cast of
 any shape where the struct is the program's; it's a decision to confirm.
+
+## Amendment: what a binding gives fresh of data properties is plain data (#411)
+
+What `JSON.parse` builds is an object of data properties alone, and so is
+`Object.getOwnPropertyDescriptor`'s descriptor (ECMAScript's
+FromPropertyDescriptor makes a fresh ordinary object): no getter answers
+a read of it. Since the decision above, a struct such a binding gives was
+taken for a JS object of getters, so React DOM's `trackValueOnNode`, ported,
+held each field before its test, `if (descriptor != null) { const get =
+descriptor.get; const set = descriptor.set; if (get != null) { if (set !=
+null) { .. } } }`, where upstream tests `descriptor.get == null ||
+descriptor.set == null` and returns; and the playground's manifest, which
+`JSON.parse` gives it, kept `const runner = manifest.tests;`.
+
+The user's decision: **one binding attribute says a result is fresh plain
+data, `#[rust_js::gives_plain_data]`**: a struct the binding gives, and
+each it holds, is read as plain data, as one the program builds is.
+`FnPointers::js_may_make` asks it beside `gives_back`, where a binding's
+call gives a result (`Made::call`). It's the binding's promise, as
+`gives_back` is: what such a result holds that JS didn't build is typed as
+no struct, a descriptor's `value` a `dyn IntoUnknown`. The js crate's
+`object::get_own_property_descriptor` and `reflect::
+get_own_property_descriptor` say it; so do the playground's `JSON.parse`
+and `response.json()` bindings and todomvc's `parse`.
+
+```rust
+#[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
+fn manifest_of(text: &str) -> Manifest {
+    unreachable!()
+}
+```
+
+```js
+const descriptor = Object.getOwnPropertyDescriptor(node, "value");
+if (descriptor == null) {
+  return false;
+}
+if (descriptor.get == null || descriptor.set == null) {
+  return false;
+}
+const get = descriptor.get;
+const set = descriptor.set;
+```
+
+Case (ADR 0262): N, no difference: no getter answers a data property, so
+reading it again gives what it gave.
+
+Held by `test/lowering-moves.test.ts`'s "a field of fresh plain data a
+binding gives is read in place" (a `JSON.parse` manifest and a
+descriptor, run); mutation `plain-data-taken-for-js-made`
+(`analysis/fn_pointers.ts`). The playground's snapshot reads
+`manifest.tests` in place and destructures `const { root } = chosen`
+again.

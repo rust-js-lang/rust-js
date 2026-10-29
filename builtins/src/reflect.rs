@@ -53,6 +53,7 @@ pub fn get<K: PropertyKey + ?Sized>(target: &Unknown, key: &K, receiver: Option<
 /// [`Reflect.getOwnPropertyDescriptor(o, key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Reflect/getOwnPropertyDescriptor):
 /// what an own property is, `None` where there's none.
 #[cfg_attr(rust_js, rust_js::link_name = "Reflect.getOwnPropertyDescriptor")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 pub fn get_own_property_descriptor<K: PropertyKey + ?Sized>(target: &Unknown, key: &K) -> Option<PropertyDescriptor<'static>> {
     unreachable!()
 }

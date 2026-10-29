@@ -506,10 +506,11 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
         }
-        // What a binding gives back is the program's (`#[rust_js::gives_back]`);
-        // what serde gives, a struct its `Deserialize` builds, is the
-        // program's own data (`built`).
-        if !crate::lower::bindings::gives_back(tcx, f) {
+        // What a binding gives back is the program's (`#[rust_js::gives_back]`),
+        // and fresh plain data JS builds is no getter's
+        // (`#[rust_js::gives_plain_data]`, #411); what serde gives, a struct
+        // its `Deserialize` builds, is the program's own data (`built`).
+        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {
             self.found.made_outside(result);
         }
     }

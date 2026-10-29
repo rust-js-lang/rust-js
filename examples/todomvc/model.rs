@@ -96,6 +96,7 @@ const KEY: &str = "todos-rust-js";
 // sandboxed frame, the playground's: then the todos are the page's only.
 // JSON.parse throws of text that isn't JSON (ADR 0035).
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+#[cfg_attr(rust_js, rust_js::gives_plain_data)]
 fn parse(json: &str) -> Result<Vec<Todo>, &'static JsError> {
     unreachable!()
 }
