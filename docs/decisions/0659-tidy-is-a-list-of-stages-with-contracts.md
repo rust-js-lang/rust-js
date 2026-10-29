@@ -349,3 +349,14 @@ reached: a compile error, no JS made, so none wrong.
 It found a wrong answer too, of the finished JS: a failing writer's
 string that tidy makes a `const` was declared inside the `try` that
 reads it in its `catch` (ADR 0187, amended).
+
+## Amendment: `handles in place` is reached, and checked again (2026-10-29, #198)
+
+09c172765 removed the `written/handles in place` pass's mutation as
+unreached. It is reached: the JS after `written/array values` and after
+`written/handles in place` (`--tidy-until`) differ in three corpus cases,
+a handle's `.value = v` the place it's of, `item.sibling = v`
+(`match_arm_guard_first.rs`), `node.next = ..` (`do_while_advances.rs`)
+and two reads `cursor.current` (`nullable_generic_fields.rs`). Its
+mutation, `mir-tidy-handle-in-place-kept` (`lower/mir/tidy/stages.ts`),
+drops the pass and is caught by those three cases' snapshots.

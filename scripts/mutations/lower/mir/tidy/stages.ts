@@ -715,4 +715,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^written_tails_apart.rs$"],
     snapshots: true,
   },
+  {
+    name: "mir-tidy-handle-in-place-kept",
+    breaks: "a handle MIR makes of a place and writes or reads once stays its getter and setter object, `{ get value() { .. }, set value(v) { .. } }.value = v`, not the place, `item.sibling = v` (#198)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"handles in place\", |b, _| handles_in_place(b)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$|^do_while_advances.rs$|^nullable_generic_fields.rs$"],
+    snapshots: true,
+  },
 ];
