@@ -854,3 +854,24 @@ its mutation; `rows_until` is as above, held by
 `test/corpus/match_breaks_its_loop.rs`'s snapshot against native Rust.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+## Amendment: no guard of a `default`'s rest that breaks its loop (2026-10-30)
+
+The #221 amendment's `some_switch_defaults` took what MIR put after a
+`Some`'s `if (x != null) { switch (x) { .. } }` for the `switch`'s
+`default`, but not a rest that `break`s its loop, whose `break` a
+`default` would make the `switch`'s. No program reaches that guard: the
+rest of a `_` arm that breaks its loop is one the `Some`s go past, which
+makes the `switch` a labeled block's, its `default` a jump, or one of
+`continue`s with no `if` of its `null`, neither of the shape the pass
+takes. Its mutation, `some-switch-rest-break`, survived main's checks;
+with the guard off no corpus case's JS changed (snapshots compared), nor
+the snapshot, lowering, JSX, React, docs, readability, compiler or stable
+suites' 1,313 tests, nor any of the 222 files of React's port's crates
+(react-in-rust 7cc212e, each built with and without it), nor probes of
+`Option<&str>` and `Option<u32>` matches whose `_ => { ..; break; }`.
+The guard went with its mutation. `test/lowering-switch-symbols.test.ts`'s
+"a match of symbols whose other arm breaks its loop leaves the loop" runs
+both shapes against native Rust.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.

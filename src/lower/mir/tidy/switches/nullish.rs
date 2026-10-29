@@ -11,8 +11,10 @@ use super::does_nothing;
 /// false;`, which `None` and each value no case takes reach: `switch (x)
 /// { .. default: hit = false; }`, as JS's `switch` takes `null` to the
 /// `default` where no case is `null`'s (#221). Not where a `break;` of no
-/// label in a case leaves the `switch` for that rest, nor in the rest,
-/// which in a `default` would leave the `switch`, not the loop.
+/// label in a case leaves the `switch` for that rest. A rest that breaks
+/// its loop never comes here: its `Some`s' way past it makes the `switch`
+/// a labeled block's, whose `default` jumps, or one of `continue`s with no
+/// `if` of its `null` (ADR 0629, amended).
 pub(super) fn some_switch_defaults(body: &mut Vec<Stmt>, switches: &[Switch]) {
     let Some(at) = body.iter().position(|s| match &s.kind {
         StmtKind::If(test, then, None) => match &then[..] {
@@ -32,7 +34,7 @@ pub(super) fn some_switch_defaults(body: &mut Vec<Stmt>, switches: &[Switch]) {
     }) else {
         return;
     };
-    if at + 1 == body.len() || js::breaks(&body[at + 1..], None) {
+    if at + 1 == body.len() {
         return;
     }
     let rest = body.split_off(at + 1);
