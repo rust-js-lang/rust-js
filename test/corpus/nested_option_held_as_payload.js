@@ -56,13 +56,7 @@ function lookups(values, wanted) {
   } else {
     shown = "nothing";
   }
-  let inner;
-  if (last !== undefined) {
-    const inner$1 = last;
-    inner = inner$1 != null;
-  } else {
-    inner = false;
-  }
+  const inner = last != null;
   return `${shown} ${seen} ${inner}`;
 }
 

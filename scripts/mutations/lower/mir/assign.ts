@@ -696,4 +696,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx-events.test.ts", "-t", "async event handler"],
   },
+  {
+    name: "settled-until-read-never",
+    breaks: "a binding of a `mut` parameter assigned after its `match` is a `const n = shape._0;` in each arm, not read in place (#121)",
+    file: "src/lower/mir/assign.rs",
+    find: "                || self.settled_until_read(state, &expr, local))\n",
+    replace: "                || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
+    snapshots: true,
+  },
 ];

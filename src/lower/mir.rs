@@ -342,6 +342,10 @@ pub(super) struct Found {
     /// And of the others' arrays, their items, `...items`.
     pub(super) alike: HashSet<String>,
     pub(super) plain: HashSet<String>,
+    /// And those of plain Rust data written again, a `mut` parameter
+    /// assigned after what it's read for: each the same until it's written
+    /// (`written_before_read`, #121).
+    pub(super) settled: HashSet<String>,
     /// And the places that hold its cells, `&mut`s to what JS can't change
     /// in place: a box or a handle, whose `value` is what it points at,
     /// unlike a struct's field of that name. Its locals', by name, and a
@@ -383,6 +387,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// same wherever it's read: assigned once and never borrowed.
     pub(super) fn alike_local(&self, name: &str) -> bool {
         self.locals.mir.alike.contains(name)
+    }
+
+    /// Whether `ty` is plain Rust data, which nothing changes but an
+    /// assignment of what holds it: no `&mut`, `Cell`, JS object or counted
+    /// `Rc` in it (ADR 0320).
+    fn plain_type(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().all(|arg| match arg.kind() {
+            ty::GenericArgKind::Type(t) => {
+                !self.refers_mutably(t)
+                    // Inside a binder, a function pointer's parameter, unknown.
+                    && !t.has_escaping_bound_vars()
+                    && t.is_freeze(self.tcx, self.typing_env)
+                    && !self.is_js_object(t)
+                    && self.counted_rc(t).is_none()
+                    && self.counted_weak(t).is_none()
+            }
+            _ => true,
+        })
     }
 
     /// Whether `name`, such a local, is plain Rust data, whose fields don't
@@ -1075,31 +1097,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // What reads the same wherever it's read.
         for (local, name) in state.locals.names.iter_enumerated() {
-            if name.is_empty()
-                || written_apart(&state, local)
-                || state.locals.borrowed[local]
-                || state.locals.changed[local]
-            {
+            if name.is_empty() || state.locals.borrowed[local] || state.locals.changed[local] {
+                continue;
+            }
+            let plain = self.plain_type(mir_body.local_decls[local].ty);
+            if written_apart(&state, local) {
+                if plain {
+                    self.locals.mir.settled.insert(name.clone());
+                }
                 continue;
             }
             self.locals.mir.alike.insert(name.clone());
-            let is_plain = |ty: Ty<'tcx>| {
-                ty.walk().all(|arg| match arg.kind() {
-                    ty::GenericArgKind::Type(t) => {
-                        !self.refers_mutably(t)
-                            // Inside a binder, a function pointer's parameter, unknown.
-                            && !t.has_escaping_bound_vars()
-                            && t.is_freeze(self.tcx, self.typing_env)
-                            && !self.is_js_object(t)
-                            // A counted `Rc`'s or `Weak`'s counts change through
-                            // what shares it (ADR 0320).
-                            && self.counted_rc(t).is_none()
-                            && self.counted_weak(t).is_none()
-                    }
-                    _ => true,
-                })
-            };
-            let plain = is_plain(mir_body.local_decls[local].ty);
             // What's to through a `&mut` changes by what it's given to.
             let through_mut = matches!(
                 mir_body.local_decls[local].ty.kind(),
@@ -1111,7 +1119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(adt, _) if !plain && !through_mut && adt.is_struct() => {
                     match self.shape(mir_body.local_decls[local].ty.peel_refs()) {
                         Shape::Object(fields) => (fields.into_iter())
-                            .filter(|(_, ty)| is_plain(*ty))
+                            .filter(|(_, ty)| self.plain_type(*ty))
                             .map(|(field, _)| format!("{name}.{field}"))
                             .collect(),
                         _ => Vec::new(),

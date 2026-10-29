@@ -252,4 +252,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
     snapshots: true,
   },
+  {
+    name: "written-before-read-blind",
+    breaks: "a binding of a `mut` parameter written before it's read, `shape = ..; n`, is read in place, its parameter held whole before it's written, `const shape$1 = shape;`, not as the binding it is (#121)",
+    file: "src/lower/mir/queries.rs",
+    find: "    uses.writes.iter().any(|write| {\n",
+    replace: "    false && uses.writes.iter().any(|write| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-before-read-anywhere-after",
+    breaks: "a parameter written after every read of a binding of it, after its `match`, keeps a `const n = shape._0;` in each arm (#121)",
+    file: "src/lower/mir/queries.rs",
+    find: "(after || reached.contains(&write.block)) && reaching.contains(&write.block)",
+    replace: "(after || reached.contains(&write.block))",
+    tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
+    snapshots: true,
+  },
 ];

@@ -454,6 +454,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// Whether `expr`, a field of a variable written again, `shape._0` of a
+    /// `mut` parameter, reads the same wherever `local`, a variant's
+    /// binding of it, is read: of plain data, and written on no way from
+    /// here to a read (`written_before_read`, #121).
+    fn settled_until_read(&self, state: &State<'_, 'tcx>, expr: &Expr, local: Local) -> bool {
+        let mut root = expr;
+        while let js::ExprKind::Member(object, _) = &root.kind {
+            if root.facts.has(js::Known::Getter) {
+                return false;
+            }
+            root = object;
+        }
+        let js::ExprKind::Var(name) = &root.kind else {
+            return false;
+        };
+        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| (n == name).then_some(l)) else {
+            return false;
+        };
+        root != local
+            && self.locals.mir.settled.contains(name)
+            && !written_before_read(state.body, state.location(), root, local)
+    }
+
     pub(super) fn mir_store(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -706,7 +729,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local]
             && !state.named.contains(&local)
-            && self.reads_same_anywhere(&expr, state.body.local_decls[local].ty)
+            && (self.reads_same_anywhere(&expr, state.body.local_decls[local].ty)
+                || self.settled_until_read(state, &expr, local))
         {
             state.in_place.insert(local, expr);
             return Ok(());

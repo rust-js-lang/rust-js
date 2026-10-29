@@ -406,6 +406,56 @@ fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -
     false
 }
 
+/// Whether `root` may be written on a way from `at`, where `local` is
+/// made, to a read of `local`: assigned, whole or in part, a call's result
+/// put in it, or lent `&mut`, in a block that's both reached from `at` and
+/// reaches a read (#121). A `mut` parameter assigned after its `match` is
+/// written on none of its arms' ways.
+pub(super) fn written_before_read(body: &mir::Body<'_>, at: mir::Location, root: Local, local: Local) -> bool {
+    use mir::visit::{PlaceContext, Visitor};
+    struct Uses {
+        root: Local,
+        local: Local,
+        writes: Vec<mir::Location>,
+        reads: Vec<mir::Location>,
+    }
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, at: mir::Location) {
+            match context {
+                PlaceContext::MutatingUse(_) if local == self.root => self.writes.push(at),
+                PlaceContext::NonMutatingUse(_) if local == self.local => self.reads.push(at),
+                _ => {}
+            }
+        }
+    }
+    let mut uses = Uses {
+        root,
+        local,
+        writes: Vec::new(),
+        reads: Vec::new(),
+    };
+    uses.visit_body(body);
+    // The blocks reached from `at`, and those that reach a read.
+    let mut reached = std::collections::HashSet::new();
+    let mut next: Vec<BasicBlock> = body.basic_blocks[at.block].terminator().successors().collect();
+    while let Some(block) = next.pop() {
+        if reached.insert(block) {
+            next.extend(body.basic_blocks[block].terminator().successors());
+        }
+    }
+    let mut reaching = std::collections::HashSet::new();
+    let mut next: Vec<BasicBlock> = uses.reads.iter().map(|read| read.block).collect();
+    while let Some(block) = next.pop() {
+        if reaching.insert(block) {
+            next.extend(body.basic_blocks.predecessors()[block].iter().copied());
+        }
+    }
+    uses.writes.iter().any(|write| {
+        let after = write.block == at.block && write.statement_index > at.statement_index;
+        (after || reached.contains(&write.block)) && reaching.contains(&write.block)
+    })
+}
+
 /// Whether `local` is assigned in `from`, or a block it goes on to.
 pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
     let mut seen = std::collections::HashSet::new();

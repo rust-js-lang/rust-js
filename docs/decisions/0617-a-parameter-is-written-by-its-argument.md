@@ -37,3 +37,21 @@ the `let`s declared first, and a `move` closure's copy all ask them.
 - `test/architecture.test.ts`, "a local written again is written_again's
   alone": no other place counts MIR's writes past one.
 - Mutations: `reassigned-param-alike`, `move-capture-of-reassigned-param-shared`.
+
+## Amendment: the same until it's written (#121)
+
+Whether a local reads the same was decided for the whole function, so a
+`mut` parameter assigned only after its `match`, `describe(mut shape)`'s
+`shape = Shape::Dot;`, had a `const n = shape._0;` in each arm, where
+reading `shape._0` in place was right. **A variant's binding of a field
+of a variable written again, of plain data, is read in place where the
+variable is written on no way from the binding to a read of it**
+(`queries::written_before_read`, from `assign::settled_until_read`): no
+assignment of it, whole or in part, no call's result put in it and no
+`&mut` of it in a block both reached from the binding and reaching a
+read. One written between, in its arm or a loop's next turn, is held as
+before, and a closure's capture is held where it's made. Case A: the
+same reads in the same order. Held by `test/corpus/settled_until_written.rs`
+and `guarded_bindings.rs` against native Rust, and the mutations
+`settled-until-read-never` (`mir/assign.ts`) and `written-before-read-*`
+(`mir/queries.ts`).
