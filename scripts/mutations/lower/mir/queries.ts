@@ -243,4 +243,13 @@ export const mutations: Mutation[] = [
     replace: "                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
     tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
   },
+  {
+    name: "read-from-past-assignment",
+    breaks: "a read of a local past where it's assigned again, a loop's `&mut found` made anew before it's read, is taken for one of the value written, so `found.push(v)` holds it first, `const f = found; f.push(v)` (#198)",
+    file: "src/lower/mir/queries.rs",
+    find: "                Some(false) => continue 'blocks,\n",
+    replace: "                Some(false) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
+    snapshots: true,
+  },
 ];
