@@ -102,3 +102,26 @@ of a `dyn` is. Which pointers hold one is `holds_a_dyn_tail`'s, which
 `dyn_tail` and `check_unsize` both ask. `test/corpus/rc_dyn_struct_tail.rs`
 holds a counted `Rc`, one never counted and an `Arc`; mutations
 `rc-dyn-tail-refused` and `counted-rc-dyn-tail-uncelled`.
+
+## Amendment: a struct in a `RefCell` (#375)
+
+`Rc<RefCell<Framed<Circle>>>` made `Rc<RefCell<Framed<dyn Shape>>>`
+compiled to `const shape = circle;`, with no `impl` given. Its borrow's
+call read `borrowMut.impl` and threw `TypeError: Cannot read properties
+of undefined (reading 'grow')`, where Rust prints 2. That's a wrong
+answer, so ADR 0262's "results change" case: Rust's behavior is kept.
+
+A `RefCell` that's the struct it holds (`is_value_cell`, ADR 0863) is now
+looked through, by `tail_holder`. The struct, which is the cell, is given
+its last field's `impl`, as one behind a reference is:
+`$dynCell(circle, circleShape)`, or the counted `Rc`'s `$dynCell(rc.value,
+..)`. That covers an `Rc`'s, a `Box`'s and a `&RefCell<Framed<dyn Shape>>`.
+
+Any other holder of a struct with a `dyn` last field, a `Mutex<W<dyn N>>`
+say, was just as wrong. It's now refused, and listed in the guide's
+limitations.
+
+- `test/corpus/dyn_tail_in_a_ref_cell.rs` checks an `Rc`'s, with a `Drop`
+  run through the `dyn`, and a lent one's, against native Rust.
+- The mutations are `dyn-tail-in-a-cell-unpeeled` and
+  `dyn-tail-holder-unchecked`.

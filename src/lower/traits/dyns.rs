@@ -278,15 +278,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADRs 0409, 0436). Not a `dyn FnMut`, the JS function: the same struct
     /// either way.
     pub(in crate::lower) fn dyn_tail(&self, source: Ty<'tcx>, target: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
-        let (from, to) = (self.pointee(source), self.pointee(target));
-        if !self.holds_a_dyn_tail(target)
-            || !matches!(to.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did()))
-        {
+        let (from, to) = (self.tail_holder(source), self.tail_holder(target));
+        if !self.holds_a_dyn_tail(target) || !self.is_own_struct(to) {
             return None;
         }
         let (concrete, tail) = self.tcx.struct_lockstep_tails_for_codegen(from, to, self.typing_env);
         matches!(tail.kind(), ty::Dynamic(traits, ..) if self.recognition().is_pair_dyn(traits))
             .then_some((concrete, tail))
+    }
+
+    /// The struct a pointer `ty` to one whose last field is a `dyn` points
+    /// to: its pointee, or of a `RefCell` that's the struct it holds
+    /// (`is_value_cell`), `Rc<RefCell<Framed<dyn Shape>>>`'s, that struct,
+    /// which the cell is (#375).
+    pub(in crate::lower) fn tail_holder(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        let pointee = self.pointee(ty);
+        match pointee.kind() {
+            ty::Adt(_, args) if self.is_value_cell(pointee) => args.type_at(0),
+            _ => pointee,
+        }
+    }
+
+    fn is_own_struct(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && self.is_rust_adt(adt.did()))
     }
 
     /// The fields from a `ty` to the struct its last `dyn` field is in, each
@@ -346,7 +360,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if pointee.is_adt()
             && matches!(tail.kind(), ty::Dynamic(traits, ..)
                 if self.recognition().is_pair_dyn(traits) || self.is_dyn_debug(tail))
-            && (!self.holds_a_dyn_tail(target) || self.is_dyn_debug(tail))
+            && (!self.holds_a_dyn_tail(target)
+                || self.is_dyn_debug(tail)
+                || !self.is_own_struct(self.tail_holder(target)))
         {
             return Err(self.unsupported(span, &format!("a `{pointee}`, whose last field is a `dyn`")));
         }
@@ -430,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let trait_id = self.dyn_trait_ref(tail, concrete).map(|tr| tr.def_id);
             let dictionary = self.dyn_dictionary(tail, concrete, span)?;
             // The struct itself holds it: given its `impl` as it's made.
-            let path = self.tail_path(self.pointee(target));
+            let path = self.tail_path(self.tail_holder(target));
             let counted = self.counted_rc(target).is_some();
             if path.is_empty() && !counted {
                 return self.given_impl(value, (concrete, trait_id), dictionary, target, span);

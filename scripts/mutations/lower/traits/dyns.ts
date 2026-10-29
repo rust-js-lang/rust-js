@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dyn-tail-holder-unchecked",
+    breaks: "a struct whose last field is a `dyn` behind a `Mutex` compiles, never given its `impl`, so its call reads `undefined.grow`, not refused (#375)",
+    file: "src/lower/traits/dyns.rs",
+    find: "                || !self.is_own_struct(self.tail_holder(target)))\n",
+    replace: "                || false)\n",
+    tests: ["test/limitations.test.ts", "-t", "behind a .Mutex"],
+  },
+  {
+    name: "dyn-tail-in-a-cell-unpeeled",
+    breaks: "a struct whose last field is made a `dyn` in a `RefCell` that's the struct, `Rc<RefCell<Framed<dyn Shape>>>`, isn't given its `impl`, so a borrow's call reads `undefined.grow` (#375)",
+    file: "src/lower/traits/dyns.rs",
+    find: "            ty::Adt(_, args) if self.is_value_cell(pointee) => args.type_at(0),\n",
+    replace: "            ty::Adt(_, args) if false && self.is_value_cell(pointee) => args.type_at(0),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_tail_in_a_ref_cell.rs$"],
+  },
+  {
     name: "dyn-bound-lifetimes",
     breaks: "a `dyn for<'a>` trait's dictionary is asked of rustc with its lifetime bound, and rustc panics",
     file: "src/lower/traits/dyns.rs",
@@ -128,8 +144,8 @@ export const mutations: Mutation[] = [
     name: "dyn-tail-unrefused",
     breaks: "an `Rc<Fat<dyn T>>`, which may be counted, whose last field would be dropped through its `impl`, isn't refused",
     file: "src/lower/traits/dyns.rs",
-    find: "            && (!self.holds_a_dyn_tail(target) || self.is_dyn_debug(tail))\n",
-    replace: "            && self.is_dyn_debug(tail)\n",
+    find: "            && (!self.holds_a_dyn_tail(target)\n                || self.is_dyn_debug(tail)\n",
+    replace: "            && (false\n                || self.is_dyn_debug(tail)\n",
     tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a struct of a dyn"],
   },
   {
@@ -209,8 +225,8 @@ export const mutations: Mutation[] = [
     name: "boxed-dyn-tail-refused",
     breaks: "a `Box<Fat<dyn Show>>`, a struct whose last field is a `dyn`, is refused, as an `Rc` of one is",
     file: "src/lower/traits/dyns.rs",
-    find: "            && (!self.holds_a_dyn_tail(target) || self.is_dyn_debug(tail))\n",
-    replace: "            && (!target.is_ref() || self.is_dyn_debug(tail))\n",
+    find: "            && (!self.holds_a_dyn_tail(target)\n                || self.is_dyn_debug(tail)\n",
+    replace: "            && (!target.is_ref()\n                || self.is_dyn_debug(tail)\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
   {
