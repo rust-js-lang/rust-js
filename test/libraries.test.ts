@@ -274,8 +274,12 @@ pub fn count() -> u32 {
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
   // One its module's path names, its namespace's, by its file (ADR 1018).
   expect(js()).toContain('import * as Hooks from "../../kids/src/hooks.js";\n');
-  // Each module as its own `use` names it: this one by the module's path.
-  expect(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8")).toContain('import * as Client from "../../kids/src/client.js";\n');
+  // Each module as its own `use` names it: this one by the module's path,
+  // each of its items, not by the package's name the root's names it by.
+  const byModule = readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8");
+  expect(byModule).toContain('import * as Client from "../../kids/src/client.js";\n');
+  expect(byModule).toContain("  Client.bump();\n  return Client.count();\n");
+  expect(byModule).not.toContain("@acme/kids");
   expect(ran()).toBe(nativeRun);
   // Its root re-exports what the entry does, each from the same module,
   // and nothing else: no JS of its own, the entry's already (ADR 1008,

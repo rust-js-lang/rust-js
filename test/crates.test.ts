@@ -191,7 +191,10 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {
   const out = chain(pairs, "returned_item", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("    depth = previous;\n  }\n  return Dep.noop;\n}");
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("    depth = previous;\n  }\n  return Dep.noop;\n}");
+  // One its `use` names, by that name.
+  expect(app).toContain("    depth = previous;\n  }\n  return idle;\n}");
 }, 300_000);
 
 // ADR 0844: a library that reads no count of its `Rc`s counts none, and its
@@ -346,7 +349,8 @@ test("a library's generic function is its program's, alone or a dependency, and 
   expect(app).toContain("text += hourDisplay.fmt(hour);");
   expect(app).toContain("digitDoubled.doubled([4])");
   expect(app).toContain("  const pointCopy = { copy: (value) => ({ ...value }) };\n");
-  expect(app).toContain("twice({ x: 3 }, pointCopy)");
+  expect(app).toContain("Dep.twice({ x: 3 }, pointCopy)");
+  expect(app).not.toContain("\nfunction twice(");
   // The impls the library's own code never asks for, which its JS hasn't,
   // the consumer compiles where it gives them to the library's generic
   // code (ADR 0914, amended); one its program exports, `digitPartialEq`, it

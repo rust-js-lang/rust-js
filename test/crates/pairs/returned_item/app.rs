@@ -1,6 +1,7 @@
 //! The library's function returned past a guard's drop, which can't change
 //! it: after the `finally`, as React's `startGestureTransition` returns
 //! `noop` (ADR 0693, amended).
+use dep::idle;
 use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -42,8 +43,22 @@ fn start(n: u32) -> &'static dyn Fn() -> u32 {
     &dep::noop
 }
 
+/// As `start`, its last a library's function its `use` names.
+fn restart(n: u32) -> &'static dyn Fn() -> u32 {
+    let previous = DEPTH.get();
+    DEPTH.set(previous + 1);
+    let _restore = Restore { previous };
+    match catch_unwind(AssertUnwindSafe(|| scope(n))) {
+        Ok(Some(_)) => return &ten,
+        Ok(None) => {}
+        Err(_) => println!("caught"),
+    }
+    &idle
+}
+
 pub fn main() {
     for n in 1..4 {
         println!("{n} gave {} at depth {}", start(n)(), DEPTH.get());
+        println!("{n} gave {} again at depth {}", restart(n)(), DEPTH.get());
     }
 }
