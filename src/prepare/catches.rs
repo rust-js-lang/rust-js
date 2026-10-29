@@ -16,6 +16,12 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>, ends: bool) {
     unwound_lets(body);
     let mut i = 0;
     while i < body.len() {
+        // One tested after what the `if` asks first, `if (c &&
+        // $catchUnwind(f).TAG === "Err") { .. }`, is the `try` inside the
+        // `if` of what's first (`asked_first`).
+        if let Some(asked) = asked_first(&body[i], &body[..i]) {
+            body[i] = asked;
+        }
         // A `Result` tested where it's made, `if ($catchUnwind(f).TAG ===
         // "Err" && c)`, is one made first, then tested (ADR 0706, amended).
         if let Some((made, tested)) = made_where_tested(&body[i])
@@ -201,6 +207,42 @@ fn made_where_tested(stmt: &Stmt) -> Option<(Stmt, Stmt)> {
         _ => unreachable!("matched above"),
     }
     Some((StmtKind::Const(TESTED.to_string(), call).at(stmt.span), tested))
+}
+
+/// `if (c && $catchUnwind(f).TAG === "Err" && d) { .. }`, with no `else`,
+/// as `if (c) { try { .. } catch { if (d) { .. } } }`, React's
+/// checkPassiveEvents (ADR 0706, amended): `c` first, the closure only where
+/// it's true, as `&&` runs them; where what's first is all before the
+/// `Result`'s test, and the `if` of the rest is a `try` (`chained_try_catch`).
+/// `before`, what's before it in its body, which a `let` it makes mustn't
+/// clash with.
+fn asked_first(stmt: &Stmt, before: &[Stmt]) -> Option<Stmt> {
+    let StmtKind::If(test, then, None) = &stmt.kind else {
+        return None;
+    };
+    let mut parts = Vec::new();
+    conjuncts(test, &mut parts);
+    let at = (parts.iter().skip(1))
+        .position(|part| js::result::tested(part).is_some_and(|(call, ..)| call.caught().is_some()))?
+        + 1;
+    let joined = |parts: &[&Expr]| {
+        (parts.iter().skip(1)).fold((*parts[0]).clone(), |a, b| Expr::bin(js::Op::And, a, (*b).clone()))
+    };
+    let rest = StmtKind::If(joined(&parts[at..]), then.clone(), None).at(stmt.span);
+    let (made, tested) = made_where_tested(&rest)?;
+    let (caught, _) = chained_try_catch(&made, &tested, before, &[], false)?;
+    Some(StmtKind::If(joined(&parts[..at]), caught, None).at(stmt.span))
+}
+
+/// Each of `test`'s `&&`s, in order.
+fn conjuncts<'e>(test: &'e Expr, out: &mut Vec<&'e Expr>) {
+    match &test.kind {
+        ExprKind::Binary(js::Op::And, a, b) => {
+            conjuncts(a, out);
+            conjuncts(b, out);
+        }
+        _ => out.push(test),
+    }
 }
 
 /// A test's first part and the rest of its `&&`s, in order: `a && b &&

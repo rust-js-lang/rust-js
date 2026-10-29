@@ -124,3 +124,50 @@ export function fatal(x) { log.push("fatal " + x); }
   lib.inside(7, true);
   expect(host.log).toEqual(["throw 0", "panic 0", "complete 0", "throw 7", "fatal 7", "complete 7"]);
 });
+
+// React's checkPassiveEvents, `if (canUseDOM) { try { .. } catch (e) {
+// passiveBrowserEventsSupported = false; } }`: a JS call's `Result` tested
+// after what the `if` asks first is the `try` inside that `if`, the call
+// made only where it's true, as `&&` makes it (ADR 0706, amended).
+test("a JS call's Result tested after what an if asks first is a try inside it", async () => {
+  const { js, dir } = compiled(
+    "unwind-asked-first",
+    `use js::JsError;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#probe")]
+fn probe(_n: u32) -> Result<(), &'static JsError> {
+    unreachable!()
+}
+
+pub fn supported(can_use_dom: bool, n: u32) -> bool {
+    let mut supported = can_use_dom;
+    if can_use_dom && probe(n).is_err() {
+        supported = false;
+    }
+    supported
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export const log = [];
+export function probe(n) { log.push(n); if (n > 2) throw new Error("no"); }
+`,
+  );
+  expect(js).toContain(`export function supported(canUseDom, n) {
+  let supported = canUseDom;
+  if (canUseDom) {
+    try {
+      probe(n);
+    } catch {
+      supported = false;
+    }
+  }
+  return supported;
+}`);
+  const lib = await import(join(dir, "lib.js"));
+  const host = await import(join(dir, "host.js"));
+  expect([lib.supported(true, 1), lib.supported(true, 3), lib.supported(false, 3)]).toEqual([true, false, false]);
+  // Not called where what's asked first is false.
+  expect(host.log).toEqual([1, 3]);
+});

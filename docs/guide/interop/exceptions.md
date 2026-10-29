@@ -672,7 +672,9 @@ export function text(value) {
   An `if let Err(e) = catch_unwind(f)` that heads a chain, `&& c`, is a
   `try` too, the rest of the chain the `catch`'s `if`, which reads what
   the closure set; its `else`, where the `if` returns, what follows the
-  `try`:
+  `try`. One tested after what an `if` asks first, `if c &&
+  catch_unwind(f).is_err()` with no `else`, is that `try` inside `if
+  (c)`, as `&&` runs the closure only where `c` is true:
 
 ```rust
 use js::{JsError, Unknown};
@@ -692,6 +694,14 @@ pub fn stacks(render: &dyn Fn()) -> Option<(String, Option<String>)> {
         return Some((sample_stack, control.stack()));
     }
     None
+}
+
+pub fn passive(can_use_dom: bool, probe: &dyn Fn()) -> bool {
+    let mut supported = can_use_dom;
+    if can_use_dom && catch_unwind(AssertUnwindSafe(probe)).is_err() {
+        supported = false;
+    }
+    supported
 }
 
 pub fn control_stack() -> Option<String> {
@@ -729,6 +739,18 @@ export function stacks(render) {
       }
     }
   }
+}
+
+export function passive(canUseDom, probe) {
+  let supported = canUseDom;
+  if (canUseDom) {
+    try {
+      probe();
+    } catch {
+      supported = false;
+    }
+  }
+  return supported;
 }
 
 export function controlStack() {

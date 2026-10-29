@@ -8,7 +8,8 @@ and [0692](0692-a-thrown-error-is-a-panic-and-what-js-threw.md), whose
 of it was `$unwinding(payload)`. Amended by
 [0710](0710-every-unwinds-payload-is-the-js-error-thrown.md): a downcast to
 a `&JsError` is what was thrown of any `try`, not only one of panics;
-below: a `catch_unwind` that heads an `if let` chain is a `try`; and by
+below: a `catch_unwind` that heads an `if let` chain is a `try`; one
+tested after what an `if` asks first is a `try` inside it; and by
 [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
 the `catch` of a `let Err(x)` is what follows that reads `x` or what that
 declares, with no `let` before the `try`.
@@ -193,3 +194,52 @@ that heads an if let chain is a try", run in Node; corpus case
 `chain-else-of-going-on-after`, `chain-else-dropped`,
 `chain-shadow-left-in-if`, `chain-if-before-its-comment`
 (`prepare/catches.rs`), `tried-last-return-dropped` (`js/applied.rs`).
+
+## Amendment: a `catch_unwind` tested after what an `if` asks first is a `try` inside it
+
+React's checkPassiveEvents asks whether it has a DOM, then tries:
+
+```js
+if (canUseDOM) {
+  try {
+    const options = {};
+    Object.defineProperty(options, 'passive', {get: function () { passiveBrowserEventsSupported = true; }});
+    window.addEventListener('test', options, options);
+    window.removeEventListener('test', options, options);
+  } catch (e) {
+    passiveBrowserEventsSupported = false;
+  }
+}
+```
+
+Its port writes clippy's form, `if can_use_dom &&
+catch_unwind(AssertUnwindSafe(|| { .. })).is_err() { .. }` (clippy's
+`collapsible_if` asks for it over an `if` in an `if`), and rust-js wrote
+`if (canUseDOM && $catchUnwind(() => { .. }).TAG === "Err") { .. }`
+(rd222): `made_where_tested` took a `Result`'s test only at the chain's
+head.
+
+**`if (c && $catchUnwind(f).TAG === "Err" && d) { .. }`, with no `else`,
+is `if (c) { try { .. } catch { if (d) { .. } } }`** (`asked_first`,
+`prepare/catches.rs`): what's before the `Result`'s test is the outer
+`if`'s, and the rest is the `if` this ADR already makes a `try`, inside
+it. A `$try` of a JS call (ADR 0637) is split the same way.
+
+- **It's the same program**: `if (a && b) S` with no `else` is `if (a) {
+  if (b) S }` in JS, `b` run only where `a` is true, as `&&` runs it, so
+  the closure runs only where `c` is true, as Rust's `&&` calls
+  `catch_unwind` only then.
+- **Only where the rest is a `try`**: where it isn't (an `Ok` read after
+  it), the `if` stays one test, as before, not two `if`s around
+  `$catchUnwind`.
+- **An `else` keeps `$catchUnwind`**: it runs both where `c` is false and
+  where the closure didn't throw, so splitting the test would write it
+  twice.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, the same tests in
+the same order. Held by corpus case `catch_unwind_tested_last` against
+native Rust (one asked first, two, one after, an `Ok`, an `else`);
+`test/lowering-unwind-arms.test.ts`, "a JS call's Result tested after what
+an if asks first is a try inside it", run in Node; the guide's `passive` (`interop/exceptions.md`); and mutations
+`asked-first-kept-in-test`, `asked-first-only-the-first`,
+`asked-first-else-dropped` (`prepare/catches.rs`).
