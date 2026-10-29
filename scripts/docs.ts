@@ -116,6 +116,17 @@ function generated(path: string): string {
   return body.join("\n").trim() + "\n";
 }
 
+/** The apps' builds, the first alone, which fills the cache they share,
+ * the rest after it, at once, each finding what it needs built: its turn,
+ * `ready`, and `done`, which the first's gives the rest. */
+let firstApp: Promise<void> | undefined;
+function appTurn(): { ready: Promise<void>; done: () => void } {
+  if (firstApp) return { ready: firstApp, done: () => {} };
+  let done = () => {};
+  firstApp = new Promise((resolve) => (done = resolve));
+  return { ready: Promise.resolve(), done };
+}
+
 /** What the example's output fences say, compiled: each fence's new body. */
 async function compile(example: Example, n: number): Promise<{ bodies: string[]; problem?: string }> {
   const dir = join(work, relative(guide, example.page).replace(/\//g, "_"), String(n));
@@ -146,6 +157,12 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
       toml: next + crate("js", "builtins") + crate("webapi", "webapi") + crate("node", "node") + (example.dependencies ?? ""),
     });
   }
+  // An app's build: each `cargo check`s webapi's crate into the cache they
+  // share, and two building it at once raced on its incremental files,
+  // "failed to move dependency graph", where webapi's sources changed. The
+  // first builds it alone.
+  const built = app ? appTurn() : undefined;
+  if (built) await built.ready;
   const proc = Bun.spawn(
     app
       ? [process.execPath, join(root, "tooling", "cli.js"), "build"]
@@ -154,6 +171,7 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
     { cwd: dir, stdout: "pipe", stderr: "pipe", env: { ...process.env, RUST_JS_COMPILER: compiler } },
   );
   const [stderr, exit] = [await new Response(proc.stderr).text(), await proc.exited];
+  built?.done();
   // What the compiler said, but Cargo's progress, which is a run's own.
   const progress = /^ +(Blocking|Compiling|Checking|Downloading|Downloaded|Updating|Locking|Adding|Finished|Fresh)\b/;
   const said =
