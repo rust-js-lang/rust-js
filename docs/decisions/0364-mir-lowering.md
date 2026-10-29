@@ -419,3 +419,41 @@ calls printed; mutations `decisions-guard-call-a-leaf`,
 alike calls and the last check of the whole chain have none: MIR makes no
 such tree the corpus has found, and each arm's own check says what the
 last does of each tree it has.
+
+## Amendment: a constant's test says its value is no `None` (#412, 2026-10-29)
+
+A `match` of an `Option`'s constants whose arm leaves the loop, `Some(C)
+=> break`, is no `switch` (its `break` would need a label the Rust lacks)
+and so the `if` chain `decisions` makes; but each arm's path there began
+`symbolFor != null`, so the chain had more tests than MIR's tree, and
+the tree stayed, `bb22: { if (symbolFor != null) { .. break bb22; .. } hit
+= false; }`.
+
+- **A path's `x != null` where another of its tests is `x === k` of a
+  `k` that's never `null` or `undefined` goes** (`present_said`): a
+  string, a number, or a constant of a `match` whose constants are
+  numbers, strings or the registry's symbols (`Switch::valued`), as ADR
+  0629's `switch` takes `None` in no case. `x === k` is false of `null`,
+  so the path holds alike.
+- **Of an arm's alternatives MIR tests apart, each failing of one before
+  it that's a single test no set says, a symbol's, goes from the paths
+  after it** (`alternatives`): `s === A || (s !== A && s === B)` is `s ===
+  A || s === B`, as `a || (!a && b)` is `a || b`; the tests are pure.
+
+- **Only of a tree no `switch` takes**, where an arm or what follows the
+  block breaks the loop around it (`Told::loops`), which a case would
+  take for the `switch`'s: of the others, a `switch` of the value reads
+  as written, React's resolveThenable's `throw thenable;` after it, not
+  its `default`, and a `match` with a `None` arm stays as it was.
+
+`if (symbolFor === A || symbolFor === B) { hit = true; } else if
+(symbolFor === C) { break; } else { hit = false; }`, and `stopped`'s
+`continue` and `break` alike. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, each value takes the same arm. Held by
+`test/lowering-switch-symbols.test.ts` (`broken`, `stopped`, run in Node
+with native Rust's values), corpus case `option_match_leaves_loop` against
+native Rust, and mutations `present-unsaid`,
+`present-unsaid-past-a-failure`, `negated-alternative-kept`,
+`present-said-of-any-tree`, `present-said-past-the-block-unseen`
+(`mir/tidy/decisions.ts`). No mutation of `Switch::valued`'s part: each
+constant MIR makes a `===` of is one.

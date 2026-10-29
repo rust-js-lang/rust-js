@@ -125,10 +125,12 @@ pub(super) const STAGES: &[Stage] = &[
             // made: the chain of its arms, now that the loops are made.
             pass("decisions", |b, h| {
                 let bound = decisions::bound(b);
+                let loops = decisions::loop_labels(b);
                 let told = decisions::Told {
                     guards: &h.written.guards,
                     switches: &h.written.switches,
                     bound: &bound,
+                    loops: &loops,
                 };
                 bottom_up(b, &mut |s| decisions::decisions(s, &told))
             }),

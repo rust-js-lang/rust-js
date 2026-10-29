@@ -245,6 +245,28 @@ pub fn guarded(values: &[&'static Unknown], limit: u32) -> Vec<u32> {
         level = 3;
     }`);
   expect(js).not.toContain("symbolFor != null) {\n        switch");
+  // An arm that leaves the loop, `Some(C) => break`, an `if` chain, each
+  // constant's test saying it's no `None`, not MIR's block (#412).
+  expect(js).toContain(`    const symbolFor = tag(value);
+    if (symbolFor === A || symbolFor === B) {
+      hit = true;
+    } else if (symbolFor === C) {
+      break;
+    } else {
+      hit = false;
+    }`);
+  expect(js.slice(js.indexOf("function broken"), js.indexOf("function returned"))).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain(`    const symbolFor = tag(value);
+    if (symbolFor === A || symbolFor === B) {
+      level = 1;
+    } else if (symbolFor === C) {
+      continue;
+    } else {
+      seen.push(0);
+      if (seen.length > 3) {
+        break;
+      }
+    }`);
   installRuntime(dir);
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 const [a, b, c, x] = ["a", "b", "c", "x"].map((name) => Symbol.for(name));

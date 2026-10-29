@@ -11,7 +11,7 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
-use crate::lower::mir::hints::{Guard, Switch};
+use crate::lower::mir::hints::{Constant, Guard, Switch};
 
 use super::{ends, first_written, made_where, names_break};
 
@@ -35,6 +35,25 @@ pub(super) struct Told<'h> {
     pub guards: &'h [Guard],
     pub switches: &'h [Switch],
     pub bound: &'h HashSet<String>,
+    /// Each loop's label (`loop_labels`), a `break` of which leaves it.
+    pub loops: &'h HashSet<String>,
+}
+
+/// The label of each loop in `body`.
+pub(super) fn loop_labels(body: &[Stmt]) -> HashSet<String> {
+    let mut labels = HashSet::new();
+    js::each_list(body, &mut |list| {
+        for stmt in list {
+            if let StmtKind::While { label: Some(l), .. }
+            | StmtKind::DoWhile { label: Some(l), .. }
+            | StmtKind::ForOf { label: Some(l), .. }
+            | StmtKind::For { label: Some(l), .. } = &stmt.kind
+            {
+                labels.insert(l.clone());
+            }
+        }
+    });
+    labels
 }
 
 /// The variables of `body` each assigned what reads nothing that changes
@@ -143,8 +162,31 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     };
     tree_walk.walk(vec![tree], Vec::new())?;
     // A path no value takes, `c < "0" && c >= "A"`, goes.
+    let valued = |e: &Expr| {
+        Value::of(e).is_some()
+            || (told.switches.iter()).any(|switch| {
+                switch.valued
+                    && (switch.arms.iter())
+                        .flat_map(|arm| &arm.constants)
+                        .any(|c| matches!(c, Constant::Value(at) if !e.span.is_none() && *at == e.span))
+            })
+    };
+    // Only of a tree no `switch` takes, a `break` of the loop around it in
+    // an arm or what follows, which a case would take for the `switch`'s
+    // (#412): of the others, the `switch` of the value reads as written.
+    let mut breaking = false;
+    let arms_and_after = (leaves.iter()).flat_map(|leaf| leaf.body.iter().copied());
+    for s in arms_and_after.chain(after) {
+        js::each_list(std::slice::from_ref(s), &mut |list| {
+            breaking |= (list.iter()).any(|s| match &s.kind {
+                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l)),
+                _ => false,
+            });
+        });
+    }
+    let valued = |e: &Expr| breaking && valued(e);
     let leaves: Vec<(Vec<Expr>, Leaf)> = (leaves.into_iter())
-        .filter_map(|leaf| Some((simplified(&leaf.tests)?, leaf)))
+        .filter_map(|leaf| Some((present_said(simplified(&leaf.tests)?, &valued), leaf)))
         .collect();
     // Leaves that do one thing, one arm.
     let mut arms: Vec<Arm> = Vec::new();
@@ -271,7 +313,11 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
                 }
             }
         }
-        if changed && let Some(tests) = made.iter().map(|path| simplified(path)).collect::<Option<Vec<_>>>() {
+        if changed
+            && let Some(tests) = (made.iter())
+                .map(|path| Some(present_said(simplified(path)?, &valued)))
+                .collect::<Option<Vec<_>>>()
+        {
             arms[i].tests = tests;
         }
     }
@@ -400,22 +446,29 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>) {
             paths.insert(i, path);
         }
     }
+    // And of a value's `===` no set says, a symbol's, `s === A || (s !== A
+    // && s === B)`'s `s !== A`, as it's written (#412).
     let mut failed: Vec<(Expr, Set)> = Vec::new();
+    let mut negated: Vec<Expr> = Vec::new();
     for tests in paths {
         let said = |t: &Expr| {
             atom(t).is_some_and(|(s, set)| {
                 failed
                     .iter()
                     .any(|(f, fails)| same_subject(f, &s) && fails.within(&set))
-            })
+            }) || negated.iter().any(|n| n.written_alike(t))
         };
         if tests.iter().any(|t| !said(t)) {
             tests.retain(|t| !said(t));
         }
-        if let [only] = tests.as_slice()
-            && let Some((s, set)) = atom(only)
-        {
-            failed.push((s, set.complement()));
+        if let [only] = tests.as_slice() {
+            match atom(only) {
+                Some((s, set)) => failed.push((s, set.complement())),
+                None if matches!(&only.kind, ExprKind::Binary(Op::Eq, of, _) if is_subject(of)) => {
+                    negated.push(only.clone().negated_test())
+                }
+                None => {}
+            }
         }
     }
 }
@@ -842,6 +895,34 @@ fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
         }
     }
     Some(out)
+}
+
+/// Of a path's `tests`, each `x != null` where another is `x === k` of a
+/// `k` never `null` or `undefined` (`valued`), which says it: gone,
+/// `symbolFor === C` alone, as a `switch` takes `None` in no case (#412).
+fn present_said(mut tests: Vec<Expr>, valued: &dyn Fn(&Expr) -> bool) -> Vec<Expr> {
+    fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
+        match &e.kind {
+            ExprKind::Binary(Op::Eq, a, b) => {
+                (same_subject(a, subject) && valued(b)) || (same_subject(b, subject) && valued(a))
+            }
+            ExprKind::Binary(Op::Or, a, b) => says(subject, a, valued) && says(subject, b, valued),
+            _ => false,
+        }
+    }
+    let said: Vec<bool> = (tests.iter())
+        .map(|t| match &t.kind {
+            ExprKind::Binary(Op::LooseNe, subject, none)
+                if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) =>
+            {
+                tests.iter().any(|other| says(subject, other, valued))
+            }
+            _ => false,
+        })
+        .collect();
+    let mut said = said.into_iter();
+    tests.retain(|_| !said.next().unwrap_or(false));
+    tests
 }
 
 /// `test`'s parts that must all hold, `a && b`'s, into `out`.

@@ -7,6 +7,46 @@ const CALLS = ["test/corpus.test.ts", "-t", "^(default_value_exits|guards_that_c
 
 export const mutations: Mutation[] = [
   {
+    name: "present-said-past-the-block-unseen",
+    breaks: "a symbol match whose `_`, after MIR's inner block, breaks the loop keeps the block's `!= null` tests, `stopped`'s `bb25:` (#412)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    for s in arms_and_after.chain(after) {\n",
+    replace: "    for s in arms_and_after {\n",
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
+  },
+  {
+    name: "present-said-of-any-tree",
+    breaks: "a tree a `switch` takes, React's resolveThenable's inner `match`, is a chain first, what follows the outer `match` its `default`, `default: throw thenable;` (#412)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    let valued = |e: &Expr| breaking && valued(e);\n",
+    replace: "    let valued = |e: &Expr| valued(e);\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable is upstream"],
+  },
+  {
+    name: "present-unsaid",
+    breaks: "a symbol match's chain tests `symbolFor != null` in each arm, beside `symbolFor === C`, more tests than MIR's tree, so its labeled block stays (#412)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                tests.iter().any(|other| says(subject, other, valued))\n",
+    replace: "                false\n",
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
+  },
+  {
+    name: "present-unsaid-past-a-failure",
+    breaks: "an arm's path whose earlier arm's failure is left out keeps its `!= null`, `symbolFor != null && symbolFor === C`, the labeled block staying (#412)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                .map(|path| Some(present_said(simplified(path)?, &valued)))\n",
+    replace: "                .map(|path| simplified(path))\n",
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
+  },
+  {
+    name: "negated-alternative-kept",
+    breaks: "an or-pattern of symbols MIR tests apart is `s === A || (s !== A && s === B)`, not `s === A || s === B` (#412)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            }) || negated.iter().any(|n| n.written_alike(t))\n",
+    replace: "            })\n",
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms"],
+  },
+  {
     name: "decisions-guard-call-a-leaf",
     breaks: "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
