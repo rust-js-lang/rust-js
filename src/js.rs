@@ -700,7 +700,10 @@ pub enum Known {
     /// A call that throws only where what it's given does: std's print,
     /// `console.log(text)`, whose stream never fails (ADRs 0132, 0901); or
     /// a function each call of which does, one of the crate's that never
-    /// unwinds, `loudDrop_drop` (ADR 0902).
+    /// unwinds, `loudDrop_drop` (ADR 0902). Or a read of a field of a
+    /// struct JS made, which a getter may answer (`Getter`), where Rust
+    /// reads a place, which can't panic: a getter's throw is none Rust
+    /// sees, so a scope's `finally` runs past it (rd227, rd228).
     NeverThrows,
     /// A binding's call that runs no code but its own, none of the
     /// program's, so it sets none of its variables: a weak set's `has(key)`,

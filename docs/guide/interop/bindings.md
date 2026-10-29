@@ -618,6 +618,9 @@ a struct JS gives an exported function, or a closure or `fn` pointer it
 calls, and one a generic `js::cast::<T>` gives: each relies on JS giving
 an object of plain data, no getters, as React's props and state are
 ([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+amended). A read of such a field can't panic in Rust, so a guard's scope
+holds it in its one `try { .. } finally { .. }`, as it holds what makes
+values ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md),
 amended).
 
 `js::concat_text` is `"" + value`: of text or a number, its `String`; of a

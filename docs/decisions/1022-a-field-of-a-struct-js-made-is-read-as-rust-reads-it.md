@@ -266,3 +266,11 @@ descriptor, run); mutation `plain-data-taken-for-js-made`
 (`analysis/fn_pointers.ts`). The playground's snapshot reads
 `manifest.tests` in place and destructures `const { root } = chosen`
 again.
+
+## Amendment: a getter's read is no panic (rd227, rd228)
+
+The fact above has two answers. A read of a field of a struct JS made is a
+getter's, so it's read as often as Rust reads it and in its order
+(`Known::Getter`); but it may not panic, as Rust's read of a field can't,
+so it throws only where what it's read of does (`Known::NeverThrows`), and
+a guard's scope holds it in its one `finally` (ADR 0693, amended).

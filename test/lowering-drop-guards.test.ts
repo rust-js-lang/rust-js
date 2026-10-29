@@ -613,3 +613,117 @@ pub fn before(strict: &Cell<bool>, f: &dyn Fn() -> u32) -> u32 {
     [false, true, true],
   ]);
 });
+
+// React's describeNativeComponentFrame and describeNode read fields of
+// what JS made, a descriptor's \`configurable\`, a node's \`type\`, in a
+// guard's scope. A getter may answer such a read (ADR 1022), but Rust's
+// read of a field can't panic, so it's no throw the scope's \`finally\`
+// must stop at: the scope is one \`try { .. } finally { .. }\`, not a
+// \`catch\` of the drop around each call (rd227, rd228; ADR 0693 amended).
+test("a field read of what JS made in a guard's scope is in its one try", async () => {
+  const { js, dir } = compiled("guard-js-made-fields", `use std::cell::Cell;
+
+thread_local! {
+    static REENTRY: Cell<bool> = const { Cell::new(false) };
+}
+
+pub struct Descriptor {
+    pub configurable: Option<bool>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.descriptorOf")]
+#[allow(unused_variables)]
+fn descriptor_of(name: &str) -> Option<&'static Descriptor> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
+#[allow(unused_variables)]
+fn work(n: f64) -> f64 {
+    unreachable!()
+}
+
+struct Restore;
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        REENTRY.set(false);
+    }
+}
+
+/// describeNativeComponentFrame's guard around its frame's calls.
+pub fn describe(name: &str) -> f64 {
+    REENTRY.set(true);
+    let _restore = Restore;
+    let mut total = work(1.0);
+    if let Some(descriptor) = descriptor_of(name)
+        && descriptor.configurable == Some(true)
+    {
+        total += work(2.0);
+    }
+    total + work(3.0)
+}
+
+pub fn reentry() -> bool {
+    REENTRY.get()
+}
+
+pub struct Tail {
+    pub kind: f64,
+    pub size: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.tails")]
+fn tails() -> Vec<&'static Tail> {
+    unreachable!()
+}
+
+/// describeNode's tail, its nodes' fields read in the guard's scope.
+pub fn described() -> f64 {
+    REENTRY.set(true);
+    let _restore = Restore;
+    let mut total = 0.0;
+    for tail in tails() {
+        let kind = tail.kind;
+        let size = tail.size;
+        total += work(kind) + size;
+    }
+    total
+}
+`);
+  expect(js).toContain(`  REENTRY = true;
+  try {
+    let total = globalThis.work(1);
+    const descriptor = globalThis.descriptorOf(name);
+    if (descriptor != null && descriptor.configurable) {
+      total += globalThis.work(2);
+    }
+    return total + globalThis.work(3);
+  } finally {
+    REENTRY = false;
+  }`);
+  expect(js).toContain(`    while ((tail = $next(iter)) != null) {
+      const kind = tail.kind;
+      const size = tail.size;
+      total += globalThis.work(kind) + size;
+    }
+    return total;
+  } finally {
+    REENTRY = false;
+  }`);
+  const lib = await import(join(dir, "lib.js"));
+  const global = globalThis as Record<string, unknown>;
+  global.work = (n: number) => n * 10;
+  global.descriptorOf = (name: string) => (name === "x" ? { configurable: true } : null);
+  global.tails = () => [{ kind: 1, size: 2 }, { kind: 3, size: 4 }];
+  expect([lib.describe("x"), lib.describe("y"), lib.reentry()]).toEqual([60, 40, false]);
+  expect([lib.described(), lib.reentry()]).toEqual([46, false]);
+  global.work = (n: number) => {
+    if (n === 2) throw new Error("work");
+    return n;
+  };
+  expect(() => lib.describe("x")).toThrow("work");
+  global.tails = () => [{ kind: 2, size: 0 }];
+  expect(() => lib.described()).toThrow("work");
+  expect(lib.reentry()).toBe(false);
+});

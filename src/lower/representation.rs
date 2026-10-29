@@ -557,10 +557,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Object(fields), _) => {
                 let field = Expr::member(base, fields[i].0.clone());
                 // Of a JS object the program didn't build, a getter may
-                // answer it (rd204, ADR 1022).
+                // answer it (rd204, ADR 1022); Rust's read of a field can't
+                // panic, so it throws only where what it's read of does: a
+                // getter's throw is none Rust sees (rd227, rd228).
                 let field = match ty.kind() {
                     ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()) => {
-                        field.answered_by_a_getter()
+                        field.answered_by_a_getter().never_throws()
                     }
                     _ => field,
                 };

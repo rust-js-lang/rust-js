@@ -235,4 +235,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rc_refcell_dyn_shared.rs$"],
     snapshots: true,
   },
+  {
+    name: "js-made-field-read-throws",
+    breaks: "a read of a field of a struct JS made may throw, so describeNativeComponentFrame's guard is a catch of its drop around each call, not one try/finally (rd228)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Member(object, _) if self.facts.has(Known::NeverThrows) => object.may_throw(),\n",
+    replace: "",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "field read of what JS made"],
+  },
 ];

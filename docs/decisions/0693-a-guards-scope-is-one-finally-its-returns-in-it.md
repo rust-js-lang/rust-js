@@ -240,3 +240,34 @@ guard's scope returns in its try", run in JS: each way out, a throw too,
 restores the fiber once; the corpus case `drop_guard_early_return`
 (React's `runWithFiberInDEV`, nested and panicking) against native Rust;
 and the mutation `return-place-out-of-scope` (`mir/tidy/unwinds.rs`).
+
+## Amendment: a field read of a struct JS made is in the scope (rd227, rd228)
+
+Since ADR 1022, a field of a struct JS made is a read a getter may answer
+(`Known::Getter`), which `Expr::may_throw` took for one that may throw, so
+a run of a guard's scope ended at it: React's describeNativeComponentFrame,
+ported, tests `descriptor != null && descriptor.configurable` in its
+`Restore` guard's scope, and printed a `try { .. } catch (error) {
+reentry = false; ..; throw error; }` around each call, its drop's body
+repeated; describeNode's tail, `const value = tailNode.type; const props =
+tailNode.props;` in a loop over a borrow, kept a catch around every call.
+
+**Rust's read of a field can't panic, so such a read throws only where
+what it's read of does** (`Known::NeverThrows`, which a call that throws
+only where what it's given does already says): the field read is
+`answered_by_a_getter().never_throws()` (`representation.rs`), and
+`may_throw` of a `Member` that says so is its object's. MIR puts no
+unwind on the read, so lowering wraps no `catch` around it; the scope's
+`finally` (`Run::covers`, `Stmt::only_makes_values`) runs past it as it
+runs past what makes values. It's still a getter's read, so it's read as
+often as Rust reads it, in its order (`has_effects`, `reads_same`).
+
+Case (ADR 0262): N. A getter that throws is no panic Rust can see: Rust
+reads the field and goes on. Where one does in JS, the guard's drop runs
+in the `finally` as it would after a panic, the cleaner JS; the program
+can't tell.
+
+Held by `test/lowering-drop-guards.test.ts`'s "a field read of what JS
+made in a guard's scope is in its one try" (both shapes, run, a throwing
+call each); mutations `js-made-field-read-throws` (`js/expr_walk.ts`) and
+`js-made-field-read-may-panic` (`lower/representation.ts`).

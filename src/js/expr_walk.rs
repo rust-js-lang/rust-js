@@ -463,6 +463,10 @@ impl Expr {
             {
                 args.iter().any(Expr::may_throw)
             }
+            // A field of a struct JS made, which a getter may answer, read
+            // where Rust reads a place, which can't panic: it throws where
+            // what it's read of does (rd227, rd228).
+            ExprKind::Member(object, _) if self.facts.has(Known::NeverThrows) => object.may_throw(),
             // Made of parts, as `has_effects` reads them: each throws where
             // one of its parts does, `${total(x)}` where `total(x)` does (ADR
             // 0902).
