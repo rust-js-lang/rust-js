@@ -712,3 +712,20 @@ a loop, written to reach it. The guard and
 `apart_from_written_break` went with the mutation. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N; a chain it would have kept
 guarded runs the same tests either way, as the guard's test is implied.
+
+## Amendment: `exits_after` moves nothing of a loop that `break`s (2026-10-29)
+
+The 2026-10-26 amendment had `exit_after` move, of a loop with one
+`break`, the code before it that's written after the loop, the `break`
+kept as it was. Since then the stages before it put that code after the
+loop themselves, so that path decided nothing: its mutation,
+`exit-after-of-a-break-kept`, survived a full check, and with it taken
+out no corpus case's JS changed (snapshots compared), nor the snapshot,
+lowering, JSX, React, docs, readability, compiler or stable suites' 1,304
+tests, nor any of React's port (react-in-rust 73d8e30, each crate built
+with and without it, its 221 generated files the same), nor probes of a
+`None => break`, a `break value` and a let-else `break` of an outer loop.
+`exit_after` takes only a loop nothing `break`s again, its way out a
+`return`, and the `break` it leaves is where the moved code ends, as
+before; the mutation went with the path. Case
+([0262](0262-when-rust-and-js-disagree.md)): N.

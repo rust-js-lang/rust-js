@@ -18,10 +18,11 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
     if !matches!(cond.kind, ExprKind::Bool(true)) || span.is_none() {
         return None;
     }
-    // A loop that `break`s, of one `break` alone: what's before it there
-    // the program wrote after the loop, `if (next != null) { update = next;
-    // } else { ..; break; }`, MIR's `None => break` of `match next`'s.
-    let own = breaks(body, label.as_deref());
+    // Not of a loop that `break`s: what it does after its own `break` is
+    // put after it as written by the stages before (ADR 0702, amended).
+    if breaks(body, label.as_deref()) {
+        return None;
+    }
     // The labels inside it, whose jumps don't leave it.
     let mut inner: HashSet<String> = label.iter().cloned().collect();
     js::each_list(body, &mut |list| {
@@ -79,13 +80,7 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
     // A loop nothing `break`s, the program's next one, never goes on
     // either: it leaves as its `return` does, where none of its jumps is to
     // a label in this one, `break bb22` of a block it's in.
-    let own_break = |s: &Stmt| match &s.kind {
-        StmtKind::Break(None) => true,
-        StmtKind::Break(Some(l)) => label.as_ref() == Some(l),
-        _ => false,
-    };
     let leaves = |s: &Stmt| match &s.kind {
-        _ if own => own_break(s),
         StmtKind::Return(_) | StmtKind::Throw(_) => true,
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
         StmtKind::While { label, cond, body } => {
@@ -129,17 +124,14 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         }
     }
     // An `if` each of whose branches leaves so, `if (total > 10) { break
-    // bb18; } else { continue bb1; }`, leaves too, where the loop has no
-    // `break` of its own to keep.
+    // bb18; } else { continue bb1; }`, leaves too.
     fn leaving(s: &Stmt, leaves: &dyn Fn(&Stmt) -> bool) -> bool {
         leaves(s)
             || matches!(&s.kind, StmtKind::If(_, then, Some(otherwise))
                 if [then, otherwise].iter().all(|b| b.last().is_some_and(|s| leaving(s, leaves))))
     }
     let at = |list: &[Stmt]| -> Option<usize> {
-        let last = list
-            .last()
-            .filter(|s| if own { leaves(s) } else { leaving(s, &leaves) })?;
+        let last = list.last().filter(|s| leaving(s, &leaves))?;
         let mut k = list.len() - 1;
         while k > 0 && stays(&list[k - 1]) && after(&list[k - 1]) {
             k -= 1;
@@ -171,28 +163,20 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
     let (path, k) = (path.clone(), *k);
     // What the loop declares, but what's moved: none of it read there.
     let mut kept = body.clone();
-    let mut moved = at_path(&mut kept, &path).split_off(k);
-    // Of its one `break`, which stays where it is, as written: no other.
-    let jump = match own {
-        true => moved
-            .pop()
-            .filter(|_| !moved.is_empty() && !breaks(&kept, label.as_deref()))?,
-        // Where what's moved ends, its last character's, however deep:
-        // what's written before it, a comment, is the moved code's, after
-        // the loop, and the `break` is no part of the loop's body as written
-        // (ADR 0702, amended).
-        false => {
-            let mut end = 0;
-            js::each_list(&moved, &mut |list| {
-                end = list.iter().map(|s| s.span.hi).fold(end, u32::max)
-            });
-            let at = js::Span {
-                lo: end.saturating_sub(1),
-                hi: end,
-            };
-            StmtKind::Break(None).at(at)
-        }
+    let moved = at_path(&mut kept, &path).split_off(k);
+    // Its `break`, where what's moved ends, its last character's, however
+    // deep: what's written before it, a comment, is the moved code's, after
+    // the loop, and the `break` is no part of the loop's body as written
+    // (ADR 0702, amended).
+    let mut moved_end = 0;
+    js::each_list(&moved, &mut |list| {
+        moved_end = list.iter().map(|s| s.span.hi).fold(moved_end, u32::max)
+    });
+    let at = js::Span {
+        lo: moved_end.saturating_sub(1),
+        hi: moved_end,
     };
+    let jump = StmtKind::Break(None).at(at);
     let made: HashSet<&str> = declared(&moved).collect();
     let mut own: HashSet<String> = HashSet::new();
     js::statement_lists(&mut kept, &mut |list| own.extend(declared(list).map(str::to_string)));
