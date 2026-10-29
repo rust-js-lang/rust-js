@@ -14,8 +14,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => ty,
         };
         match self.range_kind(ranged) {
-            Some(kind) => match kind.step(false) {
-                Some(step) => Ok(self.stepped_by(value, Expr::helper(step))),
+            Some(_) => match self.range_stepper(ranged, false) {
+                Some(step) => Ok(self.stepped_by(value, step)),
                 None => Err(self.unsupported(span, "iterating this range, from its MIR")),
             },
             None if self.is_user_iterator(ty) => {

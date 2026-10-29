@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "iterator-dictionary-range-as-js",
     breaks: "a range's `Iterator` dictionary steps it as a JS iterator, `$next`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                Some(step) => Expr::helper(step),\n                None => return Err(self.unsupported(span, &format!(\"the `Iterator` of a `{ty}`\"))),\n",
+    find: "                Some(step) => step,\n                None => return Err(self.unsupported(span, &format!(\"the `Iterator` of a `{ty}`\"))),\n",
     replace: "                Some(_) => Expr::helper(\"$next\"),\n                None => return Err(self.unsupported(span, &format!(\"the `Iterator` of a `{ty}`\"))),\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },

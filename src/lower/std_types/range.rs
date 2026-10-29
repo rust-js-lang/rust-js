@@ -162,6 +162,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a range's bounds are: the `u32` of a `Range<u32>`.
+    /// The bounds an `a..` of integers wraps its start by, its type's first
+    /// and last, as release Rust's `next()` does past its last (ADR 0011,
+    /// #414): `[0, 255]` of a `u8`'s. None of another range, nor of a
+    /// `char`'s, which `$rangeFromNext` steps by its code point.
+    fn range_from_bounds(&self, range: Ty<'tcx>, kind: RangeKind) -> Vec<Expr> {
+        let num = self.range_index(range).and_then(Num::of).filter(|num| !num.float());
+        match (kind, num) {
+            (RangeKind::From, Some(num)) => {
+                let (lo, hi) = num.range();
+                vec![num.literal(lo), num.literal(hi as i128)]
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    /// `next()` of `receiver`, a range of type `range`, or `back` its
+    /// `next_back()`: its step, `RangeKind::step`'s, called, an `a..`'s of
+    /// integers given its type's bounds, `$rangeFromNext(r, 0, 255)`.
+    /// `None` of one JS doesn't step.
+    pub(in crate::lower) fn range_next(&self, range: Ty<'tcx>, back: bool, receiver: Expr) -> Option<Expr> {
+        let kind = self.range_kind(range)?;
+        let mut args = vec![receiver];
+        args.extend(self.range_from_bounds(range, kind));
+        Some(Expr::call_helper(kind.step(back)?, args))
+    }
+
+    /// A range of type `range`'s `next`, or `back` its `next_back`, as a
+    /// value, its `Iterator`'s: the helper, or of an `a..` of integers,
+    /// `$rangeFromStep(0, 255)`, its type's bounds given. `None` of one JS
+    /// doesn't step.
+    pub(in crate::lower) fn range_stepper(&self, range: Ty<'tcx>, back: bool) -> Option<Expr> {
+        let kind = self.range_kind(range)?;
+        let step = kind.step(back)?;
+        let bounds = self.range_from_bounds(range, kind);
+        Some(match bounds.is_empty() {
+            true => Expr::helper(step),
+            false => Expr::call_helper("$rangeFromStep", bounds),
+        })
+    }
+
     pub(in crate::lower) fn range_index(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
             ty::Adt(_, args) => args.types().next(),

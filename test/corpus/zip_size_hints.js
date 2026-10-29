@@ -18,7 +18,7 @@ import {
   $lazyZip,
   $next,
   $nextBack,
-  $rangeFromNext,
+  $rangeFromStep,
   $rangeNext,
   $sizeHint,
   $slice,
@@ -195,7 +195,7 @@ function main() {
       iterator_zip(
         { start: 0 },
         $iter(w),
-        { next: $rangeFromNext },
+        { next: $rangeFromStep(-2147483648, 2147483647) },
         iterIntoIterator,
         false,
         false,
@@ -244,7 +244,7 @@ function main() {
     ),
   );
   show(hint($lazyZip($iter(v), $iter(w))));
-  show(hint($lazyZip($iterator({ start: 0 }, $rangeFromNext), $iter(w))));
+  show(hint($lazyZip($iterator({ start: 0 }, $rangeFromStep(-2147483648, 2147483647)), $iter(w))));
 
   const held = iterator_zip(
     $iter(v),

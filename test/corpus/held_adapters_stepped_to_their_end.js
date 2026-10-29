@@ -10,7 +10,7 @@ import {
   $lazyChain,
   $lazyZip,
   $next,
-  $rangeFromNext,
+  $rangeFromStep,
 } from "@rust-js/runtime";
 
 export function entry() {
@@ -70,7 +70,7 @@ function main() {
       $closing($iterator(count("zip"), countIterator_next), (it) => {
         loudDrop_drop(it.of._loud);
       }),
-      $iterator({ start: 10 }, $rangeFromNext),
+      $iterator({ start: 10 }, $rangeFromStep(-2147483648, 2147483647)),
     ),
   );
   let zipped$live = true;
@@ -144,7 +144,7 @@ function main() {
         $closing($iterator(count("param"), countIterator_next), (it) => {
           loudDrop_drop(it.of._loud);
         }),
-        $iterator({ start: 20 }, $rangeFromNext),
+        $iterator({ start: 20 }, $rangeFromStep(0, 4294967295)),
       ),
       (zip) => {
         zip.return();
@@ -155,7 +155,10 @@ function main() {
         count("moved"),
         { start: 30 },
         { next: countIterator_next },
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeFromNext }) },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({ next: $rangeFromStep(0, 4294967295) }),
+        },
         false,
         false,
         false,
@@ -182,7 +185,7 @@ function main() {
         $closing($iterator(count("collected"), countIterator_next), (it) => {
           loudDrop_drop(it.of._loud);
         }),
-        $iterator({ start: 40 }, $rangeFromNext),
+        $iterator({ start: 40 }, $rangeFromStep(-2147483648, 2147483647)),
       ),
     );
     try {
@@ -202,7 +205,7 @@ function main() {
         $closing($iterator(count("from_iter"), countIterator_next), (it) => {
           loudDrop_drop(it.of._loud);
         }),
-        $iterator({ start: 50 }, $rangeFromNext),
+        $iterator({ start: 50 }, $rangeFromStep(0, 4294967295)),
       ),
       (zip) => {
         zip.return();

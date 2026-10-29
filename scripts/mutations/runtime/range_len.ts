@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "range-from-unhinted",
     breaks: "a zip of `n..`, `(0..).zip(w)`, hints `(0, Some(2))`, as `n..` hints nothing, not `usize::MAX` (#400)",
     file: "src/runtime/range_len.js",
-    find: "  if (next === $rangeFromNext) return () => [4294967295, undefined];\n",
+    find: "  if (next === $rangeFromNext || next?.from === true) return () => [4294967295, undefined];\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },

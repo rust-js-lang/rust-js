@@ -3057,10 +3057,11 @@ export function $rangeInclusiveLen(range) {
 // The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
 // inclusive or back form's: std's, exact, of how many numbers it has left
 // (ADR 0918); of a `char`'s or a BigInt's, none known, as before. Of `n..`,
-// `$rangeFromNext`'s, `usize::MAX` and none known, std's `RangeFrom`'s,
-// whatever it's of (#400). `undefined` of another `next`.
+// `$rangeFromNext`'s or `$rangeFromStep`'s, `usize::MAX` and none known,
+// std's `RangeFrom`'s, whatever it's of (#400). `undefined` of another
+// `next`.
 export function $rangeHintOf(next) {
-  if (next === $rangeFromNext) return () => [4294967295, undefined];
+  if (next === $rangeFromNext || next?.from === true) return () => [4294967295, undefined];
   const len =
     next === $rangeNext || next === $rangeNextBack
       ? $rangeLen
@@ -3394,8 +3395,29 @@ export function $charStep(c, by) {
   return code < 0 || code > 0x10ffff ? undefined : String.fromCodePoint(code);
 }
 
-export function $rangeFromNext(range) {
-  return range.start++;
+// An `a..`'s `next()`, `{ start }`: its start, moved past. Of an integer,
+// as release Rust's, wrapped past `hi`, its type's last, to `lo`, its
+// first (ADR 0011, #414); of a `char`, by its code point, past the
+// surrogates, and past the last `char` std's panic, before it gives one.
+export function $rangeFromNext(range, lo, hi) {
+  const n = range.start;
+  if (typeof n === "string") {
+    const next = $charStep(n, 1);
+    if (next === undefined) throw new Error("overflow in `Step::forward`");
+    range.start = next;
+  } else {
+    range.start = n === hi ? lo : typeof n === "bigint" ? n + 1n : n + 1;
+  }
+  return n;
+}
+
+// The `next` of an `a..` of integers from `lo` to `hi`, as a value, its
+// `Iterator`'s: `$rangeFromNext` of those bounds, which `$rangeHintOf`
+// knows as an `a..`'s by its `from`.
+export function $rangeFromStep(lo, hi) {
+  const step = (range) => $rangeFromNext(range, lo, hi);
+  step.from = true;
+  return step;
 }
 
 // `make_ascii_uppercase()` of a `char` or a string, or of the bytes

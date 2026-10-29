@@ -6,7 +6,7 @@ import {
   $iterator,
   $panicMessage,
   $range,
-  $rangeFromNext,
+  $rangeFromStep,
   $resize,
   $resizeWith,
   $roomFor,
@@ -108,10 +108,16 @@ function main() {
     check(
       "collect endless",
       () =>
-        Array.from($roomForHint($iterator({ start: 0 }, $rangeFromNext).map(made), 1, true, true))
-          .length,
+        Array.from(
+          $roomForHint(
+            $iterator({ start: 0 }, $rangeFromStep(0, 4294967295)).map(made),
+            1,
+            true,
+            true,
+          ),
+        ).length,
     );
-    const endless = iterator_map({ start: 0 }, made, { next: $rangeFromNext });
+    const endless = iterator_map({ start: 0 }, made, { next: $rangeFromStep(0, 4294967295) });
     check("collect held endless", () => $foldToArray($roomForHint(endless, 1, true, true)).length);
     const n = 3;
     check("collect(3)", () => $range(0, n, 1).map(made));

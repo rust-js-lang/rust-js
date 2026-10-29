@@ -86,3 +86,26 @@ count too, as an exclusive one's was. Both are `range_count`'s, one place:
 passed its end or where it ends before it starts. Of BigInts, an error.
 The corpus's `range_size_hint.rs`, and rustc's `range/range_inclusive.rs`,
 pass.
+
+## Amendment: an `a..` steps as release Rust's does (2026-10-29, #414)
+
+An `a..`'s `next()` was `range.start++`: of a `char`, a string, `NaN`; of
+an integer, a JS number or BigInt that never wraps, `255u8..` giving
+`256`, `i64::MAX..` going past it. Results change, so Rust's behavior is
+kept (ADR 0262): **an `a..` of integers steps by its type's bounds,
+`$rangeFromNext(bytes, 0, 255)`, past the last to the first, as release
+Rust's `Step::forward` wraps (ADR 0011); of a `char`, by its code point,
+past the surrogates (`$charStep`), and past `char::MAX` std's panic,
+``overflow in `Step::forward` ``, before it gives one.** Its `next` as a
+value, an `Iterator`'s, `$iterator({ start: 254 }, $rangeFromStep(0,
+255))`, is the same step of those bounds, which `$rangeHintOf` knows as an
+`a..`'s, `usize::MAX` and none known (ADR 0918). The bounds are the one
+answer of `Num::range`, given by `range_next` and `range_stepper`, which
+each `next()` and each `Iterator` of a range asks; `step_by` and `skip`
+of one step through it. Held by `range_from_wraps.rs` against native Rust
+(`u8`, `i8`, `u16`, `i32`, `i64`, `u128`, `char`, taken, stepped by,
+skipped, a `for` over it) and the mutations `range-from-unwrapped` and
+`range-from-char-unchecked` (`runtime/range_from_next.ts`) and
+`range-from-bounds-dropped` (`lower/std_types/range.ts`). A
+`RangeInclusive` stepped past its type's last, `127i8..=127`, whose
+start Rust wraps and marks exhausted, is #414's other half.

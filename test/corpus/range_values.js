@@ -14,6 +14,7 @@ import {
   $print,
   $range,
   $rangeFromNext,
+  $rangeFromStep,
   $rangeInclusiveNext,
   $rangeLen,
   $rangeNext,
@@ -61,7 +62,7 @@ function clampTo(r, x) {
 function firstSquareOver(limit) {
   const iter = { start: 1 };
   let n;
-  while ((n = $rangeFromNext(iter)) != null) {
+  while ((n = $rangeFromNext(iter, 0, 4294967295)) != null) {
     if (Math.imul(n, n) >>> 0 > limit) {
       return n;
     }
@@ -99,9 +100,9 @@ function main() {
       .map((x) => (x * 2) | 0)
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  let ids = Array.from($iterator({ start: 1 }, $rangeFromNext).take(3));
+  let ids = Array.from($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3));
   const numbered = Array.from(
-    $lazyZip($iterator({ start: 1 }, $rangeFromNext), $iter(Array.from("abc"))),
+    $lazyZip($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)), $iter(Array.from("abc"))),
   );
   console.log(
     `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}`,
@@ -154,8 +155,8 @@ function main() {
   const b = { start: a.start, end: a.end };
   $rangeNext(a);
   ids = { start: 100 };
-  const firstId = $rangeFromNext(ids);
-  const secondId = $rangeFromNext(ids);
+  const firstId = $rangeFromNext(ids, -2147483648, 2147483647);
+  const secondId = $rangeFromNext(ids, -2147483648, 2147483647);
   console.log(
     `${a.start}..${a.end} ${b.start}..${b.end} ${firstId == null ? "None" : `Some(${firstId})`} ${secondId == null ? "None" : `Some(${secondId})`} ${ids.start}.. ${$rangeLen(
       { start: 0, end: 5 },
@@ -174,7 +175,7 @@ function main() {
     `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]`,
   );
   console.log(
-    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
+    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3))}`,
   );
   console.log(
     `${shownTwice(

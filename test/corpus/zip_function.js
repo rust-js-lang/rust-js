@@ -9,7 +9,7 @@ import {
   $iterator,
   $lazyRange,
   $lazyZip,
-  $rangeFromNext,
+  $rangeFromStep,
   $roomForHint,
   $sortedKeys,
 } from "@rust-js/runtime";
@@ -42,7 +42,10 @@ function main() {
       .join(", ")}]`,
   );
   const names = ["a", "b", "c"];
-  for (const [i, n] of $lazyZip($iterator({ start: 0 }, $rangeFromNext), names)) {
+  for (const [i, n] of $lazyZip(
+    $iterator({ start: 0 }, $rangeFromStep(-2147483648, 2147483647)),
+    names,
+  )) {
     console.log(`${i} ${n}`);
   }
   const total = $lazyZip(v, [1, 2])

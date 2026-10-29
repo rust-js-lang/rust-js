@@ -58,6 +58,9 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   `-Coverflow-checks=on` doesn't change it. Overflow rustc can see at
   compile time is still rustc's error
   ([0011](../decisions/0011-numbers.md), [`wrapping`](../../test/corpus/wrapping.rs)).
+  An `a..` stepped past its type's last integer wraps to its first too,
+  `$rangeFromNext(bytes, 0, 255)`, and a `char`'s steps past the
+  surrogates ([0129](../decisions/0129-range-values.md), [`range_from_wraps`](../../test/corpus/range_from_wraps.rs)).
 - **Division and remainder panic as Rust's do,** in every build: by zero,
   and `MIN / -1`, with Rust's messages, `attempt to divide by zero`
   ([0012](../decisions/0012-panics-and-runtime-helpers.md)).

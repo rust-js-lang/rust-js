@@ -74,7 +74,7 @@ function main() {
   const iter = { start: 1 };
   let total;
   while (true) {
-    const n = $rangeFromNext(iter);
+    const n = $rangeFromNext(iter, -2147483648, 2147483647);
     sum: {
       if (n != null) {
         if (n % 2 === 0) {

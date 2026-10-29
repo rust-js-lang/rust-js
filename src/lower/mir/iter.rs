@@ -592,8 +592,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");
             return Ok(Some(match self.range_kind(iter_ty) {
-                Some(kind) => match kind.step(false) {
-                    Some(step) => Expr::call_helper(step, vec![receiver]),
+                Some(_) => match self.range_next(iter_ty, false, receiver) {
+                    Some(next) => next,
                     None => return Ok(None),
                 },
                 None if self.boxed_payload(item) => Expr::call_helper("$nextSome", vec![receiver]),

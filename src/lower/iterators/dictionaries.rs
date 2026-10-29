@@ -171,8 +171,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         let (next, boxed) = match self.range_kind(ty) {
-            Some(kind) => match kind.step(false) {
-                Some(step) => (Expr::helper(step), false),
+            Some(_) => match self.range_stepper(ty, false) {
+                Some(step) => (step, false),
                 None => return Err(self.unsupported(span, &format!("`cycle()` of a `{ty}`"))),
             },
             None if self.is_user_iterator(ty) => {
@@ -222,8 +222,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn iterator_dictionary(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
         let next = match self.range_kind(ty) {
-            Some(kind) => match kind.step(false) {
-                Some(step) => Expr::helper(step),
+            Some(_) => match self.range_stepper(ty, false) {
+                Some(step) => step,
                 None => return Err(self.unsupported(span, &format!("the `Iterator` of a `{ty}`"))),
             },
             None if self.is_user_iterator(ty) => {

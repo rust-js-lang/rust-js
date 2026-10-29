@@ -241,4 +241,12 @@ export const mutations: Mutation[] = [
     replace: "                true => \"of\",\n                false => \"of\",",
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
   },
+  {
+    name: "range-from-bounds-dropped",
+    breaks: "an `a..` of integers is stepped without its type's bounds, `$rangeFromNext(bytes)`, and never wraps past its last (#414)",
+    file: "src/lower/std_types/range.rs",
+    find: "            (RangeKind::From, Some(num)) => {\n",
+    replace: "            (RangeKind::From, Some(num)) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_from_wraps.rs$"],
+  },
 ];
