@@ -3,6 +3,39 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "step-by-count-unfolded",
+    breaks: "a `step_by` of numbers known, `(0..10).step_by(3)` collected, asks room for `Math.ceil(10 / 3)`, not the 4 that surely fits",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            if let (Some(count), Some(step)) = (count.as_int(), step.as_int())\n",
+    replace: "            if let (Some(count), Some(step), false) = (count.as_int(), step.as_int(), true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_zero\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "take-of-endless-uncounted",
+    breaks: "`repeat(x).take(n)` made in place has no count, as `repeat` has none, so its `collect()` asks no room (#246)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            if !skip && self.recognition().endless_by_type(source) {\n",
+    replace: "            if false && !skip && self.recognition().endless_by_type(source) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
+    name: "step-by-uncounted",
+    breaks: "a range's `step_by(s)` made in place has no count: its `len()` is refused and its `collect()` asks no room (#246)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && callee.helper_name() == Some(\"$stepBy\")\n",
+    replace: "            && callee.helper_name() == Some(\"$stepByNot\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
+    name: "repeat-n-uncounted",
+    breaks: "`repeat_n(x, n)` made in place has no count, so its `collect()` asks no room: `capacity overflow` unasked (#246)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && callee.helper_name() == Some(\"$repeatingN\")\n",
+    replace: "            && callee.helper_name() == Some(\"$repeatingNot\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^collected_counts_ask_room.rs$"],
+  },
+  {
     name: "given-copied-lengthless",
     breaks: "a `copied()` of an iterator generic code is given as it is, bound by `ExactSizeIterator`, is the JS iterator `$given` makes without its `len`, whose `len()` throws (#387)",
     file: "src/lower/mir/iter/sources.rs",

@@ -1171,6 +1171,11 @@ pub(crate) fn chained_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
 
 /// Of std's `Skip<I>` or `Take<I>` of type `ty`, its source, and whether
 /// it's a `Skip`.
+/// Whether `ty` is std's `RepeatN`, `repeat_n(x, n)`'s, `n` items.
+pub(crate) fn is_repeat_n(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::iter::RepeatN")
+}
+
 pub(crate) fn counted_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, bool)> {
     match ty.kind() {
         ty::Adt(adt, args) => match std_path(tcx, adt.did()).as_str() {

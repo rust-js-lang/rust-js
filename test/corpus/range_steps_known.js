@@ -8,6 +8,7 @@ import {
   $print,
   $rangeLast,
   $rangeLen,
+  $roomFor,
   $step,
 } from "@rust-js/runtime";
 
@@ -21,7 +22,9 @@ function main() {
   }
   console.log("");
   const step = $step((1 << 30) >>> 0);
-  const big = Array.from($lazyRange(0, 4294967295, step));
+  const it = $lazyRange(0, 4294967295, step);
+  $roomFor(Math.ceil(4294967295 / step), 4);
+  const big = Array.from(it);
   const arg = $next($lazyRange(4000000000, 4294967295));
   console.log(`[${big.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
   console.log(

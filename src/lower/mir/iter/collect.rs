@@ -149,6 +149,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `collect()` of `it`, an iterator of type `iter_ty`, into `output` of
+    /// `item`s: of a `Vec` of one made in place whose length `len_in_place`
+    /// counts of a count the program gives, `repeat_n(x, n)`'s, a `take(n)`
+    /// of an endless one, a range's `step_by(s)`, not an array that's there
+    /// already, that nothing else asks room for, a range's `$range(a, b,
+    /// size)` or a struct's `$roomForHint`, the
+    /// room std's `SpecFromIter` asks first, `room_for`'s `$roomFor(n, size)`,
+    /// a `capacity overflow` panic past `isize::MAX` bytes (#246). Of a
+    /// `TrustedLen` one, before it's stepped; of another, which std steps
+    /// once first, one whose steps run no code. What makes it, where that
+    /// runs code, held first.
+    pub(in crate::lower::mir) fn collected_counted(
+        &mut self,
+        it: Expr,
+        (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),
+        iter_ty: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let runs_code = |ty: Ty<'tcx>| {
+            ty.walk()
+                .any(|part| part.as_type().is_some_and(|t| t.is_closure() || t.is_fn()))
+        };
+        use crate::lower::recognition as r;
+        let given_count = |ty: Ty<'tcx>| {
+            r::is_repeat_n(self.tcx, ty)
+                || r::stepped_by_source(self.tcx, ty).is_some()
+                || r::counted_source(self.tcx, ty)
+                    .is_some_and(|(source, skip)| !skip && self.recognition().endless_by_type(source))
+        };
+        let counted = item.is_some()
+            && self.is_vec_like(output)
+            && iter_ty.walk().any(|part| part.as_type().is_some_and(given_count))
+            && (crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty) || !runs_code(iter_ty))
+            && !crate::lower::iterators::is_stepped_items(&it)
+            && self.range_kind(iter_ty).is_none()
+            && self.mapped_range(&it, iter_ty, item).is_none()
+            && !self.compiled_struct_at(iter_ty, span);
+        let mut held = Vec::new();
+        let room = match (counted, item) {
+            (true, Some(item)) => self.len_in_place(&it, iter_ty, &mut held).and_then(|len| {
+                let size = self.room_size_of(&len, item)?;
+                Some((len, size))
+            }),
+            _ => None,
+        };
+        let it = match room {
+            Some((len, size)) if held.is_empty() => {
+                let it = match it.has_effects() {
+                    true => self.spill("it", it, made),
+                    false => it,
+                };
+                self.room_for((None, len), size, span, made);
+                it
+            }
+            _ => it,
+        };
+        self.collected_into(it, output, item, Some(iter_ty), span)
+    }
+
     pub(in crate::lower) fn collected_into(
         &mut self,
         it: Expr,

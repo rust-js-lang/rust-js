@@ -233,3 +233,43 @@ Held by the corpus's `capacity_overflow.rs`, against native Rust, and
 `scripts/mutations/lower/std_types/vec.ts`'s
 `room-of-a-constant-count-checked` and
 `room-of-a-constant-count-unchecked`.
+
+## Amendment: a count collected through another adapter (#246)
+
+`repeat_n(1u8, usize::MAX).collect::<Vec<_>>()` stepped until memory ran
+out, where std's `SpecFromIter` asks `with_capacity(n)` of a `TrustedLen`
+first and panics `capacity overflow`. So did `repeat(x).take(n)` and a
+range's `step_by(s)`. A program could catch std's panic with
+`catch_unwind`, and the JS ran on, so results change: ADR 0262 has Rust's
+behavior kept.
+
+`collected_counted` (`mir/iter/collect.rs`) asks `room_for`'s `$roomFor(n,
+size)` of a `Vec`'s `collect()`, where three things hold:
+- the iterator is made in place;
+- its length is a count the program gives (`repeat_n`, a `take(n)` of an
+  endless one, a range's `step_by`), counted by `len_in_place` (ADR 0986);
+- nothing else asks room for it, as a range's `$range(a, b, size)` or a
+  struct's `$roomForHint` does.
+
+It's asked before the collect steps it, of a `TrustedLen` one, so a `map`'s
+closure never runs. Of another, whose first step std takes before it asks,
+it's asked only where stepping runs no code. What makes the iterator, where
+that runs code, `repeat(made()).take(n)`, is held first, so it runs before
+the panic as Rust's does. An array's items that are there already aren't
+counted: their room is the array's.
+
+`len_in_place` counts the three forms, which also lifts the refusal of
+`len()` of a range's `step_by`. A count of numbers known folds to the
+number, `(0..10).step_by(3)` being 4, so `room_fits` leaves its check out.
+`$repeatingN` hints what it has left and `$repeating` `(usize::MAX, None)`,
+so std's struct of a `map` of one asks its room by `$roomForHint` too.
+
+The guide's difference 26 no longer lists these forms.
+
+- `test/corpus/collected_counts_ask_room.rs` checks each form against
+  native Rust, in both builds. It's in the forms test's `few` list.
+- The mutations are `counted-collect-room-unasked`,
+  `counted-collect-made-after-room`, `repeat-n-uncounted`,
+  `step-by-uncounted`, `take-of-endless-uncounted`,
+  `repeating-n-unhinted`, `range-count-unfolded` and
+  `step-by-count-unfolded`.

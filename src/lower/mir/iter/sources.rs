@@ -74,10 +74,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// without stepping it or calling what it's given, as std's `len()` of
     /// each adapter asks its source's (ADR 0986): a `map`'s, an
     /// `enumerate()`'s, a `copied()`'s and a `rev()`'s, its source's; a
-    /// `take(n)`'s, at most `n`; a `skip(n)`'s, `n` fewer or none; an array's
-    /// items', their array's; a range of numbers', its count; a generic
-    /// one's, its own. `None` of
-    /// another form, which is refused.
+    /// `take(n)`'s, at most `n`, of an endless one, `repeat(x)`'s, `n`; a
+    /// `skip(n)`'s, `n` fewer or none; an array's items', their array's; a
+    /// range of numbers', its count, and its `step_by(s)`'s, that many `s`
+    /// apart; a `repeat_n(x, n)`'s, `n`; a generic one's, its own (#246).
+    /// `None` of another form, which is refused.
     pub(in crate::lower::mir) fn len_in_place(
         &mut self,
         it: &Expr,
@@ -108,6 +109,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => crate::lower::iterators::stepped_form(it).unwrap_or(it),
             };
             return self.len_in_place(&source_value.clone(), source, made);
+        }
+        // `repeat_n(x, n)`, `$repeatingN(x, n)`: `n`.
+        if r::is_repeat_n(self.tcx, ty)
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && callee.helper_name() == Some("$repeatingN")
+            && let [_, n] = args.as_slice()
+            && !n.has_effects()
+        {
+            return Some(n.clone());
+        }
+        // A range's `step_by(s)`, `$stepBy(range, s)`: its count `s` apart,
+        // `Math.ceil(Math.max(b - a, 0) / s)`.
+        if let Some(source) = r::stepped_by_source(self.tcx, ty)
+            && self.range_kind(source).is_some()
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && callee.helper_name() == Some("$stepBy")
+            && let [source_value, step] = args.as_slice()
+            && !step.has_effects()
+        {
+            let count = self.len_in_place(&source_value.clone(), source, made)?;
+            // Of numbers known, the number, `(0..10).step_by(3)`'s 4.
+            if let (Some(count), Some(step)) = (count.as_int(), step.as_int())
+                && step > 0
+            {
+                return Some(Expr::int((count.max(0) + step - 1) / step));
+            }
+            let ceil = Expr::member(Expr::var("Math"), "ceil");
+            return Some(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step.clone())]));
         }
         // A copy of its source's items, which is its source in JS (ADR 0547).
         if let Some(source) = r::copied_source(self.tcx, ty) {
@@ -143,6 +172,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             && !n.has_effects()
         {
+            if !skip && self.recognition().endless_by_type(source) {
+                return Some(n.clone());
+            }
             let len = self.len_in_place(&source_value.clone(), source, made)?;
             let math = |name: &str, args| Expr::call(Expr::member(Expr::var("Math"), name), args);
             return Some(match skip {

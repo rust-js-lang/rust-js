@@ -66,7 +66,7 @@ function main() {
   );
   console.log(`same ${same}`);
   console.log(
-    `${$iterEq($lazyRange(1, 4), $lazyRange(1, 3), undefined, undefined, undefined, [Math.max(4 - 1, 0), Math.max(3 - 1, 0)])} ${$iterEq(
+    `${$iterEq($lazyRange(1, 4), $lazyRange(1, 3), undefined, undefined, undefined, [3, 2])} ${$iterEq(
       $iter([1, 2]),
       $iter([1, 2, 3]),
       undefined,

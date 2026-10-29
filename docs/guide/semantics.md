@@ -592,7 +592,11 @@ What's refused is in [the limitations](limitations.md).
   `SpecFromIter` does, but of one over a slice's or a `Vec`'s items; and of
   one that has no end its type knows, `(0..).map(f)`, a `TrustedLen` of no
   upper bound, panics `capacity overflow` before any item's made
-  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)).
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). So does a
+  `collect()` of a count the program gives, made in place:
+  `repeat_n(x, n)`, `repeat(x).take(n)` or a range's `step_by(s)`, through
+  adapters that keep its count, `$roomFor(n, 1)` before it's stepped
+  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
 - **A function passed where a closure goes is the arrow that calls it,**
   `.map(str::len)` being `.map((s) => $byteLen(s))` and `fold(0, i32::max)`
   being `reduce((a, b) => Math.max(a, b), 0)`; a constructor's makes what
@@ -1012,10 +1016,8 @@ React and JSX are [their own pages](README.md#react).
 26. Room std's own growth asks isn't checked: a `push`, `extend` or
     `insert` past the capacity std's doubling picks, a `collect()` whose
     length is a collection's of smaller items, `ids.iter().map(|x|
-    x.to_string())`, or a count collected through another adapter,
-    `(0..n).enumerate()`, `repeat_n(x, n)` (#246). Past `isize::MAX`
-    bytes, where std panics `capacity overflow`, JS runs on as memory
-    lets it (ADR 0774, amended).
+    x.to_string())`. Past `isize::MAX` bytes, where std panics `capacity
+    overflow`, JS runs on as memory lets it (ADR 0774, amended).
 27. A closure given to a binding's `FnOnce` callback that only passes its
     call on to a function of the crate's or of a library rust-js
     compiled, or a closure, is that function,

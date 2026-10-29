@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "range-count-unfolded",
+    breaks: "a range's count of numbers known, `(1..4).len()`, is `Math.max(4 - 1, 0)`, not `3`",
+    file: "src/lower/std_types/range.rs",
+    find: "    if let (Some(start), Some(end)) = (start.as_int(), end.as_int()) {\n",
+    replace: "    if let (Some(start), Some(end), false) = (start.as_int(), end.as_int(), true) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(range_values|len_made_in_place)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "contains-inclusive-end-excluded",
     breaks: "`(1..=7).contains(&7)` is false",
     file: "src/lower/std_types/range.rs",

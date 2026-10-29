@@ -36,14 +36,14 @@ function main() {
   const n = v.length;
   console.log(`${n} ${calls}`);
   console.log(`${v.toReversed().length}`);
-  console.log(`${Math.max(4 - 1, 0)} ${Math.max(9 - 2 + 1, 0)}`);
+  console.log("3 8");
   const arg = v.map((x, i) => [i, x]).toReversed().length;
   console.log(`${v.length} ${arg}`);
   console.log(`${v.length}`);
   console.log(`${v.slice(1).toReversed().length} ${Math.max(v.length - 9, 0)}`);
   console.log(`${Math.min(v.length, 2)} ${Math.min(v.length, 9)}`);
   console.log(`${v.length}`);
-  console.log(`${Math.min(Math.max(Math.max(10 - 0, 0) - 3, 0), 4)}`);
+  console.log(`${Math.min(Math.max(10 - 3, 0), 4)}`);
   console.log(
     `${count($mapEnds($iter(v.toReversed()), (x) => (x * 2) >>> 0))} ${count($iter(v.toReversed()))}`,
   );

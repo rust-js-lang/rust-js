@@ -72,7 +72,7 @@ function main() {
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end, 4);
   console.log(
-    `${r.start}..${r.end} [${v.join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true ${Math.max(2 - 5, 0)}`,
+    `${r.start}..${r.end} [${v.join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} true 0`,
   );
 
   const steps = { start: 0, end: 4 };

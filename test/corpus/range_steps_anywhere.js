@@ -7,6 +7,7 @@ import {
   $next,
   $rangeNext,
   $rangeNextBack,
+  $roomFor,
   $step,
   $stepBy,
 } from "@rust-js/runtime";
@@ -23,7 +24,9 @@ function every(it, n) {
 function main() {
   const held = { start: 0, end: 4294967295 };
   const step = $step((1 << 30) >>> 0);
-  const v = Array.from($stepBy($iterator(held, $rangeNext), step));
+  const it = $stepBy($iterator(held, $rangeNext), step);
+  $roomFor(Math.ceil(Math.max(held.end - held.start, 0) / step), 4);
+  const v = Array.from(it);
   console.log(`[${v.join(", ")}]`);
   console.log(`[${every($lazyRange(0, 4294967295), (1 << 30) >>> 0).join(", ")}]`);
   const start = 0;

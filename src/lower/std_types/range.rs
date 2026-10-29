@@ -398,6 +398,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `Math.max(end - start, 0)`, one more of `a..=b`, none once stepping has
 /// passed its end. A range's `len()` and `size_hint()` alike.
 pub(in crate::lower) fn range_count(start: Expr, end: Expr, kind: RangeKind) -> Expr {
+    // Of numbers known, the number, `(0..10)`'s 10.
+    if let (Some(start), Some(end)) = (start.as_int(), end.as_int()) {
+        let gap = end - start + i128::from(kind == RangeKind::Inclusive);
+        return Expr::int(gap.max(0));
+    }
     let gap = Expr::bin(Op::Sub, end, start);
     let gap = match kind {
         RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),
