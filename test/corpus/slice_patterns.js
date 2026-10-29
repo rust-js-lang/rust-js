@@ -126,9 +126,7 @@ function main() {
     if (0 >= length) {
       throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
     }
-    const t = names[0];
-    names[0] = rest[0];
-    rest[0] = t;
+    [names[0], rest[0]] = [rest[0], names[0]];
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }

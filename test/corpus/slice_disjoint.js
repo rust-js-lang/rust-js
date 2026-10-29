@@ -24,9 +24,7 @@ function main() {
   if (getDisjointMut.TAG === "Ok") {
     const a = getDisjointMut._0[0];
     const b = getDisjointMut._0[1];
-    const t = a.value;
-    a.value = b.value;
-    b.value = t;
+    [a.value, b.value] = [b.value, a.value];
     a.value = (a.value * 10) | 0;
   }
   console.log(`[${v.join(", ")}]`);

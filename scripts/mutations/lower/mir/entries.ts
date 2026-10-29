@@ -138,4 +138,21 @@ export const mutations: Mutation[] = [
     replace: "        let b = match false && made_here && js::taken_place(&a) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
+  {
+    name: "swap-of-places-held",
+    breaks: "`mem::swap(&mut a[0], &mut b[0])` is `const t = a[0]; a[0] = b[0]; b[0] = t;`, not JS's own `[a[0], b[0]] = [b[0], a[0]]` (#369)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));\n",
+    replace: "        let place = |_: &Expr| false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "swap-of-variables-destructured",
+    breaks: "`mem::swap(&mut a, &mut b)` of two variables is `[a, b] = [b, a]`, which reassigns the `const` a `let` that nothing else assigns is declared (#369)",
+    file: "src/lower/mir/entries.rs",
+    find: "        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));\n",
+    replace: "        let place = |e: &Expr| !e.has_effects();\n",
+    tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
+  },
 ];

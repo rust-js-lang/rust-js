@@ -28,9 +28,7 @@ function put(slot, value) {
 }
 
 function exchange(a, b) {
-  const t = a.value;
-  a.value = b.value;
-  b.value = t;
+  [a.value, b.value] = [b.value, a.value];
 }
 
 function main() {

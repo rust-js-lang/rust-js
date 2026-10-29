@@ -19,9 +19,7 @@ function zero(x) {
 function ends(v) {
   if (v.length >= 2) {
     const middle = $view(v, 1, v.length - 1);
-    const t = v[0];
-    v[0] = v[v.length - 1];
-    v[v.length - 1] = t;
+    [v[0], v[v.length - 1]] = [v[v.length - 1], v[0]];
     bump(middle);
   }
 }

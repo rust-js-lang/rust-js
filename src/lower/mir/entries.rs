@@ -354,6 +354,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             false => b,
         };
+        // A swap of two places that read the same where they're read again,
+        // an item's or a field's, JS's own, `[a, b] = [b, a]`, as `v.swap(i,
+        // j)` is (#369); not of two variables, which a `const` declares
+        // where nothing else assigns them.
+        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));
+        if let Some(b) = &b_place
+            && place(&a)
+            && place(b)
+        {
+            let swap = StmtKind::Assign(Expr::array(vec![a.clone(), b.clone()]), Expr::array(vec![b.clone(), a]));
+            out.push(swap.at(js_span));
+            return Ok(Value::Expr(Expr::undefined()));
+        }
         let old = self.spill(if b_place.is_some() { "t" } else { "old" }, a.clone(), out);
         out.push(StmtKind::Assign(a, b).at(js_span));
         Ok(Value::Expr(match b_place {

@@ -21,13 +21,11 @@ function main() {
   console.log(`${a} ${b}`);
 
   const pair = { left: [1, 2], right: [3], label: "p" };
-  const t$1 = pair.left;
-  pair.left = pair.right;
-  pair.right = t$1;
+  [pair.left, pair.right] = [pair.right, pair.left];
   let other = "q";
-  const t$2 = pair.label;
+  const t$1 = pair.label;
   pair.label = other;
-  other = t$2;
+  other = t$1;
   console.log(`[${pair.left.join(", ")}] [${pair.right.join(", ")}] ${pair.label} ${other}`);
 
   const old = pair.left;
@@ -51,9 +49,9 @@ function main() {
   loud = ["second"];
   console.log(`replaced ${first[0]}`);
   let third = ["third"];
-  const t$3 = loud;
+  const t$2 = loud;
   loud = third;
-  third = t$3;
+  third = t$2;
   console.log(`holding ${loud[0]} ${third[0]}`);
 
   const spare = [7];

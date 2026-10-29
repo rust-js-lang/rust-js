@@ -206,3 +206,15 @@ item, `v[i + k] = p` of an index spilled first, and a guard's `value`,
 `$assign` is left to a `&mut` that's the object alone, a parameter's.
 Held also by the corpus's `lock_destructors`, `dyn_ref_cells`,
 `generic_deref_mut` and `mut_assoc_through_dictionary`.
+
+## Amendment: a swap of two places is JS's own (#369)
+
+`std::mem::swap(&mut lower[0][r], &mut upper[r][c])` was `const t = ..; a
+= b; b = t;`. **A swap of two places that read the same where they're read
+again, an item's or a field's, is JS's own destructuring swap**, `[a, b]
+= [b, a]`, as `v.swap(i, j)` is: its right side reads both, then each is
+written in turn, what the three statements did. Not of two variables,
+whose `let` tidy declares `const` where nothing else assigns them. Held by
+the corpus's `swap_replace`, `slice_patterns` and `slice_pattern_mut_rest`
+against native Rust, and the mutations `swap-of-places-held` and
+`swap-of-variables-destructured` (`mir/entries.ts`).
