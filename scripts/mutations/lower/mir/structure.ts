@@ -133,7 +133,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/structure.rs",
     "find": "            .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
     "replace": "",
-    "tests": ["test/lowering-matches.test.ts", "-t", "a function's .s from MIR are guards"]
+    "tests": ["test/corpus.test.ts", "-t", "^store_get_mut.rs$"],
+    "snapshots": true
   },
   {
     "name": "mir-switch-cases-ungrouped",

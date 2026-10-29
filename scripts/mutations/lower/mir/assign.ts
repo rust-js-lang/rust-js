@@ -178,7 +178,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/assign.rs",
     "find": "                && let Some((bound, from)) = continued_binding(state, local)\n",
     "replace": "                && let Some((bound, from)) = continued_binding(state, local).filter(|_| false)\n",
-    "tests": ["test/lowering-early-exits.test.ts", "-t", "a place a question mark tries is read once"]
+    "tests": ["test/corpus.test.ts", "-t", "^drop_scopes.rs$"],
+    "snapshots": true
   },
   {
     name: "mir-str-box-not-copied-back",

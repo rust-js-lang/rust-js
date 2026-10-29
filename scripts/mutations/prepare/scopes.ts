@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "        if declaring.iter().any(|&s| self.declares(s, to)) {",
     replace: "        if false {",
-    tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
+    tests: ["test/corpus.test.ts", "-t", "^atomics.rs$"],
   },
   {
     name: "scopes-not-hoisted",

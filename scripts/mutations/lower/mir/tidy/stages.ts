@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: "            pass(\"parts' aliases\", |b, _| alias_variables(b)),\n            pass(\"named temporaries\", |b, _| named_temporaries(b)),\n",
     replace: "            pass(\"parts' aliases\", |b, _| alias_variables(b)),\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
     snapshots: true,
   },
   {

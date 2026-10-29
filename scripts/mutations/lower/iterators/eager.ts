@@ -219,15 +219,11 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "collected-runtime-arrayed",
-    "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
+    "breaks": "a runtime helper's iterator collected, `$decodeUtf16(..)`'s, is listed first, `Array.from($decodeUtf16(..)).map(f)`, as a `$closing(..)`'s would be, stepped to its end and never closed (ADR 0510)",
     "file": "src/lower/iterators/eager.rs",
     "find": "                {\n                    return None;\n                }\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);",
     "replace": "                {}\n                let items = Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![list]);",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "^(env_vars|text_edits).rs$"
-    ],
+    "tests": ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
     "snapshots": true
   },
   {

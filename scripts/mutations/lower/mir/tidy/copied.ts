@@ -16,7 +16,8 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy/copied.rs",
     "find": "            && then.last().is_some_and(ends)\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
     "replace": "            && then.last().is_some_and(ends)\n            && false\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
-    "tests": ["test/lowering-names.test.ts", "-t", "a let-else's binding of a variable is the variable"]
+    "tests": ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+    "snapshots": true
   },
   {
     name: "taken-binding-named-old",

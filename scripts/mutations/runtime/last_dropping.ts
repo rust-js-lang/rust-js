@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_nth_last_dropping.rs$"],
   },
   {
-    name: "last-dropping-left-open",
-    breaks: "`zip(..).last()` never drops its second's last item, `last(self)` not closing what it took (#242)",
-    file: "src/runtime/last_dropping.js",
-    find: "  it.return?.();\n  return seen",
-    replace: "  return seen",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
-  },
-  {
     name: "chain-last-each-stepped",
     breaks: "`a.chain(b).last()` steps every item in turn, dropping each as the next comes, not std's each side's own `last` (#232)",
     file: "src/runtime/last_dropping.js",

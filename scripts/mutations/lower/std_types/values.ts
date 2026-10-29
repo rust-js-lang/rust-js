@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
     replace: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::Xor)\n",
-    tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^and_of_a_generic_option.rs$"],
   },
   {
     name: "unpaired-calls-refused",

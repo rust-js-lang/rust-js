@@ -164,3 +164,38 @@ lowering, port, React and JSX test.
     ADR 1006. `applied-throw-after-return` goes with it.
   - `Expr::unary`'s `!null` as `true`, as an `Option`'s test is `== null`
     now (4b30cd7cd), so no `!null` is made.
+
+## Amendment: nightly 40783711256's survivors outside tidy (agent-tdyk, 2026-10-29)
+
+Each was rechecked at main's head, then built and run over the whole
+corpus, its JS compared case by case with the compiler's as it is, and
+over the lowering, snapshot, JSX, port and compiler suites.
+
+- **Caught by a corpus case their tests didn't name**, which they now name:
+  `scopes-twice-allowed` by `atomics.rs`, whose JS declares `previous`
+  twice in one block, a `SyntaxError`; `mir-tidy-named-temporaries-off`,
+  inconclusive as it ran the whole corpus, by `tested_options.rs`'s
+  snapshot; and, as they change only how the JS reads, by snapshots:
+  `collected-runtime-arrayed` (`cell_deque_char_methods.rs`, whose
+  `$decodeUtf16(..)` it lists first), `mir-return-written-by-storage`
+  (`store_get_mut.rs`), `let-else-copy-kept` (`non_null.rs`),
+  `mir-tidy-let-else-of-written-returns` (`local_consts.rs`) and
+  `mir-tried-named-value` (`drop_scopes.rs`).
+- **`boxed-and-refused` by a new case**, `and_of_a_generic_option.rs`:
+  `and` of a type parameter's `Option`, given `Some(None)` among others,
+  against native Rust. `and_value_drops.rs` no longer makes one.
+- **`last-dropping-left-open`** is a runtime close of the kind the first
+  amendment decided: `$lastDropping`'s `it.return?.()` after a `for … of`
+  that ran to its end. Each of the eight cases that call `$lastDropping`
+  runs as native Rust does with it gone, so no program shows it. Decided
+  the same way: the close stays, the mutation goes.
+
+Left open, as no rust-js test reaches them and React's port, which they
+were written for, no longer builds at its last commit with main's
+compiler (`react-reconciler`'s `pub` thread-locals in an import cycle,
+ADR 0037, amended), so it can't show whether they're reached:
+`js-object-deref-lowered`, `truth-implies-nothing` and
+`std-macro-pointee-copied`. And `switch-copied-returns-kept`, which React's
+port does reach (validateProperty's `switch` in an `if`), but no corpus
+case yet.
+

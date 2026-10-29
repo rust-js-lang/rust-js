@@ -426,7 +426,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))\n",
     replace: "",
-    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
+    tests: ["test/corpus.test.ts", "-t", "^local_consts.rs$"],
+    snapshots: true,
   },
   {
     name: "written-continue-guarded",
