@@ -723,10 +723,11 @@ mod tests {
                 "filled lazily",
                 "appends",
                 "bound captures",
-                "nulled as they are"
+                "nulled as they are",
+                "commented jumps"
             ]
         );
-        assert!(names.last().is_some_and(|n| n == "finish/nulled as they are"));
+        assert!(names.last().is_some_and(|n| n == "finish/commented jumps"));
     }
 
     fn present(x: &str) -> Expr {

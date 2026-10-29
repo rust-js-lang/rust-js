@@ -245,10 +245,10 @@ pub fn tally_of_four() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
   const lib = await Bun.file(join(join(dir, "mir"), "lib.js")).text();
   const shapes = await Bun.file(join(join(dir, "mir"), "shapes.js")).text();
-  // Its initializer runs the crate's code: made where it's first used, as
-  // Rust makes it (ADR 0037, amended).
-  expect(lib).toContain("const side = $local(() => ({ value: Square.sideLength(Square.new(3)) }));");
-  expect(lib).toContain("  return side().value;");
+  // Its initializer runs the crate's code, of a module its own loads
+  // first: made as its module loads (ADR 1006, amended).
+  expect(lib).toContain("const side = Square.sideLength(Square.new(3));");
+  expect(lib).toContain("export function firstSide() {\n  return side;\n}");
   expect(lib).toContain("  return Square.area(Square.new(side));");
   expect(shapes).toContain("export const Square = {\n  new(side) {");
   expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
