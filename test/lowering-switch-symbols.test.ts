@@ -296,3 +296,69 @@ console.log(JSON.stringify([
     [1, 0, 0, 1, 0],
   ]);
 });
+
+// A match of symbols whose `_` arm breaks its loop: that `break` leaves the
+// loop, for `None` and each symbol no arm takes, not the `switch` a
+// `default` would be (#221).
+test("a match of symbols whose other arm breaks its loop leaves the loop", () => {
+  const dir = fixture("default-break-symbols");
+  writeFileSync(join(dir, "lib.rs"), `use js::{SymbolFor, Unknown};
+
+pub const A: SymbolFor = SymbolFor("a");
+pub const B: SymbolFor = SymbolFor("b");
+pub const C: SymbolFor = SymbolFor("c");
+
+fn tag(value: &'static Unknown) -> Option<SymbolFor<'static>> {
+    SymbolFor::from_value(Some(value))
+}
+
+pub fn levels(values: &[&'static Unknown]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &value in values {
+        let mut level = 0;
+        match tag(value) {
+            Some(A | B) => level = 1,
+            Some(C) => level = 2,
+            _ => {
+                seen.push(0);
+                break;
+            }
+        }
+        seen.push(level);
+    }
+    seen
+}
+
+pub fn pushed(values: &[&'static Unknown]) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for &value in values {
+        match tag(value) {
+            Some(A | B) => seen.push(1),
+            Some(C) => seen.push(2),
+            _ => {
+                seen.push(0);
+                break;
+            }
+        }
+    }
+    seen.push(9);
+    seen
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  installRuntime(dir);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const [a, b, c, x] = ["a", "b", "c", "x"].map((name) => Symbol.for(name));
+console.log(JSON.stringify([
+  [lib.levels([a, c, x, b]), lib.levels([b, {}, a]), lib.levels([c, a])],
+  [lib.pushed([a, c, x, b]), lib.pushed([b, {}, a]), lib.pushed([c, a])],
+]));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  // Native Rust's, of `Some(1)`, `Some(2)`, `Some(3)` and `Some(9)` for `a`,
+  // `b`, `c` and `x`, and `None` for `{}`.
+  expect(JSON.parse(ran.stdout)).toEqual([
+    [[1, 2, 0], [1, 0], [2, 1]],
+    [[1, 2, 0, 9], [1, 0, 9], [2, 1, 9]],
+  ]);
+});
