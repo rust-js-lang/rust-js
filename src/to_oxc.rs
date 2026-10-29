@@ -439,8 +439,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let else_ifs = else_if_starts(module);
     // And each `switch`'s case, which a comment before its arm is before.
     let case_starts = cases::case_starts(module);
-    // And each value of a case after its first, which a comment between an
-    // arm's patterns is before (rd139).
+    // And each value of a case of more than one, which a comment between
+    // an arm's patterns is before (rd139), or above the arm (rd143).
     let pattern_starts = cases::pattern_starts(module);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
@@ -451,8 +451,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let mut closing = Vec::new();
     let param_starts = trailing::param_starts(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
-    // What's first on its line is of these alone.
+    // What's first on its line is of these alone, and a case's values,
+    // `"rp" | "rt"`'s second not after a blank line above the arm (rd143).
     let mut statement_starts = starts.clone();
+    statement_starts.extend(pattern_starts.iter().copied());
     statement_starts.sort_unstable();
     starts.extend(parts.keys().copied());
     starts.extend(case_starts.iter().copied());

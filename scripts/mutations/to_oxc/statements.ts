@@ -331,4 +331,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
   },
+  {
+    name: "stacked-case-first-unplaced",
+    breaks: "a comment above an arm of more than one pattern is between its `case`s, `case HostSingleton: // Unlike .. case HostComponent:`, not above the first (rd143)",
+    file: "src/to_oxc/statements.rs",
+    find: "                        .or(first)\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
+  },
 ];

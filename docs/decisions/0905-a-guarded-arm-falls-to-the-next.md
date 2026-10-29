@@ -724,3 +724,35 @@ arm's patterns or in a last _ of a guarded switch is in its clause"), run,
 and the mutations `pattern-comment-in-body` (`to_oxc/cases.ts`),
 `pattern-case-unplaced` and `default-comments-after-switch`
 (`to_oxc/statements.ts`).
+
+## Amendment: a comment above an arm of patterns is above its first `case` (rd143, 2026-10-29)
+
+Each value of a case after its first had a start of its own (rd139), so a
+comment above an arm of more than one pattern, before its first, was
+before the second: `case HostSingleton: // Unlike .. case HostComponent:`
+in React's reappearLayoutEffects, and so in its
+commitPassiveUnmountInsideDeletedTreeOnFiber and validateDOMNesting's
+isTagValidWithParent; and a blank line above the arm printed between its
+`case`s too, `case 'rp':` blank `case 'rt':`, the second value first on
+its line where only statements were counted. Upstream has each above the
+first `case`.
+
+**Each value of a case of more than one is printed where it's written,
+its first too** (`cases::pattern_starts`, `Cx::stmt`'s `switch`), so a
+comment above the arm is above its first `case`, and one between its
+patterns stays between them; a case's values are starts a blank line
+looks back from, so the second isn't after the blank line above the arm.
+A case of one value has no start of its own: its comment above the arm is
+its body's, as ADR 0590 has the scheduler's, and a start nothing is
+printed at would lose it. A case fallen to is still where its
+`// Fallthrough` is.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Comments and blank
+lines, which nothing runs.
+
+- `test/lowering-comments-jumps.test.ts`, "a comment or a blank line above
+  an arm of patterns is above its first case", run.
+- Mutations `stacked-case-first-unplaced` (`to_oxc/statements.ts`),
+  `stacked-case-starts-of-one-pattern` (`to_oxc/cases.ts`, caught by
+  `switch_guard_skips_its_case.rs`) and `stacked-case-blank-line-between`
+  (`to_oxc.ts`).

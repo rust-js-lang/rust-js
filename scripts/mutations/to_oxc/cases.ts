@@ -39,8 +39,17 @@ export const mutations: Mutation[] = [
     name: "pattern-comment-in-body",
     breaks: "a comment between a match arm's patterns, `\"keydown\" // .. | \"keyup\"`, is in the case's body, not before `case \"keyup\":`",
     file: "src/to_oxc/cases.rs",
-    find: "        starts.extend(later.filter(|v| !v.span.is_none()).map(|v| v.span.lo));\n",
+    find: "        starts.extend(values.filter(|v| !v.span.is_none()).map(|v| v.span.lo));\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
+  },
+  {
+    name: "stacked-case-starts-of-one-pattern",
+    breaks: "a comment before an arm of one pattern, which ADR 0590 puts in its body, is before a start no clause is printed at, and lost, `// Track the input node that has focus.` (rd143)",
+    file: "src/to_oxc/cases.rs",
+    find: "        let stacked = cases.iter().filter(|case| case.values.len() > 1);\n",
+    replace: "        let stacked = cases.iter().filter(|case| !case.values.is_empty());\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
   },
 ];

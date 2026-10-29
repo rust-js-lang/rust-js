@@ -1540,7 +1540,8 @@ constants and more, a case that falls through to the next's, `// Fallthrough`,
 a comment written before that next arm before it and its labels, as React
 writes one, and no `// Fallthrough` where that comment says it, `//
 falls through`; a comment between an arm's patterns, `"mouseup" // TODO
-.. | "mouseout"`, is between their `case`s, and a last `_` of only
+.. | "mouseout"`, is between their `case`s, one above an arm of
+patterns above its first `case`, and a last `_` of only
 comments keeps them in its `default`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
 or where it's a last `_` that does something, a case that falls through

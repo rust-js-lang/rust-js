@@ -516,8 +516,16 @@ impl<'a> Cx<'a> {
                         continue;
                     };
                     // Where a case falls through to it, where its comment
-                    // says so is (ADR 0905).
-                    let mut at = super::fallen_to(cases, k).map_or(SPAN, |lo| Span::new(lo, lo));
+                    // says so is (ADR 0905); else, of more than one value,
+                    // where its first is written, which a comment above
+                    // the arm is before (rd143, `cases::pattern_starts`);
+                    // one before an arm of one value is its body's (ADR 0590).
+                    let first = (!stacked.is_empty() && !case.values[0].span.is_none())
+                        .then(|| Span::new(case.values[0].span.lo, case.values[0].span.lo));
+                    let mut at = super::fallen_to(cases, k)
+                        .map(|lo| Span::new(lo, lo))
+                        .or(first)
+                        .unwrap_or(SPAN);
                     // Each value after the first where it's written, which a
                     // comment between an arm's patterns is before, `"mouseup"
                     // // TODO: .. | "mouseout"`'s (rd139, `cases::pattern_starts`).

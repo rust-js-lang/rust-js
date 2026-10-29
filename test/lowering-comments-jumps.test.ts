@@ -151,3 +151,46 @@ test("a comment between an arm's patterns or in a last _ of a guarded switch is 
   for (const name of ["keypress", "click", "keypress", "keyup", "drop", "blur"]) lib.extract(name as never, log as never);
   expect(log).toEqual(["click 2", "keypress 1", "keyup 1", "drop 3", "blur 0"]);
 });
+
+// React's reappearLayoutEffects and validateDOMNesting's
+// isTagValidWithParent: a comment, or a blank line, above an arm of more
+// than one pattern is above its first `case`, as upstream writes it, not
+// between its `case`s, where one between its patterns is (rd143).
+test("a comment or a blank line above an arm of patterns is above its first case", async () => {
+  const { js, lib } = await compiled("comments-above-stacked-cases", `const A: u8 = 0;
+const B: u8 = 1;
+const C: u8 = 2;
+const D: u8 = 3;
+
+pub fn effects(tag: u8, log: &mut Vec<u8>) {
+    match tag {
+        A | B => {
+            log.push(1);
+        }
+        // Above the arm.
+        // A second line.
+        C | D => {
+            log.push(2);
+        }
+        _ => {}
+    }
+}
+
+pub fn valid(tag: &str, parent: Option<&str>) -> bool {
+    match tag {
+        "x" => return true,
+
+        "rp" | "rt" => {
+            return parent.is_none();
+        }
+        _ => {}
+    }
+    false
+}
+`);
+  expect(js).toContain("      break;\n    // Above the arm.\n    // A second line.\n    case C:\n    case D:\n");
+  expect(js).toContain('      return true;\n\n    case "rp":\n    case "rt":\n');
+  const log: number[] = [];
+  for (const tag of [0, 3, 7]) lib.effects(tag as never, log as never);
+  expect([log, lib.valid("rt" as never, undefined as never), lib.valid("y" as never, undefined as never)]).toEqual([[1, 2], true, false]);
+});

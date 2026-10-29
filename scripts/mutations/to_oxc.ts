@@ -662,4 +662,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
+  {
+    name: "stacked-case-blank-line-between",
+    breaks: "a blank line above an arm of more than one pattern is printed again between its `case`s, `case \"rp\":` blank `case \"rt\":` (rd143)",
+    file: "src/to_oxc.rs",
+    find: "    statement_starts.extend(pattern_starts.iter().copied());\n",
+    replace: "",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
+  },
 ];
