@@ -30,7 +30,9 @@ fn main() {
     println!("{} {}", 1u64.rotate_left(63), 0x8000000000000001u64.rotate_right(4));
     println!("{}", (-2i64).rotate_left(1));
     // By a count not known till it runs, of a negative `i32` too.
-    println!("{:?} {:?} {:?}", rotated(-2, 1), rotated(-7, 35), rotated(i32::MIN, 31));
+    for (x, by) in [(-2, 1), (-7, 35), (i32::MIN, 31)] {
+        println!("{:?}", rotated(x, by));
+    }
 
     // Bytes, in each order, and back.
     println!("{:?} {:?} {:?}", 0x01020304u32.to_be_bytes(), 0x01020304u32.to_le_bytes(), 0x0102u16.to_ne_bytes());

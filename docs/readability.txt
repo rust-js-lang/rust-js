@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1349
-lines	129758
+lines	129760
 temporaries	1	0.1
 labeled blocks	15	1.2
 while (true)	115	8.9
 $iter	1062	81.8
 Iterator.from	119	9.2
 return;	138	10.6
-renamed x$1	8449	651.1
+renamed x$1	8445	650.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1975	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	186	0	0	0	6	0	0	29
@@ -567,7 +567,7 @@ test/corpus/int_div_sign_methods.js	36	0	0	0	0	0	0	3
 test/corpus/int_error_kind.js	44	0	0	0	0	0	0	4
 test/corpus/int_overflow_sign_methods.js	114	0	0	0	0	0	0	28
 test/corpus/int_shift_multiple_methods.js	57	0	0	0	0	0	0	14
-test/corpus/integer_bits.js	97	0	0	0	0	0	0	6
+test/corpus/integer_bits.js	99	0	0	0	0	0	0	2
 test/corpus/integer_families.js	114	0	0	0	0	0	0	23
 test/corpus/integer_truth.js	89	0	0	0	0	0	0	0
 test/corpus/integers_128.js	172	0	0	0	0	0	0	14
