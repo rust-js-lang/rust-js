@@ -260,15 +260,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "            stmts.push(StmtKind::Break(None).at(js::Span::NONE));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^switch_fallthrough.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(guarded_arm_chains|switch_guard_does_nothing|while_let_at_end)\\.rs$"],
   },
   {
     name: "switch-copied-returns-kept",
-    breaks: "a `return null` MIR copied into a case of what follows the `match` stays, not the case's `break`",
+    breaks: "a `return null` MIR copied into a case of what follows the `match` stays, not the case's `break`: React DOM's validateProperty's `switch (name)` in its guarded `case \"string\"` is an `if` chain of its guard",
     file: "src/lower/mir/tidy/switches.rs",
     find: "            returns_broken(body, value.as_ref(), written.span);\n",
     replace: "",
-    tests: fallthrough,
+    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "breaks where MIR copied the return past the match"],
   },
   {
     name: "switch-negated-guard-unplaced",
@@ -280,11 +280,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-failing-guard-goes-after",
-    breaks: "a guarded arm's case whose failed guard goes past the `match` takes the statements of the arm others fall to, so the `match` is labeled blocks",
+    breaks: "a guarded arm's case whose failed guard goes past the `match`, `LEGACY_HIDDEN if on(..) => { .. }` after arms that fall through, is taken as going on to the statements of the arm others fall to, so the `match` is an `if` chain, not upstream's `switch` (`switch_guard_past_match.rs`)",
     file: "src/lower/mir/tidy/switches.rs",
     find: "        .filter(|&c| (arms.iter()).any(|arm| arm.span == cases[c].3 && (arm.guard.is_none() || arm.falls)))\n",
     replace: "        .filter(|_| true)\n",
-    tests: twoGuards,
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_past_match\\.rs$"],
+    snapshots: true,
   },
   {
     name: "switch-guard-inner-if-apart",

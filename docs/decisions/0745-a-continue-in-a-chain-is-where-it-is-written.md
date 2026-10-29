@@ -124,8 +124,9 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; a jump
 moves to each place that goes on to it.
 
 Held by the corpus case `continue_arms_of_else_if` (native-compared) and
-the mutations `jumps-into-chain-arms-uncounted` and
-`jumps-into-arms-that-leave-their-own-way`.
+the mutation `jumps-into-chain-arms-uncounted`. Its second,
+`jumps-into-arms-that-leave-their-own-way`, went once no program reached
+what it changed (ADR 1004, amended).
 
 ## Amendment: one owner gives a chain's arms the jump after it (2026-10-28)
 

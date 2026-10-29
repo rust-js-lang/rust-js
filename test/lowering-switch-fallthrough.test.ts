@@ -481,3 +481,75 @@ pub fn tag_of(r#type: Option<&Unknown>) -> &'static str {
     .toEqual(["scope object", "fragment object", "throw", "throw", "throw"]);
   expect([lib.tagOf(() => {}), lib.tagOf("div")]).toEqual(["class", "host"]);
 });
+
+// React DOM's validateProperty: a guarded arm of a match of what a value
+// is, whose failed guard goes to the `return true` past the `match`, holds
+// a `match` of the name whose `_` returns the same. MIR copies that
+// `return`: in the inner `switch`'s named cases it's their `break`, as
+// upstream writes it, and the guard stays one `if` (ADR 0905).
+test("a match of a name in a guarded arm breaks where MIR copied the return past the match", async () => {
+  const dir = fixture("switch-copied-return");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::{Kind, Unknown};
+
+pub fn validate(name: &str, value: Option<&Unknown>, dev: bool, warned: &mut Vec<String>) -> bool {
+    if dev {
+        let lower_cased_name = name.to_lowercase();
+        if name != lower_cased_name {
+            warned.push(lower_cased_name);
+            return true;
+        }
+        match js::classify(value) {
+            Kind::Bool(_) => {
+                warned.push(name.to_string());
+                return false;
+            }
+            Kind::Function(_) | Kind::Symbol(_) => {
+                warned.push(name.to_string());
+                return false;
+            }
+            // Warn when passing the strings 'false' or 'true' into a boolean prop
+            Kind::String(value) if value == "false" || value == "true" => {
+                match name {
+                    "checked" | "selected" | "multiple" | "muted" => {}
+                    _ => {
+                        return true;
+                    }
+                }
+                warned.push(format!("{value} {name}"));
+                return true;
+            }
+            _ => {}
+        }
+        return true;
+    }
+    false
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`        if (value === "false" || value === "true") {
+          switch (name) {
+            case "checked":
+            case "selected":
+            case "multiple":
+            case "muted":
+              break;
+            default:
+              return true;
+          }
+          warned.push(\`\${value} \${name}\`);
+          return true;
+        }
+`);
+  const lib = await import(join(dir, "lib.js"));
+  const validated = (name: string, value: unknown) => {
+    const warned: string[] = [];
+    return [lib.validate(name, value, true, warned), warned];
+  };
+  expect([validated("checked", "true"), validated("title", "false"), validated("checked", "yes"), validated("checked", true), validated("Title", 1)])
+    .toEqual([[true, ["true checked"]], [true, []], [true, []], [false, ["checked"]], [true, ["title"]]]);
+  expect(lib.validate("checked", "true", false, [])).toBe(false);
+});

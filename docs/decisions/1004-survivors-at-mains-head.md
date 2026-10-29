@@ -220,3 +220,42 @@ built besides, every package with the compiler as it is and with each.
   statements of the arm others fall to: a wrong answer were it reached, so
   it isn't removed without a case.
 
+
+## Amendment: the four tidy survivors left open (agent-ciqx, 2026-10-29)
+
+Each was run at 23d96539d against the whole corpus, snapshots compared;
+`jumps-into-arms-that-leave-their-own-way` also against the lowering,
+snapshot, JSX, port, compiler and tidy-stage suites; and React's port,
+`react-dom-bindings` and `react-reconciler`, was built from a copy with
+the compiler as it is and with each.
+
+- **`switch-fallen-guard-goes-on` is a wrong answer, caught by three
+  corpus cases** against native Rust, `guarded_arm_chains.rs`,
+  `switch_guard_does_nothing.rs` and `while_let_at_end.rs`: a guard that
+  holds where its arm goes on past the `match` fell to the next case. Its
+  tests named `switch_fallthrough.rs` alone, which it doesn't reach; they
+  name the three now.
+- **`switch-failing-guard-goes-after` is caught by a new case**,
+  `switch_guard_past_match.rs`, React's `getComponentNameFromFiber` with a
+  guarded arm of a constant no arm names again, `LEGACY_HIDDEN if on(..)`,
+  whose failed guard goes past the `match`: with its filter gone, its case
+  is taken as going on to the arm others fall to, and the `match` is an
+  `if` chain, not upstream's `switch`. Its snapshot shows it, and the case
+  runs against native Rust. It isn't a wrong answer where reached: a second
+  case holding what follows makes `switches` leave the `match` as it was.
+- **`switch-copied-returns-kept` is caught by a new test**,
+  `test/lowering-switch-fallthrough.test.ts`, "a match of a name in a
+  guarded arm breaks where MIR copied the return past the match": React
+  DOM's `validateProperty`, whose `switch (name)` in its guarded `case
+  "string"` breaks where MIR copied the `return true` past the `match`,
+  as upstream writes it. The port reaches it through `js::classify`'s
+  `switch (typeof value)` (ADR 0668), which no natively run program can
+  write, so the test compiles against the js crate and runs the JS.
+- **`jumps-into-arms-that-leave-their-own-way` goes; its code stays.** No
+  corpus case, suite or module of React's port changes with it: what it
+  guarded, a `match`'s chain of guarded arms that leave each their own way
+  followed by the jump MIR joined after it, is now kept from
+  `jumps_into_branches` by `switched` (#389c) before the arms are counted.
+  Were one reached, the mutant's JS would still be right, the jump moved
+  into the arm that goes on, so the restriction stays as the rule ADR 0745
+  states, as the first amendment decided of closes no program shows.

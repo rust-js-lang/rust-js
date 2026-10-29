@@ -163,14 +163,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
   },
   {
-    name: "jumps-into-arms-that-leave-their-own-way",
-    breaks: "a `match`'s chain, arms of which leave each their own way, `if (tag === 3) { if (..) { break bb6; } } else { if (tag === 5) { break bb6; } else { break bb25; } } break bb25;`, has the jump in each arm, no `switch` then (ADR 0745, amended)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        matches!(&leaves[..], [going_on @ .., true] if going_on.iter().all(|leaves| !leaves))\n",
-    replace: "        matches!(&leaves[..], [going_on @ .., true] if going_on.iter().any(|leaves| !leaves))\n",
-    tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names"],
-  },
-  {
     name: "jumps-into-chain-arms-uncounted",
     breaks: "an `else if` chain whose last arm leaves keeps the jump MIR joined after it, `} else { break bb53; } continue;`, as its chained `else` is taken for one arm that goes on (ADR 0745, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
