@@ -766,13 +766,6 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
                     _ => false,
                 }
         }
-        // `x != null` where `x` holds, or `!!x`: `null` and `undefined` are
-        // falsy (ADR 0870).
-        (ExprKind::Binary(Op::LooseNe, x, null), _)
-            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, &by.tested()) =>
-        {
-            true
-        }
         _ => false,
     }
 }

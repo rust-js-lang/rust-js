@@ -172,7 +172,6 @@ that name reads: a name given apart, as a shadow is
 - Mutations `chain-values-nested`, `chain-read-first-of-any-test`,
   `chain-values-of-branches`, `chain-values-of-none`,
   `chain-values-of-written-return` (`lower/mir/tidy/logicals.ts`),
-  `truth-implies-nothing` (`lower/mir/tidy/branches.ts`),
   `declared-at-top-off` (`prepare.ts`) and `declared-at-top-not-apart`
   (`prepare/initializers.ts`).
 
@@ -223,3 +222,14 @@ its value stays the closure, as before.
   `jsxDev` beside a `let` of the same `if`.
 - Mutations `valued-guard-unseen`, `valued-guard-unexported` and
   `valued-alone-kept` (`prepare/initializers.ts`).
+
+## Amendment: a truth test implies nothing of its own (2026-10-29)
+
+`tidy/branches.rs`'s `implies` took `x != null` to hold where `x` does,
+`if (words)`, for a let chain of a value's truth to be one `if`. Its
+mutation, `truth-implies-nothing`, survived: with the arm out, no corpus
+case's JS changed (snapshots compared), nor the lowering, snapshot, JSX,
+compiler, port or tidy-stage suites', nor React's port's JS, built from
+a copy (`createTask` among it), as another rule now makes those `if`s one.
+The arm went with its mutation; a chain it would have joined stays two
+`if`s, which run as the one did.
