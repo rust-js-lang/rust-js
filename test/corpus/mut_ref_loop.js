@@ -8,26 +8,26 @@ export function entry() {
 
 function main() {
   const ints = [1, 2, 3];
-  for (const i of $mutItems(ints)) {
-    i.value = (i.value + 22) | 0;
+  for (let i = 0; i < ints.length; i++) {
+    ints[i] = (ints[i] + 22) | 0;
   }
   console.log(`[${ints.join(", ")}]`);
 
   const halves = [1.5, 2.5];
-  for (const x of $mutItems(halves)) {
-    x.value *= 2;
+  for (let i = 0; i < halves.length; i++) {
+    halves[i] *= 2;
   }
   console.log(`[${halves.map((item) => $debugF64(item)).join(", ")}]`);
 
   const counts = [1, 2];
-  for (const c of $mutItems(counts)) {
-    c.value = (c.value * 200) & 255;
+  for (let i = 0; i < counts.length; i++) {
+    counts[i] = (counts[i] * 200) & 255;
   }
   console.log(`[${counts.join(", ")}]`);
 
   const words = ["a", "b"];
-  for (const w of $mutItems(words)) {
-    w.value += "!";
+  for (let i = 0; i < words.length; i++) {
+    words[i] += "!";
   }
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 
@@ -46,12 +46,12 @@ function main() {
   console.log(`[${ns.join(", ")}]`);
 
   const v = [1, 2, 3, 4, 5];
-  for (const n of $mutItems(v)) {
-    if (n.value % 2 === 0) {
+  for (let i = 0; i < v.length; i++) {
+    if (v[i] % 2 === 0) {
       continue;
     }
-    n.value = (n.value * 10) | 0;
-    if (n.value > 20) {
+    v[i] = (v[i] * 10) | 0;
+    if (v[i] > 20) {
       break;
     }
   }

@@ -356,6 +356,54 @@ export function at(v, i) {
   length, `v.splice(i, 0, x)`; any other `$removeAt` and `$insertAt`
   ([ADR 0576](../../decisions/0576-what-a-bodys-integers-can-be.md#amendment-a-vecs-remove-and-insert-in-bounds-are-jss-own)).
 
+Changing each item in its place is a loop over its `&mut`s, `iter_mut()`,
+which is a loop over the array's indices; of its `enumerate()`, the index
+is the loop's, and of its `zip` with another array, it runs as long as the
+shorter
+([ADR 1019](../../decisions/1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)):
+
+```rust
+pub fn bump(scores: &mut [u32]) {
+    for s in scores.iter_mut() {
+        *s += 1;
+    }
+}
+
+pub fn numbered(row: &mut Vec<usize>) {
+    for (i, cell) in row.iter_mut().enumerate() {
+        *cell = i;
+    }
+}
+
+pub fn add(into: &mut [i32], from: &[i32]) {
+    for (a, b) in into.iter_mut().zip(from.iter()) {
+        *a += b;
+    }
+}
+```
+
+```js
+export function bump(scores) {
+  for (let i = 0; i < scores.length; i++) {
+    scores[i] = (scores[i] + 1) >>> 0;
+  }
+}
+
+export function numbered(row) {
+  for (let i = 0; i < row.length; i++) {
+    row[i] = i;
+  }
+}
+
+export function add(into, from) {
+  const n = Math.min(into.length, from.length);
+  for (let i = 0; i < n; i++) {
+    const b = from[i];
+    into[i] = (into[i] + b) | 0;
+  }
+}
+```
+
 ## Sorting
 
 `sort()` sorts in place, as JS's does, but numbers sort as numbers and

@@ -23,6 +23,7 @@ mod logicals;
 mod loop_labels;
 mod loops;
 mod moves;
+mod mut_items;
 mod options;
 mod shadows;
 mod stages;

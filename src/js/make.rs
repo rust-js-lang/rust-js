@@ -538,6 +538,15 @@ impl Expr {
         Expr::member(of, HELD)
     }
 
+    /// What holds what this reads, `b` of `b.value`, where it's that read
+    /// (`HELD`).
+    pub fn held_by(&self) -> Option<&Expr> {
+        match &self.kind {
+            ExprKind::Member(of, property) if property == HELD => Some(of),
+            _ => None,
+        }
+    }
+
     pub fn member(object: Expr, property: impl Into<String>) -> Expr {
         let property = property.into();
         // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`; and a

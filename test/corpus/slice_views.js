@@ -10,7 +10,6 @@ import {
   $index,
   $iter,
   $mutAt,
-  $mutItems,
   $rchunksMut,
   $rotateLeft,
   $sliceSplitAt,
@@ -28,8 +27,8 @@ export function entry() {
 }
 
 function bumpAll(part) {
-  for (const x of $mutItems(part)) {
-    x.value = (x.value + 100) | 0;
+  for (let i = 0; i < part.length; i++) {
+    part[i] = (part[i] + 100) | 0;
   }
 }
 

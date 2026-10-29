@@ -6,7 +6,6 @@ import {
   $debugStr,
   $fromUtf8Mut,
   $index,
-  $mutItems,
   $strGetMut,
   $strPart,
   $strSlice,
@@ -63,8 +62,8 @@ function main() {
   const t$3 = { value: v[0] };
   shout(t$3);
   v[0] = t$3.value;
-  for (const w of $mutItems(v)) {
-    w.value = $asciiCase(w.value, false);
+  for (let i = 0; i < v.length; i++) {
+    v[i] = $asciiCase(v[i], false);
   }
   console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
 

@@ -25,8 +25,8 @@ function main() {
   console.log(`[${a.join(", ")}] [${b.join(", ")}] [${c.join(", ")}] [${arg.join(", ")}]`);
   const d = b.slice();
   zero(d);
-  for (const x of $mutItems(d)) {
-    x.value = (x.value + 10) | 0;
+  for (let i = 0; i < d.length; i++) {
+    d[i] = (d[i] + 10) | 0;
   }
   console.log(`[${b.join(", ")}] [${d.join(", ")}]`);
 

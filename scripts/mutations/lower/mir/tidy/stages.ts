@@ -724,4 +724,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$|^do_while_advances.rs$|^nullable_generic_fields.rs$"],
     snapshots: true,
   },
+  {
+    name: "mut-items-loops-kept",
+    breaks: "`for s in state.iter_mut()` stays `for (const s of $mutItems(state))` and `s.value = ..`, not `state[i] = ..` (#320)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                bottom_up(b, &mut |stmts| mut_items::mut_item_loops(stmts, &mut taken));\n",
+    replace: "                let _ = &mut taken;\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_mut_index_loops.rs$"],
+    snapshots: true,
+  },
 ];

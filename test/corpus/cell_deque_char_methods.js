@@ -14,7 +14,6 @@ import {
   $escapeUnicode,
   $iter,
   $mutAt,
-  $mutItems,
   $partitionPoint,
   $popFrontIf,
   $popIfCell,
@@ -119,8 +118,8 @@ function main() {
   const pair = [1, 2];
   const refs = pair;
   console.log(`[${refs.map((x) => (x * 2) | 0).join(", ")}]`);
-  for (const x of $mutItems(pair)) {
-    x.value = (x.value + 1) | 0;
+  for (let i = 0; i < pair.length; i++) {
+    pair[i] = (pair[i] + 1) | 0;
   }
   console.log(`[${pair.join(", ")}]`);
 }

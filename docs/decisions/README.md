@@ -803,6 +803,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)
 - [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`)*
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137)*
+- [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -224,6 +224,11 @@ pub(super) const STAGES: &[Stage] = &[
                 })
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
+            // A loop over an array's `&mut`s, over its indices (#320).
+            pass("mut items", |b, _| {
+                let mut taken = mentions(b);
+                bottom_up(b, &mut |stmts| mut_items::mut_item_loops(stmts, &mut taken));
+            }),
             // A tuple of an `if`'s value taken apart: a `let` of each part,
             // assigned in each branch (rd45).
             pass("conditional tuples", |b, _| {

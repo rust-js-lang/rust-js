@@ -36,8 +36,8 @@ function main() {
     .forEach((s) => {
       s.value = (s.value + 1) | 0;
     });
-  for (const [i, s] of $mutItems(scores).entries()) {
-    s.value = (s.value + i) | 0;
+  for (let i = 0; i < scores.length; i++) {
+    scores[i] = (scores[i] + i) | 0;
   }
   console.log(`[${scores.join(", ")}]`);
   const names = ["ann", "bo"];
