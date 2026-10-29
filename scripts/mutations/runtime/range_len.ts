@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
+  {
+    name: "range-hint-chars-unknown",
+    breaks: "a `char` or BigInt range's `size_hint` given to generic code is `(0, None)`, not std's exact one (#421)",
+    file: "src/runtime/range_len.js",
+    find: "    return $stepsLeft(range.start, range.end, inclusive);\n",
+    replace: "    return [0, undefined];\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
+  },
+  {
+    name: "steps-left-through-surrogates",
+    breaks: "a `char` range spanning the surrogates counts them, which no `char` is, `('\\u{D7FE}'..'\\u{E001}')` hinting 2051, not 3 (#421)",
+    file: "src/runtime/range_len.js",
+    find: "    const left = b - a - (a <= 0xd7ff && b > 0xdfff ? 0x800 : 0);\n",
+    replace: "    const left = b - a;\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_hints_given.rs$"],
+  },
 ];

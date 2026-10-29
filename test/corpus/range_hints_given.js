@@ -82,5 +82,28 @@ function main() {
       ),
     ).join(", ")}]`,
   );
+  // Of `char`s, their code points, less the surrogates where it spans
+  // them, and of 64- and 128-bit numbers, exact, as std's (#421).
+  const value$5 = hint($iterator({ start: "a", end: "e" }, $rangeNext));
+  const value$6 = hint($iterator({ start: "a", end: "e" }, $rangeInclusiveNext));
+  const value$7 = hint($iterator({ start: "e", end: "a" }, $rangeNext));
+  console.log(
+    `(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}) (${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`})`,
+  );
+  const value$8 = hint($iterator({ start: "퟾", end: "\ue001" }, $rangeNext));
+  const value$9 = hint($iterator({ start: "퟿", end: "\ue000" }, $rangeInclusiveNext));
+  console.log(
+    `(${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`}) (${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`,
+  );
+  const chars = { start: "a", end: "e" };
+  $rangeInclusiveNext(chars);
+  const value$10 = hint($iterator(chars, $rangeInclusiveNext));
+  console.log(`(${value$10[0]}, ${value$10[1] == null ? "None" : `Some(${value$10[1]})`})`);
+  const value$11 = hint($iterator({ start: 3n, end: 10n }, $rangeNext));
+  const value$12 = hint($iterator({ start: 1n, end: 4n }, $rangeInclusiveNext));
+  const value$13 = hint($iterator({ start: 9n, end: 2n }, $rangeNext));
+  console.log(
+    `(${value$11[0]}, ${value$11[1] == null ? "None" : `Some(${value$11[1]})`}) (${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`}) (${value$13[0]}, ${value$13[1] == null ? "None" : `Some(${value$13[1]})`})`,
+  );
 }
 //# sourceMappingURL=case.js.map

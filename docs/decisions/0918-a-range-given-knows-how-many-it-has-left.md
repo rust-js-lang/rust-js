@@ -57,3 +57,17 @@ each `step`th after, then each `step`th. Found by tidy's stages (ADR
 0659): `range_hints_given`'s `(0..10).step_by(3)` is `$stepBy` until the
 `range steps` pass folds it. Held by `step_by_range_size_hint.rs`,
 `range_hints_given.rs` at every stage, and `step-by-hint-unknown`.
+
+## Amendment: of `char`s and BigInts too (2026-10-30, #421)
+
+A range of `char`s, or of 64- or 128-bit numbers, given to generic code
+said `(0, None)` of its size, where std's `Step::steps_between` is exact:
+`('a'..'e')` is `(4, Some(4))`. **`$rangeHintOf` of either is
+`$stepsLeft`'s: of `char`s, the code points between its bounds, less the
+surrogates where it spans them; of BigInts, their difference, past
+`usize::MAX` that and none known.** Held by `range_hints_given.rs` (open,
+inclusive, empty, across the surrogates, stepped once, `u64`, `i128`)
+against native Rust and the mutations `range-hint-chars-unknown` and
+`steps-left-through-surrogates` (`runtime/range_len.ts`). `docs/readability.txt`'s
+renamed share went from 649.1 to 649.9 in 10,000 lines, blessed: the
+test's own printed values, `value$n`, several a line.

@@ -21,4 +21,12 @@ fn main() {
     println!("{:?}", (1..=10u8).skip(7).rev().collect::<Vec<_>>());
     println!("{:?}", [1, 2, 3, 4].iter().skip(1).take(2).rev().collect::<Vec<_>>());
     println!("{:?}", (1..=10u8).step_by(3).rev().collect::<Vec<_>>());
+    // Of `char`s, their code points, less the surrogates where it spans
+    // them, and of 64- and 128-bit numbers, exact, as std's (#421).
+    println!("{:?} {:?} {:?}", hint('a'..'e'), hint('a'..='e'), hint('e'..'a'));
+    println!("{:?} {:?}", hint('\u{D7FE}'..'\u{E001}'), hint('\u{D7FF}'..='\u{E000}'));
+    let mut chars = 'a'..='e';
+    chars.next();
+    println!("{:?}", hint(chars));
+    println!("{:?} {:?} {:?}", hint(3u64..10), hint(1i128..=4), hint(9u64..2));
 }

@@ -112,7 +112,7 @@ function $rangeInclusiveLen(range) {
 
 // The `size_hint` of a range stepped by `next`, `$rangeNext`'s or its
 // inclusive or back form's: std's, exact, of how many numbers it has left
-// (ADR 0918); of a `char`'s or a BigInt's, none known, as before. Of `n..`,
+// (ADR 0918), of `char`s and BigInts too, `$stepsLeft`'s (#421). Of `n..`,
 // `$rangeFromNext`'s or `$rangeFromStep`'s, `usize::MAX` and none known,
 // std's `RangeFrom`'s, whatever it's of (#400). `undefined` of another
 // `next`.
@@ -125,11 +125,33 @@ function $rangeHintOf(next) {
         ? $rangeInclusiveLen
         : undefined;
   if (len === undefined) return undefined;
+  const inclusive = len === $rangeInclusiveLen;
   return (range) => {
-    if (typeof range.start !== "number") return [0, undefined];
-    const left = len(range);
-    return [left, left];
+    if (typeof range.start === "number") {
+      const left = len(range);
+      return [left, left];
+    }
+    // Of `char`s or BigInts, std's `Step::steps_between`, exact (#421).
+    return $stepsLeft(range.start, range.end, inclusive);
   };
+}
+
+// How many a range of `char`s or of BigInts from `start` to `end` has left,
+// `inclusive` of its end, as std's `Step::steps_between` counts them, both
+// bounds of its `size_hint`: of `char`s their code points, less the
+// surrogates where it spans them, which no `char` is; of BigInts, past
+// `usize::MAX`, that and none known (#421).
+function $stepsLeft(start, end, inclusive) {
+  if (typeof start === "string") {
+    const [a, b] = [start.codePointAt(0), end.codePointAt(0) + (inclusive ? 1 : 0)];
+    if (!(a < b)) return [0, 0];
+    const left = b - a - (a <= 0xd7ff && b > 0xdfff ? 0x800 : 0);
+    return [left, left];
+  }
+  const left = inclusive ? end - start + 1n : end - start;
+  if (left <= 0n) return [0, 0];
+  if (left > 4294967295n) return [4294967295, undefined];
+  return [Number(left), Number(left)];
 }
 
 // The `try_fold` of an inclusive range stepped by `next`, std's, which ends
