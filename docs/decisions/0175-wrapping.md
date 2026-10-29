@@ -62,3 +62,23 @@ place; of the place itself, as before. Held by the corpus case
 MIR's borrow before a call still reads `$assign(b0, [..])` where the same
 `op=` without one reads `b0 = [..]`: #310.
 
+
+## Amendment: `op=` of a call's operand rebinds the variable (#396, #310)
+
+`b0 += b1 << 4` of a variable `b0: Wrapping<u32>` that a copy was made
+of, `let w = b0`, changed the copy too: Rust's `1 (1, 17)` was `17 (17,
+17)`. With a call's operand, MIR takes `&mut b0` into a temporary, `_5 =
+&mut _1`. The rule writing through a `&mut` asked whether any local of
+that name was a reference, so it wrote `$assign(b0, ..)`, into the array
+the copy `const w = b0` shares.
+
+Now a temporary of MIR's own that borrows a variable of the program's
+whole is that variable, rebound, `b0 = [..]`, as it is without a call's
+operand. Only a variable the program wrote that holds a `&mut`, `r` of
+`fn bump(r: &mut W<u32>)`, writes what it refers to in place.
+
+- `test/corpus/wrapping_assign_of_a_copy.rs` checks the copy and the
+  caller's value against native Rust.
+- `wrapping_assigned_through_a_ref.js` now reads `b0 = [..]`, where it
+  was `$assign(b0, ..)`.
+- The mutation is `wrapping-op-assign-written-through`.

@@ -129,3 +129,18 @@ its form isn't seen.
 indices and drop order, against native Rust. The mutations are
 `enumerate-of-droppers-unrecorded`, `back-stepped-enumerate-unknown` and
 `back-stepped-enumerate-fuse-unwrapped`.
+
+## Amendment: `next_back()` of an array's enumeration made in place (#395)
+
+`w.iter().enumerate().next_back()` gave `Some((undefined, 30))` where Rust
+gives `Some((2, 30))`. `next_back()`'s rule for a map of an array's items,
+its last item mapped, read the enumeration's form, `src.map((x, i) => [i,
+x])`, as a map, and called its function with the item alone.
+
+- An enumeration made in place is now stepped from its back by what
+  `as_double_ended` makes of it, `$nextBack($enumerate($iter(w)))`, asked
+  before the map rule, which so never sees one. Both are
+  `next_back_made_here`'s.
+- `test/corpus/enumerate_next_back_of_items.rs` checks a `Vec`'s and a
+  slice's against native Rust.
+- The mutation is `next-back-enumeration-refused`.

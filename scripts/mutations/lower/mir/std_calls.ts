@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "wrapping-op-assign-written-through",
+    breaks: "a `Wrapping`'s `op=` of a call's operand, through MIR's own `&mut b0`, is `$assign(b0, ..)`, written into the array its copies share: `17 (17, 17)` where Rust gives `1 (1, 17)` (#396)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            if let Some(of) = own.map(|of| Expr::var(&state.locals.names[of])) {\n",
+    replace: "                            if let Some(of) = own.filter(|_| false).map(|of| Expr::var(&state.locals.names[of])) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^wrapping_assign_of_a_copy.rs$"],
+  },
+  {
     name: "inspect-back-stepped-unmade",
     breaks: "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
     file: "src/lower/mir/std_calls.rs",

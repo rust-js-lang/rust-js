@@ -1370,14 +1370,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::WrappingOp(op, assign) => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let (target, through) = match (assign, values.next().expect("the `Wrapping`")) {
+                        // Through a variable the program wrote that holds a
+                        // `&mut`, what it refers to is written in place. Not
+                        // MIR's own `&mut b0` of `b0 += ..`: the variable it's
+                        // of, rebound, so a `Copy` value's copies stay what
+                        // they were (#396).
                         (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => {
-                            let reference = matches!(&place.kind, js::ExprKind::Var(name)
-                                if (state.locals.names.iter_enumerated())
-                                    .any(|(l, n)| n == name && state.body.local_decls[l].ty.is_ref()));
-                            if reference && !this.written_in_place(arg_tys[0].peel_refs()) {
-                                return Err(this.unsupported(span, "assigning a whole value through a `&mut`"));
+                            let local = match &place.kind {
+                                js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
+                                    .find(|(l, n)| *n == name && state.body.local_decls[*l].ty.is_ref())
+                                    .map(|(l, _)| l),
+                                _ => None,
+                            };
+                            let own = local.and_then(|l| super::queries::own_borrow_of_a_variable(state, l));
+                            if let Some(of) = own.map(|of| Expr::var(&state.locals.names[of])) {
+                                (of, false)
+                            } else {
+                                let reference = local.is_some();
+                                if reference && !this.written_in_place(arg_tys[0].peel_refs()) {
+                                    return Err(this.unsupported(span, "assigning a whole value through a `&mut`"));
+                                }
+                                (place, reference)
                             }
-                            (place, reference)
                         }
                         (true, _) => return Err(this.unsupported(span, "this assignment, from its MIR")),
                         (false, value) => (this.value_expr(value, span)?, false),

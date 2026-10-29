@@ -64,6 +64,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate's own nor a range: of a `$iter`, exact, or of a generic one, as
     /// `$sizeHint` finds it (ADR 0170), by its dictionary where it's given
     /// one, which has its impl's own (ADR 0561).
+    /// `next_back()` of what's made here, by its form: of a map of an
+    /// array's items, `v.iter().map(f)`, its source's last item, mapped, as
+    /// Rust's `Map::next_back` maps that one alone; of an enumeration,
+    /// `src.map((x, i) => [i, x])`, what steps it from its back, `$enumerate`
+    /// of its source, its index from the back where it is (ADR 0528, #395).
+    /// `None` of another.
+    fn next_back_made_here(
+        &mut self,
+        it: Expr,
+        iter_ty: Ty<'tcx>,
+        boxed: bool,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        if crate::lower::iterators::enumeration_source(&it).is_some() {
+            let back = self.as_double_ended(it, iter_ty, span)?;
+            let next_back = if boxed { "$nextBackSome" } else { "$nextBack" };
+            return Ok(Some(Expr::call_helper(next_back, vec![back])));
+        }
+        if !boxed
+            && crate::lower::iterators::is_items_map(&it)
+            && let js::ExprKind::Call(callee, args) = &it.kind
+            && let js::ExprKind::Member(source, _) = &callee.kind
+        {
+            let last = Expr::call_helper("$nextBack", vec![(**source).clone()]);
+            let last = self.spill("last", last, made);
+            let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
+            let mapped = crate::lower::calls::apply(args[0].clone(), vec![last]);
+            return Ok(Some(Expr::cond(none, Expr::undefined(), mapped)));
+        }
+        Ok(None)
+    }
+
     fn size_hint_of(&mut self, receiver: Expr, iter_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let mut it = receiver;
         // A `map`'s is its source's, as Rust's `Map` passes it on; its
@@ -448,28 +481,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             }
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+            if std_method == Some(IterMethod::NextBack)
+                && self.range_kind(iter_ty).is_none()
+                && let Some(back) = self.next_back_made_here(it.clone(), iter_ty, boxed, span, made)?
+            {
+                return Ok(Some(back));
+            }
             let array = self.has_a_back(iter_ty);
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
                 (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
                     Expr::call_helper(step, vec![it])
-                }
-                // A map of an array's items, `v.iter().map(f)`: its source's
-                // last item, mapped, as Rust's `Map::next_back` maps that one
-                // alone.
-                (Some(IterMethod::NextBack), None)
-                    if !boxed
-                        && crate::lower::iterators::is_items_map(&it)
-                        && let js::ExprKind::Call(callee, args) = &it.kind
-                        && let js::ExprKind::Member(source, _) = &callee.kind =>
-                {
-                    let last = Expr::call_helper("$nextBack", vec![(**source).clone()]);
-                    let last = self.spill("last", last, made);
-                    let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
-                    Expr::cond(
-                        none,
-                        Expr::undefined(),
-                        crate::lower::calls::apply(args[0].clone(), vec![last]),
-                    )
                 }
                 (Some(IterMethod::NextBack), None) if array && boxed => Expr::call_helper("$nextBackSome", vec![it]),
                 (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),

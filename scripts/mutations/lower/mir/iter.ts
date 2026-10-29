@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "next-back-enumeration-refused",
+    breaks: "`next_back()` of an enumeration of an array's items made in place is refused, not stepped from its back by `$enumerate` (#395)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if crate::lower::iterators::enumeration_source(&it).is_some() {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_next_back_of_items.rs$"],
+  },
+  {
     name: "generic-map-hint-refused",
     breaks: "`size_hint()` of a map of what's given as it is, `I: Clone`'s, is refused (#385)",
     file: "src/lower/mir/iter.rs",
@@ -111,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "mir-next-back-map-all",
     breaks: "MIR's `v.iter().map(f).next_back()` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                        && crate::lower::iterators::is_items_map(&it)\n",
-    replace: "                        && false\n",
+    find: "            && crate::lower::iterators::is_items_map(&it)\n",
+    replace: "            && false\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "next_back of a map"],
   },
   {

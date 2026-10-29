@@ -905,6 +905,30 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
     }
 }
 
+/// The program's variable whole that `local`, a `&mut` of MIR's own, is of:
+/// `_1` of `_5 = &mut _1`, `b0` of `b0 += ..` (#396). `None` of a local the
+/// program wrote, or one of a part or a reference.
+pub(super) fn own_borrow_of_a_variable(state: &State<'_, '_>, local: Local) -> Option<Local> {
+    if state.locals.user[local] {
+        return None;
+    }
+    (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+        StatementKind::Assign(assign) => match &assign.1 {
+            Rvalue::Ref(_, _, of)
+                if assign.0.local == local
+                    && assign.0.projection.is_empty()
+                    && of.projection.is_empty()
+                    && state.locals.user[of.local]
+                    && !state.body.local_decls[of.local].ty.is_ref() =>
+            {
+                Some(of.local)
+            }
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
 /// The variable a place is of, `route` of `route.title[0]`.
 pub(super) fn root_var(place: &Expr) -> Option<&str> {
     match &place.kind {
