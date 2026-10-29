@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "rotate-signed-bits-unmasked",
     breaks: "a negative `i32`'s `rotate_left` rotates its JS number, not its 32 bits",
     file: "src/lower/std_types/number.rs",
-    find: "                    Num::I32 => Expr::bin(Op::UShr, arg(), Expr::int(0)),",
-    replace: "                    Num::I32 => arg(),",
+    find: "                        Num::I32 => Expr::bin(Op::UShr, x, Expr::int(0)),",
+    replace: "                        Num::I32 => x,",
     tests: ["test/corpus.test.ts", "-t", "integer_bits"],
   },
   {

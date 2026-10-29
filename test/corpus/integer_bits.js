@@ -25,6 +25,10 @@ function fnv1a(text) {
 }
 
 // xorshift, as small random number generators are written.
+function rotated(x, by) {
+  return [$rotateBits(x >>> 0, by, 32, true) | 0, $rotateBits(x >>> 0, by, 32, false) | 0];
+}
+
 function xorshift(x) {
   x ^= BigInt.asUintN(64, x << 13n);
   x ^= x >> 7n;
@@ -44,6 +48,13 @@ function main() {
     `${$rotateBits(BigInt.asUintN(64, 1n), 63, 64, true)} ${$rotateBits(BigInt.asUintN(64, 9223372036854775809n), 4, 64, false)}`,
   );
   console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
+  // By a count not known till it runs, of a negative `i32` too.
+  const value = rotated(-2, 1);
+  const value$1 = rotated(-7, 35);
+  const value$2 = rotated(-2147483648, 31);
+  console.log(
+    `(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]}) (${value$2[0]}, ${value$2[1]})`,
+  );
 
   // Bytes, in each order, and back.
   const beBytes = $toBytes(0x01020304, 4, false);
@@ -51,10 +62,10 @@ function main() {
   console.log(
     `[${beBytes.join(", ")}] [${leBytes.join(", ")}] [${$toBytes(0x0102, 2, true).join(", ")}]`,
   );
-  const value = $toBytes(-2, 4, false);
-  const value$1 = $toBytes(-1, 1, true);
+  const value$3 = $toBytes(-2, 4, false);
+  const value$4 = $toBytes(-1, 1, true);
   console.log(
-    `[${value.join(", ")}] [${value$1.join(", ")}] [${$toBytes(258n, 8, false).join(", ")}]`,
+    `[${value$3.join(", ")}] [${value$4.join(", ")}] [${$toBytes(258n, 8, false).join(", ")}]`,
   );
   console.log(`[${$toBytes(-3n, 8, true).join(", ")}]`);
   console.log(

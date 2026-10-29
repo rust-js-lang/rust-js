@@ -767,12 +767,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => rotated,
                 }
             }
-            // Of its unsigned bits, the sign bit among them.
+            // Of its unsigned bits, the sign bit among them (a 32-bit
+            // integer's is the arm above's).
             NumOp::RotateBits { left } => {
-                let x = match num {
-                    Num::I32 => Expr::bin(Op::UShr, arg(), Expr::int(0)),
-                    _ => bits(arg()),
-                };
+                let x = bits(arg());
                 let list = vec![x, arg(), Expr::int(num.bits().into()), Expr::bool(left)];
                 let rotated = helper("$rotateBits", list);
                 if num.signed() { num.wrap(rotated) } else { rotated }

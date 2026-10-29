@@ -12,6 +12,10 @@ fn fnv1a(text: &str) -> u32 {
 }
 
 // xorshift, as small random number generators are written.
+fn rotated(x: i32, by: u32) -> (i32, i32) {
+    (x.rotate_left(by), x.rotate_right(by))
+}
+
 fn xorshift(mut x: u64) -> u64 {
     x ^= x << 13;
     x ^= x >> 7;
@@ -25,6 +29,8 @@ fn main() {
     println!("{} {} {}", (-2i32).rotate_left(1), i8::MIN.rotate_right(7), (-1i16).rotate_left(3));
     println!("{} {}", 1u64.rotate_left(63), 0x8000000000000001u64.rotate_right(4));
     println!("{}", (-2i64).rotate_left(1));
+    // By a count not known till it runs, of a negative `i32` too.
+    println!("{:?} {:?} {:?}", rotated(-2, 1), rotated(-7, 35), rotated(i32::MIN, 31));
 
     // Bytes, in each order, and back.
     println!("{:?} {:?} {:?}", 0x01020304u32.to_be_bytes(), 0x01020304u32.to_le_bytes(), 0x0102u16.to_ne_bytes());
