@@ -19,9 +19,9 @@ function main() {
   const first = Array.from($lent($iterator(numbers, $rangeNext)).take(3));
   console.log(`[${first.join(", ")}] ${numbers.start}..${numbers.end}`);
   const iter = numbers;
-  while (true) {
-    const n = $rangeNext(iter);
-    if (n == null || n === 5) {
+  let n;
+  while ((n = $rangeNext(iter)) != null) {
+    if (n === 5) {
       break;
     }
   }

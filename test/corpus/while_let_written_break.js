@@ -30,9 +30,36 @@ function untilHash(words) {
   return i;
 }
 
+function untilDue(times, now, hasTime, yields) {
+  let i = 0;
+  let time;
+  while ((time = times[i]) != null) {
+    if (time > now && (!hasTime || yields())) {
+      // This one hasn't expired, and we've reached the deadline.
+      break;
+    }
+    i++;
+  }
+  return i;
+}
+
 function main() {
   for (const words of [["a", "b", "", "c"], ["a", "#b"], [], ["", "a"], ["x", "y"]]) {
     console.log(`${untilBlank(words)} ${untilHash(words)}`);
+  }
+  let calls = 0;
+  function yields() {
+    calls = (calls + 1) | 0;
+    return calls % 2 === 0;
+  }
+  for (const [times, now, hasTime] of [
+    [[1, 5, 2, 9], 4, true],
+    [[1, 5, 2, 9], 4, false],
+    [[], 4, true],
+    [[1, 2], 4, true],
+  ]) {
+    const due = untilDue(times, now, hasTime, yields);
+    console.log(`${due} ${calls}`);
   }
 }
 //# sourceMappingURL=case.js.map

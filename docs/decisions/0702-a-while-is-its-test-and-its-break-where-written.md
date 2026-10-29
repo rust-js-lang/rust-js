@@ -729,3 +729,58 @@ with and without it, its 221 generated files the same), nor probes of a
 `return`, and the `break` it leaves is where the moved code ends, as
 before; the mutation went with the path. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+## Amendment: a test `skipped tests` joined is taken apart again (rd215, 2026-10-30)
+
+React's Scheduler's `workLoop`:
+
+```rust
+while let Some(task) = CURRENT.with_borrow(Clone::clone) {
+    if task.expiration_time > now && (!has_time || yield_now()) {
+        // This task hasn't expired, and we've reached the deadline.
+        break;
+    }
+    run(&task);
+}
+```
+
+was the comment above the loop, then `while (true) { const task = current;
+if (task == null || (task.expirationTime > now && (!hasTime ||
+yieldNow()))) { break; } run(task); }`. MIR splits the `&&` and `||` into
+nested blocks, so the written `break` is the way out of one of them,
+`break bb23`, of no place; `skipped tests` (ADR 0946) read that block as
+one `if` of the `Some` and the program's test, `task != null && (!(..) ||
+(..))`, and the #301 rule, which keeps each run of nested `if`s of one
+written `if` apart, saw one test.
+
+Now `early_breaks` takes a test that `&&` joins apart at its `&&`s, down
+their left (`and_parts`), where its parts are of different `if`s
+(`Written::breaks`, as of the nested ones), the first part where the `if`
+was and each other where it's written, so it's the program's `if` again,
+its `break` that `if`'s, with its comment:
+
+```js
+while (current != null) {
+  const task = current;
+  if (task.expirationTime > now && (!hasTime || yieldNow())) {
+    // This task hasn't expired, and we've reached the deadline.
+    break;
+  }
+  run(task);
+}
+```
+
+A test whose parts are all of one `if`, or none, stays as it was. The
+port's SchedulerMock `workLoop` now reads as upstream's. Two corpus cases
+of a `for` over `by_ref()` that breaks on its first `if` change the same
+way, `let n; while ((n = $rangeNext(iter)) != null) { if (n === 5) {
+break; } }` where both tests were one.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `if (a && b) { s }`
+with no `else` is `if (a) { if (b) { s } }`: the same tests in the same
+order, each leaving the loop where it did.
+
+Held by `test/corpus/while_let_written_break.rs`'s `until_due` against
+native Rust, and the mutations `early-break-joined-test-kept`,
+`early-break-split-part-placed-first` and `early-break-and-parts-one`
+(`mir/tidy/jumps.ts`).

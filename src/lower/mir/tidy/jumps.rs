@@ -17,7 +17,8 @@ use crate::js::result;
 /// of `if (b) { if (c) { a; continue l; } } break;`, a `while let`'s test
 /// then its own, `if (!(b && c)) { break; } a`; but of a `c` of an `if`
 /// the program wrote of a `break`, `breaks`', each its own, `if (!b) {
-/// break; } if (!c) { break; } a`, as written (#301).
+/// break; } if (!c) { break; } a`, as written (#301), of a test of both
+/// joined `b && !c` too, its parts apart (rd215).
 pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span, js::Span)]) {
     for stmt in stmts.iter_mut() {
         let (label, body) = match &mut stmt.kind {
@@ -67,6 +68,23 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
         // `!word` of `word.is_empty()`, would join, `while ((word = ..))`
         // (#301), each where it was.
         let of = |t: &Expr| jump_tested(breaks, written_at(t));
+        // So too of one test `skipped tests` made of both, `n != null &&
+        // !c` of `if c { break; }` in `while let Some(n)`, its `break` the
+        // block's way out MIR made (rd215): its parts, each where it's of.
+        let tests: Vec<(Expr, js::Span)> = (tests.into_iter())
+            .flat_map(|(test, span)| {
+                let parts = and_parts(&test);
+                match parts.iter().all(|part| of(part) == of(&parts[0])) {
+                    true => vec![(test, span)],
+                    false => (parts.into_iter().enumerate())
+                        .map(|(i, part)| {
+                            let at = if i == 0 { span } else { written_at(&part) };
+                            (part, at)
+                        })
+                        .collect(),
+                }
+            })
+            .collect();
         let mut groups: Vec<Vec<(Expr, js::Span)>> = Vec::new();
         for test in tests {
             match groups.last_mut() {
@@ -95,6 +113,19 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
             unreachable!("matched")
         };
         body.extend(broken_early(test, then, span, &continues));
+    }
+}
+
+/// `test`'s parts down its `&&`s' left, `a && b && (c && d)`'s `a`, `b` and
+/// `c && d`: what each `if` of a run of nested ones tested.
+fn and_parts(test: &Expr) -> Vec<Expr> {
+    match &test.kind {
+        ExprKind::Binary(Op::And, a, b) => {
+            let mut parts = and_parts(a);
+            parts.push((**b).clone());
+            parts
+        }
+        _ => vec![test.clone()],
     }
 }
 

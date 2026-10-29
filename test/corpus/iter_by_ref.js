@@ -70,15 +70,15 @@ function main() {
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
   const all = { at: 0 };
   const iter = all;
-  while (true) {
-    const value = namesIterator_next(iter);
-    if (value == null || value[0] === "B") {
+  let value$4;
+  while ((value$4 = namesIterator_next(iter)) != null) {
+    if (value$4[0] === "B") {
       break;
     }
   }
-  const value$4 = namesIterator_next(all);
+  const value$5 = namesIterator_next(all);
   console.log(
-    `${value$4 == null ? "None" : `Some((${$debugStr(value$4[0])}, ${value$4[1]}))`} ${all.at}`,
+    `${value$5 == null ? "None" : `Some((${$debugStr(value$5[0])}, ${value$5[1]}))`} ${all.at}`,
   );
 }
 //# sourceMappingURL=case.js.map
