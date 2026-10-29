@@ -196,3 +196,12 @@ plain `r.by_ref().collect()` is seen lent. Held by
 the mutations `steps-lent-inclusive-never` (`lower/std_types/range.ts`)
 and `collected-lent-range-peeled` (`lower/mir/iter/collect.ts`). With it,
 #414 is done.
+
+## Amendment: two `RangeFull`s are equal, of no bound to compare (2026-10-30)
+
+`range_eq` (#414 stage 1) asked a range's bound type before comparing its
+bounds, and a `RangeFull` has none: `a == b` of two, as rustc's
+`range-implement-clone.rs` asserts, panicked rust-js. It asks it of each
+bound it compares, as before #414, so two `RangeFull`s are `true`. Held by
+corpus `range_values` (`same(RangeFull, ..)`) against native Rust and
+the mutation `range-full-eq-bound-asked`.

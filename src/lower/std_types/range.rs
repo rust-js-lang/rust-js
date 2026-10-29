@@ -405,12 +405,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let index = self.range_index(ty).expect("a bound's type");
+        // A `RangeFull`'s, of no bounds, has no bound's type to compare.
+        let index = self.range_index(ty);
         let (a, a_exhausted) = self.range_state(a, ty, out);
         let (b, b_exhausted) = self.range_state(b, ty, out);
         let mut parts = Vec::new();
         for (x, y) in a.into_iter().zip(b) {
-            parts.push(self.eq_value(x, y, index, span, out)?);
+            parts.push(self.eq_value(x, y, index.expect("a bound's type"), span, out)?);
         }
         parts.extend(match (a_exhausted, b_exhausted) {
             (Some(x), Some(y)) => Some(Expr::bin(Op::Eq, x, y)),

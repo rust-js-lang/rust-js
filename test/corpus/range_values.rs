@@ -3,7 +3,7 @@
 // it contains a number.
 
 use std::collections::BTreeSet;
-use std::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
+use std::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 const FROM: RangeFrom<i32> = 5..;
 const TO: RangeTo<i32> = ..8;
@@ -103,6 +103,8 @@ fn main() {
     println!("{:?} {:?} {:?} {} {}", FROM, TO, THROUGH, FROM.contains(&9), THROUGH.contains(&8));
     println!("{:?} {:?} {:?} {}", AFTER, BEFORE, UPTO, AFTER.contains(&2));
     println!("{} {} {}", (1..4) == (1..4), (1..=4) != (1..=5), (2..) == (2..));
+    // A full range, of no bounds, equals another, and one to an end by it.
+    println!("{} {} {}", same(RangeFull, ..), same(..5, cloned(..5)), !same(..=5, ..=4));
     let big: u64 = (1u64..4).sum();
     println!("{}", big);
 
@@ -137,6 +139,14 @@ fn main() {
         print!("{}", c);
     }
     println!(" {} {:?} {} {}", letters, around, kept.len(), ("a".."m").contains(&"hat"));
+}
+
+fn cloned<T: Clone>(x: T) -> T {
+    x.clone()
+}
+
+fn same<T: PartialEq>(a: T, b: T) -> bool {
+    a == b
 }
 
 fn r_of(n: u32) -> Range<u32> {

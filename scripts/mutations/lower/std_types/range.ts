@@ -297,4 +297,12 @@ export const mutations: Mutation[] = [
     replace: "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
+  {
+    name: "range-full-eq-bound-asked",
+    breaks: "`==` of two `RangeFull`s asks the bound type they haven't, and rust-js panics, as `range-implement-clone.rs` found",
+    file: "src/lower/std_types/range.rs",
+    find: "        let index = self.range_index(ty);\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n",
+    replace: "        let index = Some(self.range_index(ty).expect(\"a bound's type\"));\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
+  },
 ];

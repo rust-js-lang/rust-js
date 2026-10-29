@@ -71,6 +71,8 @@ function firstSquareOver(limit) {
 }
 
 function main() {
+  const clone = { clone: (value) => ({ ...value }) };
+  const partialEq = { eq: (a, b) => a.end === b.end };
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end, 4);
   console.log(
@@ -140,6 +142,10 @@ function main() {
   );
   console.log(`${AFTER.start}.. ..${BEFORE.end} ..=${UPTO.end} ${AFTER.start <= 2}`);
   console.log("true true true");
+  // A full range, of no bounds, equals another, and one to an end by it.
+  console.log(
+    `${same(undefined, undefined, { eq: (a, b) => true })} ${same({ end: 5 }, cloned({ end: 5 }, clone), partialEq)} ${!same({ end: 5 }, { end: 4 }, partialEq)}`,
+  );
   const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
     (a, b) => BigInt.asUintN(64, a + b),
     0n,
@@ -179,7 +185,7 @@ function main() {
       { start: 1, end: 4 },
       { clone: (value) => ({ start: value.start, end: value.end }) },
       { fmt: (value) => `${value.start}..${value.end}` },
-    )} ${shownTwice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
+    )} ${shownTwice({ end: 2 }, clone, { fmt: (value) => `..=${value.end}` })}`,
   );
 
   const numbers = [1, 2, 3, 4, 5];
@@ -200,6 +206,14 @@ function main() {
   console.log(
     ` ${letters} [${around.map((item) => $debugStr(item, "'")).join(", ")}] ${kept.size} ${"a" <= "hat" && "hat" < "m"}`,
   );
+}
+
+function cloned(x, TClone) {
+  return TClone.clone(x);
+}
+
+function same(a, b, TPartialEq) {
+  return TPartialEq.eq(a, b);
 }
 
 function rOf(n) {
