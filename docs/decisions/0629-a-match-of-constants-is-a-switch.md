@@ -838,3 +838,19 @@ native Rust gives) and `test/corpus/option_switch_default.rs`; mutations
 `some-switch-default-off`, `some-switch-rest-break` (`tidy/switches.ts`)
 and `switch-constants-unvalued` (`hints.ts`). A case's `break;` before
 the rest has none: no tree the corpus has makes one.
+
+## Amendment: no `tested_exit_after` (2026-10-29)
+
+The #389 amendment's `tested_exit_after` moved an inner loop's last `if`
+the program wrote after it out after the loop. Later that day the passes
+before it came to write that `if` after the loop themselves, and it
+decided nothing: its mutation, `tested-exit-kept-in-loop`, survived a
+full check, and with it off no corpus case's JS changed (snapshots
+compared), nor the snapshot, lowering, JSX, React, docs, readability,
+compiler or stable suites' 1,307 tests, nor any of React's port's 221
+generated files (react-in-rust 73d8e30, each crate built with and
+without it, a positive control's mutation changing them). It went with
+its mutation; `rows_until` is as above, held by
+`test/corpus/match_breaks_its_loop.rs`'s snapshot against native Rust.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.

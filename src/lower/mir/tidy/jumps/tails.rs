@@ -702,70 +702,8 @@ pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
         if let Some(after) = exit_after(stmts, i) {
             stmts.splice(i + 1..i + 1, after);
         }
-        if let Some(after) = tested_exit_after(stmts, i) {
-            stmts.splice(i + 1..i + 1, after);
-        }
         i += 1;
     }
-}
-
-/// Of `exits_after`, a `while (true)` at `i` whose body ends in an `if`
-/// the program wrote after it that leaves past it, and then its own
-/// `break`, `if (k === 0) { break bb25; } break;` of `while k < n { .. } if
-/// k == 0 { break; }` in an outer loop, which MIR shares with the outer's
-/// way out (#389): its `break` alone, the `if` after the loop, where it's
-/// written. The same tests in the same order. Not where the `if` reads
-/// what the loop declares, jumps to it, or the loop has another `break`.
-fn tested_exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
-    let Stmt {
-        kind: StmtKind::While { label, cond, body },
-        span,
-    } = &mut stmts[i]
-    else {
-        return None;
-    };
-    if !matches!(cond.kind, ExprKind::Bool(true)) || span.is_none() {
-        return None;
-    }
-    let label = label.as_deref();
-    let end = span.hi;
-    let own_break =
-        |s: &[Stmt]| matches!(s, [Stmt { kind: StmtKind::Break(l), .. }] if l.is_none() || l.as_deref() == label);
-    // `if (t) { exit } break;`, or `if (t) { exit } else { break; }`.
-    let (before, tested, exit) = match body.as_slice() {
-        [
-            before @ ..,
-            tested @ Stmt {
-                kind: StmtKind::If(_, exit, None),
-                ..
-            },
-            last,
-        ] if own_break(std::slice::from_ref(last)) => (before, tested, exit),
-        [
-            before @ ..,
-            tested @ Stmt {
-                kind: StmtKind::If(_, exit, Some(otherwise)),
-                ..
-            },
-        ] if own_break(otherwise) => (before, tested, exit),
-        _ => return None,
-    };
-    if tested.span.is_none()
-        || tested.span.lo < end
-        || !exit.last().is_some_and(js::ends)
-        || own_jumps(exit, label)
-        || breaks(before, label)
-        || (declared(before)).any(|name| js::mentions_in(std::slice::from_ref(tested), name) > 0)
-    {
-        return None;
-    }
-    let at = before.len();
-    let moved = body.drain(at..).next().expect("the `if`");
-    let StmtKind::If(test, exit, _) = moved.kind else {
-        unreachable!("matched")
-    };
-    body.push(StmtKind::Break(None).at(js::Span::NONE));
-    Some(vec![StmtKind::If(test, exit, None).at(moved.span)])
 }
 
 /// Whether `stmt` is `if (t) { a } else { e }` of an `if` the program wrote
