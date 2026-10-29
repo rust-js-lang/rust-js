@@ -143,3 +143,22 @@ test reads anew.
 Case N: neither check can fail. Held by
 `test/corpus/refcell_listeners_momentary.rs` against native Rust, and
 the mutation `rc-deref-of-a-cell-unviewed` (`recognition/types.ts`).
+
+## Amendment: an item written by an operation keeps its index
+
+`pattern_table[suffix_index] = prefix_index as u32 + 1; suffix_index += 1;`
+of trekhleb/javascript-algorithms' Knuth-Morris-Pratt printed `const index
+= suffixIndex; patternTable[index] = ..` (#353). Its write, `(*_r) =
+Add(move _24, const 1_u32)` after `index_mut`, wasn't of a value made
+before, which only a local or a constant was taken to be. **An operation
+of locals and constants, a binary or unary one or a cast, runs nothing
+either**: MIR's operations don't panic, as each check is an `Assert`
+before them. So its index is read where it's written,
+`patternTable[suffixIndex] = (prefixIndex + 1) >>> 0;`, as upstream's.
+
+Case N: nothing changes the index between its read and the write.
+Held by `test/corpus/index_written_by_an_operation.rs` against native
+Rust. It writes an addition, a negation and a cast, and a division by
+zero panics before the bounds check, as Rust's does. Mutations
+`written-at-once-of-an-operation-held`, `-a-negation-held` and
+`-a-cast-held` (`mir/bounds.ts`).

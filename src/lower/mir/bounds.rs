@@ -163,7 +163,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether the `&mut` the call that ends `block` gives is written through
 /// once, by the first statement of the block it goes on to, its storage's
 /// aside, of a value made
-/// before: `(*_9) = move _5;`, MIR's `queue.borrow_mut()[i] = callback`.
+/// before, or an operation of them: `(*_9) = move _5;`, MIR's
+/// `queue.borrow_mut()[i] = callback`.
 /// Nothing runs between the call and the write, so what its items and its
 /// index are read as there is what they were (ADR 0881); but the old
 /// value's drop, `drop((*_9))`, which can't change them, borrowed as they
@@ -209,9 +210,17 @@ fn written_through_at_once(body: &mir::Body<'_>, block: mir::BasicBlock) -> bool
         return false;
     };
     let (place, value) = &**assign;
+    // A local or a constant, or an operation of them, `prefix + 1` of
+    // `table[i] = prefix + 1` (#353), which runs nothing: MIR's own
+    // operations don't panic, their checks are `Assert`s before.
+    let read = |o: &mir::Operand<'_>| match o {
+        mir::Operand::Copy(p) | mir::Operand::Move(p) => p.projection.is_empty() && p.local != r,
+        mir::Operand::Constant(_) => true,
+        _ => false,
+    };
     let made_before = match value {
-        mir::Rvalue::Use(mir::Operand::Copy(p) | mir::Operand::Move(p), _) => p.projection.is_empty() && p.local != r,
-        mir::Rvalue::Use(mir::Operand::Constant(_), _) => true,
+        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) | mir::Rvalue::Cast(_, o, _) => read(o),
+        mir::Rvalue::BinaryOp(_, operands) => read(&operands.0) && read(&operands.1),
         _ => false,
     };
     // Its uses but where it unwinds, whose cleanup writes it too, the
