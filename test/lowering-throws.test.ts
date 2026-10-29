@@ -149,9 +149,21 @@ for (const reason of [thenable, "text", 5, error]) {
 // (ADR 0840, amended).
 test("a with whose closure throws, a match arm's value, is its throw", () => {
   const { js, dir } = compiled("throw-with-tail", `use js::Error;
+use std::cell::Cell;
 
 thread_local! {
     pub static EXCEPTION: &'static Error = js::error::new("suspended");
+    static SEEN: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn track(status: Option<&str>) -> f64 {
+    match status {
+        Some("fulfilled") => 1.0,
+        _ => {
+            SEEN.set(true);
+            EXCEPTION.with(|exception| js::throw(exception.as_unknown()))
+        }
+    }
 }
 
 pub fn status(done: bool) -> f64 {
@@ -188,6 +200,11 @@ pub fn found(items: &[f64]) -> f64 {
   }
   throw exception;
 }`);
+  // Of an \`else\` the program wrote, at the function's end too (rd106).
+  expect(js).toContain(`  } else {
+    seen = true;
+    throw exception;
+  }`);
   writeFileSync(join(dir, "run.mjs"), `import { exception, found, status, twice } from "./lib.js";
 console.log(status(true), twice(true), found([3]));
 for (const f of [status, twice, found]) {

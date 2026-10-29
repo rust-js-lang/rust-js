@@ -1,6 +1,7 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
-Status: Accepted; amended (in a closure's body too; one that only throws). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+Status: Accepted; amended (in a closure's body too; one that only throws;
+at the end of a branch that ends the function). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -251,3 +252,20 @@ Case A ([0262](0262-when-rust-and-js-disagree.md)): what runs is the
 same. Tested by `test/lowering-throws.test.ts`'s "a with whose closure
 throws", run in Node; its mutations are `applied-throw-kept-called` and
 `applied-throw-after-return`.
+
+## Amendment (2026-10-29): at the end of a branch that ends the function
+
+A closure called where it's made as the function's value was its body
+only where its `return` was the body's last statement. A match arm the
+program wrote with more before it is an `else` (ADR 0237, amended), so
+React's ReactFiberThenable, `_ => { SEEN.set(true);
+EXCEPTION.with(|exception| js::throw(..)) }`, read `} else { seen = true;
+return ((exception) => { throw exception; })(exception); }` (rd106), where
+it had read `throw exception;` before the `else` was kept. **The last
+statement of each branch of an `if` that's last ends the function too**
+(`applied.rs`'s `tail_applied`), and so is in place as the body's last
+is: `} else { seen = true; throw exception; }`. Case: none; a `return;` of
+the closure's body there leaves the function, as leaving the closure
+there does. Held by `test/lowering-throws.test.ts`'s "a with whose
+closure throws, a match arm's value, is its throw" (`track`) and the
+mutation `tail-branch-unapplied`.

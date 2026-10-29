@@ -47,12 +47,7 @@ fn applied_in_closure(e: &mut Expr) {
 fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
     loop {
         let whole = body.clone();
-        if ends_function
-            && let Some(last) = body.len().checked_sub(1)
-            && let Some(inlined) =
-                block_of(&body[last], &whole, true, true).or_else(|| returned_block(&body[last], &whole))
-        {
-            body.splice(last..=last, inlined);
+        if ends_function && tail_applied(body, &whole) {
             continue;
         }
         let mut done = false;
@@ -69,6 +64,27 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
         if !done {
             break;
         }
+    }
+}
+
+/// The call that ends the function's body `whole`, the last of `stmts`,
+/// or the last of a branch of an `if` that's last, which ends it too, an
+/// `else` the program wrote's (rd106): its body in its place, a `return;`
+/// in it the function's. Whether one was.
+fn tail_applied(stmts: &mut Vec<Stmt>, whole: &[Stmt]) -> bool {
+    let Some(last) = stmts.len().checked_sub(1) else {
+        return false;
+    };
+    if let Some(inlined) = block_of(&stmts[last], whole, true, true).or_else(|| returned_block(&stmts[last], whole)) {
+        stmts.splice(last..=last, inlined);
+        return true;
+    }
+    match &mut stmts[last].kind {
+        StmtKind::If(_, then, otherwise) => {
+            let branch = |b: &mut Option<Vec<Stmt>>| b.as_mut().is_some_and(|b| tail_applied(b, whole));
+            tail_applied(then, whole) || branch(otherwise)
+        }
+        _ => false,
     }
 }
 
