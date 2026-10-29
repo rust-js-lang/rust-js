@@ -117,8 +117,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-written-continue-nested",
     breaks: "a loop body's last `if` of more than one statement is an early `continue` the program never wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1) else {\n",
-    replace: "    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1).or((then.len() > 1).then_some(js::Span::NONE)) else {\n",
+    find: "    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1) else {\n",
+    replace: "    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1).or((then.len() > 1).then_some(js::Span::NONE)) else {\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a loop.s early break"],
   },
   {
@@ -280,14 +280,6 @@ export const mutations: Mutation[] = [
     find: "            Some(StmtKind::Break(None)) => breaks,\n",
     replace: "            Some(StmtKind::Break(None)) => &[],\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
-  },
-  {
-    name: "written-break-or-unread",
-    breaks: "an `if` the loop's own test joins, `if (x == null || (stop && x > 3))`, isn't the program's `if` of its `break`, so its comment is before the loop (#298)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, written_at(last)),\n",
-    replace: "        ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, last.span),\n",
-    tests: ["test/port-scheduler.test.ts"],
   },
   {
     name: "jump-tested-at-its-test-alone",

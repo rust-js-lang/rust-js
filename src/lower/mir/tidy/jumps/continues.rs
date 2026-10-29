@@ -172,14 +172,14 @@ fn kept_in_turn(stmts: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Writt
     for (k, stmt) in stmts.iter_mut().enumerate() {
         let end = at_end && k == last;
         let span = stmt.span;
-        if let StmtKind::If(test, then, otherwise) = &mut stmt.kind {
+        if let StmtKind::If(_, then, otherwise) = &mut stmt.kind {
             kept_in_turn(then, written, kept, end);
             let (continues, breaks) = (written.continues.as_slice(), written.breaks.as_slice());
-            kept_in_branch(then, span, test, (continues, breaks), kept, end);
+            kept_in_branch(then, span, (continues, breaks), kept, end);
             if let Some(otherwise) = otherwise {
                 kept_in_turn(otherwise, written, kept, end);
                 let elses = (written.else_continues.as_slice(), written.else_breaks.as_slice());
-                kept_in_branch(otherwise, span, test, elses, kept, end);
+                kept_in_branch(otherwise, span, elses, kept, end);
             }
         }
     }
@@ -194,13 +194,13 @@ fn kept_in_turn(stmts: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Writt
 /// of a second `let doubled` (`written_jumps_kept.rs`'s `shadowed`).
 fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js::Span)]) -> bool {
     let Some(Stmt {
-        kind: StmtKind::If(test, then, None),
+        kind: StmtKind::If(_, then, None),
         span,
     }) = stmts.last()
     else {
         return false;
     };
-    let Some(at) = written_jump(continues, *span, test).map(|k| continues[k].1) else {
+    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1) else {
         return false;
     };
     if !then.iter().all(|s| s.span.is_none() || s.span.hi > at.lo) {
@@ -219,22 +219,15 @@ fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js::Span)]) ->
     true
 }
 
-/// A branch of the `if` at `span` testing `test`, given the jump the program
+/// A branch of the `if` at `span`, given the jump the program
 /// wrote it ends with, of `jumps`, its `continue`s' and its `break`s' (the
 /// `then`'s or the `else`'s, `Written::continues` or `else_continues`),
 /// where it's of `kept`; at that jump's place, which its comment is before.
 /// Only of a branch of nothing written after the jump, so not the other of
 /// an `if` tidy turned, `std_enumerate.rs`'s `return;`, React's
 /// findAllNodes' `if (!isHiddenSubtree(node)) { .. }`.
-fn kept_in_branch(
-    branch: &mut Vec<Stmt>,
-    span: js::Span,
-    test: &Expr,
-    (continues, breaks): BranchJumps,
-    kept: Kept,
-    end: bool,
-) {
-    let tested = |written: &[(js::Span, js::Span)]| written_jump(written, span, test).map(|k| written[k].1);
+fn kept_in_branch(branch: &mut Vec<Stmt>, span: js::Span, (continues, breaks): BranchJumps, kept: Kept, end: bool) {
+    let tested = |written: &[(js::Span, js::Span)]| jump_tested(written, span).map(|k| written[k].1);
     let after = |at: js::Span| {
         let mut after = false;
         js::each_list(branch, &mut |list| {
@@ -271,9 +264,7 @@ pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Sp
 
 /// The `continue` an `if` of `continues` ends its `then` with, and the
 /// `break` one of `breaks` does, where the program wrote it: its comment is
-/// before it (ADR 0684, amended). Of an `if` that tests the loop's own test
-/// or another first, `if (x == null || (stop && x > 3)) { break; }` of a
-/// `while let`, the one whose test is its last `||`'s.
+/// before it (ADR 0684, amended).
 pub(in crate::lower::mir::tidy) fn written_jumps(
     stmts: &mut [Stmt],
     continues: &[(js::Span, js::Span)],
@@ -281,7 +272,7 @@ pub(in crate::lower::mir::tidy) fn written_jumps(
 ) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
-        let StmtKind::If(test, then, _) = &mut stmt.kind else {
+        let StmtKind::If(_, then, _) = &mut stmt.kind else {
             continue;
         };
         let written = match then.last().map(|last| &last.kind) {
@@ -289,23 +280,12 @@ pub(in crate::lower::mir::tidy) fn written_jumps(
             Some(StmtKind::Break(None)) => breaks,
             _ => continue,
         };
-        if let Some((_, at)) = written_jump(written, span, test).map(|k| &written[k])
+        if let Some((_, at)) = jump_tested(written, span).map(|k| &written[k])
             && let Some(last) = then.last_mut()
         {
             last.span = *at;
         }
     }
-}
-
-/// Which of `written`, `if`s the program wrote of a jump, the `if` at
-/// `span` testing `test` is: by `jump_tested`, or of one that tests the
-/// loop's own test or another first, `if (x == null || (stop && x > 3))`
-/// of a `while let`, the one whose test is its last `||`'s.
-fn written_jump(written: &[(js::Span, js::Span)], span: js::Span, test: &Expr) -> Option<usize> {
-    jump_tested(written, span).or_else(|| match &test.kind {
-        ExprKind::Binary(js::Op::Or, _, last) => jump_tested(written, written_at(last)),
-        _ => None,
-    })
 }
 
 /// Which of `written`, `if`s the program wrote of a jump (`Written::continues`,

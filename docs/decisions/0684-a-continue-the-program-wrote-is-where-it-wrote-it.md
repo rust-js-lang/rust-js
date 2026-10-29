@@ -355,3 +355,16 @@ writes two `if`s; the port's Rust, one).
   `kept-turned-continue-of-any-then`, and `mir-tidy-continue-guard-kept`,
   `mir-tidy-written-continue-nested`, `mir-tidy-continue-written-negated-only`
   and `restored-continue-at-its-if` moved to `turned_continue`.
+
+## Amendment: no `||` the loop's test joins is read for the program's `if` (2026-10-29)
+
+The #298 amendment read an `if` whose test the loop's own joined, `if (x
+== null || (stop && x > 3))` of a `while let`, as the program's `if` of its
+jump by its last `||`'s operand (`written_jump`). Since ADR 0702's #301
+amendment a `while let`'s `Some` is the loop's test, apart from the
+program's `if`, so no such join is made: the mutation of that reading,
+`written-break-or-unread`, survived a full check, and with the whole
+reading out no corpus case's JS changes (snapshots compared), nor the
+lowering, JSX, React, port or snapshot suites'. The reading went with its
+mutation; an `if` is the program's by `jump_tested` alone. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
