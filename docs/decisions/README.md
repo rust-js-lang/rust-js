@@ -123,7 +123,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0860: JS's iterator protocol, `js::Iterator`; amended by 1020: a timeout takes `TimerHandler`, a window's timers gone)*
 - [0103 The runtime is a package, `@rust-js/runtime`, as ReScript's is](0103-runtime-package.md) *(amended by 0919: it spreads only arrays, so an app's loose transforms leave its answers)*
 - [0919 The runtime spreads only arrays, so an app's loose transforms leave its answers as they are](0919-the-runtime-survives-loose-transforms.md)
-- [0104 The tests run side by side, each native program built once](0104-parallel-tests.md)
+- [0104 The tests run side by side, each native program built once](0104-parallel-tests.md) *(amended: the corpus in parts beside the rest)*
 - [0105 `bun create @rust-js` makes a Vite and React app in Rust](0105-create.md)
 - [0106 A trait's type parameters, associated types, generic methods and constants](0106-generic-traits.md)
 - [0107 A const parameter is a value its caller gives](0107-const-generics.md)

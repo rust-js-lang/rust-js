@@ -420,7 +420,7 @@ Its jobs run at once:
 |---|---|---|
 | `plan` | of a push, the commit its mutations are since, `main`'s last check whose mutations passed, and their machines | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
-| `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`; a bless patch on failure | 9 min, 5 in 2 shards |
+| `test` | `bun run test`, or a shard of it, balanced by the last run's timings, `timings-*`, the corpus in parts beside it; a bless patch on failure | to be measured: 13–24 min in 2 shards with the corpus in one file |
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
@@ -461,7 +461,12 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
   build's by its lockfile and patches.
 - `scripts/test.ts --shard=i/n`, which `bun test --shard` splits by how
   long each file took, in this checkout and in the last run's shards,
-  whose `timings-*` artifacts `bun scripts/ci.ts timings` fetches.
+  whose `timings-*` artifacts `bun scripts/ci.ts timings` fetches; and
+  the corpus beside them in parts, one for each two cores, as
+  `check:fast` runs it, each shard its `1/n` of them (`caseShardParts`,
+  `scripts/shard.ts`). One file of 1,300 cases one after another, it was
+  13 to 24 minutes of its shard's time on CI, the rest done in 4, and
+  stopped at the suite's 25-minute deadline (2026-10-29).
 - `scripts/mutations.ts --changed=<base>` and `--shard=i/n`, by
   `scripts/shard.ts`.
 - `scripts/ci.ts`: `bun run ci:check`, `ci:status`, `ci:bless`, and a

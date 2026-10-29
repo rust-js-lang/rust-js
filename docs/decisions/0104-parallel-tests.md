@@ -113,3 +113,25 @@ another.
 - `target/native-cache/`, `target/native-sources/` and
   `target/tests-build/` grow with each program changed and each run; it's in
   `target/`, and removing it only costs building them again.
+
+## Amendment: the corpus runs in parts beside the rest
+
+The corpus is one file, `test/corpus.test.ts`, of 1,300 cases one after
+another, so Bun runs it as one worker, and `bun test --shard` gives it to
+one shard whole. On CI it was most of its shard's time, 787 to 1,462
+seconds in the day's runs (2026-10-29, their `timings-*`), while the
+shard's other files were done in about four minutes and three of its four
+cores sat idle; twice running it stopped at the suite's 25-minute
+deadline (`scripts/test.ts`), main red with nothing wrong. The compiler
+hadn't slowed: 123 of its cases compiled in 11 and 12 seconds, by that
+morning's compiler and by main's.
+
+**`bun run test` runs the corpus in parts, each a process of its own,
+beside the rest of the suite** (`RUST_JS_CASES=i/n`, `test/support.ts`),
+as `check:fast` has: one for each two cores, `caseParts`, one answer for
+both, and of a shard of `m`, its `1/m` of `m` times as many,
+`caseShardParts` (`scripts/shard.ts`), so each part runs in exactly one
+shard and what isn't a case, in the first part, in the first shard. The
+rest is sharded by Bun as before, the corpus left out of it. Held by
+`test/ci.test.ts`'s "each shard runs its share of a file of cases'
+parts, each part once".

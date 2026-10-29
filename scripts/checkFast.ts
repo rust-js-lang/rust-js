@@ -12,6 +12,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { pruneKept } from "../test/kept";
+import { caseParts } from "./shard";
 import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -66,12 +67,8 @@ const node = Bun.spawnSync(["bun", "-e", "import { buildNode } from './test/supp
 if (node.exitCode !== 0) process.exit(1);
 console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
-// Each part of a file of cases, a process of its own (test/support.ts):
-// one for each two cores. A case is a compile, then its runs, one core at a
-// time, so the cores a part leaves are the other jobs'. On 12 cores, 3
-// parts took 85 s, 6 take 70 s, and 10 took 72 s, the other jobs twice as
-// long and a test of them timing out: the check is bound by its CPU time.
-const parts = Math.max(2, Math.floor(availableParallelism() / 2));
+// Each part of a file of cases, a process of its own (scripts/shard.ts).
+const parts = caseParts(availableParallelism());
 const inParts = (name: string, file: string) =>
   Array.from({ length: parts }, (_, i): [string, string[], Record<string, string>] => [
     `${name} ${i + 1}/${parts}`,

@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
-import { shard } from "../scripts/shard";
+import { caseParts, caseShardParts, shard } from "../scripts/shard";
 import { root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -17,6 +17,21 @@ test("shards split the files between them, each once, whatever the order given",
   expect(shards.map((s) => s.length).sort()).toEqual([2, 2, 3]);
   expect(shard([...files].reverse(), 2, 3)).toEqual(shards[1]);
   expect(() => shard(files, 4, 3)).toThrow("a shard is 1 to 3");
+});
+
+// The corpus runs in parts, one for each two cores (scripts/test.ts,
+// check:fast): each of the parts of all the shards in exactly one.
+test("each shard runs its share of a file of cases' parts, each part once", () => {
+  expect(caseParts(4)).toBe(2);
+  expect(caseParts(12)).toBe(6);
+  expect(caseParts(1)).toBe(2);
+  expect(caseShardParts(1, 1, 6)).toEqual(["1/6", "2/6", "3/6", "4/6", "5/6", "6/6"]);
+  const shards = [1, 2].map((i) => caseShardParts(i, 2, 2));
+  expect(shards).toEqual([
+    ["1/4", "3/4"],
+    ["2/4", "4/4"],
+  ]);
+  expect(shards.flat().sort()).toEqual(caseShardParts(1, 1, 4));
 });
 
 const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });

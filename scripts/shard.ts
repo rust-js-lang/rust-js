@@ -11,6 +11,25 @@ export function shard<T extends string>(items: T[], index: number, count: number
   return [...items].sort().filter((_, i) => i % count === index - 1);
 }
 
+/** How many parts a file of cases runs in at once on `cores`, each a
+ * process of its own, `RUST_JS_CASES=i/n` (test/support.ts): one for each
+ * two cores. A case is a compile, then its runs, one core at a time, so
+ * the cores a part leaves are the other files'. On 12 cores, 3 parts took
+ * 85 s, 6 take 70 s, and 10 took 72 s, the rest twice as long and a test
+ * of them timing out: it's bound by its CPU time. */
+export function caseParts(cores: number): number {
+  return Math.max(2, Math.floor(cores / 2));
+}
+
+/** The parts, `i/n`, of a file of cases that shard `index` of `count`
+ * runs, `perShard` of them at once: of `count` times as many in all, each
+ * part in exactly one shard. */
+export function caseShardParts(index: number, count: number, perShard: number): string[] {
+  const parts = count * perShard;
+  const all = Array.from({ length: parts }, (_, i) => i + 1);
+  return all.filter((part) => (part - 1) % count === index - 1).map((part) => `${part}/${parts}`);
+}
+
 /** `--shard=2/4` among `args`: the shard and the count, or nothing. */
 export function shardArg(args: string[]): { index: number; count: number } | undefined {
   const arg = args.find((a) => a.startsWith("--shard="));
