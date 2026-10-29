@@ -1594,6 +1594,8 @@ pub struct Context<T>(PhantomData<JsObject>, PhantomData<T>);
 
 /// [`createContext`](https://react.dev/reference/react/createContext), in a `thread_local!`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#createContext")]
+// It keeps what it's given, its default, which it never calls nor reads.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn create_context<T>(default: T) -> Context<T> {
     unreachable!()
 }
@@ -1795,6 +1797,8 @@ pub fn act<R: ActionResult<M>, M>(f: impl FnOnce() -> R + 'static) -> Promise<()
 /// results. For React Server Components only.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#cache")]
+// It makes a function of what it's given, run only when it's called.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn cache<F: 'static>(f: F) -> F {
     unreachable!()
 }

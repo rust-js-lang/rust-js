@@ -360,3 +360,30 @@ pub fn Counter() -> JSX::Element {
   expect(jsx).toContain("useState(() => load().length);");
   expect(jsx).toContain("useState(() => (n) => (n + 1) >>> 0);");
 });
+
+// ADR 1006, amended: a binding that keeps what it's given, and never calls
+// it, runs nothing, `#[rust_js::runs_nothing]`, so a `pub` thread-local of
+// one is made as its module loads, as React's own `export const` is:
+// `createContext` of a default that's a function, and `cache`, which makes
+// a function of one. Next.js's `catchError` and `withRouter`, which make a
+// component of one as `memo` does, are held by test/next.test.ts.
+test("React's createContext and cache keep what they're given, made at load", async () => {
+  const { fixture } = await import("./support");
+  buildReact();
+  const dir = fixture("react-runs-nothing");
+  const input = join(dir, "lib.rs");
+  await Bun.write(input, `use react::{Context, cache, create_context};
+
+pub fn shout(s: &str) -> String {
+    s.to_uppercase()
+}
+
+thread_local! {
+    pub static ON_SAVE: Context<Box<dyn Fn()>> = create_context(Box::new(|| {}));
+    pub static SHOUTED: fn(&str) -> String = cache(shout);
+}
+`);
+  run([compiler, input, "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const js = require("node:fs").readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const OnSave = createContext(() => {});\nexport const shouted = cache(shout);");
+}, 60_000);

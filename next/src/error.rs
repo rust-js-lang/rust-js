@@ -29,6 +29,8 @@ pub struct ErrorProps<'a> {
 /// `P`'s `children`, or `fallback` of its props and the error where one is
 /// thrown.
 #[cfg_attr(rust_js, rust_js::link_name = "next/error#catchError")]
+// It makes a component of what it's given, run only when React renders it.
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn catch_error<P, R: ReactNode>(fallback: impl Fn(P, &'static ErrorInfo) -> R + 'static) -> ComponentValue<P> {
     unreachable!()
 }

@@ -790,7 +790,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1003 A compiler's build is part of its identity](1003-a-compilers-build-is-its-identity.md)
 - [1004 The mutations surviving at main's head](1004-survivors-at-mains-head.md)
 - [1005 A module of types alone is its declarations](1005-a-module-of-types-alone-is-its-declarations.md) *(the user's decision; amended: one another module's JS imports keeps its JS)*
-- [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision; amended: a private one too, made where it's first used where its module's load can't make it, rd120; one rule of what a binding's call runs there)*
+- [1006 A `pub` thread-local is made as its module loads](1006-a-pub-thread-local-is-made-as-its-module-loads.md) *(the user's decision; amended: a private one too, made where it's first used where its module's load can't make it, rd120; one rule of what a binding's call runs there; every binding that keeps what it's given marked)*
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
 - [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*

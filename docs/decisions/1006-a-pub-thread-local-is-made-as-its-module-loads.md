@@ -251,3 +251,27 @@ the mutations `at-load-binding-runs-nothing-followed` and
 `js-object-deref-runs-code`, `at-load-own-const-reached` and `at-load-key-read-as-const`. The fast path's mutations, `at-load-*` of
 what `runs_the_crates` asked, are gone with it.
 
+## Amendment: every binding that keeps what it's given says so
+
+The amendment above marked `memo`, `lazy`, `forwardRef`, `dynamic` and
+`noSSR`, but not the other bindings that keep what they're given and never
+call it, so `pub static Shown: ComponentValue<..> =
+next::error::catch_error(..)` in `test/next.test.ts`'s app was refused, its
+initializer taken to run its fallback as its module loads. Each binding
+that only keeps what it's given is marked `#[rust_js::runs_nothing]` now:
+
+- Next.js's `catchError` and `withRouter`, which make a component of a
+  fallback or a component, rendered later, as `memo` does;
+- React's `createContext`, which keeps its default, a function too, never
+  calling nor reading it, and `cache`, which makes a function of one,
+  called later.
+
+A binding that calls what it's given, `startTransition`, `act`,
+`flushSync`, or a hook's, isn't: those run as they're called.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B, as above: each made
+as its module loads, as React's and Next.js's own `export const` are.
+
+Held by `test/next.test.ts`'s app (`catchError`, `withRouter`) and
+`test/react.test.ts`'s "React's createContext and cache keep what they're
+given, made at load".
