@@ -1572,12 +1572,14 @@ comments keeps them in its `default`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
 or where it's a last `_` that does something, a case that falls through
 to the `default`
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended); and
+of a guard that fails past the `match`, `"LINK" if keep => continue, _ =>
+{}` and then `remove(node)`, a `switch` with no `default`, what follows the
+`match` after it, `case "LINK": if (keep) { continue; } } remove(node);`,
+each arm that leaves in its case, in a loop a `continue`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended). Any other `match`, of a range, a binding of a
 pattern's part or before the last arm (but a name a guard compares with a
-read, below), a guard a later arm goes on from, a guard that fails to what
-follows the `match` where other arms leave, `"LINK" if keep => continue,
-_ => {}` and then `remove(node)` in a loop whose other arms `continue`
-([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended), or
+read, below), a guard a later arm goes on from, or
 of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.md), [ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)), a guard
 that calls made where Rust makes it and no other time, `[n, ..] if

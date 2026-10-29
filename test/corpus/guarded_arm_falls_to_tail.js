@@ -14,16 +14,21 @@ function clear(items) {
     const name = get[0];
     const keep = get[1];
     i++;
-    if (name === "HTML" || name === "HEAD" || name === "BODY") {
-      out.push(`nested ${name}`);
-    } else if (name !== "SCRIPT" && name !== "STYLE") {
-      if (name === "LINK") {
+    switch (name) {
+      case "HTML":
+      case "HEAD":
+      case "BODY":
+        out.push(`nested ${name}`);
+        continue;
+      case "SCRIPT":
+      case "STYLE":
+        continue;
+      case "LINK":
         if (keep) {
           continue;
         }
-      }
-      out.push(`removed ${name}`);
     }
+    out.push(`removed ${name}`);
   }
   return out;
 }
@@ -73,7 +78,106 @@ function kinds(items) {
   return out;
 }
 
+/**
+ * A `_` that does something, the guarded arm just before it falling into
+ * it; and one whose guarded arm isn't, an `if` chain still.
+ */
+function owned(items) {
+  const out = [];
+  for (const [name, keep] of items) {
+    if (name !== "A") {
+      if (name === "B") {
+        out.push("b");
+      } else if (name !== "C" || !keep) {
+        out.push(`other ${name}`);
+        out.push(`tail ${name}`);
+      }
+    }
+  }
+  return out;
+}
+
+function apart(items) {
+  const out = [];
+  for (const [name, keep] of items) {
+    if ((name === "C" && keep) || name === "A") {
+      continue;
+    }
+    if (name === "B") {
+      out.push("b");
+    } else {
+      out.push(`other ${name}`);
+      out.push(`tail ${name}`);
+    }
+  }
+  return out;
+}
+
+/**
+ * Of a function, each arm that doesn't go on leaving it: the `switch`,
+ * what follows the `match` after it.
+ */
+function pick(name, keep) {
+  let n = 0;
+  switch (name) {
+    case "A":
+      return 1;
+    case "B":
+      if (keep) {
+        return 2;
+      }
+  }
+  n += 5;
+  return n;
+}
+
+/**
+ * Of a function, arms that go on past the `match`, each its case's
+ * `break`.
+ */
+function counted(name, keep) {
+  let n = 0;
+  switch (name) {
+    case "A":
+      n++;
+      break;
+    case "B":
+      if (keep) {
+        return 2;
+      }
+      break;
+    case "C":
+      n += 3;
+  }
+  n += 5;
+  return n;
+}
+
 function main() {
+  for (const name of ["A", "B", "C", "D"]) {
+    for (const keep of [true, false]) {
+      const value = pick(name, keep);
+      const arg = counted(name, keep);
+      console.log(`pick ${name} ${keep} ${value} ${arg}`);
+    }
+  }
+  const named = [
+    ["A", true],
+    ["B", false],
+    ["C", true],
+    ["C", false],
+    ["D", false],
+  ];
+  console.log(
+    `[${owned(named)
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  console.log(
+    `[${apart(named)
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
   const items = [
     ["HTML", false],
     ["SCRIPT", false],

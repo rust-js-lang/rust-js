@@ -6,8 +6,9 @@ whose `switch` had no arm with a guard. Amended by
 next arm names each of its constants falls through to that arm's case;
 and an or-pattern of a guard, which MIR tests by each alternative, is one
 case. Amended below: a guarded arm just before a last `_` that does
-something falls through to the `default`; and no `default` holds what
-follows the `match` past a failed guard (rd184).
+something falls through to the `default`; no `default` holds what
+follows the `match` past a failed guard (rd184); and what follows the
+`match` past a failed guard is after the `switch` (rd184's upstream form).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the case runs the guard where the arm did, after its
@@ -220,3 +221,45 @@ Held by `test/corpus/guarded_arm_falls_to_tail.rs`, against native Rust
 after the guarded one that do something); mutations
 `guard-failing-past-default-kept` and `guard-failing-past-any-default`
 (`mir/tidy/switches.ts`).
+
+## Amendment: what follows the `match` past a failed guard is after the `switch` (rd184's upstream form)
+
+The amendment above made clearContainerSparingly correct, an `if` chain,
+where upstream writes
+
+```js
+switch (nodeName) {
+  case 'HTML': case 'HEAD': case 'BODY': { ..; continue; }
+  case 'SCRIPT': case 'STYLE': continue;
+  case 'LINK': if (node.rel.toLowerCase() === 'stylesheet') { continue; }
+}
+container.removeChild(node);
+```
+
+MIR's chain holds `container.removeChild(node)` in the `_ => {}`'s
+branch, which the `"LINK"` arm's `if`, with no `else`, goes on to where its
+guard fails; the other arms' `if`s have an `else`, so they go on to the
+chain's end, the loop's turn's, their Rust `continue`s.
+
+**Where the `_ => {}`'s statements are all written past the `match`, they
+follow the `switch`, and the `_`'s case is gone** (`switches.rs`'s
+`past_the_turn`): each case whose arm's `if` has no `else`
+(`Values::goes_on`, which `chain` sets), the arms after it and the `_`'s
+what it goes on to, falls out of the `switch` by its `break`, to them as
+before; each other case that goes on went on to the chain's end, past
+them, so where the chain ends its loop's turn it `continue`s, and
+elsewhere there's no `switch`. In a function whose other arms leave,
+`match name { "A" => return 1, "B" if keep => return 2, _ => {} } n +=
+5;` is `switch (name) { case "A": return 1; case "B": if (keep) { return
+2; } } n += 5;`. A `_` that does something of its own, which MIR makes of
+no chain this reaches, keeps the `if` chain.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, each value runs the
+same statements, its tests in the same order. Held by corpus case
+`guarded_arm_falls_to_tail` against native Rust (clearContainerSparingly,
+codes, a function's, and two whose `_` does something); and mutations
+`past-the-turn-refused`, `past-the-turn-goes-on-continued`,
+`past-the-turn-not-continued`, `goes-on-unflagged`
+(`mir/tidy/switches.ts`). No mutation of the refusal outside a loop's turn
+end, where a case would need a `continue`: no chain MIR makes reaches it
+today.

@@ -255,6 +255,10 @@ struct Values {
     tested: Vec<Expr>,
     excluding: Vec<Expr>,
     inside: Vec<(&'static str, Expr)>,
+    /// Whether its arm's `if` has no `else`, so its statements go on to
+    /// what follows that `if` in the chain's list, the arms after it and at
+    /// last the `_`'s, as a guarded arm whose guard fails goes on to them.
+    goes_on: bool,
 }
 
 /// The statements of the chain at `stmts[at]`, of the `match` an arm's
@@ -459,8 +463,16 @@ fn switch_at(
             && (arms.iter()).any(|arm| arm.span == case.3 && arm.guard.is_some() && !arm.falls)
     });
     let held_past = |body: &[Stmt]| (body.iter()).any(|s| written_at(s).is_some_and(|at| !within(at, written.span)));
+    // What's written past the `match` after the `switch`, React DOM's
+    // clearContainerSparingly's `container.removeChild(node);`
+    // (`past_the_turn`); else no `switch`.
+    let mut after_switch = Vec::new();
     if fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {
-        return None;
+        if framed || falling || !before.is_empty() || !past.is_empty() {
+            return None;
+        }
+        let ends_turn = turn && stmts.len() == at + taken;
+        after_switch = past_the_turn(&mut cases, &mut falls, written.span, ends_turn)?;
     }
     let mut switched = Vec::new();
     let mut default = None;
@@ -487,7 +499,11 @@ fn switch_at(
     }
     // Each `if` before it, its `else` the rest, where it goes on.
     let left = framed.then(|| StmtKind::Break(None).at(js::Span::NONE));
-    let switched = std::iter::once(switch.at(span)).chain(past).chain(left).collect();
+    let switched = (std::iter::once(switch.at(span)))
+        .chain(past)
+        .chain(after_switch)
+        .chain(left)
+        .collect();
     let written = (before.into_iter().rev()).fold(switched, |rest, (test, body, at)| {
         match body.last().is_some_and(js::ends) {
             true => std::iter::once(StmtKind::If(test, body, None).at(at))
@@ -497,6 +513,34 @@ fn switch_at(
         }
     });
     Some((written, taken))
+}
+
+/// Of a chain's cases, the last a `_ => {}`'s whose statements are what's
+/// written past the `match`, `span`: those, which follow the `switch`, as
+/// written, `switch (nodeName) { .. case "LINK": if (..) { continue; } }
+/// container.removeChild(node);` (rd184, ADR 0636, amended), the `_`'s case
+/// gone. Each case that went on to what follows its `if` (`goes_on`), the
+/// arms after it and the `_`'s, the `switch`'s `break`, to what's past it;
+/// each that went on to the chain's end, its arm's `if` with an `else`, past
+/// what's past it: where the chain `ends_turn`, its loop's, `continue;`,
+/// and otherwise no `switch`. `None` too where the `_` does something of
+/// its own, which MIR makes of no chain this reaches.
+fn past_the_turn(cases: &mut Vec<Case>, falls: &mut Vec<bool>, span: js::Span, ends_turn: bool) -> Option<Vec<Stmt>> {
+    let past = |s: &Stmt| written_at(s).is_some_and(|at| !within(at, span));
+    let (_, after, ..) = cases.pop()?;
+    falls.pop();
+    if !after.iter().all(|s| written_at(s).is_none() || past(s)) {
+        return None;
+    }
+    for (values, body, ..) in cases.iter_mut() {
+        if !values.goes_on && !body.last().is_some_and(js::ends) {
+            if !ends_turn {
+                return None;
+            }
+            body.push(StmtKind::Continue(None).at(js::Span::NONE));
+        }
+    }
+    Some(after)
 }
 
 /// `cases`, in the order their arms are written, each arm's one: of an
@@ -920,12 +964,9 @@ fn chain(
         alternatives(&tested, Op::Or, &mut each);
         let to = from + each.len();
         let constants = arm.constants.get(from..to)?;
-        cases.push((
-            values_of(&tested, constants, false, discriminant)?,
-            body,
-            false,
-            arm.span,
-        ));
+        let mut values = values_of(&tested, constants, false, discriminant)?;
+        values.goes_on = otherwise.is_none();
+        cases.push((values, body, false, arm.span));
         match to == arm.constants.len() {
             true => {
                 left.remove(k);
