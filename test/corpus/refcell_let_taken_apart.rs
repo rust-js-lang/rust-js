@@ -1,10 +1,13 @@
 // A `let` that ends a `RefCell`'s borrow, which an `if let` then takes
 // apart, React's `startTransition`'s `let prev_types =
 // prev.types.borrow().clone(); if DEV && let Some(prev_types) = prev_types
-// && ..`: where only that test reads it, and the test does nothing, the
-// place is read there, `prev.types != null && prev.types !== currentTypes`
-// (ADR 0866). Not where the body reads it too, nor where the test runs
-// code that may change the cell first, nor a `let` no `if let` takes apart.
+// && ..`: a `let` the program wrote, which stays, `const prevTypes =
+// prev.types;` (rd226, the user's decision). A binding a pattern alone
+// makes of a field by its own name, read by the test and the `then`'s first
+// statement alone, is the field read in place, React's
+// getViewTransitionName's `if (instance.autoName != null) { return
+// instance.autoName; }` (ADR 0866, amended); not where the body reads it
+// again, nor where the test runs code.
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -73,6 +76,53 @@ fn unset(t: &Transition) -> bool {
     false
 }
 
+struct Named {
+    auto_name: RefCell<Option<String>>,
+}
+
+/// A pattern's binding of a field by its own name, read by the test and the
+/// `then`'s first statement alone: the field read there.
+fn own(named: &Named) -> String {
+    if let Some(auto_name) = &*named.auto_name.borrow() {
+        return auto_name.clone();
+    }
+    "none".to_string()
+}
+
+/// One the body reads twice: held, before the test.
+fn own_twice(named: &Named, seen: &mut Vec<String>) -> usize {
+    if let Some(auto_name) = &*named.auto_name.borrow() {
+        seen.push(auto_name.clone());
+        return auto_name.len();
+    }
+    0
+}
+
+/// One whose test runs code: held, before the test.
+fn own_checked(named: &Named) -> String {
+    if let Some(auto_name) = &*named.auto_name.borrow()
+        && checked(auto_name)
+    {
+        return auto_name.clone();
+    }
+    "unchecked".to_string()
+}
+
+fn checked(name: &str) -> bool {
+    println!("checked {name}");
+    !name.is_empty()
+}
+
+/// A `let` the program wrote, named as the field, its `if let`'s body
+/// reading it once: its name kept.
+fn first(t: &Transition) -> Option<Rc<RefCell<Vec<String>>>> {
+    let types = t.types.borrow().clone();
+    if let Some(types) = types {
+        return Some(types);
+    }
+    None
+}
+
 fn main() {
     let outer = transition(&["a"]);
     let inner = transition(&["b"]);
@@ -88,4 +138,16 @@ fn main() {
     );
     println!("counted {} {}", counted(&outer), counted(&transition(&[])));
     println!("unset {} {}", unset(&outer), unset(&transition(&[])));
+    let named = Named {
+        auto_name: RefCell::new(Some("a".to_string())),
+    };
+    let unnamed = Named {
+        auto_name: RefCell::new(None),
+    };
+    println!("own {} {}", own(&named), own(&unnamed));
+    let mut seen = Vec::new();
+    println!("own twice {} {}", own_twice(&named, &mut seen), own_twice(&unnamed, &mut seen));
+    println!("seen {seen:?}");
+    println!("own checked {} {}", own_checked(&named), own_checked(&unnamed));
+    println!("first {:?} {:?}", first(&outer).map(|t| t.borrow().len()), first(&transition(&[])).is_none());
 }

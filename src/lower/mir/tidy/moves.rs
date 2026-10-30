@@ -428,52 +428,50 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
     }
 }
 
-/// `const types = prev.types; if (dev && types != null && types !== other)
-/// { .. }`: a `let` an `if let` takes apart, `taken_apart`'s, of a place's
-/// read that only the test of the `if` right after it reads, `prev.types`
-/// where the test reads `types`, each time (ADR 0866): as the program would
-/// write the place there, `if let Some(types) = &prev.types`, but for a
-/// `RefCell`'s borrow, which the `let` ends once its value's read,
-/// `prev.types.borrow().clone()`, the object (ADR 0863), and which JS
-/// doesn't have. What's read where `tested_read` says it may be.
-pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, taken_apart: &HashSet<String>) {
+/// `const autoName = instance.autoName; if (autoName != null) { return
+/// autoName; }`: a binding a pattern alone makes, `if let Some(auto_name) =
+/// &*instance.auto_name.borrow()`, named as the property it reads, of a
+/// place's read that only the test of the `if` right after it and its
+/// `then`'s first statement read: read in place there, `if
+/// (instance.autoName != null) { return instance.autoName; }`, as React's
+/// getViewTransitionName writes it (ADR 0866, amended, the user's decision,
+/// 2026-10-27). A `let` the program wrote stays, `named`'s, as it wrote it
+/// (rd226, the user's decision, 2026-10-30). What's read where
+/// `tested_read` says it may be.
+pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        let Some((test, then)) = tested_read(&stmts[i], &stmts[i + 1..], taken_apart) else {
+        let Some((test, then)) = tested_read(&stmts[i], &stmts[i + 1..], named) else {
             i += 1;
             continue;
         };
         stmts.remove(i);
         if let StmtKind::If(tested, branch, _) = &mut stmts[i].kind {
             *tested = test;
-            if let Some((read, first)) = then {
-                *read.of_mut(&mut branch[0]) = first;
-            }
+            *then.0.of_mut(&mut branch[0]) = then.1;
         }
         // A `let` before it may now be read by the `if` too.
         i = i.saturating_sub(1);
     }
 }
 
-/// Of `stmt`, `const x = p.f;`, and `rest`, the statements after it, the
-/// test of the `if` `rest` starts with, `x` read there as `p.f`: where `p.f`
-/// reads a variable's property, which no getter may answer and nothing
-/// that runs before each read changes, as the test does nothing; and
-/// nothing else reads `x`, its branches nor what follows it. Or, where `x`
-/// is the property's own name, `const autoName = instance.autoName`, its
-/// `then`'s first statement too, where what it reads is `x` alone, `return
-/// autoName`, nothing run before it: `if (instance.autoName != null) {
-/// return instance.autoName; }`, as React's getViewTransitionName writes it
-/// (ADR 0866, amended, the user's decision, 2026-10-27). That statement's
-/// read too, where it reads `x` so.
-fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Option<(Expr, Option<(Read, Expr)>)> {
+/// Of `stmt`, `const x = p.x;`, of the property's own name and no `let`
+/// the program wrote, and `rest`, the statements after it, the test of
+/// the `if` `rest` starts with and its `then`'s first statement, `x` read
+/// there as `p.x`: where `p.x` reads a variable's property, which no getter
+/// may answer and nothing that runs before each read changes, as the test
+/// does nothing; the first statement reads `x` alone, once, nothing run
+/// before it, `return autoName`; and nothing else reads `x`, its branches
+/// nor what follows it.
+fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &HashSet<String>) -> Option<(Expr, (Read, Expr))> {
     let (StmtKind::Const(name, value), Some(StmtKind::If(test, then, _))) = (&stmt.kind, rest.first().map(|s| &s.kind))
     else {
         return None;
     };
-    // The property's own name, `const autoName = instance.autoName`.
+    // The property's own name, `const autoName = instance.autoName`, of a
+    // pattern's binding, not a `let` the program wrote.
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !taken_apart.contains(name) && !own_name {
+    if !own_name || named.contains(name) {
         return None;
     }
     let place = place_read(value, name);
@@ -483,21 +481,20 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], taken_apart: &HashSet<String>) -> Opt
         return None;
     }
     let substituted = |e: &Expr| e.substitute(&|v| (v == name).then(|| value.clone()));
-    // Of the property's own name, read once more by the `then`'s first
-    // statement, nothing it evaluates first doing anything.
-    let then = match js::mentions_in(rest, name) - tested {
-        0 if taken_apart.contains(name) => None,
-        1 if own_name
-            && let Some(first) = then.first()
-            && js::mentions_in(std::slice::from_ref(first), name) == 1
-            && let Some(read) = read_of(first, name, false)
-            && matches!(&read.of(first).kind, ExprKind::Var(v) if v == name) =>
-        {
-            Some((read, substituted(read.of(first))?))
-        }
-        _ => return None,
-    };
-    Some((substituted(test)?, then))
+    // Read once more by the `then`'s first statement, nothing it
+    // evaluates first doing anything.
+    if js::mentions_in(rest, name) - tested != 1 {
+        return None;
+    }
+    let first = then.first()?;
+    let read = read_of(first, name, false)?;
+    if js::mentions_in(std::slice::from_ref(first), name) != 1
+        || !matches!(&read.of(first).kind, ExprKind::Var(v) if v == name)
+    {
+        return None;
+    }
+    let read_in_place = substituted(read.of(first))?;
+    Some((substituted(test)?, (read, read_in_place)))
 }
 
 /// `const child = current.child; workInProgress.child = child;`: a `let`

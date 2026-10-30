@@ -1,6 +1,6 @@
 # 0866. A `let` only the `if let` that takes it apart reads is read there
 
-Status: Accepted; amended by [1022](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md): a place's read is plain only of a struct the program built; amended below: named as its field by their Rust names; a `let` of a cast is no `let` that ends a
+Status: Accepted; its first decision, a `let` the program wrote read in its `if let`'s test, withdrawn (rd226, the user's decision, below); amended by [1022](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md): a place's read is plain only of a struct the program built; amended below: named as its field by their Rust names; a `let` of a cast is no `let` that ends a
 borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first; and an `if let`'s
 binding of a thread-local's value only its test reads; and a `let` that
@@ -359,3 +359,37 @@ tidy reads: `sibling.return = node.return;`,
 - Held by the corpus case `refcell_let_named_as_its_field.rs` and the
   mutations `ended-borrow-by-js-names` and the moved and amended
   `ended-borrow-of-another-name`, `ended-borrow-of-any-let`.
+
+## Amendment: a `let` the program wrote stays (rd226, the user's decision)
+
+The user's rule (2026-10-30): **a `let` the program wrote stays; a binding
+that exists only in a pattern is read in place.** React's prepareForCommit
+writes `const focusedElem = selectionInformation.focusedElem; if
+(focusedElem !== null)`, which the port's `let focused_elem = ..; if let
+Some(focused_elem) = focused_elem` read in the test, its name lost, as
+this ADR's first decision said of a `let` an `if let` takes apart. So
+`tested reads` takes no `let` the program wrote (`LetNames::named`), and
+`LetNames::taken_apart`, which only it asked, is gone: startTransition's
+`let prev_types = prev.types.borrow().clone(); if DEV && let
+Some(prev_types) = prev_types && ..` is `const prevTypes = prev.types; if
+(DEV && prevTypes != null && prevTypes !== currentTypes)`. A pattern's
+binding named as its field, getViewTransitionName's `if let Some(auto_name)
+= &*instance.auto_name.borrow() { return auto_name.clone(); }`, is still
+`if (instance.autoName != null) { return instance.autoName; }`; and the
+let chain's binding read again, and the thread-local's, are patterns'
+too. The `let` of a cast, which the first decision left out, is one the
+program wrote, so it stays without a rule of its own. The differences the
+user listed: prepareForCommit's and createTextInstance's pattern bindings
+read twice where upstream holds a `const`.
+
+Held by `test/corpus/refcell_let_taken_apart.rs` (`finish`'s `const
+prevTypes`, `first`'s written `let` of the field's own name kept; `own`'s
+pattern binding read in place, `ownTwice`'s and `ownChecked`'s held),
+mutations `tested-read-of-a-written-let`, `tested-read-past-a-call`
+(`tidy/moves.ts`, snapshots), `own-name-read-never-in-place`; the
+patterns.ts mutations of `taken_apart` and a cast's `let` are gone with it.
+`test/lowering-moves.test.ts`'s ADR 1022 tests write the program's own
+structs' reads as pattern bindings now, and hold a JS-made struct's by a
+`let` that ends a borrow, `const child = current.child;`, which still reads
+in place where the field is the program's.
+

@@ -408,10 +408,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("and tests", |b, h| {
                 bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
             }),
-            // A `let` an `if let` takes apart, of a place's read only the
-            // test after it reads, one test now: read there (ADR 0866).
+            // A pattern's binding of a property by its name, read only by
+            // the test after it and its first statement: read there (ADR
+            // 0866, amended); a `let` the program wrote stays (rd226).
             pass("tested reads", |b, h| {
-                js::statement_lists(b, &mut |s| tested_reads(s, &h.lets.taken_apart))
+                js::statement_lists(b, &mut |s| tested_reads(s, &h.lets.named))
             }),
             // An `if` whose condition mixes `&&`, `||` and `!`, of `if`s that
             // leave a block MIR made: its one test (ADR 0946).

@@ -2692,13 +2692,12 @@ export function isAdult(p) {
   once, as a person writes it: `if (debug) { const value = info.value; if
   (value != null) { .. } }`
   ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)).
-- A `let` an `if let` then takes apart, as one that ends a `RefCell`'s
-  borrow first, `let types = prev.types.borrow().clone(); if dev && let
-  Some(types) = types && ..`, is the place read in the test, where only
-  the test reads it and runs no code first: `if (dev && prev.types !=
-  null && prev.types !== other)`
-  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md)).
-  So is a chain's binding of a field its test read, `if let Some(fiber) =
+- A `let` the program wrote stays as it wrote it, one an `if let` then
+  takes apart too, `let types = prev.types.borrow().clone(); if dev &&
+  let Some(types) = types && ..`: `const types = prev.types; if (dev &&
+  types != null && types !== other)`
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
+  amended, rd226, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
   &fiber && let Some(task) = fiber.debug_task.get() { return
   task.run(..); }`, where the body reads it first, before anything runs:
   `if (fiber != null && fiber._debugTask) { return

@@ -179,14 +179,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
   },
   {
-    name: "cast-let-of-a-place-tested-in-its-place",
-    breaks: "`let instance: Option<&Instance> = unsafe { js::cast(node.state_node.get()) }; if let Some(instance) = instance && ..` reads `node.stateNode` twice in the test, the program's name gone",
-    file: "src/lower/mir/patterns.rs",
-    find: "            .filter(|(var, _)| scrutinees.contains(var) && !typed.contains(var))\n",
-    replace: "            .filter(|(var, _)| scrutinees.contains(var))\n",
-    tests: ["test/lowering-parts.test.ts", "-t", "a let of a cast an if let tests"],
-  },
-  {
     name: "ended-borrow-of-any-let",
     breaks: "a `let` of a `Cell`'s value, `let index = current.index.get();`, is taken for one that ends a borrow, its name lost to its place's read",
     file: "src/lower/mir/patterns.rs",
@@ -202,15 +194,6 @@ export const mutations: Mutation[] = [
     find: "                    && adt.has_dtor(self.tcx)\n",
     replace: "                    && false\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's try starts at its let"],
-  },
-  {
-    name: "let-taken-apart-unseen",
-    breaks: "a `let` an `if let` takes apart, `let prev_types = prev.types.borrow().clone()`, stays a `const` before the test that alone reads it",
-    file: "src/lower/mir/patterns.rs",
-    find: "            .filter(|(var, _)| scrutinees.contains(var) && !typed.contains(var))\n",
-    replace: "            .filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
-    snapshots: true,
   },
   {
     name: "nullable-items-made-undefined",

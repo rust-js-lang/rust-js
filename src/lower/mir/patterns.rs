@@ -1014,17 +1014,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => return e,
             }
         };
-        // A cast, `js::cast(..)`.
-        let is_cast = |e: thir::ExprId| {
-            let thir::ExprKind::Call { fun, .. } = thir[through(e)].kind else {
-                return false;
-            };
-            let ty::FnDef(def_id, _) = *thir[fun].ty.kind() else {
-                return false;
-            };
-            bindings::is_binding(self.tcx, def_id)
-                && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
-        };
         // The field a borrow's receiver is, `&current.child`, by its Rust name.
         let field_named = |receiver: Option<thir::ExprId>| {
             let mut e = through(receiver?);
@@ -1083,32 +1072,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut named = Vec::new();
         let mut ends_borrow = Vec::new();
         let mut guards = Vec::new();
-        // A `let` of a cast of anything, `let instance: Option<&Instance> =
-        // unsafe { js::cast(node.state_node.get()) };`: the program's name
-        // for a value of the type it gives, no `let` that ends a borrow.
-        let mut typed = Vec::new();
-        let mut lets = Vec::new();
         for stmt in thir.stmts.iter() {
             if let thir::StmtKind::Let {
                 pattern, initializer, ..
             } = &stmt.kind
                 && let thir::PatKind::Binding {
                     subpattern: None,
-                    var,
                     name: binding,
                     ..
                 } = pattern.kind
             {
                 named.push(pattern.span);
-                lets.push((var, pattern.span));
                 // Named as the field it reads, by their Rust names, whatever
                 // the JS ones: `r#return`'s `return$` of `.return`, and a
                 // field's `#[rust_js::name]`, `_debugHookTypes`.
                 if initializer.and_then(borrow_cloned) == Some(binding) {
                     ends_borrow.push(pattern.span);
-                }
-                if initializer.is_some_and(is_cast) {
-                    typed.push(var);
                 }
             }
         }
@@ -1127,20 +1106,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // Of those, each an `if let`'s scrutinee, the variable alone.
-        let scrutinees: Vec<thir::LocalVarId> = (thir.exprs.iter())
-            .filter_map(|e| match e.kind {
-                thir::ExprKind::Let { expr, .. } => match thir[crate::lower::body_queries::strip(thir, expr)].kind {
-                    thir::ExprKind::VarRef { id } => Some(id),
-                    _ => None,
-                },
-                _ => None,
-            })
-            .collect();
-        let taken_apart: Vec<Span> = (lets.iter())
-            .filter(|(var, _)| scrutinees.contains(var) && !typed.contains(var))
-            .map(|&(_, span)| span)
-            .collect();
         let names = |spans: &[Span]| {
             (body.var_debug_info.iter())
                 .filter_map(|info| match info.value {
@@ -1158,7 +1123,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(l, _)| state.locals.names[l].clone())
                 .collect(),
             named: names(&named),
-            taken_apart: names(&taken_apart),
             ends_borrow: names(&ends_borrow),
             guards,
         }

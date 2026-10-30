@@ -464,6 +464,21 @@ fn set_padding(this: &Unknown, value: Option<&Unknown>) {
     unreachable!()
 }
 
+pub struct Fiber {
+    pub child: std::cell::RefCell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Fiber {}
+
+/// A \`let\` that ends a borrow of a field of a struct JS made, stored right
+/// after: read once, as Rust reads it, not again where it's stored.
+pub fn copy_child(target: &Fiber, current: &Unknown) {
+    // Safety: what's given is a fiber.
+    let current: &Fiber = unsafe { js::cast(Some(current)) };
+    let child = current.child.borrow().clone();
+    target.child.replace(child);
+}
+
 fn apply(style: &Unknown, style_prop: &StyleProp) {
     let margin = style_prop.margin;
     if margin.is_some() {
@@ -496,9 +511,8 @@ fn stored() -> &'static Kept {
 
 pub fn kept(style: &Unknown) {
     let kept = stored();
-    let margin = kept.margin;
-    if margin.is_some() {
-        set_margin(style, margin);
+    if let Some(margin) = kept.margin {
+        set_margin(style, Some(margin));
     } else {
         let padding = kept.padding;
         set_padding(style, padding);
@@ -511,9 +525,8 @@ struct Own {
 }
 
 fn own_margin(style: &Unknown, own: &Own) {
-    let margin = own.margin;
-    if margin.is_some() {
-        set_margin(style, margin);
+    if let Some(margin) = own.margin {
+        set_margin(style, Some(margin));
     } else {
         let padding = own.padding;
         set_padding(style, padding);
@@ -525,6 +538,8 @@ pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
 }
 `);
   expect(js).toContain("  const margin = styleProp.margin;\n  if (margin != null) {\n    style.margin = margin;\n");
+  // A \`let\` that ends a borrow of a JS-made struct's field is read once too.
+  expect(js).toContain("  const child = current.child;\n");
   // The program's own struct's field is read in place, and so is one a
   // binding gives back (\`#[rust_js::gives_back]\`).
   expect(js).toContain("  if (own.margin != null) {\n    style.margin = own.margin;\n");
@@ -691,9 +706,8 @@ fn set_margin(this: &Unknown, value: Option<&Unknown>) {
 pub fn kept_margin(style: &Unknown, kept: &Rc<Kept>) {
     // Safety: what's kept is a view of a margin.
     let view: Rc<KeptView> = unsafe { js::cast(Some(js::unknown_of(Rc::clone(kept)))) };
-    let margin = view.margin;
-    if margin.is_some() {
-        set_margin(style, margin);
+    if let Some(margin) = view.margin {
+        set_margin(style, Some(margin));
     }
 }
 
@@ -703,12 +717,15 @@ pub struct StyleProp {
 
 pub struct Margin {
     pub margin: Option<&'static Unknown>,
+    pub child: std::cell::RefCell<Option<&'static Unknown>>,
 }
 
 pub fn margin_of(style: &Unknown, props: &Unknown) {
     // Safety: a style prop is an object of a margin.
     let style_prop: &StyleProp = unsafe { js::cast(js::get(props, "style")) };
     let view: &Margin = unsafe { js::cast(Some(js::unknown(style_prop))) };
+    let child = view.child.borrow().clone();
+    set_margin(style, child);
     let margin = view.margin;
     if margin.is_some() {
         set_margin(style, margin);
@@ -722,7 +739,7 @@ pub fn margin_of(style: &Unknown, props: &Unknown) {
   expect(js).toContain("  if (view.margin != null) {\n    style.margin = view.margin;\n");
   expect(js).not.toContain("const old");
   // A view of a struct JS made is read once, as Rust reads it.
-  expect(js).toContain("  const view = props.style;\n  const margin = view.margin;\n");
+  expect(js).toContain("  const view = props.style;\n  const child = view.child;\n  style.margin = child;\n  const margin = view.margin;\n");
   let reads = 0;
   const styleProp = { get margin() { return ++reads === 1 ? "4px" : undefined; } };
   const style: Record<string, unknown> = {};

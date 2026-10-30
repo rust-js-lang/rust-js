@@ -75,8 +75,9 @@ function sumThenLast(first, skip) {
   let update = first;
   while (true) {
     if (update.lane === skip) {
-      if (update.next != null && update.next !== first) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next !== first) {
+        update = next;
         continue;
       }
     } else {
@@ -97,8 +98,9 @@ function testedApart(first, skip) {
   let update = first;
   while (true) {
     if (update.lane === skip) {
-      if (update.next != null && update.next.lane !== skip + 2) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next.lane !== skip + 2) {
+        update = next;
         continue;
       }
     } else {
@@ -119,8 +121,9 @@ function risingSum(first, skip) {
   let update = first;
   while (true) {
     if (update.lane === skip) {
-      if (update.next != null && update.next.lane > update.lane) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next.lane > update.lane) {
+        update = next;
         continue;
       }
     } else {
@@ -141,8 +144,9 @@ function capped(first, skip, cap) {
   let update = first;
   while (true) {
     if (update.lane === skip) {
-      if (update.next != null && update.next !== first) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next !== first) {
+        update = next;
         continue;
       }
     } else {
@@ -200,8 +204,9 @@ function skippingOnce(first, skip) {
       continue;
     }
     if (update.lane === 2) {
-      if (update.next != null && update.next !== first) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next !== first) {
+        update = next;
         continue;
       }
     } else {
@@ -222,8 +227,9 @@ function skippingLow(first) {
   let update = first;
   while (true) {
     if (update.lane === 2) {
-      if (update.next != null && update.next.lane > 1) {
-        update = update.next;
+      const next = update.next;
+      if (next != null && next.lane > 1) {
+        update = next;
         continue;
       }
     } else {

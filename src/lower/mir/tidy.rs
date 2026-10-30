@@ -56,11 +56,6 @@ pub(super) struct LetNames {
     pub(super) patterns: HashSet<String>,
     /// What a name alone binds, `let x = p.x;`.
     pub(super) named: HashSet<String>,
-    /// Of those, one an `if let` takes apart, the variable alone its
-    /// scrutinee, `let types = t.types.borrow().clone(); if let Some(types)
-    /// = types`: a `let` that ends a borrow, which reads as its value
-    /// written there where only that test reads it (ADR 0866).
-    pub(super) taken_apart: HashSet<String>,
     /// Of those, one of a `RefCell` field's value cloned, named as the field, `let child =
     /// current.child.borrow().clone();`: a `let` that ends a borrow, which
     /// reads as its value written in the statement right after it where
