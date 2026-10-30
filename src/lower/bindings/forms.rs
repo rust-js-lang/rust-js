@@ -87,6 +87,13 @@ pub(in crate::lower) enum JsForm {
     /// .. }`, its first parameter JS's `this`, its second the tuple of what
     /// it's called with, `js::function::with_this`'s (ADR 0972).
     WithThis,
+    /// `method`: the method a path from a value names, read as a value,
+    /// `element.focus` of `js::method((element, HTMLElement::focus))`
+    /// (rd181).
+    Method,
+    /// `||`: `this || other`, JS's `||` of any two values, `js::or`'s
+    /// (rd181).
+    Or,
 }
 
 /// What `js::is_defined`, `js::is_function` or `js::is_number` asks of a
@@ -150,6 +157,8 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
         "function" => return JsForm::WithThis,
+        "method" => return JsForm::Method,
+        "||" => return JsForm::Or,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

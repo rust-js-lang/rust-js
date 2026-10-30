@@ -374,3 +374,77 @@ pub fn hide(style: &webapi::CSSStyleDeclaration) {
   lib.hide(oldStyle);
   expect([set, modernStyle.cssText, oldStyle.cssText]).toEqual([[["display", "none", "important"]], "", "display: none"]);
 });
+
+// React DOM's setFocusIfFocusable, the user's decision (rd181):
+// `(element.focus || HTMLElement.prototype.focus).call(element,
+// focusOptions)`. A path from a value read as a value is `js::method`'s,
+// the method itself, a JS function of its `this`; one from a class's
+// prototype, any value, reads it as TypeScript reads `any`'s; `js::or` is
+// JS's `||`, and `function::call` gives it its `this`.
+test("js::method of a path reads its method as a value, js::or is JS's ||", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("method-value-path");
+  writeFileSync(join(dir, "lib.rs"), `use js::function;
+use webapi::{FocusOptions, HTMLElement};
+
+pub fn focus(element: &HTMLElement, focus_options: Option<&'static FocusOptions>) {
+    function::call(
+        js::or(
+            js::method((element, HTMLElement::focus)),
+            js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus)),
+        ),
+        Some(element),
+        (focus_options,),
+    );
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")]
+fn counted() -> f64 {
+    unreachable!()
+}
+
+/// Rust gives \`or\` both: one that may run code runs first, as \`??\`'s does.
+pub fn either(a: f64) -> f64 {
+    js::or(a, counted())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n");
+  expect(js).toContain("const fallback = globalThis.counted();\n  return a || fallback;");
+  const calls: unknown[] = [];
+  const g = globalThis as Record<string, unknown>;
+  const saved = g.HTMLElement;
+  class FakeElement {}
+  (FakeElement.prototype as unknown as { focus: unknown }).focus = function (this: unknown, options: unknown) {
+    calls.push(["prototype", this, options]);
+  };
+  g.HTMLElement = FakeElement;
+  let count = 0;
+  g.counted = () => ++count;
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    const own = { name: "own", focus(this: unknown, options: unknown) { calls.push(["own", this, options]); } };
+    const bare = { name: "bare" };
+    lib.focus(own, { preventScroll: true });
+    lib.focus(bare, undefined);
+    expect(calls).toEqual([["own", own, { preventScroll: true }], ["prototype", bare, undefined]]);
+    expect([lib.either(3), lib.either(0), count]).toEqual([3, 2, 2]);
+  } finally {
+    g.HTMLElement = saved;
+  }
+});
+
+// A path's method is of its value's type, or of any value's: one of
+// another type's is refused, as a path's step is.
+test("js::method of a method of another type is refused", () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("method-value-refused");
+  writeFileSync(join(dir, "lib.rs"), `pub fn read(element: &webapi::HTMLElement) {
+    let exit = js::method((element, webapi::Document::exit_fullscreen));
+    exit();
+}
+`);
+  const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb], root, 60_000);
+  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::method` of a path of bindings where a step isn't a method of what the one before gives")]);
+});

@@ -186,9 +186,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let class = name.split('.').fold(this, Expr::member);
                 Expr::new_(class.or_at(fun_span), args)
             }
-            // A property's read, which a getter may answer (ADR 0672).
+            // A property's read, which a getter may answer (ADR 0672); not
+            // one that runs nothing, a data property's, a function's
+            // `prototype` (rd181).
             (JsForm::Get(name), Some(this)) if args.is_empty() && !name.contains('#') => {
-                Expr::member(this, name).answered_by_a_getter()
+                match super::bindings::runs_nothing(self.tcx, def_id) {
+                    true => Expr::member(this, name),
+                    false => Expr::member(this, name).answered_by_a_getter(),
+                }
             }
             // A class's static property, read at each call: `Notification.permission`.
             (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
@@ -222,6 +227,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),
             (JsForm::Truthy, Some(this)) if args.is_empty() => {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
+            }
+            // `||` skips its right side where it isn't needed, and Rust
+            // evaluates it either way: one with effects runs first, in
+            // order, as `Option::unwrap_or`'s `??` does (rd181).
+            (JsForm::Or, Some(mut this)) if args.len() == 1 => {
+                let mut other = args.remove(0);
+                if other.has_effects() {
+                    if this.has_effects() {
+                        this = self.spill("value", this, out);
+                    }
+                    other = self.spill("fallback", other, out);
+                }
+                Expr::bin(Op::Or, this, other)
             }
             (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),
             (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),

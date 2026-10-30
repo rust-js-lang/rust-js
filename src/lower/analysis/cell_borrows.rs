@@ -519,6 +519,8 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
                 | JsForm::WithThis
                 | JsForm::TypeofObject
                 | JsForm::Null
+                | JsForm::Or
+                | JsForm::Method
         ) || runs_nothing(tcx, id))
 }
 

@@ -311,8 +311,8 @@ export const mutations: Mutation[] = [
     name: "get-getter-unseen",
     breaks: "a `get x` binding's read isn't said to be one a getter may answer, so a let chain reads it twice",
     file: "src/lower/binding_calls.rs",
-    find: "                Expr::member(this, name).answered_by_a_getter()\n",
-    replace: "                Expr::member(this, name)\n",
+    find: "                    false => Expr::member(this, name).answered_by_a_getter(),\n",
+    replace: "                    false => Expr::member(this, name),\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
   },
   {
@@ -506,5 +506,21 @@ export const mutations: Mutation[] = [
     find: "            js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),\n",
     replace: "",
     tests: ["test/js-collections.test.ts", "-t", "own iteration collected"],
+  },
+  {
+    name: "or-other-unspilled",
+    breaks: "`js::or(a, counted())` is `a || globalThis.counted()`, which skips the call Rust makes where `a` is truthy (rd181)",
+    file: "src/lower/binding_calls.rs",
+    find: "                if other.has_effects() {\n                    if this.has_effects() {",
+    replace: "                if false {\n                    if this.has_effects() {",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
+  },
+  {
+    name: "runs-nothing-read-a-getter",
+    breaks: "a read that runs nothing, `HTMLElement.prototype`, is one a getter may answer, so `element.focus || HTMLElement.prototype.focus` holds its right side first (rd181)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    true => Expr::member(this, name),\n",
+    replace: "                    true => Expr::member(this, name).answered_by_a_getter(),\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
 ];

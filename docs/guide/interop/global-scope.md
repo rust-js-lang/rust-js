@@ -307,6 +307,38 @@ names, is a step as the `fn` pointer it's cast to, `(style,
 CSSStyleDeclaration::set_property as fn(_, _, &'static str, _))`, `typeof
 style.setProperty === "function"`.
 
+`js::method` of such a path is the method read as a value, the JS
+function itself, called with `function::call`, which gives its `this`:
+`js::method((element, HTMLElement::focus))` is `element.focus`, a
+`&'static dyn Fn(Option<FocusOptions>)`. The path's value may be any
+value, as TypeScript reads `any`'s: a class's prototype,
+`js::class::<HTMLElement>().prototype()`. `js::or(a, b)` is JS's `a ||
+b`; Rust gives it both, so a `b` that may run code runs first. React DOM's
+setFocusIfFocusable
+([ADR 1025](../../decisions/1025-a-method-read-as-a-value-is-js-methods.md)):
+
+```rust
+use js::function;
+use webapi::{FocusOptions, HTMLElement};
+
+pub fn focus(element: &HTMLElement, focus_options: Option<&'static FocusOptions>) {
+    function::call(
+        js::or(
+            js::method((element, HTMLElement::focus)),
+            js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus)),
+        ),
+        Some(element),
+        (focus_options,),
+    );
+}
+```
+
+```js
+export function focus(element, focusOptions) {
+  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);
+}
+```
+
 Of a value of a function's type that JS gives, which a JS caller may give
 as anything, it asks the value: a `fn`, a `dyn Fn` lent or boxed, an `impl
 Fn`, a transparent struct of one, or an `Option` of one. React's scheduler

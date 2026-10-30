@@ -523,7 +523,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// static it is, so no temporary between hides it. A global's own name,
     /// its `js_path`: not an import's, which isn't the host's to lack.
     /// And `js::is_function` of a value JS gave, `typeof callback ===
-    /// "function"` (`asks_of_value`). `None` of another call.
+    /// "function"` (`asks_of_value`); and `js::method`'s read of a path,
+    /// its member (`mir_method`). `None` of another call.
     pub(super) fn mir_defined(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -536,6 +537,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body = state.body;
         if !bindings::is_binding(tcx, def_id) {
             return Ok(None);
+        }
+        // A path's method read as a value, `js::method`'s (rd181).
+        if let Some(method) = self.mir_method(state, def_id, args, span, out)? {
+            return Ok(Some(method));
         }
         let bindings::JsForm::Asks(asked) = bindings::js_form(tcx, def_id) else {
             return Ok(None);
@@ -557,7 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let steps = &self.steps_named(body, &arg.node, steps)[..];
             if let Some(value_ty) = value_first(steps) {
-                let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked, span)?;
+                let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked.function(), span)?;
                 self.asked_of_number(asked, read, span)?;
                 let mut values = self.take_operands(state, &[&arg.node], out)?;
                 let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
@@ -568,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 return self.mir_defined_parts(Some(path), Some(items.swap_remove(0)), asked, span);
             }
-            let (path, read) = self.defined_path(steps, None, asked, span)?;
+            let (path, read) = self.defined_path(steps, None, asked.function(), span)?;
             self.asked_of_number(asked, read, span)?;
             return self.mir_defined_parts(Some(path), None, asked, span);
         }
@@ -618,6 +623,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.asked_of_number(asked, read, span)?;
         }
         self.mir_defined_parts(global, None, asked, span)
+    }
+
+    /// `js::method`'s method a path from a value names, read as a value,
+    /// the JS function itself: `(element, HTMLElement::focus)`'s
+    /// `element.focus`, its value read as it's read in the path, each step
+    /// a member (rd181). As its call reads it, a getter may answer it of a
+    /// value of any shape's type (ADR 0750). `None` of another call.
+    fn mir_method(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        let body = state.body;
+        if !bindings::is_binding(tcx, def_id) || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::Method) {
+            return Ok(None);
+        }
+        let refused = |cx: &Self| {
+            Err(cx.unsupported(
+                span,
+                "`js::method` of what isn't a path of a value and its method, `(element, HTMLElement::focus)`,",
+            ))
+        };
+        let [arg] = args else { return refused(self) };
+        let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind() else {
+            return refused(self);
+        };
+        let steps = self.steps_named(body, &arg.node, steps);
+        let Some(value_ty) = value_first(&steps) else {
+            return refused(self);
+        };
+        let (path, _) = self.defined_path(&steps[1..], Some(value_ty), "js::method", span)?;
+        let mut values = self.take_operands(state, &[&arg.node], out)?;
+        let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
+            return Err(self.unsupported(span, "`js::method` of a path whose value isn't written in it"));
+        };
+        let method = path.split('.').fold(items.swap_remove(0), Expr::member);
+        let getters = (steps[1..].iter()).any(|&step| {
+            crate::lower::fn_def(step)
+                .is_some_and(|(f, _)| crate::lower::binding_calls::method_may_be_a_getters(tcx, f))
+        });
+        let method = match getters {
+            true => method.answered_by_a_getter(),
+            false => method,
+        };
+        Ok(Some(method.or_at(self.js_span(span))))
     }
 
     /// The type of each step of a path `tuple` is, a binding's function's;
@@ -811,17 +865,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         steps: &[ty::Ty<'tcx>],
         from: Option<ty::Ty<'tcx>>,
-        asked: Asked,
+        function: &str,
         span: Span,
     ) -> R<(String, ty::Ty<'tcx>)> {
         let tcx = self.tcx;
         let refused = || {
             self.unsupported(
                 span,
-                &format!(
-                    "`{}` of a path of bindings where a step isn't a method of what the one before gives",
-                    asked.function()
-                ),
+                &format!("`{function}` of a path of bindings where a step isn't a method of what the one before gives"),
             )
         };
         if from.is_some() && steps.is_empty() {
@@ -849,7 +900,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let Some(name) = member_read(tcx, f) else {
                         return Err(refused());
                     };
-                    if !bindings::is_method(tcx, f) || of != Some(before.peel_refs()) {
+                    // Of any value, a method of any type, as TypeScript
+                    // reads `any`'s: `HTMLElement.prototype.focus` (rd181).
+                    let any = matches!(before.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()));
+                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any) {
                         return Err(refused());
                     }
                     match path.is_empty() {

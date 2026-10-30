@@ -821,6 +821,74 @@ pub fn is_number<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
 
+/// [`object.method`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Property_accessors):
+/// the method a path from a value names, read as a value, the JS function
+/// itself, whose `this` its call gives, as [`function::with_this`]'s is: of
+/// `(element, HTMLElement::focus)`, `element.focus`, a `&'static dyn
+/// Fn(Option<FocusOptions>)`. The path's value may be any value,
+/// `js::class::<HTMLElement>().prototype()`'s, `HTMLElement.prototype.focus`,
+/// as TypeScript reads `any`'s; else the method's own type (rd181).
+/// Called with [`function::call`], its `this` given, as JS calls it.
+#[cfg_attr(rust_js, rust_js::link_name = "method")]
+#[allow(unused_variables)]
+pub fn method<P: Method<M>, M>(path: P) -> P::Function {
+    unreachable!()
+}
+
+/// What [`method`] reads: a path of a value and a method of it, of the
+/// signature `M`, the method's `fn` pointer's, its `this` first. Of each
+/// method of up to 12 parameters. No program names it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't a path of a value and its method",
+    note = "a method is read of a value it's a method of: `js::method((element, HTMLElement::focus))`"
+)]
+pub trait Method<M>: sealed::Path {
+    /// The method, a JS function of its `this`.
+    type Function: Copy;
+}
+
+/// `Method` of each path of a value and a method of up to 12 parameters.
+macro_rules! methods {
+    ($(($($a:ident),*))*) => {
+        $(
+            impl<T: ?Sized, V: ?Sized, F, R: 'static, $($a: 'static),*> Method<fn(&V, $($a),*) -> R> for (&T, F)
+            where
+                F: Fn(&V, $($a),*) -> R,
+            {
+                type Function = &'static dyn Fn($($a),*) -> R;
+            }
+        )*
+    };
+}
+
+methods! {
+    ()
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, F1)
+    (A, B, C, D, E, F1, G)
+    (A, B, C, D, E, F1, G, H)
+    (A, B, C, D, E, F1, G, H, I)
+    (A, B, C, D, E, F1, G, H, I, J)
+    (A, B, C, D, E, F1, G, H, I, J, K)
+    (A, B, C, D, E, F1, G, H, I, J, K, L)
+}
+
+/// [`this || other`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Logical_OR):
+/// `this` where it's [truthy](truthy), else `other`, as JS's `||` of any
+/// two values: React DOM's `element.focus || HTMLElement.prototype.focus`
+/// of `js::or(js::method((element, HTMLElement::focus)), ..)` (rd181).
+/// Rust gives it both, so an `other` that may run code runs first, as
+/// `Option::unwrap_or`'s does.
+#[cfg_attr(rust_js, rust_js::link_name = "||")]
+#[allow(unused_variables)]
+pub fn or<T: Copy>(this: T, other: T) -> T {
+    unreachable!()
+}
+
 /// [`String(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/String):
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.
@@ -1001,8 +1069,11 @@ impl<S> Class<S> {
     }
 
     /// [`C.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/prototype):
-    /// what each instance `new C(..)` makes inherits from.
+    /// what each instance `new C(..)` makes inherits from. A function's
+    /// own data property, which no getter answers, so its read runs
+    /// nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "get prototype")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn prototype(&self) -> &'static Unknown {
         unreachable!()
     }
@@ -1513,10 +1584,14 @@ impl IntoStrOrNumberOrBool for bool {}
 mod sealed {
     pub trait Sealed {}
     /// What [`function::Parameters`](crate::function::Parameters) is of: a
-    /// tuple alone, so what `with_this` makes is a `Box<dyn Fn>`, never a
+    /// tuple alone, so what `with_this` makes is a `&dyn Fn`, never a
     /// fn pointer, which a call through what holds it gives no `this` of
     /// its own (ADR 0972, amended).
     pub trait Tuple {}
+    /// What [`Method`](crate::Method) is of: a path of a value and its
+    /// method, a pair.
+    pub trait Path {}
+    impl<T: ?Sized, F> Path for (&T, F) {}
     impl Sealed for &str {}
     impl Sealed for &String {}
     impl Sealed for f64 {}
