@@ -470,7 +470,8 @@ pub(super) const STAGES: &[Stage] = &[
             pass("jumps into branches", |b, h| {
                 js::statement_lists(b, &mut |s| {
                     jumps_into_branches(s, &h.written.switches, &h.written.elses)
-                })
+                });
+                js::statement_lists(b, &mut |s| written_jumps_before(s, h.written))
             }),
             // A block's `return` of one value that some of the paths of the
             // `if` before it go on to, and the rest leave past: in each that

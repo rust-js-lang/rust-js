@@ -499,24 +499,11 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(
         arms(stmt, &mut leaves);
         matches!(&leaves[..], [going_on @ .., true] if going_on.iter().all(|leaves| !leaves))
     };
-    // A jump the program wrote after an `if` it wrote with an `else`, past
-    // all of it, `if n == 0 { .. } else { ..; continue; } break;`, stays
-    // where it's written (uz2).
-    let written_after = |stmt: &Stmt, jump: &Stmt| {
-        if !written_else(stmt, elses) {
-            return false;
-        }
-        let mut end = 0;
-        js::each_list(std::slice::from_ref(stmt), &mut |list| {
-            end = list.iter().map(|s| s.span.hi).fold(end, u32::max)
-        });
-        !jump.span.is_none() && jump.span.lo >= end
-    };
     let mut i = 0;
     while i + 1 < stmts.len() {
         if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_))
             && into_arms(&stmts[i])
-            && !written_after(&stmts[i], &stmts[i + 1])
+            && !written_after(&stmts[i], &stmts[i + 1], elses)
         {
             let jump = stmts.remove(i + 1);
             let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
@@ -531,6 +518,101 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(
             }
         }
         i += 1;
+    }
+}
+
+/// Whether `jump` is one the program wrote after `stmt`, an `if` it wrote
+/// with an `else`, past all of it, `if n == 0 { .. } else { ..; continue;
+/// } break;`, which stays where it's written (uz2).
+fn written_after(stmt: &Stmt, jump: &Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> bool {
+    if !written_else(stmt, elses) {
+        return false;
+    }
+    let mut end = 0;
+    js::each_list(std::slice::from_ref(stmt), &mut |list| {
+        end = list.iter().map(|s| s.span.hi).fold(end, u32::max)
+    });
+    !jump.span.is_none() && jump.span.lo >= end
+}
+
+/// Each `if .. else` the program wrote of `stmts` followed by a jump it
+/// wrote after it, which `jumps_into_branches` leaves there: its branches
+/// as written (`jumps_as_written_before`), once each list in them is
+/// done.
+pub(in crate::lower::mir::tidy) fn written_jumps_before(
+    stmts: &mut [Stmt],
+    written: &crate::lower::mir::hints::Written,
+) {
+    for i in 1..stmts.len() {
+        let (before, after) = stmts.split_at_mut(i);
+        if matches!(after[0].kind, StmtKind::Continue(None) | StmtKind::Break(None))
+            && written_after(&before[i - 1], &after[0], &written.elses)
+        {
+            jumps_as_written_before(&mut before[i - 1], &after[0], written);
+        }
+    }
+}
+
+/// The branches of `stmt`, an `if .. else` the program wrote, that go on
+/// to `jump`, which it wrote after it, as it wrote them (rd109's written
+/// jumps): one it wrote ending in that jump, `if exitStatus ==
+/// ROOT_IN_PROGRESS { ..; break; } else { .. } break;` of React's
+/// performWorkOnRoot, given it back where it's written, which `tail
+/// jumps` took as the block's way out; and MIR's copy of the jump at
+/// another's end, which the `jump` after it does, gone. Each goes on to
+/// `jump` as it did.
+fn jumps_as_written_before(stmt: &mut Stmt, jump: &Stmt, written: &crate::lower::mir::hints::Written) {
+    let span = stmt.span;
+    let StmtKind::If(_, then, Some(otherwise)) = &mut stmt.kind else {
+        return;
+    };
+    let (thens, elses) = match jump.kind {
+        StmtKind::Break(None) => (&written.breaks, &written.else_breaks),
+        StmtKind::Continue(None) => (&written.continues, &written.else_continues),
+        _ => return,
+    };
+    for (arm, jumps) in [(then, thens), (otherwise, elses)] {
+        let at = jump_tested(jumps, span).map(|k| jumps[k].1);
+        uncopied(arm, jump, at.is_some(), (thens, elses));
+        let mut after = false;
+        if let Some(at) = at {
+            js::each_list(arm, &mut |list| {
+                after |= list.iter().any(|s| !s.span.is_none() && s.span.lo >= at.hi);
+            });
+        }
+        if let Some(at) = at
+            && !after
+            && !arm.last().is_some_and(ends)
+        {
+            arm.push(Stmt {
+                kind: jump.kind.clone(),
+                span: at,
+            });
+        }
+    }
+}
+
+/// `arm`, a branch of no jump the program wrote at its end (`wrote`),
+/// without the copy of `jump` MIR made there, nor in the branches of an
+/// `if .. else` it ends with that the program wrote none in either, of
+/// `jumps`, the `then`s' and the `else`s': each goes on to `jump` as it
+/// is.
+fn uncopied(arm: &mut Vec<Stmt>, jump: &Stmt, wrote: bool, jumps: BranchJumps) {
+    let Some(last) = arm.last_mut() else {
+        return;
+    };
+    let span = last.span;
+    match &mut last.kind {
+        kind if *kind == jump.kind => {
+            if !wrote {
+                arm.pop();
+            }
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            uncopied(then, jump, jump_tested(jumps.0, span).is_some(), jumps);
+            uncopied(otherwise, jump, jump_tested(jumps.1, span).is_some(), jumps);
+        }
+        _ => {}
     }
 }
 

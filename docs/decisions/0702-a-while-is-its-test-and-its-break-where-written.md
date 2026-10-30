@@ -11,7 +11,8 @@ before `decisions` (rd141c); and a `break 'rows` in an inner loop is the
 outer's, by its label (uz3); and a loop's value is declared before it, and
 a `break 'outer` from a loop inside leaves the outer, what follows each
 after its loop (rd148); and a written `if .. { break; }` before an `if`
-with an `else` and the `break` after it is each where it's written (uz2).
+with an `else` and the `break` after it is each where it's written (uz2);
+and so are the jumps of that `if .. else`'s branches (performWorkOnRoot).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -935,3 +936,68 @@ Rust; mutations `early-break-going-on-unbroken`,
 `early-break-going-on-of-an-ending-body` and
 `broken-in-then-of-a-written-else` (`mir/tidy/jumps.ts`) and
 `jumps-into-branches-past-a-written-jump` (`mir/tidy/jumps/continues.ts`).
+
+## Amendment: the branches of an `if .. else` before a written `break` (performWorkOnRoot, 2026-10-30)
+
+uz2's "nor the port's" was wrong: React's performWorkOnRoot is
+
+```rust
+loop {
+    if exit_status == ROOT_IN_PROGRESS {
+        ..
+        break;
+    } else {
+        ..
+        if exit_status == ROOT_FATAL_ERRORED {
+            ..
+            break;
+        }
+        finish_concurrent_render(..);
+    }
+    break;
+}
+```
+
+as upstream writes it. MIR's ways out share one block, so `tail jumps`
+took the `then`'s `break` as that block's end, and the `else` ended with
+MIR's own copy of the `break` after it. Before uz2, `jumps_into_branches`
+moved the `break` after into the `then`, which read as written there but
+left the `else`'s copy and no `break` after; since, the `break` after
+stayed and the `then` had none: `if (..) { .. } else { ..;
+finishConcurrentRender(..); break; } break;`.
+
+**Of an `if .. else` the program wrote, followed by a jump it wrote after
+it (`written_after`), each branch is as written** (`written_jumps_before`,
+once `jumps_into_branches` has done each list in it): one whose `if` the
+program wrote of that jump at its end (`Written::breaks`, `continues`, or
+their `else_` lists) has it back, at its place, where nothing written
+after it is in the branch; and MIR's copy of the jump at a branch's end,
+in the branches of an `if .. else` it ends with too, goes, where the
+program wrote none there. Each branch goes on to the jump as it did.
+
+```js
+while (true) {
+  if (exitStatus === ROOT_IN_PROGRESS) {
+    ..
+    break;
+  } else {
+    ..
+    if (exitStatus === ROOT_FATAL_ERRORED) {
+      ..
+      break;
+    }
+    finishConcurrentRender(root, exitStatus, finishedWork, lanes, renderEndTime);
+  }
+  break;
+}
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A branch that went
+on to the `break` after it ends with that `break`, and one that ended with
+it goes on to it: each leaves the loop where it did.
+
+No other corpus case's JS changes. Held by
+`test/corpus/written_breaks_beside_an_else.rs`, performWorkOnRoot's loop
+against native Rust, and the mutations `written-before-then-unbroken`,
+`written-before-copy-kept` and `written-before-written-copy-dropped`
+(`mir/tidy/jumps/continues.ts`).
