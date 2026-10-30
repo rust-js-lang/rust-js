@@ -827,3 +827,16 @@ function's last if has no return MIR made at its end", run on each path;
 `test/corpus/written_tails_apart.rs` against native Rust; ADR 0742's
 mutations of `returns past blocks`; and
 `let-else-first-ended-returns-of-ended-only` (`mir/tidy/stages.ts`).
+
+## Amendment: a `return;` MIR copied of a `let … else`'s is `returns past blocks`' (2026-10-31)
+
+The nightly at 83234ef63 found `copied-let-else-return-kept` surviving:
+since ADR 0742's amendment of 2026-10-30, `returns past blocks` places a
+written `return` MIR joined where it was written, and leaves no copy at
+the block's end. With `ending_returns`' `copied` gone, the whole suite
+with the nightly's files, its corpus and snapshots included, writes the
+same JS, and "a let-else's return in a block that ends the function
+leaves no return at its end" still holds rd73's decision. `copied`,
+`returns_at` and the mutation go.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None, as above.

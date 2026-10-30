@@ -196,3 +196,17 @@ function returns from its catch", run where each arm runs and where the
 `Ok` arm throws; mutations `err-ending-function-goes-on`,
 `err-ending-return-after-its-if` (`prepare/catches.ts`) and
 `err-ending-a-block-returns` (`prepare.ts`).
+
+## Amendment (2026-10-31): its test's `else` that goes on is the program's own
+
+The nightly at 83234ef63 found `err-ending-function-goes-on` and
+`err-ending-return-after-its-if` surviving. Their test's `unwind` writes
+`panic_on_root_error(x); return;` in the `Err` arm's `else`, and since
+ADR 0742's amendment of 2026-10-30 that written `return` stays where it is
+written, so neither the rule nor its `else` case was reached there.
+
+The test now also compiles `last`, a `match` that ends the function and
+whose `Err` arm's `else` goes on, `panic_on_root_error(x)` with no
+`return`, and holds its `catch` as `} else { panicOnRootError(x); return;
+}` with no `.TAG`, run where each arm runs. Both mutations are caught
+again. Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above.

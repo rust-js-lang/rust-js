@@ -85,6 +85,25 @@ pub fn inside(x: u32, go: bool) {
     complete(x);
 }
 
+pub fn last(x: u32, return_fiber: Option<u32>) {
+    match catch_unwind(AssertUnwindSafe(|| throw_exception(x))) {
+        Ok(did_fatal) => {
+            if did_fatal {
+                fatal(x);
+            }
+            complete(x);
+        }
+        Err(error) => {
+            if let Some(return_fiber) = return_fiber {
+                WORK.set(Some(return_fiber));
+                resume_unwind(error);
+            } else {
+                panic_on_root_error(x);
+            }
+        }
+    }
+}
+
 pub fn work() -> Option<u32> {
     WORK.get()
 }
@@ -107,6 +126,11 @@ export function fatal(x) { log.push("fatal " + x); }
   expect(js).toContain("  let didFatal;\n  try {\n    didFatal = throwException(x);\n  } catch (error) {\n");
   expect(js).toContain("      throw error;\n    } else {\n      panicOnRootError(x);\n      return;\n    }\n  }\n");
   expect(js.slice(js.indexOf("export function unwind"), js.indexOf("export function inside"))).not.toContain("TAG");
+  // Of a `match` that ends the function, an `else` that goes on returns
+  // where it ends, as the `if`'s other branch throws.
+  const last = js.slice(js.indexOf("export function last"), js.indexOf("export function work"));
+  expect(last).toContain("    } else {\n      panicOnRootError(x);\n      return;\n    }\n  }\n  if (didFatal) {");
+  expect(last).not.toContain("TAG");
   const lib = await import(join(dir, "lib.js"));
   const host = await import(join(dir, "host.js"));
   lib.unwind(0, null);
@@ -123,6 +147,12 @@ export function fatal(x) { log.push("fatal " + x); }
   lib.inside(0, true);
   lib.inside(7, true);
   expect(host.log).toEqual(["throw 0", "panic 0", "complete 0", "throw 7", "fatal 7", "complete 7"]);
+  host.log.length = 0;
+  lib.last(0, null);
+  lib.last(7, null);
+  expect(() => lib.last(0, 2)).toThrow(host.thrown);
+  expect(lib.work()).toBe(2);
+  expect(host.log).toEqual(["throw 0", "panic 0", "throw 7", "fatal 7", "complete 7", "throw 0"]);
 });
 
 // React's checkPassiveEvents, `if (canUseDOM) { try { .. } catch (e) {
