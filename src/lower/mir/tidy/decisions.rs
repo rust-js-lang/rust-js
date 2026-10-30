@@ -16,8 +16,10 @@ use crate::lower::mir::hints::{Constant, Guard, Switch};
 use super::{ends, first_written, made_where, names_break};
 
 mod calls;
+mod defaults;
 
 use calls::Model;
+pub(super) use defaults::default_values;
 
 /// More leaves than a match a person writes has: a tree of tests that
 /// aren't one.
@@ -265,127 +267,141 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     {
         bodies[*only].extend(after.iter().cloned());
     }
-    // The `else`: an arm that does nothing, or the one whose test is longest.
+    // The `else`: an arm that does nothing, or the one whose test is longest;
+    // and that one where the others' tests, with the arm that does nothing's
+    // the `else`, are longer than the tree's, of an arm that does nothing
+    // going on to what follows the block, `"C" => {}` between guarded arms
+    // (not one a turn of a loop ends, which a `switch` of `continue`s may
+    // be, ADR 0636): that arm's test negated, what follows it in the chain
+    // inside, `if (name !== "C") { if (name === "D" && keep) { .. } else {
+    // .. } }`.
     let empty: Vec<usize> = (0..arms.len()).filter(|&i| bodies[i].is_empty()).collect();
-    let otherwise = match empty.as_slice() {
-        [only] => *only,
-        _ => (0..arms.len()).max_by_key(|&i| arms[i].tests.iter().flatten().map(atoms).sum::<usize>())?,
-    };
-    // The others in the order they're written: where the test that decides
-    // each path to them, its last, or what they do first is.
-    let written = |i: usize| {
-        let tests = arms[i].tests.iter().filter_map(|tests| written_at(tests.last()?));
-        tests.chain(first_written(&bodies[i])).min().unwrap_or(u32::MAX)
-    };
-    let mut order: Vec<usize> = (0..arms.len()).filter(|&i| i != otherwise).collect();
-    order.sort_by_key(|&i| (written(i), i));
-    // What an arm before it in the chain says of each path to it, where
-    // it failed: a path through that arm's own tests up to its last, then
-    // that last failing, `n >= 1 && !(a || b) && n === 2`, needs no more of
-    // that last than that the chain got past that arm, `n === 2` once its
-    // run of tests of `n` reads as one (#221). Of the tests as the tree
-    // makes them, each path's then `simplified`.
-    for k in 0..order.len() {
-        let (before, at) = order.split_at(k);
-        let i = at[0];
-        let mut made = arms[i].made.clone();
-        let mut changed = false;
-        for path in &mut made {
-            // Each earlier path's own failing, as long as one says more:
-            // `(a, b)`'s paths `[n >= 1, x !== 1, y === 1]` and `[n >= 1, x
-            // === 1]` leave `x !== 1` and `y !== 1` to say nothing more.
-            let mut more = true;
-            while more {
-                more = false;
-                for earlier in before.iter().flat_map(|&j| &arms[j].made) {
-                    let Some((last, prefix)) = earlier.split_last() else {
-                        continue;
-                    };
-                    let failed = last.clone().negated_test();
-                    if !prefix.is_empty()
-                        && path.len() > prefix.len() + 1
-                        && (path[..prefix.len()].iter().zip(prefix)).all(|(a, b)| a.written_alike(b))
-                        && path[prefix.len()].written_alike(&failed)
-                    {
-                        path.remove(prefix.len());
-                        (changed, more) = (true, true);
+    let longest = (0..arms.len()).max_by_key(|&i| arms[i].tests.iter().flatten().map(atoms).sum::<usize>())?;
+    let arranged = |otherwise: usize, mut arms: Vec<Arm>, mut bodies: Vec<Vec<Stmt>>| -> Option<Vec<Stmt>> {
+        // The others in the order they're written: where the test that decides
+        // each path to them, its last, or what they do first is.
+        let written = |i: usize| {
+            let tests = arms[i].tests.iter().filter_map(|tests| written_at(tests.last()?));
+            tests.chain(first_written(&bodies[i])).min().unwrap_or(u32::MAX)
+        };
+        let mut order: Vec<usize> = (0..arms.len()).filter(|&i| i != otherwise).collect();
+        order.sort_by_key(|&i| (written(i), i));
+        // What an arm before it in the chain says of each path to it, where
+        // it failed: a path through that arm's own tests up to its last, then
+        // that last failing, `n >= 1 && !(a || b) && n === 2`, needs no more of
+        // that last than that the chain got past that arm, `n === 2` once its
+        // run of tests of `n` reads as one (#221). Of the tests as the tree
+        // makes them, each path's then `simplified`.
+        for k in 0..order.len() {
+            let (before, at) = order.split_at(k);
+            let i = at[0];
+            let mut made = arms[i].made.clone();
+            let mut changed = false;
+            for path in &mut made {
+                // Each earlier path's own failing, as long as one says more:
+                // `(a, b)`'s paths `[n >= 1, x !== 1, y === 1]` and `[n >= 1, x
+                // === 1]` leave `x !== 1` and `y !== 1` to say nothing more.
+                let mut more = true;
+                while more {
+                    more = false;
+                    for earlier in before.iter().flat_map(|&j| &arms[j].made) {
+                        let Some((last, prefix)) = earlier.split_last() else {
+                            continue;
+                        };
+                        let failed = last.clone().negated_test();
+                        if !prefix.is_empty()
+                            && path.len() > prefix.len() + 1
+                            && (path[..prefix.len()].iter().zip(prefix)).all(|(a, b)| a.written_alike(b))
+                            && path[prefix.len()].written_alike(&failed)
+                        {
+                            path.remove(prefix.len());
+                            (changed, more) = (true, true);
+                        }
                     }
                 }
             }
+            if changed
+                && let Some(tests) = (made.iter())
+                    .map(|path| Some(present_said(simplified(path)?, &valued)))
+                    .collect::<Option<Vec<_>>>()
+            {
+                arms[i].tests = tests;
+            }
         }
-        if changed
-            && let Some(tests) = (made.iter())
-                .map(|path| Some(present_said(simplified(path)?, &valued)))
-                .collect::<Option<Vec<_>>>()
+        // A tree whose guard calls: what it does each way its tests come out,
+        // which the chain must do too, as `Model` tells (#221).
+        let model = match calls.is_empty() {
+            true => None,
+            false => Some(Model::of(&arms, &calls, told.guards)?),
+        };
+        let mut steps: Vec<(usize, Expr)> = Vec::new();
+        for &i in &order {
+            // Its patterns in the order they're written, `'0'..='9' | '.'`; one
+            // whose test is where the whole `|` is, after those it holds.
+            // Of a tree that calls, each path as the tree tests it, which
+            // `Model::fewest` reads as few tests as tell.
+            let mut paths = match &model {
+                Some(_) => arms[i].made.iter().filter_map(|path| simplified(path)).collect(),
+                None => arms[i].tests.clone(),
+            };
+            let spans: Vec<js::Span> = paths.iter().filter_map(|t| t.last()).map(|t| t.span).collect();
+            paths.sort_by_key(|tests| {
+                let span = tests.last().map(|t| t.span).unwrap_or_default();
+                let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
+                (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
+            });
+            let test = match &model {
+                Some(model) => model.fewest(i, &steps, paths)?,
+                None => factored(paths),
+            };
+            steps.push((i, test));
+        }
+        if let Some(model) = &model
+            && !model.kept(&steps, otherwise)
         {
-            arms[i].tests = tests;
+            return None;
         }
-    }
-    // A tree whose guard calls: what it does each way its tests come out,
-    // which the chain must do too, as `Model` tells (#221).
-    let model = match calls.is_empty() {
-        true => None,
-        false => Some(Model::of(&arms, &calls, told.guards)?),
-    };
-    let mut steps: Vec<(usize, Expr)> = Vec::new();
-    for &i in &order {
-        // Its patterns in the order they're written, `'0'..='9' | '.'`; one
-        // whose test is where the whole `|` is, after those it holds.
-        // Of a tree that calls, each path as the tree tests it, which
-        // `Model::fewest` reads as few tests as tell.
-        let mut paths = match &model {
-            Some(_) => arms[i].made.iter().filter_map(|path| simplified(path)).collect(),
-            None => arms[i].tests.clone(),
+        let mut chain: Option<Vec<Stmt>> = match std::mem::take(&mut bodies[otherwise]) {
+            body if body.is_empty() => None,
+            body => Some(body),
         };
-        let spans: Vec<js::Span> = paths.iter().filter_map(|t| t.last()).map(|t| t.span).collect();
-        paths.sort_by_key(|tests| {
-            let span = tests.last().map(|t| t.span).unwrap_or_default();
-            let holds = spans.iter().any(|s| *s != span && span.lo <= s.lo && s.hi <= span.hi);
-            (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))
-        });
-        let test = match &model {
-            Some(model) => model.fewest(i, &steps, paths)?,
-            None => factored(paths),
+        // Of a tree that calls, each test read alike once: `Model::fewest`
+        // reads no more than tells, and a test it makes again, `n >= 1` of
+        // `[1, ..]`'s arm and `[n, ..] if f(*n)`'s, is the pattern's.
+        let count = |tests: &mut dyn Iterator<Item = &Expr>| match &model {
+            Some(_) => distinct(tests),
+            None => tests.map(atoms).sum(),
         };
-        steps.push((i, test));
-    }
-    if let Some(model) = &model
-        && !model.kept(&steps, otherwise)
-    {
-        return None;
-    }
-    let mut chain: Option<Vec<Stmt>> = match std::mem::take(&mut bodies[otherwise]) {
-        body if body.is_empty() => None,
-        body => Some(body),
+        let tests_made = count(&mut steps.iter().map(|(_, test)| test));
+        for (k, (i, test)) in steps.into_iter().enumerate().rev() {
+            let then = std::mem::take(&mut bodies[i]);
+            // The chain's first `if` where the block is, of one MIR made where
+            // its tree's first `if` is (`made_where`), so what's written before
+            // the tree, `// c \n if a || b {`, is before it, not past its `{`;
+            // an `else if` where its arm's code is, a comment before the arm
+            // that code's (ADR 0444, amended).
+            let span = match k {
+                0 => made_where(block, tree),
+                _ => then.first().map(|s| s.span).unwrap_or_default(),
+            };
+            chain = Some(vec![StmtKind::If(test, then, chain).at(span)]);
+        }
+        // Tests no longer than the tree's, or the tree reads better.
+        let written = count(&mut tested.iter().map(|(_, test)| test));
+        if tests_made > written {
+            return None;
+        }
+        Some(chain.unwrap_or_default())
     };
-    // Of a tree that calls, each test read alike once: `Model::fewest`
-    // reads no more than tells, and a test it makes again, `n >= 1` of
-    // `[1, ..]`'s arm and `[n, ..] if f(*n)`'s, is the pattern's.
-    let count = |tests: &mut dyn Iterator<Item = &Expr>| match &model {
-        Some(_) => distinct(tests),
-        None => tests.map(atoms).sum(),
-    };
-    let tests_made = count(&mut steps.iter().map(|(_, test)| test));
-    for (k, (i, test)) in steps.into_iter().enumerate().rev() {
-        let then = std::mem::take(&mut bodies[i]);
-        // The chain's first `if` where the block is, of one MIR made where
-        // its tree's first `if` is (`made_where`), so what's written before
-        // the tree, `// c \n if a || b {`, is before it, not past its `{`;
-        // an `else if` where its arm's code is, a comment before the arm
-        // that code's (ADR 0444, amended).
-        let span = match k {
-            0 => made_where(block, tree),
-            _ => then.first().map(|s| s.span).unwrap_or_default(),
-        };
-        chain = Some(vec![StmtKind::If(test, then, chain).at(span)]);
-    }
-    // Tests no longer than the tree's, or the tree reads better.
-    let written = count(&mut tested.iter().map(|(_, test)| test));
-    if tests_made > written {
-        return None;
-    }
+    let chain = match empty.as_slice() {
+        [only] => arranged(*only, arms.clone(), bodies.clone()).or_else(|| {
+            let goes_on = *only != longest && !after.is_empty();
+            goes_on.then(|| arranged(longest, arms, bodies)).flatten()
+        }),
+        _ => arranged(longest, arms, bodies),
+    }?;
     let mut stmts: Vec<Stmt> = decls.to_vec();
-    stmts.extend(chain.unwrap_or_default());
+    stmts.extend(chain);
     Some((stmts, takes_rest))
 }
 
@@ -474,6 +490,7 @@ fn alternatives(paths: &mut Vec<Vec<Expr>>) {
 }
 
 /// Leaves that do one thing, and the tests of each path to them.
+#[derive(Clone)]
 struct Arm<'s> {
     tests: Vec<Vec<Expr>>,
     /// Each path's tests as the tree makes them, before `simplified`.
@@ -1309,190 +1326,5 @@ fn meets(hi: &Option<(Value, bool)>, lo: &Option<(Value, bool)>) -> bool {
             Ordering::Equal => *hi_in || *lo_in,
             Ordering::Greater => false,
         },
-    }
-}
-
-/// `bb7: { .. x = true; break bb7; .. x = false; }`, a block MIR made of a
-/// value, its last statement a constant it gives where nothing else does,
-/// each other written just before a `break` of it: `x = false;` first, as
-/// a person gives a default, the block then left where it ends. Only
-/// where nothing tells it was given first (ADR 0364, amended): each other
-/// way out of the block gives its own; and what the block does before
-/// its end can't see it, the variable declared in the block's list and
-/// named by nothing since, or neither runs code nor throws nor leaves
-/// another way.
-pub(super) fn default_values(stmts: &mut Vec<Stmt>) {
-    let mut i = 0;
-    while i < stmts.len() {
-        if let StmtKind::Labeled(label, body) = &stmts[i].kind
-            && crate::lower::mir::is_block_label(label)
-            && let Some((last, rest)) = body.split_last()
-            && let StmtKind::Assign(target, value) = &last.kind
-            && let ExprKind::Var(x) = &target.kind
-            && value.is_constant()
-            && let Some(given) = (Given {
-                x,
-                label,
-                local: declared_unread(&stmts[..i], x),
-            })
-            .before_breaks(rest, &Inside::default())
-            && js::mentions_in(rest, x) == given
-        {
-            let StmtKind::Labeled(_, body) = &mut stmts[i].kind else {
-                unreachable!("matched")
-            };
-            let last = body.pop().expect("split");
-            stmts.insert(i, last);
-            i += 1;
-        }
-        i += 1;
-    }
-}
-
-/// Whether `x` is declared in `before`, `let x = ..;`, and named by nothing
-/// since: what can see it is only what follows in the list, which a
-/// way out of it never reaches.
-fn declared_unread(before: &[Stmt], x: &str) -> bool {
-    (before.iter())
-        .rposition(|s| matches!(&s.kind, StmtKind::Let(name, _) if name == x))
-        .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)
-}
-
-/// A value `x` a block labeled `label` gives last, as `default_values`
-/// asks of what comes before it.
-struct Given<'a> {
-    x: &'a str,
-    label: &'a str,
-    /// Whether `x` is declared in the block's list, named by nothing
-    /// since (`declared_unread`): nothing but the block sees it before it
-    /// ends, nor once it's left another way.
-    local: bool,
-}
-
-/// Where in the block a statement is: in which of its own labeled
-/// statements, and in a loop or a `switch` of its own, which a `break` of
-/// no label leaves, or a loop, which a `continue` does.
-#[derive(Clone, Default)]
-struct Inside<'s> {
-    labels: Vec<&'s str>,
-    in_loop: bool,
-    in_switch: bool,
-}
-
-impl<'s> Inside<'s> {
-    fn labeled(&self, label: Option<&'s str>, is_loop: bool, is_switch: bool) -> Inside<'s> {
-        let mut inside = self.clone();
-        inside.labels.extend(label);
-        inside.in_loop |= is_loop;
-        inside.in_switch |= is_switch;
-        inside
-    }
-
-    /// Whether a jump to `label`, or of no label, stays in the block.
-    fn holds(&self, label: Option<&str>, is_continue: bool) -> bool {
-        match label {
-            Some(l) => self.labels.contains(&l),
-            None if is_continue => self.in_loop,
-            None => self.in_loop || self.in_switch,
-        }
-    }
-}
-
-impl Given<'_> {
-    /// How many times `stmts` assign `x` just before a `break` of the
-    /// block, what it's given read nowhere else: `None` where another way
-    /// out of the block gives none (a `break` of it after anything else,
-    /// and, of a variable that isn't local, a `return`, a `throw` or a
-    /// jump past it), or, of one that isn't, where what runs before may
-    /// see it given: code of the program's that it calls, or what throws.
-    fn before_breaks<'s>(&self, stmts: &'s [Stmt], inside: &Inside<'s>) -> Option<usize> {
-        let quiet = |e: &Expr| self.local || !e.may_throw();
-        let gives = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == self.x));
-        let mut given = 0;
-        for (k, stmt) in stmts.iter().enumerate() {
-            given += match &stmt.kind {
-                StmtKind::Assign(_, value) if gives(stmt) => {
-                    let breaks =
-                        matches!(stmts.get(k + 1).map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == self.label);
-                    if !breaks || js::mentions_in(&[StmtKind::Expr(value.clone()).at(stmt.span)], self.x) > 0 {
-                        return None;
-                    }
-                    if !quiet(value) {
-                        return None;
-                    }
-                    1
-                }
-                // A way out of the block that gives no value of its own.
-                StmtKind::Break(Some(l)) if l == self.label => {
-                    if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {
-                        return None;
-                    }
-                    0
-                }
-                StmtKind::Break(label) | StmtKind::Continue(label) => {
-                    let is_continue = matches!(stmt.kind, StmtKind::Continue(_));
-                    if !self.local && !inside.holds(label.as_deref(), is_continue) {
-                        return None;
-                    }
-                    0
-                }
-                StmtKind::Return(_) | StmtKind::Throw(_) if !self.local => return None,
-                StmtKind::If(test, a, b) => {
-                    if !quiet(test) {
-                        return None;
-                    }
-                    self.before_breaks(a, inside)? + b.as_deref().map_or(Some(0), |b| self.before_breaks(b, inside))?
-                }
-                StmtKind::Labeled(label, body) => {
-                    self.before_breaks(body, &inside.labeled(Some(label), false, false))?
-                }
-                StmtKind::While { label, cond, body } => {
-                    if !quiet(cond) {
-                        return None;
-                    }
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
-                }
-                StmtKind::For {
-                    label,
-                    start,
-                    test,
-                    step,
-                    body,
-                    ..
-                } => {
-                    if !quiet(start) || !quiet(test) || step.value().is_some_and(|v| !quiet(v)) {
-                        return None;
-                    }
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
-                }
-                // Its iterator's `next` may be the program's.
-                StmtKind::ForOf { label, body, .. } if self.local => {
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
-                }
-                StmtKind::Switch {
-                    discriminant,
-                    cases,
-                    default,
-                } => {
-                    if !quiet(discriminant) || !cases.iter().flat_map(|case| &case.values).all(&quiet) {
-                        return None;
-                    }
-                    let inside = inside.labeled(None, false, true);
-                    let mut given = 0;
-                    for body in js::case_lists(cases, default) {
-                        given += self.before_breaks(body, &inside)?;
-                    }
-                    given
-                }
-                // Of a variable from before, a `catch` or a `finally` may read it.
-                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) if self.local => {
-                    self.before_breaks(a, inside)? + self.before_breaks(b, inside)?
-                }
-                StmtKind::Function(_) | StmtKind::Directive(_) | StmtKind::Comments => 0,
-                _ if self.local || stmt.only_makes_values() => 0,
-                _ => return None,
-            };
-        }
-        Some(given)
     }
 }

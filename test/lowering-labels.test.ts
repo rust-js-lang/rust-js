@@ -811,3 +811,37 @@ pub fn create(r#type: Option<&Unknown>, mut mode: u32) -> String {
     "29 9 false",
   ]);
 });
+
+// A match's arm that does nothing between guarded arms, `"C" => {}`, isn't
+// the chain's `else` where the others' tests would then be longer than the
+// tree's: the `_` is, and that arm's test, negated, holds the arms after
+// it, as of a match that ends its function, `if (name !== "C") { .. }`, not
+// MIR's labeled block whose `break` is that arm (bb39).
+test("an arm that does nothing between guarded arms is no labeled block", async () => {
+  const dir = fixture("empty-arm-between-guards");
+  writeFileSync(join(dir, "lib.rs"), `pub fn kinds(items: &[(&str, bool)]) -> Vec<String> {
+    let mut out = Vec::new();
+    for &(name, keep) in items {
+        match name {
+            "B" if keep => continue,
+            "C" => {}
+            "D" if keep => out.push("kept d".to_string()),
+            _ => out.push(format!("other {name}")),
+        }
+        out.push(format!("tail {name}"));
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain(
+    '    if (name !== "C") {\n      if (name === "D" && keep) {\n        out.push("kept d");\n      } else {\n        out.push(`other ${name}`);\n      }\n    }\n    out.push(`tail ${name}`);\n',
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const items = [["B", true], ["B", false], ["C", true], ["D", true], ["D", false], ["E", true]];
+  expect(lib.kinds(items)).toEqual([
+    "other B", "tail B", "tail C", "kept d", "tail D", "other D", "tail D", "other E", "tail E",
+  ]);
+});

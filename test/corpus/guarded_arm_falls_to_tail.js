@@ -59,18 +59,15 @@ function kinds(items) {
     if (name === "A") {
       out.push("a");
     } else {
-      bb39: {
-        if (name === "B") {
-          if (keep) {
-            continue;
-          }
-        } else if (name === "C") {
-          break bb39;
-        } else if (name === "D" && keep) {
+      if (name === "B" && keep) {
+        continue;
+      }
+      if (name !== "C") {
+        if (name === "D" && keep) {
           out.push("kept d");
-          break bb39;
+        } else {
+          out.push(`other ${name}`);
         }
-        out.push(`other ${name}`);
       }
       out.push(`tail ${name}`);
     }

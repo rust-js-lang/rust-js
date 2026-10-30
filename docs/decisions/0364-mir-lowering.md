@@ -457,3 +457,63 @@ native Rust, and mutations `present-unsaid`,
 `present-said-of-any-tree`, `present-said-past-the-block-unseen`
 (`mir/tidy/decisions.ts`). No mutation of `Switch::valued`'s part: each
 constant MIR makes a `===` of is one.
+
+## Amendment: an arm that does nothing between others needn't be the `else` (bb39, 2026-10-30)
+
+```rust
+match name {
+    "B" if keep => continue,
+    "C" => {}
+    "D" if keep => out.push("kept d".to_string()),
+    _ => out.push(format!("other {name}")),
+}
+out.push(format!("tail {name}"));
+```
+
+kept MIR's block, `bb39: { if (name === "B") { if (keep) { continue; } }
+else if (name === "C") { break bb39; } else if (name === "D" && keep) {
+..; break bb39; } out.push(..); }`, a label the Rust lacks. `decisions`
+made the arm that does nothing, `"C"`, the chain's `else`, so the `_`
+arm needed a test of each path to it, `(name === "B" && !keep) || ..`,
+more tests than the tree's, and the block stayed.
+
+Now, where that chain has more tests than the tree, and the block goes on
+to something, `decisions` tries the arm whose test is longest as the
+`else` (`arranged`), as of any other tree, the arm that does nothing an
+`if` of an empty `then` in its place, which reads as its test negated
+around the arms after it, as a `match` that ends its function already
+reads:
+
+```js
+if (name === "B" && keep) {
+  continue;
+}
+if (name !== "C") {
+  if (name === "D" && keep) {
+    out.push("kept d");
+  } else {
+    out.push(`other ${name}`);
+  }
+}
+out.push(`tail ${name}`);
+```
+
+Not where the block ends a loop's turn, `"SCRIPT" | "STYLE" => continue,
+"LINK" if keep => continue, _ => {}` last: that tree is upstream's
+`switch` of `continue`s (rd184, ADR 0636), which a negated chain would
+take. A `match` of symbols in an `if` of their `Some` whose `_` breaks
+the loop, and whose arms go on to what follows (`levels` of
+`test/lowering-switch-symbols.test.ts`'s runtime test), still keeps its
+block: its inner block's chain has more tests than its tree, as symbols
+are no values `simplified` reads apart (`s !== A && s === C`), and the
+outer block's tree can't hold the inner block.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same pure tests,
+each value taking the same arm.
+
+Held by `test/lowering-labels.test.ts` ("an arm that does nothing between
+guarded arms is no labeled block", run in Node),
+`test/corpus/guarded_arm_falls_to_tail.rs`'s `kinds` against native Rust,
+and the mutations `empty-arm-else-only` and `empty-arm-of-a-turn-negated`
+(`mir/tidy/decisions.ts`). `default_values` and its mutations moved to
+`decisions/defaults.rs` (`decisions/defaults.ts`), the file at its cap.
