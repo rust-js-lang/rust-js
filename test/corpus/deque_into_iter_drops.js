@@ -87,7 +87,7 @@ function main() {
   console.log(`first ${first != null ? map(first) : 0}`);
 
   const skip = (l) => l[0] < 5;
-  const skipped = Array.from(
+  const skipped = $collectDropping(
     $lazySkipWhile($closing($iter(deque([1, 8, 2])), $dropEach(loudDrop_drop)), (item) => {
       if (skip(item)) {
         loudDrop_drop(item);
@@ -95,6 +95,8 @@ function main() {
       }
       return false;
     }),
+    loudDrop_drop,
+    true,
   );
   console.log(`skipped to ${skipped.length}`);
   for (const item of skipped) {

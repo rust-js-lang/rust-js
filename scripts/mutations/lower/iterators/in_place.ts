@@ -71,4 +71,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "callbacks-uncounted",
+    breaks: "a chain's callbacks its JS shows are counted none, so a collect of every chain with a closure that may panic is taken to hide one, `$collectDropping` where `Array.from` was (#423)",
+    file: "src/lower/iterators/in_place.rs",
+    find: "            js::ExprKind::Arrow(..) => 1,\n",
+    replace: "            js::ExprKind::Arrow(..) => 0,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
+    snapshots: true,
+  },
 ];

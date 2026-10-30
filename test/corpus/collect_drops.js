@@ -36,7 +36,7 @@ function main() {
   const w = [["x"], ["y"], ["z"]];
   try {
     const skip = (n) => n[0] !== "y";
-    const rest = Array.from(
+    const rest = $collectDropping(
       $lazySkipWhile($closing($iter(w), $dropEach(noisyDrop_drop)), (item) => {
         if (skip(item)) {
           noisyDrop_drop(item);
@@ -44,6 +44,8 @@ function main() {
         }
         return false;
       }),
+      noisyDrop_drop,
+      true,
     );
     console.log(`rest ${rest.length}`);
 
@@ -53,7 +55,7 @@ function main() {
     try {
       try {
         const skip = () => true;
-        const none = Array.from(
+        const none = $collectDropping(
           $lazySkipWhile($closing($iter(old), $dropEach(noisyDrop_drop)), (item) => {
             if (skip(item)) {
               noisyDrop_drop(item);
@@ -61,6 +63,7 @@ function main() {
             }
             return false;
           }),
+          noisyDrop_drop,
         );
         console.log(`none ${none.length} ${fragments.length}`);
 
@@ -74,7 +77,7 @@ function main() {
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 
           const keep = (n) => n[0] !== "p2";
-          const checked = Array.from(
+          const checked = $collectDropping(
             $closing($iter([["p1"], ["p2"], ["p3"]]), $dropEach(noisyDrop_drop))
               .filter((item) => {
                 if (keep(item)) {
@@ -87,6 +90,7 @@ function main() {
                 console.log(`map ${n[0]}`);
                 return n;
               }),
+            noisyDrop_drop,
           );
           console.log(`checked ${checked.length}`);
           console.log("end");

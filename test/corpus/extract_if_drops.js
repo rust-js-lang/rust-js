@@ -3,6 +3,7 @@
 import {
   $BTreeMap,
   $cmp,
+  $collectDropping,
   $extendMap,
   $extractIf,
   $iter,
@@ -26,7 +27,11 @@ function ids(v) {
 function collected() {
   const v = [[1], [2], [3], [4], [5]];
   try {
-    const odd = Array.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1));
+    const odd = $collectDropping(
+      Iterator.from($extractIf(v, 0, undefined, (l) => l[0] % 2 === 1)),
+      loudDrop_drop,
+      true,
+    );
     try {
       const value = ids(odd);
       const value$1 = ids(v);

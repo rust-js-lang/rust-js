@@ -33,7 +33,7 @@ function main() {
   console.log(`${kept.length}`);
   const value = [[[3], [4]]];
   try {
-    const firsts = Array.from(
+    const firsts = $collectDropping(
       $closing($iter(value), (intoIter) => {
         for (const item of intoIter) {
           for (const item$1 of item) {
@@ -41,6 +41,11 @@ function main() {
           }
         }
       }).map((arg0) => first(arg0, loudDrop_drop)),
+      (option) => {
+        if (option != null) {
+          loudDrop_drop(option);
+        }
+      },
     );
     console.log(`${firsts.length}`);
     for (const item of firsts) {

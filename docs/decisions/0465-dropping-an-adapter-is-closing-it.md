@@ -623,3 +623,26 @@ Held by `panic_in_own_next_drops.rs` against native Rust and the mutations
 `flat-map-closed-as-it-throws` (`runtime/flat_map.ts`). It's also what now
 reaches `last-throw-keeps-last` and `fold-dropping-step-unwinds-nothing`,
 which survived on main.
+
+## Amendment: a stage a variable holds (2026-10-30, #423)
+
+A collect's `chain_may_throw` reads the chain's JS. A stage a variable holds,
+`ds(..).into_iter().inspect(boom).zip(ds(..)).collect()`'s, spilled for the
+second source's call, was taken to throw nothing: native drops 2, 3, 12,
+13, 0, 10, 1, 11, JS 2 alone. Results change, so Rust's behavior is kept
+(ADR 0262):
+- **A collect whose iterator's type has more closures and functions that
+  may panic** (`panicking_steps`: each but one of the crate's that never
+  unwinds, ADR 0902, or a constructor) **than its JS shows callbacks**
+  (`callbacks_in`) **hides a stage**, and is taken to throw, as nothing
+  shows it can't. A collect of a chain still a variable at lowering, tidy's
+  to inline later, is so too.
+- **A compiled std struct's collect by its fold comes before that**, its
+  own unwinding `folded_unwinding`'s, so a `zip`'s `SpecFold` stays its own
+  (#380).
+
+5 corpus cases read so, 17 lines more, a `$collectDropping` where an
+`Array.from` was. Held by `panic_part_way_drops.rs`'s `zip of a stage`
+against native Rust and the mutations `hidden-stage-unseen` and
+`folded-collect-after-unwinding` (`lower/mir/iter/collect.ts`) and
+`callbacks-uncounted` (`lower/iterators/in_place.ts`).

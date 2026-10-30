@@ -3,6 +3,7 @@
 import {
   $cmp,
   $cmpItems,
+  $collectDropping,
   $debugStr,
   $downgrade,
   $eq,
@@ -234,7 +235,7 @@ function main() {
   }
   let lists;
   try {
-    lists = Array.from(map);
+    lists = $collectDropping(map, $rcDrop);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);

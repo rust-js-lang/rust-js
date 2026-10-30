@@ -155,6 +155,26 @@ pub(in crate::lower) fn chain_may_throw(it: &Expr) -> bool {
     })
 }
 
+/// How many callbacks a chain, `it`, gives its stages, as its JS shows them:
+/// each function it's given, an arrow or a function's name (#423).
+pub(in crate::lower) fn callbacks_in(it: &Expr) -> usize {
+    let js::ExprKind::Call(callee, args) = &it.kind else {
+        return 0;
+    };
+    let own = match &callee.kind {
+        js::ExprKind::Member(object, _) => callbacks_in(object),
+        _ => 0,
+    };
+    own + (args.iter())
+        .map(|arg| match &arg.kind {
+            js::ExprKind::Arrow(..) => 1,
+            js::ExprKind::Var(_) if arg.facts.has(js::Known::Item) => 1,
+            js::ExprKind::Call(..) => callbacks_in(arg),
+            _ => 0,
+        })
+        .sum::<usize>()
+}
+
 /// Whether a chain, `it`, steps an owning source closed to drop what it
 /// hasn't given, `$closing(..)`.
 pub(in crate::lower) fn closes_a_source(it: &Expr) -> bool {

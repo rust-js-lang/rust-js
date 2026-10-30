@@ -26,6 +26,7 @@ import {
   $lazyScan,
   $lazySkipWhile,
   $lazyTakeWhile,
+  $lazyZip,
   $lent,
   $mapFrom,
   $maxByKey,
@@ -668,6 +669,42 @@ function main() {
       dDrop_drop(item[1]);
     }
   });
+  run("zip of a stage", () => {
+    function inspect$1(d) {
+      boom(d, 222);
+    }
+    const inspect = $closing($iter(ds({ start: 220, end: 224 })), $dropEach(dDrop_drop)).map(
+      (item) => {
+        try {
+          inspect$1(item);
+        } catch (error) {
+          dDrop_drop(item);
+          throw error;
+        }
+        return item;
+      },
+    );
+    let tmp;
+    try {
+      tmp = ds({ start: 230, end: 234 });
+    } catch (error) {
+      inspect.return();
+      throw error;
+    }
+    const x = $collectDropping(
+      $lazyZip(inspect, $closing($iter(tmp), $dropEach(dDrop_drop)), dDrop_drop),
+      (value) => {
+        dDrop_drop(value[0]);
+        dDrop_drop(value[1]);
+      },
+      true,
+    );
+    console.log(`${x.length}`);
+    for (const item of x) {
+      dDrop_drop(item[0]);
+      dDrop_drop(item[1]);
+    }
+  });
   run("btreeset", () => {
     function inspect(d) {
       boom(d, 22);
@@ -794,7 +831,7 @@ function main() {
     const x = $collectDropping(
       $closing($iter(ds({ start: 70, end: 74 })), $dropEach(dDrop_drop))
         .map((d) => {
-          let d$66$live = true;
+          let d$69$live = true;
           try {
             boom(d, 72);
           } catch (error) {
@@ -805,10 +842,10 @@ function main() {
           if (d[0] === 71) {
             result = undefined;
           } else {
-            d$66$live = false;
+            d$69$live = false;
             result = [d, 1n];
           }
-          if (d$66$live) {
+          if (d$69$live) {
             dDrop_drop(d);
           }
           return result;

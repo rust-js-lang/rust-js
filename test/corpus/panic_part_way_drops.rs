@@ -231,6 +231,16 @@ fn main() {
             .collect();
         println!("{}", x.len());
     });
+    run("zip of a stage", || {
+        let x: Vec<(D, D)> = ds(220..224)
+            .into_iter()
+            .inspect(|d| {
+                boom(d, 222);
+            })
+            .zip(ds(230..234))
+            .collect();
+        println!("{}", x.len());
+    });
     run("btreeset", || {
         let x: BTreeSet<D> = ds(20..24)
             .into_iter()

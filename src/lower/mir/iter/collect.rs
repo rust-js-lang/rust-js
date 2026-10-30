@@ -258,7 +258,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         iter_ty: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Option<UnwindingCollect>> {
-        if !crate::lower::iterators::chain_may_throw(it) {
+        // Or of a chain whose JS hides a stage its type has, a variable
+        // holding it: more of its closures that may panic than its JS shows
+        // callbacks, each taken to throw, as nothing shows it can't (#423).
+        let hidden = iter_ty.is_some_and(|ty| self.panicking_steps(ty) > crate::lower::iterators::callbacks_in(it));
+        if !crate::lower::iterators::chain_may_throw(it) && !hidden {
             return Ok(None);
         }
         let drop = match item {
@@ -277,16 +281,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// function of its type's, each but one of the crate's functions that
     /// never unwinds (ADR 0902) or a constructor (#423).
     pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
-        iter_ty
-            .walk()
-            .filter_map(|part| part.as_type())
-            .any(|part| match *part.kind() {
+        self.panicking_steps(iter_ty) > 0
+    }
+
+    /// How many of the closures and functions of `iter_ty`'s, its stages',
+    /// may panic: each but one of the crate's that never unwinds (ADR 0902)
+    /// or a constructor.
+    fn panicking_steps(&self, iter_ty: Ty<'tcx>) -> usize {
+        let mut seen = std::collections::HashSet::new();
+        (iter_ty.walk().filter_map(|part| part.as_type()))
+            .filter(|part| match *part.kind() {
                 ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {
-                    !self.krate.never_unwinding.contains(&def_id)
+                    seen.insert(def_id)
+                        && !self.krate.never_unwinding.contains(&def_id)
                         && !matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Ctor(..))
                 }
                 _ => false,
             })
+            .count()
     }
 
     /// `$foldToArray`'s arguments, `it` folded into a `Vec` of `item`s:
@@ -389,21 +401,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // exhausted at its last (#414).
             let folded = (self.compiled_struct_at(iter_ty, span) || self.steps_lent_inclusive(iter_ty))
                 && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            // By its fold, which drops what it holds as it unwinds itself
+            // (`folded_unwinding`), first.
             match self.mapped_range(&it, iter_ty, item) {
                 Some(items) => items,
-                None if let Some(unwinding) = self.unwinding_collect(&it, output, item, Some(iter_ty), span)? => {
-                    unwinding.collected(it)
-                }
                 None if folded && self.steps_lent_inclusive(iter_ty) => {
                     let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
                     Expr::call_helper("$foldToArray", args)
                 }
+                None if folded && self.collected_items(&it, iter_ty).is_none() => {
+                    let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
+                    Expr::call_helper("$foldToArray", args)
+                }
+                None if let Some(unwinding) = self.unwinding_collect(&it, output, item, Some(iter_ty), span)? => {
+                    unwinding.collected(it)
+                }
                 None => match self.collected_items(&it, iter_ty) {
                     Some(items) => items,
-                    None if folded => {
-                        let args = self.folded_unwinding(it, output, item, iter_ty, span)?;
-                        Expr::call_helper("$foldToArray", args)
-                    }
                     None => Expr::collected(it),
                 },
             }
