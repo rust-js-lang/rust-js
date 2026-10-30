@@ -280,10 +280,11 @@ What keeps them there:
   by the name of its copy of it: on CI, where one built alone took 28 s, a
   build of many takes about as long as one. `--batch=1` builds each alone.
   A build of many that fails is built again as two halves, so a mutation
-  that doesn't build alone says so. The controls, each set of tests run
-  first as the compiler is, run as many at once as there are cores, and
-  each run stops at its first failure (`bun test --bail`), which is the
-  answer (ADR 1031, amended).
+  that doesn't build alone says so. The controls run each file the
+  mutations name once as the compiler is and once broken, read from its
+  JUnit report; a build's mutants test on every core (`--tests=N`) while
+  the next builds; and each mutant's run stops at its first failure
+  (`bun test --bail`), which is the answer (ADR 1031, amended).
 
 ## Keeping the loop fast
 

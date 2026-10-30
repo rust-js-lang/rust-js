@@ -80,3 +80,23 @@ A run whose first failure is a timeout stops there, and is inconclusive,
 where a later test might have caught it: an inconclusive mutant fails the
 run, as before, so none passes unseen. The sample of 24 ran in 24 s,
 against 76 s, each caught as before.
+
+## Amendment: builds and tests apart, the controls one run of each file
+
+What a run waited on next were its own steps:
+
+- **A worker tested its build's mutants one after another** before it
+  built again, so four workers kept four cores testing. Now a build's
+  compiler is kept once, each mutant's name a hard link to it, and its
+  tests run while the worker builds the next: as many at once as there are
+  cores (`--tests=N`), at most `--jobs` builds.
+- **Each set of tests was run twice as a process of its own**, 3,274 sets,
+  each paying `bun test`'s start and its file's setup. Now each file the
+  sets name is run once as the compiler is and once with one that compiles
+  nothing (the corpus in parts, as the suite runs it), its JUnit report
+  read for each test's result by name, and each set is answered from
+  those: it runs something, all of it passes, and with the broken compiler
+  some of it fails. `test/ci.test.ts` holds the reading of a report.
+
+A shard of 502 took 532 s, against 969 s, on a Mac loaded by two other
+builds, with the same verdicts: 499 caught, the same 3 survived.

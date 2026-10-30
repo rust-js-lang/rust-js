@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
-import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, site, type Sited, testBlocks } from "../scripts/mutations";
+import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -209,6 +209,29 @@ test("a build of many runs as each mutation's own build where it's chosen, and a
   // One mutation is a build of its own, as it was.
   const alone = schema([{ mutation: sumOff }], readProgram);
   expect(alone instanceof Map && alone.get("src/main.rs")).toBe(program.replace("total += value;", "total += value + 1;"));
+});
+
+// The controls (ADR 1031): each set a mutation names answered from one run
+// of each of its files, every test's result by name in its JUnit report.
+test("a mutation's set of tests is its files and its pattern", () => {
+  expect(testSet(["test/corpus.test.ts", "-t", "^a.rs$"])).toEqual({ files: ["test/corpus.test.ts"], pattern: "^a.rs$" });
+  expect(testSet(["test/a.test.ts", "test/b.test.ts"])).toEqual({ files: ["test/a.test.ts", "test/b.test.ts"], pattern: undefined });
+});
+
+test("a set passes where each test it names passed, runs nothing where none ran, and fails otherwise", () => {
+  const junit = `<testsuites><testsuite name="test/a.test.ts">
+    <testcase name="adds &amp; keeps" classname="" time="0" />
+    <testcase name="drops" classname="lists" time="0"><failure message="x" /></testcase>
+    <testcase name="skipped one" classname="" time="0"><skipped /></testcase>
+  </testsuite></testsuites>`;
+  const results = testResults(junit);
+  expect([...results]).toEqual([["adds & keeps", true], ["lists drops", false]]);
+  const ran = new Map([["test/a.test.ts", results]]);
+  expect(setPasses({ files: ["test/a.test.ts"], pattern: "adds" }, ran)).toBe(true);
+  expect(setPasses({ files: ["test/a.test.ts"], pattern: "drops" }, ran)).toBe(false);
+  expect(setPasses({ files: ["test/a.test.ts"] }, ran)).toBe(false);
+  expect(setPasses({ files: ["test/a.test.ts"], pattern: "skipped" }, ran)).toBeUndefined();
+  expect(setPasses({ files: ["test/b.test.ts"] }, ran)).toBeUndefined();
 });
 
 test("a test file's tests are their comments and bodies", () => {

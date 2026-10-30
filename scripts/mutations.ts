@@ -16,12 +16,12 @@
 // (AGENTS.md).
 
 import { createHash } from "node:crypto";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
-import { shard, shardArg } from "./shard";
+import { caseParts, shard, shardArg } from "./shard";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 
@@ -478,8 +478,14 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
 // one compiler (`main`).
 let testRuns = 0;
 
-/** How `tests` do with `compiler`, what they printed, and how many ran. */
-async function test(tests: string[], compiler: string, snapshots = false): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
+/** How `tests` do with `compiler`, what they printed, and how many ran:
+ * to its first failure, or, `bail` false, each of them, with `env` besides. */
+async function test(
+  tests: string[],
+  compiler: string,
+  snapshots = false,
+  { bail = true, env = {} }: { bail?: boolean; env?: Record<string, string> } = {},
+): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
   // nearly any change to the compiler, a mutation's or not. One that only
   // changes how the JS reads is checked by its snapshots.
@@ -493,7 +499,8 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   const p = await withRuntime(compiler, () =>
     // The first failure is the answer: a mutant is caught by any test, and
     // a control passes only where none fails (ADR 1031).
-    run([process.execPath, "test", "--bail", ...tests], root, testTimeout, {
+    run([process.execPath, "test", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
+      ...env,
       RUST_JS_COMPILER: compiler,
       // Which mutation of a build of many it is, for a test that runs a
       // copy of the compiler under another name.
@@ -515,6 +522,38 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   const output = p.stdout + p.stderr;
   const { pass, fail } = summary(output);
   return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
+}
+
+/** A set of tests a mutation names, `bun test` arguments: its files, and
+ * the pattern `-t` gives, if any. */
+export function testSet(tests: string[]): { files: string[]; pattern?: string } {
+  const at = tests.indexOf("-t");
+  return { files: tests.filter((arg, i) => arg.startsWith("test/") && (at < 0 || i !== at + 1)), pattern: at >= 0 ? tests[at + 1] : undefined };
+}
+
+/** What a `bun test` run's JUnit report says of each test it ran, by its
+ * name, a `describe`'s before it: passed or not. One `-t` filtered out
+ * isn't there. */
+export function testResults(junit: string): Map<string, boolean> {
+  const text = (s: string) => s.replace(/&(lt|gt|quot|apos|amp);/g, (_, e) => ({ lt: "<", gt: ">", quot: '"', apos: "'", amp: "&" })[e as string]!);
+  const said = new Map<string, boolean>();
+  for (const [, attrs, body] of junit.matchAll(/<testcase\b([^>]*?)(?:\/>|>([\s\S]*?)<\/testcase>)/g)) {
+    if (body?.includes("<skipped")) continue;
+    const attr = (key: string) => text(attrs.match(new RegExp(`\\b${key}="([^"]*)"`))?.[1] ?? "");
+    const name = [attr("classname"), attr("name")].filter(Boolean).join(" ");
+    const passed = !body || !/<(failure|error)\b/.test(body);
+    if (said.get(name) !== false) said.set(name, passed);
+  }
+  return said;
+}
+
+/** Whether a set's tests pass, of `ran`, what each of its files' tests did
+ * by name; `undefined` where none of them ran. */
+export function setPasses(set: { files: string[]; pattern?: string }, ran: Map<string, Map<string, boolean>>): boolean | undefined {
+  // As `bun test -t` reads a name: with each `describe`'s before it.
+  const named = (name: string) => set.pattern === undefined || new RegExp(set.pattern).test(name);
+  const results = set.files.flatMap((file) => [...(ran.get(file) ?? [])].filter(([name]) => named(name)).map(([, passed]) => passed));
+  return results.length === 0 ? undefined : results.every((passed) => passed);
 }
 
 async function main() {
@@ -551,23 +590,58 @@ async function main() {
   writeFileSync(broken, "#!/bin/sh\necho 'error: rust-js compiles nothing here' >&2\nexit 101\n");
   chmodSync(broken, 0o755);
   // Each set of tests as its mutations run them, with snapshots or without,
-  // as many at once as there are cores: each a run of its own, 3,274 sets
-  // in all, they were hours of a run one after another (ADR 1031).
-  const sets = [...new Set(chosen.map((m) => [m.snapshots ? "snapshots" : "", ...m.tests].join("\0")))];
-  const problems: string[] = [];
+  // answered from one run of each file it names, each test's result by its
+  // name, as the compiler is and as one that compiles nothing: 3,274 sets'
+  // runs of their own were most of a run's time (ADR 1031). The corpus in
+  // parts, each a process, as the suite runs it; as many at once as there
+  // are cores.
+  const sets = [...new Map(chosen.map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests].join("\0"), m])).values()].map((m) => ({
+    snapshots: m.snapshots === true,
+    tests: m.tests,
+    ...testSet(m.tests),
+  }));
+  type Run = { compiler: string; snapshots: boolean; file: string; pattern?: string; part?: string };
+  const runs: Run[] = [];
+  for (const snapshots of [false, true]) {
+    const ofMode = sets.filter((set) => set.snapshots === snapshots);
+    for (const file of new Set(ofMode.flatMap((set) => set.files))) {
+      const naming = ofMode.filter((set) => set.files.includes(file));
+      const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
+      const parts = file === "test/corpus.test.ts" ? caseParts(availableParallelism()) : 1;
+      for (const compiler of [unmutated, broken]) {
+        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
+      }
+    }
+  }
+  const ran = new Map<string, Map<string, Map<string, boolean>>>();
+  const ranOf = (run: Run) => `${run.compiler}\0${run.snapshots}`;
+  let reports = 0;
   await Promise.all(
-    Array.from({ length: Math.min(availableParallelism(), sets.length) }, async () => {
-      for (let key = sets.shift(); key !== undefined; key = sets.shift()) {
-        const [mode, ...tests] = key.split("\0");
-        const control = await test(tests, unmutated, mode === "snapshots");
-        if (!control.passed || control.ran === 0) {
-          problems.push(`\`bun test ${tests.join(" ")}\` doesn't pass, or runs nothing, as the compiler is:\n${control.output.slice(-2000)}`);
-        } else if ((await test(tests, broken, mode === "snapshots")).passed) {
-          problems.push(`\`bun test ${tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
-        }
+    Array.from({ length: Math.min(availableParallelism(), runs.length) }, async () => {
+      for (let run = runs.shift(); run !== undefined; run = runs.shift()) {
+        const report = join(work, "reports", `${++reports}.xml`);
+        mkdirSync(dirname(report), { recursive: true });
+        const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
+        await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
+        const junit = existsSync(report) ? readFileSync(report, "utf8") : "";
+        rmSync(report, { force: true });
+        const byFile = ran.get(ranOf(run)) ?? new Map<string, Map<string, boolean>>();
+        ran.set(ranOf(run), byFile);
+        const results = byFile.get(run.file) ?? new Map<string, boolean>();
+        for (const [name, passed] of testResults(junit)) if (results.get(name) !== false) results.set(name, passed);
+        byFile.set(run.file, results);
       }
     }),
   );
+  const problems: string[] = [];
+  for (const set of sets) {
+    const as = setPasses(set, ran.get(`${unmutated}\0${set.snapshots}`) ?? new Map());
+    if (as !== true) {
+      problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is`);
+    } else if (setPasses(set, ran.get(`${broken}\0${set.snapshots}`) ?? new Map()) === true) {
+      problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
+    }
+  }
   if (problems.length > 0) throw new Error(problems.join("\n\n"));
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own: one for each two cores, up to four, as a build uses about two, two
@@ -594,8 +668,11 @@ async function main() {
   const waiters: (() => void)[] = [];
   const wake = () => waiters.splice(0).forEach((resume) => resume());
   const turn = () => new Promise<void>((resume) => waiters.push(resume));
+  // And as many mutants' tests at once as there are cores, `--tests=N`:
+  // a test run is a core's, where a build is two or three of them.
+  const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || availableParallelism();
   const beside = async <T>(work: () => Promise<T>) => {
-    while (alone || waitingAlone > 0) await turn();
+    while (alone || waitingAlone > 0 || testing >= testsAtOnce) await turn();
     testing++;
     try {
       return await work();
@@ -616,6 +693,9 @@ async function main() {
       wake();
     }
   };
+  // The builds' tests, which run on after their workers go on to build.
+  const buildsTesting: Promise<unknown>[] = [];
+  let builds = 0;
   const one = async (batch: Sited[], slot: number) => {
     const began = performance.now();
     const files = schema(batch, read);
@@ -630,17 +710,26 @@ async function main() {
       } else results.set(batch[0].mutation, compiler.problem);
       return;
     }
-    for (const { mutation } of batch) {
-      // Each mutation's copy is named for it, which chooses it.
+    // The build's tests run while the worker builds the next: its compiler
+    // kept once, and each mutation's name a link to it, which chooses it.
+    mkdirSync(join(work, "bin"), { recursive: true });
+    const kept = join(work, "bin", `.build-${slot}-${++builds}`);
+    cpSync(compiler, kept);
+    const tested = batch.map(async ({ mutation }) => {
       const mutant = join(work, "bin", mutation.name);
-      mkdirSync(join(work, "bin"), { recursive: true });
-      cpSync(compiler, mutant);
-      const started = performance.now();
+      rmSync(mutant, { force: true });
+      try {
+        linkSync(kept, mutant);
+      } catch {
+        cpSync(kept, mutant);
+      }
       const own = runtimeOf(mutant) !== original;
-      const { ran, output, exit } = await (own ? byItself : beside)(() => test(mutation.tests, mutant, mutation.snapshots));
+      let started = 0;
+      const { ran, output, exit } = await (own ? byItself : beside)(() => {
+        started = performance.now();
+        return test(mutation.tests, mutant, mutation.snapshots);
+      });
       took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
-      // A mutant's compiler is its tests' alone: a debug build, hundreds of
-      // megabytes, which kept for each of hundreds would fill a disk.
       rmSync(mutant, { force: true });
       // Its log, whatever it says, for what it caught or didn't.
       const log = join(work, "logs", `${mutation.name}.log`);
@@ -651,7 +740,10 @@ async function main() {
         mutation,
         verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
       );
-    }
+    });
+    // A mutant's compiler is its tests' alone: a debug build, hundreds of
+    // megabytes, which kept for each build would fill a disk.
+    buildsTesting.push(Promise.all(tested).finally(() => rmSync(kept, { force: true })));
   };
   // A worker with nothing to take waits while another's build may yet split.
   let busy = 0;
@@ -673,6 +765,7 @@ async function main() {
       }
     }),
   );
+  await Promise.all(buildsTesting);
   const rows: [Mutation, string][] = chosen.map((mutation) => [mutation, results.get(mutation) ?? "not run"]);
   for (const [mutation, result] of rows) console.log(`${mutation.name}\t${result}`);
   const summary = process.env.GITHUB_STEP_SUMMARY;
