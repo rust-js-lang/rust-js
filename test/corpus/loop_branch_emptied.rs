@@ -27,6 +27,18 @@ fn main() {
     }
     println!("{best:?}");
     scaled_or_last();
+    held_copied(Some(probe(6)));
+    held_copied(None);
+}
+
+// Of `names`' stage, an `if let` of a borrow whose binding is only copied:
+// the copy gone (`copied bindings`), the `if` with it.
+fn held_copied(best: Option<u8>) {
+    let held: Option<Vec<u8>> = best.map(|b| vec![b]);
+    if let Some(v) = &held {
+        let _copy = v;
+    }
+    println!("{held:?}");
 }
 
 fn same<T>(x: T) -> T {

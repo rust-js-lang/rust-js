@@ -144,21 +144,49 @@ pub fn is_simple(names: &[String], descriptors: &HashMap<String, Descriptor>) ->
     true
 }
 
-pub fn simple(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> bool {
-    let descriptors = (names.iter().cloned())
+// The same \`if\` of a \`continue\` before more of the loop's turn, which
+// no later pass turns back: as written too.
+pub fn counted(names: &[String], descriptors: &HashMap<String, Descriptor>) -> Option<usize> {
+    let mut count = 0;
+    for name in names {
+        let descriptor = descriptors.get(name)?;
+        if !descriptor.enumerable.unwrap_or_default() {
+            if name == "key" && descriptor.get.is_some() {
+                // A key's getter warns: skipped, not counted.
+                continue;
+            }
+            return None;
+        }
+        count += 1;
+    }
+    Some(count)
+}
+
+fn descriptors(names: &[String], enumerable: Vec<bool>, getters: Vec<bool>) -> HashMap<String, Descriptor> {
+    (names.iter().cloned())
         .zip(enumerable.into_iter().zip(getters))
         .map(|(name, (enumerable, getter))| {
             let descriptor = Descriptor { enumerable: Some(enumerable), get: getter.then_some(1) };
             (name, descriptor)
         })
-        .collect();
-    is_simple(&names, &descriptors)
+        .collect()
+}
+
+pub fn simple(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> bool {
+    is_simple(&names, &descriptors(&names, enumerable, getters))
+}
+
+pub fn count(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> Option<usize> {
+    counted(&names, &descriptors(&names, enumerable, getters))
 }
 `);
   expect(js).toContain(
     '      if ((name === "key" || name === "ref") && descriptor.get != null) {\n        // React adds key and ref getters to props objects to issue warnings.\n',
   );
   expect(js).toContain("        // so we'll special case them.\n        continue;\n      }\n      return false;\n    }\n");
+  expect(js).toContain(
+    '      if (name === "key" && descriptor.get != null) {\n        // A key\'s getter warns: skipped, not counted.\n        continue;\n      }\n',
+  );
   const simple = (names: string[], enumerable: boolean[], getters: boolean[]) => lib.simple(names as never, enumerable as never, getters as never);
   expect([
     simple(["a", "key"], [true, false], [false, true]),
@@ -166,6 +194,12 @@ pub fn simple(names: Vec<String>, enumerable: Vec<bool>, getters: Vec<bool>) -> 
     simple(["ref", "b"], [false, false], [true, true]),
     simple(["a"], [true], [false]),
   ]).toEqual([true, false, false, true]);
+  const count = (names: string[], enumerable: boolean[], getters: boolean[]) => lib.count(names as never, enumerable as never, getters as never);
+  expect([
+    count(["a", "key", "b"], [true, false, true], [false, true, false]),
+    count(["a", "key"], [true, false], [false, false]),
+    count(["ref"], [false], [true]),
+  ]).toEqual([2, undefined, undefined]);
 });
 
 // isSimpleObject itself, of the js crate's reflection: its `let … else`

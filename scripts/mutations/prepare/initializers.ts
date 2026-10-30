@@ -3,19 +3,11 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "valued-guard-unseen",
-    breaks: "an exported thread-local of `if t { Some(f) } else { None }` stays a closure called where it's made, `(() => { if (t) return f; })()` (ADR 0870, amended)",
-    file: "src/prepare/initializers.rs",
-    find: "        StmtKind::If(test, then, None) if guarded => Some((test.clone(), returned(then)?)),\n",
-    replace: "        StmtKind::If(test, then, None) if guarded && false => Some((test.clone(), returned(then)?)),\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "exported thread-local an if makes None of"],
-  },
-  {
     name: "valued-guard-unexported",
     breaks: "a thread-local an `if` makes `None` of, not exported, is a conditional, where upstream's `let componentFrameCache; if (__DEV__) { .. }` is (ADR 0704)",
     file: "src/prepare/initializers.rs",
-    find: "        let value = match valued(body, constant.export) {\n",
-    replace: "        let value = match valued(body, true) {\n",
+    find: "        StmtKind::If(..) => value(body, true, exported),\n",
+    replace: "        StmtKind::If(..) => value(body, true, true),\n",
     tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only|build global.s if"],
   },
   {

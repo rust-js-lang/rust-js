@@ -269,3 +269,25 @@ The readability ratchet's `renamed x$1` fell, 8,406 to 8,398. Held by corpus `le
 `test/lowering-cells.test.ts`'s "a thread-local an if makes"; mutation
 `declared-consts-dropped`, which replaces `declared-at-top-not-apart`.
 
+
+## Amendment: an exported one's value of a test is `chained`'s (2026-10-30)
+
+The mutation `valued-guard-unseen`, `valued`'s guard of one test taken
+out, survived the nightly: with it out, no corpus case's JS changed
+(snapshots compared), nor the lowering, port, JSX, React, declarations,
+snapshot, readability or guide suites'. ADR 0969's amendment (rd234) made
+`chained` read a module's initializer of an `if` chain, and one test,
+`if (t) { return a; }` then `return b;` or nothing, is a chain of one
+link: exported, `t ? a : b`, or `t ? a : undefined`, the same value. So
+**`chained` alone makes an exported initializer's value of a test**;
+`valued` is a closure's `const`s and then its `return v`, and asks
+nothing of the export. A guard MIR turned, `if (!t) { return a; }
+return b;`, is `t ? b : a` now, as written, where `valued` gave `!t ? a :
+b`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same conditional.
+
+Held by `test/lowering-cells.test.ts`, "an exported thread-local an if
+makes None of is a conditional", unchanged; `valued-guard-unseen` went
+with the guard, and `valued-guard-unexported` now takes `chained`'s
+export, which keeps a thread-local not exported 0704's `let` and `if`.

@@ -368,3 +368,16 @@ reading out no corpus case's JS changes (snapshots compared), nor the
 lowering, JSX, React, port or snapshot suites'. The reading went with its
 mutation; an `if` is the program's by `jump_tested` alone. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
+
+## Amendment: a written `continue`'s `if` before more of the turn (2026-10-30)
+
+The mutation `written-continue-guarded`, `returned_branches`' check of a
+written `continue` taken out, survived the nightly: its test's `if` ends
+the loop's turn, where `kept_jumps`' `turned_continue` (`finish`) turns the
+guard back, `if (c) { continue; } return false;`, as written. Before more
+of the turn, `if c { // ..\n continue; } return None; } count += 1;`, no
+pass turns it back, and the check is what keeps it: without it, `if (!c)
+{ return; } continue;`, its comment moved. The test "a continue the
+program wrote keeps its if" has such a loop now, `counted`, run, and
+catches the mutation. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, a comment's place.

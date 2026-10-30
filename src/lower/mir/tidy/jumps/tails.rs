@@ -1076,8 +1076,8 @@ pub(in crate::lower::mir::tidy) fn written_thens(
             continue;
         }
         let mut rest = stmts.split_off(at + 1);
-        // The `return;` the rest goes on to, `returns_at_ends`'s, is the one
-        // the program wrote in its `then`, which MIR joined to it.
+        // The `return;` the rest goes on to, MIR's, is the one the program
+        // wrote in its `then`, which MIR joined to it.
         if let Some(
             last @ Stmt {
                 kind: StmtKind::Return(None),
@@ -1095,30 +1095,6 @@ pub(in crate::lower::mir::tidy) fn written_thens(
         stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);
         stmts.extend(exit);
         break;
-    }
-}
-
-/// Each way through a body that goes on past its end, or to the `return;`
-/// it ends with, given a `return;` of its own, MIR's (no span), so
-/// `written_thens` sees it leave, which `tail returns` takes away again where
-/// it still ends one: the `Ok` arm of React's
-/// throwAndUnwindWorkLoop, `if (!didFatal) { ..; return; }
-/// panicOnRootError(..);`, whose rest goes on to the function's end (ADR
-/// 0879, amended). An `if`'s with an `else`, in each branch.
-pub(in crate::lower::mir::tidy) fn returns_at_ends(stmts: &mut Vec<Stmt>) {
-    let returned = stmts.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None)));
-    let end = stmts.len() - usize::from(returned);
-    match stmts[..end].last_mut() {
-        Some(Stmt {
-            kind: StmtKind::If(_, then, Some(otherwise)),
-            ..
-        }) => {
-            returns_at_ends(then);
-            returns_at_ends(otherwise);
-        }
-        _ if returned => {}
-        Some(last) if ends(last) => {}
-        _ => stmts.push(StmtKind::Return(None).at(js::Span::NONE)),
     }
 }
 

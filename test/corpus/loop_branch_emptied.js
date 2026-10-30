@@ -27,6 +27,15 @@ function main() {
   for (let i = 0; i < end; i++) {}
   console.log(`${best == null ? "None" : `Some(${best})`}`);
   scaledOrLast();
+  heldCopied(probe(6));
+  heldCopied(undefined);
+}
+
+// Of `names`' stage, an `if let` of a borrow whose binding is only copied:
+// the copy gone (`copied bindings`), the `if` with it.
+function heldCopied(best) {
+  const held = best != null ? [best] : undefined;
+  console.log(`${held == null ? "None" : `Some([${held.join(", ")}])`}`);
 }
 
 function same(x) {

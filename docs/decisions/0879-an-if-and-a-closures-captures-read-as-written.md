@@ -756,3 +756,24 @@ value._0 : value._0`: a conditional whose branches are one value.
   `alike-branches-signed-zero` (`mir/tidy/logicals.ts`),
   `alike-branches-of-a-call-assigned` (`branches.ts`) and
   `alike-branches-of-a-call-returned` (`jumps/tails.ts`).
+
+## Amendment: the `return;` a written `if`'s rest goes on to is `returns past blocks`' (2026-10-30)
+
+The mutation `written-thens-not-to-the-end`, `returns_at_ends` taken out
+of the `written thens` pass, survived the nightly: with it out, no corpus
+case's JS changed (snapshots compared), nor the lowering, port, JSX,
+React, readability, guide or snapshot suites', and in none did it decide
+what `written_thens` turned (each compile of the corpus and those suites
+was traced). Since the 2026-10-29 amendment of ADR 0742 (rd100), the
+`jumps` stage's `returns_past_blocks` gives each way out of a block MIR
+made, followed by a `return;`, that `return;`, so throwAndUnwindWorkLoop's
+`Ok` arm's rest, `onRootError(x)`, already ends in one when `written thens`
+reads it, and a rest nested in an `if .. else` ends in its branch's.
+
+**`written_thens` reads the `return;` `returns past blocks` gave** (or the
+function's own); `returns_at_ends` went with its mutation.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements.
+
+Held by `test/corpus/written_tails_apart.rs` against native Rust, and
+`written-thens-end-return-unwritten` (`tidy/jumps/tails.ts`).

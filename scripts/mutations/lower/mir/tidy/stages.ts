@@ -723,15 +723,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-or-patterns.test.ts", "-t", "an or-pattern's variants are tested in the order written, of a field"],
   },
   {
-    name: "written-thens-not-to-the-end",
-    breaks: "React's throwAndUnwindWorkLoop's `Ok` arm, `if did_fatal { ..; return; }` then the code after the match, is `if (!didFatal) { .. } else { onRootError(x); }`, MIR's order, its rest going on to the function's end not seen to leave (ADR 0879, amended, wl6)",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "                returns_at_ends(b);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^written_tails_apart.rs$"],
-    snapshots: true,
-  },
-  {
     name: "mir-tidy-handle-in-place-kept",
     breaks: "a handle MIR makes of a place and writes or reads once stays its getter and setter object, `{ get value() { .. }, set value(v) { .. } }.value = v`, not the place, `item.sibling = v` (#198)",
     file: "src/lower/mir/tidy/stages.rs",

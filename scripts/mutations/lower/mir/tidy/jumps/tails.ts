@@ -129,11 +129,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-breaks-not-returned",
-    breaks: "a `while (true)` that makes the function's value before each `break` keeps the `break`, its `return` gone",
+    breaks: "a `while (true)` that makes the function's value before each `break` keeps the `break`, its `return` gone: returns_in_place's `?` in a loop of `,`s leaves the loop, not the function, a wrong answer",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_deref()),\n",
     replace: "        StmtKind::While { .. } => {}\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "findFirstSuspended"],
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_place.rs$"],
   },
   {
     name: "returned-in-place-end-kept",
@@ -223,11 +223,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lone-jumps-given-an-else",
-    breaks: "`if (t) { return a; } return;`, a lone jump each way, is given an `else` of the `return;` the program didn't write",
+    breaks: "`if (t) { return a; } return b;`, a lone jump each way, is given an `else`, `if (a === 0 || a > b) { return a; } else { return b; }`, not the conditional the program's `if .. else` is (lane_bits' lowerEventPriority, tested_options' named)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "                _ if plain(exit, rest, linked) => None,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(let_chain_values|own_fold_and_nth).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(lane_bits|tested_options).rs$"],
     snapshots: true,
   },
   {
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-continue-guarded",
-    breaks: "`if a && b { continue; } return false;` is a `let … else`'s guard, `if (!a || !b) { return false; }`, its `continue` and comment gone",
+    breaks: "`if a && b { continue; } return None;` before more of the loop's turn is a `let … else`'s guard, `if (!a || !b) { return; } continue;`, its comment gone (at the turn's end, `kept_jumps` turns it back)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        && !tests_continue(continues, last_if.span)\n",
     replace: "",

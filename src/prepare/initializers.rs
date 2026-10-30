@@ -84,7 +84,7 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
         // An exported one's value of a test, which no `let` the test
         // assigns can be (`assigned_in_place`), a conditional; one of an
         // `if` chain, one nested conditional.
-        let value = match valued(body, constant.export) {
+        let value = match valued(body) {
             Some(([], value)) => value,
             _ => match chained(body, constant.export) {
                 Some(value) => value,
@@ -99,34 +99,18 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
 }
 
 /// What a closure's `body` gives, of `const`s and then one value: the
-/// value it returns at its end; or, `guarded`, of one test, `if (t) {
-/// return a; }`, and the value after it, `return b;`, or `undefined` where
-/// it ends with nothing, `t ? a : b`, which runs `t` and then the one
-/// branch, as the `if` did (ADR 0870, amended): `if __DEV__ { Some(f) }
-/// else { None }`'s, as `__DEV__.then_some(f)` is. With the `const`s
-/// before it.
-fn valued(body: &[Stmt], guarded: bool) -> Option<(&[Stmt], Expr)> {
-    let returned = |stmts: &[Stmt]| match stmts {
+/// value it returns at its end, with the `const`s before it. One of a
+/// test, `if (t) { return a; }`, is `chained`'s: an exported one's `t ? a
+/// : undefined`, as `__DEV__.then_some(f)` is (ADR 0870, amended).
+fn valued(body: &[Stmt]) -> Option<(&[Stmt], Expr)> {
+    match body {
         [
+            before @ ..,
             Stmt {
                 kind: StmtKind::Return(Some(value)),
                 ..
             },
-        ] => Some(value.clone()),
-        _ => None,
-    };
-    let guard = |stmt: &Stmt| match &stmt.kind {
-        StmtKind::If(test, then, None) if guarded => Some((test.clone(), returned(then)?)),
-        _ => None,
-    };
-    match body {
-        [before @ .., last] if let Some(no) = returned(std::slice::from_ref(last)) => match before {
-            [consts @ .., test] if let Some((test, yes)) = guard(test) => Some((consts, Expr::cond(test, yes, no))),
-            _ => Some((before, no)),
-        },
-        [consts @ .., last] if let Some((test, yes)) = guard(last) => {
-            Some((consts, Expr::cond(test, yes, Expr::undefined())))
-        }
+        ] => Some((before, value.clone())),
         _ => None,
     }
 }

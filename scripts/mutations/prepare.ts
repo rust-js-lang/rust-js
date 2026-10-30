@@ -233,7 +233,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && els.as_ref().is_some_and(Vec::is_empty)\n",
     replace: "            && els.as_ref().is_some_and(|_| false)\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "of `matches!` from MIR is one test, at a function's end"],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_lazy_drops|temporaries_taken_apart).rs$"],
+    snapshots: true,
   },
   {
     name: "template-values-unprepared",
