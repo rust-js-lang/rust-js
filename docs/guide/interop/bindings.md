@@ -886,6 +886,21 @@ export async function open(other) {
   Rust drops it: as a panic unwinds before it's handed over, or where it
   never is; and one a binding gives back, as `widen` does, is Rust's
   again ([ADR 0873](../../decisions/0873-a-function-handed-to-js-carries-no-drop.md)).
+- **A callback of a promise JS resolves gives any value**, WebIDL's
+  `Promise<any> ()`, TypeScript's `(): any`: a promise, or any other
+  value, `()` and `None` `undefined`, as `then`'s function does. It's a
+  trait, `IntoViewTransitionUpdateCallback`, so a closure's parameters
+  say their types, `Box::new(|lock: Option<&Lock>| ..)`. Moved, it's a
+  `Box`, which may own what it holds; lent, a union's or a field of a
+  dictionary in one, it's `Copy`, as an event handler is, so
+  `start_view_transition(Some(&StartViewTransitionOptions { update:
+  Some(&update), types }))` is `startViewTransition({ update, types })`,
+  `update: Some(&mutation_callback)` of a `fn()` is `update:
+  mutationCallback`, and `start_view_transition(Some(&move || ..))` takes
+  the function itself. A string in an array a binding takes is a
+  `String`, as one it gives is, so a `Vec<String>` is given as it is,
+  `types: Some(&types)`, and a literal is `&["class".into()]`
+  ([ADR 1026](../../decisions/1026-a-callback-of-a-promise-js-resolves-gives-any-value.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`, to call, keep, or compare by
   `std::ptr::eq`, which is `===`

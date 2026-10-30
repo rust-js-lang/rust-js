@@ -1,7 +1,8 @@
 # 0219. A sequence a webapi function takes is a slice
 
 Status: Accepted. Extends [0024](0024-web-crate.md) and
-[0215](0215-webapi-unions.md).
+[0215](0215-webapi-unions.md). Amended by [1026](1026-a-callback-of-a-promise-js-resolves-gives-any-value.md):
+a string in one is a `String`, `&[String]`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

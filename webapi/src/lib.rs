@@ -2880,7 +2880,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start_view_transition(&self, callback_options: Option<&dyn IntoListenerOrStartViewTransitionOptions>) -> &'static ViewTransition {
+    pub fn start_view_transition(&self, callback_options: Option<&dyn IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions>) -> &'static ViewTransition {
         unreachable!()
     }
 
@@ -34838,7 +34838,7 @@ pub mod headers {
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(init: Option<&[&[&str]]>) -> &'static Headers {
+    pub fn new(init: Option<&[&[String]]>) -> &'static Headers {
         unreachable!()
     }
 
@@ -67863,7 +67863,7 @@ impl LockManager {
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request(&self, name: &str, callback: Box<dyn FnOnce(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
+    pub fn request(&self, name: &str, callback: Box<dyn IntoLockGrantedCallback>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -67871,7 +67871,7 @@ impl LockManager {
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_with_lock_options_and_callback(&self, name: &str, options: LockOptions<'_>, callback: Box<dyn FnOnce(Option<&Lock>) -> Promise<Option<&'static Unknown>>>) -> Promise<Option<&'static Unknown>> {
+    pub fn request_with_lock_options_and_callback(&self, name: &str, options: LockOptions<'_>, callback: Box<dyn IntoLockGrantedCallback>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
 
@@ -73696,7 +73696,7 @@ impl NavigationPrecommitController {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_handler(&self, handler: Box<dyn FnMut() -> Promise<()>>) {
+    pub fn add_handler(&self, handler: Box<dyn IntoNavigationInterceptHandler>) {
         unreachable!()
     }
 
@@ -87109,7 +87109,7 @@ impl SubtleCrypto {
     #[cfg_attr(rust_js, rust_js::link_name = "deriveKey")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn derive_key(&self, algorithm: &dyn core::any::Any, base_key: &CryptoKey, derived_key_type: &dyn core::any::Any, extractable: bool, key_usages: &[&str]) -> Promise<&'static CryptoKey> {
+    pub fn derive_key(&self, algorithm: &dyn core::any::Any, base_key: &CryptoKey, derived_key_type: &dyn core::any::Any, extractable: bool, key_usages: &[String]) -> Promise<&'static CryptoKey> {
         unreachable!()
     }
 
@@ -87125,7 +87125,7 @@ impl SubtleCrypto {
     #[cfg_attr(rust_js, rust_js::link_name = "importKey")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn import_key(&self, format: &str, key_data: impl IntoBufferSourceOrJsonWebKey, algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[&str]) -> Promise<&'static CryptoKey> {
+    pub fn import_key(&self, format: &str, key_data: impl IntoBufferSourceOrJsonWebKey, algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[String]) -> Promise<&'static CryptoKey> {
         unreachable!()
     }
 
@@ -87141,7 +87141,7 @@ impl SubtleCrypto {
     #[cfg_attr(rust_js, rust_js::link_name = "unwrapKey")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn unwrap_key(&self, format: &str, wrapped_key: impl IntoBufferSource, unwrapping_key: &CryptoKey, unwrap_algorithm: &dyn core::any::Any, unwrapped_key_algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[&str]) -> Promise<&'static CryptoKey> {
+    pub fn unwrap_key(&self, format: &str, wrapped_key: impl IntoBufferSource, unwrapping_key: &CryptoKey, unwrap_algorithm: &dyn core::any::Any, unwrapped_key_algorithm: &dyn core::any::Any, extractable: bool, key_usages: &[String]) -> Promise<&'static CryptoKey> {
         unreachable!()
     }
 
@@ -93899,7 +93899,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn transform_feedback_varyings(&self, program: &WebGLProgram, varyings: &[&str], buffer_mode: impl Into<f64>) {
+    pub fn transform_feedback_varyings(&self, program: &WebGLProgram, varyings: &[String], buffer_mode: impl Into<f64>) {
         unreachable!()
     }
 
@@ -93963,7 +93963,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::nullable)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_uniform_indices(&self, program: &WebGLProgram, uniform_names: &[&str]) -> Option<Vec<f64>> {
+    pub fn get_uniform_indices(&self, program: &WebGLProgram, uniform_names: &[String]) -> Option<Vec<f64>> {
         unreachable!()
     }
 
@@ -98942,7 +98942,7 @@ impl Window {
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_headers(&self, init: Option<&[&[&str]]>) -> &'static Headers {
+    pub fn new_headers(&self, init: Option<&[&[String]]>) -> &'static Headers {
         unreachable!()
     }
 
@@ -100867,7 +100867,7 @@ pub mod console {
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn table(tabular_data: Option<&dyn IntoUnknown>, properties: Option<&[&str]>) {
+    pub fn table(tabular_data: Option<&dyn IntoUnknown>, properties: Option<&[String]>) {
         unreachable!()
     }
 
@@ -101983,6 +101983,38 @@ mod handlers {
     impl Error for &'static dyn Fn(Option<&Unknown>) {}
 }
 
+/// What a `LockGrantedCallback` takes: a function or closure that gives what JS resolves, as a
+/// promise's `then` does, a promise or any value, `()` `undefined` (ADR 1026). Moved,
+/// `Box::new(..)`, it's JS's, which may own what it holds.
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `LockGrantedCallback`", note = "a `LockGrantedCallback` is a function or closure of what JS gives it that gives any value, a promise or not")]
+#[cfg_attr(rust_js, rust_js::types = "LockGrantedCallback")]
+pub trait IntoLockGrantedCallback: promised::IntoLockGrantedCallback {}
+impl<R: 'static, F: FnOnce(Option<&'static Lock>) -> R + 'static> IntoLockGrantedCallback for F {}
+
+/// What a `NavigationInterceptHandler` takes: a function or closure that gives what JS resolves, as a
+/// promise's `then` does, a promise or any value, `()` `undefined` (ADR 1026). Moved,
+/// `Box::new(..)`, it's JS's, which may own what it holds.
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `NavigationInterceptHandler`", note = "a `NavigationInterceptHandler` is a function or closure of what JS gives it that gives any value, a promise or not")]
+#[cfg_attr(rust_js, rust_js::types = "NavigationInterceptHandler")]
+pub trait IntoNavigationInterceptHandler: promised::IntoNavigationInterceptHandler {}
+impl<R: 'static, F: FnMut() -> R + 'static> IntoNavigationInterceptHandler for F {}
+
+/// What a `NavigationPrecommitHandler` takes: a function or closure that gives what JS resolves, as a
+/// promise's `then` does, a promise or any value, `()` `undefined` (ADR 1026). Moved,
+/// `Box::new(..)`, it's JS's, which may own what it holds.
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `NavigationPrecommitHandler`", note = "a `NavigationPrecommitHandler` is a function or closure of what JS gives it that gives any value, a promise or not")]
+#[cfg_attr(rust_js, rust_js::types = "NavigationPrecommitHandler")]
+pub trait IntoNavigationPrecommitHandler: promised::IntoNavigationPrecommitHandler {}
+impl<R: 'static, F: FnMut(&'static NavigationPrecommitController) -> R + 'static> IntoNavigationPrecommitHandler for F {}
+
+/// What a `ViewTransitionUpdateCallback` takes: a function or closure that gives what JS resolves, as a
+/// promise's `then` does, a promise or any value, `()` `undefined` (ADR 1026). Lent,
+/// `Some(&update)`, it's `Copy`, which owns nothing to drop while JS holds it (ADR 1021).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ViewTransitionUpdateCallback`", note = "a `ViewTransitionUpdateCallback` is a function or closure of what JS gives it, `Copy`, that gives any value, a promise or not")]
+#[cfg_attr(rust_js, rust_js::types = "ViewTransitionUpdateCallback")]
+pub trait IntoViewTransitionUpdateCallback: promised::IntoViewTransitionUpdateCallback {}
+impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallback for F {}
+
 /// The `SanitizerConfig` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct SanitizerConfig {
@@ -103087,7 +103119,7 @@ unsafe impl Defined for AddEventListenerOptions<'_> {}
 pub struct AllAcceptedCredentialsOptions<'a> {
     pub rp_id: &'a str,
     pub user_id: &'a str,
-    pub all_accepted_credential_ids: &'a [&'a str],
+    pub all_accepted_credential_ids: &'a [String],
 }
 
 unsafe impl Defined for AllAcceptedCredentialsOptions<'_> {}
@@ -103413,7 +103445,7 @@ unsafe impl Defined for ClipboardEventInit<'_> {}
 /// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ClipboardUnsanitizedFormats<'a> {
-    pub unsanitized: Option<&'a [&'a str]>,
+    pub unsanitized: Option<&'a [String]>,
 }
 
 unsafe impl Defined for ClipboardUnsanitizedFormats<'_> {}
@@ -104324,7 +104356,7 @@ unsafe impl Defined for GPUDepthStencilState<'_> {}
 #[derive(Default)]
 pub struct GPUDeviceDescriptor<'a> {
     pub label: Option<&'a str>,
-    pub required_features: Option<&'a [&'a str]>,
+    pub required_features: Option<&'a [String]>,
     pub default_queue: Option<GPUQueueDescriptor<'a>>,
 }
 
@@ -104443,7 +104475,7 @@ unsafe impl Defined for GPURenderBundleDescriptor<'_> {}
 /// The [`GPURenderBundleEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 pub struct GPURenderBundleEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
-    pub color_formats: &'a [&'a str],
+    pub color_formats: &'a [String],
     pub depth_stencil_format: Option<&'a str>,
     pub sample_count: Option<f64>,
     pub depth_read_only: Option<bool>,
@@ -104636,7 +104668,7 @@ pub struct GPUTextureDescriptor<'a> {
     pub dimension: Option<&'a str>,
     pub format: &'a str,
     pub usage: f64,
-    pub view_formats: Option<&'a [&'a str]>,
+    pub view_formats: Option<&'a [String]>,
     pub texture_binding_view_dimension: Option<&'a str>,
 }
 
@@ -105215,7 +105247,7 @@ pub struct MutationObserverInit<'a> {
     pub subtree: Option<bool>,
     pub attribute_old_value: Option<bool>,
     pub character_data_old_value: Option<bool>,
-    pub attribute_filter: Option<&'a [&'a str]>,
+    pub attribute_filter: Option<&'a [String]>,
 }
 
 unsafe impl Defined for MutationObserverInit<'_> {}
@@ -105255,8 +105287,8 @@ unsafe impl Defined for NavigationCurrentEntryChangeEventInit<'_> {}
 /// The [`NavigationInterceptOptions`](https://developer.mozilla.org/docs/Web/API/NavigationInterceptOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct NavigationInterceptOptions<'a> {
-    pub precommit_handler: Option<Box<dyn FnMut(&'a NavigationPrecommitController) -> Promise<()>>>,
-    pub handler: Option<Box<dyn FnMut() -> Promise<()>>>,
+    pub precommit_handler: Option<Box<dyn IntoNavigationPrecommitHandler>>,
+    pub handler: Option<Box<dyn IntoNavigationInterceptHandler>>,
     pub focus_reset: Option<&'a str>,
     pub scroll: Option<&'a str>,
 }
@@ -105564,7 +105596,7 @@ unsafe impl Defined for PerformanceObserverCallbackOptions {}
 /// The [`PerformanceObserverInit`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct PerformanceObserverInit<'a> {
-    pub entry_types: Option<&'a [&'a str]>,
+    pub entry_types: Option<&'a [String]>,
     pub r#type: Option<&'a str>,
     pub buffered: Option<bool>,
 }
@@ -105714,9 +105746,9 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
     pub timeout: Option<f64>,
     pub exclude_credentials: Option<&'a [PublicKeyCredentialDescriptorJSON<'a>]>,
     pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
-    pub hints: Option<&'a [&'a str]>,
+    pub hints: Option<&'a [String]>,
     pub attestation: Option<&'a str>,
-    pub attestation_formats: Option<&'a [&'a str]>,
+    pub attestation_formats: Option<&'a [String]>,
     pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
@@ -105726,7 +105758,7 @@ unsafe impl Defined for PublicKeyCredentialCreationOptionsJSON<'_> {}
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
     pub r#type: &'a str,
     pub id: &'a str,
-    pub transports: Option<&'a [&'a str]>,
+    pub transports: Option<&'a [String]>,
 }
 
 unsafe impl Defined for PublicKeyCredentialDescriptorJSON<'_> {}
@@ -105738,7 +105770,7 @@ pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub rp_id: Option<&'a str>,
     pub allow_credentials: Option<&'a [PublicKeyCredentialDescriptorJSON<'a>]>,
     pub user_verification: Option<&'a str>,
-    pub hints: Option<&'a [&'a str]>,
+    pub hints: Option<&'a [String]>,
     pub extensions: Option<AuthenticationExtensionsClientInputsJSON<'a>>,
 }
 
@@ -105814,7 +105846,7 @@ unsafe impl Defined for RegistrationOptions<'_> {}
 /// The [`ReportingObserverOptions`](https://developer.mozilla.org/docs/Web/API/ReportingObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct ReportingObserverOptions<'a> {
-    pub types: Option<&'a [&'a str]>,
+    pub types: Option<&'a [String]>,
     pub buffered: Option<bool>,
 }
 
@@ -105855,7 +105887,7 @@ unsafe impl Defined for ResizeObserverOptions<'_> {}
 pub struct ResponseInit<'a> {
     pub status: Option<f64>,
     pub status_text: Option<&'a str>,
-    pub headers: Option<&'a [&'a [&'a str]]>,
+    pub headers: Option<&'a [&'a [String]]>,
 }
 
 unsafe impl Defined for ResponseInit<'_> {}
@@ -106231,8 +106263,8 @@ unsafe impl Defined for SpeechSynthesisEventInit<'_> {}
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Default)]
 pub struct StartViewTransitionOptions<'a> {
-    pub update: Option<Box<dyn FnMut() -> Promise<Option<&'static Unknown>>>>,
-    pub types: Option<&'a [&'a str]>,
+    pub update: Option<&'a dyn IntoViewTransitionUpdateCallback>,
+    pub types: Option<&'a [String]>,
 }
 
 unsafe impl Defined for StartViewTransitionOptions<'_> {}
@@ -106639,7 +106671,7 @@ unsafe impl Defined for WaveShaperOptions<'_> {}
 #[derive(Default)]
 pub struct WebAssemblyCompileOptions<'a> {
     pub imported_string_constants: Option<&'a str>,
-    pub builtins: Option<&'a [&'a str]>,
+    pub builtins: Option<&'a [String]>,
 }
 
 unsafe impl Defined for WebAssemblyCompileOptions<'_> {}
@@ -106677,12 +106709,12 @@ unsafe impl Defined for WebTransportHash<'_> {}
 pub struct WebTransportOptions<'a> {
     pub allow_pooling: Option<bool>,
     pub require_unreliable: Option<bool>,
-    pub headers: Option<&'a [&'a [&'a str]]>,
+    pub headers: Option<&'a [&'a [String]]>,
     pub server_certificate_hashes: Option<&'a [WebTransportHash<'a>]>,
     pub congestion_control: Option<&'a str>,
     pub anticipated_concurrent_incoming_unidirectional_streams: Option<f64>,
     pub anticipated_concurrent_incoming_bidirectional_streams: Option<f64>,
-    pub protocols: Option<&'a [&'a str]>,
+    pub protocols: Option<&'a [String]>,
     pub datagrams_readable_type: Option<&'a str>,
 }
 
@@ -116621,54 +116653,15 @@ impl<'a> LineAndPositionSetting<'a> {
     }
 }
 
-/// `EventListener | StartViewTransitionOptions`: each variant's value is the member itself (ADR 0215).
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum ListenerOrStartViewTransitionOptions<'a> {
-    Listener(Box<dyn FnMut() -> Promise<Option<&'static Unknown>>>),
-    StartViewTransitionOptions(StartViewTransitionOptions<'a>),
-}
-
-impl<'a> From<Box<dyn FnMut() -> Promise<Option<&'static Unknown>>>> for ListenerOrStartViewTransitionOptions<'a> {
-    fn from(value: Box<dyn FnMut() -> Promise<Option<&'static Unknown>>>) -> Self {
-        ListenerOrStartViewTransitionOptions::Listener(value)
-    }
-}
-
-impl<'a> From<StartViewTransitionOptions<'a>> for ListenerOrStartViewTransitionOptions<'a> {
-    fn from(value: StartViewTransitionOptions<'a>) -> Self {
-        ListenerOrStartViewTransitionOptions::StartViewTransitionOptions(value)
-    }
-}
-
-/// What a `EventListener | StartViewTransitionOptions` parameter takes: each member as it is, and the enum (ADR 0229);
-/// an optional one, `Option<&dyn IntoListenerOrStartViewTransitionOptions>`, each borrowed, `Some(&value)` (ADR 0443).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `EventListener | StartViewTransitionOptions`", note = "an optional one, `Option<&dyn IntoListenerOrStartViewTransitionOptions>`, takes `Some(&value)`")]
-#[cfg_attr(rust_js, rust_js::types = "EventListener | StartViewTransitionOptions")]
-pub trait IntoListenerOrStartViewTransitionOptions: sealed::Sealed {}
-impl IntoListenerOrStartViewTransitionOptions for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
-impl IntoListenerOrStartViewTransitionOptions for StartViewTransitionOptions<'_> {}
-impl IntoListenerOrStartViewTransitionOptions for ListenerOrStartViewTransitionOptions<'_> {}
-/// A rest parameter of `EventListener | StartViewTransitionOptions`s takes each member (ADR 0640).
-impl<A: IntoListenerOrStartViewTransitionOptions> Takes<A> for dyn IntoListenerOrStartViewTransitionOptions {}
-
-impl<'a> ListenerOrStartViewTransitionOptions<'a> {
-    /// The member a parameter was given, as its enum, to `match`: the value itself.
-    #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
-    pub fn of(this: impl IntoListenerOrStartViewTransitionOptions + 'a) -> ListenerOrStartViewTransitionOptions<'a> {
-        unreachable!()
-    }
-}
-
 /// `List | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ListOrStr<'a> {
-    List(&'a [&'a [&'a str]]),
+    List(&'a [&'a [String]]),
     Str(&'a str),
 }
 
-impl<'a> From<&'a [&'a [&'a str]]> for ListOrStr<'a> {
-    fn from(value: &'a [&'a [&'a str]]) -> Self {
+impl<'a> From<&'a [&'a [String]]> for ListOrStr<'a> {
+    fn from(value: &'a [&'a [String]]) -> Self {
         ListOrStr::List(value)
     }
 }
@@ -116684,7 +116677,7 @@ impl<'a> From<&'a str> for ListOrStr<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | string`", note = "an optional one, `Option<&dyn IntoListOrStr>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "List | string")]
 pub trait IntoListOrStr: sealed::Sealed {}
-impl IntoListOrStr for &[&[&str]] {}
+impl IntoListOrStr for &[&[String]] {}
 impl IntoListOrStr for &str {}
 impl IntoListOrStr for ListOrStr<'_> {}
 /// A rest parameter of `List | string`s takes each member (ADR 0640).
@@ -120211,7 +120204,7 @@ impl<'a> StrOrElementCreationOptions<'a> {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum StrOrList<'a> {
     Str(&'a str),
-    List(&'a [&'a str]),
+    List(&'a [String]),
 }
 
 impl<'a> From<&'a str> for StrOrList<'a> {
@@ -120220,8 +120213,8 @@ impl<'a> From<&'a str> for StrOrList<'a> {
     }
 }
 
-impl<'a> From<&'a [&'a str]> for StrOrList<'a> {
-    fn from(value: &'a [&'a str]) -> Self {
+impl<'a> From<&'a [String]> for StrOrList<'a> {
+    fn from(value: &'a [String]) -> Self {
         StrOrList::List(value)
     }
 }
@@ -120232,7 +120225,7 @@ impl<'a> From<&'a [&'a str]> for StrOrList<'a> {
 #[cfg_attr(rust_js, rust_js::types = "string | List")]
 pub trait IntoStrOrList: sealed::Sealed {}
 impl IntoStrOrList for &str {}
-impl IntoStrOrList for &[&str] {}
+impl IntoStrOrList for &[String] {}
 impl IntoStrOrList for StrOrList<'_> {}
 /// A rest parameter of `string | List`s takes each member (ADR 0640).
 impl<A: IntoStrOrList> Takes<A> for dyn IntoStrOrList {}
@@ -120755,6 +120748,45 @@ impl<'a> VibratePattern<'a> {
     }
 }
 
+/// `ViewTransitionUpdateCallback | StartViewTransitionOptions`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
+    ViewTransitionUpdateCallback(&'a dyn IntoViewTransitionUpdateCallback),
+    StartViewTransitionOptions(StartViewTransitionOptions<'a>),
+}
+
+impl<'a> From<&'a dyn IntoViewTransitionUpdateCallback> for ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
+    fn from(value: &'a dyn IntoViewTransitionUpdateCallback) -> Self {
+        ViewTransitionUpdateCallbackOrStartViewTransitionOptions::ViewTransitionUpdateCallback(value)
+    }
+}
+
+impl<'a> From<StartViewTransitionOptions<'a>> for ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
+    fn from(value: StartViewTransitionOptions<'a>) -> Self {
+        ViewTransitionUpdateCallbackOrStartViewTransitionOptions::StartViewTransitionOptions(value)
+    }
+}
+
+/// What a `ViewTransitionUpdateCallback | StartViewTransitionOptions` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `ViewTransitionUpdateCallback | StartViewTransitionOptions`", note = "an optional one, `Option<&dyn IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "ViewTransitionUpdateCallback | StartViewTransitionOptions")]
+pub trait IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions: promised::IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions {}
+impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for F {}
+impl IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for StartViewTransitionOptions<'_> {}
+impl IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'_> {}
+/// A rest parameter of `ViewTransitionUpdateCallback | StartViewTransitionOptions`s takes each member (ADR 0640).
+impl<A: IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions> Takes<A> for dyn IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions {}
+
+impl<'a> ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn of(this: impl IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions + 'a) -> ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
+        unreachable!()
+    }
+}
+
 /// `Worker | WorkerAndParameters`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum WorkerOrWorkerAndParameters<'a> {
@@ -120801,6 +120833,27 @@ impl<'a> Takes<&'a StaticRange> for AbstractRange {}
 
 /// A rest parameter of `MediaStream`s takes each, and each that extends it (ADR 0640).
 impl<'a> Takes<&'a MediaStream> for MediaStream {}
+
+mod promised {
+    use super::*;
+
+    pub trait IntoLockGrantedCallback {}
+    impl<R: 'static, F: FnOnce(Option<&'static Lock>) -> R + 'static> IntoLockGrantedCallback for F {}
+
+    pub trait IntoNavigationInterceptHandler {}
+    impl<R: 'static, F: FnMut() -> R + 'static> IntoNavigationInterceptHandler for F {}
+
+    pub trait IntoNavigationPrecommitHandler {}
+    impl<R: 'static, F: FnMut(&'static NavigationPrecommitController) -> R + 'static> IntoNavigationPrecommitHandler for F {}
+
+    pub trait IntoViewTransitionUpdateCallback {}
+    impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallback for F {}
+
+    pub trait IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions {}
+    impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for F {}
+    impl IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for StartViewTransitionOptions<'_> {}
+    impl IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions for ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'_> {}
+}
 
 mod sealed {
     use super::*;
@@ -121111,9 +121164,9 @@ mod sealed {
     impl Sealed for &Window {}
     impl Sealed for &Worker {}
     impl Sealed for &XMLDocument {}
-    impl Sealed for &[&[&str]] {}
-    impl Sealed for &[&str] {}
+    impl Sealed for &[&[String]] {}
     impl Sealed for &[NumberOrDOMPointInit] {}
+    impl Sealed for &[String] {}
     impl Sealed for &[f64] {}
     impl Sealed for &str {}
     impl Sealed for AddEventListenerOptions<'_> {}
@@ -121130,7 +121183,6 @@ mod sealed {
     impl Sealed for BoolOrNumberOrStr<'_> {}
     impl Sealed for BoolOrScrollIntoViewOptions<'_> {}
     impl Sealed for BoolOrStr<'_> {}
-    impl Sealed for Box<dyn FnMut() -> Promise<Option<&'static Unknown>>> {}
     impl Sealed for BufferSource<'_> {}
     impl Sealed for BufferSourceOrBlobOrStr<'_> {}
     impl Sealed for BufferSourceOrJsonWebKey<'_> {}
@@ -121185,7 +121237,6 @@ mod sealed {
     impl Sealed for KeyframeEffectOptions<'_> {}
     impl Sealed for LineAndPositionSetting<'_> {}
     impl Sealed for ListOrStr<'_> {}
-    impl Sealed for ListenerOrStartViewTransitionOptions<'_> {}
     impl Sealed for MediaListOrStr<'_> {}
     impl Sealed for MediaProvider<'_> {}
     impl Sealed for MediaStreamTrackOrStr<'_> {}
@@ -121219,7 +121270,6 @@ mod sealed {
     impl Sealed for SanitizerProcessingInstruction {}
     impl Sealed for ScrollIntoViewOptions<'_> {}
     impl Sealed for SharedWorkerOptions<'_> {}
-    impl Sealed for StartViewTransitionOptions<'_> {}
     impl Sealed for StrOrArrayBuffer<'_> {}
     impl Sealed for StrOrAudioSinkOptions<'_> {}
     impl Sealed for StrOrBufferSource<'_> {}

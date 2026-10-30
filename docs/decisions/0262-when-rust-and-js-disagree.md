@@ -130,10 +130,11 @@ react.dev's TopNav passes the same closure instead.
   `localRequestAnimationFrame` hold `setTimeout` itself where the port
   writes `|callback| { js::set_timeout(callback, None); }`. Rust's calls of
   the `fn` give it what the closure takes and read nothing it gives; a JS
-  caller of an exported value tells them apart, which sees what the host
-  function gives, setTimeout's id where the closure gave `undefined`, and
-  may give it more than the closure takes, setTimeout's delay. Listed in
-  the guide's differences (`semantics.md`, 32).
+  caller of an exported value tells them apart in two ways, both kept by
+  the user's decision (2026-10-30): it sees what the host function gives,
+  setTimeout's id where the closure gave `undefined`; and it may give it
+  more than the closure takes, setTimeout's delay, which the host
+  function reads. Listed in the guide's differences (`semantics.md`, 32).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

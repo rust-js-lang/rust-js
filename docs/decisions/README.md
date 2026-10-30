@@ -810,6 +810,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1023 A dictionary is a JS object, and a member of a union its parent is](1023-a-dictionary-is-a-js-object-and-its-parents.md)
 - [1024 A mixin its interfaces share is a type, the union of them](1024-a-mixins-union-is-a-type.md) *(rd193)*
 - [1025 A method read as a value is `js::method`'s, and JS's `||` is `js::or`](1025-a-method-read-as-a-value-is-js-methods.md) *(rd181, the user's decision; amended: a step of a class the value extends, a path held before a guard, rd232, rd233)*
+- [1026 A callback of a promise JS resolves gives any value, and a string in an array is a `String`](1026-a-callback-of-a-promise-js-resolves-gives-any-value.md) *(rd206)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

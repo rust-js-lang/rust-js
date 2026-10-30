@@ -1059,7 +1059,8 @@ React and JSX are [their own pages](README.md#react).
 32. A closure that captures nothing as a `fn`, which only calls one host
     function with what it's given, its optional parameters `None`, is
     that function, `|callback| { js::set_timeout(callback, None); }` is
-    `setTimeout`: a JS caller of an exported value sees what it gives,
-    setTimeout's id, where the closure gave `undefined`, and may give it
-    more, a delay, which the closure would drop (ADR 0605, amended, the
-    user's decision).
+    `setTimeout`. A JS caller of an exported value tells them apart in
+    two ways, both accepted: it sees what the function gives, setTimeout's
+    id, where the closure gave `undefined`; and it may give it more, a
+    delay, which the closure would drop and setTimeout reads (ADR 0605,
+    amended, the user's decision).

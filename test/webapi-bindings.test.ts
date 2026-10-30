@@ -1180,3 +1180,94 @@ test("webapi's css module is CSS's namespace", async () => {
     delete (globalThis as any).CSS;
   }
 });
+
+// React port gap rd206 (ADR 1026): a callback whose result is a promise,
+// `ViewTransitionUpdateCallback`'s `Promise<any> ()`, gives what JS
+// resolves, a promise or any value, so React's update gives a promise on
+// two paths and nothing on the third, `update: mutationCallback` is the
+// function itself, and a string array is the program's `[String]`, React's
+// shared TransitionTypes, not a copy. Lent, a union's or a dictionary's in
+// one, it's `Copy`; moved, `Box::new(..)`, it may own what it holds.
+test("a callback of a promise JS resolves is a function of any result", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-promised-callbacks");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::{Promise, Unknown};
+use webapi::{Document, Lock, LockManager, NavigateEvent, NavigationInterceptOptions, StartViewTransitionOptions};
+
+pub fn start(document: &'static Document, transition_types: Option<Rc<RefCell<Vec<String>>>>, mutation_callback: fn()) {
+    let update = move || {
+        mutation_callback();
+        if document.hidden() {
+            let ready: Promise<()> = document.fonts().ready().then(move |_| mutation_callback());
+            return Some(ready);
+        }
+        None
+    };
+    let types = transition_types.as_ref().map(|types| types.borrow());
+    document.start_view_transition(Some(&StartViewTransitionOptions {
+        update: Some(&update),
+        types: types.as_ref().map(|types| types.as_slice()),
+    }));
+}
+
+pub fn gesture(document: &Document, transition_types: Option<&[String]>, mutation_callback: fn()) {
+    document.start_view_transition(Some(&StartViewTransitionOptions {
+        update: Some(&mutation_callback),
+        types: transition_types,
+    }));
+}
+
+pub fn bare(document: &Document, mutation_callback: fn()) {
+    document.start_view_transition(Some(&move || mutation_callback()));
+}
+
+pub fn navigate(event: &NavigateEvent, name: String) {
+    event.intercept(Some(NavigationInterceptOptions {
+        handler: Some(Box::new(move || webapi::console::log((name.as_str(),)))),
+        ..Default::default()
+    }));
+}
+
+pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
+    locks.request("name", Box::new(|lock: Option<&Lock>| lock.is_some()))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  function update() {\n    mutationCallback();\n    if (document.hidden) {\n      const ready = document.fonts.ready.then(() => {\n        mutationCallback();\n      });\n      return ready;\n    }\n  }\n");
+  expect(js).toContain("    document.startViewTransition({\n      update,\n      types,\n    });\n");
+  expect(js).toContain("  document.startViewTransition({\n    update: mutationCallback,\n    types: transitionTypes,\n  });\n");
+  expect(js).toContain("  document.startViewTransition(() => {\n    mutationCallback();\n  });\n");
+  expect(js).toContain("    handler: () => console.log(name),\n");
+  expect(js).toContain('  return locks.request("name", (lock) => lock != null);\n');
+  const lib = await import(join(dir, "lib.js"));
+  const given: { update?: () => unknown; types?: unknown }[] = [];
+  let mutations = 0;
+  const document = (hidden: boolean) => ({
+    hidden,
+    fonts: { ready: Promise.resolve() },
+    startViewTransition: (options: { update?: () => unknown; types?: unknown } | (() => unknown)) =>
+      void given.push(typeof options === "function" ? { update: options } : options),
+  });
+  const types = ["navigation"];
+  lib.start(document(false), types, () => void mutations++);
+  expect(given[0].types).toBe(types);
+  expect(given[0].update!()).toBeUndefined();
+  lib.start(document(true), undefined, () => void mutations++);
+  expect(given[1].types).toBeUndefined();
+  const ready = given[1].update!();
+  expect(ready).toBeInstanceOf(Promise);
+  await ready;
+  expect(mutations).toBe(3);
+  const callback = () => void mutations++;
+  lib.gesture(document(false), types, callback);
+  expect(given[2]).toEqual({ update: callback, types });
+  expect(given[2].update).toBe(callback);
+  lib.bare(document(false), callback);
+  expect(given[3].update!()).toBeUndefined();
+  expect(mutations).toBe(4);
+  expect(await lib.locked({ request: (_: string, f: (lock: unknown) => unknown) => Promise.resolve(f(null)) })).toBe(false);
+});

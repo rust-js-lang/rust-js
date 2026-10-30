@@ -622,9 +622,13 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   // they are (ADR 0219): `new Blob([text, "!"])` of `&[BlobPart]`.
   // An `ObservableArray`, `adoptedStyleSheets`, is a JS array to JS: given
   // as one, and read as one, its items as they are.
+  // A string in one is a `String`, as one a function gives is, so an array
+  // a program holds, `Vec<String>`, or a getter gave, `&'static [String]`,
+  // is given as it is, not copied to `&str`s (rd206): `types:
+  // Some(&types)`, `attribute_filter: Some(&["class".into()])`.
   if ((t.generic === "sequence" || t.generic === "FrozenArray" || t.generic === "ObservableArray") && at === "param") {
     const item = paramType((t.idlType as IdlType[])[0]);
-    return item ? `&[${item}]` : { skip: t.generic };
+    return item ? `&[${item === "&str" ? "String" : item}]` : { skip: t.generic };
   }
   // One a function gives is a `Vec`, a new array each time; a frozen
   // array, the same one, which JS won't change, a slice of it.
@@ -658,6 +662,7 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
   // attribute's, `onclick`, isn't: a listener is `add_event_listener`'s,
   // typed by its event.
   const callback = name.endsWith("EventHandlerNonNull") ? undefined : callbacks.get(name);
+  if (callback && at === "param" && (callback.idlType as IdlType).generic === "Promise") return promisedCallback(callback);
   if (callback && at === "param") {
     const args = (callback.arguments ?? []).map((a) => {
       const type = paramType(a.idlType);
@@ -830,6 +835,7 @@ const suffix = (rust: string) => snake(rust.replace(/^&/, "").replace(/^Box<dyn 
  */
 function kindOf(rust: string): string | null {
   if (rust === "&str") return "string";
+  if (promisedOf(rust)) return "function";
   if (rust === "bool") return "boolean";
   if (Object.values(NUMBERS).includes(rust)) return "number";
   if (rust.startsWith("Box<dyn FnMut")) return "function";
@@ -839,13 +845,19 @@ function kindOf(rust: string): string | null {
   return rust.replace(/^&/, "").replace(/<.*$/, "");
 }
 
+/** The callback of a result JS resolves a type is, `&dyn IntoViewTransitionUpdateCallback`'s. */
+function promisedOf(rust: string): string | undefined {
+  const name = rust.match(/^(?:Box<dyn |&(?:'a )?dyn )Into(\w+)>?$/)?.[1];
+  return name && promised.has(name) ? name : undefined;
+}
+
 /** A variant's name: its type's, or of a primitive its kind's, `Str`. */
 function variantName(rust: string): string {
   const kind = kindOf(rust);
   if (kind === "string") return "Str";
   if (kind === "boolean") return "Bool";
   if (kind === "number") return "Number";
-  if (kind === "function") return "Listener";
+  if (kind === "function") return promisedOf(rust) ?? "Listener";
   if (kind === "array") return "List";
   return rust.replace(/^&/, "").replace(/<.*$/, "");
 }
@@ -854,7 +866,7 @@ function variantName(rust: string): string {
 function tsName(rust: string): string {
   const kind = kindOf(rust);
   if (kind === "string" || kind === "boolean" || kind === "number") return kind;
-  if (kind === "function") return "EventListener";
+  if (kind === "function") return promisedOf(rust) ?? "EventListener";
   const name = variantName(rust);
   const idl = INTERFACES.find((n) => typeName(n) === name);
   return idl ? jsName(interfaces.get(idl)!) : name;
@@ -1056,6 +1068,79 @@ const CALLED_ONCE = new Set([
   "RTCPeerConnection.setRemoteDescription",
   "RTCPeerConnection.addIceCandidate",
 ]);
+
+/**
+ * A callback whose result is a promise, WebIDL's `Promise<any> ()` of a
+ * `ViewTransitionUpdateCallback`, gives JS what JS resolves, as a promise's
+ * `then` does: a promise, or any value, `()` `undefined`, as TypeScript's
+ * `(): any` and `(): void | PromiseLike<void>` are (rd206). So it's a
+ * function of any result, `Into<Name>`, which a closure or a function is
+ * (`ADR 1026`). What JS keeps is JS's, as ADR 1021 says of a handler:
+ * where Rust gives it, moved, a `Box`, which may own what it holds; where
+ * Rust lends it, a union's `Option<&dyn ..>` (ADR 0443) or a field of a
+ * dictionary in one, `&dyn`, `Copy`, `Fn`, which owns nothing Rust drops
+ * when the borrow ends, while JS still holds it.
+ */
+type Promised = { args: string[]; lent: boolean; once: boolean; ts: string };
+const promised = new Map<string, Promised>();
+function promisedCallback(callback: Def): string | { skip: string } {
+  const name = callback.name;
+  let known = promised.get(name);
+  if (!known) {
+    const args = (callback.arguments ?? []).map((a) => {
+      const type = paramType(a.idlType);
+      return type && a.idlType.nullable ? `Option<${type}>` : type;
+    });
+    if (args.some((a) => !a || a === ANY)) return { skip: "callback" };
+    const uses = callbackUses().get(name) ?? { lent: false, ops: new Set<string>() };
+    const once = !uses.lent && uses.ops.size > 0 && [...uses.ops].every((op) => CALLED_ONCE.has(op));
+    known = { args: args as string[], lent: uses.lent, once, ts: name };
+    promised.set(name, known);
+  }
+  return known.lent ? `&dyn Into${name}` : `Box<dyn Into${name}>`;
+}
+
+/** The bound of a function `Into<name>` takes: its arguments, `'static`
+ * borrows, as a handler's event is (ADR 1021), and any result `R`. */
+function promisedBound(name: string): string {
+  const { args, lent, once } = promised.get(name)!;
+  const each = args.map((a) => a.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>"));
+  return `${lent ? "Fn" : once ? "FnOnce" : "FnMut"}(${each.join(", ")}) -> R${lent ? " + Copy" : ""} + 'static`;
+}
+
+/** Where each callback is taken: the operations, `Interface.op`, and
+ * whether a union holds it, or a dictionary one holds: lent. */
+let uses: Map<string, { lent: boolean; ops: Set<string> }> | undefined;
+function callbackUses(): Map<string, { lent: boolean; ops: Set<string> }> {
+  if (uses) return uses;
+  const found = new Map<string, { lent: boolean; ops: Set<string> }>();
+  const use = (name: string) => found.get(name) ?? found.set(name, { lent: false, ops: new Set() }).get(name)!;
+  const seen = new Set<string>();
+  const walk = (t: IdlType | undefined, op: string | undefined, inUnion: boolean): void => {
+    if (!t) return;
+    if (Array.isArray(t.idlType)) return t.idlType.forEach((each) => walk(each, op, inUnion || !!t.union));
+    const name = t.idlType as string;
+    const aliased = typedefs.get(name);
+    if (aliased) return walk(aliased, op, inUnion);
+    if (callbacks.has(name)) {
+      const u = use(name);
+      if (inUnion) u.lent = true;
+      if (op) u.ops.add(op);
+    }
+    const d = dictionaries.get(name);
+    if (d && !seen.has(`${name}${inUnion}`)) {
+      seen.add(`${name}${inUnion}`);
+      for (const m of dictionaryMembers(d)) walk(m.idlType, undefined, inUnion);
+    }
+  };
+  for (const d of everywhere) {
+    for (const m of d.members ?? []) {
+      if (m.type === "operation" || m.type === "constructor") for (const a of m.arguments ?? []) walk(a.idlType, `${d.name}.${m.name}`, false);
+    }
+  }
+  uses = found;
+  return found;
+}
 
 /** A parameter of an operation `CALLED_ONCE` names: its callbacks called once. */
 const once = (param: string) => param.replaceAll("Box<dyn FnMut(", "Box<dyn FnOnce(");
@@ -2156,6 +2241,18 @@ mod handlers {
     impl Error for &'static dyn Fn(Option<&Unknown>) {}
 }`);
 
+// Each callback of a result JS resolves (\`promisedCallback\`): what it takes,
+// a function or closure of any result, sealed by a trait of its own.
+for (const [name, { lent, ts }] of [...promised].sort(([a], [b]) => a.localeCompare(b))) {
+  line();
+  line(`/// What a \`${ts}\` takes: a function or closure that gives what JS resolves, as a`);
+  line(`/// promise's \`then\` does, a promise or any value, \`()\` \`undefined\` (ADR 1026). ${lent ? "Lent," : "Moved,"}`);
+  line(lent ? `/// \`Some(&update)\`, it's \`Copy\`, which owns nothing to drop while JS holds it (ADR 1021).` : `/// \`Box::new(..)\`, it's JS's, which may own what it holds.`);
+  line(`#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`${ts}\`", note = "a \`${ts}\` is a function or closure of what JS gives it${lent ? ", \`Copy\`," : ""} that gives any value, a promise or not")]`);
+  line(`#[cfg_attr(rust_js, rust_js::types = "${ts}")]`);
+  line(`pub trait Into${name}: promised::Into${name} {}`);
+  line(`impl<R: 'static, F: ${promisedBound(name)}> Into${name} for F {}`);
+}
 // The dictionaries results use, as plain structs: JS objects (ADR 0020).
 for (const [name, fields] of usedDictionaries) {
   line();
@@ -2197,6 +2294,7 @@ const ancestors = (name: string): string[] => {
 // the enum, which a function's parameter of it takes (ADR 0229): each the
 // value itself. Sealed, by a trait each of them has once.
 const sealed = new Set<string>();
+const promisedUnions = new Map<string, { generics: string; type: string }[]>();
 for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.name))) {
   const lifetime = union.borrows ? "<'a>" : "";
   const elided = (type: string) => type.replace(/&'a /g, "&").replace(/'a\b/g, "'_");
@@ -2238,10 +2336,22 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   line(`/// an optional one, \`Option<&dyn Into${union.name}>\`, each borrowed, \`Some(&value)\` (ADR 0443).`);
   line(`#[diagnostic::on_unimplemented(message = "\`{Self}\` is not a \`${ts}\`", note = "an optional one, \`Option<&dyn Into${union.name}>\`, takes \`Some(&value)\`")]`);
   line(`#[cfg_attr(rust_js, rust_js::types = "${ts}")]`);
-  line(`pub trait Into${union.name}: sealed::Sealed {}`);
-  for (const member of [...members, own]) {
-    line(`impl Into${union.name} for ${member} {}`);
-    sealed.add(member);
+  // A union of a callback of a result JS resolves takes the function
+  // itself, of any result, `Some(&|| ..)`: sealed by a trait of its own,
+  // as no shared one may take every function beside each other member.
+  const callback = union.variants.map((v) => promisedOf(v.type)).find((c) => c !== undefined);
+  if (callback) {
+    const impls = [{ generics: `<R: 'static, F: ${promisedBound(callback)}>`, type: "F" }];
+    for (const member of [...members, own]) if (!promisedOf(member)) impls.push({ generics: "", type: member });
+    promisedUnions.set(union.name, impls);
+    line(`pub trait Into${union.name}: promised::Into${union.name} {}`);
+    for (const { generics, type } of impls) line(`impl${generics} Into${union.name} for ${type} {}`);
+  } else {
+    line(`pub trait Into${union.name}: sealed::Sealed {}`);
+    for (const member of [...members, own]) {
+      line(`impl Into${union.name} for ${member} {}`);
+      sealed.add(member);
+    }
   }
   line(`/// A rest parameter of \`${ts}\`s takes each member (ADR 0640).`);
   line(`impl<A: Into${union.name}> Takes<A> for dyn Into${union.name} {}`);
@@ -2264,6 +2374,20 @@ for (const named of [...restInterfaces].sort()) {
     line(`impl<'a> Takes<&'a ${typeName(n)}> for ${typeName(named)} {}`);
   }
 }
+line();
+line(`mod promised {`);
+line(`    use super::*;`);
+for (const [name] of [...promised].sort(([a], [b]) => a.localeCompare(b))) {
+  line();
+  line(`    pub trait Into${name} {}`);
+  line(`    impl<R: 'static, F: ${promisedBound(name)}> Into${name} for F {}`);
+}
+for (const [union, impls] of [...promisedUnions].sort(([a], [b]) => a.localeCompare(b))) {
+  line();
+  line(`    pub trait Into${union} {}`);
+  for (const { generics, type } of impls) line(`    impl${generics} Into${union} for ${type} {}`);
+}
+line(`}`);
 line();
 line(`mod sealed {`);
 line(`    use super::*;`);
