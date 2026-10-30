@@ -813,6 +813,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1026 A callback of a promise JS resolves gives any value, and a string in an array is a `String`](1026-a-callback-of-a-promise-js-resolves-gives-any-value.md) *(rd206)*
 - [1027 A held class's static is called on it, and whether the host has a class is `js::is_function` of it](1027-a-held-classs-static-is-called-on-it.md) *(rd235)*
 - [1028 A dictionary or a union of `Copy` values is `Copy`, and a narrower union is one of a wider](1028-a-dictionary-of-copy-values-is-copy.md) *(rd208)*
+- [1029 A stepped index to an item is counted to the length](1029-a-stepped-index-to-an-item-is-counted-to-the-length.md) *(rd260)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -579,3 +579,103 @@ pub fn ordered(mut k: usize) -> usize {
   lib.swapped(m);
   expect([lib.pairs([1, 2, 3]), m, lib.ordered(0)]).toEqual([11, [3, 2, 1], 45]);
 });
+
+// rd260: React's Fizz runtime counts its batch, `for (let i = 0; i <
+// batch.length; i += 2)`, whose length grows as it runs; its port, `for i
+// in (0..).step_by(2) { let Some(&id) = batch.borrow().get(i) else { break;
+// }; .. }`, which reads the length each turn as upstream does, printed
+// `for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(..)),
+// 2))`, a BigInt's range code Closure can't make ES5 of. An item that may
+// be `None`, or of no size, keeps the iterator.
+test("a stepped index to a slice's item is counted to its length", () => {
+  const dir = fixture("counted-to-length");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+
+pub fn complete(batch: &RefCell<Vec<u32>>) -> u32 {
+    let mut sum = 0;
+    for i in (0..).step_by(2) {
+        let Some(&id) = batch.borrow().get(i) else {
+            break;
+        };
+        let content = batch.borrow().get(i + 1).copied().unwrap_or(0);
+        if id == 7 {
+            batch.borrow_mut().extend([1, 1]);
+        }
+        sum += id * content;
+    }
+    sum
+}
+
+pub fn ones(batch: &[u32]) -> u32 {
+    let mut sum = 0;
+    for i in (1..).step_by(1) {
+        let Some(id) = batch.get(i).copied() else {
+            break;
+        };
+        sum += id;
+    }
+    sum
+}
+
+pub fn slots(batch: &[Option<u32>]) -> u32 {
+    let mut sum = 0;
+    for i in (0..).step_by(2) {
+        let Some(&slot) = batch.get(i) else {
+            break;
+        };
+        sum += slot.unwrap_or(100);
+    }
+    sum
+}
+
+pub fn flat(batch: &[Option<u32>]) -> u32 {
+    let mut sum = 0;
+    for i in (0..).step_by(2) {
+        let Some(id) = batch.get(i).copied().flatten() else {
+            break;
+        };
+        sum += id;
+    }
+    sum
+}
+
+pub fn other(batch: &[u32]) -> usize {
+    let mut sum = 0;
+    let mut k = 0;
+    for i in (0..).step_by(2) {
+        let Some(&id) = batch.get(k) else {
+            break;
+        };
+        sum += id as usize * i;
+        k += 1;
+    }
+    sum
+}
+
+pub fn wide(batch: &[u32]) -> u32 {
+    let mut sum = 0;
+    for i in (0..).step_by(2_147_483_649) {
+        let Some(&id) = batch.get(i) else {
+            break;
+        };
+        sum += id;
+    }
+    sum
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (let i = 0; i < batch.length; i += 2) {\n    const id = batch[i];\n    const content = batch[i + 1] ?? 0;\n");
+  expect(js).toContain("  for (let i = 1; i < batch.length; i++) {\n    const id = batch[i];\n");
+  expect(js).toContain("  for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(0, 4294967295)), 2)) {\n    const get = $someAt(batch, i);\n");
+  // A `None` an item may be ends the loop, of `flatten()`, and another
+  // index, or a step that may pass `usize`'s most, isn't the loop's count.
+  const stepped = (step: number, read: string) =>
+    `  for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(0, 4294967295)), ${step})) {\n    const id = batch[${read}];\n`;
+  expect(js).toContain(`export function flat(batch) {\n  let sum = 0;\n${stepped(2, "i")}`);
+  expect(js).toContain(stepped(2, "k"));
+  expect(js).toContain(stepped(2147483649, "i"));
+});

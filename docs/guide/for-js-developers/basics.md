@@ -2359,6 +2359,36 @@ export function lastNamed(names) {
 }
 ```
 
+- A loop that steps past a length a body may grow, `for (let i = 0; i <
+  batch.length; i += 2)`, is `for i in (0..).step_by(2)` whose body starts
+  with `let Some(&id) = batch.get(i) else { break };`, which reads the
+  length each turn as the `for`'s test does
+  ([ADR 1029](../../decisions/1029-a-stepped-index-to-an-item-is-counted-to-the-length.md)):
+
+```rust
+pub fn completed(batch: &[u32]) -> u32 {
+    let mut sum = 0;
+    for i in (0..).step_by(2) {
+        let Some(&id) = batch.get(i) else {
+            break;
+        };
+        sum += id;
+    }
+    sum
+}
+```
+
+```js
+export function completed(batch) {
+  let sum = 0;
+  for (let i = 0; i < batch.length; i += 2) {
+    const id = batch[i];
+    sum = (sum + id) >>> 0;
+  }
+  return sum;
+}
+```
+
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

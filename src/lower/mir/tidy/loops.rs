@@ -417,6 +417,90 @@ fn from_the_end(
     Some((name, start, test, body.to_vec()))
 }
 
+/// Of a loop of `(s..).step_by(n)`, `$stepBy(..)` (`stepped_from`), whose
+/// body starts with `let Some(x) = v.get(i) else { break; }`, `const x =
+/// v[i]; if (x == null) { break; }` (`Written::present_breaks`): `for (let
+/// i = s; i < v.length; i += n) { const x = v[i]; .. }`, as React's Fizz
+/// runtime counts its batch (rd260). Each turn runs the same: Rust's steps
+/// `i` and then tests `v.get(i)`, which reads `v`'s length then, as the
+/// `for`'s test does; where it holds, `i` is below that length, at most
+/// `isize`'s most of items that take up room, so `i + n` can't pass
+/// `usize`'s most, where Rust's step would panic.
+pub(super) fn counted_to_lengths(stmts: &mut [Stmt], present_breaks: &[js::Span]) {
+    for stmt in stmts {
+        if let StmtKind::ForOf {
+            label,
+            pattern,
+            mutable: false,
+            iterable,
+            body,
+            keys: false,
+        } = &stmt.kind
+            && let Some(counted) = counted_to_length(iterable, pattern, body, present_breaks)
+        {
+            let (name, start, test, step, body) = counted;
+            stmt.kind = StmtKind::For {
+                label: label.clone(),
+                name,
+                start,
+                test,
+                step,
+                body,
+            };
+        }
+    }
+}
+
+/// The parts of `counted_to_lengths`' `for` of a loop of `iterable`.
+fn counted_to_length(
+    iterable: &Expr,
+    pattern: &js::Pattern,
+    body: &[Stmt],
+    present_breaks: &[js::Span],
+) -> Option<(String, Expr, Expr, js::Step, Vec<Stmt>)> {
+    let (start, n) = crate::lower::iterators::stepped_from(iterable)?;
+    let js::Pattern::Name(name) = pattern else {
+        return None;
+    };
+    let [first, second, rest @ ..] = body else {
+        return None;
+    };
+    let StmtKind::Const(item, read) = &first.kind else {
+        return None;
+    };
+    let ExprKind::Index(items, index) = &read.kind else {
+        return None;
+    };
+    // The slice read where it's tested, each turn, as `get` reads it.
+    let path = |e: &Expr| {
+        let mut e = e;
+        while let ExprKind::Member(of, _) = &e.kind {
+            e = of;
+        }
+        matches!(e.kind, ExprKind::Var(_))
+    };
+    let within = |s: js::Span| !s.is_none() && present_breaks.iter().any(|c| c.lo <= s.lo && s.hi <= c.hi);
+    let broken = matches!(&second.kind, StmtKind::If(test, then, None)
+        if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(None), .. }])
+            && js::null_test(test, false).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)));
+    if !matches!(&index.kind, ExprKind::Var(i) if i == name)
+        || !path(items)
+        || !broken
+        || !(within(first.span) || within(second.span))
+        || n > i128::from(i32::MAX) + 1
+    {
+        return None;
+    }
+    let test = Expr::bin(Op::Lt, Expr::var(name), Expr::member((**items).clone(), "length"));
+    let step = match n {
+        1 => js::Step::Up,
+        n => js::Step::By(Op::Add, Expr::int(n)),
+    };
+    let mut stepped = vec![first.clone()];
+    stepped.extend(rest.iter().cloned());
+    Some((name.clone(), start.clone(), test, step, stepped))
+}
+
 /// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,
 /// `$keysIn(o).map((x, i) => [i, x])`: `n`, `key` and `o`, where a counter
 /// is the same `n` each turn: no closure in the body reads it, which would

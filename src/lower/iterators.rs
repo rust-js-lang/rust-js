@@ -577,6 +577,35 @@ pub(in crate::lower) struct SteppedRange<'e> {
     pub(in crate::lower) back: bool,
 }
 
+/// Of `(s..).step_by(n)`, made where it's stepped, `$stepBy($iterator({
+/// start: s }, $rangeFromStep(..)), n)`: `s` and `n`, a whole number from
+/// 1 up, which every step adds (rd260).
+pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (Some("$stepBy"), [made, n]) = (callee.helper_name(), &args[..]) else {
+        return None;
+    };
+    let js::ExprKind::Call(iterator, parts) = &made.kind else {
+        return None;
+    };
+    let (Some("$iterator"), [range, next]) = (iterator.helper_name(), &parts[..]) else {
+        return None;
+    };
+    let js::ExprKind::Call(stepper, _) = &next.kind else {
+        return None;
+    };
+    let (js::ExprKind::Object(bounds, ..), Some("$rangeFromStep")) = (&range.kind, stepper.helper_name()) else {
+        return None;
+    };
+    let [js::Prop::Field(s, start)] = &bounds[..] else {
+        return None;
+    };
+    let n = n.as_int().filter(|&n| n >= 1)?;
+    (s == "start").then_some((start, n))
+}
+
 pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;

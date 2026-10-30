@@ -203,6 +203,12 @@ pub(super) const STAGES: &[Stage] = &[
             // What an array made for its parts left, `const _5 = 6;`, too.
             pass("parts' aliases", |b, _| alias_variables(b)),
             pass("named temporaries", |b, _| named_temporaries(b)),
+            // `for (const i of (s..).step_by(n))` of a body that breaks
+            // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i
+            // += n)`, before `range steps` makes another iterator of it (rd260).
+            pass("counted to lengths", |b, h| {
+                js::statement_lists(b, &mut |s| counted_to_lengths(s, &h.written.present_breaks))
+            }),
             pass("consumed into iterators", |b, h| {
                 iterators::consumed_into_iters(b, h.fuse)
             }),

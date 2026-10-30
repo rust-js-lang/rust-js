@@ -13,7 +13,7 @@ use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
 use crate::lower::recognition::{PresentItem, is_local_borrow, present_item};
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, PatKind, Thir};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 /// Each of the crate's bodies walked, by what it is: its THIR and its root.
@@ -75,4 +75,31 @@ pub(super) fn below_most(var: LocalVarId, volatile: bool, known: &mut Option<Kno
             },
         );
     }
+}
+
+/// Whether `init`, an `Option` a `let pattern = init else { .. }` tests,
+/// `pattern` a `Some(..)`,
+/// is an item of a slice by its index, `v.get(i)`, `.copied()` too
+/// (`present::present_index`), of items that take up room: where it's
+/// `Some`, `i` is below the slice's length, at most `isize`'s most (ADR
+/// 0701), so `i + n` stays in `usize` for any `n` up to it, and where it's
+/// `None`, `i` is the length or past it (rd260).
+pub(in crate::lower) fn present_item_of_sized<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &Thir<'tcx>,
+    pattern: &Pat<'tcx>,
+    init: ExprId,
+) -> bool {
+    if !some_pattern(tcx, pattern) {
+        return false;
+    }
+    let rustc_middle::ty::Adt(_, args) = thir[init].ty.kind() else {
+        return false;
+    };
+    let item = args.types().next().map(|t| t.peel_refs());
+    let sized = item.filter(|item| !item.has_param()).is_some_and(|item| {
+        (tcx.layout_of(rustc_middle::ty::TypingEnv::fully_monomorphized().as_query_input(item)))
+            .is_ok_and(|layout| !layout.is_zst())
+    });
+    sized && present_index(tcx, thir, init, &HashMap::new()).is_some()
 }

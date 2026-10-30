@@ -7,6 +7,8 @@
 use super::*;
 use crate::lower::body_queries::{self, PatternValue};
 
+mod present_breaks;
+
 /// Where the program writes what tidy reads a body's JS by.
 pub(super) struct Written {
     /// Each `match` whose arms are each a variant of its own, with no field,
@@ -39,6 +41,11 @@ pub(super) struct Written {
     /// exit, which stays where it's written, not a tail it's alike
     /// (`shared_tails`), and comes first (`let_else_first`).
     pub let_elses: Vec<js::Span>,
+    /// Where each `let Some(x) = v.get(i) else { break; }` is written, of
+    /// items that take up room: where it breaks, `i` is the slice's length
+    /// or past it (`body_queries::present_item_of_sized`), a `for`'s test
+    /// of it (rd260).
+    pub present_breaks: Vec<js::Span>,
     /// Each `&&` or `||` the program wrote.
     pub logicals: Vec<js::Span>,
     /// Each `js::strict_equals(a, b)` the program wrote, a chain of which
@@ -500,7 +507,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .chain(tries)
             .chain(arm_exits)
             .collect();
+        let present_breaks = self.present_breaks();
         Written {
+            present_breaks,
             tables,
             conditions,
             ifs,

@@ -217,7 +217,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
-it. `mir/hints.rs` supplies source facts and `mir/offsets.rs` analyzes string
+it. `mir/hints.rs` and `mir/hints/` supply source facts and `mir/offsets.rs` analyzes string
 offsets without emission. `mir/tidy/stages.rs` lists the body rewrites, in
 stages that each say what they leave a body with; `mir/tidy.rs` runs them and,
 in a debug build, checks each stage's contracts (`mir/tidy/contracts.rs`).

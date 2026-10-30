@@ -27,6 +27,7 @@ mod tables;
 
 use cells::reads_a_cell;
 use known::{Below, ITEM, Known, Range, VALUE, by_value, either};
+pub(in crate::lower) use present::present_item_of_sized;
 use reads::{calls, pure, read_vars};
 use tables::chosen;
 
