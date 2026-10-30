@@ -80,4 +80,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_collect_drops.rs$"],
     snapshots: true,
   },
+  {
+    name: "helper-drop-unseen",
+    breaks: "a helper stepping all is taken to be given no drop of its items, so a `$iter` of a borrowed `Vec` it's given is made the array, which it takes as its own and drops what's left of as a panic stops it (#423)",
+    file: "src/lower/iterators/in_place.rs",
+    find: "        .filter(|drop| !matches!(drop.kind, js::ExprKind::Undefined))\n",
+    replace: "        .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];

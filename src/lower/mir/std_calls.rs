@@ -927,9 +927,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut exprs = this.marked_in_place(exprs, arg_tys, span);
                     let receiver = exprs.remove(0);
                     let it = this.as_js_iterator(receiver, iter_ty, span)?;
+                    // One that owns items with a destructor, given whole to a
+                    // consumer that leaves none, `partition`'s or `max_by`'s,
+                    // closed too: a panic in its callback stops it part-way,
+                    // and what's left is dropped as it unwinds, by its closing,
+                    // as `dropping_source` closes `max()`'s (#423).
                     let it = match lent {
                         true => this.lent_iterator(it),
-                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,
+                        false if comb.holds_its_sources() || comb.leaves_none() => this.closing(it, iter_ty, span)?,
                         false => it,
                     };
                     // Another iterator it's given, `chain(Counter(0))`'s, the

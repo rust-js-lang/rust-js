@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     "name": "extreme-of-copy",
     "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
     "file": "src/lower/iterators/eager.rs",
-    "find": "            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))\n            && let Some(chain) = args.first()\n",
-    "replace": "            .is_some_and(|_| false)\n            && let Some(chain) = args.first()\n",
+    "find": "            && steps_all(name)\n            && let Some(chain) = args.first()\n",
+    "replace": "            && steps_all(name)\n            && false\n            && let Some(chain) = args.first()\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
   },
   {
@@ -379,5 +379,22 @@ export const mutations: Mutation[] = [
     find: "                && taker.is_none_or(|f| !crate::lower::iterators::in_place::may_throw(f)) =>\n",
     replace: " =>\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+  },
+  {
+    name: "closed-by-its-drop-unread",
+    breaks: "an owning `$iter` closed by the drop its consumer is given, `$maxByKey($closing($iter(xs), $dropEach(drop)), ..)`, isn't read as the array the helper closes itself, `$maxByKey(xs, ..)` (#423)",
+    file: "src/lower/iterators/eager.rs",
+    find: "    by_drop.then(|| fresh_iter_source(it)).flatten()\n",
+    replace: "    by_drop.then(|| fresh_iter_source(it)).flatten().filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "borrowed-made-owned",
+    breaks: "a `$iter` of a borrowed `Vec`, `cloned()`'s, given to a consumer with its items' drop, is made the array, which the helper takes as its own and drops what's left of as a panic stops it (#423)",
+    file: "src/lower/iterators/eager.rs",
+    find: "        _ if owns => return None,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];

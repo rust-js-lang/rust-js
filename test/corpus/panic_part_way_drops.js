@@ -29,11 +29,13 @@ import {
   $lazyZip,
   $lent,
   $mapFrom,
+  $maxBy,
   $maxByKey,
   $minBy,
   $next,
   $partition,
   $position,
+  $range,
   $rangeNext,
   $rev,
   $roomForHint,
@@ -52,6 +54,10 @@ function dDrop_drop(d) {
 
 function ds(r) {
   return Array.from($iterator(r, $rangeNext).map((value) => [value]));
+}
+
+function cDrop_drop(c) {
+  console.log(`drop ${c[0]}`);
 }
 
 function boom(d, at) {
@@ -1106,5 +1112,182 @@ function main() {
       }
     }
   });
+  // A held iterator, stepped once, given whole to a consumer that keeps
+  // what it takes: what's left dropped as it unwinds too.
+  run("held max_by_key", () => {
+    const it = $iter(ds({ start: 900, end: 905 }));
+    let next;
+    try {
+      next = $next(it);
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      if (next != null) {
+        dDrop_drop(next);
+      }
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    const x = $maxByKey(
+      $closing(it, $dropEach(dDrop_drop)),
+      (d) => {
+        boom(d, 902);
+        return d[0];
+      },
+      $cmp,
+      false,
+      dDrop_drop,
+    );
+    console.log(`${x != null}`);
+    if (x != null) {
+      dDrop_drop(x);
+    }
+  });
+  run("held partition", () => {
+    const it = $iter(ds({ start: 910, end: 915 }));
+    let next;
+    try {
+      next = $next(it);
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      if (next != null) {
+        dDrop_drop(next);
+      }
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    const [a, b] = $partition($closing(it, $dropEach(dDrop_drop)), (d) => boom(d, 912), dDrop_drop);
+    console.log(`${a.length} ${b.length}`);
+    try {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+    } finally {
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }
+  });
+  run("held min_by", () => {
+    const it = $iter(ds({ start: 920, end: 925 }));
+    let next;
+    try {
+      next = $next(it);
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    try {
+      if (next != null) {
+        dDrop_drop(next);
+      }
+    } catch (error) {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+      throw error;
+    }
+    const x = $minBy(
+      $closing(it, $dropEach(dDrop_drop)),
+      (a, b) => {
+        boom(b, 923);
+        return $cmp(a[0], b[0]);
+      },
+      false,
+      dDrop_drop,
+    );
+    console.log(`${x != null}`);
+    if (x != null) {
+      dDrop_drop(x);
+    }
+  });
+  // Lent, what's left is the lender's, dropped where it is.
+  run("lent max_by", () => {
+    const it = $iter(ds({ start: 930, end: 935 }));
+    try {
+      const x = $maxBy(
+        $lent(it),
+        (a, b) => {
+          boom(b, 932);
+          return $cmp(a[0], b[0]);
+        },
+        false,
+        dDrop_drop,
+      );
+      console.log(`${x != null} ${it.end - it.at}`);
+      if (x != null) {
+        dDrop_drop(x);
+      }
+    } finally {
+      for (const item of it) {
+        dDrop_drop(item);
+      }
+    }
+  });
+  const cs = $range(940, 945).map((value) => [value]);
+  try {
+    run("cloned max_by_key", () => {
+      const x = $maxByKey(
+        $iter(cs),
+        (c) => {
+          if (c[0] === 942) {
+            throw new Error("942");
+          }
+          return c[0];
+        },
+        $cmp,
+        false,
+        cDrop_drop,
+      );
+      console.log(`${x != null}`);
+      if (x != null) {
+        cDrop_drop(x);
+      }
+    });
+    run("cloned partition", () => {
+      const [a, b] = $partition(
+        $iter(cs),
+        (c) => {
+          if (c[0] === 943) {
+            throw new Error("943");
+          }
+          return c[0] % 2 === 0;
+        },
+        cDrop_drop,
+      );
+      console.log(`${a.length} ${b.length}`);
+      try {
+        for (const item of b) {
+          cDrop_drop(item);
+        }
+      } finally {
+        for (const item of a) {
+          cDrop_drop(item);
+        }
+      }
+    });
+    console.log(`${cs.length}`);
+  } finally {
+    for (const item of cs) {
+      cDrop_drop(item);
+    }
+  }
 }
 //# sourceMappingURL=case.js.map

@@ -207,12 +207,22 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
             return;
         }
         // What reads every item, as each comes, `$max`'s: of the array
-        // itself, `$max(xs)`; `$maxBy`'s compares as each comes.
-        if callee
-            .helper_name()
-            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))
+        // itself, `$max(xs)`; `$maxBy`'s compares as each comes. Given its
+        // items' drop, an array is the helper's own, which it closes to drop
+        // what's left where a panic stops it (#423): of an owning `$iter`
+        // closed by that drop, the array, closed as the helper closes it;
+        // of a chain of one closed where nothing may throw, its items; of
+        // one not closed, which it doesn't own, none.
+        if let Some(name) = callee.helper_name()
+            && steps_all(name)
             && let Some(chain) = args.first()
-            && let Some((items, _)) = eager_items(chain, true, args.get(1))
+            && let Some(items) = match item_drop_given(name, args) {
+                Some(drop) => match closed_by_its_drop(chain, drop) {
+                    Some(items) => Some(items.clone()),
+                    None => eager_items_of(chain, true, args.get(1), true).map(|(items, _)| items),
+                },
+                None => eager_items(chain, true, args.get(1)).map(|(items, _)| items),
+            }
         {
             let mut args = args.clone();
             args[0] = items;
@@ -341,6 +351,22 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
     }
 }
 
+/// Of `$closing($iter(xs), $dropEach(drop))`, an owning `$iter` closed by
+/// `drop`, as a helper given `drop` closes an array it's given (#423): `xs`.
+fn closed_by_its_drop<'e>(chain: &'e Expr, drop: &Expr) -> Option<&'e Expr> {
+    let js::ExprKind::Call(closing, args) = &chain.kind else {
+        return None;
+    };
+    let [it, each] = &args[..] else { return None };
+    let js::ExprKind::Call(drop_each, dropped) = &each.kind else {
+        return None;
+    };
+    let by_drop = closing.helper_name() == Some("$closing")
+        && drop_each.helper_name() == Some("$dropEach")
+        && matches!(&dropped[..], [d] if d.kind == drop.kind);
+    by_drop.then(|| fresh_iter_source(it)).flatten()
+}
+
 /// A chain MIR makes as Rust runs it (ADR 0364), item by item, `$iter(xs)
 /// .map(f).filter(g)`: an array made of `xs`, `xs.map(f).filter(g)`
 /// (ADR 0055), and how many stages it has, where the order its closures run
@@ -349,6 +375,13 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
 /// callback, which runs as each item comes, among them; else it may stop
 /// early, and no stage may.
 fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr, usize)> {
+    eager_items_of(chain, whole, taker, false)
+}
+
+/// `eager_items`', given to what `owns` the array it's made, a helper given
+/// its items' drop, which closes it: only of a source that owns its items,
+/// closed, never one it borrows (#423).
+fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -> Option<(Expr, usize)> {
     let mut stages = Vec::new();
     let mut at = unlent(chain);
     while let js::ExprKind::Call(callee, args) = &at.kind
@@ -385,6 +418,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         {
             &args[0]
         }
+        _ if owns => return None,
         _ => at,
     };
     let js::ExprKind::Call(_, args) = &at.kind else {
@@ -569,9 +603,7 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
                 return;
             }
             stepped_in_place(object, false, fuse);
-        } else if callee
-            .helper_name()
-            .is_some_and(|name| HELPERS_STEPPING_ALL.contains(&name))
+        } else if callee.helper_name().is_some_and(steps_all)
             && let Some(first) = args.first_mut()
         {
             stepped_in_place(first, false, fuse);

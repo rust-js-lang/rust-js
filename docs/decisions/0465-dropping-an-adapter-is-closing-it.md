@@ -646,3 +646,38 @@ second source's call, was taken to throw nothing: native drops 2, 3, 12,
 against native Rust and the mutations `hidden-stage-unseen` and
 `folded-collect-after-unwinding` (`lower/mir/iter/collect.ts`) and
 `callbacks-uncounted` (`lower/iterators/in_place.ts`).
+
+## Amendment: a consumer that keeps what it takes is given its source closed (2026-10-30, #423)
+
+`partition`, `max_by` and `max_by_key` of an owning iterator, by the
+combinators' path, were given its `$iter` unclosed, and their helpers close
+only an array they're given with its items' drop. Tidy's eager chains made
+`$maxByKey($iter(ds()), ..)` the array, `$maxByKey(ds(), ..)`, so the
+finished JS was right but each stage before it wasn't: the nightly's tidy
+stages (ADR 0659) failed `panic_mid_fold_drops` and `panic_part_way_drops`,
+native dropping 153 where JS didn't. A held iterator, `it.max_by_key(..)`
+after `it.next()`, was wrong in the finished JS too: native drops 903 and
+904, JS neither. And the array was made of what's borrowed: `v.iter()
+.cloned().max_by_key(..)`'s `$iter(v)`, made `v`, which the helper took as
+its own, so a panic dropped `v`'s items too. Results change, so Rust's
+behavior is kept (ADR 0262):
+- **A consumer that leaves none** (`IterComb::leaves_none`) **is given its
+  source closed**, as an adapter that holds it is and as `dropping_source`
+  closes `max()`'s: `$maxByKey($closing(it, $dropEach(drop)), ..)`.
+- **Tidy's eager chains reads `$closing($iter(xs), $dropEach(drop))` given
+  to a helper with that `drop` as `xs`**, which the helper closes the same
+  way (`closed_by_its_drop`), whatever its callback may throw: the finished
+  JS reads as before, and `max()`'s reads as `max_by`'s, `$maxBy(loud(),
+  ..)`. **Given its items' drop, a helper is never given an array made of a
+  source not closed**, which it doesn't own (`eager_items_of`'s `owns`).
+  `HELPERS_STEPPING_ALL` says where each helper is given its drop
+  (`item_drop_given`).
+
+One corpus case reads so, `extreme_drops.js`, 17 lines fewer and three `$iter`s; the `$iter`
+share went from 85.7 to 85.8 in 10,000 lines, blessed: the new cases' own,
+a held one and a borrowed one. Held by
+`panic_part_way_drops.rs`'s held, lent and cloned cases against native Rust,
+the tidy stages of the corpus, and the mutations `leaves-none-source-unclosed`
+(`lower/mir/std_calls.ts`), `closed-by-its-drop-unread` and
+`borrowed-made-owned` (`lower/iterators/eager.ts`) and `helper-drop-unseen`
+(`lower/iterators/in_place.ts`).

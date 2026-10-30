@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1366
-lines	133732
+lines	133898
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	118	8.8
-$iter	1146	85.7
+$iter	1149	85.8
 Iterator.from	115	8.6
 return;	139	10.4
-renamed x$1	8435	630.7
+renamed x$1	8435	630
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -382,7 +382,7 @@ test/corpus/extension_trait_params.js	83	0	0	0	4	0	1	0
 test/corpus/extract_if.js	148	0	0	0	0	3	0	0
 test/corpus/extract_if_drops.js	141	0	0	0	1	5	0	2
 test/corpus/extract_if_past_len.js	16	0	0	0	0	1	0	0
-test/corpus/extreme_drops.js	217	0	0	0	3	1	1	16
+test/corpus/extreme_drops.js	200	0	0	0	0	1	1	16
 test/corpus/f32.js	105	0	0	0	0	0	0	0
 test/corpus/f32_digits.js	50	0	0	0	0	0	0	3
 test/corpus/f32_parse.js	63	0	0	0	0	0	0	0
@@ -825,7 +825,7 @@ test/corpus/panic_in_std_bodies_drops.js	107	0	0	1	2	0	1	0
 test/corpus/panic_in_std_fold_drops.js	130	0	0	0	2	0	0	0
 test/corpus/panic_mid_fold_drops.js	1021	0	0	0	32	0	0	5
 test/corpus/panic_mid_iteration_drops.js	116	0	0	0	5	0	0	0
-test/corpus/panic_part_way_drops.js	1111	0	0	1	44	0	1	11
+test/corpus/panic_part_way_drops.js	1294	0	0	1	50	0	1	11
 test/corpus/parameter_assigned_itself.js	30	0	0	0	0	0	0	3
 test/corpus/parse_error_order.js	34	0	0	0	0	0	0	2
 test/corpus/partial_eq_other_type.js	46	0	0	0	0	0	0	6

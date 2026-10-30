@@ -19,6 +19,17 @@ fn ds(r: std::ops::Range<u32>) -> Vec<D> {
     r.map(D).collect()
 }
 
+// Cloned as each is taken from a `Vec` it borrows: what's left of it isn't
+// the consumer's to drop.
+#[derive(Clone)]
+struct C(u32);
+
+impl Drop for C {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
 fn boom(d: &D, at: u32) -> bool {
     if d.0 == at {
         panic!("boom");
@@ -383,4 +394,59 @@ fn main() {
             .collect();
         println!("{}", out.is_ok());
     });
+    // A held iterator, stepped once, given whole to a consumer that keeps
+    // what it takes: what's left dropped as it unwinds too.
+    run("held max_by_key", || {
+        let mut it = ds(900..905).into_iter();
+        it.next();
+        let x = it.max_by_key(|d| {
+            boom(d, 902);
+            d.0
+        });
+        println!("{}", x.is_some());
+    });
+    run("held partition", || {
+        let mut it = ds(910..915).into_iter();
+        it.next();
+        let (a, b): (Vec<D>, Vec<D>) = it.partition(|d| boom(d, 912));
+        println!("{} {}", a.len(), b.len());
+    });
+    run("held min_by", || {
+        let mut it = ds(920..925).into_iter();
+        it.next();
+        let x = it.min_by(|a, b| {
+            boom(b, 923);
+            a.cmp(b)
+        });
+        println!("{}", x.is_some());
+    });
+    // Lent, what's left is the lender's, dropped where it is.
+    run("lent max_by", || {
+        let mut it = ds(930..935).into_iter();
+        let x = it.by_ref().max_by(|a, b| {
+            boom(b, 932);
+            a.cmp(b)
+        });
+        println!("{} {}", x.is_some(), it.len());
+    });
+    let cs: Vec<C> = (940..945).map(C).collect();
+    run("cloned max_by_key", || {
+        let x = cs.iter().cloned().max_by_key(|c| {
+            if c.0 == 942 {
+                panic!("942");
+            }
+            c.0
+        });
+        println!("{}", x.is_some());
+    });
+    run("cloned partition", || {
+        let (a, b): (Vec<C>, Vec<C>) = cs.iter().cloned().partition(|c| {
+            if c.0 == 943 {
+                panic!("943");
+            }
+            c.0 % 2 == 0
+        });
+        println!("{} {}", a.len(), b.len());
+    });
+    println!("{}", cs.len());
 }

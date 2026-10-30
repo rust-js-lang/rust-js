@@ -11,17 +11,33 @@ pub(super) const STEPPED_TILL_DONE: [&str; 10] = [
 
 /// What the runtime's helpers step their first argument till its first
 /// `done` with, each item as it comes (#179): the extremes', `partition`'s
-/// and `unzip`'s.
-pub(in crate::lower) const HELPERS_STEPPING_ALL: [&str; 8] = [
-    "$max",
-    "$min",
-    "$maxBy",
-    "$minBy",
-    "$maxByKey",
-    "$minByKey",
-    "$partition",
-    "$unzip",
+/// and `unzip`'s; and of each that may be given its items' drop, which
+/// argument it is. An array given with it is the helper's own, closed as
+/// `$closing($iter(xs), $dropEach(drop))` (#423).
+const HELPERS_STEPPING_ALL: [(&str, Option<usize>); 8] = [
+    ("$max", None),
+    ("$min", None),
+    ("$maxBy", Some(3)),
+    ("$minBy", Some(3)),
+    ("$maxByKey", Some(4)),
+    ("$minByKey", Some(4)),
+    ("$partition", Some(2)),
+    ("$unzip", None),
 ];
+
+/// Whether `name` is one of the runtime's helpers that steps its first
+/// argument till its first `done` (`HELPERS_STEPPING_ALL`).
+pub(in crate::lower) fn steps_all(name: &str) -> bool {
+    HELPERS_STEPPING_ALL.iter().any(|(helper, _)| *helper == name)
+}
+
+/// The drop of its items `name`, a helper stepping all, is given among
+/// `args`, its call's; `None` where it's given none.
+pub(in crate::lower) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Option<&'e Expr> {
+    let (_, at) = HELPERS_STEPPING_ALL.iter().find(|(helper, _)| *helper == name)?;
+    args.get((*at)?)
+        .filter(|drop| !matches!(drop.kind, js::ExprKind::Undefined))
+}
 
 /// `e`, stepped till it ends, by a `for` or not: of an `$intoIter(xs)`,
 /// where nothing reads where it is, JS's iterator of `xs`, which a `for`

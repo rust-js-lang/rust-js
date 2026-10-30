@@ -813,4 +813,12 @@ export const mutations: Mutation[] = [
       "^flatten_of_iterators_from_back.rs$"
     ]
   },
+  {
+    name: "leaves-none-source-unclosed",
+    breaks: "an owning iterator given whole to `partition`, `max_by` or `max_by_key` isn't closed, so what's left when its callback panics is never dropped (#423)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        false if comb.holds_its_sources() || comb.leaves_none() => this.closing(it, iter_ty, span)?,\n",
+    replace: "                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
 ];
