@@ -94,6 +94,9 @@ pub(in crate::lower) enum JsForm {
     /// `||`: `this || other`, JS's `||` of any two values, `js::or`'s
     /// (rd181).
     Or,
+    /// `static`: a static method of the class `this` is, called on it,
+    /// `localPromise.resolve(null)`, `Class::call_static`'s (rd235).
+    Static,
 }
 
 /// What `js::is_defined`, `js::is_function` or `js::is_number` asks of a
@@ -159,6 +162,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "function" => return JsForm::WithThis,
         "method" => return JsForm::Method,
         "||" => return JsForm::Or,
+        "static" => return JsForm::Static,
         _ => {}
     }
     if let Some(tag) = name.strip_prefix('<').and_then(|t| t.strip_suffix('>')) {

@@ -633,6 +633,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::FnDef(f, _) if crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {
                 Some("Symbol.for".to_string())
             }
+            // A binding's class, `js::class::<Promise<()>>`, the global
+            // class TypeScript names, `typeof Promise === "function"` (rd235).
+            ty::FnDef(f, f_args)
+                if bindings::is_binding(tcx, f) && matches!(bindings::js_form(tcx, f), bindings::JsForm::Class) =>
+            {
+                f_args
+                    .skip_binder()
+                    .types()
+                    .next()
+                    .and_then(|ty| self.recognition().class_value(ty))
+            }
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) && bindings::is_method(tcx, f) => self.member_of_global(f),
             ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),
             _ => match self.static_given(body, &arg.node).filter(|&s| tcx.is_foreign_item(s)) {

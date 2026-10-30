@@ -574,6 +574,16 @@ export function controller() {
 - **What TypeScript names no class is refused**: a `JsError`, what JS
   threw, of no one class; a `JsObject` or an `Unknown`, TypeScript's
   `object` and `unknown`; a type it doesn't name, `any`.
+- **Whether the host has it is `js::is_function(js::class::<T>)`**,
+  `typeof Promise === "function"`, and **a static of the class held is
+  `class.call_static(binding, (arguments,))`**, called on the class held,
+  not the global: React DOM's `localPromise = typeof Promise === 'function'
+  ? Promise : undefined`, then `localPromise.resolve(null)`, is
+  `if js::is_function(js::class::<Promise<()>>) { Some(js::class::<Promise<()>>()) }
+  else { None }` and `local_promise.call_static(js::promise::resolve,
+  (js::null::<&Unknown>(),))`. The binding is the static's,
+  `Promise.resolve`; what's no binding's static is refused
+  ([ADR 1027](../../decisions/1027-a-held-classs-static-is-called-on-it.md)).
 
 ## What a value is: `typeof`
 

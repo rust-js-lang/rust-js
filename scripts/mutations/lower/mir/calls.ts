@@ -639,4 +639,12 @@ export const mutations: Mutation[] = [
     replace: "            js::ExprKind::Var(_) if false => {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
+  {
+    name: "is-function-of-a-class-refused",
+    breaks: "`js::is_function(js::class::<Promise<()>>)`, React's `typeof Promise === 'function'`, is refused (rd235)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    .and_then(|ty| self.recognition().class_value(ty))\n            }\n",
+    replace: "                    .and_then(|_| None)\n            }\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
+  },
 ];

@@ -494,3 +494,53 @@ test("js::method of a method of another type is refused", () => {
   const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb], root, 60_000);
   expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`js::method` of a path of bindings where a step isn't a method of what the one before gives")]);
 });
+
+// React DOM's localPromise (rd235): `typeof Promise === 'function' ?
+// Promise : undefined` held as the module loads, its static called on the
+// class it holds, `localPromise.resolve(null)`, not the global's: a page
+// that replaces `Promise` after still gets the one React captured.
+test("a class held as a value is asked whether it's a function, and its static called on it", async () => {
+  const dir = fixture("class-static-held");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Class, Promise, Unknown};
+
+thread_local! {
+    static LOCAL_PROMISE: Option<&'static Class> =
+        if js::is_function(js::class::<Promise<()>>) { Some(js::class::<Promise<()>>()) } else { None };
+}
+
+pub fn resolved() -> Option<Promise<Option<&'static Unknown>>> {
+    LOCAL_PROMISE.with(|local_promise| {
+        local_promise.map(|local_promise| local_promise.call_static(js::promise::resolve, (js::null::<&Unknown>(),)))
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof Promise === "function") {\n  localPromise = Promise;\n}');
+  expect(js).toContain(".resolve(null)");
+  expect(js).not.toContain("Promise.resolve");
+  const lib = await import(join(dir, "lib.js"));
+  const original = globalThis.Promise;
+  try {
+    (globalThis as Record<string, unknown>).Promise = { resolve: () => "replaced" };
+    const promise = lib.resolved();
+    expect(promise).toBeInstanceOf(original);
+    expect(await promise).toBeNull();
+  } finally {
+    globalThis.Promise = original;
+  }
+});
+
+test("a class's static call of what's no binding's static is refused", () => {
+  const dir = fixture("class-static-refused");
+  writeFileSync(join(dir, "lib.rs"), `fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+pub fn call(class: &js::Class) -> u32 {
+    class.call_static(twice, (2,))
+}
+`);
+  const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
+  expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`Class::call_static` of what isn't a binding's static method")]);
+});

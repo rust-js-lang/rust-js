@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "            Asked::Function => \"js::is_defined\",\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "refused"],
   },
+  {
+    name: "static-form-a-method",
+    breaks: "`Class::call_static` is a method of the class called `static`, `localPromise.static(..)` (rd235)",
+    file: "src/lower/bindings/forms.rs",
+    find: "        \"static\" => return JsForm::Static,\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
+  },
 ];

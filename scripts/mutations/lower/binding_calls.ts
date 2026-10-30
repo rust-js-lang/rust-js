@@ -523,4 +523,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => Expr::member(this, name).answered_by_a_getter(),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
+  {
+    name: "static-call-given-itself",
+    breaks: "a class's static called on it is given its own binding first, `localPromise.resolve(Promise.resolve, null)` (rd235)",
+    file: "src/lower/binding_calls.rs",
+    find: "                args.remove(0);\n                Expr::call(Expr::member(this, name).or_at(fun_span), args)\n",
+    replace: "                Expr::call(Expr::member(this, name).or_at(fun_span), args)\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
+  },
 ];

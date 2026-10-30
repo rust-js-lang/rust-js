@@ -255,6 +255,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
             (JsForm::NewThis, Some(this)) => Expr::new_(this, args),
             (JsForm::Null, None) if args.is_empty() => Expr::null(),
+            // A static method of the class `this` is, called on it,
+            // `localPromise.resolve(null)`: the static's own name, of its
+            // binding, `Promise.resolve`'s (rd235). Its own value, the
+            // first argument, is no argument JS is given.
+            (JsForm::Static, Some(this)) if !args.is_empty() => {
+                let Some(name) = static_member(self.tcx, generic_args) else {
+                    let what = "`Class::call_static` of what isn't a binding's static method, `js::promise::resolve`,";
+                    return Err(self.unsupported(span, what));
+                };
+                args.remove(0);
+                Expr::call(Expr::member(this, name).or_at(fun_span), args)
+            }
             (JsForm::Class, None) if args.is_empty() => {
                 let ty = generic_args.types().next();
                 let constructor = ty.and_then(|ty| match ty.kind() {
@@ -563,5 +575,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             kind: js::ExprKind::Function(Box::new(function)),
             span: closure.span,
         })
+    }
+}
+
+/// The member a static's binding names of its class, `resolve` of
+/// `Promise.resolve`, the function `Class::call_static` is given: a
+/// binding's, no method's, of a class's member.
+fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Option<String> {
+    let f = generic_args.types().find_map(|ty| match *ty.kind() {
+        ty::FnDef(f, _) => Some(f),
+        _ => None,
+    })?;
+    if !is_binding(tcx, f) || is_method(tcx, f) {
+        return None;
+    }
+    match js_form(tcx, f) {
+        JsForm::Call(name) if !name.contains('#') => {
+            let (class, member) = name.rsplit_once('.')?;
+            (!class.is_empty() && crate::names::is_identifier(member)).then(|| member.to_string())
+        }
+        _ => None,
     }
 }

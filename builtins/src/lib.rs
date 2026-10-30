@@ -988,6 +988,44 @@ constructs! {
     (A, B, C, D, E, F, G, H, I, J, K, L)
 }
 
+/// What [`Class::call_static`] calls: a static method's binding, given the
+/// tuple of its arguments, `A`, and what it gives. No program names it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't a static method given `{A}`",
+    note = "a class's static is called of its binding and a tuple of its arguments: `class.call_static(js::promise::resolve, (value,))`"
+)]
+pub trait Static<A> {
+    /// What it gives.
+    type Output;
+}
+
+/// `Static` of each function of up to 12 parameters.
+macro_rules! statics {
+    ($(($($a:ident),*))*) => {
+        $(
+            impl<F: Fn($($a),*) -> R, R, $($a),*> Static<($($a,)*)> for F {
+                type Output = R;
+            }
+        )*
+    };
+}
+
+statics! {
+    ()
+    (A)
+    (A, B)
+    (A, B, C)
+    (A, B, C, D)
+    (A, B, C, D, E)
+    (A, B, C, D, E, G)
+    (A, B, C, D, E, G, H)
+    (A, B, C, D, E, G, H, I)
+    (A, B, C, D, E, G, H, I, J)
+    (A, B, C, D, E, G, H, I, J, K)
+    (A, B, C, D, E, G, H, I, J, K, L)
+    (A, B, C, D, E, G, H, I, J, K, L, M)
+}
+
 /// What [`Class::of`] makes of a function's signature, `fn(A, B) -> R`: the
 /// class's, `fn(A, B) -> T`, `T` what `new` of it makes ([`Made`]). No
 /// program names it.
@@ -1075,6 +1113,20 @@ impl<S> Class<S> {
     #[cfg_attr(rust_js, rust_js::link_name = "get prototype")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn prototype(&self) -> &'static Unknown {
+        unreachable!()
+    }
+
+    /// `C.method(..)`: a static method of the class this is, called on it,
+    /// as JS reads it of the value it holds: `f` is the static's binding,
+    /// `js::promise::resolve`, and `arguments` the tuple of what it's
+    /// given, so `local_promise.call_static(js::promise::resolve,
+    /// (js::null(),))` is React's `localPromise.resolve(null)`, of the class
+    /// it captured, not the global's (rd235). Of a function that's no
+    /// binding's static, a compile error.
+    #[cfg_attr(rust_js, rust_js::link_name = "static")]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[allow(unused_variables)]
+    pub fn call_static<F: Static<A>, A>(&self, f: F, arguments: A) -> F::Output {
         unreachable!()
     }
 
