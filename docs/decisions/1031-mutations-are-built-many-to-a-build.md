@@ -58,3 +58,25 @@ function, and runs it as each one's build and as none.
 - A change's mutations, `--changed`, are built the same way.
 - The compiler's line numbers in a batch are after its copies: a crash's
   location in a mutant's own build reads otherwise.
+
+## Amendment: the controls at once, and each run to its first failure
+
+With builds shared, what was left of a run was its tests, and two parts
+of them were waits:
+
+- **The controls ran one after another.** Each of the 3,274 sets of tests
+  the mutations name is run first as the compiler is, and with one that
+  compiles nothing, before any mutant: hours of a whole run, and some 30
+  to 45 minutes of each nightly shard, on one core. They now run as many
+  at once as there are cores, each in a target of its own.
+- **A mutant's tests ran to their end.** A mutant is caught by any test
+  that fails, and a control passes only where none does, so the first
+  failure is the answer: each run is `bun test --bail`. A mutant whose
+  tests are whole files was most of the rest, `mir-conditional-drop-static`
+  229 s on CI, 5.7 s now on the M3 Max; `mir-alike-unknown`, of the JSX
+  files, 98 s and 2.7 s.
+
+A run whose first failure is a timeout stops there, and is inconclusive,
+where a later test might have caught it: an inconclusive mutant fails the
+run, as before, so none passes unseen. The sample of 24 ran in 24 s,
+against 76 s, each caught as before.

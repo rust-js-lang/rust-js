@@ -474,6 +474,10 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
   return p.code === 1 && failed.length > 0 ? "caught" : "inconclusive";
 }
 
+// Each test run's own target is numbered: the controls run at once with
+// one compiler (`main`).
+let testRuns = 0;
+
 /** How `tests` do with `compiler`, what they printed, and how many ran. */
 async function test(tests: string[], compiler: string, snapshots = false): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
@@ -483,11 +487,13 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   // test's, nor another mutant's: run beside the suite, `check:fast`'s, the
   // react crate a mutant built was read half written, and the suite's tests
   // failed; beside another mutant, each wrote the other's `js` crate.
-  const own = join(work, "tests", basename(compiler));
+  const own = join(work, "tests", `${basename(compiler)}-${++testRuns}`);
   rmSync(own, { recursive: true, force: true });
   mkdirSync(own, { recursive: true });
   const p = await withRuntime(compiler, () =>
-    run([process.execPath, "test", ...tests], root, testTimeout, {
+    // The first failure is the answer: a mutant is caught by any test, and
+    // a control passes only where none fails (ADR 1031).
+    run([process.execPath, "test", "--bail", ...tests], root, testTimeout, {
       RUST_JS_COMPILER: compiler,
       // Which mutation of a build of many it is, for a test that runs a
       // copy of the compiler under another name.
@@ -544,17 +550,25 @@ async function main() {
   const broken = join(work, "bin", "broken");
   writeFileSync(broken, "#!/bin/sh\necho 'error: rust-js compiles nothing here' >&2\nexit 101\n");
   chmodSync(broken, 0o755);
-  // Each set of tests as its mutations run them, with snapshots or without.
-  for (const key of new Set(chosen.map((m) => [m.snapshots ? "snapshots" : "", ...m.tests].join("\0")))) {
-    const [mode, ...tests] = key.split("\0");
-    const control = await test(tests, unmutated, mode === "snapshots");
-    if (!control.passed || control.ran === 0) {
-      throw new Error(`\`bun test ${tests.join(" ")}\` doesn't pass, or runs nothing, as the compiler is:\n${control.output.slice(-2000)}`);
-    }
-    if ((await test(tests, broken, mode === "snapshots")).passed) {
-      throw new Error(`\`bun test ${tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
-    }
-  }
+  // Each set of tests as its mutations run them, with snapshots or without,
+  // as many at once as there are cores: each a run of its own, 3,274 sets
+  // in all, they were hours of a run one after another (ADR 1031).
+  const sets = [...new Set(chosen.map((m) => [m.snapshots ? "snapshots" : "", ...m.tests].join("\0")))];
+  const problems: string[] = [];
+  await Promise.all(
+    Array.from({ length: Math.min(availableParallelism(), sets.length) }, async () => {
+      for (let key = sets.shift(); key !== undefined; key = sets.shift()) {
+        const [mode, ...tests] = key.split("\0");
+        const control = await test(tests, unmutated, mode === "snapshots");
+        if (!control.passed || control.ran === 0) {
+          problems.push(`\`bun test ${tests.join(" ")}\` doesn't pass, or runs nothing, as the compiler is:\n${control.output.slice(-2000)}`);
+        } else if ((await test(tests, broken, mode === "snapshots")).passed) {
+          problems.push(`\`bun test ${tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
+        }
+      }
+    }),
+  );
+  if (problems.length > 0) throw new Error(problems.join("\n\n"));
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own: one for each two cores, up to four, as a build uses about two, two
   // on a CI machine's four, the second's first build cold, a minute or two
