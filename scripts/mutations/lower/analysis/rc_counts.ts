@@ -196,4 +196,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_copy.rs$"],
   },
+  {
+    name: "rc-of-bound-function-made-apart",
+    breaks: "an `Rc` of a `&dyn Fn` made of a function made with it, `Rc::from(function::bind(..))`, is one that may share it, so React's hooks' `dyn Fn`s are counted and drop, which `react_isomorphic`'s refuse (rd231)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            made_with.contains(&from) && !made_apart.contains(&from)\n        }\n        ty::Closure(id, _) => {",
+    replace: "            false\n        }\n        ty::Closure(id, _) => {",
+    tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
+  },
+  {
+    name: "rc-of-shared-reference-made-with",
+    breaks: "an `Rc` of a `&dyn Fn` made of a reference given it is that function, so two of one reference are `ptr_eq` in JS where Rust's are two (rd231)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                        false => made_apart.insert(erased(from)),\n                    };\n                }",
+    replace: "                        false => made_with.insert(erased(from)),\n                    };\n                }",
+    tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
+  },
 ];

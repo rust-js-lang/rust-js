@@ -901,6 +901,60 @@ pub fn ticker(n: u32) -> Box<dyn Fn() -> u32> {
   expect(JSON.parse(readFileSync(join(refused, "dep", "lib.manifest.json"), "utf8")).library.makes_dropping_fn_dyns).toBe(false);
 });
 
+// rd231: React's hooks share a bound function and the Rust closures an
+// `Rc<dyn Fn>` holds alike, `Rc::from(function::bind(..))`, an `Rc<&dyn
+// Fn>` unsized to an `Rc<dyn Fn>`, and compare them, `Rc::ptr_eq`: one made
+// of a `&dyn Fn`, a JS function already, is that function, which its own
+// making answers for, as one made of a `dyn Fn` is (ADR 0959), so its
+// counts aren't asked, its closures drop nothing, and a library whose `dyn
+// Fn`s drop nothing may hold them (ADR 0626).
+test("an Rc of a bound function, compared, makes no dyn Fn drop", async () => {
+  const dir = fixture("cross-crate-dyn-fn-bound");
+  const { app } = compiled(dir, `use std::rc::Rc;
+
+pub fn call_shared(f: Rc<dyn Fn(u32) -> u32>) -> u32 {
+    f(1)
+}
+`, `use std::rc::Rc;
+
+fn add(by: u32, n: u32) -> u32 {
+    by + n
+}
+
+fn shared(by: u32) -> Rc<dyn Fn(u32) -> u32> {
+    Rc::from(js::function::bind(add, None, (by,)))
+}
+
+pub fn run(n: u32) -> u32 {
+    let f = shared(n);
+    let g = Rc::clone(&f);
+    let same = Rc::ptr_eq(&f, &g);
+    dep::call_shared(Rc::new(move |x| f(x) + u32::from(same)))
+}
+`);
+  expect(app).toContain("add.bind(undefined, by)");
+  const lib = await import(join(dir, "app", "lib.js"));
+  expect(lib.run(4)).toBe(6);
+  // One reference made two \`Rc\`s is two to Rust, whose \`ptr_eq\` says so,
+  // as native Rust's does: counted.
+  const twiceDir = fixture("cross-crate-dyn-fn-bound-twice");
+  compiled(twiceDir, "pub fn one() -> u32 {\n    1\n}\n", `use std::rc::Rc;
+
+fn add(by: u32, n: u32) -> u32 {
+    by + n
+}
+
+pub fn twice(n: u32) -> (bool, u32) {
+    let bound = js::function::bind(add, None, (n,));
+    let x: Rc<dyn Fn(u32) -> u32> = Rc::from(bound);
+    let y: Rc<dyn Fn(u32) -> u32> = Rc::from(bound);
+    (Rc::ptr_eq(&x, &y), x(1) + y(dep::one()))
+}
+`);
+  const twice = await import(join(twiceDir, "app", "lib.js"));
+  expect(twice.twice(4)).toEqual([false, 10]);
+});
+
 // A library's generic function takes a copy function only where its own
 // crate's calls give one (ADR 0914): its consumer gives the dictionaries its
 // contract says it takes, each in its place, not a `TCopy` the library's JS

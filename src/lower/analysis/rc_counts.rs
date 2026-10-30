@@ -195,6 +195,17 @@ pub(super) fn counted_rcs<'tcx>(
                 if tcx.type_is_copy_modulo_regions(env, from) {
                     copied.insert(erased(from));
                 }
+                // An `Rc` of a `&dyn Fn` made right there of a function made
+                // right there, `Rc::from(function::bind(..))` (rd231).
+                if let ty::Ref(_, function, _) = from.kind()
+                    && let ty::Dynamic(predicates, ..) = function.kind()
+                    && is_fn_dyn(tcx, predicates)
+                {
+                    match made_of_a_new_function(tcx, &body.thir, source) {
+                        true => made_with.insert(erased(from)),
+                        false => made_apart.insert(erased(from)),
+                    };
+                }
                 made_others.insert((erased(from), erased(to)));
             }
             // A count read by a call, or by the function given as a value,
@@ -250,7 +261,14 @@ pub(super) fn counted_rcs<'tcx>(
     // One neither `Copy` nor cloned is given `Rc::new` once, moved, a JS
     // function of its own wherever it was made: React's
     // `subscribe(Rc::new(handle_store_change))` (ADR 0959, amended).
+    // One of a `&dyn Fn`, a JS function already, is that function where
+    // each is made of a function made with it, `Rc::from(function::bind(..))`,
+    // which no other is; one made of a reference given it may share it
+    // with another (rd231).
     let made_with_it = |from: Ty<'tcx>| match *from.kind() {
+        ty::Ref(_, function, _) if matches!(function.kind(), ty::Dynamic(predicates, ..) if is_fn_dyn(tcx, predicates)) => {
+            made_with.contains(&from) && !made_apart.contains(&from)
+        }
         ty::Closure(id, _) => {
             id.is_local()
                 && (made_with.contains(&from) && !made_apart.contains(&from)
@@ -294,6 +312,39 @@ pub(super) fn counted_rcs<'tcx>(
     // An `Rc` of a type parameter's value may be of any type.
     counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());
     counted
+}
+
+/// Is `rc`, an `Rc` unsized, one made there of a JS function made there,
+/// `Rc::from(function::bind(..))` or `Rc::new(function::with_this(..))`,
+/// so a function no other `Rc` holds (rd231)?
+fn made_of_a_new_function(tcx: TyCtxt<'_>, thir: &Thir<'_>, rc: ExprId) -> bool {
+    let through = |mut e: ExprId| {
+        while let ExprKind::Scope { value: inner, .. } | ExprKind::Use { source: inner } = thir[e].kind {
+            e = inner;
+        }
+        e
+    };
+    let ExprKind::Call { fun, ref args, .. } = thir[through(rc)].kind else {
+        return false;
+    };
+    let [given] = args[..] else { return false };
+    let makes_rc = fn_def(thir[fun].ty).is_some_and(|(id, _)| {
+        is_rc_new(tcx, id)
+            || tcx.trait_of_assoc(id).is_some_and(|t| {
+                crate::lower::recognition::is_std_def(tcx, t, crate::lower::recognition::StdItem::From)
+            })
+    });
+    let ExprKind::Call { fun: made, .. } = thir[through(given)].kind else {
+        return false;
+    };
+    makes_rc
+        && fn_def(thir[made].ty).is_some_and(|(id, _)| {
+            crate::lower::recognition::is_function_bind(tcx, id)
+                || matches!(
+                    crate::lower::bindings::js_form(tcx, id),
+                    crate::lower::bindings::JsForm::WithThis
+                ) && crate::lower::bindings::is_binding(tcx, id)
+        })
 }
 
 /// Is `given`, what `Rc::new` is given, a closure made there, `Rc::new(move

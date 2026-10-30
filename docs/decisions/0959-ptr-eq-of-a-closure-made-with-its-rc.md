@@ -112,3 +112,31 @@ with its `Rc` wherever it was made** (`rc_counts.rs`, `made_with_it`):
   `fn-identity-of-copied-closure`.
 - ReactTestSelectors' held draft builds with Hooks in the crate; React's
   TestSelectors tests pass (37).
+
+## Amendment: of a `&dyn Fn` made with it, `Rc::from(function::bind(..))` (rd231)
+
+`function::bind` and `function::with_this` give the JS function itself,
+`&'l dyn Fn(..)` (ADRs 0907, 0972, amended). React's hooks share a bound
+dispatch and Rust closures alike, `let dispatch: Rc<Dispatch> =
+Rc::from(function::bind(dispatch_set_state, ..))`: an `Rc<&dyn Fn>` unsized
+to an `Rc<dyn Fn>`, which the hooks compare, `Rc::ptr_eq`. As one that may
+share its function with another `Rc`, it was counted, every `Rc<dyn Fn>`
+it may be with it; the closures holding them dropped what they held, and
+`react_isomorphic`'s `dyn Fn`s, which drop nothing, refused the crate
+(ADR 0626).
+
+**An `Rc` of a `&dyn Fn` made right there of a function made right there,
+`Rc::from(bind(..))` or `Rc::new(with_this(..))`, is that function, as one
+of a closure made with it is:** no other `Rc` holds it, so `===` is
+Rust's `ptr_eq` and nothing is counted. One made of a reference given it,
+`let bound = bind(..); Rc::from(bound); Rc::from(bound)`, may be two
+`Rc`s of one function, which Rust tells apart and JS wouldn't: counted,
+as before.
+
+Held by `test/cross-crate-items.test.ts`'s "an Rc of a bound function,
+compared, makes no dyn Fn drop" (a library whose `dyn Fn`s drop nothing
+given a closure holding one, run; and one reference made two `Rc`s,
+`ptr_eq` false, as native Rust's), by react-in-rust's react-reconciler and
+react-dom-bindings building, and mutations
+`rc-of-bound-function-made-apart`, `rc-of-shared-reference-made-with`
+(`analysis/rc_counts.ts`).
