@@ -61,17 +61,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Called::Pointer(_) => func,
         };
         let mut place = through.place()?;
-        if place.projection.is_empty() {
+        let assigned = |local: mir::Local| {
             let statements = state.body.basic_blocks.iter().flat_map(|block| &block.statements);
-            place = statements.into_iter().find_map(|statement| match &statement.kind {
-                StatementKind::Assign(assign) if assign.0.local == place.local && assign.0.projection.is_empty() => {
+            statements.into_iter().find_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.local == local && assign.0.projection.is_empty() => {
                     match &assign.1 {
                         Rvalue::Ref(_, _, of) | Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) => Some(*of),
                         _ => None,
                     }
                 }
                 _ => None,
-            })?;
+            })
+        };
+        if place.projection.is_empty() {
+            place = match assigned(place.local) {
+                Some(of) => of,
+                // A `Cell`'s value got, `(s.f.get())()`: the cell's place.
+                None => {
+                    let got = (state.body.basic_blocks.iter()).find_map(|block| match &block.terminator().kind {
+                        mir::TerminatorKind::Call {
+                            func,
+                            args,
+                            destination,
+                            ..
+                        } if destination.local == place.local
+                            && destination.projection.is_empty()
+                            && let Some((f, _)) = func.const_fn_def()
+                            && crate::lower::recognition::cell_own_method(self.tcx, f)
+                                == Some(crate::lower::recognition::CellMethod::Get) =>
+                        {
+                            args.first()?.node.place()
+                        }
+                        _ => None,
+                    })?;
+                    match got.projection.is_empty() {
+                        true => assigned(got.local)?,
+                        false => got,
+                    }
+                }
+            };
         }
         let (base, elem) = (place.iter_projections()).rfind(|(_, elem)| matches!(elem, PlaceElem::Field(..)))?;
         let PlaceElem::Field(index, _) = elem else { return None };

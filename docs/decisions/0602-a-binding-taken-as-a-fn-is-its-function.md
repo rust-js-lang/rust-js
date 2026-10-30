@@ -76,3 +76,35 @@ Held by `test/lowering-passed-on.test.ts`'s "a fn field that may hold a
 host function is called with no this, in Chromium" (run in Chromium, the
 real `queueMicrotask`), and mutations `host-fn-field-called-through`
 (`analysis/fn_pointers.ts`), `host-fn-temporary-unheld` (`mir/calls.ts`).
+
+## Amendment: a `Cell`'s fn field, and one the crate fills alone
+
+Two answers were wrong, each read from the field's type alone:
+
+- **A `Cell<fn(..)>` field called, `(hooks.schedule.get())(cb)`, wasn't
+  seen as its field's**, the callee a `Cell::get`'s result, so a host
+  function set in it, `hooks.schedule.set(queue_microtask)`, was called
+  through the struct, `hooks.schedule(cb)`: Illegal invocation in
+  Chromium. ADR 0262's second case; Rust's behavior is kept. `called_field`
+  reads through `Cell::get` to the cell's place.
+- **A field the crate fills with its own functions alone was held first
+  wherever the crate made a binding's function a fn of its type**:
+  React's `ReactStrictModeWarnings.discardPendingWarnings()`, a `Cell<fn()>`
+  of the program's closures, printed `const discardPendingWarnings =
+  ReactStrictModeWarnings.discardPendingWarnings; discardPendingWarnings();`
+  because the crate makes some binding a `fn()`. A readability gap.
+
+**A fn pointer field, a `Cell`'s too, that each write the crate makes
+fills with its own closure or function, never a binding's, is called
+through it**, as #405's `dyn Fn` field is (`own_fields`): written by a
+literal, `Cell::new(|| {})`, an assignment, `Cell::set` or `replace`; any
+other `Cell` method, `swap`, a `&mut` of it, or a `&` of a `Cell` field,
+which may set it, is a write not seen. A binding's function written to a
+field, of a `dyn Fn` too, is no own function. Held by
+`test/lowering-passed-on.test.ts`'s "a fn field that may hold a host
+function is called with no this, in Chromium" and "a fn field a cell's
+other method may write is called with no this", and mutations
+`own-fn-pointer-field-unseen`, `cell-set-unwritten`,
+`cell-other-method-unwritten`, `cell-field-lent-unwritten`,
+`cell-new-not-own`, `binding-fn-def-own` (`analysis/fn_pointers.ts`) and
+`cell-get-field-unseen` (`mir/calls.ts`).

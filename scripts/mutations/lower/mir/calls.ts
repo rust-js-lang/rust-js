@@ -608,6 +608,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
   {
+    name: "cell-get-field-unseen",
+    breaks: "a `Cell<fn()>` field's value called, `(hooks.flush.get())()`, isn't seen as its field's, so one the crate fills with its own is held first (#427)",
+    file: "src/lower/mir/calls.rs",
+    find: "                                == Some(crate::lower::recognition::CellMethod::Get) =>\n",
+    replace: "                                == Some(crate::lower::recognition::CellMethod::Other) =>\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+  },
+  {
     name: "host-fn-temporary-unheld",
     breaks: "a host function's field read MIR holds in a temporary, `_3 = CONFIG.schedule`, is read in place by tidy, `CONFIG.schedule(..)`, its `this` the config (#427)",
     file: "src/lower/mir/calls.rs",

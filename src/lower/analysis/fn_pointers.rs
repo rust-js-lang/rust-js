@@ -19,7 +19,7 @@
 //! answer, each read as often as Rust reads it (ADR 1022).
 
 use crate::lower::bindings::is_binding;
-use crate::lower::recognition::Recognition;
+use crate::lower::recognition::{CellMethod, Recognition, cell_own_method};
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};
@@ -183,6 +183,8 @@ impl<'tcx> FnPointers<'tcx> {
         field: Option<DefId>,
     ) -> bool {
         match called {
+            // A field the crate fills with its own functions alone (#427).
+            Called::Pointer(_) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,
             Called::Pointer(ptr) => key(tcx, ptr)
                 .is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),
             // A field the crate fills with its own closures alone (#405).
@@ -612,31 +614,36 @@ impl<'tcx> Made<'_, '_, 'tcx> {
 
     /// A write of `field`, of `value`, or of what's lent mutably: kept as
     /// one of the crate's own closures where it is one, of a field of a
-    /// `dyn Fn`.
+    /// `dyn Fn` or a fn pointer, `Cell<fn()>`'s too (#427).
     fn field_written(&mut self, field: DefId, value: Option<&'tcx hir::Expr<'tcx>>) {
         let tcx = self.recognition.tcx;
         let declared = tcx.type_of(field).instantiate_identity().skip_normalization();
-        if !(declared.walk().filter_map(|part| part.as_type())).any(|part| matches!(part.kind(), ty::Dynamic(..))) {
+        let called = |part: Ty<'tcx>| matches!(part.kind(), ty::Dynamic(..) | ty::FnPtr(..));
+        if !(declared.walk().filter_map(|part| part.as_type())).any(called) {
             return;
         }
         let own = value.is_some_and(|value| self.own_function(value));
         *self.found.own_fields.entry(field).or_insert(true) &= own;
     }
 
-    /// Whether `value` is a closure or a function of the crate's, or a box
-    /// or an `Rc` of one, `Box::new(move || ..)`: never a with_this one.
+    /// Whether `value` is a closure or a function of the crate's, not a
+    /// binding's, or a box, an `Rc` or a `Cell` of one, `Box::new(move ||
+    /// ..)`, `Cell::new(|| {})`: never a with_this one.
     fn own_function(&self, value: &'tcx hir::Expr<'tcx>) -> bool {
         let tcx = self.recognition.tcx;
         let value = match value.kind {
             hir::ExprKind::AddrOf(_, _, inner) => inner,
             _ => value,
         };
-        if matches!(self.results.expr_ty(value).kind(), ty::Closure(..) | ty::FnDef(..)) {
-            return true;
+        match *self.results.expr_ty(value).kind() {
+            ty::Closure(..) => return true,
+            ty::FnDef(f, _) => return !is_binding(tcx, f),
+            _ => {}
         }
         let made = |id: DefId| {
             crate::lower::recognition::is_rc_new(tcx, id)
                 || crate::lower::recognition::is_std_def(tcx, id, crate::lower::recognition::StdItem::BoxNew)
+                || cell_own_method(tcx, id) == Some(CellMethod::New)
         };
         matches!(value.kind, hir::ExprKind::Call(callee, [inner])
             if matches!(*self.results.expr_ty(callee).kind(), ty::FnDef(id, _) if made(id))
@@ -711,7 +718,26 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                         .map(|arg| results.expr_ty_adjusted(arg))
                         .collect();
                     self.call(f, results.expr_ty(expr), &inputs);
+                    // A `Cell` field's: `set` and `replace` write what
+                    // they're given; `get` writes nothing; any other may
+                    // write what isn't seen here (#427's own fields).
+                    if let Some(def) = self.field_of(receiver)
+                        && let Some(method) = cell_own_method(tcx, f)
+                    {
+                        match (method, args) {
+                            (CellMethod::Get, _) => {}
+                            (CellMethod::Writes, [value]) => self.field_written(def, Some(value)),
+                            _ => self.field_written(def, None),
+                        }
+                    }
                 }
+            }
+            // A `Cell` field lent, which may be set through the borrow.
+            hir::ExprKind::AddrOf(_, rustc_hir::Mutability::Not, place)
+                if let Some(def) = self.field_of(place)
+                    && is_cell(tcx, self.results.expr_ty(place)) =>
+            {
+                self.field_written(def, None);
             }
             // An operator of a library's type's impl.
             hir::ExprKind::Binary(_, a, b) | hir::ExprKind::AssignOp(_, a, b) | hir::ExprKind::Index(a, b, _) => {
@@ -760,4 +786,9 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
         }
         intravisit::walk_expr(self, expr);
     }
+}
+
+/// Whether `ty` is a `Cell`.
+fn is_cell(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_def(tcx, adt.did(), crate::lower::recognition::StdItem::Cell))
 }

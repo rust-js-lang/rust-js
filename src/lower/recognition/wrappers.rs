@@ -588,6 +588,37 @@ pub(crate) fn compares_fn_identity<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: 
 }
 
 /// Is `id` `Rc::new` or `Arc::new`, an `Rc` of what it's given?
+/// One of a `Cell`'s own methods, as what holds a function in it asks:
+/// what it writes, and what it reads (#427).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum CellMethod {
+    /// `Cell::new(value)`.
+    New,
+    /// `cell.get()`.
+    Get,
+    /// `cell.set(value)` or `cell.replace(value)`: it writes `value`.
+    Writes,
+    /// Any other, which may write what isn't its argument, `swap`.
+    Other,
+}
+
+/// Which of a `Cell`'s own methods `id` is, if it's one.
+pub(crate) fn cell_own_method(tcx: TyCtxt<'_>, id: DefId) -> Option<CellMethod> {
+    let imp = tcx.inherent_impl_of_assoc(id)?;
+    let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() else {
+        return None;
+    };
+    if !is_std_def(tcx, adt.did(), StdItem::Cell) {
+        return None;
+    }
+    Some(match tcx.item_name(id).as_str() {
+        "new" => CellMethod::New,
+        "get" => CellMethod::Get,
+        "set" | "replace" => CellMethod::Writes,
+        _ => CellMethod::Other,
+    })
+}
+
 pub(crate) fn is_rc_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.item_name(id).as_str() == "new" && is_rc_method(tcx, id)
 }

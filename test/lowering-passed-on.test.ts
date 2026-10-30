@@ -515,9 +515,43 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
 // invocation": its callee held first, \`const schedule = CONFIG.schedule;
 // schedule(..)\`, as a with_this function's is (#402, \`called_unbound\`).
 // One the crate's functions alone may be is called through its field.
+// A \`Cell<fn()>\` field the crate sets of its own functions alone is called
+// through it, as React's \`ReactStrictModeWarnings.discardPendingWarnings()\`;
+// one it sets of a host function is held first (#427).
 test("a fn field that may hold a host function is called with no this, in Chromium", async () => {
   const dir = fixture("fn-pointer-field-host");
-  writeFileSync(join(dir, "lib.rs"), `pub struct Config {
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Hooks {
+    pub schedule: Cell<fn(Box<dyn FnOnce()>)>,
+    pub flush: Cell<fn()>,
+    pub ended: Cell<fn()>,
+}
+
+thread_local! {
+    pub static HOOKS: Hooks = Hooks {
+        schedule: Cell::new(|_| {}),
+        flush: Cell::new(|| {}),
+        ended: Cell::new(|| {}),
+    };
+}
+
+fn lend(cell: &Cell<fn()>) {
+    cell.set(webapi::console::group_end);
+}
+
+pub fn hooked(n: u32) {
+    HOOKS.with(|hooks| {
+        hooks.schedule.set(webapi::global::queue_microtask);
+        hooks.flush.set(|| record(0));
+        lend(&hooks.ended);
+        (hooks.schedule.get())(Box::new(move || record(n)));
+        (hooks.flush.get())();
+        (hooks.ended.get())();
+    });
+}
+
+pub struct Config {
     pub schedule: fn(Box<dyn FnOnce()>),
     pub count: fn(u32) -> u32,
 }
@@ -542,6 +576,8 @@ fn record(n: u32) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const schedule = CONFIG.schedule;\n  schedule(() => {");
   expect(js).toContain("return CONFIG.count(n);");
+  expect(js).toContain("  const schedule = hooks.schedule;\n  schedule(() => {");
+  expect(js).toContain("  hooks.flush();\n  const ended = hooks.ended;\n  ended();\n");
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
@@ -551,14 +587,39 @@ fn record(n: u32) {
       const url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
       const lib = await import(url);
       const counted = lib.run(3);
+      lib.hooked(5);
       await new Promise((resolve) => setTimeout(resolve, 0));
       return [counted, seen];
     }, js);
-    expect(result).toEqual([6, [3]]);
+    expect(result).toEqual([6, [0, 3, 5]]);
   } finally {
     await browser.close();
   }
 }, 60_000);
+
+// A \`Cell<fn()>\` field any other method of may write, \`swap\`'s, is held
+// first: what it's set to isn't seen (#427).
+test("a fn field a cell's other method may write is called with no this", () => {
+  const dir = fixture("fn-pointer-field-swapped");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Hooks {
+    pub swapped: Cell<fn()>,
+}
+
+pub fn swapped(hooks: &Hooks) {
+    hooks.swapped.swap(&Cell::new(webapi::console::group_end));
+    (hooks.swapped.get())();
+}
+
+pub fn made() -> Hooks {
+    Hooks { swapped: Cell::new(|| {}) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const swapped = hooks.swapped;\n  swapped();\n");
+});
 
 // React DOM's scheduleMicrotask and localRequestAnimationFrame hold a host
 // function itself, `queueMicrotask : scheduleTimeout`. Ported, a closure as
