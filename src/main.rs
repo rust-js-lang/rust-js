@@ -362,6 +362,19 @@ fn main() -> ExitCode {
     if std::env::var_os("RUST_MIN_STACK").is_none() {
         let _ = rustc_interface::util::STACK_SIZE.set(STACK);
     }
+    on_its_thread()
+}
+
+/// `run` where WASI starts it: it has no threads, and its stack is what
+/// its runtime gives (`wasm/`).
+#[cfg(target_os = "wasi")]
+fn on_its_thread() -> ExitCode {
+    run()
+}
+
+/// `run` on a thread with rustc's stack.
+#[cfg(not(target_os = "wasi"))]
+fn on_its_thread() -> ExitCode {
     let stack = *rustc_interface::util::STACK_SIZE.get().unwrap_or(&STACK);
     match std::thread::Builder::new()
         .name("rust-js".into())
