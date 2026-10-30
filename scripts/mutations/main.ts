@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "main-stack-default",
     breaks: "a long function's MIR overflows rustc's default stack",
     file: "src/main.rs",
-    find: "        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);\n",
+    find: "        let _ = rustc_interface::util::STACK_SIZE.set(STACK);\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "a long function"],
   },
