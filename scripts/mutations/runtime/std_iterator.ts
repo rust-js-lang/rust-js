@@ -56,6 +56,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/std_iterator.js",
     find: "    it.fold = (init, f, unwind) => taking(\"fold\", steps.fold(it, init, f, unwind));",
     replace: "    it.fold = (init, f, unwind) => taking(\"fold\", steps.fold(it, init, f));",
-    tests: ["test/corpus.test.ts", "-t", "^panic_in_std_bodies_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_std_fold_drops.rs$"],
   },
 ];
