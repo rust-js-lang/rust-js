@@ -6,7 +6,10 @@
 // 0702 amended); and of an `if` whose test mixes `&&` and `||`, whose
 // `break` MIR makes the way out of a block, React's workLoop (rd215). The
 // same tests in the same order: a missing item and a blank both end the
-// loop, as in Rust, and `yields` runs only where it did.
+// loop, as in Rust, and `yields` runs only where it did. And a written
+// `if .. { break; }` before an `if` with an `else` that goes on and the
+// `break` after it, each where it's written, `if (n > 99) { break; } if
+// (n === 0) { .. } else { i++; continue; } break;` (uz2).
 use std::cell::Cell;
 
 fn until_blank(words: &[&str]) -> usize {
@@ -45,6 +48,23 @@ fn until_due(times: &[u32], now: u32, has_time: bool, yields: &dyn Fn() -> bool)
     i
 }
 
+fn scan(items: &[u32], log: &mut Vec<u32>) -> usize {
+    let mut i = 0;
+    while let Some(&n) = items.get(i) {
+        if n > 99 {
+            break;
+        }
+        if n == 0 {
+            log.push(i as u32);
+        } else {
+            i += 1;
+            continue;
+        }
+        break;
+    }
+    i
+}
+
 fn main() {
     for words in [&["a", "b", "", "c"][..], &["a", "#b"], &[], &["", "a"], &["x", "y"]] {
         println!("{} {}", until_blank(words), until_hash(words));
@@ -62,5 +82,9 @@ fn main() {
     ] {
         let due = until_due(times, now, has_time, &yields);
         println!("{due} {}", calls.get());
+    }
+    for items in [&[3, 4, 0, 5][..], &[3, 100, 0], &[1, 2], &[0]] {
+        let mut log = Vec::new();
+        println!("{} {log:?}", scan(items, &mut log));
     }
 }

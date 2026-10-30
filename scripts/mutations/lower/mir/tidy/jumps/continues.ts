@@ -5,6 +5,15 @@ const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are a
 
 export const mutations: Mutation[] = [
   {
+    name: "jumps-into-branches-past-a-written-jump",
+    breaks: "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            && !written_after(&stmts[i], &stmts[i + 1])\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
+    snapshots: true,
+  },
+  {
     name: "last-loop-break-returned",
     breaks: "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
@@ -219,8 +228,8 @@ export const mutations: Mutation[] = [
     name: "jumps-into-branches-off",
     breaks: "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745), and so a chain's at its block's end, `bb16: { if (a) { A } else if (b) { B } else { break bb16; } continue; }`, which `breaks as ends` gave each arm too (ADR 0745, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "StmtKind::Break(_)) && into_arms(&stmts[i]) {\n",
-    replace: "StmtKind::Break(_)) && false {\n",
+    find: "            && into_arms(&stmts[i])\n",
+    replace: "            && false\n",
     tests: ["test/lowering-early-exits.test.ts", "test/corpus.test.ts", "-t", "a continue the program wrote in a chain|^continues_in_arms.rs$"],
     snapshots: true,
   },

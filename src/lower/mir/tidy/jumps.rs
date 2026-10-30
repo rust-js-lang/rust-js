@@ -19,7 +19,12 @@ use crate::js::result;
 /// the program wrote of a `break`, `breaks`', each its own, `if (!b) {
 /// break; } if (!c) { break; } a`, as written (#301), of a test of both
 /// joined `b && !c` too, its parts apart (rd215).
-pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span, js::Span)]) {
+pub(super) fn early_breaks(
+    stmts: &mut [Stmt],
+    nested: bool,
+    breaks: &[(js::Span, js::Span)],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
     for stmt in stmts.iter_mut() {
         let (label, body) = match &mut stmt.kind {
             StmtKind::While { label, body, .. }
@@ -32,7 +37,7 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
             StmtKind::Continue(Some(l)) => Some(l) == label.as_ref(),
             _ => false,
         };
-        if broken_in_then(body, &continues) {
+        if broken_in_then(body, &continues, elses) {
             continue;
         }
         broken_in_nested_then(body, &continues, breaks);
@@ -57,17 +62,24 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
             true => leaves_early(then),
             false => then.last().is_some_and(ends),
         };
-        if tests.is_empty() || !leaves {
-            continue;
-        }
-        // What it puts in the body is named apart from what's there, each
-        // of its scopes inside the body's.
         // Each run of them of one `if` the program wrote of a `break`, or
         // of none, one test, nested in the one before: the program's `if`
         // apart from a `while let`'s `Some`, which a test of its truth,
         // `!word` of `word.is_empty()`, would join, `while ((word = ..))`
         // (#301), each where it was.
         let of = |t: &Expr| jump_tested(breaks, written_at(t));
+        // Or one that goes on to the `break` after it, where the innermost
+        // `if` it ends in is one the program wrote of a `break`, `if n > 99
+        // { break; }` before `if n == 0 { .. } else { ..; continue; }
+        // break;`: each test its early `break`, and what's in the innermost
+        // then the `break` after it, as written (uz2).
+        let goes_on =
+            !leaves && innermost(then).is_some_and(|(t, inner)| of(t).is_some() && !inner.last().is_some_and(ends));
+        if tests.is_empty() || !(leaves || goes_on) {
+            continue;
+        }
+        // What it puts in the body is named apart from what's there, each
+        // of its scopes inside the body's.
         // So too of one test `skipped tests` made of both, `n != null &&
         // !c` of `if c { break; }` in `while let Some(n)`, its `break` the
         // block's way out MIR made (rd215): its parts, each where it's of.
@@ -104,7 +116,7 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
             });
             body[at] = nested.into_iter().next().expect("one");
         }
-        body.pop();
+        let last = body.pop().expect("matched");
         let Some(Stmt {
             kind: StmtKind::If(test, then, None),
             span,
@@ -113,6 +125,21 @@ pub(super) fn early_breaks(stmts: &mut [Stmt], nested: bool, breaks: &[(js::Span
             unreachable!("matched")
         };
         body.extend(broken_early(test, then, span, &continues));
+        if goes_on {
+            body.push(last);
+        }
+    }
+}
+
+/// The test and the body of the innermost `if` of no `else` that `then`
+/// ends in, each in the one before's.
+fn innermost(then: &[Stmt]) -> Option<(&Expr, &[Stmt])> {
+    match then.last() {
+        Some(Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        }) => innermost(inner).or(Some((test, inner))),
+        _ => None,
     }
 }
 
@@ -132,8 +159,13 @@ fn and_parts(test: &Expr) -> Vec<Expr> {
 /// A loop's body that ends `if (c) { a } else { b; continue l; } break;`,
 /// `a` going on to the `break`, MIR's of `if c { a; break; } b`: that, as
 /// the program wrote it (ADR 0730), `b` the body's own where it declares
-/// nothing beside it. Whether it was.
-fn broken_in_then(body: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool) -> bool {
+/// nothing beside it; not of an `if` the program wrote with its `else`,
+/// and the `break` after it (uz2). Whether it was.
+fn broken_in_then(
+    body: &mut Vec<Stmt>,
+    continues: &dyn Fn(&Stmt) -> bool,
+    elses: &[(js::Span, js::Span, js::Span)],
+) -> bool {
     let [.., last_if, last] = body.as_slice() else {
         return false;
     };
@@ -141,6 +173,7 @@ fn broken_in_then(body: &mut Vec<Stmt>, continues: &dyn Fn(&Stmt) -> bool) -> bo
         return false;
     };
     if !matches!(last.kind, StmtKind::Break(None))
+        || written_else(last_if, elses)
         || !otherwise.last().is_some_and(continues)
         || then.last().is_some_and(ends)
         || !fits_in_place(&body[..body.len() - 1], body.len() - 2, otherwise)

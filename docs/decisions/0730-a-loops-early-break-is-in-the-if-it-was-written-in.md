@@ -3,6 +3,9 @@
 Status: Accepted. Amends [0684](0684-a-continue-the-program-wrote-is-where-it-wrote-it.md):
 a loop body's last `if` is an early `continue` only where the program
 wrote one.
+Amended by [0702](0702-a-while-is-its-test-and-its-break-where-written.md)
+(uz2): not of an `if` the program wrote with its `else`, and the `break`
+after it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 which `if` a jump is in is how the JS reads, not what it does.

@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0364](0364-mir-lowering.md)'s jumps past blocks
 and branch ends. Amended (2026-10-28): `jumps into branches` owns the rule
-`breaks as ends` asked for too, one authority.
+`breaks as ends` asked for too, one authority. Amended by
+[0702](0702-a-while-is-its-test-and-its-break-where-written.md) (uz2): a
+jump the program wrote after an `if` it wrote with an `else` stays there.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 each rewrite moves a jump to where it goes on from anyway, or an `if`'s

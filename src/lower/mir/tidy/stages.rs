@@ -140,7 +140,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| early_returns(s, &h.written.elses))
             }),
             pass("early breaks", |b, h| {
-                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks))
+                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))
             }),
             pass("settle jumps", |b, _| settle_jumps(b)),
             // A `let` declared first, its one write now beside it, what a
@@ -460,7 +460,9 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| branch_ends(s))
             }),
             pass("jumps into branches", |b, h| {
-                js::statement_lists(b, &mut |s| jumps_into_branches(s, &h.written.switches))
+                js::statement_lists(b, &mut |s| {
+                    jumps_into_branches(s, &h.written.switches, &h.written.elses)
+                })
             }),
             // A block's `return` of one value that some of the paths of the
             // `if` before it go on to, and the rest leave past: in each that
@@ -476,7 +478,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.
             pass("early breaks", |b, h| {
-                js::statement_lists(b, &mut |s| early_breaks(s, true, &h.written.breaks))
+                js::statement_lists(b, &mut |s| early_breaks(s, true, &h.written.breaks, &h.written.elses))
             }),
             // A loop's test those read in place now, `while (true) { if
             // (!(m.length > n)) { .. } }`'s of `const _7 = m.length;`.
@@ -665,7 +667,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| outer_continues(s, &h.written.loops))
             }),
             pass("early breaks", |b, h| {
-                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks))
+                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))
             }),
             // Each `break` a loop that ends a block MIR made leaves it by,
             // once what's after each loop is placed: the loop's own, a

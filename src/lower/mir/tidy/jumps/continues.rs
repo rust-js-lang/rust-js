@@ -451,7 +451,11 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
 /// guarded arms fall to the next, `1 if on(n) => break, 1 | 2 => { .. }`,
 /// whose arms `switches` reads by the blocks MIR leaves them by, then the
 /// `if` chain they are (#389c).
-pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>, switches: &[super::Switch]) {
+pub(in crate::lower::mir::tidy) fn jumps_into_branches(
+    stmts: &mut Vec<Stmt>,
+    switches: &[super::Switch],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
     // An `else` that is one `if` with an `else` of its own: the chain's
     // next link.
     fn linked(otherwise: &[Stmt]) -> bool {
@@ -495,9 +499,25 @@ pub(in crate::lower::mir::tidy) fn jumps_into_branches(stmts: &mut Vec<Stmt>, sw
         arms(stmt, &mut leaves);
         matches!(&leaves[..], [going_on @ .., true] if going_on.iter().all(|leaves| !leaves))
     };
+    // A jump the program wrote after an `if` it wrote with an `else`, past
+    // all of it, `if n == 0 { .. } else { ..; continue; } break;`, stays
+    // where it's written (uz2).
+    let written_after = |stmt: &Stmt, jump: &Stmt| {
+        if !written_else(stmt, elses) {
+            return false;
+        }
+        let mut end = 0;
+        js::each_list(std::slice::from_ref(stmt), &mut |list| {
+            end = list.iter().map(|s| s.span.hi).fold(end, u32::max)
+        });
+        !jump.span.is_none() && jump.span.lo >= end
+    };
     let mut i = 0;
     while i + 1 < stmts.len() {
-        if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_)) && into_arms(&stmts[i]) {
+        if matches!(stmts[i + 1].kind, StmtKind::Continue(_) | StmtKind::Break(_))
+            && into_arms(&stmts[i])
+            && !written_after(&stmts[i], &stmts[i + 1])
+        {
             let jump = stmts.remove(i + 1);
             let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[i].kind else {
                 unreachable!("matched")

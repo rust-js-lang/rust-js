@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     name: "outer-break-not-early",
     breaks: "an inner loop whose way out is its `break` now ends `if (value) { .. break; } break;`, not `if (!value) { break; }` first",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "outer_continues(s, &h.written.loops))\n            }),\n            pass(\"early breaks\", |b, h| {\n                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks))\n            }),\n",
+    find: "outer_continues(s, &h.written.loops))\n            }),\n            pass(\"early breaks\", |b, h| {\n                js::statement_lists(b, &mut |s| early_breaks(s, false, &h.written.breaks, &h.written.elses))\n            }),\n",
     replace: "outer_continues(s, &h.written.loops))\n            }),\n",
     tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|writer_callables).rs$"],
     snapshots: true,

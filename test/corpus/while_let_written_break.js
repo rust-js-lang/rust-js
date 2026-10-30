@@ -43,6 +43,24 @@ function untilDue(times, now, hasTime, yields) {
   return i;
 }
 
+function scan(items, log) {
+  let i = 0;
+  let n;
+  while ((n = items[i]) != null) {
+    if (n > 99) {
+      break;
+    }
+    if (n === 0) {
+      log.push(i);
+    } else {
+      i++;
+      continue;
+    }
+    break;
+  }
+  return i;
+}
+
 function main() {
   for (const words of [["a", "b", "", "c"], ["a", "#b"], [], ["", "a"], ["x", "y"]]) {
     console.log(`${untilBlank(words)} ${untilHash(words)}`);
@@ -60,6 +78,10 @@ function main() {
   ]) {
     const due = untilDue(times, now, hasTime, yields);
     console.log(`${due} ${calls}`);
+  }
+  for (const items of [[3, 4, 0, 5], [3, 100, 0], [1, 2], [0]]) {
+    const log = [];
+    console.log(`${scan(items, log)} [${log.join(", ")}]`);
   }
 }
 //# sourceMappingURL=case.js.map

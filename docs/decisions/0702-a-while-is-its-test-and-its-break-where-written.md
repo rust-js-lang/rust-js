@@ -10,7 +10,8 @@ after a loop that `break`s is after it; and an inner loop's tail moves out
 before `decisions` (rd141c); and a `break 'rows` in an inner loop is the
 outer's, by its label (uz3); and a loop's value is declared before it, and
 a `break 'outer` from a loop inside leaves the outer, what follows each
-after its loop (rd148).
+after its loop (rd148); and a written `if .. { break; }` before an `if`
+with an `else` and the `break` after it is each where it's written (uz2).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -870,3 +871,67 @@ closures made in the loop; mutations `exit-after-nested-loops-unsought`,
 (`mir/tidy/jumps/labels.ts`). `exits-after-reads-loop-names` went: the
 name it let what's moved read, `setInLoop`'s `found`, is now the value's,
 and no case reaches a way out that reads another, which still stays.
+
+## Amendment: a written `break`'s `if`, then an `if .. else` and a `break` (uz2, 2026-10-30)
+
+```rust
+while let Some(&n) = items.get(i) {
+    if n > 99 {
+        break;
+    }
+    if n == 0 {
+        log.push(i as u32);
+    } else {
+        i += 1;
+        continue;
+    }
+    break;
+}
+```
+
+printed `while (true) { const n = items[i]; if (n != null) { if (n <= 99) {
+if (n === 0) { .. } else { i++; continue; } } } break; }`: MIR's three
+ways out share the `break`, so the program's `if n > 99 { break; }` was
+the negated test around the rest. `early_breaks` took a nested run of
+tests only where the innermost body leaves, and here it goes on to the
+`break` after it. Past it, two passes moved that `break` the program
+wrote: `broken_in_then` (ADR 0730) made `if (n === 0) { ..; break; } i++;`
+of the `if .. else`, as MIR makes that of `if c { a; break; } b`, and
+`jumps_into_branches` (ADR 0745) put it in the `then`.
+
+**The early `break`s are taken where the innermost `if` is one the
+program wrote of a `break` and its body goes on**: each test its early
+`break`, the innermost body, then the `break` after it, which it went on
+to. Not where that body ends, `i++; continue;`, whose `continue`
+`broken_early` drops as going round anyway: the `break` after it would
+end the turn that went round. **And a jump the program wrote after an
+`if` it wrote with an `else` (`written_else`) stays there**: neither
+`broken_in_then` nor `jumps_into_branches` moves it into a branch.
+
+```js
+let n;
+while ((n = items[i]) != null) {
+  if (n > 99) {
+    break;
+  }
+  if (n === 0) {
+    log.push(i);
+  } else {
+    i++;
+    continue;
+  }
+  break;
+}
+```
+
+No other corpus case's JS, nor the port's, changes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `if (b) { if (c) {
+t } } break;` is `if (!b) { break; } if (!c) { break; } t break;`, the
+same tests in the same order, each way out the same.
+
+Held by `test/corpus/while_let_written_break.rs`'s `scan` against native
+Rust; mutations `early-break-going-on-unbroken`,
+`early-break-going-on-of-an-ending-body` and
+`broken-in-then-of-a-written-else` (`mir/tidy/jumps.ts`) and
+`jumps-into-branches-past-a-written-jump` (`mir/tidy/jumps/continues.ts`).
