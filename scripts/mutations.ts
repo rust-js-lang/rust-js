@@ -616,15 +616,19 @@ async function main() {
   const ran = new Map<string, Map<string, Map<string, boolean>>>();
   const ranOf = (run: Run) => `${run.compiler}\0${run.snapshots}`;
   let reports = 0;
+  const printedBy = new Map<string, string>();
   await Promise.all(
     Array.from({ length: Math.min(availableParallelism(), runs.length) }, async () => {
       for (let run = runs.shift(); run !== undefined; run = runs.shift()) {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
         const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
-        await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
+        const { output } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
         const junit = existsSync(report) ? readFileSync(report, "utf8") : "";
         rmSync(report, { force: true });
+        // What the run as the compiler is printed, of one that fails or runs
+        // nothing: its setup's error, Node missing say, is why.
+        if (run.compiler === unmutated) printedBy.set(`${run.snapshots}\0${run.file}`, `${printedBy.get(`${run.snapshots}\0${run.file}`) ?? ""}${output.slice(-1500)}`);
         const byFile = ran.get(ranOf(run)) ?? new Map<string, Map<string, boolean>>();
         ran.set(ranOf(run), byFile);
         const results = byFile.get(run.file) ?? new Map<string, boolean>();
@@ -637,7 +641,8 @@ async function main() {
   for (const set of sets) {
     const as = setPasses(set, ran.get(`${unmutated}\0${set.snapshots}`) ?? new Map());
     if (as !== true) {
-      problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is`);
+      const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${file}`) ?? "").join("\n");
+      problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
     } else if (setPasses(set, ran.get(`${broken}\0${set.snapshots}`) ?? new Map()) === true) {
       problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
     }
