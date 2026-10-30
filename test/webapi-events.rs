@@ -149,15 +149,14 @@ pub fn given_wrapped(button: &HTMLButtonElement, given: EventListenerOrEventList
 }
 
 // FragmentInstance's `once` wrapper, kept to add to each child and remove
-// by identity: a function of its `this`, kept for good, `Box::leak(..)`,
-// as JS keeps it (rd209).
+// by identity: a function of its `this`, which JS keeps, as it is (rd209).
 pub fn kept_wrapped(buttons: &[&HTMLButtonElement], given: EventListenerOrEventListenerObject) -> EventListenerOrEventListenerObject {
-    let attached = Box::leak(function::with_this(move |this, (event,): (&'static Event,)| {
+    let attached = function::with_this(move |this, (event,): (&'static Event,)| {
         record(20);
         if let EventListenerOrEventListenerObject::EventListener(f) = given {
             function::call(f, this.map(|t| t as &dyn js::IntoUnknown), (event,));
         }
-    }));
+    });
     let attached = EventListenerOrEventListenerObject::EventListener(attached);
     for button in buttons {
         button.add_event_listener_named("custom", attached, None);

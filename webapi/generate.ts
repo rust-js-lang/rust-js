@@ -2018,7 +2018,7 @@ line(typed(["A shared JavaScript callback, reusable by add_event_listener/remove
   "and an event handler property's setter, set_onclick(Some(&listener(..))).",
   "The function itself, never a wrapper. For shared mutable state, capture a Cell or RefCell.",
   "Specify the event when inference needs it: listener::<PointerEvent>(|e| ..).",
-  "A function made already, a `function::with_this(..)`'s box, is kept as one by `Box::leak(..)` (rd209)."], "this",
+  "A function of its `this`, `function::with_this(..)`'s, is a listener as it is (rd209)."], "this",
   "listener<E>(this: impl Fn(&E) + 'static) -> &'static dyn Fn(&E)").replaceAll(/^    /gm, ""));
 line();
 line(`/// [\`EventListenerObject\`](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener#the_event_listener_callback):

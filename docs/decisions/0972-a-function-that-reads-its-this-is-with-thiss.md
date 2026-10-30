@@ -252,3 +252,35 @@ called through its object, as the user decided. Held by
 `test/js-functions.test.ts`, "a dyn Fn field the crate fills with its own
 closures is called through its object", and the mutations `own-field-*`
 (`analysis/fn_pointers.ts`).
+
+## Amendment: it gives the JS function itself, `&'l dyn Fn(..A) -> R` (rd209)
+
+React DOM's FragmentInstance keeps its `once` wrapper, a `function
+(event) { .. listener.call(this, event) }`, as an
+`EventListenerOrEventListenerObject` to add to each child and remove by
+identity. The union's function is `&'static dyn Fn(&'static Event)`, what
+JS keeps; `with_this` gave a `Box<dyn Fn(..)>`, which only `Box::leak`
+made one of: a leak written to fit the binding, which a port mustn't
+write.
+
+**`with_this` gives `&'l (dyn Fn(..A) -> R + 'l)`**, the JS function
+itself, which JS keeps as long as what its closure keeps, as
+`webapi::listener(..)`'s `&'static dyn Fn(&E)` is: the binding owns its
+lifetime, as JS does. It's a listener, a property's function, a
+constructor `Class::of` takes and a value `js::unknown_of` takes, each as
+it is; Rust calls it as before, its `this` `None`. Its captures are never
+dropped, as a function JS keeps never is: no box the program drops runs
+their drops. `Parameters`' impls bound each parameter and `R` by `'l`,
+which a reference to a `dyn` of them needs.
+
+Callers migrate their types, `Box<dyn Fn(u32) -> String>` to `&'static
+dyn Fn(u32) -> String` (`&dyn Fn(u32) -> bool` of one borrowing `self`).
+`function::bind`'s result is still a box (decision pending: the same
+reference, for one form of a JS function made).
+
+Held by `test/js-functions.test.ts` (each with_this test, its types
+migrated), `test/js-constructors.test.ts`,
+`test/lowering-module-variables.test.ts` and `test/webapi-events.test.ts`'s
+"a function of its this is kept as a listener" (`kept_wrapped`,
+`EventListener(function::with_this(..))`, no leak). No mutation: a
+binding's signature.

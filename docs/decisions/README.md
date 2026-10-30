@@ -756,7 +756,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
 - [0970 A `LinkedList`'s `into_iter()` owns its array](0970-a-linked-lists-into-iter-owns-its-array.md)
 - [0971 An escape is the array of what it gives](0971-an-escape-is-the-array-of-what-it-gives.md)
-- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter; amended by 1009: held by `Class::of`, a constructor closed over what it captures)*
+- [0972 A function that reads its `this` is `js::function::with_this`'s](0972-a-function-that-reads-its-this-is-with-thiss.md) *(amended: its last parameter of rest arguments is JS's rest parameter; amended by 1009: held by `Class::of`, a constructor closed over what it captures; amended: it gives the JS function itself, `&'l dyn Fn`, rd209)*
 - [0973 A zip std reads by index stops at the shorter](0973-a-zip-std-reads-by-index-stops-at-the-shorter.md)
 - [0974 A `while` that steps its variable last is a `for`](0974-a-while-that-steps-its-variable-last-is-a-for.md)
 - [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
@@ -805,7 +805,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
-- [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185; amended: a handler's setter takes a union too, rd192; amended: listener(..) takes a function of `&'static` events, rd209; amended: a shared listener is `&'static dyn Fn(&E)` again, removal takes any kept function of the event, a box kept is `Box::leak(..)`'s)*
+- [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185; amended: a handler's setter takes a union too, rd192; amended: listener(..) takes a function of `&'static` events, rd209; amended: a shared listener is `&'static dyn Fn(&E)` again, removal takes any kept function of the event, a with_this function is a listener as it is)*
 - [1022 A field of a struct JS made is read as often as Rust reads it](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md) *(the user's decision, rd204; amended: what a binding gives back is the program's; amended: a struct the program builds is its own data, rd221; amended: what a binding gives fresh of data properties is plain data, #411; amended: a getter's read is no panic, rd227/rd228)*
 - [1023 A dictionary is a JS object, and a member of a union its parent is](1023-a-dictionary-is-a-js-object-and-its-parents.md)
 - [1024 A mixin its interfaces share is a type, the union of them](1024-a-mixins-union-is-a-type.md) *(rd193)*

@@ -494,9 +494,12 @@ pub mod function {
     }
 
     /// What a function [`with_this`] makes is, given a tuple of its
-    /// parameters, `Self`, and giving `R`: of `(A, B)`, a `Box<dyn Fn(A, B)
-    /// -> R>`, which lives as long as what its closure keeps, `'l`. Of each
-    /// tuple of up to 12. No program names it.
+    /// parameters, `Self`, and giving `R`: of `(A, B)`, a `&'l dyn Fn(A, B)
+    /// -> R`, the JS function itself, which JS keeps as long as what its
+    /// closure keeps, `'l`, as webapi's `listener(..)`'s
+    /// is: a listener, a property's function, a constructor, each as it is,
+    /// never a box the program would leak (rd209). Of each tuple of up to
+    /// 12. No program names it.
     #[diagnostic::on_unimplemented(
         message = "`{Self}` isn't a tuple of the parameters a JS function takes",
         note = "a function `with_this` makes is given its `this` and a tuple of its parameters: `|this, (a, b)|`, `|this, (a,)|` of one, `|this, ()|` of none"
@@ -510,8 +513,8 @@ pub mod function {
     macro_rules! parameters {
         ($(($($a:ident),*))*) => {
             $(
-                impl<'l, R, $($a),*> Parameters<'l, R> for ($($a,)*) {
-                    type Function = Box<dyn Fn($($a),*) -> R + 'l>;
+                impl<'l, R: 'l, $($a: 'l),*> Parameters<'l, R> for ($($a,)*) {
+                    type Function = &'l (dyn Fn($($a),*) -> R + 'l);
                 }
                 impl<$($a),*> crate::sealed::Tuple for ($($a,)*) {}
             )*

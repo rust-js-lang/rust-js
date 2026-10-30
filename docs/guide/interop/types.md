@@ -2432,8 +2432,10 @@ export function logMeasure(task, name, start, end) {
   closure given that `this`, `Option<&'static Unknown>`, and a tuple of
   what it's called with, `(a, b)`, `()` of nothing: a JS `function (a, b)
   { .. }` whose `this` is what it's called on, `function::call`'s, an
-  object's whose method it is, `None` called alone. It's a closure, so
-  rustc checks what it captures. Stored as a property it's named as it,
+  object's whose method it is, `None` called alone. It's the JS function
+  itself, `&dyn Fn(A, B) -> R`, which JS keeps as `listener(..)`'s is: a
+  listener, a property's value or a constructor as it is. It's a closure,
+  so rustc checks what it captures. Stored as a property it's named as it,
   a `let` of it is declared, and a function nested in it reads its
   `this` through a `const`; an arrow in it reads it as it is. Its tuple's
   last item of rest arguments as a value, `&'static dyn Rest<T>`, is JS's
@@ -2477,7 +2479,7 @@ pub fn initialize_class_error_update(update: &Update, fiber: &Rc<Fiber>) {
     }))));
 }
 
-pub fn named_by(name: String) -> Box<dyn Fn(u32) -> String> {
+pub fn named_by(name: String) -> &'static dyn Fn(u32) -> String {
     function::with_this(move |this, (count,): (u32,)| {
         let read = function::with_this(move |own, ()| own.is_some() && this.is_some());
         format!("{name} {count} {}", read())
@@ -2578,7 +2580,7 @@ unsafe impl js::Defined for BaseSyntheticEvent {}
 pub type SyntheticEventClass = Class<fn(Option<&'static str>, &'static Unknown) -> BaseSyntheticEvent>;
 
 struct SyntheticEventPrototype {
-    persist: Box<dyn Fn()>,
+    persist: &'static dyn Fn(),
     is_persistent: fn() -> bool,
 }
 

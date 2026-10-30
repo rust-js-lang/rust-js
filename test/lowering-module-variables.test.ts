@@ -1387,7 +1387,7 @@ pub fn told() -> (bool, u32) {
 use std::cell::Cell;
 
 thread_local! {
-    pub static REPORT: Box<dyn Fn() -> bool> =
+    pub static REPORT: &'static dyn Fn() -> bool =
         js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
     pub static COUNT: Cell<u32> = const { Cell::new(3) };
 }

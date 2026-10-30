@@ -117,7 +117,7 @@ impl Counter {
         self.count.get()
     }
 
-    pub fn bumper(&self) -> Box<dyn Fn(u32) -> bool + '_> {
+    pub fn bumper(&self) -> &dyn Fn(u32) -> bool {
         function::with_this(move |this, (by,): (u32,)| {
             self.count.set(self.count.get() + by);
             this.is_some()
@@ -125,11 +125,11 @@ impl Counter {
     }
 }
 
-pub fn second() -> Box<dyn Fn(u32, u32) -> u32> {
+pub fn second() -> &'static dyn Fn(u32, u32) -> u32 {
     function::with_this(move |_, (_, b): (u32, u32)| b)
 }
 
-pub fn whole() -> Box<dyn Fn(u32, u32) -> String> {
+pub fn whole() -> &'static dyn Fn(u32, u32) -> String {
     function::with_this(move |mut this, pair: (u32, u32)| {
         let before = name_of(this);
         if this.is_some() {
@@ -238,7 +238,7 @@ test("with_this of a variable is refused", () => {
   const error = refused(
     "with-this-variable",
     `use js::{Unknown, function};
-pub fn held() -> Box<dyn Fn() -> bool> {
+pub fn held() -> &'static dyn Fn() -> bool {
     let f = move |this: Option<&'static Unknown>, ()| this.is_some();
     function::with_this(f)
 }
@@ -365,13 +365,13 @@ test("a function with_this makes takes rest arguments as JS's rest parameter", a
 
 pub fn wrap_callback(
     callback: &'static dyn Fn(&dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown>,
-) -> Box<dyn Fn(&'static dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown>> {
+) -> &'static dyn Fn(&'static dyn Rest<dyn IntoUnknown>) -> Option<&'static Unknown> {
     function::with_this(move |this, (args,): (&'static dyn Rest<dyn IntoUnknown>,)| {
         function::apply(callback, this.map(|this| this as &dyn IntoUnknown), Some(&args))
     })
 }
 
-pub fn first_and_rest() -> Box<dyn Fn(f64, &'static dyn Rest<f64>) -> f64> {
+pub fn first_and_rest() -> &'static dyn Fn(f64, &'static dyn Rest<f64>) -> f64 {
     function::with_this(|_, (first, rest): (f64, &'static dyn Rest<f64>)| first * rest.iter().sum::<f64>())
 }
 
@@ -386,7 +386,7 @@ pub fn called() -> f64 {
   expect([lib.firstAndRest()(2, 3, 4), lib.called()]).toEqual([14, 14]);
   expect(refused("with-this-rest-first", `use js::{Rest, function};
 
-pub fn early() -> Box<dyn Fn(&'static dyn Rest<f64>, f64) -> f64> {
+pub fn early() -> &'static dyn Fn(&'static dyn Rest<f64>, f64) -> f64 {
     function::with_this(|_, (rest, last): (&'static dyn Rest<f64>, f64)| rest.len() as f64 + last)
 }
 `)).toContain("does not support values of type `dyn std::ops::Fn(&dyn js::Rest<f64>, f64) -> f64`");
@@ -435,7 +435,7 @@ test("a dyn Fn a field or an item holds is called with no this", async () => {
   const { js, lib } = await compiled("dyn-fn-field-this", `use js::Unknown;
 
 pub struct S {
-    pub f: Box<dyn Fn() -> bool>,
+    pub f: &'static dyn Fn() -> bool,
 }
 
 pub fn field() -> bool {
@@ -493,7 +493,7 @@ pub fn other(o: &Other) -> u32 {
   const alone = await compiled("dyn-fn-field-this-alone", `use js::Unknown;
 
 struct S {
-    f: Box<dyn Fn() -> bool>,
+    f: &'static dyn Fn() -> bool,
 }
 
 pub fn field() -> bool {
@@ -520,12 +520,12 @@ pub fn rust() -> bool {
   // One generic code makes, of what its callers give, may be any.
   const generic = await compiled("dyn-fn-field-this-generic", `use js::Unknown;
 
-fn reader<T: Copy + 'static>(t: T) -> Box<dyn Fn() -> T> {
+fn reader<T: Copy + 'static>(t: T) -> &'static dyn Fn() -> T {
     js::function::with_this(move |_: Option<&'static Unknown>, ()| t)
 }
 
 pub struct S {
-    pub f: Box<dyn Fn() -> u32>,
+    pub f: &'static dyn Fn() -> u32,
 }
 
 pub fn call(s: &S) -> u32 {
@@ -539,7 +539,7 @@ pub fn read() -> u32 {
   expect(generic.js).toContain("  const f = s.f;\n  return f();\n");
 });
 
-// What with_this makes is a `Box<dyn Fn>`, as `Parameters` is of a tuple
+// What with_this makes is a `&dyn Fn`, as `Parameters` is of a tuple
 // alone, sealed: never a fn pointer, whose call through what holds it is
 // never held first (ADR 0972, amended).
 test("with_this's Parameters is of a tuple alone", () => {
@@ -564,7 +564,7 @@ pub struct Tracker {
 }
 
 pub struct Held {
-    pub f: Box<dyn Fn() -> bool>,
+    pub f: &'static dyn Fn() -> bool,
 }
 
 pub fn tracker(n: u32) -> Tracker {
@@ -576,21 +576,21 @@ pub fn stop(t: &Tracker) -> bool {
 }
 
 pub fn held() -> bool {
-    let f: Box<dyn Fn() -> bool> = js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
+    let f: &'static dyn Fn() -> bool = js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
     let h = Held { f };
     (h.f)()
 }
 
 pub struct Lent {
-    pub g: Box<dyn Fn() -> bool>,
+    pub g: &'static dyn Fn() -> bool,
 }
 
-fn set(g: &mut Box<dyn Fn() -> bool>) {
+fn set(g: &mut &'static dyn Fn() -> bool) {
     *g = js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some());
 }
 
 pub fn lent() -> bool {
-    let mut l = Lent { g: Box::new(|| true) };
+    let mut l = Lent { g: &|| true };
     set(&mut l.g);
     (l.g)()
 }

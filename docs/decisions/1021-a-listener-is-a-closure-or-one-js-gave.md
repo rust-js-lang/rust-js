@@ -217,3 +217,19 @@ four sites compile as written. The refusal of a closure that names a
 different event is rustc's closure-signature error now, where the
 `EventListenerOrEventListenerObject` note was. No mutation: the
 generator's.
+
+## Amendment: a with_this function is a listener as it is, no `Box::leak` (rd209)
+
+The amendment above kept a `with_this(..)` box with `Box::leak(..)`, a
+leak a port mustn't write. `with_this` now gives the JS function itself,
+`&'l dyn Fn(..)` (ADR 0972, amended), so it's an `EventListener` as it
+is:
+
+```rust
+let attached = function::with_this(move |this, (event,): (&'static Event,)| { .. });
+let attached = EventListenerOrEventListenerObject::EventListener(attached);
+```
+
+`listener(..)` makes a JS-owned function of a closure; `with_this(..)` one
+of a closure given its `this`: each the one way for what it's given. Held
+by `test/webapi-events.test.ts`'s `kept_wrapped`, the same JS.

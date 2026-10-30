@@ -350,8 +350,8 @@ How WebIDL maps to Rust, one rule for each:
   A shared listener is typed as Rust types a function of the event,
   `&'static dyn Fn(&Event)`, and removal takes it or any reference to a
   function of the event JS keeps. A function of its `this` kept to add and
-  remove is kept for good as its box is, `EventListener(Box::leak(function::with_this(move
-  |this, (event,): (&'static Event,)| ..)))`, the function itself
+  remove is `function::with_this`'s as it is, `EventListener(function::with_this(move
+  |this, (event,): (&'static Event,)| ..))`, the function itself
   ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md), amended).
 - **A union is each of its members as it is:** `window.fetch(url, None)`
   and `window.fetch(request, None)`; a union a JS API gives is an enum of

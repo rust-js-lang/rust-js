@@ -59,7 +59,7 @@ unsafe impl js::Defined for BaseSyntheticEvent {}
 pub type SyntheticEventClass = Class<fn(Option<&'static str>, &'static str, &'static Unknown) -> BaseSyntheticEvent>;
 
 struct SyntheticEventPrototype {
-    prevent_default: Box<dyn Fn()>,
+    prevent_default: &'static dyn Fn(),
     is_persistent: fn() -> bool,
 }
 

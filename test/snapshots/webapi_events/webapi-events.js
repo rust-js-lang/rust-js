@@ -158,8 +158,7 @@ export function givenWrapped(button, given) {
 }
 
 // FragmentInstance's `once` wrapper, kept to add to each child and remove
-// by identity: a function of its `this`, kept for good, `Box::leak(..)`,
-// as JS keeps it (rd209).
+// by identity: a function of its `this`, which JS keeps, as it is (rd209).
 export function keptWrapped(buttons, given) {
   function attached(event) {
     globalThis.record(20);
