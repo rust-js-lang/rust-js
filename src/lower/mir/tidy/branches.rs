@@ -472,6 +472,7 @@ pub(super) fn one_assignment(
     let (x, yes) = assigned_only(then)?;
     let (y, no) = assigned_only(otherwise)?;
     let one = x == y
+        && !(super::logicals::alike_branches(yes, no) && test.has_effects())
         && ((small(yes) && small(no)) || is_temporary(x))
         && (x != result || folds_into_return(yes, no))
         && !(updates(x, yes) || updates(x, no))
@@ -1450,8 +1451,7 @@ fn shared_tail(a: &[Stmt], b: &[Stmt]) -> usize {
         .count()
 }
 
-/// Whether `tail` reads a name `branches` declare, which it can't be moved
-/// out of.
+/// Whether `tail` reads a name `branches` declare, which it can't leave.
 fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -> bool {
     let branches: Vec<Stmt> = branches.cloned().collect();
     declared(&branches).any(|name| js::mentions_in(tail, name) > 0)

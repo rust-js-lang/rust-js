@@ -140,7 +140,7 @@ function main() {
     console.log(`width ${$displayF64(w)}`);
   }
   const r = { TAG: "Err", _0: 9 };
-  const n = r.TAG === "Ok" ? r._0 : r._0;
+  const n = r._0;
   console.log(`${n}`);
 
   // Through a `&mut`, where it's the same place in each: written there.

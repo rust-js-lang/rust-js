@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alike-branches-of-a-call-returned",
+    breaks: "a returned `if` of alike values whose test calls is `return mark(n) ? 5 : 5;`, not as written",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        && !(super::super::logicals::alike_branches(&yes, &no) && test.has_effects())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^alike_branches.rs$"],
+    snapshots: true,
+  },  {
     name: "written-else-of-a-made-return-unturned",
     breaks: "an `if … else { break; }` of the loop a function ends with, MIR's `if (!t) { return; } rest`, isn't turned back, `if (x <= 3) { break; } out.push(x);` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",

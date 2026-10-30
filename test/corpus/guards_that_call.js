@@ -196,8 +196,10 @@ function unmarked(rows) {
       level = 1;
     } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
       continue;
+    } else if (row.length >= 1 && mark(row[0])) {
+      level = 5;
     } else {
-      level = row.length >= 1 && mark(row[0]) ? 5 : 5;
+      level = 5;
     }
     seen.push(level);
   }

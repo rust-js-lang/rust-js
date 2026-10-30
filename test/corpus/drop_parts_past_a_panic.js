@@ -43,7 +43,7 @@ function boomDrop_drop(boom) {
 
 const Item = {
   id(item) {
-    return item.TAG === "Quiet" ? item._0[0] : item._0[0];
+    return item._0[0];
   },
 };
 

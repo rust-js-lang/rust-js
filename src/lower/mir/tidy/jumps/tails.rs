@@ -1031,6 +1031,7 @@ pub(in crate::lower::mir::tidy) fn returned_values(
     };
     if let (Some(yes), Some(no)) = (returned(then), returned(last))
         && folds_into_return(&yes, &no)
+        && !(super::super::logicals::alike_branches(&yes, &no) && test.has_effects())
         && elses.iter().any(|(cond, ..)| within(cond, if_stmt.span))
     {
         // Its branches as written: the test negated where MIR turned them,

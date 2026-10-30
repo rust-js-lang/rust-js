@@ -1309,6 +1309,23 @@ fn chain_within(body: &[Stmt], label: &str) -> bool {
         if chained(inner, label).is_some() || chain_within(inner, label))
 }
 
+/// Whether `yes` and `no` are the same value, read the same either way:
+/// one constant, `5` and `5` (not `0` and `-0`, which JS tells apart), or
+/// one path of what does nothing. An `if` of such branches whose test does
+/// something stays an `if`, `if (row.length >= 1 && mark(row[0])) { level
+/// = 5; } else { level = 5; }`, as the program wrote its two arms, not `c ?
+/// 5 : 5`; one whose test does nothing is the value (`conditional`).
+pub(super) fn alike_branches(yes: &Expr, no: &Expr) -> bool {
+    match (&yes.kind, &no.kind) {
+        (ExprKind::Num(a), ExprKind::Num(b)) => a.to_bits() == b.to_bits(),
+        (ExprKind::Str(a), ExprKind::Str(b)) => a == b,
+        (ExprKind::Bool(a), ExprKind::Bool(b)) => a == b,
+        (ExprKind::BigInt(a), ExprKind::BigInt(b)) => a == b,
+        (ExprKind::Null, ExprKind::Null) | (ExprKind::Undefined, ExprKind::Undefined) => true,
+        _ => !yes.has_effects() && !no.has_effects() && js::same_path(yes, no),
+    }
+}
+
 /// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
 /// where `yes` is `true`, the test `!!test` where it's not a `bool`. Of an
 /// `if` the program wrote with an `else`, `written_if`, `c ? b : false` is
@@ -1317,6 +1334,12 @@ fn chain_within(body: &[Stmt], label: &str) -> bool {
 /// that isn't a `bool`, an `Option<bool>`'s `c ? o : false`, as it wrote
 /// them (ADR 0879, amended).
 pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>, written_if: bool) -> Expr {
+    // Of branches alike, the value alone, where the test does nothing:
+    // `value._0` of `value.TAG === "Continue" ? value._0 : value._0`. One
+    // that does something keeps its `if` (`alike_branches`).
+    if alike_branches(&yes, &no) && !test.has_effects() {
+        return yes;
+    }
     // Where the test itself is the value, of what's not a `bool`, `!!c`;
     // its negation too, `!!o` of `!o`'s, `is_some()`'s.
     let truth = |test: Expr| match is_boolean(&test, booleans) {

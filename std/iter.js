@@ -3942,7 +3942,7 @@ export function scanIterator_fold(
       $controlFlowTry,
     );
     $dispose(value$1);
-    return value.TAG === "Continue" ? value._0 : value._0;
+    return value._0;
   } finally {
     try {
       dropI?.(scan.iter);

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alike-branches-of-a-call-assigned",
+    breaks: "an assigned `if` of alike values whose test calls is `level = mark(n) ? 5 : 5;`, not as written",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        && !(super::logicals::alike_branches(yes, no) && test.has_effects())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^guards_that_call.rs$"],
+    snapshots: true,
+  },  {
     name: "switch-arm-going-on-tail-shared",
     breaks: "React's unwindWork's arm that goes on to its `return null` shares it with `_`'s after the `switch`, no `default` (ADR 0956, amended)",
     file: "src/lower/mir/tidy/branches.rs",

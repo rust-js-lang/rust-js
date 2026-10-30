@@ -15,7 +15,7 @@ function squareShape_area(square) {
 }
 export const blobShape = { area: blobShape_area, name: (self) => "shape" };
 function blobShape_area(blob) {
-  return blob === "Dot" ? 0 : 0;
+  return 0;
 }
 export const f64Shape = { area: f64Shape_area, name: (self) => "shape" };
 function f64Shape_area(self) {

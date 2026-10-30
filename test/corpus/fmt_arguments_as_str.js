@@ -8,7 +8,7 @@ export function entry() {
 
 const Message = {
   text(message) {
-    return message.TAG === "Literal" ? message._0 : message._0;
+    return message._0;
   },
 };
 

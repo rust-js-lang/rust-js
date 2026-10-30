@@ -3,6 +3,27 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alike-branches-conditional",
+    breaks: "branches that give one value, of a test that does nothing, are a conditional of it twice, `n > 3 ? 1.5 : 1.5`, `r.TAG === \"Ok\" ? r._0 : r._0`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if alike_branches(&yes, &no) && !test.has_effects() {\n        return yes;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^alike_branches.rs$"],
+    snapshots: true,
+  },
+
+  {
+    name: "alike-branches-signed-zero",
+    breaks: "`0` and `-0` are taken for one value, `n > 3 ? 0 : -0` is `0`, so `1 / signed(1)` is `inf`",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        (ExprKind::Num(a), ExprKind::Num(b)) => a.to_bits() == b.to_bits(),\n",
+    replace: "        (ExprKind::Num(a), ExprKind::Num(b)) => a == b,\n",
+    tests: ["test/corpus.test.ts", "-t", "^alike_branches.rs$"],
+  },
+
+
+
+  {
     name: "written-ors-kept-apart",
     breaks: "an `if` whose condition the program wrote `a || b`, each side a value `if`'s comparison, is an `if (..) { continue; }` of each side, not `if (a !== (..) || b !== (..)) { continue; }` (rd225, ADR 0683, amended)",
     file: "src/lower/mir/tidy/logicals.rs",

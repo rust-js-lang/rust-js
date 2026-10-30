@@ -21,7 +21,7 @@ const Item = {
   },
 
   text(item) {
-    return item.TAG === "Literal" ? item._0 : item._0;
+    return item._0;
   },
 };
 

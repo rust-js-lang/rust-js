@@ -727,3 +727,32 @@ loop before one. The look is removed with its mutation; the loop the
 function ends with is its last statement. A body that ends `loop; return;`
 there again would print the loop's written `break` as MIR's `return;`,
 which does the same, and the corpus case's `break` would show it.
+
+## Amendment: branches of one value (2026-10-30)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Of a test that does
+nothing, which value it picks can't be told: the value alone gives the
+same. Of one that does something, the `if` runs it as before.
+
+guards_that_call's `[n, ..] if mark(*n) => level = 5, _ => level = 5`
+printed `level = row.length >= 1 && mark(row[0]) ? 5 : 5;`, and std's
+`try_fold` and `fmt::Arguments::as_str` `value.TAG === "Continue" ?
+value._0 : value._0`: a conditional whose branches are one value.
+
+- **`conditional` gives the value alone of branches alike, where the test
+  does nothing** (`logicals::alike_branches`): one constant, `5` and `5`
+  (`0` and `-0` are two, compared by their bits, as JS's `1 / x` tells
+  them apart), or one path of what does nothing, `r._0` of `Ok(n) |
+  Err(n) => n`: `return value._0;`, `const v = 1.5;`.
+- **Where the test does something, the `if` stays**, as written:
+  `one_assignment` and `returned_values` don't turn it, `} else if
+  (row.length >= 1 && mark(row[0])) { level = 5; } else { level = 5; }`,
+  `if (mark(n)) { return 5; } return 5;`. `conditional`'s own check keeps
+  the call where another caller asks it of such branches; no caller that
+  idiomatic Rust reaches does, so no mutation holds that check.
+- Held by `test/corpus/alike_branches.rs` and `guards_that_call.rs`
+  against native Rust, five other corpus snapshots, `traits`' snapshot and
+  std's `iter.js`, and the mutations `alike-branches-conditional`,
+  `alike-branches-signed-zero` (`mir/tidy/logicals.ts`),
+  `alike-branches-of-a-call-assigned` (`branches.ts`) and
+  `alike-branches-of-a-call-returned` (`jumps/tails.ts`).

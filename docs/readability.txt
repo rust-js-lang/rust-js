@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1357
-lines	132911
+files	1360
+lines	133222
 temporaries	1	0.1
 labeled blocks	14	1.1
-while (true)	117	8.8
-$iter	1157	87.1
-Iterator.from	123	9.3
+while (true)	118	8.9
+$iter	1157	86.8
+Iterator.from	123	9.2
 return;	138	10.4
-renamed x$1	8418	633.4
+renamed x$1	8427	632.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -17,6 +17,7 @@ test/corpus/adapter_source_drops.js	72	0	0	0	0	0	0	0
 test/corpus/adapters_given_to_generic_backs.js	53	0	0	0	2	0	0	4
 test/corpus/adapters_own_nth_fold.js	229	0	0	0	0	0	0	8
 test/corpus/alias_reads.js	57	0	0	0	0	0	0	2
+test/corpus/alike_branches.js	73	0	0	0	0	0	0	0
 test/corpus/allocator.js	131	0	0	1	1	0	1	0
 test/corpus/and_of_a_generic_option.js	35	0	0	0	0	0	0	8
 test/corpus/and_value_drops.js	164	0	0	0	0	0	0	28
@@ -511,7 +512,7 @@ test/corpus/guarded_arms_leave_their_loop.js	144	0	0	1	0	0	0	5
 test/corpus/guarded_arms_nested_break.js	74	0	0	0	0	0	0	0
 test/corpus/guarded_bindings.js	76	0	0	0	0	0	0	0
 test/corpus/guarded_match_ends_function.js	61	0	0	0	0	0	0	0
-test/corpus/guards_that_call.js	277	0	3	0	0	0	0	0
+test/corpus/guards_that_call.js	279	0	3	0	0	0	0	0
 test/corpus/handle_named_value.js	32	0	0	0	0	0	0	0
 test/corpus/hash_hashers.js	249	0	0	0	0	0	0	12
 test/corpus/hash_values.js	544	0	0	0	0	0	0	18
@@ -1292,6 +1293,8 @@ test/corpus/wrapping_unary.js	12	0	0	0	0	0	0	0
 test/corpus/write_to_string.js	46	0	0	0	0	0	0	0
 test/corpus/writer_callables.js	147	0	0	0	3	0	0	2
 test/corpus/writer_fn_pointer.js	61	0	0	0	0	0	0	0
+test/corpus/written_breaks_beside_an_else.js	155	0	0	1	0	0	0	6
+test/corpus/written_ifs_of_one_exit.js	81	0	0	0	0	0	0	3
 test/corpus/written_jumps_kept.js	157	0	0	1	0	0	0	5
 test/corpus/written_tails_apart.js	51	0	0	0	0	0	2	0
 test/corpus/xor_drop_panics.js	60	0	0	0	0	0	0	10
