@@ -390,3 +390,47 @@ new case showed. `own_fold_through_adapters` adds the shape, and
 `map-fold-source-dropped-again` are caught.
 Readability: the line's `Vec` adds `$iter` (87.6 to 87.7 in 10,000 lines),
 as each such case does.
+
+## Amendment: std's bodies are lowered of a `core` built to unwind (2026-10-30, #424)
+
+The `core` the toolchain ships for wasm32 is built to abort. Each call in
+its MIR unwinds nowhere (`UnwindAction::Unreachable`), so it has no
+cleanup to lower. A panic that unwound through a compiled body, a `Fuse`'s
+or a `Peekable`'s over an `Inspect`, dropped nothing the body held: native
+drops 32, 33, JS 33 alone. Results change, so Rust's behavior is kept (ADR
+0262). The user's decision was a std built to unwind.
+- **`--std-bodies` lowers std's bodies of a `core` built to unwind**
+  (`std_sysroot.rs`), given as the session's `--sysroot` where none is.
+  `@rust-js/std` is `core`'s bodies alone, `std/lib.rs` is `#![no_std]`,
+  so what's built is `core`, of the toolchain's `rust-src`, `-Cpanic=unwind`,
+  its metadata alone with each body's MIR and MIR inlined, and a
+  `compiler_builtins` that's a crate and nothing more, as the panic runtime
+  is (ADR 0090). In-process, no Cargo or network. It's built once, 2.4 s, and
+  kept beside the compiler, keyed by the toolchain, the target and how it's
+  built.
+- **Std's own items are keyed by their crate's name and def path**,
+  `core::iter::adapters::inspect::{impl#3}::next` (`lower::library::key`),
+  where they were keyed by `DefPathHash`. A program's session, on the
+  shipped std, then finds what `@rust-js/std` compiled, though the two
+  `core`s' crate ids differ. The same source gives the same paths. A
+  program's session stays on the shipped sysroot, so no host changes.
+- **A cleanup that tests an enum's discriminant** before it drops a
+  variant's field, `switchInt` of `discriminant(_)`, is an `if` of the
+  variant's test (`switch_test`). The discriminant is read as a value,
+  never written to a temporary the function doesn't declare. A drop
+  flag's is tested as it's set, `if (flag) { drop(x); }`, as before, which
+  `settled_flags` settles.
+- **A closure only a local of a std body holds,** one inlined there, is
+  collected with the body, `sum`'s in `Filter::count`.
+
+208 `catch`es in std/iter.js, and its MIR's inlining differs where a call's
+cleanup makes it costlier: `Peekable::next_back`'s `or_else` stays a call,
+`next_back(..) ?? fallback()`, as `test/std-package.test.ts` now holds.
+Still open in #424: an accumulator or a source a compiled body moves into
+a dictionary's `fold`, which drops neither as a panic unwinds. Held by
+`panic_in_std_bodies_drops.rs` against native Rust and the mutations
+`std-core-aborts` (`std_sysroot.ts`), `std-core-shipped` (`main.ts`),
+`std-keyed-by-hash` (`lower/library.ts`), `cleanup-switch-bool-only` and
+`cleanup-discriminant-written` and `cleanup-flag-tested-negated`
+(`lower/mir/drops.ts`), and
+`inlined-closures-unfound` (`lower/analysis.ts`).

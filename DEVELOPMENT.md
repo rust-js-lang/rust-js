@@ -256,6 +256,9 @@ What keeps them there:
 - **`@rust-js/std` is generated**, as `runtime/index.js` is: `bun run std`
   after a change to what std's bodies lower to, then a rebuild, which
   builds its manifest in; `test/std-package.test.ts` holds it (ADR 0561).
+  Its `core` is built to unwind, of the toolchain's `rust-src`, once for
+  each toolchain and how it's built, 2.4 s, kept in `target/debug/std-sysroot`
+  (`src/std_sysroot.rs`, #424).
 - **Mutations keep their crate** in `target/mutants/crate`, writing only
   the files that differ, and the compiler built without a mutation while
   the sources are what it was built from. They run up to four at a time,

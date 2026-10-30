@@ -156,7 +156,8 @@ pub(crate) fn gives_what_it_isnt_given(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || (is_std_crate(tcx, id) && tcx.item_name(id).as_str().starts_with("downcast"))
 }
 
-/// std's bodies rust-js compiles from the MIR the toolchain ships, into
+/// std's bodies rust-js compiles from the MIR of a `core` built to unwind
+/// (#424), into
 /// `@rust-js/std` (ADR 0561): each by its type, as
 /// `core::iter` exports it, the trait of the impl, or none for the type's
 /// own, and the method. Each is one the measure says is safe

@@ -9,9 +9,21 @@ use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// What a library and its consumers both call an item: rustc's `DefPathHash`
-/// of it, the same in every crate that sees it.
+/// of it, the same in every crate that sees it. Of std's own, `core`'s,
+/// `alloc`'s and `std`'s, its crate's name and its def path, each part's
+/// disambiguator too, `core::iter::adapters::inspect::{impl#3}::next`: the
+/// same of the std `@rust-js/std` was compiled from, built to unwind, as
+/// of the one the toolchain ships, built to abort, whose crates' ids
+/// differ (#424).
 fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
-    tcx.def_path_hash(id).0.to_hex()
+    match super::recognition::is_std_crate(tcx, id) {
+        true => format!(
+            "{}{}",
+            tcx.crate_name(id.krate),
+            tcx.def_path(id).to_string_no_crate_verbose()
+        ),
+        false => tcx.def_path_hash(id).0.to_hex(),
+    }
 }
 
 /// Can another crate reach `id`, a local item? rustc's own answer, which

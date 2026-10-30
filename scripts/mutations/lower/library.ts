@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key) && false)\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
   },
+  {
+    name: "std-keyed-by-hash",
+    breaks: "std's items are keyed by their `DefPathHash`, which a program's session, on the shipped std, finds none of in `@rust-js/std` built of a `core` built to unwind (#424)",
+    file: "src/lower/library.rs",
+    find: "    match super::recognition::is_std_crate(tcx, id) {",
+    replace: "    match false && super::recognition::is_std_crate(tcx, id) {",
+    tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
+  },
 ];

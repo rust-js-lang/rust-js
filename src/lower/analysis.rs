@@ -142,7 +142,8 @@ pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initia
 }
 
 /// std's bodies compiled into `@rust-js/std` (ADR 0561):
-/// each from the optimized MIR the toolchain ships, with no THIR beside it,
+/// each from the optimized MIR of a `core` built to unwind (#424,
+/// `std_sysroot`), with no THIR beside it,
 /// as a dictionary has none (`pipeline.rs`'s `no_body`).
 pub fn collect_std_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     foreign_bodies(tcx, super::recognition::compiled_std(tcx).to_vec())
@@ -183,7 +184,17 @@ pub(super) fn foreign_bodies(tcx: TyCtxt<'_>, mut ids: Vec<DefId>) -> Vec<Body<'
             }
         }
         let mut closures = Closures(Vec::new());
-        rustc_middle::mir::visit::Visitor::visit_body(&mut closures, tcx.optimized_mir(def_id));
+        let body = tcx.optimized_mir(def_id);
+        rustc_middle::mir::visit::Visitor::visit_body(&mut closures, body);
+        // And each a local holds, of a body rustc inlined into this one,
+        // `sum`'s in `Filter::count` of a std built to unwind (#424).
+        for decl in &body.local_decls {
+            for part in decl.ty.walk().filter_map(|part| part.as_type()) {
+                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {
+                    closures.0.push(closure);
+                }
+            }
+        }
         for closure in closures.0 {
             if !ids.contains(&closure) {
                 ids.push(closure);

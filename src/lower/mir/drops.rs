@@ -223,7 +223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // rustc's `ElaborateDrops`, of the paths whose drop JS sees.
         let move_data = MoveData::gather_moves(body, tcx, drops);
-        // A std body, read from the MIR the toolchain ships, has its drops
+        // A std body, read from its crate's MIR, has its drops
         // elaborated by rustc already: each `Drop` left drops what's there,
         // and its flags are the body's own locals. Its dataflow isn't run,
         // which its optimized switches wouldn't let be.
@@ -719,9 +719,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let data = &state.body.basic_blocks[block];
             // Where its Rust is, as a cleanup has no span of its own.
             let span = data.terminator().source_info.span;
+            // A discriminant the block's switch tests, read there as a value,
+            // never written to a temporary the function doesn't declare (#424).
+            let tested = match &data.terminator().kind {
+                TerminatorKind::SwitchInt { discr, .. } => discr.place().and_then(|place| place.as_local()),
+                _ => None,
+            };
+            let mut discriminant = None;
             for (index, statement) in data.statements.iter().enumerate() {
                 match &statement.kind {
                     StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => {}
+                    StatementKind::Assign(assign)
+                        if matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>
+                    {
+                        discriminant = Some(&assign.1);
+                    }
                     // A `Drop`'s replacing value, written as the old one's
                     // drop unwinds: of variables, made of nothing made before.
                     StatementKind::Assign(assign) => {
@@ -750,20 +762,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 TerminatorKind::Goto { target } => block = target,
                 TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return Ok(out),
+                // Or of an enum's discriminant, which a std body's cleanup
+                // tests before it drops a variant's field, `Option`'s `Some`,
+                // as the MIR a std built to unwind ships has it (#424).
                 TerminatorKind::SwitchInt { ref discr, ref targets }
-                    if discr.ty(&state.body.local_decls, self.tcx).is_bool()
-                        && let [(0, unset)] = targets.iter().collect::<Vec<_>>()[..] =>
+                    if let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>
                 {
-                    let flag = self.mir_operand(state, discr, &mut out)?;
-                    let flag = self.value_expr(flag, span)?;
-                    let set = self.mir_cleanup(state, targets.otherwise())?;
-                    let unset = self.mir_cleanup(state, unset)?;
+                    let ty = discr.ty(&state.body.local_decls, self.tcx);
+                    let subject = match discriminant {
+                        Some(rvalue) => self.mir_rvalue(state, rvalue, span, &mut out)?,
+                        None => self.mir_operand(state, discr, &mut out)?,
+                    };
+                    // A drop flag's, `0: unset`, tested as it's set, `if
+                    // (flag) { drop(x); }`, which `settled_flags` settles.
+                    let (test, then, otherwise) = match ty.is_bool() && value == 0 {
+                        true => (self.value_expr(subject, span)?, targets.otherwise(), then),
+                        false => (
+                            self.switch_test(&subject, ty, value, span, None)?,
+                            then,
+                            targets.otherwise(),
+                        ),
+                    };
+                    let then = self.mir_cleanup(state, then)?;
+                    let otherwise = self.mir_cleanup(state, otherwise)?;
                     let js_span = self.js_span(span);
-                    out.push(match (set.is_empty(), unset.is_empty()) {
+                    out.push(match (then.is_empty(), otherwise.is_empty()) {
                         (true, true) => return Ok(out),
-                        (false, true) => StmtKind::If(flag, set, None).at(js_span),
-                        (true, false) => StmtKind::If(Expr::unary(js::UnaryOp::Not, flag), unset, None).at(js_span),
-                        (false, false) => StmtKind::If(flag, set, Some(unset)).at(js_span),
+                        (false, true) => StmtKind::If(test, then, None).at(js_span),
+                        (true, false) => StmtKind::If(test.negated_test(), otherwise, None).at(js_span),
+                        (false, false) => StmtKind::If(test, then, Some(otherwise)).at(js_span),
                     });
                     return Ok(out);
                 }

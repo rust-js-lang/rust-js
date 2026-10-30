@@ -401,4 +401,12 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
+  {
+    name: "inlined-closures-unfound",
+    breaks: "a closure only a local of a std body holds, `sum`'s in `Filter::count` of a `core` built to unwind, is never collected, so the body is refused (#424)",
+    file: "src/lower/analysis.rs",
+    find: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    closures.0.push(closure);\n",
+    replace: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    let _ = closure;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

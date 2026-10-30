@@ -54,7 +54,7 @@ pub(crate) struct Build {
     /// `--std-coverage <file>` (ADR 0314).
     pub std_coverage: Option<PathBuf>,
     /// `--std-bodies`: the crate is `@rust-js/std`, given std's bodies to
-    /// lower, each from the MIR the toolchain ships (ADR 0561).
+    /// lower, each from the MIR of a `core` built to unwind (ADR 0561, #424).
     pub std_bodies: bool,
     /// `--tidy-until <stage/pass>`: each body's JS as tidy leaves it after
     /// that pass, to see what each pass does (ADR 0659): no pass after it

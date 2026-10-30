@@ -64,6 +64,7 @@ mod publish;
 mod reachability;
 mod runtime;
 mod settings;
+mod std_sysroot;
 mod to_oxc;
 mod typescript;
 
@@ -119,7 +120,7 @@ struct RustJs {
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
     /// `--std-bodies`: the crate is given std's bodies to lower, from the MIR
-    /// the toolchain ships (ADR 0561).
+    /// of a `core` built to unwind (ADR 0561, #424).
     std_bodies: bool,
     /// `--tidy-until <stage/pass>` (ADR 0659).
     tidy_until: Option<String>,
@@ -266,7 +267,8 @@ impl Callbacks for RustJs {
         lower::build_std_structs_as_meaning(self.std_bodies || self.std_iterators);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx, self.std_iterators);
-        // `@rust-js/std`'s: std's own, from the MIR the toolchain ships.
+        // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
+        // unwind (#424).
         if self.std_bodies {
             bodies.extend(lower::collect_std_bodies(tcx));
         }
@@ -482,7 +484,19 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     if !build.std_bodies {
         dependencies.add_std()?;
     }
-    let (rustc_args, staged) = build.rustc_args()?;
+    let (mut rustc_args, staged) = build.rustc_args()?;
+    // std's bodies lowered from a std built to unwind, where none is given
+    // (#424).
+    if build.std_bodies && command::flag_values(&rustc_args, "--sysroot").next().is_none() {
+        let toolchain = rustc_session::config::Sysroot::new(None).default;
+        let target = command::flag_values(&rustc_args, "--target")
+            .last()
+            .unwrap_or(command::TARGET.to_string());
+        rustc_args.push(format!(
+            "--sysroot={}",
+            std_sysroot::sysroot(&toolchain, &target)?.display()
+        ));
+    }
     let stage = Stage::create(&staged, &rustc_args)?;
     let command::Build {
         input,

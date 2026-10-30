@@ -1,6 +1,7 @@
 // std's bodies as a package (ADR 0561): `@rust-js/std`,
 // released with the compiler as `@rust-js/runtime` is. Its JS and its
-// manifest are made by the compiler from the bodies the toolchain ships,
+// manifest are made by the compiler from std's bodies, of a `core` built
+// to unwind (#424),
 // `bun run std`, and committed in `std/`: the compiler builds the manifest
 // in, so what it imports can't drift from what the package has.
 
@@ -84,8 +85,11 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
 test("a std body's JS has no test its early return decided, no once-read bool, no tail written twice", () => {
   const std = readFileSync(join(root, "std", "iter.js"), "utf8");
   const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_nextBack("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
-  expect(nextBack.match(/if \(option != null\)/g)).toHaveLength(1);
-  expect(nextBack).toContain("return option;\n    }\n    const x = v.value;\n    v.value = undefined;\n    return x;\n");
+  // Its `or_else`, which a `core` built to unwind keeps a call of, its
+  // closure's unwinding too costly to inline (#424): `??` of it, the
+  // `Some` tested once.
+  expect(nextBack.match(/!= null/g)).toHaveLength(1);
+  expect(nextBack).toContain("return IDoubleEndedIterator.next_back(peekable.iter) ?? fallback();\n");
   expect(std).not.toMatch(/tmp\$?\d* = !tmp/);
   // No statement line written twice in a row at the two ends of an `if`/`else`.
   // The `return` is indented one level past the `}` and the `else {` that

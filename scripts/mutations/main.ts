@@ -122,4 +122,11 @@ export const mutations: Mutation[] = [
     replace: "        plan.bound = (Vec::<PathBuf>::new().into_iter())\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a bound JS file imports back"],
   },
-];
+  {
+    name: "std-core-shipped",
+    breaks: "`--std-bodies` lowers std's bodies from the toolchain's own, built to abort (#424)",
+    file: "src/main.rs",
+    find: "        rustc_args.push(format!(\n            \"--sysroot={}\",\n            std_sysroot::sysroot(&toolchain, &target)?.display()\n        ));\n",
+    replace: "        let _ = (toolchain, target);\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },];

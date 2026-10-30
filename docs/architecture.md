@@ -41,7 +41,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 
 | Responsibility | Code |
 | --- | --- |
-| Compiler entry, command parsing, Cargo wrapper, panic reporting | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs` |
+| Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/panic_runtime.rs`, `src/std_sysroot.rs` |
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
 | JSX syntax expansion and provenance | `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
@@ -163,7 +163,7 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 
 | Layer | Modules | May depend on |
 | --- | --- | --- |
-| Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs` | Every layer |
+| Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `panic_runtime.rs`, `std_sysroot.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
 | Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `typescript.rs`, `prettier.rs` | Printing and owned output; no rustc |

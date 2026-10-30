@@ -16,7 +16,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 //
 //   driver ──► front end (rustc) ──► owned output ──► printing (oxc, TypeScript)
 const layers = {
-  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/panic_runtime.rs"],
+  driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/panic_runtime.rs", "src/std_sysroot.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
@@ -291,12 +291,13 @@ test("oxc APIs stay behind the printing and formatting adapters", () => {
 });
 
 // Files are written by the publisher, and by the driver, which stages a
-// build and writes a report it's asked for: no other module, by any of
+// build and writes a report it's asked for, and keeps the `core` std's
+// bodies are lowered of (`std_sysroot.rs`, #424): no other module, by any of
 // std's ways to (found in the third architecture audit: the rule was of
 // lowering and artifact planning alone, and of four of the ways).
 test("only the publisher and the driver write files", () => {
   const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
-  const writers = ["src/publish.rs", "src/main.rs"];
+  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs"];
   expect(sources.filter(file => !writers.includes(file) && writes.test(read(file)))).toEqual([]);
   for (const file of writers) expect(read(file), file).toMatch(writes);
 });
