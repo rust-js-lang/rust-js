@@ -751,6 +751,10 @@ async function main() {
       mkdirSync(join(work, "logs"), { recursive: true });
       writeFileSync(log, output);
       const verdict = judge(exit, output);
+      // Its log's end, here, as on CI the log is left on the machine: two
+      // nightlies' inconclusive mutations, each caught here, said nothing
+      // of what stopped them.
+      if (verdict === "inconclusive") console.log(`--- ${mutation.name}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
       results.set(
         mutation,
         verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,

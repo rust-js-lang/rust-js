@@ -365,6 +365,7 @@ checked:
 | A mutation that makes the compiler never finish, `drop-of-its-own-type-inlined` | Caught only by its corpus case's timeout: about a minute where its change's `check:fast` runs it, and in the nightly | A compile timeout of its own for a corpus case that says it, a few seconds |
 | Two tests that compile a port inside bun's 5 s, lowering-labels' "React's addObjectDiffToProperties has no block MIR made" and js-builtins' "unwrap of a throwing call each branch makes" | Time out in `check:fast` when other worktrees load the Mac (load 35–48), failing a run that passes with each alone (8 s for the second's file) | A timeout that fits their compile, or the port compiled once per run and shared |
 | `check:fast`'s guide, std package and readability job | The guide's examples take every core for ~20 s, and the other jobs slow (architecture's 6 s to 13 s) | The guide's examples kept by what they compiled, as the corpus's runs are |
+| A mutant's tests that don't end on CI's machines, `mir-tidy-named-temporaries-off` (nightly of 2026-10-27, its run stopped at 20 min) and `spill-hyphenated-name` (2026-10-30, 2 min 28 s over 7 JSX files, no test failed) | A nightly red with an inconclusive mutation; each is caught here in seconds | Their log's end is now printed with the verdict: read it the next time, and fix what it waited on |
 
 ## Working on `main`
 
