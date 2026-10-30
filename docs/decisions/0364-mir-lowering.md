@@ -517,3 +517,17 @@ guarded arms is no labeled block", run in Node),
 and the mutations `empty-arm-else-only` and `empty-arm-of-a-turn-negated`
 (`mir/tidy/decisions.ts`). `default_values` and its mutations moved to
 `decisions/defaults.rs` (`decisions/defaults.ts`), the file at its cap.
+
+## Amendment: all of rust-js runs with rustc's stack
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; where the work
+runs, not what it makes.
+
+rustc's thread was given a 256 MB stack for lowering, as deep as a function
+is long, but rust-js wrote the JS after that thread ended, on the process's
+main thread: 8 MB. rustc's `mir/issue-29227.rs`, a `match` of hundreds of
+arms, is an `else if` chain as deep, and printing it overflowed that stack
+on macOS, aborting, where Linux's frames fit. **rust-js runs on a thread of
+its own with the stack rustc's thread has**, `RUST_MIN_STACK`'s if it's
+set; a panic there ends the process with 101, as one on the main thread
+did. The rustc suite's `issue-29227.rs` run on a Mac is what holds it.

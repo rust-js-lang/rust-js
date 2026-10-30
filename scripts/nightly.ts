@@ -70,9 +70,12 @@ export const jobs: Record<string, Part[]> = {
   // build, as the lists are made with: in shards, then checked as one run.
   rustc: [
     { id: "rustc:release", cmd: ["cargo", "build", "--release", "--locked", "--quiet"], cores: 6, timeout: 40 * minutes },
+    // rustc's tests at the toolchain's commit, fetched once, as the setup
+    // action does: the shards each fetching them raced for the same folder.
+    { id: "rustc:tests", cmd: ["bun", "scripts/rustc-tests.ts"], cores: 1, timeout: 15 * minutes },
     ...parts("rustc", 6, (i) => ({
       cmd: ["bun", "scripts/rustc-suite.ts", "--compiler=target/release/rust-js", `--shard=${i}/6`, `--out=target/nightly/rustc-${i}.json`],
-      after: ["rustc:release"],
+      after: ["rustc:release", "rustc:tests"],
       cores: 2,
       timeout: 40 * minutes,
     })),

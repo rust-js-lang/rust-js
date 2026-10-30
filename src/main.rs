@@ -349,13 +349,32 @@ impl Callbacks for RustJs {
     }
 }
 
+/// The stack rust-js runs with: a body's MIR is lowered block by block, as
+/// deep as the function is long (ADR 0364), and its JS printed as deep as
+/// it nests, a `match` of hundreds of arms' chain of `else if`s.
+const STACK: usize = 256 * 1024 * 1024;
+
 fn main() -> ExitCode {
-    // A body's MIR is lowered block by block, as deep as the function is
-    // long (ADR 0364): rustc's thread has the stack for it, unless
-    // `RUST_MIN_STACK` says otherwise, as it does to rustc.
+    // rustc's thread has the stack for it, unless `RUST_MIN_STACK` says
+    // otherwise, as it does to rustc; and so has the thread that writes the
+    // JS after rustc's ends, not the process's own, whose 8 MB rustc's
+    // `issue-29227.rs` passed on macOS.
     if std::env::var_os("RUST_MIN_STACK").is_none() {
-        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);
+        let _ = rustc_interface::util::STACK_SIZE.set(STACK);
     }
+    let stack = *rustc_interface::util::STACK_SIZE.get().unwrap_or(&STACK);
+    match std::thread::Builder::new().name("rust-js".into()).stack_size(stack).spawn(run) {
+        // A panic ends it as one on the main thread would, 101, which says
+        // a crash where 1 says a refusal.
+        Ok(thread) => thread.join().unwrap_or(ExitCode::from(101)),
+        Err(error) => {
+            eprintln!("error: rust-js: cannot start its thread: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     // Cargo's workspace wrapper (ADR 0101): its call, as rust-js's, or rustc's.
     let args = match cargo::translate(args) {
