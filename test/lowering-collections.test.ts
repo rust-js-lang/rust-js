@@ -124,6 +124,38 @@ pub fn chained(v: Vec<u32>, set: BTreeSet<u32>) -> Vec<u32> {
   ]);
 });
 
+// A map's `into_keys()` is the array of its keys, `into_values()` of its
+// values, which drops what it hasn't given (#432). Rust drops each entry's
+// other part as it steps it, which the array doesn't hold: refused where
+// that part has a destructor, where its JS read entries' parts of the keys
+// it held, `iter.inner is not iterable`.
+test("a map's into_keys of values with a destructor is refused", () => {
+  const dir = fixture("into-keys-other-part");
+  const loud = `use std::collections::{BTreeMap, HashMap};
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+`;
+  const refused = (body: string, message: string) => {
+    writeFileSync(join(dir, "lib.rs"), loud + body);
+    const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { stderr: "pipe" });
+    expect(p.exitCode).not.toBe(0);
+    expect(p.stderr.toString()).toContain(message);
+  };
+  refused(
+    "pub fn keys(m: HashMap<u32, Loud>) -> Vec<u32> { m.into_keys().collect() }\n",
+    "`into_keys()` of a map whose values have a destructor",
+  );
+  refused(
+    "pub fn values(m: BTreeMap<Loud, u32>) -> Vec<u32> { m.into_values().collect() }\n",
+    "`into_values()` of a map whose keys have a destructor",
+  );
+  writeFileSync(join(dir, "lib.rs"), loud + "pub fn values(m: HashMap<u32, Loud>) -> usize { m.into_values().count() }\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+});
+
 // `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,
 // refused, as its `Some` isn't boxed.
 test("a deque's remove gives what was there", async () => {

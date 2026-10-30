@@ -220,6 +220,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     | "std::collections::btree_map::IntoIter"
                     | "std::collections::hash_set::IntoIter"
                     | "std::collections::btree_set::IntoIter"
+                    // A map's `into_keys()` and `into_values()`, the array of
+                    // its keys or its values (`map_items`), which owns them
+                    // (#432).
+                    | "std::collections::hash_map::IntoKeys"
+                    | "std::collections::hash_map::IntoValues"
+                    | "std::collections::btree_map::IntoKeys"
+                    | "std::collections::btree_map::IntoValues"
                     // A `Box<[T; N]>`'s `into_iter()`, 1.99's, its array (ADR
                     // 0941).
                     | "std::boxed::BoxedArrayIntoIter"

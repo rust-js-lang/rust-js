@@ -773,4 +773,12 @@ export const mutations: Mutation[] = [
     replace: "        (self.array_source(source) == Some(false) || self.range_kind(source).is_some()).then_some(None)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_borrowed_and_owned.rs$"],
   },
+  {
+    name: "into-values-unowned",
+    breaks: "a map's `into_keys()` and `into_values()` own nothing, so `into_values().take(n)` is `Array.from(m.values()).slice(0, n)`, which never drops what it leaves (#432)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                    | \"std::collections::hash_map::IntoKeys\"\n                    | \"std::collections::hash_map::IntoValues\"\n                    | \"std::collections::btree_map::IntoKeys\"\n                    | \"std::collections::btree_map::IntoValues\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^collection_taken_drops_what_is_left.rs$"],
+  },
 ];

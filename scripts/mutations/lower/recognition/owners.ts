@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "        ) {",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
+  {
+    name: "into-values-owns-keys",
+    breaks: "a map's `into_values()` owns its keys, `K`, so what a `take` leaves of its values isn't dropped (#432)",
+    file: "src/lower/recognition/owners.rs",
+    find: "            return args.types().nth(1);\n",
+    replace: "            return args.types().next();\n",
+    tests: ["test/corpus.test.ts", "-t", "^collection_taken_drops_what_is_left.rs$"],
+  },
 ];

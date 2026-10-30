@@ -5,8 +5,9 @@ use super::*;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What an iterator that owns its items gives, `vec::IntoIter`'s,
-    /// `drain(..)`'s, a map's `(K, V)`, or `option::IntoIter`'s, each of which
-    /// it drops with it.
+    /// `drain(..)`'s, a map's `(K, V)`, its `into_keys()`'s `K` and its
+    /// `into_values()`'s `V`, or `option::IntoIter`'s, each of which it drops
+    /// with it.
     pub(in crate::lower) fn owned_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
@@ -22,6 +23,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ) {
             let mut types = args.types();
             return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
+        }
+        // A map's `into_values()`'s, its values, `V` of `<K, V>` (#432).
+        if matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::collections::hash_map::IntoValues" | "std::collections::btree_map::IntoValues"
+        ) {
+            return args.types().nth(1);
         }
         // A `splice`'s, what it took out, its replacing iterator's items
         // (ADR 0501).

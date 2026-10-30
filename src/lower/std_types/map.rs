@@ -734,6 +734,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             MapOp::Len => Expr::member(arg(), "size"),
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
+            // Of a map given by value, `into_keys()` or `into_values()`: the
+            // array of the part it gives, which owns them and drops what it
+            // hasn't given (#432). Rust drops the other part of each entry as
+            // it's stepped, which the array no longer holds: refused where
+            // that part has a destructor.
+            MapOp::Iter(part @ (Part::Keys | Part::Values)) if !tys[0].is_ref() => {
+                let other = types.get(usize::from(part == Part::Keys)).copied();
+                if other.is_some_and(|other| self.drops(other) != crate::lower::drops::Drops::Nothing) {
+                    let (given, dropped) = match part {
+                        Part::Keys => ("into_keys", "values"),
+                        _ => ("into_values", "keys"),
+                    };
+                    return Err(self.unsupported(
+                        span,
+                        &format!("`{given}()` of a map whose {dropped} have a destructor, which it drops as it steps"),
+                    ));
+                }
+                self.map_items(arg(), tys[0], part, span)?
+            }
             MapOp::Iter(part) => self.map_items(arg(), tys[0], part, span)?,
             // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
             // enum is (ADR 0345).

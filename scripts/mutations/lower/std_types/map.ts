@@ -644,4 +644,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            return Ok(base.unwrap_or_else(",
     tests: ["test/runtime-package.test.ts", "-t", "reads as a Map"],
   },
+  {
+    name: "into-keys-other-part-unrefused",
+    breaks: "a map's `into_keys()` of values with a destructor is the array of its keys, whose drop reads entries' values of them: `iter.inner is not iterable` (#432)",
+    file: "src/lower/std_types/map.rs",
+    find: "                if other.is_some_and(|other| self.drops(other) != crate::lower::drops::Drops::Nothing) {\n",
+    replace: "                if other.is_some() && false {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "into_keys of values with a destructor is refused"],
+  },
 ];

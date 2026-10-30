@@ -114,3 +114,29 @@ share of those blessed for it. Held by
 `test/corpus/zip_of_borrowed_and_owned.rs` against native Rust, at the
 zip's end and at a `break`, and the mutation
 `closing-source-holding-nothing-unclosed` (`recognition/iterators.ts`).
+
+## Amendment: a map's `into_keys()` and `into_values()` own their part (#432)
+
+`HashMap::into_values().take(n).map(f).collect()` was `Array.from(m.values())
+.slice(0, n).map(f)`, which never dropped the values the `take` left, where
+Rust drops them with it at the statement's end; a B-tree's and
+`into_keys()` alike, and `count()` of a `take`. Case C: what's dropped
+changes. `recognition::array_source` didn't list the map's `IntoKeys` and
+`IntoValues`, though their JS is the array of that part (`map_items`), so
+`owned_items`, the one question of what an iterator owns, said nothing.
+**A map's `into_keys()` and `into_values()` are arrays that own their part,
+`K` and `V`, closed as a `Vec`'s `into_iter()` is**, `$closing($iter(..),
+drop)`. The entry's other part, which Rust drops as each is stepped, isn't
+in the array: **`into_keys()` of values with a destructor, and
+`into_values()` of keys with one, are refused** (`map_values`), where the
+JS read the leftover keys as entries, `iter.inner is not iterable`.
+
+Held by `test/corpus/collection_taken_drops_what_is_left.rs` with native
+Rust, a `take` and a `skip` of a hashed map's `into_values()`,
+`into_keys()` and `into_iter()`, a set's, a B-tree's, a deque's and a
+`Vec`'s, each counting its drops; the lowering-collections test "a map's
+into_keys of values with a destructor is refused"; and the mutations
+`into-values-unowned` (`recognition/iterators.ts`), `into-values-owns-keys`
+(`recognition/owners.ts`) and `into-keys-other-part-unrefused`
+(`std_types/map.ts`). A `filter` of a hashed map's `into_values()` of such
+values is still refused ("a std type holding a value with a destructor").
