@@ -119,7 +119,7 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f) =>
+          (iterator, init, f, unwind) =>
             fuseDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -135,6 +135,7 @@ function main() {
                 nthBack: countDoubleEndedIterator_nthBack,
               },
               countDrop_drop,
+              unwind,
             ),
           (iterator, k) =>
             fuseDoubleEndedIterator_nthBack(
@@ -153,7 +154,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -171,6 +172,7 @@ function main() {
               $tryOf(broke),
               false,
               countDrop_drop,
+              unwind,
             ),
         ),
         (x) => (x * 2) | 0,
@@ -199,7 +201,7 @@ function main() {
               countDrop_drop,
             ),
           (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f) =>
+          (iterator, init, f, unwind) =>
             fuseDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -215,6 +217,7 @@ function main() {
                 nthBack: countDoubleEndedIterator_nthBack,
               },
               countDrop_drop,
+              unwind,
             ),
           (iterator, k) =>
             fuseDoubleEndedIterator_nthBack(
@@ -233,7 +236,7 @@ function main() {
               false,
               countDrop_drop,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -251,6 +254,7 @@ function main() {
               $tryOf(broke),
               false,
               countDrop_drop,
+              unwind,
             ),
         ),
         2,
@@ -359,7 +363,7 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (iterator, init, f) =>
+        (iterator, init, f, unwind) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -371,6 +375,7 @@ function main() {
               nthBack: countDoubleEndedIterator_nthBack,
             },
             countDrop_drop,
+            unwind,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
@@ -385,7 +390,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator, init, f, broke) =>
+        (iterator, init, f, broke, unwind) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -399,6 +404,7 @@ function main() {
             $tryOf(broke),
             false,
             countDrop_drop,
+            unwind,
           ),
       ),
       (x) => x % 2 === 1,
@@ -535,7 +541,7 @@ function main() {
             countDrop_drop,
           ),
         (iterator) => fuseExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-        (iterator, init, f) =>
+        (iterator, init, f, unwind) =>
           fuseDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -547,6 +553,7 @@ function main() {
               nthBack: countDoubleEndedIterator_nthBack,
             },
             countDrop_drop,
+            unwind,
           ),
         (iterator, k) =>
           fuseDoubleEndedIterator_nthBack(
@@ -561,7 +568,7 @@ function main() {
             false,
             countDrop_drop,
           ),
-        (iterator, init, f, broke) =>
+        (iterator, init, f, broke, unwind) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -575,6 +582,7 @@ function main() {
             $tryOf(broke),
             false,
             countDrop_drop,
+            unwind,
           ),
       ),
     ),

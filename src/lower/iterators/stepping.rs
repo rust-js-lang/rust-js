@@ -385,47 +385,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drops, a bound's dictionary, can't be given what each caller would:
     /// refused.
     pub(in crate::lower) fn own_methods(
-        &self,
+        &mut self,
         ty: ty::Ty<'tcx>,
         back: bool,
         span: Span,
     ) -> R<crate::lower::iterators::OwnMethods> {
-        let recognition = self.recognition();
-        // The impl's `name`, of `Iterator`, or of `DoubleEndedIterator`,
-        // `of_back`, where it writes one.
-        let own = |name: &str, of_back: bool| -> R<Option<Expr>> {
-            let written = match of_back {
-                true => recognition.own_back_method(ty, name),
-                false => recognition.own_iterator_method(ty, name),
-            };
-            let Some(written) = written else {
-                return Ok(None);
-            };
-            // Given no drops: what std's consumers fold, through the
-            // runtime, is a JS value whose type it can't name (#162).
-            if self.takes_more_than_drops(written) {
-                return Err(self.unsupported(span, &format!("an iterator's own `{name}` given a dictionary")));
-            }
-            Ok(Some(self.fn_ref(written)))
-        };
         let folds = !ty.is_ref();
-        let folded = |name: &str, of_back: bool| if folds { own(name, of_back) } else { Ok(None) };
         Ok(match back {
             true => crate::lower::iterators::OwnMethods {
-                fold: folded("rfold", true)?,
-                nth: own("nth_back", true)?,
+                fold: self.own_fold(ty, ("rfold", folds), span)?,
+                nth: self.own_method(ty, ("nth_back", true), span)?,
                 ..Default::default()
             },
             // Its back's too, which std's adapters stepped from their back
             // ask (#220).
             false => crate::lower::iterators::OwnMethods {
-                fold: folded("fold", false)?,
-                nth: own("nth", false)?,
-                last: folded("last", false)?,
-                rfold: folded("rfold", true)?,
-                nth_back: own("nth_back", true)?,
+                fold: self.own_fold(ty, ("fold", folds), span)?,
+                nth: self.own_method(ty, ("nth", false), span)?,
+                last: match folds {
+                    true => self.own_method(ty, ("last", false), span)?,
+                    false => None,
+                },
+                rfold: self.own_fold(ty, ("rfold", folds), span)?,
+                nth_back: self.own_method(ty, ("nth_back", true), span)?,
             },
         })
+    }
+
+    /// The impl's `name`, of `Iterator`, or of `DoubleEndedIterator`,
+    /// `of_back`, where it writes one: `own_methods`'.
+    fn own_method_id(&self, ty: ty::Ty<'tcx>, (name, of_back): (&str, bool), span: Span) -> R<Option<DefId>> {
+        let written = match of_back {
+            true => self.recognition().own_back_method(ty, name),
+            false => self.recognition().own_iterator_method(ty, name),
+        };
+        let Some(written) = written else {
+            return Ok(None);
+        };
+        // Given no drops: what std's consumers fold, through the
+        // runtime, is a JS value whose type it can't name (#162).
+        if self.takes_more_than_drops(written) {
+            return Err(self.unsupported(span, &format!("an iterator's own `{name}` given a dictionary")));
+        }
+        Ok(Some(written))
+    }
+
+    /// `own_method_id`'s, the function itself.
+    fn own_method(&self, ty: ty::Ty<'tcx>, method: (&str, bool), span: Span) -> R<Option<Expr>> {
+        Ok(self
+            .own_method_id(ty, method, span)?
+            .map(|written| self.fn_ref(written)))
+    }
+
+    /// The crate's iterator `ty`'s own `fold` or `rfold`, `name`, where
+    /// `folds`: what it takes after its function is what the runtime's
+    /// fold gives it, `unwind`, its accumulator's drop (#423), its `B`'s.
+    /// The function itself where that's its first drop; else, its impl's
+    /// type parameters' drops before it, `fold_entry`'s, given those as
+    /// `ty` has them.
+    fn own_fold(&mut self, ty: ty::Ty<'tcx>, (name, folds): (&str, bool), span: Span) -> R<Option<Expr>> {
+        if !folds {
+            return Ok(None);
+        }
+        let Some(written) = self.own_method_id(ty, (name, name == "rfold"), span)? else {
+            return Ok(None);
+        };
+        let acc = self.tcx.generics_of(written).parent_count as u32;
+        let before = (self.krate.drop_params.get(&written)).is_some_and(|drops| drops.iter().any(|&index| index < acc));
+        let trait_id = self
+            .tcx
+            .trait_of_assoc(self.tcx.trait_item_of(written).unwrap_or(written));
+        match (before, trait_id.and_then(|trait_id| self.fold_of(ty, (trait_id, name)))) {
+            (true, Some(found)) => self.fold_entry(found, span).map(Some),
+            _ => Ok(Some(self.fn_ref(written))),
+        }
     }
 
     /// Whether `ty` is an iterator of the crate's that's double-ended, by

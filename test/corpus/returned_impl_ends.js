@@ -62,7 +62,7 @@ function main() {
   const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const b = [[1, 2, 3, 4, 6]];
   console.log(
-    `[${Array.from($rev($knowing(Bag.oddSquares(b), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke))))).join(", ")}]`,
+    `[${Array.from($rev($knowing(Bag.oddSquares(b), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke, unwind) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, undefined, unwind)))).join(", ")}]`,
   );
   console.log(`[${Array.from($rev(Bag.evens(b))).join(", ")}]`);
   const e = Bag.evens(b);
@@ -80,7 +80,7 @@ function main() {
           (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
           undefined,
           undefined,
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -88,6 +88,10 @@ function main() {
               { next: $next },
               { next_back: $nextBack },
               $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
             ),
         ),
       ),
@@ -106,7 +110,7 @@ function main() {
             (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
             undefined,
             undefined,
-            (iterator, init, f, broke) =>
+            (iterator, init, f, broke, unwind) =>
               mapDoubleEndedIterator_tryRfold(
                 iterator,
                 init,
@@ -114,6 +118,10 @@ function main() {
                 { next: $next },
                 { next_back: $nextBack },
                 $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
               ),
           ),
         ),
@@ -129,7 +137,7 @@ function main() {
     `[${Array.from($iterator(Bag.ranged(b), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($knowing(Bag.chained(b), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke)))).take(3)).join(", ")}]`,
+    `[${Array.from($rev($knowing(Bag.chained(b), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind))).take(3)).join(", ")}]`,
   );
   const value$1 = $findBack(
     $knowing(
@@ -138,7 +146,7 @@ function main() {
       undefined,
       undefined,
       chainDoubleEndedIterator_nthBack,
-      (iterator, init, f, broke) =>
+      (iterator, init, f, broke, unwind) =>
         chainDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -148,6 +156,9 @@ function main() {
           { next: $next },
           { next_back: $nextBack },
           $tryOf(broke),
+          undefined,
+          undefined,
+          unwind,
         ),
     ),
     (x) => x % 3 === 0,
@@ -161,7 +172,7 @@ function main() {
       (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
       undefined,
       undefined,
-      (iterator, init, f, broke) =>
+      (iterator, init, f, broke, unwind) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -169,6 +180,10 @@ function main() {
           { next: $next },
           { next_back: $nextBack },
           $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
         ),
     ),
     (x) => x === 4,

@@ -78,7 +78,7 @@ function main() {
               { next: downIterator_next },
               { next_back: downDoubleEndedIterator_nextBack },
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             chainDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -88,6 +88,9 @@ function main() {
               { next: $next },
               { next_back: $nextBack },
               $tryOf(broke),
+              undefined,
+              undefined,
+              unwind,
             ),
         ),
       ),
@@ -105,7 +108,7 @@ function main() {
           undefined,
           undefined,
           undefined,
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -113,6 +116,10 @@ function main() {
               { next: downIterator_next },
               { next_back: downDoubleEndedIterator_nextBack },
               $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
             ),
         ),
       ),

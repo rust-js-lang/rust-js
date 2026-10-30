@@ -78,7 +78,7 @@ function main() {
               $dropEach(loudDrop_drop),
               loudDrop_drop,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -88,7 +88,7 @@ function main() {
               $tryOf(broke),
               true,
               $dropEach(loudDrop_drop),
-              undefined,
+              unwind,
               undefined,
               undefined,
               loudDrop_drop,
@@ -154,7 +154,7 @@ function main() {
               $dropEach(loudDrop_drop),
               loudDrop_drop,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -164,7 +164,7 @@ function main() {
               $tryOf(broke),
               true,
               $dropEach(loudDrop_drop),
-              undefined,
+              unwind,
               undefined,
               undefined,
               loudDrop_drop,
@@ -199,7 +199,7 @@ function main() {
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               true,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             fuseDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -208,6 +208,8 @@ function main() {
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
               $tryOf(broke),
               true,
+              undefined,
+              unwind,
             ),
         ),
       ),

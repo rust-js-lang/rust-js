@@ -24,11 +24,23 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
     it.tryFold = (init, f, broke) => rangeFold(iterator, init, f, broke);
     it.fold = (init, f) => rangeFold(iterator, init, f, () => false);
   }
+  // And from its back, by its `next_back`: its `try_rfold`, and so its
+  // `rfold`, std's, which end it exhausted at its first, as a held `Rev`'s
+  // fold of it does, not past it as `next_back` does (#414).
+  const rangeRfold = nextBack === undefined ? undefined : $rangeFoldOf(nextBack);
+  if (rangeRfold !== undefined) {
+    it.tryRfold = (init, f, broke) => rangeRfold(iterator, init, f, broke);
+    it.rfold = (init, f) => rangeRfold(iterator, init, f, () => false);
+  }
   // The crate's own `fold` and `nth`, where its impl writes them, which
   // what std routes through them calls (#162).
   // That `fold` takes what it steps and drops it, which `ownFold` says.
+  // Given `unwind`, the drop of an accumulator a stage's panic may strand,
+  // `$foldDropping`'s: each dictionary's `fold` and `rfold` takes it after
+  // its function, as its `B`'s drop, the crate's own's first drop and std's
+  // compiled struct's (#423).
   if (fold !== undefined) {
-    it.fold = (init, f) => fold(iterator, init, f);
+    it.fold = (init, f, unwind) => fold(iterator, init, f, unwind);
     it.ownFold = true;
   }
   // `ownNth` and `ownLast` say they're the crate's own, which drop what
@@ -45,11 +57,11 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   }
   // That `rfold` takes what it steps and drops it, as its `fold` does.
   if (rfold !== undefined) {
-    it.rfold = (init, f) => rfold(iterator, init, f);
+    it.rfold = (init, f, unwind) => rfold(iterator, init, f, unwind);
     it.ownRfold = true;
   }
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
-  if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);
+  if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind);
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).

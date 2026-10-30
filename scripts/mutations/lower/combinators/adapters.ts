@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "step-by-passed-undropped",
     breaks: "what `step_by` steps over isn't dropped",
     file: "src/lower/combinators/adapters.rs",
-    find: "                        StmtKind::Expr(Expr::call(drop, vec![Expr::var(\"item\")])).at(js::Span::NONE),\n",
-    replace: "",
+    find: "                        .at(js::Span::NONE),\n                        StmtKind::Expr(dropped).at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
+    replace: "                        .at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
@@ -362,8 +362,8 @@ export const mutations: Mutation[] = [
     name: "inspect-throw-keeps-item",
     breaks: "an `inspect` whose closure panics leaves the item it was given undropped (#423)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                if throws && let Some(drop) = self.item_drop_of(receiver_ty, span)? {",
-    replace: "                if false && let Some(drop) = self.item_drop_of(receiver_ty, span)? {",
+    find: "                if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
+    replace: "                if false && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {

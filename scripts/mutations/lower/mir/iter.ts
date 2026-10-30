@@ -207,8 +207,8 @@ export const mutations: Mutation[] = [
     name: "try-fold-unlowered",
     breaks: "`try_fold` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "            Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,\n",
-    replace: "            Some(IterMethod::TryFold) => return Ok(None),\n            Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,\n",
+    find: "            Some(m) if m.tries() => self.try_folded(",
+    replace: "            Some(IterMethod::TryFold) => return Ok(None),\n            Some(m) if m.tries() => self.try_folded(",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
   {
@@ -445,5 +445,21 @@ export const mutations: Mutation[] = [
     replace: "        match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
     snapshots: true,
+  },
+  {
+    name: "rfold-consumed-undropped",
+    breaks: "what `rfold` takes by value, std's `Map::rfold`'s `IntoIter`, isn't dropped after it, nor as a stage's panic unwinds: what it hadn't stepped is left undropped (#423)",
+    file: "src/lower/mir/iter.rs",
+    find: "            && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))\n",
+    replace: "            && is_std_def(self.tcx, trait_id, StdItem::Iterator)\n",
+    tests: ["test/std-package.test.ts", "test/iterator-forms.test.ts", "-t", "the committed @rust-js/std is std|^generic_folds_unwind with"],
+  },
+  {
+    name: "rfold-consumed-by-fold-asked",
+    breaks: "what `rfold` takes by value is dropped after it unless its `Iterator` dictionary's `fold` is there, where its `DoubleEndedIterator`'s `rfold` is what drops it",
+    file: "src/lower/mir/iter.rs",
+    find: "            true => (self.recognition().double_ended_iterator(), \"rfold\"),\n",
+    replace: "            true => (Some(std_item(self.tcx, StdItem::Iterator)), \"fold\"),\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
 ];

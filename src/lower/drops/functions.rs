@@ -1,6 +1,7 @@
 //! A drop as a function: std's, a type's own, and one held.
 
 use super::*;
+use crate::lower::calls::apply;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `drop_function` of a `ty` a std function drops itself, `truncate`'s
@@ -23,6 +24,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_function_of(ty, None, span)
     }
 
+    /// `drop(value)`, a `ty` a std function drops itself dropped as an
+    /// expression, where no statement can be: its drop called,
+    /// `noisyDrop_drop(value)`, or of a drop that may be none, its caller's
+    /// for a type parameter, `dropT?.(value)`, or an impl's dictionary's for
+    /// an associated type, `IItemIntoIterator.$dropIntoIter?.(value)`, each
+    /// none where the type has nothing to drop (ADRs 0106, 0178, 0421), as
+    /// `drop_value` drops them. None for a type with nothing to drop.
+    pub(in crate::lower) fn std_drop_call(&mut self, ty: Ty<'tcx>, value: Expr, span: Span) -> R<Option<Expr>> {
+        let Some((drop, given)) = self.found_drop(ty, None, span)? else {
+            self.require_no_drops(ty);
+            return Ok(None);
+        };
+        Ok(Some(match given {
+            true => Expr {
+                facts: js::Facts::NONE,
+                kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
+                span: js::Span::NONE,
+            },
+            false => apply(drop, vec![value]),
+        }))
+    }
+
     /// `drop_function`'s, its parameter `param` where it's given one, else
     /// named for its type, `(noisy) => ..`.
     pub(in crate::lower) fn drop_function_of(
@@ -31,16 +54,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         param: Option<&str>,
         span: Span,
     ) -> R<Option<Expr>> {
+        Ok(self.found_drop(ty, param, span)?.map(|(drop, _)| drop))
+    }
+
+    /// `drop_function_of`'s, and whether it's one that may be none where
+    /// it's run: given by the caller, `dropT`, or held by an impl's
+    /// dictionary, `ZZone.$dropOffset`, either of which is none of a type
+    /// with nothing to drop.
+    fn found_drop(&mut self, ty: Ty<'tcx>, param: Option<&str>, span: Span) -> R<Option<(Expr, bool)>> {
         if let ty::Param(_) = ty.kind() {
             let index = self.given_drop(ty);
             if let Some(index) = index {
                 self.drop_state.used_drops.insert(index);
             }
-            return Ok(index.map(|index| Expr::var(&self.drop_state.param_drops[&index])));
+            return Ok(index.map(|index| (Expr::var(&self.drop_state.param_drops[&index]), true)));
         }
         if let Some(index) = self.given_drop(ty) {
             self.drop_state.used_drops.insert(index);
-            return Ok(Some(Expr::var(&self.drop_state.param_drops[&index])));
+            return Ok(Some((Expr::var(&self.drop_state.param_drops[&index]), true)));
         }
         match self.drops(ty) {
             Drops::Nothing => return Ok(None),
@@ -48,7 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Drops::Runs => {}
         }
         if let Some(drop) = self.item_drop(ty) {
-            return Ok(Some(drop));
+            return Ok(Some((drop, true)));
         }
         let base = match (param, ty.kind()) {
             (Some(param), _) => param.to_string(),
@@ -70,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && matches!(&arg.kind, js::ExprKind::Var(name) if *name == param)
             && callee.is_named()
         {
-            return Ok(Some((**callee).clone()));
+            return Ok(Some(((**callee).clone(), false)));
         }
         // `(intoIter) => { for (const item of intoIter) nDrop_drop(item); }`,
         // what drops each an iterator hasn't given, is `$dropEach(nDrop_drop)`.
@@ -99,9 +130,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && matches!(&arg.kind, js::ExprKind::Var(name) if name == item)
             && callee.is_named()
         {
-            return Ok(Some(Expr::call_helper("$dropEach", vec![(**callee).clone()])));
+            return Ok(Some((Expr::call_helper("$dropEach", vec![(**callee).clone()]), false)));
         }
-        Ok(Some(Expr::arrow(vec![param.into()], body)))
+        Ok(Some((Expr::arrow(vec![param.into()], body), false)))
     }
 
     /// The function that drops what generic code holds of a `ty`: `ty`'s

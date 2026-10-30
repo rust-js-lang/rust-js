@@ -59,7 +59,7 @@ function main() {
         { next_back: $nextBack },
         exactSizeIterator,
       ),
-    rfold: (iterator, init, f) =>
+    rfold: (iterator, init, f, unwind) =>
       takeIDoubleEndedIterator_rfold(
         iterator,
         init,
@@ -67,6 +67,8 @@ function main() {
         { next: $next },
         { next_back: $nextBack },
         exactSizeIterator,
+        undefined,
+        unwind,
       ),
     nthBack: (iterator, k) =>
       takeIDoubleEndedIterator_nthBack(
@@ -76,7 +78,7 @@ function main() {
         { next_back: $nextBack },
         exactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke) =>
+    tryRfold: (iterator, init, f, broke, unwind) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -85,6 +87,8 @@ function main() {
         { next_back: $nextBack },
         exactSizeIterator,
         $tryOf(broke),
+        undefined,
+        unwind,
       ),
   };
   const v = [10, 20, 30, 40, 50];
@@ -103,11 +107,20 @@ function main() {
     { next: $next, fold: $foldOf, getUnchecked: enumerateIterator___iteratorGetUnchecked },
     {
       next_back: (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator),
-      rfold: (iterator, init, f) =>
-        enumerateDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, exactSizeIterator),
+      rfold: (iterator, init, f, unwind) =>
+        enumerateDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          exactSizeIterator,
+          { next_back: $nextBack },
+          undefined,
+          unwind,
+        ),
       nthBack: (iterator, k) =>
         enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
-      tryRfold: (iterator, init, f, broke) =>
+      tryRfold: (iterator, init, f, broke, unwind) =>
         enumerateDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -116,6 +129,8 @@ function main() {
           exactSizeIterator,
           { next_back: $nextBack },
           $tryOf(broke),
+          undefined,
+          unwind,
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator) },
@@ -134,7 +149,7 @@ function main() {
           takeExactSizeIterator,
           takeDoubleEndedIterator,
         ),
-      rfold: (iterator, init, f) =>
+      rfold: (iterator, init, f, unwind) =>
         enumerateDoubleEndedIterator_rfold(
           iterator,
           init,
@@ -142,6 +157,8 @@ function main() {
           { next: $next, fold: $foldOf },
           takeExactSizeIterator,
           takeDoubleEndedIterator,
+          undefined,
+          unwind,
         ),
       nthBack: (iterator, k) =>
         enumerateDoubleEndedIterator_nthBack(
@@ -151,7 +168,7 @@ function main() {
           takeExactSizeIterator,
           takeDoubleEndedIterator,
         ),
-      tryRfold: (iterator, init, f, broke) =>
+      tryRfold: (iterator, init, f, broke, unwind) =>
         enumerateDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -160,6 +177,8 @@ function main() {
           takeExactSizeIterator,
           takeDoubleEndedIterator,
           $tryOf(broke),
+          undefined,
+          unwind,
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, takeExactSizeIterator) },
@@ -186,7 +205,7 @@ function main() {
           undefined,
           (iterator, k) =>
             enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             enumerateDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -195,6 +214,8 @@ function main() {
               exactSizeIterator,
               { next_back: $nextBack },
               $tryOf(broke),
+              undefined,
+              unwind,
             ),
         ),
         f,

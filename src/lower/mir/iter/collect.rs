@@ -134,6 +134,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
         let recognition = self.recognition();
         recognition.folds_what_it_consumes(method)
+            || recognition.rfolds_what_it_consumes(method)
             || recognition.iterator_method(method) == Some(IterMethod::Collect) && self.collects_by_fold(output)
     }
 
@@ -526,6 +527,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$rposition", vec![items, found]))
     }
 
+    /// What drops a fold's accumulator, an `acc`, that a stage of `it`, of
+    /// type `receiver`, strands where it throws, a panic, as std's adapter's
+    /// fold closure drops it (#423): `it`'s stages may throw, or of a type
+    /// parameter's, whose steps are anyone's (#424), and it has a
+    /// destructor. `$foldDropping`'s and `$foldBack`'s `unwind`.
+    pub(super) fn stranded_drop(
+        &mut self,
+        it: &Expr,
+        receiver: Ty<'tcx>,
+        acc: Ty<'tcx>,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let may_throw =
+            crate::lower::iterators::chain_may_throw(it) || receiver.has_param() || self.steps_may_panic(receiver);
+        match may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {
+            true => self.drop_function(acc, span),
+            false => Ok(None),
+        }
+    }
+
     /// `it.fold(init, f)`: `it.reduce(f, init)`, `f` given after what it
     /// starts from. JS's `reduce` counts its arguments: a start of
     /// `undefined`, a `fold(None, ..)`'s, is given, or it starts from the
@@ -539,21 +560,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let own = arg_tys.last().is_some_and(|ty| self.is_called_as_written(*ty));
         let callback = self.binary_callback(f, own);
-        // Of an accumulator with a destructor, where a stage may throw, a
-        // panic, what drops the one it strands, as std's adapter's fold
-        // closure drops it (#423).
         let acc = match init {
             Some(_) => arg_tys.get(1).copied(),
             None => item,
         };
-        let receiver = arg_tys.first().copied();
-        // Of a type parameter's too, whose steps are anyone's (#424).
-        let may_throw = crate::lower::iterators::chain_may_throw(&it)
-            || receiver.is_some_and(|ty| ty.has_param() || self.steps_may_panic(ty));
-        let unwind = match acc {
-            Some(acc) if may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing => {
-                self.drop_function(acc, span)?
-            }
+        let unwind = match (acc, arg_tys.first()) {
+            (Some(acc), Some(&receiver)) => self.stranded_drop(&it, receiver, acc, span)?,
             _ => None,
         };
         let Some(init) = init else {
@@ -588,6 +600,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: IterMethod,
         arg: &mut dyn FnMut() -> Expr,
         (own, output): (bool, Ty<'tcx>),
+        arg_tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<Expr> {
         // Into a `fmt::Result`, whose `Ok(())` is nothing and whose `Err` is
@@ -622,9 +635,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             IterMethod::TryForEach => (Expr::undefined(), self.unary_folded(arg())),
             _ => (arg(), arg()),
         };
+        // Into another `Try`, of an accumulator, a `B`, with a destructor
+        // that a stage's panic may strand, its drop, as `fold`'s (#423).
+        // Of `try_fold` and `try_rfold`, `(&mut self, B, F)`.
+        let unwind = match (arg_tys, &tried, method) {
+            ([receiver, acc, _], Some(_), IterMethod::TryFold | IterMethod::TryRFold) => {
+                self.stranded_drop(&it, *receiver, *acc, span)?
+            }
+            _ => None,
+        };
         let mut args = vec![it, init, self.binary_callback(f, own)];
         crate::lower::calls::given_to_js(&mut args);
         args.extend(tried);
+        args.extend(unwind);
         Ok(Expr::call_helper(helper, args))
     }
 }

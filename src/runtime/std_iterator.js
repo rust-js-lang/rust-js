@@ -39,7 +39,7 @@ function $stdIterator(struct, steps) {
   }
   // Its `try_fold`, std's, where it passes it on to its source's (#214).
   if (steps.tryFold !== undefined) {
-    it.tryFold = (init, f, broke) => steps.tryFold(it, init, f, broke);
+    it.tryFold = (init, f, broke, unwind) => steps.tryFold(it, init, f, broke, unwind);
   }
   if (steps.hint !== undefined) {
     it.hint = () => steps.hint(it);
@@ -76,10 +76,10 @@ function $stdIterator(struct, steps) {
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
-    if (rfold !== undefined) it.rfold = (init, f) => rfold(it, init, f);
+    if (rfold !== undefined) it.rfold = (init, f, unwind) => rfold(it, init, f, unwind);
     if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(it, k));
     // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
-    if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(it, init, f, broke);
+    if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);
   };
   return it;
 }

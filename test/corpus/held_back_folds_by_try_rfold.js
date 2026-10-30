@@ -84,7 +84,7 @@ function main() {
         },
         countExactSizeIterator,
       ),
-    rfold: (iterator, init, f) =>
+    rfold: (iterator, init, f, unwind) =>
       takeIDoubleEndedIterator_rfold(
         iterator,
         init,
@@ -96,6 +96,8 @@ function main() {
           nthBack: countDoubleEndedIterator_nthBack,
         },
         countExactSizeIterator,
+        undefined,
+        unwind,
       ),
     nthBack: (iterator, k) =>
       takeIDoubleEndedIterator_nthBack(
@@ -109,7 +111,7 @@ function main() {
         },
         countExactSizeIterator,
       ),
-    tryRfold: (iterator, init, f, broke) =>
+    tryRfold: (iterator, init, f, broke, unwind) =>
       takeIDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -122,6 +124,8 @@ function main() {
         },
         countExactSizeIterator,
         $tryOf(broke),
+        undefined,
+        unwind,
       ),
   };
   const held = $rev(
@@ -162,13 +166,15 @@ function main() {
           takeDoubleEndedIterator,
         ),
       (iterator) => $exactLen($sizeHint(iterator)),
-      (iterator, init, f) =>
+      (iterator, init, f, unwind) =>
         skipDoubleEndedIterator_rfold(
           iterator,
           init,
           f,
           { next: $next, fold: $foldOf },
           takeDoubleEndedIterator,
+          undefined,
+          unwind,
         ),
       (iterator, k) =>
         skipDoubleEndedIterator_nthBack(
@@ -177,7 +183,7 @@ function main() {
           { next: $next, fold: $foldOf },
           takeDoubleEndedIterator,
         ),
-      (iterator, init, f, broke) =>
+      (iterator, init, f, broke, unwind) =>
         skipDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -185,6 +191,8 @@ function main() {
           { next: $next, fold: $foldOf },
           takeDoubleEndedIterator,
           $tryOf(broke),
+          undefined,
+          unwind,
         ),
     ),
     (x) => x % 2 === 0,

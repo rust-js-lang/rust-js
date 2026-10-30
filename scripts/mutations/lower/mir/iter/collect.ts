@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "fold-acc-unwind-unseen",
     breaks: "a `fold` whose accumulator has a destructor is given no drop for it, so a stage's panic leaves it undropped (#423)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            Some(acc) if may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing => {",
-    replace: "            Some(acc) if false && may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing => {",
+    find: "        match may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {",
+    replace: "        match false && may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {
@@ -399,8 +399,8 @@ export const mutations: Mutation[] = [
     name: "fold-of-a-param-unwinding-unseen",
     breaks: "a fold of a type parameter's iterator, std's `Fuse::fold`'s of what it fuses, is given no drop of its accumulator (#424)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "            || receiver.is_some_and(|ty| ty.has_param() || self.steps_may_panic(ty));",
-    replace: "            || receiver.is_some_and(|ty| self.steps_may_panic(ty));",
+    find: "chain_may_throw(it) || receiver.has_param() || self.steps_may_panic(receiver);",
+    replace: "chain_may_throw(it) || self.steps_may_panic(receiver);",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
   {
@@ -419,5 +419,13 @@ export const mutations: Mutation[] = [
     replace: "                None if false && folded && self.collected_items(&it, iter_ty).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "try-fold-acc-unwind-unseen",
+    breaks: "a `try_fold` into a `ControlFlow` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                self.stranded_drop(&it, *receiver, *acc, span)?\n",
+    replace: "                let _ = (receiver, acc);\n                None\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_mid_fold_drops with"],
   },
 ];

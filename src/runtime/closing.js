@@ -56,11 +56,13 @@ function $closing(it, drop, slices = true) {
   if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
   if (it.ownNth) closing.ownNth = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
-  // of what it took as it unwinds (#422).
-  const unwound = (fold) => {
+  // of what it took as it unwinds (#422); done with, not closed, where its
+  // fold is its own, `own`, which took it and drops it as it unwinds (#423).
+  const unwound = (fold, own) => {
     try {
       return fold();
     } catch (error) {
+      if (own) closed = true;
       close();
       throw error;
     }
@@ -69,7 +71,10 @@ function $closing(it, drop, slices = true) {
   // passes it on, so a step of the crate's own iterator that panics drops
   // a `last`'s kept item before what's left (#423, #426).
   closing.fold = (init, f, unwind) => {
-    const folded = unwound(() => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)));
+    const folded = unwound(
+      () => (it.fold !== undefined ? it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)),
+      it.ownFold,
+    );
     if (it.ownFold) closed = true;
     close();
     return folded;
@@ -77,17 +82,17 @@ function $closing(it, drop, slices = true) {
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
-  const rfoldClosing = (init, f) => {
-    const folded = unwound(() => it.rfold(init, f));
+  const rfoldClosing = (init, f, unwind) => {
+    const folded = unwound(() => it.rfold(init, f, unwind), it.ownRfold);
     if (it.ownRfold) closed = true;
     close();
     return folded;
   };
   if (it.rfold !== undefined) closing.rfold = rfoldClosing;
-  if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
+  if (it.tryRfold !== undefined) closing.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   // Its `try_fold`, its iterator's, done with where it isn't stopped.
-  closing.tryFold = (init, f, broke) => {
-    const folded = $lent(it).tryFold(init, f, broke);
+  closing.tryFold = (init, f, broke, unwind) => {
+    const folded = $lent(it).tryFold(init, f, broke, unwind);
     if (!broke(folded) && !closing.held) close();
     return folded;
   };

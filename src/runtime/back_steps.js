@@ -57,11 +57,33 @@ function $advanceBackBy(it, m, _found, drop, slices = true) {
 
 // `it.rfold(init, f)`: `f` of each item from the back, given what it gave;
 // its own `rfold`, where it reaches the crate's (#220). Consuming it, it
-// closes it, as Rust's `rfold` drops what it takes at its end (#206).
-function $foldBack(it, init, f) {
-  if (it.rfold !== undefined) return it.rfold(init, f);
+// closes it, as Rust's `rfold` drops what it takes at its end (#206), or
+// as it unwinds. Given `unwind`, the drop of an accumulator a stage's panic
+// may strand, as `$foldDropping`'s: passed on to its own `rfold`, or run
+// where a step throws, before what's left is closed (#423).
+function $foldBack(it, init, f, unwind) {
+  if (it.rfold !== undefined) return it.rfold(init, f, unwind);
   let folded = init;
-  for (let step = it.back(); !step.done; step = it.back()) folded = f(folded, step.value);
+  for (;;) {
+    let step;
+    try {
+      step = it.back();
+    } catch (error) {
+      try {
+        unwind?.(folded);
+      } finally {
+        it.return?.();
+      }
+      throw error;
+    }
+    if (step.done) break;
+    try {
+      folded = f(folded, step.value);
+    } catch (error) {
+      it.return?.();
+      throw error;
+    }
+  }
   it.return?.();
   return folded;
 }

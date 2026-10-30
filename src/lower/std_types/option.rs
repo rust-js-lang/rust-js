@@ -770,26 +770,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of a value with a destructor, the one it doesn't keep dropped,
         // `insert`'s old one, or `get_or_insert`'s given one where it holds
         // one (ADR 0098).
-        let drop = match matches!(op, OptionPlaceOp::Insert | OptionPlaceOp::GetOrInsert) {
-            true => self.std_drop_function(item, span)?,
-            false => None,
-        };
-        let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
-        let assign = StmtKind::Assign(place.clone(), self.held_in_option(value.clone(), item)).at(js_span);
-        match (op, drop) {
-            (OptionPlaceOp::Insert, Some(drop)) => {
+        let dropped = match op {
+            OptionPlaceOp::Insert => {
                 let old = match self.boxed_payload(item) {
                     true => self.some_value(place.clone()),
                     false => place.clone(),
                 };
-                let dropped = StmtKind::Expr(apply(drop, vec![old])).at(js_span);
-                out.push(StmtKind::If(present, vec![dropped], None).at(js_span));
+                self.std_drop_call(item, old, span)?
+            }
+            OptionPlaceOp::GetOrInsert => self.std_drop_call(item, value.clone(), span)?,
+            _ => None,
+        };
+        let dropped = dropped.map(|call| vec![StmtKind::Expr(call).at(js_span)]);
+        let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
+        let assign = StmtKind::Assign(place.clone(), self.held_in_option(value, item)).at(js_span);
+        match (op, dropped) {
+            (OptionPlaceOp::Insert, Some(dropped)) => {
+                out.push(StmtKind::If(present, dropped, None).at(js_span));
                 out.push(assign);
             }
             (OptionPlaceOp::Insert, None) => out.push(assign),
-            (_, drop) => {
+            (_, otherwise) => {
                 let absent = Expr::bin(Op::LooseEq, place, Expr::null());
-                let otherwise = drop.map(|drop| vec![StmtKind::Expr(apply(drop, vec![value])).at(js_span)]);
                 out.push(StmtKind::If(absent, vec![assign], otherwise).at(js_span));
             }
         }

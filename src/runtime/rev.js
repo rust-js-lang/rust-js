@@ -39,6 +39,6 @@ function $rev(it) {
     rev.advanceBackBy = (m) => it.advanceBy(m);
     rev.ownNthBack = true;
   }
-  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);
+  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   return rev;
 }

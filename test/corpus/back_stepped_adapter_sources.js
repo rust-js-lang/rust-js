@@ -51,8 +51,19 @@ function main() {
   });
   let last = mapDoubleEndedIterator_nextBack(odd, {
     next_back: mapDoubleEndedIterator_nextBack,
-    rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),
-    tryRfold: (iterator, init, f, broke) =>
+    rfold: (iterator, init, f, unwind) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind) =>
       mapDoubleEndedIterator_tryRfold(
         iterator,
         init,
@@ -60,6 +71,10 @@ function main() {
         { next: $next },
         { next_back: $nextBack },
         $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
       ),
   });
   let first = $next(odd);
@@ -127,7 +142,7 @@ function main() {
             { next_back: $nextBack },
             true,
           ),
-        (iterator, init, f, broke) =>
+        (iterator, init, f, broke, unwind) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -136,6 +151,8 @@ function main() {
             { next_back: $nextBack },
             $tryOf(broke),
             true,
+            undefined,
+            unwind,
           ),
       ),
       (x) => x % 2 === 1,

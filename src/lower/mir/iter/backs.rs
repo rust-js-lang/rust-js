@@ -276,9 +276,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         method: IterMethod,
         values: Vec<Expr>,
-        (iter_ty, output): (Ty<'tcx>, Ty<'tcx>),
+        (iter_ty, output, arg_tys): (Ty<'tcx>, Ty<'tcx>, &[Ty<'tcx>]),
         span: Span,
-    ) -> R<Expr> {
+    ) -> R<Option<Expr>> {
         let drop = match self.iterator_item(iter_ty) {
             Some(item) if method != IterMethod::RFold => self.std_drop_function(item, span)?,
             _ => None,
@@ -305,7 +305,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if method == IterMethod::TryRFold {
             let reversed = Expr::call_helper("$rev", vec![it]);
             let mut arg = || values.next().expect("rustc checked the arguments");
-            return self.try_folded(reversed, method, &mut arg, (false, output), span);
+            let folded = self.try_folded(reversed, method, &mut arg, (false, output), arg_tys, span)?;
+            return Ok(Some(folded));
+        }
+        // `rfold`'s accumulator, which a stage's panic may strand, dropped by
+        // what it's given, as `fold`'s is (#423).
+        if method == IterMethod::RFold {
+            let unwind = match arg_tys.get(1) {
+                Some(&acc) => self.stranded_drop(&it, iter_ty, acc, span)?,
+                None => None,
+            };
+            let mut given = vec![it];
+            given.extend(values);
+            given.extend(unwind);
+            return Ok(Some(Expr::call_helper("$foldBack", given)));
         }
         let mut given = vec![it];
         given.extend(values);
@@ -327,10 +340,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let helper = match method {
             IterMethod::NthBack => "$nthBack",
             IterMethod::AdvanceBackBy => "$advanceBackBy",
-            IterMethod::RFold => "$foldBack",
             _ => "$findBack",
         };
-        Ok(Expr::call_helper(helper, given))
+        Ok(Some(Expr::call_helper(helper, given)))
     }
 
     /// Whether `iter_ty` is an array's items under `Rev`s, `Filter`s and

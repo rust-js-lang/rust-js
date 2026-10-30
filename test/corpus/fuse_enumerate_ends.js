@@ -66,7 +66,7 @@ function fusedBack(it, IFused) {
             { next_back: $nextBack },
             IFused,
           ),
-        (iterator, init, f, broke) =>
+        (iterator, init, f, broke, unwind) =>
           fuseDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -75,6 +75,8 @@ function fusedBack(it, IFused) {
             { next_back: $nextBack },
             $tryOf(broke),
             IFused,
+            undefined,
+            unwind,
           ),
       ),
     ),

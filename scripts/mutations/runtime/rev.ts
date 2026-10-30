@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "rev-try-fold-by-next",
     breaks: "a `rev()`'s `try_fold` steps its source by `next_back`, not a `take`'s `try_rfold`, which trims by the crate's `nth_back` (#220)",
     file: "src/runtime/rev.js",
-    find: "  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);\n",
+    find: "  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
@@ -81,5 +81,13 @@ export const mutations: Mutation[] = [
     find: "rev.fold = (init, f, unwind) => it.rfold(init, f, unwind);",
     replace: "rev.fold = (init, f, unwind) => it.rfold(init, f);",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
+  },
+  {
+    name: "rev-try-fold-unwind-lost",
+    breaks: "a `Rev`'s `try_fold`, its source's `try_rfold`, gets no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
+    file: "src/runtime/rev.js",
+    find: "  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);\n",
+    replace: "  if (it.tryRfold !== undefined) rev.tryFold = (init, f, broke) => it.tryRfold(init, f, broke);\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
 ];

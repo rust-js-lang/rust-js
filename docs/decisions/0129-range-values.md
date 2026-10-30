@@ -236,3 +236,17 @@ std's `Step::backward` does.** Held by `char_ranges_stepped.rs` (an
 inclusive one, an open one, one across the surrogates) against native
 Rust and the mutation `lazy-range-back-chars-as-numbers`
 (`runtime/lazy_range.ts`).
+
+## Amendment: a range folded from its back by a held `Rev` (2026-10-30, #414)
+
+Of std's iterator structs alone (ADR 0908), `k.by_ref().rev().fold(..)` of
+`1u8..=3` is `Rev::fold`, its source's `rfold`, which std's `RangeInclusive`
+folds by its `try_rfold`, exhausted at its first, `1..=1 (exhausted)`. The
+JS iterator generic code makes of the range, `$given`'s, folded it by
+`next_back`, which steps past its start, `1..=0`. Results change, so
+Rust's behavior is kept (ADR 0262): **`$iterator` of what's stepped from
+its back by an inclusive range's `next_back` has std's `try_rfold` and
+`rfold`, `$rangeFoldOf(nextBack)`**, as one stepped by `next` has its
+`try_fold` and `fold`. Held by `range_inclusive_exhausted.rs` of std's
+structs, in the iterator forms test's default list, and the mutation
+`range-rfold-steps-past` (`runtime/iterator.ts`).

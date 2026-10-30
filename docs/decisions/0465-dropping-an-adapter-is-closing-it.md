@@ -681,3 +681,72 @@ the tidy stages of the corpus, and the mutations `leaves-none-source-unclosed`
 (`lower/mir/std_calls.ts`), `closed-by-its-drop-unread` and
 `borrowed-made-owned` (`lower/iterators/eager.ts`) and `helper-drop-unseen`
 (`lower/iterators/in_place.ts`).
+
+## Amendment: std's iterator structs alone (2026-10-30, ADR 0908)
+
+Built with std's iterator structs alone, `--std-iterators`, five corpus
+cases dropped what a stage's panic strands in another order than native
+Rust, or not at all: the accumulator std's fold closure holds, which the
+runtime's `unwind` drops, was lost on its way to the closure, and what an
+`rfold` or a `skip_while`'s `find` held wasn't dropped. Results change, so
+Rust's behavior is kept (ADR 0262). Each fold the runtime routes passes
+`unwind`, the accumulator's drop, on, as `fold` and `$foldDropping` did:
+- **`rfold`, `try_fold` and `try_rfold` take it as `fold` does.**
+  `$foldBack(it, init, f, unwind)` gives it to its own `rfold`, or drops
+  the accumulator where a step throws, before what's left, which it now
+  closes where `f` throws too; `$tryFoldInto(.., unwind)` gives a
+  `tryFold` its drop of what's made; `$Steps`', `$lent`'s, `$rev`'s,
+  `$stdIterator`'s and a dictionary's `tryFold`, `tryRfold` and `rfold`
+  pass it on; and std's compiled `rfold` and `try_fold` of its struct, as
+  a dictionary's entry, `compiled_fold` and `compiled_try_fold`, take it as
+  their `B`'s drop, as its `fold` did. A compiled `rfold`, `try_fold` and
+  `try_rfold` into a `Try` of an accumulator with a destructor, where a
+  stage may panic, is given it, `collect`'s `stranded_drop`, the one
+  answer `fold`'s is.
+- **A dictionary's `fold` and `rfold` are given it after their function,**
+  as their `B`'s drop: std's struct's `$foldOf`, a compiled one's, and the
+  crate's own, whose first drop is its `B`'s; one whose impl's type
+  parameters take drops before it, `impl<T> Iterator for Wrap<T>`'s, is
+  given theirs first, as its type has them, `knowing::fold_entry`'s, as
+  std's compiled one is (`iterators::stepping::own_fold`): before, it was
+  given none, and std's struct folding it dropped none of its `T`s.
+- **`$closing` of an iterator whose fold is its own, which took it and
+  drops it as it unwinds, is done with, not closed, where that fold
+  throws**: a panic in a stage dropped what the crate's own `fold` hadn't
+  stepped twice.
+- **A collect in place by its fold, `$foldToArray`, has what it collected
+  as the fold's accumulator**, std's `InPlaceDrop`, dropped by the stage
+  that panics before what's left; where it collects otherwise, what's left
+  first, as before.
+- **`$findDropping` drops the item its test panics on**, as std's `find`'s
+  closure holds it: a `skip_while`'s predicate's.
+- **What `rfold` takes by value is dropped after it**, and as it unwinds,
+  as `fold`'s is, unless its `DoubleEndedIterator` dictionary's `rfold`,
+  which drops it, is there: std's `Map::rfold` of a `Vec`'s `IntoIter`
+  dropped none of what it hadn't stepped where its closure panicked.
+
+The corpus's dictionaries of std's structs, 23 cases, give `unwind` on,
+`(iterator, init, f, broke, unwind) => ..`. Held by
+`panic_in_own_next_drops.rs`, `panic_in_own_rfold_drops.rs`,
+`panic_mid_fold_drops.rs`, `panic_mid_iteration_drops.rs`,
+`panic_part_way_drops.rs`, `generic_folds_unwind.rs` and
+`own_folds_unwind.rs` of std's structs,
+now in the iterator forms test's default list, and
+`own_folds_unwind.rs` and `generic_folds_unwind.rs`, as the crate builds
+them and of std's structs, against native Rust; and the mutations
+`compiled-try-fold-given-no-unwind` (`lower/iterators/knowing.ts`),
+`own-fold-unwind-as-impl-drop` (`lower/iterators/stepping.ts`),
+`try-fold-acc-unwind-unseen` (`lower/mir/iter/collect.ts`),
+`rfold-acc-unwind-unseen` and `try-rfold-acc-unseen`
+(`lower/mir/iter/backs.ts`), `rfold-consumed-undropped` and
+`rfold-consumed-by-fold-asked` (`lower/mir/iter.ts`), and of the runtime
+`dictionary-fold-unwind-lost`, `dictionary-rfold-unwind-lost`,
+`dictionary-try-rfold-unwind-lost` (`iterator.ts`),
+`fold-back-step-unwinds-nothing`, `fold-back-own-given-no-unwind`
+(`back_steps.ts`), `std-iterator-try-fold-unwind-lost`,
+`std-iterator-rfold-unwind-lost`, `std-iterator-try-rfold-unwind-lost`
+(`std_iterator.ts`), `try-fold-into-unwind-lost` (`try_by.ts`),
+`lent-try-fold-unwind-lost` (`lent.ts`), `closing-own-fold-closed-again`
+(`closing.ts`), `rev-try-fold-unwind-lost`
+(`rev.ts`), `fold-to-array-collected-last`, `fold-of-unwind-lost`
+(`fold_of.ts`) and `find-dropping-throw-keeps-item` (`find_dropping.ts`).

@@ -101,6 +101,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `item_drop_of`'s, run on `item`, as `std_drop_call` runs it.
+    fn item_drop_call(&mut self, receiver: Ty<'tcx>, item: Expr, span: Span) -> R<Option<Expr>> {
+        match self.iterator_item(receiver.peel_refs()) {
+            Some(ty) => self.std_drop_call(ty, item, span),
+            None => Ok(None),
+        }
+    }
+
     /// What `flat_map(f)` and `flatten()`, of no `f`, give JS's `flatMap`
     /// of an `inner`, an `IntoIterator` that owns items with a destructor:
     /// `(i) => $closing($iter(..), drop)`, each closed to drop what it
@@ -396,15 +404,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Expr::call(Expr::helper("$stepBy"), list));
                 }
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var("i"), n), Expr::int(0));
-                let body = match self.item_drop_of(receiver_ty, span)? {
-                    Some(drop) => vec![
+                let body = match self.item_drop_call(receiver_ty, Expr::var("item"), span)? {
+                    Some(dropped) => vec![
                         StmtKind::If(
                             keep,
                             vec![StmtKind::Return(Some(Expr::bool(true))).at(js::Span::NONE)],
                             None,
                         )
                         .at(js::Span::NONE),
-                        StmtKind::Expr(Expr::call(drop, vec![Expr::var("item")])).at(js::Span::NONE),
+                        StmtKind::Expr(dropped).at(js::Span::NONE),
                         StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),
                     ],
                     None => vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
@@ -487,10 +495,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let item = Expr::var("item");
                 let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);
-                if throws && let Some(drop) = self.item_drop_of(receiver_ty, span)? {
+                if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {
                     let error = self.fresh("error");
                     let handler = vec![
-                        StmtKind::Expr(Expr::call(drop, vec![item.clone()])).at(js::Span::NONE),
+                        StmtKind::Expr(dropped).at(js::Span::NONE),
                         StmtKind::Throw(Expr::var(&error)).at(js::Span::NONE),
                     ];
                     inspected = StmtKind::TryCatch(vec![inspected], Some(error), handler).at(js::Span::NONE);

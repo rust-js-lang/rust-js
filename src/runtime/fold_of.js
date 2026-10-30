@@ -1,8 +1,9 @@
 // `it.fold(init, f)` of a JS iterator whose `fold` is std's adapter's over
 // the crate's own, as a dictionary's `fold` is called, of the value it's of
-// (#214).
-function $foldOf(it, init, f) {
-  return it.fold(init, f);
+// (#214); given `unwind`, what a stage's panic strands, `$foldDropping`'s,
+// its own fold's to pass on (#423).
+function $foldOf(it, init, f, unwind) {
+  return it.fold(init, f, unwind);
 }
 
 // `it.fold(init, f)` of an accumulator with a destructor that a stage's
@@ -45,16 +46,30 @@ function $foldDropping(it, init, f, unwind) {
 // Where its fold throws, a panic in a closure, what it collected dropped
 // by `drop`, of items with a destructor, and what's left of it closed, as
 // std's unwinds, what's left first, `restFirst`, where it doesn't collect
-// in place (#423).
+// in place (#423). In place, what it collected is the fold's accumulator,
+// std's `InPlaceDrop`, which the stage that panics drops before its fold
+// drops what's left: the fold's `unwind`.
 function $foldToArray(it, drop, restFirst = false) {
   const items = [];
+  let unwound = false;
+  const unwind =
+    restFirst || drop === undefined
+      ? undefined
+      : () => {
+          unwound = true;
+          $dropItems(items, drop);
+        };
   try {
-    return it.fold(items, (items, x) => {
-      items.push(x);
-      return items;
-    });
+    return it.fold(
+      items,
+      (items, x) => {
+        items.push(x);
+        return items;
+      },
+      unwind,
+    );
   } catch (error) {
-    $collectUnwound(it, items, drop, restFirst);
+    $collectUnwound(it, items, unwound ? undefined : drop, restFirst);
     throw error;
   }
 }

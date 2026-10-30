@@ -188,8 +188,19 @@ function main() {
     { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
     {
       next_back: mapDoubleEndedIterator_nextBack,
-      rfold: (iterator, init, f) => mapDoubleEndedIterator_rfold(iterator, init, f),
-      tryRfold: (iterator, init, f, broke) =>
+      rfold: (iterator, init, f, unwind) =>
+        mapDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+        ),
+      tryRfold: (iterator, init, f, broke, unwind) =>
         mapDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -197,6 +208,10 @@ function main() {
           { next: $next },
           { next_back: $nextBack },
           $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
         ),
     },
   );

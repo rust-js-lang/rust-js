@@ -96,7 +96,7 @@ function main() {
           { next: $rangeNext },
           { next_back: $rangeNextBack, nthBack: $rangeNthBack },
         ),
-      (iterator, init, f, broke) =>
+      (iterator, init, f, broke, unwind) =>
         chainDoubleEndedIterator_tryRfold(
           iterator,
           init,
@@ -106,6 +106,9 @@ function main() {
           { next: $rangeNext },
           { next_back: $rangeNextBack, nthBack: $rangeNthBack },
           $tryOf(broke),
+          undefined,
+          undefined,
+          unwind,
         ),
     ),
     (x) => x % 2 === 0,

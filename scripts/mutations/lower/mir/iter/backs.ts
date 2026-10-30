@@ -427,4 +427,20 @@ export const mutations: Mutation[] = [
     replace: "        let knowing = match false && self.compiled_struct_at(revealed, span) {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^returned_impl_ends.rs$|^back_steps with"],
   },
+  {
+    name: "rfold-acc-unwind-unseen",
+    breaks: "an `rfold` of an accumulator with a destructor, a stage panicking part-way, leaves the accumulator undropped (#423)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                Some(&acc) => self.stranded_drop(&it, iter_ty, acc, span)?,\n",
+    replace: "                Some(_) => None,\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_in_own_rfold_drops with"],
+  },
+  {
+    name: "try-rfold-acc-unseen",
+    breaks: "a `try_rfold`, std's `Rev::try_fold`'s, of an accumulator with a destructor, a stage panicking part-way, leaves it undropped (#423)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "(false, output), arg_tys, span)?;",
+    replace: "(false, output), &[], span)?;",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

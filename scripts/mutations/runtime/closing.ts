@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "closing-try-fold-by-next",
     breaks: "a closing's tryFold is its iterator's",
     file: "src/runtime/closing.js",
-    find: "  closing.tryFold = (init, f, broke) => {",
-    replace: "  closing.tryFoldUnused = (init, f, broke) => {",
+    find: "  closing.tryFold = (init, f, broke, unwind) => {",
+    replace: "  closing.tryFoldUnused = (init, f, broke, unwind) => {",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {
@@ -137,5 +137,13 @@ export const mutations: Mutation[] = [
     find: "it.fold(init, f, unwind) : $foldDropping(it, init, (a, x) => f(a, x), unwind)",
     replace: "it.fold(init, f) : $foldDropping(it, init, (a, x) => f(a, x))",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
+  },
+  {
+    name: "closing-own-fold-closed-again",
+    breaks: "an iterator of the crate's whose own `fold` drops what it took as a stage's panic unwinds is closed again: what it hadn't stepped is dropped twice (#423)",
+    file: "src/runtime/closing.js",
+    find: "      if (own) closed = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_folds_unwind.rs$"],
   },
 ];

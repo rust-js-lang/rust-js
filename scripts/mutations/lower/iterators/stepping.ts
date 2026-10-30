@@ -242,8 +242,8 @@ export const mutations: Mutation[] = [
     name: "own-methods-back-forward",
     breaks: "`rev()` of the crate's iterator is given its forward `nth`, so `rev().nth(1)` counts from the front (#217)",
     file: "src/lower/iterators/stepping.rs",
-    find: "                fold: folded(\"rfold\", true)?,\n                nth: own(\"nth_back\", true)?,\n",
-    replace: "                fold: folded(\"fold\", false)?,\n                nth: own(\"nth\", false)?,\n",
+    find: "                fold: self.own_fold(ty, (\"rfold\", folds), span)?,\n                nth: self.own_method(ty, (\"nth_back\", true), span)?,\n",
+    replace: "                fold: self.own_fold(ty, (\"fold\", folds), span)?,\n                nth: self.own_method(ty, (\"nth\", false), span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
   {
@@ -253,5 +253,13 @@ export const mutations: Mutation[] = [
     find: "        let rest_first = rest_first && drop.is_some();",
     replace: "        let rest_first = false;",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
+  {
+    name: "own-fold-unwind-as-impl-drop",
+    breaks: "the crate's own `fold` of an `impl<T> Iterator for Wrap<T>` is given the runtime's `unwind`, its accumulator's drop, as its `T`'s drop, which comes first: `drop undefined` as a stage panics, and none of its `T`s as std's struct folds it (#423)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            (true, Some(found)) => self.fold_entry(found, span).map(Some),\n",
+    replace: "            (true, Some(_)) => Ok(Some(self.fn_ref(written))),\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^own_folds_unwind.rs$|^own_folds_unwind with"],
   },
 ];

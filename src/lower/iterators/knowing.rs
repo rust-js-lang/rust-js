@@ -920,10 +920,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The compiled `fold` or `rfold`, `method`, of std's struct `ty`, a
     /// held `Map`'s (ADRs 0871, 0912), as a dictionary's entry,
-    /// `(iterator, init, f, unwind) => ..`, a `fold` given `unwind`, the
-    /// runtime's fold's, as what drops its accumulator, its `B`, where a
-    /// stage's panic strands it inside its closure, before what's left (#423,
-    /// #424).
+    /// `(iterator, init, f, unwind) => ..`, given `unwind`, the runtime's
+    /// fold's, `$foldDropping`'s or `$foldBack`'s, as what drops its
+    /// accumulator, its `B`, where a stage's panic strands it inside its
+    /// closure, before what's left (#423, #424).
     /// `None` where it isn't compiled.
     pub(in crate::lower) fn compiled_fold(
         &mut self,
@@ -931,23 +931,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (trait_id, method): (DefId, &str),
         span: Span,
     ) -> R<Option<Expr>> {
-        let Some((fold, args)) = self.compiled_fold_of(ty, (trait_id, method))? else {
-            return Ok(None);
-        };
+        match self.compiled_fold_of(ty, (trait_id, method))? {
+            Some(found) => self.fold_entry(found, span).map(Some),
+            None => Ok(None),
+        }
+    }
+
+    /// `compiled_fold`'s entry, of the `fold` or `rfold` `fold` of `args`
+    /// resolves to: std's compiled one, or the crate's own, given its
+    /// impl's drops as its type's arguments have them (#423).
+    pub(in crate::lower) fn fold_entry(
+        &mut self,
+        (fold, args): (DefId, ty::GenericArgsRef<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
         let instance =
             (self.resolve_instance(fold, args)?).ok_or_else(|| self.unsupported(span, "this implementation"))?;
         // The method's own first type parameter, its `B`.
         let acc = self.tcx.generics_of(instance.def_id()).parent_count as u32;
-        // Of a `fold`, which the runtime's folds give theirs; an `rfold`'s
-        // the caller's, as before.
-        let mut params = vec!["iterator", "init", "f"];
-        let dropped = match method {
-            "fold" => {
-                params.push("unwind");
-                vec![(acc, Expr::var("unwind"))]
-            }
-            _ => Vec::new(),
-        };
+        let params = ["iterator", "init", "f", "unwind"];
+        let dropped = vec![(acc, Expr::var("unwind"))];
         let mut values = params[..3].iter().map(|&name| Expr::var(name)).collect::<Vec<_>>();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
@@ -961,15 +964,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             span,
         )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
-        Ok(Some(Expr::arrow(
+        Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
-        )))
+        ))
     }
 
     /// Std's compiled `try_fold` of std's struct `ty`, as its steps'
-    /// `tryFold`, `(iterator, init, f, broke) => ..`: of any `R`, whose `Try`
-    /// is `$tryOf(broke)`, as a JS iterator's `tryFold` folds (ADR 0913).
+    /// `tryFold`, `(iterator, init, f, broke, unwind) => ..`: of any `R`,
+    /// whose `Try` is `$tryOf(broke)`, as a JS iterator's `tryFold` folds
+    /// (ADR 0913), given `unwind` as `compiled_fold`'s is (#423).
     /// Given no drops of what it folds, as `fold` is, so its `B` is `()`,
     /// its `F` a function of it and its `R` a `ControlFlow<(), ()>`, which
     /// nothing drops. `None` where std's isn't compiled. Of `method`, a
@@ -1008,6 +1012,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::TraitRef::new(tcx, try_trait, [tried]),
             Expr::call_helper("$tryOf", vec![Expr::var("broke")]),
         )];
+        // Given `unwind`, as its `B`'s drop, as `compiled_fold` is.
+        let acc = tcx.generics_of(instance.def_id()).parent_count as u32;
         let mut values = ["iterator", "init", "f"].map(Expr::var).to_vec();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
@@ -1016,13 +1022,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             location,
             crate::lower::traits::GivenEvidence {
                 bounds: &given,
-                drops: &[],
+                drops: &[(acc, Expr::var("unwind"))],
             },
             span,
         )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
-            ["iterator", "init", "f", "broke"].map(Into::into).to_vec(),
+            ["iterator", "init", "f", "broke", "unwind"].map(Into::into).to_vec(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }
@@ -1037,10 +1043,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         (trait_id, method): (DefId, &str),
     ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
-        let tcx = self.tcx;
-        let Some(item) = self.iterator_item(ty) else {
+        let Some(found) = self.fold_of(ty, (trait_id, method)) else {
             return Ok(None);
         };
+        let compiled = self
+            .resolve_instance(found.0, found.1)?
+            .is_some_and(|instance| crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id()));
+        Ok(compiled.then_some(found))
+    }
+
+    /// The trait's `fold` or `rfold`, `method`, of `ty` and what it's
+    /// called with as a dictionary's entry: given no drops of what it folds
+    /// into and by, so its own `B` and `F` are `()` and a function of it.
+    pub(in crate::lower) fn fold_of(
+        &self,
+        ty: ty::Ty<'tcx>,
+        (trait_id, method): (DefId, &str),
+    ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+        let tcx = self.tcx;
+        let item = self.iterator_item(ty)?;
         let unit = tcx.types.unit;
         let by = ty::Ty::new_fn_ptr(
             tcx,
@@ -1051,11 +1072,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )),
         );
         let fold = trait_method(tcx, trait_id, method);
-        let args = tcx.mk_args(&[ty.into(), unit.into(), by.into()]);
-        let compiled = self
-            .resolve_instance(fold, args)?
-            .is_some_and(|instance| crate::lower::recognition::is_compiled_std(tcx, instance.def_id()));
-        Ok(compiled.then_some((fold, args)))
+        Some((fold, tcx.mk_args(&[ty.into(), unit.into(), by.into()])))
     }
 
     /// The dictionary this function was given for `ty`, a type parameter

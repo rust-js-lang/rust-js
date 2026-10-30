@@ -30,6 +30,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
     }
 
+    /// Whether `method` is `DoubleEndedIterator::rfold`, the one of its
+    /// methods that takes what it steps by value, as `fold` does (#423).
+    pub(in crate::lower) fn rfolds_what_it_consumes(&self, method: DefId) -> bool {
+        self.tcx
+            .trait_of_assoc(method)
+            .is_some_and(|tr| is_double_ended(self.tcx, tr))
+            && self.tcx.item_name(method).as_str() == "rfold"
+    }
+
     /// Whether std's `Iterator` method `method` takes its items by `fold`,
     /// `for_each` or `reduce`, whatever it's given: `sum`, `count`, `max_by`
     /// and the rest; `collect`'s depends on what it makes (#162).

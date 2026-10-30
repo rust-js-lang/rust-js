@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    (made) => tried.branch(made).TAG === \"Continue\",\n",
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
+  {
+    name: "try-fold-into-unwind-lost",
+    breaks: "a `try_fold` into an `R` of its `Try`, `TakeWhile::fold`'s, gives what it folds no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
+    file: "src/runtime/try_by.js",
+    find: "    unwind && ((made) => unwind(tried.branch(made)._0)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_mid_fold_drops with"],
+  },
 ];

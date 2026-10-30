@@ -107,7 +107,7 @@ function main() {
           undefined,
           undefined,
           undefined,
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             flatMapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -119,6 +119,10 @@ function main() {
               $tryOf(broke),
               true,
               false,
+              undefined,
+              undefined,
+              undefined,
+              unwind,
             ),
         ),
       ),

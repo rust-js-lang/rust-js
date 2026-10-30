@@ -87,3 +87,21 @@ first(loud, (intoIter) => { for (const item of intoIter) loudDrop_drop(item); })
 - Before, a crate's iterator given as a JS iterator was dropped as the JS
   iterator, which its `Drop` read as its own: a silent difference, now the
   value's.
+
+## Amendment: a drop that may be none is called only where it's there (2026-10-30)
+
+`insert` and `get_or_insert` of an `Option` in generic code dropped the
+value they don't keep by the drop they were given, called as though it
+were there, `dropT(old)` or, of an associated type's, std's `flatten`'s
+front and back iterators, `IItemIntoIterator.$dropIntoIter(old)`: a
+`TypeError` where what it's called with has nothing to drop, which neither
+is then. Every program reaching it threw: `put(&mut Some(1), 2)`, and
+`v.iter().flatten()` stepped from its back of std's iterator structs
+(ADR 0908). Results change, so Rust's behavior is kept (ADR 0262): **a
+drop that may be none, a type parameter's its caller gives or one an
+impl's dictionary holds, is `?.()`**, as this ADR has it, in an expression
+too: `drops::functions`' `std_drop_call`, which `insert`'s,
+`get_or_insert`'s, `step_by`'s and `inspect`'s drops are. Held by
+`option_insert_given_drops.rs` and `flatten_from_its_back.rs` of std's
+structs against native Rust and the mutation `given-drop-called-as-there`
+(`lower/drops/functions.ts`).

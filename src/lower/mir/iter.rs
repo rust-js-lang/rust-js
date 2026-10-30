@@ -45,7 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
         if !receiver_ty.is_ref()
-            && is_std_def(self.tcx, trait_id, StdItem::Iterator)
+            && (is_std_def(self.tcx, trait_id, StdItem::Iterator) || self.recognition().rfolds_what_it_consumes(def_id))
             && self.dropped_after(def_id, receiver_ty, output, !values.is_empty(), span)?
         {
             let held = self.spill_marked(values.remove(0), made);
@@ -320,16 +320,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         made: &mut Vec<Stmt>,
     ) -> R<()> {
-        let iterator = std_item(self.tcx, StdItem::Iterator);
-        let Some(dictionary) =
-            (self.iterator_evidence(receiver, iterator)).filter(|_| self.consumes_by_fold(method, output))
+        // Its dictionary's `fold`, or of `rfold`, `DoubleEndedIterator`'s
+        // `rfold`, which drops it where it's there.
+        let (by, fold) = match self.recognition().rfolds_what_it_consumes(method) {
+            true => (self.recognition().double_ended_iterator(), "rfold"),
+            false => (Some(std_item(self.tcx, StdItem::Iterator)), "fold"),
+        };
+        let Some((by, dictionary)) = by
+            .and_then(|by| Some((by, self.iterator_evidence(receiver, by)?)))
+            .filter(|_| self.consumes_by_fold(method, output))
         else {
             return self.drop_value(held, receiver, span, made);
         };
         let mut dropped = Vec::new();
         self.drop_value(held, receiver, span, &mut dropped)?;
         if !dropped.is_empty() {
-            let fold = crate::lower::bindings::trait_method_name(self.tcx, iterator, "fold");
+            let fold = crate::lower::bindings::trait_method_name(self.tcx, by, fold);
             let unfolded = Expr::bin(Op::Eq, Expr::member(dictionary, fold), Expr::undefined());
             made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
         }
@@ -396,7 +402,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What the crate's own `fold` is called by: it takes the iterator
         // and drops it, so nothing's dropped after (#162). Not of an adapter
         // that holds a function with a destructor, which it doesn't drop.
-        if self.consumes_by_fold(def_id, output) && self.recognition().folds_its_own(receiver) {
+        let own = match self.recognition().rfolds_what_it_consumes(def_id) {
+            true => self.recognition().rfolds_its_own(receiver),
+            false => self.recognition().folds_its_own(receiver),
+        };
+        if self.consumes_by_fold(def_id, output) && own {
             if (self.recognition().held_function(receiver))
                 .is_some_and(|function| self.drops(function) != crate::lower::drops::Drops::Nothing)
             {
@@ -500,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
         // back, stepped from it, a generic one's too (ADRs 0429, 0455).
         if let Some(method) = std_method.filter(|method| method.steps_from_its_back()) {
-            return self.back_step(method, values, (iter_ty, output), span).map(Some);
+            return self.back_step(method, values, (iter_ty, output, arg_tys), span);
         }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
         // range, a `$iter` or one held (ADRs 0071, 0549); not a lazy one.
@@ -695,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,
             Some(IterMethod::Fold) => self.folded(it, (Some(arg()), arg()), (arg_tys, item), span)?,
             Some(IterMethod::Reduce) => self.folded(it, (None, arg()), (arg_tys, item), span)?,
-            Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), span)?,
+            Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), arg_tys, span)?,
             Some(IterMethod::Count) => self.counted(it, item, (def_id, iter_ty), span)?,
             Some(IterMethod::Sum | IterMethod::Product) => {
                 let sum = std_method == Some(IterMethod::Sum);

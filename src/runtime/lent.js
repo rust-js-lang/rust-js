@@ -13,8 +13,8 @@ function $lent(it) {
   // And its `fold` that `tryFold`, as std's `&mut I` folds by its
   // `I::try_fold`: an inclusive range's ends it exhausted at its last (#414).
   if (it.tryFold !== undefined) {
-    lent.tryFold = (init, f, broke) => it.tryFold(init, f, broke);
-    lent.fold = (init, f) => it.tryFold(init, f, () => false);
+    lent.tryFold = (init, f, broke, unwind) => it.tryFold(init, f, broke, unwind);
+    lent.fold = (init, f, unwind) => it.tryFold(init, f, () => false, unwind);
   }
   // And its back and its length, `it`'s, as std's `&mut I` passes on an
   // `I: DoubleEndedIterator`'s `next_back`, `nth_back` and `try_rfold`
@@ -22,7 +22,7 @@ function $lent(it) {
   // that `try_rfold`, as its dictionary does (ADRs 0928, 0982).
   if (it.back !== undefined) lent.back = () => it.back();
   if (it.nthBack !== undefined) lent.nthBack = (k) => it.nthBack(k);
-  if (it.tryRfold !== undefined) lent.tryRfold = (init, f, broke) => it.tryRfold(init, f, broke);
+  if (it.tryRfold !== undefined) lent.tryRfold = (init, f, broke, unwind) => it.tryRfold(init, f, broke, unwind);
   if (it.len !== undefined) lent.len = () => it.len();
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as

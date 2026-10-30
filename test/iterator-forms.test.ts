@@ -65,6 +65,21 @@ const few = [
   "range_steps_anywhere.rs",
   "cloned_chains_and_cycles.rs",
   "lazy_chains.rs",
+  // Std's `flatten` dropping its front by an impl's dictionary's drop, which
+  // may be none; a held `Rev`'s fold of an inclusive range, its `try_rfold`;
+  // and a stage's panic, the accumulator std's fold closure holds dropped
+  // before what's left, through each fold, `rfold`, `try_fold` and
+  // collect std's structs pass it on to, and what an `rfold` takes dropped
+  // as it unwinds (#423).
+  "flatten_from_its_back.rs",
+  "generic_folds_unwind.rs",
+  "own_folds_unwind.rs",
+  "range_inclusive_exhausted.rs",
+  "panic_in_own_next_drops.rs",
+  "panic_in_own_rfold_drops.rs",
+  "panic_mid_fold_drops.rs",
+  "panic_mid_iteration_drops.rs",
+  "panic_part_way_drops.rs",
 ];
 const which = process.env.ITERATOR_FORMS;
 if (which !== undefined && which !== "corpus") throw new Error(`ITERATOR_FORMS=${which}: \`corpus\`, or unset for a few cases`);

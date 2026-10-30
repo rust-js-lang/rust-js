@@ -71,7 +71,7 @@ function main() {
               { next: $next },
               iterExactSizeIterator,
             ),
-          (iterator, init, f, broke) =>
+          (iterator, init, f, broke, unwind) =>
             enumerateDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -80,6 +80,8 @@ function main() {
               iterExactSizeIterator,
               { next_back: $nextBack },
               $tryOf(broke),
+              undefined,
+              unwind,
             ),
         ),
       ),
@@ -100,8 +102,16 @@ function main() {
         (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
         undefined,
         (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
-        (iterator, init, f, broke) =>
-          revDoubleEndedIterator_tryRfold(iterator, init, f, { next: $rangeNext }, $tryOf(broke)),
+        (iterator, init, f, broke, unwind) =>
+          revDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            $tryOf(broke),
+            undefined,
+            unwind,
+          ),
       ),
     ),
   );
