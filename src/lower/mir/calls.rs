@@ -580,14 +580,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(value_ty) = value_first(steps) {
                 let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked.function(), span)?;
                 self.asked_of_number(asked, read, span)?;
-                let mut values = self.take_operands(state, &[&arg.node], out)?;
-                let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
-                    return Err(self.unsupported(
-                        span,
-                        &format!("`{}` of a path whose value isn't written in it", asked.function()),
-                    ));
-                };
-                return self.mir_defined_parts(Some(path), Some(items.swap_remove(0)), asked, span);
+                let value = self.path_value(state, &arg.node, asked.function(), (span, out))?;
+                return self.mir_defined_parts(Some(path), Some(value), asked, span);
             }
             let (path, read) = self.defined_path(steps, None, asked.function(), span)?;
             self.asked_of_number(asked, read, span)?;
@@ -674,20 +668,86 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return refused(self);
         };
         let (path, _) = self.defined_path(&steps[1..], Some(value_ty), "js::method", span)?;
-        let mut values = self.take_operands(state, &[&arg.node], out)?;
-        let js::ExprKind::Array(mut items) = self.value_expr(values.remove(0), span)?.kind else {
-            return Err(self.unsupported(span, "`js::method` of a path whose value isn't written in it"));
-        };
-        let method = path.split('.').fold(items.swap_remove(0), Expr::member);
+        let value = self.path_value(state, &arg.node, "js::method", (span, out))?;
         let getters = (steps[1..].iter()).any(|&step| {
             crate::lower::fn_def(step)
                 .is_some_and(|(f, _)| crate::lower::binding_calls::method_may_be_a_getters(tcx, f))
         });
+        let method = path.split('.').fold(value, Expr::member);
         let method = match getters {
             true => method.answered_by_a_getter(),
             false => method,
         };
         Ok(Some(method.or_at(self.js_span(span))))
+    }
+
+    /// The value a path from a value starts at, the tuple's first item, as
+    /// it's read where the path is: of the tuple written in the call; or of
+    /// one held before it, `const _15 = [element, ..]`, which a value with a
+    /// drop live makes, as the call may unwind past it (rd233), a variable
+    /// the program names read again, nothing run between.
+    fn path_value(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        tuple: &Operand<'tcx>,
+        function: &str,
+        (span, out): (Span, &mut Vec<Stmt>),
+    ) -> R<Expr> {
+        let mut values = self.take_operands(state, &[tuple], out)?;
+        let refused =
+            |cx: &Self| cx.unsupported(span, &format!("`{function}` of a path whose value isn't written in it"));
+        match self.value_expr(values.remove(0), span)?.kind {
+            js::ExprKind::Array(mut items) => Ok(items.swap_remove(0)),
+            js::ExprKind::Var(_) => {
+                let body = state.body;
+                let first = tuple.place().and_then(|place| place.as_local()).and_then(|local| {
+                    (body.basic_blocks.iter())
+                        .flat_map(|block| &block.statements)
+                        .find_map(|s| match &s.kind {
+                            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => match &assign.1 {
+                                Rvalue::Aggregate(kind, items) if matches!(**kind, mir::AggregateKind::Tuple) => {
+                                    items.iter().next().cloned()
+                                }
+                                _ => None,
+                            },
+                            _ => None,
+                        })
+                });
+                // Through the temporaries MIR makes of it, a copy or a
+                // reborrow, `_8 = &(*_2)`, to the variable.
+                let assigned = |local: mir::Local| {
+                    (body.basic_blocks.iter())
+                        .flat_map(|block| &block.statements)
+                        .find_map(|s| match &s.kind {
+                            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => {
+                                Some(assign.1.clone())
+                            }
+                            _ => None,
+                        })
+                };
+                let mut at = match first {
+                    Some(Operand::Copy(place) | Operand::Move(place)) => place,
+                    _ => return Err(refused(self)),
+                };
+                for _ in 0..4 {
+                    if at.projection.is_empty() && body.local_decls[at.local].is_user_variable() {
+                        let mut values = self.take_operands(state, &[&Operand::Copy(at)], out)?;
+                        return self.value_expr(values.remove(0), span);
+                    }
+                    at = match at.as_local().and_then(assigned) {
+                        Some(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)) => of,
+                        Some(Rvalue::Ref(_, _, of)) | Some(Rvalue::CopyForDeref(of))
+                            if matches!(of.projection[..], [mir::ProjectionElem::Deref]) =>
+                        {
+                            mir::Place::from(of.local)
+                        }
+                        _ => return Err(refused(self)),
+                    };
+                }
+                Err(refused(self))
+            }
+            _ => Err(refused(self)),
+        }
     }
 
     /// The type of each step of a path `tuple` is, a binding's function's;
@@ -919,7 +979,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of any value, a method of any type, as TypeScript
                     // reads `any`'s: `HTMLElement.prototype.focus` (rd181).
                     let any = matches!(before.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()));
-                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any) {
+                    // Or of a class it extends, as its `Deref` says,
+                    // `CSSStyleProperties`' `CSSStyleDeclaration::set_property`
+                    // (rd232).
+                    let extends = match (before.peel_refs().kind(), of.map(|of| of.kind())) {
+                        (ty::Adt(value, _), Some(ty::Adt(owner, _))) => {
+                            self.recognition().superclasses(value.did()).contains(&owner.did())
+                        }
+                        _ => false,
+                    };
+                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any && !extends) {
                         return Err(refused());
                     }
                     match path.is_empty() {

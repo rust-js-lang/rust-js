@@ -83,3 +83,33 @@ function::call(
   `or-other-unspilled`, `runs-nothing-read-a-getter` (`binding_calls.ts`),
   `method-path-any-value-refused`, `method-path-step-unread`
   (`mir/calls.ts`).
+
+## Amendment: a step of a class the value extends, and a path held before a guard's `try` (rd232, rd233)
+
+React DOM's hideInstance asks `typeof style.setProperty === 'function'` of
+an element's `style`, TypeScript's `CSSStyleProperties`, whose
+`setProperty` is the `CSSStyleDeclaration` it extends (its `Deref`):
+`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))`
+was refused, the step no method of the value's own type. **A step may be a
+method of a class the value's type extends, as its `Deref` says**
+(`Recognition::superclasses`), for every path, `js::is_defined`'s,
+`js::is_function`'s and `js::method`'s.
+
+setFocusIfFocusable reads `(element.focus || HTMLElement.prototype.focus)`
+while a guard that removes its focus listener is live: the call may unwind
+past the guard, so the path's tuple was held before the guard's `try`,
+`const _15 = [element, ..]`, and its value no longer written in the call:
+refused. **A path's value held so is the variable the tuple was made of,
+read again** (through the copies and reborrows MIR makes of it), nothing
+having run between; one of another value is still refused. Its JS reads
+`element.focus` before the `try`, `const focus = element.focus; try {
+(focus || HTMLElement.prototype.focus).call(element, focusOptions); }
+finally { .. }`, where upstream reads it inside: the read of a host
+object's member is held before the class's read (temporaries' `admit`),
+a readability difference left open.
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_function of a path
+from a value asks its member" (`hide_element`) and "js::method of a path
+reads its method as a value" (`guarded`, run: the guard dropped each
+time), and mutations `path-step-superclass-refused`,
+`path-value-held-refused` (`mir/calls.ts`).

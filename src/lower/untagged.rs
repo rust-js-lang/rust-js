@@ -377,7 +377,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// The classes the JS object type `def_id` extends, nearest first: what
     /// its `Deref` goes to, and on, as the webapi crate's types say theirs.
-    fn superclasses(&self, def_id: DefId) -> Vec<DefId> {
+    pub(super) fn superclasses(&self, def_id: DefId) -> Vec<DefId> {
         let tcx = self.tcx;
         let Some(deref) = tcx.lang_items().get(LangItem::Deref) else {
             return Vec::new();

@@ -356,11 +356,21 @@ pub fn hide(style: &webapi::CSSStyleDeclaration) {
         style.set_css_text("display: none");
     }
 }
+
+/// Of an element's style, TypeScript's \`CSSStyleProperties\`, whose
+/// \`setProperty\` is the \`CSSStyleDeclaration\` it extends (rd232).
+pub fn hide_element(element: &webapi::HTMLElement) {
+    let style = element.style();
+    if js::is_function((style, webapi::CSSStyleDeclaration::set_property as fn(_, _, &'static str, _))) {
+        style.set_property("display", "none", Some("important"));
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('if (typeof selection.extend !== "function" && start > end) {');
   expect(js).toContain('return typeof selection.extend !== "undefined";');
+  expect(js).toContain('export function hideElement(element) {\n  const style = element.style;\n  if (typeof style.setProperty === "function") {');
   expect(js).toContain('  if (typeof style.setProperty === "function") {\n    style.setProperty("display", "none", "important");\n  } else {\n    style.cssText = "display: none";\n  }');
   const lib = await import(join(dir, "lib.js"));
   const extended: unknown[] = [];
@@ -403,6 +413,35 @@ fn counted() -> f64 {
     unreachable!()
 }
 
+struct Done;
+
+impl Drop for Done {
+    fn drop(&mut self) {
+        done();
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.done")]
+fn done() {
+    unreachable!()
+}
+
+/// setFocusIfFocusable's, of an element narrowed from its parameter, while
+/// a guard that removes its listener is live: the path's value, held
+/// before the guard's \`try\`, is the variable read again (rd233).
+pub fn guarded(node: &'static webapi::Element, focus_options: Option<&'static FocusOptions>) {
+    let element = webapi::html_element::unchecked_from(node);
+    let _done = Done;
+    function::call(
+        js::or(
+            js::method((element, HTMLElement::focus)),
+            js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus)),
+        ),
+        Some(element),
+        (focus_options,),
+    );
+}
+
 /// Rust gives \`or\` both: one that may run code runs first, as \`??\`'s does.
 pub fn either(a: f64) -> f64 {
     js::or(a, counted())
@@ -412,6 +451,7 @@ pub fn either(a: f64) -> f64 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n");
   expect(js).toContain("const fallback = globalThis.counted();\n  return a || fallback;");
+  expect(js).toContain("    (focus || HTMLElement.prototype.focus).call(element, focusOptions);\n  } finally {\n    globalThis.done();\n  }");
   const calls: unknown[] = [];
   const g = globalThis as Record<string, unknown>;
   const saved = g.HTMLElement;
@@ -430,6 +470,11 @@ pub fn either(a: f64) -> f64 {
     lib.focus(bare, undefined);
     expect(calls).toEqual([["own", own, { preventScroll: true }], ["prototype", bare, undefined]]);
     expect([lib.either(3), lib.either(0), count]).toEqual([3, 2, 2]);
+    let dones = 0;
+    g.done = () => void dones++;
+    lib.guarded(own, undefined);
+    lib.guarded(bare, { preventScroll: false });
+    expect([dones, calls.slice(2)]).toEqual([2, [["own", own, undefined], ["prototype", bare, { preventScroll: false }]]]);
   } finally {
     g.HTMLElement = saved;
   }
