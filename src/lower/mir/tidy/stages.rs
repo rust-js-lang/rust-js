@@ -320,6 +320,14 @@ pub(super) const STAGES: &[Stage] = &[
             pass("branch values", branch_values_of),
             pass("declarations", |b, _| declarations(b)),
             pass("inlined in values", inlined_of),
+            // A `return a || b` the program wrote of reads in place now, a
+            // getter's, `instance.data === "$!" || (..)`, which MIR's
+            // temporaries held apart from its `if (a) { return true; }`
+            // when `logical returns` ran (rd179).
+            pass("logical returns", |b, h| {
+                let (logicals, returns, booleans) = (&h.written.logicals, h.returns, h.booleans);
+                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))
+            }),
             // A tuple's part held, `const _3$0 = v.pop();`, which an arm's
             // binding takes, by that name.
             pass("named temporaries", |b, _| named_temporaries(b)),

@@ -4,6 +4,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "in-place-logical-returns-off",
+    breaks: "a `return a || (b && c)` of method reads MIR held in temporaries stays `if (a) { return true; } return b && c;`, not as written (rd179)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| logical_returns(s, logicals, returns, booleans))\n            }),\n            // A tuple's part held",
+    replace: "                let _ = (b, logicals, returns, booleans);\n            }),\n            // A tuple's part held",
+    tests: ["test/lowering-returned-chains.test.ts", "-t", "getters' reads"],
+  },
+  {
     name: "exits-after-past-decisions",
     breaks: "an inner loop's tail that leaves the outer, `if (count > 10) { break; } continue bb1;`, stays in it once `decisions` makes its block's `break` the loop's, `bb1: while (..) { while (true) { .. continue bb1; } break; }` (rd141c)",
     file: "src/lower/mir/tidy/stages.rs",

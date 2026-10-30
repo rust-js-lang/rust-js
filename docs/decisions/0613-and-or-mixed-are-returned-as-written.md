@@ -1,6 +1,7 @@
 # 0613. `&&` and `||` mixed are one value, as written
 
-Status: Accepted. Extends tidy's logicals (`logical_returns`).
+Status: Accepted. Extends tidy's logicals (`logical_returns`). Amended:
+`logical returns` runs again once MIR's temporaries are read in place (rd179).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the same tests, in
 the same order, short-circuited as they were.
@@ -41,3 +42,25 @@ program wrote a `return` there.
 - `test/lowering.test.ts`, "a value of && and || mixed is returned as
   written", each of sixteen inputs of `(a || b) && (c || d)` too.
 - Mutations: the block kept, unfactored.
+
+## Amendment: once its reads are in place (rd179, 2026-10-30)
+
+React DOM's isSuspenseInstanceFallback, `instance.data() == FALLBACK ||
+(instance.data() == PENDING && instance.owner_document().ready_state() !=
+LOADING)`, reads a getter in each test, which MIR holds in a temporary,
+`const _3 = instance.data; if (_3 === FALLBACK) { return true; } const _11
+= ..`: `logical returns`, in the `logicals` stage, saw statements between
+the `if` and what follows, and joined nothing. Once `in place` reads the
+temporaries where they're used, `branch values` made the `&&` but nothing
+the `||`: `if (instance.data === FALLBACK) { return true; } return
+instance.data === PENDING && ..;`.
+
+**`logical returns` runs again in `in place`, after `inlined in values`**:
+`return instance.data === FALLBACK || (instance.data === PENDING &&
+instance.ownerDocument.readyState !== LOADING);`, as upstream writes it.
+The pass is the same rule, one owner, run where its input is ready; no
+corpus case or port file changes otherwise.
+
+Held by `test/lowering-returned-chains.test.ts`, "a returned || of
+getters' reads is returned as written", and the mutation
+`in-place-logical-returns-off` (`mir/tidy/stages.ts`).

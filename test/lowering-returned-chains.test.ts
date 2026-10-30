@@ -206,3 +206,28 @@ pub fn named(x: Option<&'static str>, n: u32) -> String {
   expect([describe("#a", 0), describe("#a", 9), describe("a", 9), describe(undefined, 2)]).toEqual(["zero", "a", "big", "small"]);
   expect([named("#a", 3), named(undefined, 9), named("b", 2)]).toEqual(["<a>", "big", "2 small"]);
 });
+
+// React DOM's isSuspenseInstanceFallback, `return instance.data === "$!" ||
+// (instance.data === "$?" && instance.ownerDocument.readyState !==
+// "loading")`: each test a getter's read, which MIR holds in a temporary
+// apart from the `if (a) { return true; }` it makes when `logical returns`
+// runs, read in place after; one value, as written, not `if (..) { return
+// true; } return .. && ..;` (rd179).
+test("a returned || of getters' reads is returned as written", () => {
+  const dir = fixture("returned-or-of-getters");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::Comment;
+
+pub const FALLBACK: &str = "$!";
+pub const PENDING: &str = "$?";
+pub const LOADING: &str = "loading";
+
+pub fn is_fallback(instance: &Comment) -> bool {
+    instance.data() == FALLBACK || (instance.data() == PENDING && instance.owner_document().ready_state() != LOADING)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "  return (\n    instance.data === FALLBACK ||\n    (instance.data === PENDING && instance.ownerDocument.readyState !== LOADING)\n  );\n",
+  );
+});

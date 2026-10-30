@@ -496,7 +496,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0610 A function that only calls a module variable's function is that variable](0610-a-forwarding-function-is-its-variable.md) *(amended: a private function only called is its variable of any value, of no value too)*
 - [0611 A default export the macro holds is the function's declaration](0611-a-default-export-is-where-its-macro-is.md) *(amended: a `pub` one is the default alone, in its `.d.ts` too; and one the naming form names)*
 - [0612 Two values of any shape are equal by JS's `===`](0612-unknown-equality-is-strict.md) *(amended: two `Option`s of them are std's, both `None` equal; extended by 0721: `js::strict_equals` is JS's `===`)*
-- [0613 `&&` and `||` mixed are one value, as written](0613-and-or-mixed-are-returned-as-written.md)
+- [0613 `&&` and `||` mixed are one value, as written](0613-and-or-mixed-are-returned-as-written.md) *(amended: run again once the reads are in place, rd179)*
 - [0614 A match arm's pattern of parts is one test of each](0614-a-patterns-parts-are-one-test.md)
 - [0615 `Object.prototype.hasOwnProperty` is a function to call with its object](0615-has-own-property-the-function.md) *(amended: a value's own, `value.has_own_property(key)`, the other form)*
 - [0616 An import read only by a `const` is the import by that name](0616-an-import-read-by-a-const-is-it.md)
