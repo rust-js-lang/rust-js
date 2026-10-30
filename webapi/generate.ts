@@ -2266,11 +2266,38 @@ for (const [name, fields] of usedDictionaries) {
   line(`}`);
 }
 
+/**
+ * Whether a value of the Rust type `rust` a dictionary or a union a
+ * function takes holds is `Copy`: a number, a `bool`, a borrow, or an
+ * `Option`, a dictionary or a union of them, so the program keeps what it
+ * gave and gives it again, React's FragmentInstance's listener options
+ * (rd208). Not a callback JS is given, a `Box`.
+ */
+const copyable = (rust: string, seen = new Set<string>()): boolean => {
+  const option = rust.match(/^Option<(.*)>$/);
+  if (option) return copyable(option[1], seen);
+  if (rust === "bool" || /^[fiu](8|16|32|64)$/.test(rust) || rust.startsWith("&")) return true;
+  const named = rust.replace(/<.*$/, "");
+  if (seen.has(named)) return true;
+  seen.add(named);
+  const dictionary = [...paramDictionaries].find(([n]) => typeName(n) === named);
+  if (dictionary) return dictionary[1].fields.every((f) => copyable(f.type, seen));
+  const union = unions.get(named);
+  if (union) return union.variants.every((v) => copyable(v.type, seen));
+  return false;
+};
+
+/** A dictionary's or a union's derives: `Clone` and `Copy` of one that's `copyable`, and `Default` of a dictionary of optional fields. */
+const derives = (name: string, optional: boolean) => {
+  const each = [...(copyable(name) ? ["Clone", "Copy"] : []), ...(optional ? ["Default"] : [])];
+  if (each.length) line(`#[derive(${each.join(", ")})]`);
+};
+
 // The dictionaries functions take (ADR 0102): records of optional fields.
 for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b]) => a.localeCompare(b))) {
   line();
   line(`/// The [\`${name}\`](https://developer.mozilla.org/docs/Web/API/${name}) dictionary: a JS object of these fields, a \`None\` one not given.`);
-  if (fields.every((f) => f.optional)) line(`#[derive(Default)]`);
+  derives(typeName(name), fields.every((f) => f.optional));
   line(`pub struct ${typeName(name)}${borrows ? "<'a>" : ""} {`);
   for (const f of fields) {
     if (needsJsName(f.rust, f.js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
@@ -2295,6 +2322,8 @@ const ancestors = (name: string): string[] => {
 // value itself. Sealed, by a trait each of them has once.
 const sealed = new Set<string>();
 const promisedUnions = new Map<string, { generics: string; type: string }[]>();
+/** Whether a union holds a callback of a result JS resolves, sealed by a trait of its own. */
+const promisedUnionsOf = (union: Union) => union.variants.some((v) => promisedOf(v.type) !== undefined);
 for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.name))) {
   const lifetime = union.borrows ? "<'a>" : "";
   const elided = (type: string) => type.replace(/&'a /g, "&").replace(/'a\b/g, "'_");
@@ -2302,6 +2331,7 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   line();
   line(`/// \`${union.ts}\`: each variant's value is the member itself (ADR 0215).`);
   line(`#[cfg_attr(rust_js, rust_js::untagged)]`);
+  derives(union.name, false);
   line(`pub enum ${union.name}${lifetime} {`);
   for (const v of union.variants) line(`    ${v.name}(${v.type}),`);
   line(`}`);
@@ -2351,6 +2381,19 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
     for (const member of [...members, own]) {
       line(`impl Into${union.name} for ${member} {}`);
       sealed.add(member);
+    }
+    // A union whose each member is one of this one's is one too, as
+    // TypeScript's is: an `AddEventListenerOptions | boolean` an
+    // `EventListenerOptions | boolean` (rd208), the value itself.
+    const elidedMembers = new Set(members);
+    for (const other of unions.values()) {
+      if (other.name === union.name || promisedUnionsOf(other)) continue;
+      const each = other.variants.map((v) => elided(v.type));
+      if (each.length > 0 && each.every((m) => elidedMembers.has(m))) {
+        const theirs = `${other.name}${other.borrows ? "<'_>" : ""}`;
+        line(`impl Into${union.name} for ${theirs} {}`);
+        sealed.add(theirs);
+      }
     }
   }
   line(`/// A rest parameter of \`${ts}\`s takes each member (ADR 0640).`);

@@ -103105,7 +103105,7 @@ pub struct WebAssemblyInstantiatedSource {
 }
 
 /// The [`AddEventListenerOptions`](https://developer.mozilla.org/docs/Web/API/AddEventListenerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AddEventListenerOptions<'a> {
     pub capture: Option<bool>,
     pub passive: Option<bool>,
@@ -103116,6 +103116,7 @@ pub struct AddEventListenerOptions<'a> {
 unsafe impl Defined for AddEventListenerOptions<'_> {}
 
 /// The [`AllAcceptedCredentialsOptions`](https://developer.mozilla.org/docs/Web/API/AllAcceptedCredentialsOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AllAcceptedCredentialsOptions<'a> {
     pub rp_id: &'a str,
     pub user_id: &'a str,
@@ -103125,7 +103126,7 @@ pub struct AllAcceptedCredentialsOptions<'a> {
 unsafe impl Defined for AllAcceptedCredentialsOptions<'_> {}
 
 /// The [`AnalyserOptions`](https://developer.mozilla.org/docs/Web/API/AnalyserOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AnalyserOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103139,7 +103140,7 @@ pub struct AnalyserOptions<'a> {
 unsafe impl Defined for AnalyserOptions<'_> {}
 
 /// The [`AnimationEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AnimationEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103153,7 +103154,7 @@ pub struct AnimationEventInit<'a> {
 unsafe impl Defined for AnimationEventInit<'_> {}
 
 /// The [`AnimationPlaybackEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AnimationPlaybackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103165,7 +103166,7 @@ pub struct AnimationPlaybackEventInit<'a> {
 unsafe impl Defined for AnimationPlaybackEventInit<'_> {}
 
 /// The [`AssignedNodesOptions`](https://developer.mozilla.org/docs/Web/API/AssignedNodesOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AssignedNodesOptions {
     pub flatten: Option<bool>,
 }
@@ -103173,6 +103174,7 @@ pub struct AssignedNodesOptions {
 unsafe impl Defined for AssignedNodesOptions {}
 
 /// The [`AudioBufferOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AudioBufferOptions {
     pub number_of_channels: Option<f64>,
     pub length: f64,
@@ -103182,7 +103184,7 @@ pub struct AudioBufferOptions {
 unsafe impl Defined for AudioBufferOptions {}
 
 /// The [`AudioBufferSourceOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AudioBufferSourceOptions<'a> {
     pub buffer: Option<&'a AudioBuffer>,
     pub detune: Option<f64>,
@@ -103195,7 +103197,7 @@ pub struct AudioBufferSourceOptions<'a> {
 unsafe impl Defined for AudioBufferSourceOptions<'_> {}
 
 /// The [`AudioContextOptions`](https://developer.mozilla.org/docs/Web/API/AudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AudioContextOptions<'a> {
     pub latency_hint: Option<StrOrNumber<'a>>,
     pub sample_rate: Option<f64>,
@@ -103206,6 +103208,7 @@ pub struct AudioContextOptions<'a> {
 unsafe impl Defined for AudioContextOptions<'_> {}
 
 /// The [`AudioDataCopyToOptions`](https://developer.mozilla.org/docs/Web/API/AudioDataCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AudioDataCopyToOptions<'a> {
     pub plane_index: f64,
     pub frame_offset: Option<f64>,
@@ -103216,6 +103219,7 @@ pub struct AudioDataCopyToOptions<'a> {
 unsafe impl Defined for AudioDataCopyToOptions<'_> {}
 
 /// The [`AudioDataInit`](https://developer.mozilla.org/docs/Web/API/AudioDataInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AudioDataInit<'a> {
     pub format: &'a str,
     pub sample_rate: f64,
@@ -103245,7 +103249,7 @@ pub struct AudioEncoderInit<'a> {
 unsafe impl Defined for AudioEncoderInit<'_> {}
 
 /// The [`AudioNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AudioNodeOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103255,6 +103259,7 @@ pub struct AudioNodeOptions<'a> {
 unsafe impl Defined for AudioNodeOptions<'_> {}
 
 /// The [`AudioProcessingEventInit`](https://developer.mozilla.org/docs/Web/API/AudioProcessingEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AudioProcessingEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103267,6 +103272,7 @@ pub struct AudioProcessingEventInit<'a> {
 unsafe impl Defined for AudioProcessingEventInit<'_> {}
 
 /// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AudioSinkOptions<'a> {
     pub r#type: &'a str,
 }
@@ -103274,7 +103280,7 @@ pub struct AudioSinkOptions<'a> {
 unsafe impl Defined for AudioSinkOptions<'_> {}
 
 /// The [`AudioWorkletNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AudioWorkletNodeOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103287,7 +103293,7 @@ pub struct AudioWorkletNodeOptions<'a> {
 unsafe impl Defined for AudioWorkletNodeOptions<'_> {}
 
 /// The [`AuthenticationExtensionsClientInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsClientInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsClientInputsJSON<'a> {
     pub appid: Option<&'a str>,
     pub cred_props: Option<bool>,
@@ -103298,7 +103304,7 @@ pub struct AuthenticationExtensionsClientInputsJSON<'a> {
 unsafe impl Defined for AuthenticationExtensionsClientInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsLargeBlobInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsLargeBlobInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
     pub support: Option<&'a str>,
     pub read: Option<bool>,
@@ -103308,7 +103314,7 @@ pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
 unsafe impl Defined for AuthenticationExtensionsLargeBlobInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsPRFInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
     pub eval: Option<AuthenticationExtensionsPRFValuesJSON<'a>>,
 }
@@ -103316,6 +103322,7 @@ pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
 unsafe impl Defined for AuthenticationExtensionsPRFInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsPRFValuesJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFValuesJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct AuthenticationExtensionsPRFValuesJSON<'a> {
     pub first: &'a str,
     pub second: Option<&'a str>,
@@ -103324,7 +103331,7 @@ pub struct AuthenticationExtensionsPRFValuesJSON<'a> {
 unsafe impl Defined for AuthenticationExtensionsPRFValuesJSON<'_> {}
 
 /// The [`BiquadFilterOptions`](https://developer.mozilla.org/docs/Web/API/BiquadFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct BiquadFilterOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103340,6 +103347,7 @@ pub struct BiquadFilterOptions<'a> {
 unsafe impl Defined for BiquadFilterOptions<'_> {}
 
 /// The [`BlobEventInit`](https://developer.mozilla.org/docs/Web/API/BlobEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct BlobEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103351,7 +103359,7 @@ pub struct BlobEventInit<'a> {
 unsafe impl Defined for BlobEventInit<'_> {}
 
 /// The [`BlobPropertyBag`](https://developer.mozilla.org/docs/Web/API/BlobPropertyBag) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct BlobPropertyBag<'a> {
     pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
@@ -103360,7 +103368,7 @@ pub struct BlobPropertyBag<'a> {
 unsafe impl Defined for BlobPropertyBag<'_> {}
 
 /// The [`BoxQuadOptions`](https://developer.mozilla.org/docs/Web/API/BoxQuadOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct BoxQuadOptions<'a> {
     pub r#box: Option<&'a str>,
     pub relative_to: Option<GeometryNode<'a>>,
@@ -103369,7 +103377,7 @@ pub struct BoxQuadOptions<'a> {
 unsafe impl Defined for BoxQuadOptions<'_> {}
 
 /// The [`CacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/CacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CacheQueryOptions {
     pub ignore_search: Option<bool>,
     pub ignore_method: Option<bool>,
@@ -103379,7 +103387,7 @@ pub struct CacheQueryOptions {
 unsafe impl Defined for CacheQueryOptions {}
 
 /// The [`CaretPositionFromPointOptions`](https://developer.mozilla.org/docs/Web/API/CaretPositionFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CaretPositionFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
@@ -103387,7 +103395,7 @@ pub struct CaretPositionFromPointOptions<'a> {
 unsafe impl Defined for CaretPositionFromPointOptions<'_> {}
 
 /// The [`ChannelMergerOptions`](https://developer.mozilla.org/docs/Web/API/ChannelMergerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ChannelMergerOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103398,7 +103406,7 @@ pub struct ChannelMergerOptions<'a> {
 unsafe impl Defined for ChannelMergerOptions<'_> {}
 
 /// The [`ChannelSplitterOptions`](https://developer.mozilla.org/docs/Web/API/ChannelSplitterOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ChannelSplitterOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103409,7 +103417,7 @@ pub struct ChannelSplitterOptions<'a> {
 unsafe impl Defined for ChannelSplitterOptions<'_> {}
 
 /// The [`ChapterInformationInit`](https://developer.mozilla.org/docs/Web/API/ChapterInformationInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ChapterInformationInit<'a> {
     pub title: Option<&'a str>,
     pub start_time: Option<f64>,
@@ -103419,7 +103427,7 @@ pub struct ChapterInformationInit<'a> {
 unsafe impl Defined for ChapterInformationInit<'_> {}
 
 /// The [`CheckVisibilityOptions`](https://developer.mozilla.org/docs/Web/API/CheckVisibilityOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CheckVisibilityOptions {
     pub check_opacity: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "checkVisibilityCSS")]
@@ -103432,7 +103440,7 @@ pub struct CheckVisibilityOptions {
 unsafe impl Defined for CheckVisibilityOptions {}
 
 /// The [`ClipboardEventInit`](https://developer.mozilla.org/docs/Web/API/ClipboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ClipboardEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103443,7 +103451,7 @@ pub struct ClipboardEventInit<'a> {
 unsafe impl Defined for ClipboardEventInit<'_> {}
 
 /// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ClipboardUnsanitizedFormats<'a> {
     pub unsanitized: Option<&'a [String]>,
 }
@@ -103451,7 +103459,7 @@ pub struct ClipboardUnsanitizedFormats<'a> {
 unsafe impl Defined for ClipboardUnsanitizedFormats<'_> {}
 
 /// The [`CloseEventInit`](https://developer.mozilla.org/docs/Web/API/CloseEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CloseEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103464,7 +103472,7 @@ pub struct CloseEventInit<'a> {
 unsafe impl Defined for CloseEventInit<'_> {}
 
 /// The [`CloseWatcherOptions`](https://developer.mozilla.org/docs/Web/API/CloseWatcherOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CloseWatcherOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
 }
@@ -103472,7 +103480,7 @@ pub struct CloseWatcherOptions<'a> {
 unsafe impl Defined for CloseWatcherOptions<'_> {}
 
 /// The [`CommandEventInit`](https://developer.mozilla.org/docs/Web/API/CommandEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CommandEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103484,7 +103492,7 @@ pub struct CommandEventInit<'a> {
 unsafe impl Defined for CommandEventInit<'_> {}
 
 /// The [`CompositionEventInit`](https://developer.mozilla.org/docs/Web/API/CompositionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CompositionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103498,7 +103506,7 @@ pub struct CompositionEventInit<'a> {
 unsafe impl Defined for CompositionEventInit<'_> {}
 
 /// The [`ConstantSourceOptions`](https://developer.mozilla.org/docs/Web/API/ConstantSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ConstantSourceOptions {
     pub offset: Option<f64>,
 }
@@ -103506,7 +103514,7 @@ pub struct ConstantSourceOptions {
 unsafe impl Defined for ConstantSourceOptions {}
 
 /// The [`ContentVisibilityAutoStateChangeEventInit`](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ContentVisibilityAutoStateChangeEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103517,7 +103525,7 @@ pub struct ContentVisibilityAutoStateChangeEventInit {
 unsafe impl Defined for ContentVisibilityAutoStateChangeEventInit {}
 
 /// The [`ConvertCoordinateOptions`](https://developer.mozilla.org/docs/Web/API/ConvertCoordinateOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ConvertCoordinateOptions<'a> {
     pub from_box: Option<&'a str>,
     pub to_box: Option<&'a str>,
@@ -103526,7 +103534,7 @@ pub struct ConvertCoordinateOptions<'a> {
 unsafe impl Defined for ConvertCoordinateOptions<'_> {}
 
 /// The [`ConvolverOptions`](https://developer.mozilla.org/docs/Web/API/ConvolverOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ConvolverOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103538,7 +103546,7 @@ pub struct ConvolverOptions<'a> {
 unsafe impl Defined for ConvolverOptions<'_> {}
 
 /// The [`CookieChangeEventInit`](https://developer.mozilla.org/docs/Web/API/CookieChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CookieChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103550,6 +103558,7 @@ pub struct CookieChangeEventInit<'a> {
 unsafe impl Defined for CookieChangeEventInit<'_> {}
 
 /// The [`CookieInit`](https://developer.mozilla.org/docs/Web/API/CookieInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct CookieInit<'a> {
     pub name: &'a str,
     pub value: &'a str,
@@ -103564,6 +103573,7 @@ pub struct CookieInit<'a> {
 unsafe impl Defined for CookieInit<'_> {}
 
 /// The [`CookieStoreDeleteOptions`](https://developer.mozilla.org/docs/Web/API/CookieStoreDeleteOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct CookieStoreDeleteOptions<'a> {
     pub name: &'a str,
     pub domain: Option<&'a str>,
@@ -103595,7 +103605,7 @@ pub struct CredentialRequestOptions<'a> {
 unsafe impl Defined for CredentialRequestOptions<'_> {}
 
 /// The [`CSSMatrixComponentOptions`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponentOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CSSMatrixComponentOptions {
     pub is2_d: Option<bool>,
 }
@@ -103603,7 +103613,7 @@ pub struct CSSMatrixComponentOptions {
 unsafe impl Defined for CSSMatrixComponentOptions {}
 
 /// The [`CSSStyleSheetInit`](https://developer.mozilla.org/docs/Web/API/CSSStyleSheetInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CSSStyleSheetInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "baseURL")]
     pub base_url: Option<&'a str>,
@@ -103614,6 +103624,7 @@ pub struct CSSStyleSheetInit<'a> {
 unsafe impl Defined for CSSStyleSheetInit<'_> {}
 
 /// The [`CurrentUserDetailsOptions`](https://developer.mozilla.org/docs/Web/API/CurrentUserDetailsOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct CurrentUserDetailsOptions<'a> {
     pub rp_id: &'a str,
     pub user_id: &'a str,
@@ -103624,7 +103635,7 @@ pub struct CurrentUserDetailsOptions<'a> {
 unsafe impl Defined for CurrentUserDetailsOptions<'_> {}
 
 /// The [`CustomEventInit`](https://developer.mozilla.org/docs/Web/API/CustomEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct CustomEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103635,7 +103646,7 @@ pub struct CustomEventInit<'a> {
 unsafe impl Defined for CustomEventInit<'_> {}
 
 /// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DelayOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103647,7 +103658,7 @@ pub struct DelayOptions<'a> {
 unsafe impl Defined for DelayOptions<'_> {}
 
 /// The [`DeviceMotionEventAccelerationInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventAccelerationInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventAccelerationInit {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -103657,7 +103668,7 @@ pub struct DeviceMotionEventAccelerationInit {
 unsafe impl Defined for DeviceMotionEventAccelerationInit {}
 
 /// The [`DeviceMotionEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103671,7 +103682,7 @@ pub struct DeviceMotionEventInit {
 unsafe impl Defined for DeviceMotionEventInit {}
 
 /// The [`DeviceMotionEventRotationRateInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventRotationRateInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventRotationRateInit {
     pub alpha: Option<f64>,
     pub beta: Option<f64>,
@@ -103681,7 +103692,7 @@ pub struct DeviceMotionEventRotationRateInit {
 unsafe impl Defined for DeviceMotionEventRotationRateInit {}
 
 /// The [`DeviceOrientationEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DeviceOrientationEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103710,6 +103721,7 @@ pub struct DisplayMediaStreamOptions<'a> {
 unsafe impl Defined for DisplayMediaStreamOptions<'_> {}
 
 /// The [`DocumentPictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct DocumentPictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103720,7 +103732,7 @@ pub struct DocumentPictureInPictureEventInit<'a> {
 unsafe impl Defined for DocumentPictureInPictureEventInit<'_> {}
 
 /// The [`DocumentPictureInPictureOptions`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DocumentPictureInPictureOptions {
     pub width: Option<f64>,
     pub height: Option<f64>,
@@ -103731,7 +103743,7 @@ pub struct DocumentPictureInPictureOptions {
 unsafe impl Defined for DocumentPictureInPictureOptions {}
 
 /// The [`DocumentTimelineOptions`](https://developer.mozilla.org/docs/Web/API/DocumentTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DocumentTimelineOptions {
     pub origin_time: Option<f64>,
 }
@@ -103739,7 +103751,7 @@ pub struct DocumentTimelineOptions {
 unsafe impl Defined for DocumentTimelineOptions {}
 
 /// The [`DOMMatrix2DInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrix2DInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DOMMatrix2DInit {
     pub a: Option<f64>,
     pub b: Option<f64>,
@@ -103758,7 +103770,7 @@ pub struct DOMMatrix2DInit {
 unsafe impl Defined for DOMMatrix2DInit {}
 
 /// The [`DOMMatrixInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrixInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DOMMatrixInit {
     pub a: Option<f64>,
     pub b: Option<f64>,
@@ -103788,7 +103800,7 @@ pub struct DOMMatrixInit {
 unsafe impl Defined for DOMMatrixInit {}
 
 /// The [`DOMPointInit`](https://developer.mozilla.org/docs/Web/API/DOMPointInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DOMPointInit {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -103799,7 +103811,7 @@ pub struct DOMPointInit {
 unsafe impl Defined for DOMPointInit {}
 
 /// The [`DOMQuadInit`](https://developer.mozilla.org/docs/Web/API/DOMQuadInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DOMQuadInit {
     pub p1: Option<DOMPointInit>,
     pub p2: Option<DOMPointInit>,
@@ -103810,7 +103822,7 @@ pub struct DOMQuadInit {
 unsafe impl Defined for DOMQuadInit {}
 
 /// The [`DOMRectInit`](https://developer.mozilla.org/docs/Web/API/DOMRectInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DOMRectInit {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -103821,7 +103833,7 @@ pub struct DOMRectInit {
 unsafe impl Defined for DOMRectInit {}
 
 /// The [`DragEventInit`](https://developer.mozilla.org/docs/Web/API/DragEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DragEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103858,7 +103870,7 @@ pub struct DragEventInit<'a> {
 unsafe impl Defined for DragEventInit<'_> {}
 
 /// The [`DynamicsCompressorOptions`](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct DynamicsCompressorOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -103873,7 +103885,7 @@ pub struct DynamicsCompressorOptions<'a> {
 unsafe impl Defined for DynamicsCompressorOptions<'_> {}
 
 /// The [`ElementCreationOptions`](https://developer.mozilla.org/docs/Web/API/ElementCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ElementCreationOptions<'a> {
     pub custom_element_registry: Option<&'a CustomElementRegistry>,
     pub is: Option<&'a str>,
@@ -103882,7 +103894,7 @@ pub struct ElementCreationOptions<'a> {
 unsafe impl Defined for ElementCreationOptions<'_> {}
 
 /// The [`ElementDefinitionOptions`](https://developer.mozilla.org/docs/Web/API/ElementDefinitionOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ElementDefinitionOptions<'a> {
     pub extends: Option<&'a str>,
 }
@@ -103890,6 +103902,7 @@ pub struct ElementDefinitionOptions<'a> {
 unsafe impl Defined for ElementDefinitionOptions<'_> {}
 
 /// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct EncodedAudioChunkInit<'a> {
     pub r#type: &'a str,
     pub timestamp: f64,
@@ -103909,6 +103922,7 @@ pub struct EncodedAudioChunkMetadata {
 unsafe impl Defined for EncodedAudioChunkMetadata {}
 
 /// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct EncodedVideoChunkInit<'a> {
     pub r#type: &'a str,
     pub timestamp: f64,
@@ -103930,7 +103944,7 @@ pub struct EncodedVideoChunkMetadata<'a> {
 unsafe impl Defined for EncodedVideoChunkMetadata<'_> {}
 
 /// The [`ErrorEventInit`](https://developer.mozilla.org/docs/Web/API/ErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103945,7 +103959,7 @@ pub struct ErrorEventInit<'a> {
 unsafe impl Defined for ErrorEventInit<'_> {}
 
 /// The [`EventInit`](https://developer.mozilla.org/docs/Web/API/EventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct EventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -103955,7 +103969,7 @@ pub struct EventInit {
 unsafe impl Defined for EventInit {}
 
 /// The [`EventListenerOptions`](https://developer.mozilla.org/docs/Web/API/EventListenerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct EventListenerOptions {
     pub capture: Option<bool>,
 }
@@ -103963,7 +103977,7 @@ pub struct EventListenerOptions {
 unsafe impl Defined for EventListenerOptions {}
 
 /// The [`EventSourceInit`](https://developer.mozilla.org/docs/Web/API/EventSourceInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct EventSourceInit {
     pub with_credentials: Option<bool>,
 }
@@ -103971,7 +103985,7 @@ pub struct EventSourceInit {
 unsafe impl Defined for EventSourceInit {}
 
 /// The [`FilePropertyBag`](https://developer.mozilla.org/docs/Web/API/FilePropertyBag) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FilePropertyBag<'a> {
     pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
@@ -103981,7 +103995,7 @@ pub struct FilePropertyBag<'a> {
 unsafe impl Defined for FilePropertyBag<'_> {}
 
 /// The [`FileSystemCreateWritableOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemCreateWritableOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FileSystemCreateWritableOptions {
     pub keep_existing_data: Option<bool>,
 }
@@ -103989,7 +104003,7 @@ pub struct FileSystemCreateWritableOptions {
 unsafe impl Defined for FileSystemCreateWritableOptions {}
 
 /// The [`FileSystemFlags`](https://developer.mozilla.org/docs/Web/API/FileSystemFlags) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FileSystemFlags {
     pub create: Option<bool>,
     pub exclusive: Option<bool>,
@@ -103998,7 +104012,7 @@ pub struct FileSystemFlags {
 unsafe impl Defined for FileSystemFlags {}
 
 /// The [`FileSystemGetDirectoryOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetDirectoryOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FileSystemGetDirectoryOptions {
     pub create: Option<bool>,
 }
@@ -104006,7 +104020,7 @@ pub struct FileSystemGetDirectoryOptions {
 unsafe impl Defined for FileSystemGetDirectoryOptions {}
 
 /// The [`FileSystemGetFileOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetFileOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FileSystemGetFileOptions {
     pub create: Option<bool>,
 }
@@ -104014,7 +104028,7 @@ pub struct FileSystemGetFileOptions {
 unsafe impl Defined for FileSystemGetFileOptions {}
 
 /// The [`FileSystemRemoveOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemRemoveOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FileSystemRemoveOptions {
     pub recursive: Option<bool>,
 }
@@ -104022,7 +104036,7 @@ pub struct FileSystemRemoveOptions {
 unsafe impl Defined for FileSystemRemoveOptions {}
 
 /// The [`FocusEventInit`](https://developer.mozilla.org/docs/Web/API/FocusEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FocusEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104036,7 +104050,7 @@ pub struct FocusEventInit<'a> {
 unsafe impl Defined for FocusEventInit<'_> {}
 
 /// The [`FocusOptions`](https://developer.mozilla.org/docs/Web/API/FocusOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FocusOptions {
     pub prevent_scroll: Option<bool>,
     pub focus_visible: Option<bool>,
@@ -104045,7 +104059,7 @@ pub struct FocusOptions {
 unsafe impl Defined for FocusOptions {}
 
 /// The [`FontFaceDescriptors`](https://developer.mozilla.org/docs/Web/API/FontFaceDescriptors) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FontFaceDescriptors<'a> {
     pub style: Option<&'a str>,
     pub weight: Option<&'a str>,
@@ -104062,7 +104076,7 @@ pub struct FontFaceDescriptors<'a> {
 unsafe impl Defined for FontFaceDescriptors<'_> {}
 
 /// The [`FontFaceSetLoadEventInit`](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FontFaceSetLoadEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104073,6 +104087,7 @@ pub struct FontFaceSetLoadEventInit<'a> {
 unsafe impl Defined for FontFaceSetLoadEventInit<'_> {}
 
 /// The [`FormDataEventInit`](https://developer.mozilla.org/docs/Web/API/FormDataEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct FormDataEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104083,7 +104098,7 @@ pub struct FormDataEventInit<'a> {
 unsafe impl Defined for FormDataEventInit<'_> {}
 
 /// The [`FullscreenOptions`](https://developer.mozilla.org/docs/Web/API/FullscreenOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct FullscreenOptions<'a> {
     pub keyboard_lock: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "navigationUI")]
@@ -104093,7 +104108,7 @@ pub struct FullscreenOptions<'a> {
 unsafe impl Defined for FullscreenOptions<'_> {}
 
 /// The [`GainOptions`](https://developer.mozilla.org/docs/Web/API/GainOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GainOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -104104,7 +104119,7 @@ pub struct GainOptions<'a> {
 unsafe impl Defined for GainOptions<'_> {}
 
 /// The [`GamepadEffectParameters`](https://developer.mozilla.org/docs/Web/API/GamepadEffectParameters) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GamepadEffectParameters {
     pub duration: Option<f64>,
     pub start_delay: Option<f64>,
@@ -104117,7 +104132,7 @@ pub struct GamepadEffectParameters {
 unsafe impl Defined for GamepadEffectParameters {}
 
 /// The [`GamepadEventInit`](https://developer.mozilla.org/docs/Web/API/GamepadEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GamepadEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104128,7 +104143,7 @@ pub struct GamepadEventInit<'a> {
 unsafe impl Defined for GamepadEventInit<'_> {}
 
 /// The [`GetAnimationsOptions`](https://developer.mozilla.org/docs/Web/API/GetAnimationsOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GetAnimationsOptions<'a> {
     pub subtree: Option<bool>,
     pub pseudo_element: Option<&'a str>,
@@ -104137,7 +104152,7 @@ pub struct GetAnimationsOptions<'a> {
 unsafe impl Defined for GetAnimationsOptions<'_> {}
 
 /// The [`GetComposedRangesOptions`](https://developer.mozilla.org/docs/Web/API/GetComposedRangesOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GetComposedRangesOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
@@ -104145,7 +104160,7 @@ pub struct GetComposedRangesOptions<'a> {
 unsafe impl Defined for GetComposedRangesOptions<'_> {}
 
 /// The [`GetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/GetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GetHTMLOptions<'a> {
     pub serializable_shadow_roots: Option<bool>,
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
@@ -104154,7 +104169,7 @@ pub struct GetHTMLOptions<'a> {
 unsafe impl Defined for GetHTMLOptions<'_> {}
 
 /// The [`GetNotificationOptions`](https://developer.mozilla.org/docs/Web/API/GetNotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GetNotificationOptions<'a> {
     pub tag: Option<&'a str>,
 }
@@ -104162,7 +104177,7 @@ pub struct GetNotificationOptions<'a> {
 unsafe impl Defined for GetNotificationOptions<'_> {}
 
 /// The [`GetRootNodeOptions`](https://developer.mozilla.org/docs/Web/API/GetRootNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GetRootNodeOptions {
     pub composed: Option<bool>,
 }
@@ -104170,6 +104185,7 @@ pub struct GetRootNodeOptions {
 unsafe impl Defined for GetRootNodeOptions {}
 
 /// The [`GPUBindGroupDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBindGroupDescriptor<'a> {
     pub label: Option<&'a str>,
     pub layout: &'a GPUBindGroupLayout,
@@ -104179,6 +104195,7 @@ pub struct GPUBindGroupDescriptor<'a> {
 unsafe impl Defined for GPUBindGroupDescriptor<'_> {}
 
 /// The [`GPUBindGroupEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupEntry) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBindGroupEntry<'a> {
     pub binding: f64,
     pub resource: GPUBindingResource<'a>,
@@ -104187,6 +104204,7 @@ pub struct GPUBindGroupEntry<'a> {
 unsafe impl Defined for GPUBindGroupEntry<'_> {}
 
 /// The [`GPUBindGroupLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBindGroupLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
     pub entries: &'a [GPUBindGroupLayoutEntry<'a>],
@@ -104195,6 +104213,7 @@ pub struct GPUBindGroupLayoutDescriptor<'a> {
 unsafe impl Defined for GPUBindGroupLayoutDescriptor<'_> {}
 
 /// The [`GPUBindGroupLayoutEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutEntry) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBindGroupLayoutEntry<'a> {
     pub binding: f64,
     pub visibility: f64,
@@ -104207,7 +104226,7 @@ pub struct GPUBindGroupLayoutEntry<'a> {
 unsafe impl Defined for GPUBindGroupLayoutEntry<'_> {}
 
 /// The [`GPUBlendComponent`](https://developer.mozilla.org/docs/Web/API/GPUBlendComponent) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUBlendComponent<'a> {
     pub operation: Option<&'a str>,
     pub src_factor: Option<&'a str>,
@@ -104217,6 +104236,7 @@ pub struct GPUBlendComponent<'a> {
 unsafe impl Defined for GPUBlendComponent<'_> {}
 
 /// The [`GPUBlendState`](https://developer.mozilla.org/docs/Web/API/GPUBlendState) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBlendState<'a> {
     pub color: GPUBlendComponent<'a>,
     pub alpha: GPUBlendComponent<'a>,
@@ -104225,6 +104245,7 @@ pub struct GPUBlendState<'a> {
 unsafe impl Defined for GPUBlendState<'_> {}
 
 /// The [`GPUBufferBinding`](https://developer.mozilla.org/docs/Web/API/GPUBufferBinding) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBufferBinding<'a> {
     pub buffer: &'a GPUBuffer,
     pub offset: Option<f64>,
@@ -104234,7 +104255,7 @@ pub struct GPUBufferBinding<'a> {
 unsafe impl Defined for GPUBufferBinding<'_> {}
 
 /// The [`GPUBufferBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUBufferBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUBufferBindingLayout<'a> {
     pub r#type: Option<&'a str>,
     pub has_dynamic_offset: Option<bool>,
@@ -104244,6 +104265,7 @@ pub struct GPUBufferBindingLayout<'a> {
 unsafe impl Defined for GPUBufferBindingLayout<'_> {}
 
 /// The [`GPUBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUBufferDescriptor<'a> {
     pub label: Option<&'a str>,
     pub size: f64,
@@ -104254,6 +104276,7 @@ pub struct GPUBufferDescriptor<'a> {
 unsafe impl Defined for GPUBufferDescriptor<'_> {}
 
 /// The [`GPUColorDict`](https://developer.mozilla.org/docs/Web/API/GPUColorDict) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUColorDict {
     pub r: f64,
     pub g: f64,
@@ -104264,6 +104287,7 @@ pub struct GPUColorDict {
 unsafe impl Defined for GPUColorDict {}
 
 /// The [`GPUColorTargetState`](https://developer.mozilla.org/docs/Web/API/GPUColorTargetState) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUColorTargetState<'a> {
     pub format: &'a str,
     pub blend: Option<GPUBlendState<'a>>,
@@ -104273,7 +104297,7 @@ pub struct GPUColorTargetState<'a> {
 unsafe impl Defined for GPUColorTargetState<'_> {}
 
 /// The [`GPUCommandBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUCommandBufferDescriptor<'a> {
     pub label: Option<&'a str>,
 }
@@ -104281,7 +104305,7 @@ pub struct GPUCommandBufferDescriptor<'a> {
 unsafe impl Defined for GPUCommandBufferDescriptor<'_> {}
 
 /// The [`GPUCommandEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUCommandEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
 }
@@ -104289,7 +104313,7 @@ pub struct GPUCommandEncoderDescriptor<'a> {
 unsafe impl Defined for GPUCommandEncoderDescriptor<'_> {}
 
 /// The [`GPUComputePassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUComputePassDescriptor<'a> {
     pub label: Option<&'a str>,
     pub timestamp_writes: Option<GPUComputePassTimestampWrites<'a>>,
@@ -104298,6 +104322,7 @@ pub struct GPUComputePassDescriptor<'a> {
 unsafe impl Defined for GPUComputePassDescriptor<'_> {}
 
 /// The [`GPUComputePassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPUComputePassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUComputePassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
     pub beginning_of_pass_write_index: Option<f64>,
@@ -104307,6 +104332,7 @@ pub struct GPUComputePassTimestampWrites<'a> {
 unsafe impl Defined for GPUComputePassTimestampWrites<'_> {}
 
 /// The [`GPUComputePipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUComputePipelineDescriptor<'a> {
     pub label: Option<&'a str>,
     pub layout: GPUPipelineLayoutOrStr<'a>,
@@ -104316,6 +104342,7 @@ pub struct GPUComputePipelineDescriptor<'a> {
 unsafe impl Defined for GPUComputePipelineDescriptor<'_> {}
 
 /// The [`GPUCopyExternalImageDestInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageDestInfo) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUCopyExternalImageDestInfo<'a> {
     pub texture: &'a GPUTexture,
     pub mip_level: Option<f64>,
@@ -104328,6 +104355,7 @@ pub struct GPUCopyExternalImageDestInfo<'a> {
 unsafe impl Defined for GPUCopyExternalImageDestInfo<'_> {}
 
 /// The [`GPUCopyExternalImageSourceInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageSourceInfo) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUCopyExternalImageSourceInfo<'a> {
     pub source: GPUCopyExternalImageSource<'a>,
     pub origin: Option<GPUOrigin2D<'a>>,
@@ -104337,6 +104365,7 @@ pub struct GPUCopyExternalImageSourceInfo<'a> {
 unsafe impl Defined for GPUCopyExternalImageSourceInfo<'_> {}
 
 /// The [`GPUDepthStencilState`](https://developer.mozilla.org/docs/Web/API/GPUDepthStencilState) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUDepthStencilState<'a> {
     pub format: &'a str,
     pub depth_write_enabled: Option<bool>,
@@ -104353,7 +104382,7 @@ pub struct GPUDepthStencilState<'a> {
 unsafe impl Defined for GPUDepthStencilState<'_> {}
 
 /// The [`GPUDeviceDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUDeviceDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUDeviceDescriptor<'a> {
     pub label: Option<&'a str>,
     pub required_features: Option<&'a [String]>,
@@ -104363,6 +104392,7 @@ pub struct GPUDeviceDescriptor<'a> {
 unsafe impl Defined for GPUDeviceDescriptor<'_> {}
 
 /// The [`GPUExtent3DDict`](https://developer.mozilla.org/docs/Web/API/GPUExtent3DDict) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUExtent3DDict {
     pub width: f64,
     pub height: Option<f64>,
@@ -104372,6 +104402,7 @@ pub struct GPUExtent3DDict {
 unsafe impl Defined for GPUExtent3DDict {}
 
 /// The [`GPUExternalTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUExternalTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUExternalTextureDescriptor<'a> {
     pub label: Option<&'a str>,
     pub source: HTMLVideoElementOrVideoFrame<'a>,
@@ -104381,6 +104412,7 @@ pub struct GPUExternalTextureDescriptor<'a> {
 unsafe impl Defined for GPUExternalTextureDescriptor<'_> {}
 
 /// The [`GPUFragmentState`](https://developer.mozilla.org/docs/Web/API/GPUFragmentState) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUFragmentState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
@@ -104390,7 +104422,7 @@ pub struct GPUFragmentState<'a> {
 unsafe impl Defined for GPUFragmentState<'_> {}
 
 /// The [`GPUMultisampleState`](https://developer.mozilla.org/docs/Web/API/GPUMultisampleState) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUMultisampleState {
     pub count: Option<f64>,
     pub mask: Option<f64>,
@@ -104400,7 +104432,7 @@ pub struct GPUMultisampleState {
 unsafe impl Defined for GPUMultisampleState {}
 
 /// The [`GPUOrigin2DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin2DDict) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUOrigin2DDict {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -104409,7 +104441,7 @@ pub struct GPUOrigin2DDict {
 unsafe impl Defined for GPUOrigin2DDict {}
 
 /// The [`GPUOrigin3DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin3DDict) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUOrigin3DDict {
     pub x: Option<f64>,
     pub y: Option<f64>,
@@ -104419,6 +104451,7 @@ pub struct GPUOrigin3DDict {
 unsafe impl Defined for GPUOrigin3DDict {}
 
 /// The [`GPUPipelineLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUPipelineLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUPipelineLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
     pub bind_group_layouts: &'a [&'a GPUBindGroupLayout],
@@ -104428,7 +104461,7 @@ pub struct GPUPipelineLayoutDescriptor<'a> {
 unsafe impl Defined for GPUPipelineLayoutDescriptor<'_> {}
 
 /// The [`GPUPrimitiveState`](https://developer.mozilla.org/docs/Web/API/GPUPrimitiveState) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUPrimitiveState<'a> {
     pub topology: Option<&'a str>,
     pub strip_index_format: Option<&'a str>,
@@ -104440,6 +104473,7 @@ pub struct GPUPrimitiveState<'a> {
 unsafe impl Defined for GPUPrimitiveState<'_> {}
 
 /// The [`GPUProgrammableStage`](https://developer.mozilla.org/docs/Web/API/GPUProgrammableStage) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUProgrammableStage<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
@@ -104448,6 +104482,7 @@ pub struct GPUProgrammableStage<'a> {
 unsafe impl Defined for GPUProgrammableStage<'_> {}
 
 /// The [`GPUQuerySetDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQuerySetDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUQuerySetDescriptor<'a> {
     pub label: Option<&'a str>,
     pub r#type: &'a str,
@@ -104457,7 +104492,7 @@ pub struct GPUQuerySetDescriptor<'a> {
 unsafe impl Defined for GPUQuerySetDescriptor<'_> {}
 
 /// The [`GPUQueueDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQueueDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUQueueDescriptor<'a> {
     pub label: Option<&'a str>,
 }
@@ -104465,7 +104500,7 @@ pub struct GPUQueueDescriptor<'a> {
 unsafe impl Defined for GPUQueueDescriptor<'_> {}
 
 /// The [`GPURenderBundleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPURenderBundleDescriptor<'a> {
     pub label: Option<&'a str>,
 }
@@ -104473,6 +104508,7 @@ pub struct GPURenderBundleDescriptor<'a> {
 unsafe impl Defined for GPURenderBundleDescriptor<'_> {}
 
 /// The [`GPURenderBundleEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderBundleEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
     pub color_formats: &'a [String],
@@ -104485,6 +104521,7 @@ pub struct GPURenderBundleEncoderDescriptor<'a> {
 unsafe impl Defined for GPURenderBundleEncoderDescriptor<'_> {}
 
 /// The [`GPURenderPassColorAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassColorAttachment) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderPassColorAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
     pub depth_slice: Option<f64>,
@@ -104497,6 +104534,7 @@ pub struct GPURenderPassColorAttachment<'a> {
 unsafe impl Defined for GPURenderPassColorAttachment<'_> {}
 
 /// The [`GPURenderPassDepthStencilAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDepthStencilAttachment) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderPassDepthStencilAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
     pub depth_clear_value: Option<f64>,
@@ -104512,6 +104550,7 @@ pub struct GPURenderPassDepthStencilAttachment<'a> {
 unsafe impl Defined for GPURenderPassDepthStencilAttachment<'_> {}
 
 /// The [`GPURenderPassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderPassDescriptor<'a> {
     pub label: Option<&'a str>,
     pub color_attachments: &'a [GPURenderPassColorAttachment<'a>],
@@ -104524,6 +104563,7 @@ pub struct GPURenderPassDescriptor<'a> {
 unsafe impl Defined for GPURenderPassDescriptor<'_> {}
 
 /// The [`GPURenderPassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPURenderPassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderPassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
     pub beginning_of_pass_write_index: Option<f64>,
@@ -104533,6 +104573,7 @@ pub struct GPURenderPassTimestampWrites<'a> {
 unsafe impl Defined for GPURenderPassTimestampWrites<'_> {}
 
 /// The [`GPURenderPipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPURenderPipelineDescriptor<'a> {
     pub label: Option<&'a str>,
     pub layout: GPUPipelineLayoutOrStr<'a>,
@@ -104546,7 +104587,7 @@ pub struct GPURenderPipelineDescriptor<'a> {
 unsafe impl Defined for GPURenderPipelineDescriptor<'_> {}
 
 /// The [`GPURequestAdapterOptions`](https://developer.mozilla.org/docs/Web/API/GPURequestAdapterOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPURequestAdapterOptions<'a> {
     pub feature_level: Option<&'a str>,
     pub power_preference: Option<&'a str>,
@@ -104557,7 +104598,7 @@ pub struct GPURequestAdapterOptions<'a> {
 unsafe impl Defined for GPURequestAdapterOptions<'_> {}
 
 /// The [`GPUSamplerBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUSamplerBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUSamplerBindingLayout<'a> {
     pub r#type: Option<&'a str>,
 }
@@ -104565,7 +104606,7 @@ pub struct GPUSamplerBindingLayout<'a> {
 unsafe impl Defined for GPUSamplerBindingLayout<'_> {}
 
 /// The [`GPUSamplerDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUSamplerDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUSamplerDescriptor<'a> {
     pub label: Option<&'a str>,
     pub address_mode_u: Option<&'a str>,
@@ -104583,6 +104624,7 @@ pub struct GPUSamplerDescriptor<'a> {
 unsafe impl Defined for GPUSamplerDescriptor<'_> {}
 
 /// The [`GPUShaderModuleCompilationHint`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleCompilationHint) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUShaderModuleCompilationHint<'a> {
     pub entry_point: &'a str,
     pub layout: Option<GPUPipelineLayoutOrStr<'a>>,
@@ -104591,6 +104633,7 @@ pub struct GPUShaderModuleCompilationHint<'a> {
 unsafe impl Defined for GPUShaderModuleCompilationHint<'_> {}
 
 /// The [`GPUShaderModuleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUShaderModuleDescriptor<'a> {
     pub label: Option<&'a str>,
     pub code: &'a str,
@@ -104600,7 +104643,7 @@ pub struct GPUShaderModuleDescriptor<'a> {
 unsafe impl Defined for GPUShaderModuleDescriptor<'_> {}
 
 /// The [`GPUStencilFaceState`](https://developer.mozilla.org/docs/Web/API/GPUStencilFaceState) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUStencilFaceState<'a> {
     pub compare: Option<&'a str>,
     pub fail_op: Option<&'a str>,
@@ -104611,6 +104654,7 @@ pub struct GPUStencilFaceState<'a> {
 unsafe impl Defined for GPUStencilFaceState<'_> {}
 
 /// The [`GPUStorageTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUStorageTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUStorageTextureBindingLayout<'a> {
     pub access: Option<&'a str>,
     pub format: &'a str,
@@ -104620,6 +104664,7 @@ pub struct GPUStorageTextureBindingLayout<'a> {
 unsafe impl Defined for GPUStorageTextureBindingLayout<'_> {}
 
 /// The [`GPUTexelCopyBufferInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferInfo) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUTexelCopyBufferInfo<'a> {
     pub offset: Option<f64>,
     pub bytes_per_row: Option<f64>,
@@ -104630,7 +104675,7 @@ pub struct GPUTexelCopyBufferInfo<'a> {
 unsafe impl Defined for GPUTexelCopyBufferInfo<'_> {}
 
 /// The [`GPUTexelCopyBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUTexelCopyBufferLayout {
     pub offset: Option<f64>,
     pub bytes_per_row: Option<f64>,
@@ -104640,6 +104685,7 @@ pub struct GPUTexelCopyBufferLayout {
 unsafe impl Defined for GPUTexelCopyBufferLayout {}
 
 /// The [`GPUTexelCopyTextureInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyTextureInfo) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUTexelCopyTextureInfo<'a> {
     pub texture: &'a GPUTexture,
     pub mip_level: Option<f64>,
@@ -104650,7 +104696,7 @@ pub struct GPUTexelCopyTextureInfo<'a> {
 unsafe impl Defined for GPUTexelCopyTextureInfo<'_> {}
 
 /// The [`GPUTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUTextureBindingLayout<'a> {
     pub sample_type: Option<&'a str>,
     pub view_dimension: Option<&'a str>,
@@ -104660,6 +104706,7 @@ pub struct GPUTextureBindingLayout<'a> {
 unsafe impl Defined for GPUTextureBindingLayout<'_> {}
 
 /// The [`GPUTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUTextureDescriptor<'a> {
     pub label: Option<&'a str>,
     pub size: GPUExtent3D<'a>,
@@ -104675,7 +104722,7 @@ pub struct GPUTextureDescriptor<'a> {
 unsafe impl Defined for GPUTextureDescriptor<'_> {}
 
 /// The [`GPUTextureViewDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureViewDescriptor) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct GPUTextureViewDescriptor<'a> {
     pub label: Option<&'a str>,
     pub format: Option<&'a str>,
@@ -104692,6 +104739,7 @@ pub struct GPUTextureViewDescriptor<'a> {
 unsafe impl Defined for GPUTextureViewDescriptor<'_> {}
 
 /// The [`GPUUncapturedErrorEventInit`](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUUncapturedErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104702,6 +104750,7 @@ pub struct GPUUncapturedErrorEventInit<'a> {
 unsafe impl Defined for GPUUncapturedErrorEventInit<'_> {}
 
 /// The [`GPUVertexAttribute`](https://developer.mozilla.org/docs/Web/API/GPUVertexAttribute) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUVertexAttribute<'a> {
     pub format: &'a str,
     pub offset: f64,
@@ -104711,6 +104760,7 @@ pub struct GPUVertexAttribute<'a> {
 unsafe impl Defined for GPUVertexAttribute<'_> {}
 
 /// The [`GPUVertexBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUVertexBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUVertexBufferLayout<'a> {
     pub array_stride: f64,
     pub step_mode: Option<&'a str>,
@@ -104720,6 +104770,7 @@ pub struct GPUVertexBufferLayout<'a> {
 unsafe impl Defined for GPUVertexBufferLayout<'_> {}
 
 /// The [`GPUVertexState`](https://developer.mozilla.org/docs/Web/API/GPUVertexState) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct GPUVertexState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
@@ -104729,7 +104780,7 @@ pub struct GPUVertexState<'a> {
 unsafe impl Defined for GPUVertexState<'_> {}
 
 /// The [`HashChangeEventInit`](https://developer.mozilla.org/docs/Web/API/HashChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct HashChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104743,7 +104794,7 @@ pub struct HashChangeEventInit<'a> {
 unsafe impl Defined for HashChangeEventInit<'_> {}
 
 /// The [`HighlightsFromPointOptions`](https://developer.mozilla.org/docs/Web/API/HighlightsFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct HighlightsFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
 }
@@ -104751,7 +104802,7 @@ pub struct HighlightsFromPointOptions<'a> {
 unsafe impl Defined for HighlightsFromPointOptions<'_> {}
 
 /// The [`IDBIndexParameters`](https://developer.mozilla.org/docs/Web/API/IDBIndexParameters) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IDBIndexParameters {
     pub unique: Option<bool>,
     pub multi_entry: Option<bool>,
@@ -104760,7 +104811,7 @@ pub struct IDBIndexParameters {
 unsafe impl Defined for IDBIndexParameters {}
 
 /// The [`IDBObjectStoreParameters`](https://developer.mozilla.org/docs/Web/API/IDBObjectStoreParameters) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IDBObjectStoreParameters<'a> {
     pub key_path: Option<StrOrList<'a>>,
     pub auto_increment: Option<bool>,
@@ -104769,7 +104820,7 @@ pub struct IDBObjectStoreParameters<'a> {
 unsafe impl Defined for IDBObjectStoreParameters<'_> {}
 
 /// The [`IDBTransactionOptions`](https://developer.mozilla.org/docs/Web/API/IDBTransactionOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IDBTransactionOptions<'a> {
     pub durability: Option<&'a str>,
 }
@@ -104777,7 +104828,7 @@ pub struct IDBTransactionOptions<'a> {
 unsafe impl Defined for IDBTransactionOptions<'_> {}
 
 /// The [`IDBVersionChangeEventInit`](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IDBVersionChangeEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104789,7 +104840,7 @@ pub struct IDBVersionChangeEventInit {
 unsafe impl Defined for IDBVersionChangeEventInit {}
 
 /// The [`IdleRequestOptions`](https://developer.mozilla.org/docs/Web/API/IdleRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IdleRequestOptions {
     pub timeout: Option<f64>,
 }
@@ -104797,6 +104848,7 @@ pub struct IdleRequestOptions {
 unsafe impl Defined for IdleRequestOptions {}
 
 /// The [`IIRFilterOptions`](https://developer.mozilla.org/docs/Web/API/IIRFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct IIRFilterOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -104808,7 +104860,7 @@ pub struct IIRFilterOptions<'a> {
 unsafe impl Defined for IIRFilterOptions<'_> {}
 
 /// The [`ImageBitmapOptions`](https://developer.mozilla.org/docs/Web/API/ImageBitmapOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ImageBitmapOptions<'a> {
     pub image_orientation: Option<&'a str>,
     pub premultiply_alpha: Option<&'a str>,
@@ -104821,7 +104873,7 @@ pub struct ImageBitmapOptions<'a> {
 unsafe impl Defined for ImageBitmapOptions<'_> {}
 
 /// The [`ImageDataSettings`](https://developer.mozilla.org/docs/Web/API/ImageDataSettings) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ImageDataSettings<'a> {
     pub color_space: Option<&'a str>,
     pub pixel_format: Option<&'a str>,
@@ -104830,7 +104882,7 @@ pub struct ImageDataSettings<'a> {
 unsafe impl Defined for ImageDataSettings<'_> {}
 
 /// The [`ImageDecodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ImageDecodeOptions {
     pub frame_index: Option<f64>,
     pub complete_frames_only: Option<bool>,
@@ -104839,6 +104891,7 @@ pub struct ImageDecodeOptions {
 unsafe impl Defined for ImageDecodeOptions {}
 
 /// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct ImageDecoderInit<'a> {
     pub r#type: &'a str,
     pub data: ImageBufferSource<'a>,
@@ -104852,7 +104905,7 @@ pub struct ImageDecoderInit<'a> {
 unsafe impl Defined for ImageDecoderInit<'_> {}
 
 /// The [`ImageEncodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ImageEncodeOptions<'a> {
     pub r#type: Option<&'a str>,
     pub quality: Option<f64>,
@@ -104861,7 +104914,7 @@ pub struct ImageEncodeOptions<'a> {
 unsafe impl Defined for ImageEncodeOptions<'_> {}
 
 /// The [`ImportNodeOptions`](https://developer.mozilla.org/docs/Web/API/ImportNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ImportNodeOptions<'a> {
     pub custom_element_registry: Option<&'a CustomElementRegistry>,
     pub self_only: Option<bool>,
@@ -104870,7 +104923,7 @@ pub struct ImportNodeOptions<'a> {
 unsafe impl Defined for ImportNodeOptions<'_> {}
 
 /// The [`InputEventInit`](https://developer.mozilla.org/docs/Web/API/InputEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct InputEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104888,6 +104941,7 @@ pub struct InputEventInit<'a> {
 unsafe impl Defined for InputEventInit<'_> {}
 
 /// The [`IntersectionObserverEntryInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntryInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct IntersectionObserverEntryInit<'a> {
     pub time: f64,
     pub root_bounds: DOMRectInit,
@@ -104902,7 +104956,7 @@ pub struct IntersectionObserverEntryInit<'a> {
 unsafe impl Defined for IntersectionObserverEntryInit<'_> {}
 
 /// The [`IntersectionObserverInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct IntersectionObserverInit<'a> {
     pub root: Option<ElementOrDocument<'a>>,
     pub root_margin: Option<&'a str>,
@@ -104915,7 +104969,7 @@ pub struct IntersectionObserverInit<'a> {
 unsafe impl Defined for IntersectionObserverInit<'_> {}
 
 /// The [`KeyboardEventInit`](https://developer.mozilla.org/docs/Web/API/KeyboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct KeyboardEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -104949,7 +105003,7 @@ pub struct KeyboardEventInit<'a> {
 unsafe impl Defined for KeyboardEventInit<'_> {}
 
 /// The [`KeyframeAnimationOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeAnimationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct KeyframeAnimationOptions<'a> {
     pub fill: Option<&'a str>,
     pub iteration_start: Option<f64>,
@@ -104972,7 +105026,7 @@ pub struct KeyframeAnimationOptions<'a> {
 unsafe impl Defined for KeyframeAnimationOptions<'_> {}
 
 /// The [`KeyframeEffectOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeEffectOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct KeyframeEffectOptions<'a> {
     pub fill: Option<&'a str>,
     pub iteration_start: Option<f64>,
@@ -104991,7 +105045,7 @@ pub struct KeyframeEffectOptions<'a> {
 unsafe impl Defined for KeyframeEffectOptions<'_> {}
 
 /// The [`LockOptions`](https://developer.mozilla.org/docs/Web/API/LockOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct LockOptions<'a> {
     pub mode: Option<&'a str>,
     pub if_available: Option<bool>,
@@ -105002,6 +105056,7 @@ pub struct LockOptions<'a> {
 unsafe impl Defined for LockOptions<'_> {}
 
 /// The [`MediaElementAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaElementAudioSourceOptions<'a> {
     pub media_element: &'a HTMLMediaElement,
 }
@@ -105009,7 +105064,7 @@ pub struct MediaElementAudioSourceOptions<'a> {
 unsafe impl Defined for MediaElementAudioSourceOptions<'_> {}
 
 /// The [`MediaEncryptedEventInit`](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaEncryptedEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105021,6 +105076,7 @@ pub struct MediaEncryptedEventInit<'a> {
 unsafe impl Defined for MediaEncryptedEventInit<'_> {}
 
 /// The [`MediaImage`](https://developer.mozilla.org/docs/Web/API/MediaImage) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaImage<'a> {
     pub src: &'a str,
     pub sizes: Option<&'a str>,
@@ -105030,6 +105086,7 @@ pub struct MediaImage<'a> {
 unsafe impl Defined for MediaImage<'_> {}
 
 /// The [`MediaKeyMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaKeyMessageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105041,7 +105098,7 @@ pub struct MediaKeyMessageEventInit<'a> {
 unsafe impl Defined for MediaKeyMessageEventInit<'_> {}
 
 /// The [`MediaKeysPolicy`](https://developer.mozilla.org/docs/Web/API/MediaKeysPolicy) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaKeysPolicy<'a> {
     pub min_hdcp_version: Option<&'a str>,
 }
@@ -105049,7 +105106,7 @@ pub struct MediaKeysPolicy<'a> {
 unsafe impl Defined for MediaKeysPolicy<'_> {}
 
 /// The [`MediaMetadataInit`](https://developer.mozilla.org/docs/Web/API/MediaMetadataInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaMetadataInit<'a> {
     pub title: Option<&'a str>,
     pub artist: Option<&'a str>,
@@ -105061,7 +105118,7 @@ pub struct MediaMetadataInit<'a> {
 unsafe impl Defined for MediaMetadataInit<'_> {}
 
 /// The [`MediaPositionState`](https://developer.mozilla.org/docs/Web/API/MediaPositionState) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaPositionState {
     pub duration: Option<f64>,
     pub playback_rate: Option<f64>,
@@ -105071,7 +105128,7 @@ pub struct MediaPositionState {
 unsafe impl Defined for MediaPositionState {}
 
 /// The [`MediaQueryListEventInit`](https://developer.mozilla.org/docs/Web/API/MediaQueryListEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaQueryListEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105083,7 +105140,7 @@ pub struct MediaQueryListEventInit<'a> {
 unsafe impl Defined for MediaQueryListEventInit<'_> {}
 
 /// The [`MediaRecorderOptions`](https://developer.mozilla.org/docs/Web/API/MediaRecorderOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MediaRecorderOptions<'a> {
     pub mime_type: Option<&'a str>,
     pub audio_bits_per_second: Option<f64>,
@@ -105097,6 +105154,7 @@ pub struct MediaRecorderOptions<'a> {
 unsafe impl Defined for MediaRecorderOptions<'_> {}
 
 /// The [`MediaSessionActionDetails`](https://developer.mozilla.org/docs/Web/API/MediaSessionActionDetails) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaSessionActionDetails<'a> {
     pub action: &'a str,
     pub seek_offset: Option<f64>,
@@ -105109,6 +105167,7 @@ pub struct MediaSessionActionDetails<'a> {
 unsafe impl Defined for MediaSessionActionDetails<'_> {}
 
 /// The [`MediaStreamAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaStreamAudioSourceOptions<'a> {
     pub media_stream: &'a MediaStream,
 }
@@ -105127,6 +105186,7 @@ pub struct MediaStreamConstraints<'a> {
 unsafe impl Defined for MediaStreamConstraints<'_> {}
 
 /// The [`MediaStreamTrackEventInit`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MediaStreamTrackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105137,6 +105197,7 @@ pub struct MediaStreamTrackEventInit<'a> {
 unsafe impl Defined for MediaStreamTrackEventInit<'_> {}
 
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct MemoryDescriptor<'a> {
     pub initial: &'a dyn IntoUnknown,
     pub maximum: Option<&'a dyn IntoUnknown>,
@@ -105146,7 +105207,7 @@ pub struct MemoryDescriptor<'a> {
 unsafe impl Defined for MemoryDescriptor<'_> {}
 
 /// The [`MessageEventInit`](https://developer.mozilla.org/docs/Web/API/MessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MessageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105161,7 +105222,7 @@ pub struct MessageEventInit<'a> {
 unsafe impl Defined for MessageEventInit<'_> {}
 
 /// The [`MIDIConnectionEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MIDIConnectionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105172,7 +105233,7 @@ pub struct MIDIConnectionEventInit<'a> {
 unsafe impl Defined for MIDIConnectionEventInit<'_> {}
 
 /// The [`MIDIMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MIDIMessageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105183,7 +105244,7 @@ pub struct MIDIMessageEventInit<'a> {
 unsafe impl Defined for MIDIMessageEventInit<'_> {}
 
 /// The [`MIDIOptions`](https://developer.mozilla.org/docs/Web/API/MIDIOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MIDIOptions {
     pub sysex: Option<bool>,
     pub software: Option<bool>,
@@ -105192,7 +105253,7 @@ pub struct MIDIOptions {
 unsafe impl Defined for MIDIOptions {}
 
 /// The [`MouseEventInit`](https://developer.mozilla.org/docs/Web/API/MouseEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MouseEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105228,7 +105289,7 @@ pub struct MouseEventInit<'a> {
 unsafe impl Defined for MouseEventInit<'_> {}
 
 /// The [`MultiCacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/MultiCacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MultiCacheQueryOptions<'a> {
     pub ignore_search: Option<bool>,
     pub ignore_method: Option<bool>,
@@ -105239,7 +105300,7 @@ pub struct MultiCacheQueryOptions<'a> {
 unsafe impl Defined for MultiCacheQueryOptions<'_> {}
 
 /// The [`MutationObserverInit`](https://developer.mozilla.org/docs/Web/API/MutationObserverInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct MutationObserverInit<'a> {
     pub child_list: Option<bool>,
     pub attributes: Option<bool>,
@@ -105253,6 +105314,7 @@ pub struct MutationObserverInit<'a> {
 unsafe impl Defined for MutationObserverInit<'_> {}
 
 /// The [`NavigateEventInit`](https://developer.mozilla.org/docs/Web/API/NavigateEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct NavigateEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105274,6 +105336,7 @@ pub struct NavigateEventInit<'a> {
 unsafe impl Defined for NavigateEventInit<'_> {}
 
 /// The [`NavigationCurrentEntryChangeEventInit`](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct NavigationCurrentEntryChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105296,7 +105359,7 @@ pub struct NavigationInterceptOptions<'a> {
 unsafe impl Defined for NavigationInterceptOptions<'_> {}
 
 /// The [`NavigationNavigateOptions`](https://developer.mozilla.org/docs/Web/API/NavigationNavigateOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct NavigationNavigateOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
     pub state: Option<&'a dyn IntoUnknown>,
@@ -105306,7 +105369,7 @@ pub struct NavigationNavigateOptions<'a> {
 unsafe impl Defined for NavigationNavigateOptions<'_> {}
 
 /// The [`NavigationOptions`](https://developer.mozilla.org/docs/Web/API/NavigationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct NavigationOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
 }
@@ -105314,7 +105377,7 @@ pub struct NavigationOptions<'a> {
 unsafe impl Defined for NavigationOptions<'_> {}
 
 /// The [`NavigationReloadOptions`](https://developer.mozilla.org/docs/Web/API/NavigationReloadOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct NavigationReloadOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
     pub state: Option<&'a dyn IntoUnknown>,
@@ -105323,6 +105386,7 @@ pub struct NavigationReloadOptions<'a> {
 unsafe impl Defined for NavigationReloadOptions<'_> {}
 
 /// The [`NavigationUpdateCurrentEntryOptions`](https://developer.mozilla.org/docs/Web/API/NavigationUpdateCurrentEntryOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct NavigationUpdateCurrentEntryOptions<'a> {
     pub state: &'a dyn IntoUnknown,
 }
@@ -105330,7 +105394,7 @@ pub struct NavigationUpdateCurrentEntryOptions<'a> {
 unsafe impl Defined for NavigationUpdateCurrentEntryOptions<'_> {}
 
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct NotificationOptions<'a> {
     pub dir: Option<&'a str>,
     pub lang: Option<&'a str>,
@@ -105352,6 +105416,7 @@ pub struct NotificationOptions<'a> {
 unsafe impl Defined for NotificationOptions<'_> {}
 
 /// The [`OfflineAudioCompletionEventInit`](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct OfflineAudioCompletionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105362,6 +105427,7 @@ pub struct OfflineAudioCompletionEventInit<'a> {
 unsafe impl Defined for OfflineAudioCompletionEventInit<'_> {}
 
 /// The [`OfflineAudioContextOptions`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct OfflineAudioContextOptions<'a> {
     pub number_of_channels: Option<f64>,
     pub length: Option<f64>,
@@ -105372,7 +105438,7 @@ pub struct OfflineAudioContextOptions<'a> {
 unsafe impl Defined for OfflineAudioContextOptions<'_> {}
 
 /// The [`OptionalEffectTiming`](https://developer.mozilla.org/docs/Web/API/OptionalEffectTiming) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct OptionalEffectTiming<'a> {
     pub delay: Option<f64>,
     pub end_delay: Option<f64>,
@@ -105388,7 +105454,7 @@ pub struct OptionalEffectTiming<'a> {
 unsafe impl Defined for OptionalEffectTiming<'_> {}
 
 /// The [`OscillatorOptions`](https://developer.mozilla.org/docs/Web/API/OscillatorOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct OscillatorOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -105402,7 +105468,7 @@ pub struct OscillatorOptions<'a> {
 unsafe impl Defined for OscillatorOptions<'_> {}
 
 /// The [`PageRevealEventInit`](https://developer.mozilla.org/docs/Web/API/PageRevealEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PageRevealEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105413,7 +105479,7 @@ pub struct PageRevealEventInit<'a> {
 unsafe impl Defined for PageRevealEventInit<'_> {}
 
 /// The [`PageSwapEventInit`](https://developer.mozilla.org/docs/Web/API/PageSwapEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PageSwapEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105425,7 +105491,7 @@ pub struct PageSwapEventInit<'a> {
 unsafe impl Defined for PageSwapEventInit<'_> {}
 
 /// The [`PageTransitionEventInit`](https://developer.mozilla.org/docs/Web/API/PageTransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PageTransitionEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105436,7 +105502,7 @@ pub struct PageTransitionEventInit {
 unsafe impl Defined for PageTransitionEventInit {}
 
 /// The [`PannerOptions`](https://developer.mozilla.org/docs/Web/API/PannerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PannerOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -105468,6 +105534,7 @@ pub struct ParseHTMLUnsafeOptions<'a> {
 unsafe impl Defined for ParseHTMLUnsafeOptions<'_> {}
 
 /// The [`PaymentCurrencyAmount`](https://developer.mozilla.org/docs/Web/API/PaymentCurrencyAmount) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentCurrencyAmount<'a> {
     pub currency: &'a str,
     pub value: &'a str,
@@ -105476,6 +105543,7 @@ pub struct PaymentCurrencyAmount<'a> {
 unsafe impl Defined for PaymentCurrencyAmount<'_> {}
 
 /// The [`PaymentDetailsInit`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentDetailsInit<'a> {
     pub display_items: Option<&'a [PaymentItem<'a>]>,
     pub shipping_options: Option<&'a [PaymentShippingOption<'a>]>,
@@ -105487,6 +105555,7 @@ pub struct PaymentDetailsInit<'a> {
 unsafe impl Defined for PaymentDetailsInit<'_> {}
 
 /// The [`PaymentDetailsModifier`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsModifier) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentDetailsModifier<'a> {
     pub supported_methods: &'a str,
     pub total: Option<PaymentItem<'a>>,
@@ -105496,6 +105565,7 @@ pub struct PaymentDetailsModifier<'a> {
 unsafe impl Defined for PaymentDetailsModifier<'_> {}
 
 /// The [`PaymentItem`](https://developer.mozilla.org/docs/Web/API/PaymentItem) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentItem<'a> {
     pub label: &'a str,
     pub amount: PaymentCurrencyAmount<'a>,
@@ -105505,7 +105575,7 @@ pub struct PaymentItem<'a> {
 unsafe impl Defined for PaymentItem<'_> {}
 
 /// The [`PaymentMethodChangeEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PaymentMethodChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105516,6 +105586,7 @@ pub struct PaymentMethodChangeEventInit<'a> {
 unsafe impl Defined for PaymentMethodChangeEventInit<'_> {}
 
 /// The [`PaymentMethodData`](https://developer.mozilla.org/docs/Web/API/PaymentMethodData) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentMethodData<'a> {
     pub supported_methods: &'a str,
 }
@@ -105523,7 +105594,7 @@ pub struct PaymentMethodData<'a> {
 unsafe impl Defined for PaymentMethodData<'_> {}
 
 /// The [`PaymentOptions`](https://developer.mozilla.org/docs/Web/API/PaymentOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PaymentOptions<'a> {
     pub request_payer_name: Option<bool>,
     pub request_billing_address: Option<bool>,
@@ -105536,7 +105607,7 @@ pub struct PaymentOptions<'a> {
 unsafe impl Defined for PaymentOptions<'_> {}
 
 /// The [`PaymentRequestUpdateEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PaymentRequestUpdateEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105546,6 +105617,7 @@ pub struct PaymentRequestUpdateEventInit {
 unsafe impl Defined for PaymentRequestUpdateEventInit {}
 
 /// The [`PaymentShippingOption`](https://developer.mozilla.org/docs/Web/API/PaymentShippingOption) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PaymentShippingOption<'a> {
     pub id: &'a str,
     pub label: &'a str,
@@ -105566,7 +105638,7 @@ pub struct PaymentValidationErrors<'a> {
 unsafe impl Defined for PaymentValidationErrors<'_> {}
 
 /// The [`PerformanceMarkOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMarkOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PerformanceMarkOptions<'a> {
     pub detail: Option<&'a dyn IntoUnknown>,
     pub start_time: Option<f64>,
@@ -105575,7 +105647,7 @@ pub struct PerformanceMarkOptions<'a> {
 unsafe impl Defined for PerformanceMarkOptions<'_> {}
 
 /// The [`PerformanceMeasureOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMeasureOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PerformanceMeasureOptions<'a> {
     pub detail: Option<&'a dyn IntoUnknown>,
     pub start: Option<StrOrNumber<'a>>,
@@ -105586,7 +105658,7 @@ pub struct PerformanceMeasureOptions<'a> {
 unsafe impl Defined for PerformanceMeasureOptions<'_> {}
 
 /// The [`PerformanceObserverCallbackOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverCallbackOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PerformanceObserverCallbackOptions {
     pub dropped_entries_count: Option<f64>,
 }
@@ -105594,7 +105666,7 @@ pub struct PerformanceObserverCallbackOptions {
 unsafe impl Defined for PerformanceObserverCallbackOptions {}
 
 /// The [`PerformanceObserverInit`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PerformanceObserverInit<'a> {
     pub entry_types: Option<&'a [String]>,
     pub r#type: Option<&'a str>,
@@ -105604,7 +105676,7 @@ pub struct PerformanceObserverInit<'a> {
 unsafe impl Defined for PerformanceObserverInit<'_> {}
 
 /// The [`PeriodicWaveConstraints`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveConstraints) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PeriodicWaveConstraints {
     pub disable_normalization: Option<bool>,
 }
@@ -105612,7 +105684,7 @@ pub struct PeriodicWaveConstraints {
 unsafe impl Defined for PeriodicWaveConstraints {}
 
 /// The [`PeriodicWaveOptions`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PeriodicWaveOptions<'a> {
     pub disable_normalization: Option<bool>,
     pub real: Option<&'a [f64]>,
@@ -105622,6 +105694,7 @@ pub struct PeriodicWaveOptions<'a> {
 unsafe impl Defined for PeriodicWaveOptions<'_> {}
 
 /// The [`PictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/PictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105632,7 +105705,7 @@ pub struct PictureInPictureEventInit<'a> {
 unsafe impl Defined for PictureInPictureEventInit<'_> {}
 
 /// The [`PointerEventInit`](https://developer.mozilla.org/docs/Web/API/PointerEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PointerEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105683,7 +105756,7 @@ pub struct PointerEventInit<'a> {
 unsafe impl Defined for PointerEventInit<'_> {}
 
 /// The [`PointerLockOptions`](https://developer.mozilla.org/docs/Web/API/PointerLockOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PointerLockOptions {
     pub unadjusted_movement: Option<bool>,
 }
@@ -105691,7 +105764,7 @@ pub struct PointerLockOptions {
 unsafe impl Defined for PointerLockOptions {}
 
 /// The [`PopStateEventInit`](https://developer.mozilla.org/docs/Web/API/PopStateEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PopStateEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105704,7 +105777,7 @@ pub struct PopStateEventInit<'a> {
 unsafe impl Defined for PopStateEventInit<'_> {}
 
 /// The [`PositionOptions`](https://developer.mozilla.org/docs/Web/API/PositionOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PositionOptions {
     pub enable_high_accuracy: Option<bool>,
     pub timeout: Option<f64>,
@@ -105714,7 +105787,7 @@ pub struct PositionOptions {
 unsafe impl Defined for PositionOptions {}
 
 /// The [`ProgressEventInit`](https://developer.mozilla.org/docs/Web/API/ProgressEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ProgressEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105727,6 +105800,7 @@ pub struct ProgressEventInit {
 unsafe impl Defined for ProgressEventInit {}
 
 /// The [`PromiseRejectionEventInit`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PromiseRejectionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105755,6 +105829,7 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
 unsafe impl Defined for PublicKeyCredentialCreationOptionsJSON<'_> {}
 
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
     pub r#type: &'a str,
     pub id: &'a str,
@@ -105764,6 +105839,7 @@ pub struct PublicKeyCredentialDescriptorJSON<'a> {
 unsafe impl Defined for PublicKeyCredentialDescriptorJSON<'_> {}
 
 /// The [`PublicKeyCredentialRequestOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialRequestOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub challenge: &'a str,
     pub timeout: Option<f64>,
@@ -105777,6 +105853,7 @@ pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
 unsafe impl Defined for PublicKeyCredentialRequestOptionsJSON<'_> {}
 
 /// The [`PublicKeyCredentialUserEntityJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialUserEntityJSON) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct PublicKeyCredentialUserEntityJSON<'a> {
     pub id: &'a str,
     pub name: &'a str,
@@ -105786,7 +105863,7 @@ pub struct PublicKeyCredentialUserEntityJSON<'a> {
 unsafe impl Defined for PublicKeyCredentialUserEntityJSON<'_> {}
 
 /// The [`PushSubscriptionOptionsInit`](https://developer.mozilla.org/docs/Web/API/PushSubscriptionOptionsInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct PushSubscriptionOptionsInit<'a> {
     pub user_visible_only: Option<bool>,
     pub application_server_key: Option<BufferSourceOrStr<'a>>,
@@ -105795,7 +105872,7 @@ pub struct PushSubscriptionOptionsInit<'a> {
 unsafe impl Defined for PushSubscriptionOptionsInit<'_> {}
 
 /// The [`QueuingStrategy`](https://developer.mozilla.org/docs/Web/API/QueuingStrategy) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct QueuingStrategy {
     pub high_water_mark: Option<f64>,
 }
@@ -105803,6 +105880,7 @@ pub struct QueuingStrategy {
 unsafe impl Defined for QueuingStrategy {}
 
 /// The [`QueuingStrategyInit`](https://developer.mozilla.org/docs/Web/API/QueuingStrategyInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct QueuingStrategyInit {
     pub high_water_mark: f64,
 }
@@ -105810,7 +105888,7 @@ pub struct QueuingStrategyInit {
 unsafe impl Defined for QueuingStrategyInit {}
 
 /// The [`ReadableStreamBYOBReaderReadOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReaderReadOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ReadableStreamBYOBReaderReadOptions {
     pub min: Option<f64>,
 }
@@ -105818,7 +105896,7 @@ pub struct ReadableStreamBYOBReaderReadOptions {
 unsafe impl Defined for ReadableStreamBYOBReaderReadOptions {}
 
 /// The [`ReadableStreamGetReaderOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamGetReaderOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ReadableStreamGetReaderOptions<'a> {
     pub mode: Option<&'a str>,
 }
@@ -105826,6 +105904,7 @@ pub struct ReadableStreamGetReaderOptions<'a> {
 unsafe impl Defined for ReadableStreamGetReaderOptions<'_> {}
 
 /// The [`ReadableWritablePair`](https://developer.mozilla.org/docs/Web/API/ReadableWritablePair) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct ReadableWritablePair<'a> {
     pub readable: &'a ReadableStream,
     pub writable: &'a WritableStream,
@@ -105834,7 +105913,7 @@ pub struct ReadableWritablePair<'a> {
 unsafe impl Defined for ReadableWritablePair<'_> {}
 
 /// The [`RegistrationOptions`](https://developer.mozilla.org/docs/Web/API/RegistrationOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RegistrationOptions<'a> {
     pub scope: Option<&'a str>,
     pub r#type: Option<&'a str>,
@@ -105844,7 +105923,7 @@ pub struct RegistrationOptions<'a> {
 unsafe impl Defined for RegistrationOptions<'_> {}
 
 /// The [`ReportingObserverOptions`](https://developer.mozilla.org/docs/Web/API/ReportingObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ReportingObserverOptions<'a> {
     pub types: Option<&'a [String]>,
     pub buffered: Option<bool>,
@@ -105853,7 +105932,7 @@ pub struct ReportingObserverOptions<'a> {
 unsafe impl Defined for ReportingObserverOptions<'_> {}
 
 /// The [`RequestInit`](https://developer.mozilla.org/docs/Web/API/RequestInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RequestInit<'a> {
     pub method: Option<&'a str>,
     pub headers: Option<&'a Headers>,
@@ -105875,7 +105954,7 @@ pub struct RequestInit<'a> {
 unsafe impl Defined for RequestInit<'_> {}
 
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ResizeObserverOptions<'a> {
     pub r#box: Option<&'a str>,
 }
@@ -105883,7 +105962,7 @@ pub struct ResizeObserverOptions<'a> {
 unsafe impl Defined for ResizeObserverOptions<'_> {}
 
 /// The [`ResponseInit`](https://developer.mozilla.org/docs/Web/API/ResponseInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ResponseInit<'a> {
     pub status: Option<f64>,
     pub status_text: Option<&'a str>,
@@ -105893,6 +105972,7 @@ pub struct ResponseInit<'a> {
 unsafe impl Defined for ResponseInit<'_> {}
 
 /// The [`RTCDataChannelEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct RTCDataChannelEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105903,7 +105983,7 @@ pub struct RTCDataChannelEventInit<'a> {
 unsafe impl Defined for RTCDataChannelEventInit<'_> {}
 
 /// The [`RTCDataChannelInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCDataChannelInit<'a> {
     pub ordered: Option<bool>,
     pub max_packet_life_time: Option<f64>,
@@ -105916,7 +105996,7 @@ pub struct RTCDataChannelInit<'a> {
 unsafe impl Defined for RTCDataChannelInit<'_> {}
 
 /// The [`RTCDTMFToneChangeEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCDTMFToneChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105943,6 +106023,7 @@ pub struct RTCEncodedVideoFrameOptions {
 unsafe impl Defined for RTCEncodedVideoFrameOptions {}
 
 /// The [`RTCErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct RTCErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -105953,6 +106034,7 @@ pub struct RTCErrorEventInit<'a> {
 unsafe impl Defined for RTCErrorEventInit<'_> {}
 
 /// The [`RTCErrorInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct RTCErrorInit<'a> {
     pub error_detail: &'a str,
     pub sdp_line_number: Option<f64>,
@@ -105965,7 +106047,7 @@ pub struct RTCErrorInit<'a> {
 unsafe impl Defined for RTCErrorInit<'_> {}
 
 /// The [`RTCLocalIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCLocalIceCandidateInit<'a> {
     pub candidate: Option<&'a str>,
     pub sdp_mid: Option<&'a str>,
@@ -105978,7 +106060,7 @@ pub struct RTCLocalIceCandidateInit<'a> {
 unsafe impl Defined for RTCLocalIceCandidateInit<'_> {}
 
 /// The [`RTCLocalSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCLocalSessionDescriptionInit<'a> {
     pub r#type: Option<&'a str>,
     pub sdp: Option<&'a str>,
@@ -105987,7 +106069,7 @@ pub struct RTCLocalSessionDescriptionInit<'a> {
 unsafe impl Defined for RTCLocalSessionDescriptionInit<'_> {}
 
 /// The [`RTCOfferOptions`](https://developer.mozilla.org/docs/Web/API/RTCOfferOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCOfferOptions {
     pub ice_restart: Option<bool>,
     pub offer_to_receive_audio: Option<bool>,
@@ -105997,6 +106079,7 @@ pub struct RTCOfferOptions {
 unsafe impl Defined for RTCOfferOptions {}
 
 /// The [`RTCPeerConnectionIceErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct RTCPeerConnectionIceErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106011,7 +106094,7 @@ pub struct RTCPeerConnectionIceErrorEventInit<'a> {
 unsafe impl Defined for RTCPeerConnectionIceErrorEventInit<'_> {}
 
 /// The [`RTCPeerConnectionIceEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCPeerConnectionIceEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106023,7 +106106,7 @@ pub struct RTCPeerConnectionIceEventInit<'a> {
 unsafe impl Defined for RTCPeerConnectionIceEventInit<'_> {}
 
 /// The [`RTCRtpTransceiverInit`](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiverInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct RTCRtpTransceiverInit<'a> {
     pub direction: Option<&'a str>,
     pub streams: Option<&'a [&'a MediaStream]>,
@@ -106033,6 +106116,7 @@ pub struct RTCRtpTransceiverInit<'a> {
 unsafe impl Defined for RTCRtpTransceiverInit<'_> {}
 
 /// The [`RTCTrackEventInit`](https://developer.mozilla.org/docs/Web/API/RTCTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct RTCTrackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106046,7 +106130,7 @@ pub struct RTCTrackEventInit<'a> {
 unsafe impl Defined for RTCTrackEventInit<'_> {}
 
 /// The [`SchedulerPostTaskOptions`](https://developer.mozilla.org/docs/Web/API/SchedulerPostTaskOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SchedulerPostTaskOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
     pub priority: Option<&'a str>,
@@ -106056,7 +106140,7 @@ pub struct SchedulerPostTaskOptions<'a> {
 unsafe impl Defined for SchedulerPostTaskOptions<'_> {}
 
 /// The [`ScrollIntoViewOptions`](https://developer.mozilla.org/docs/Web/API/ScrollIntoViewOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ScrollIntoViewOptions<'a> {
     pub behavior: Option<&'a str>,
     pub block: Option<&'a str>,
@@ -106067,7 +106151,7 @@ pub struct ScrollIntoViewOptions<'a> {
 unsafe impl Defined for ScrollIntoViewOptions<'_> {}
 
 /// The [`ScrollTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ScrollTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ScrollTimelineOptions<'a> {
     pub source: Option<&'a Element>,
     pub axis: Option<&'a str>,
@@ -106076,7 +106160,7 @@ pub struct ScrollTimelineOptions<'a> {
 unsafe impl Defined for ScrollTimelineOptions<'_> {}
 
 /// The [`ScrollToOptions`](https://developer.mozilla.org/docs/Web/API/ScrollToOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ScrollToOptions<'a> {
     pub behavior: Option<&'a str>,
     pub left: Option<f64>,
@@ -106086,7 +106170,7 @@ pub struct ScrollToOptions<'a> {
 unsafe impl Defined for ScrollToOptions<'_> {}
 
 /// The [`SecurityPolicyViolationEventInit`](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SecurityPolicyViolationEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106110,6 +106194,7 @@ pub struct SecurityPolicyViolationEventInit<'a> {
 unsafe impl Defined for SecurityPolicyViolationEventInit<'_> {}
 
 /// The [`SerialOptions`](https://developer.mozilla.org/docs/Web/API/SerialOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct SerialOptions<'a> {
     pub baud_rate: f64,
     pub data_bits: Option<f64>,
@@ -106122,7 +106207,7 @@ pub struct SerialOptions<'a> {
 unsafe impl Defined for SerialOptions<'_> {}
 
 /// The [`SerialOutputSignals`](https://developer.mozilla.org/docs/Web/API/SerialOutputSignals) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SerialOutputSignals {
     pub data_terminal_ready: Option<bool>,
     pub request_to_send: Option<bool>,
@@ -106132,7 +106217,7 @@ pub struct SerialOutputSignals {
 unsafe impl Defined for SerialOutputSignals {}
 
 /// The [`SerialPortFilter`](https://developer.mozilla.org/docs/Web/API/SerialPortFilter) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SerialPortFilter<'a> {
     pub usb_vendor_id: Option<f64>,
     pub usb_product_id: Option<f64>,
@@ -106142,7 +106227,7 @@ pub struct SerialPortFilter<'a> {
 unsafe impl Defined for SerialPortFilter<'_> {}
 
 /// The [`SerialPortRequestOptions`](https://developer.mozilla.org/docs/Web/API/SerialPortRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SerialPortRequestOptions<'a> {
     pub filters: Option<&'a [SerialPortFilter<'a>]>,
     pub allowed_bluetooth_service_class_ids: Option<&'a [BluetoothServiceUUID<'a>]>,
@@ -106168,6 +106253,7 @@ pub struct SetHTMLUnsafeOptions<'a> {
 unsafe impl Defined for SetHTMLUnsafeOptions<'_> {}
 
 /// The [`ShadowRootInit`](https://developer.mozilla.org/docs/Web/API/ShadowRootInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct ShadowRootInit<'a> {
     pub mode: &'a str,
     pub delegates_focus: Option<bool>,
@@ -106180,7 +106266,7 @@ pub struct ShadowRootInit<'a> {
 unsafe impl Defined for ShadowRootInit<'_> {}
 
 /// The [`ShareData`](https://developer.mozilla.org/docs/Web/API/ShareData) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ShareData<'a> {
     pub files: Option<&'a [&'a File]>,
     pub title: Option<&'a str>,
@@ -106191,7 +106277,7 @@ pub struct ShareData<'a> {
 unsafe impl Defined for ShareData<'_> {}
 
 /// The [`SharedWorkerOptions`](https://developer.mozilla.org/docs/Web/API/SharedWorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SharedWorkerOptions<'a> {
     pub name: Option<&'a str>,
     pub r#type: Option<&'a str>,
@@ -106202,7 +106288,7 @@ pub struct SharedWorkerOptions<'a> {
 unsafe impl Defined for SharedWorkerOptions<'_> {}
 
 /// The [`ShowPopoverOptions`](https://developer.mozilla.org/docs/Web/API/ShowPopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ShowPopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
 }
@@ -106210,6 +106296,7 @@ pub struct ShowPopoverOptions<'a> {
 unsafe impl Defined for ShowPopoverOptions<'_> {}
 
 /// The [`SpeechRecognitionErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct SpeechRecognitionErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106221,6 +106308,7 @@ pub struct SpeechRecognitionErrorEventInit<'a> {
 unsafe impl Defined for SpeechRecognitionErrorEventInit<'_> {}
 
 /// The [`SpeechRecognitionEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct SpeechRecognitionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106232,6 +106320,7 @@ pub struct SpeechRecognitionEventInit<'a> {
 unsafe impl Defined for SpeechRecognitionEventInit<'_> {}
 
 /// The [`SpeechSynthesisErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct SpeechSynthesisErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106247,6 +106336,7 @@ pub struct SpeechSynthesisErrorEventInit<'a> {
 unsafe impl Defined for SpeechSynthesisErrorEventInit<'_> {}
 
 /// The [`SpeechSynthesisEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct SpeechSynthesisEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106261,7 +106351,7 @@ pub struct SpeechSynthesisEventInit<'a> {
 unsafe impl Defined for SpeechSynthesisEventInit<'_> {}
 
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct StartViewTransitionOptions<'a> {
     pub update: Option<&'a dyn IntoViewTransitionUpdateCallback>,
     pub types: Option<&'a [String]>,
@@ -106270,6 +106360,7 @@ pub struct StartViewTransitionOptions<'a> {
 unsafe impl Defined for StartViewTransitionOptions<'_> {}
 
 /// The [`StaticRangeInit`](https://developer.mozilla.org/docs/Web/API/StaticRangeInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct StaticRangeInit<'a> {
     pub start_container: &'a Node,
     pub start_offset: f64,
@@ -106280,7 +106371,7 @@ pub struct StaticRangeInit<'a> {
 unsafe impl Defined for StaticRangeInit<'_> {}
 
 /// The [`StereoPannerOptions`](https://developer.mozilla.org/docs/Web/API/StereoPannerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct StereoPannerOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -106291,7 +106382,7 @@ pub struct StereoPannerOptions<'a> {
 unsafe impl Defined for StereoPannerOptions<'_> {}
 
 /// The [`StorageEventInit`](https://developer.mozilla.org/docs/Web/API/StorageEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct StorageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106306,7 +106397,7 @@ pub struct StorageEventInit<'a> {
 unsafe impl Defined for StorageEventInit<'_> {}
 
 /// The [`StreamPipeOptions`](https://developer.mozilla.org/docs/Web/API/StreamPipeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct StreamPipeOptions<'a> {
     pub prevent_close: Option<bool>,
     pub prevent_abort: Option<bool>,
@@ -106317,7 +106408,7 @@ pub struct StreamPipeOptions<'a> {
 unsafe impl Defined for StreamPipeOptions<'_> {}
 
 /// The [`StructuredSerializeOptions`](https://developer.mozilla.org/docs/Web/API/StructuredSerializeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct StructuredSerializeOptions<'a> {
     pub transfer: Option<&'a [&'a dyn core::any::Any]>,
 }
@@ -106325,7 +106416,7 @@ pub struct StructuredSerializeOptions<'a> {
 unsafe impl Defined for StructuredSerializeOptions<'_> {}
 
 /// The [`SubmitEventInit`](https://developer.mozilla.org/docs/Web/API/SubmitEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SubmitEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106336,7 +106427,7 @@ pub struct SubmitEventInit<'a> {
 unsafe impl Defined for SubmitEventInit<'_> {}
 
 /// The [`SvcOutputMetadata`](https://developer.mozilla.org/docs/Web/API/SvcOutputMetadata) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SvcOutputMetadata {
     pub temporal_layer_id: Option<f64>,
 }
@@ -106344,7 +106435,7 @@ pub struct SvcOutputMetadata {
 unsafe impl Defined for SvcOutputMetadata {}
 
 /// The [`SVGBoundingBoxOptions`](https://developer.mozilla.org/docs/Web/API/SVGBoundingBoxOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SVGBoundingBoxOptions {
     pub fill: Option<bool>,
     pub stroke: Option<bool>,
@@ -106355,7 +106446,7 @@ pub struct SVGBoundingBoxOptions {
 unsafe impl Defined for SVGBoundingBoxOptions {}
 
 /// The [`TaskControllerInit`](https://developer.mozilla.org/docs/Web/API/TaskControllerInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TaskControllerInit<'a> {
     pub priority: Option<&'a str>,
 }
@@ -106363,6 +106454,7 @@ pub struct TaskControllerInit<'a> {
 unsafe impl Defined for TaskControllerInit<'_> {}
 
 /// The [`TaskPriorityChangeEventInit`](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct TaskPriorityChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106373,7 +106465,7 @@ pub struct TaskPriorityChangeEventInit<'a> {
 unsafe impl Defined for TaskPriorityChangeEventInit<'_> {}
 
 /// The [`TaskSignalAnyInit`](https://developer.mozilla.org/docs/Web/API/TaskSignalAnyInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TaskSignalAnyInit<'a> {
     pub priority: Option<StrOrTaskSignal<'a>>,
 }
@@ -106381,7 +106473,7 @@ pub struct TaskSignalAnyInit<'a> {
 unsafe impl Defined for TaskSignalAnyInit<'_> {}
 
 /// The [`TextDecodeOptions`](https://developer.mozilla.org/docs/Web/API/TextDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TextDecodeOptions {
     pub stream: Option<bool>,
 }
@@ -106389,7 +106481,7 @@ pub struct TextDecodeOptions {
 unsafe impl Defined for TextDecodeOptions {}
 
 /// The [`TextDecoderOptions`](https://developer.mozilla.org/docs/Web/API/TextDecoderOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TextDecoderOptions {
     pub fatal: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "ignoreBOM")]
@@ -106399,7 +106491,7 @@ pub struct TextDecoderOptions {
 unsafe impl Defined for TextDecoderOptions {}
 
 /// The [`TimelineRangeOffset`](https://developer.mozilla.org/docs/Web/API/TimelineRangeOffset) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TimelineRangeOffset<'a> {
     pub range_name: Option<&'a str>,
     pub offset: Option<&'a CSSNumericValue>,
@@ -106408,7 +106500,7 @@ pub struct TimelineRangeOffset<'a> {
 unsafe impl Defined for TimelineRangeOffset<'_> {}
 
 /// The [`ToggleEventInit`](https://developer.mozilla.org/docs/Web/API/ToggleEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ToggleEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106421,7 +106513,7 @@ pub struct ToggleEventInit<'a> {
 unsafe impl Defined for ToggleEventInit<'_> {}
 
 /// The [`TogglePopoverOptions`](https://developer.mozilla.org/docs/Web/API/TogglePopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TogglePopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
     pub force: Option<bool>,
@@ -106430,7 +106522,7 @@ pub struct TogglePopoverOptions<'a> {
 unsafe impl Defined for TogglePopoverOptions<'_> {}
 
 /// The [`TouchEventInit`](https://developer.mozilla.org/docs/Web/API/TouchEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TouchEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106460,6 +106552,7 @@ pub struct TouchEventInit<'a> {
 unsafe impl Defined for TouchEventInit<'_> {}
 
 /// The [`TouchInit`](https://developer.mozilla.org/docs/Web/API/TouchInit) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct TouchInit<'a> {
     pub identifier: f64,
     pub target: &'a EventTarget,
@@ -106481,7 +106574,7 @@ pub struct TouchInit<'a> {
 unsafe impl Defined for TouchInit<'_> {}
 
 /// The [`TrackEventInit`](https://developer.mozilla.org/docs/Web/API/TrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TrackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106492,7 +106585,7 @@ pub struct TrackEventInit<'a> {
 unsafe impl Defined for TrackEventInit<'_> {}
 
 /// The [`TransitionEventInit`](https://developer.mozilla.org/docs/Web/API/TransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct TransitionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106506,7 +106599,7 @@ pub struct TransitionEventInit<'a> {
 unsafe impl Defined for TransitionEventInit<'_> {}
 
 /// The [`UIEventInit`](https://developer.mozilla.org/docs/Web/API/UIEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct UIEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106519,6 +106612,7 @@ pub struct UIEventInit<'a> {
 unsafe impl Defined for UIEventInit<'_> {}
 
 /// The [`UnknownCredentialOptions`](https://developer.mozilla.org/docs/Web/API/UnknownCredentialOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct UnknownCredentialOptions<'a> {
     pub rp_id: &'a str,
     pub credential_id: &'a str,
@@ -106527,7 +106621,7 @@ pub struct UnknownCredentialOptions<'a> {
 unsafe impl Defined for UnknownCredentialOptions<'_> {}
 
 /// The [`URLPatternOptions`](https://developer.mozilla.org/docs/Web/API/URLPatternOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct URLPatternOptions {
     pub ignore_case: Option<bool>,
 }
@@ -106535,7 +106629,7 @@ pub struct URLPatternOptions {
 unsafe impl Defined for URLPatternOptions {}
 
 /// The [`ValidityStateFlags`](https://developer.mozilla.org/docs/Web/API/ValidityStateFlags) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ValidityStateFlags {
     pub value_missing: Option<bool>,
     pub type_mismatch: Option<bool>,
@@ -106560,7 +106654,7 @@ pub struct VideoDecoderInit<'a> {
 unsafe impl Defined for VideoDecoderInit<'_> {}
 
 /// The [`VideoEncoderEncodeOptions`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct VideoEncoderEncodeOptions {
     pub key_frame: Option<bool>,
     pub avc: Option<VideoEncoderEncodeOptionsForAvc>,
@@ -106569,7 +106663,7 @@ pub struct VideoEncoderEncodeOptions {
 unsafe impl Defined for VideoEncoderEncodeOptions {}
 
 /// The [`VideoEncoderEncodeOptionsForAvc`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptionsForAvc) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct VideoEncoderEncodeOptionsForAvc {
     pub quantizer: Option<f64>,
 }
@@ -106604,6 +106698,7 @@ pub struct VideoFrameBufferInit<'a> {
 unsafe impl Defined for VideoFrameBufferInit<'_> {}
 
 /// The [`VideoFrameCallbackMetadata`](https://developer.mozilla.org/docs/Web/API/VideoFrameCallbackMetadata) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct VideoFrameCallbackMetadata {
     pub presentation_time: f64,
     pub expected_display_time: f64,
@@ -106620,7 +106715,7 @@ pub struct VideoFrameCallbackMetadata {
 unsafe impl Defined for VideoFrameCallbackMetadata {}
 
 /// The [`VideoFrameCopyToOptions`](https://developer.mozilla.org/docs/Web/API/VideoFrameCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct VideoFrameCopyToOptions<'a> {
     pub rect: Option<DOMRectInit>,
     pub layout: Option<&'a [PlaneLayout]>,
@@ -106631,7 +106726,7 @@ pub struct VideoFrameCopyToOptions<'a> {
 unsafe impl Defined for VideoFrameCopyToOptions<'_> {}
 
 /// The [`VideoFrameInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct VideoFrameInit<'a> {
     pub duration: Option<f64>,
     pub timestamp: Option<f64>,
@@ -106646,7 +106741,7 @@ pub struct VideoFrameInit<'a> {
 unsafe impl Defined for VideoFrameInit<'_> {}
 
 /// The [`ViewTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ViewTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct ViewTimelineOptions<'a> {
     pub subject: Option<&'a Element>,
     pub axis: Option<&'a str>,
@@ -106656,7 +106751,7 @@ pub struct ViewTimelineOptions<'a> {
 unsafe impl Defined for ViewTimelineOptions<'_> {}
 
 /// The [`WaveShaperOptions`](https://developer.mozilla.org/docs/Web/API/WaveShaperOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WaveShaperOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
@@ -106668,7 +106763,7 @@ pub struct WaveShaperOptions<'a> {
 unsafe impl Defined for WaveShaperOptions<'_> {}
 
 /// The [`WebAssemblyCompileOptions`](https://developer.mozilla.org/docs/Web/API/WebAssemblyCompileOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WebAssemblyCompileOptions<'a> {
     pub imported_string_constants: Option<&'a str>,
     pub builtins: Option<&'a [String]>,
@@ -106677,7 +106772,7 @@ pub struct WebAssemblyCompileOptions<'a> {
 unsafe impl Defined for WebAssemblyCompileOptions<'_> {}
 
 /// The [`WebGLContextEventInit`](https://developer.mozilla.org/docs/Web/API/WebGLContextEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WebGLContextEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106688,7 +106783,7 @@ pub struct WebGLContextEventInit<'a> {
 unsafe impl Defined for WebGLContextEventInit<'_> {}
 
 /// The [`WebTransportErrorOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportErrorOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WebTransportErrorOptions<'a> {
     pub source: Option<&'a str>,
     pub stream_error_code: Option<f64>,
@@ -106697,6 +106792,7 @@ pub struct WebTransportErrorOptions<'a> {
 unsafe impl Defined for WebTransportErrorOptions<'_> {}
 
 /// The [`WebTransportHash`](https://developer.mozilla.org/docs/Web/API/WebTransportHash) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct WebTransportHash<'a> {
     pub algorithm: &'a str,
     pub value: BufferSource<'a>,
@@ -106705,7 +106801,7 @@ pub struct WebTransportHash<'a> {
 unsafe impl Defined for WebTransportHash<'_> {}
 
 /// The [`WebTransportOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WebTransportOptions<'a> {
     pub allow_pooling: Option<bool>,
     pub require_unreliable: Option<bool>,
@@ -106721,7 +106817,7 @@ pub struct WebTransportOptions<'a> {
 unsafe impl Defined for WebTransportOptions<'_> {}
 
 /// The [`WebTransportSendStreamOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WebTransportSendStreamOptions {
     pub send_order: Option<f64>,
     pub wait_until_available: Option<bool>,
@@ -106730,7 +106826,7 @@ pub struct WebTransportSendStreamOptions {
 unsafe impl Defined for WebTransportSendStreamOptions {}
 
 /// The [`WheelEventInit`](https://developer.mozilla.org/docs/Web/API/WheelEventInit) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WheelEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
@@ -106771,7 +106867,7 @@ pub struct WheelEventInit<'a> {
 unsafe impl Defined for WheelEventInit<'_> {}
 
 /// The [`WindowPostMessageOptions`](https://developer.mozilla.org/docs/Web/API/WindowPostMessageOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WindowPostMessageOptions<'a> {
     pub transfer: Option<&'a [&'a dyn core::any::Any]>,
     pub target_origin: Option<&'a str>,
@@ -106780,6 +106876,7 @@ pub struct WindowPostMessageOptions<'a> {
 unsafe impl Defined for WindowPostMessageOptions<'_> {}
 
 /// The [`WorkerAndParameters`](https://developer.mozilla.org/docs/Web/API/WorkerAndParameters) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct WorkerAndParameters<'a> {
     pub worker: &'a Worker,
     pub r#type: Option<&'a str>,
@@ -106788,7 +106885,7 @@ pub struct WorkerAndParameters<'a> {
 unsafe impl Defined for WorkerAndParameters<'_> {}
 
 /// The [`WorkerOptions`](https://developer.mozilla.org/docs/Web/API/WorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WorkerOptions<'a> {
     pub name: Option<&'a str>,
     pub r#type: Option<&'a str>,
@@ -106798,7 +106895,7 @@ pub struct WorkerOptions<'a> {
 unsafe impl Defined for WorkerOptions<'_> {}
 
 /// The [`WorkletOptions`](https://developer.mozilla.org/docs/Web/API/WorkletOptions) dictionary: a JS object of these fields, a `None` one not given.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct WorkletOptions<'a> {
     pub credentials: Option<&'a str>,
 }
@@ -106806,6 +106903,7 @@ pub struct WorkletOptions<'a> {
 unsafe impl Defined for WorkletOptions<'_> {}
 
 /// The [`WriteParams`](https://developer.mozilla.org/docs/Web/API/WriteParams) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
 pub struct WriteParams<'a> {
     pub r#type: &'a str,
     pub size: Option<f64>,
@@ -106817,6 +106915,7 @@ unsafe impl Defined for WriteParams<'_> {}
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum AddEventListenerOptionsOrBool<'a> {
     AddEventListenerOptions(AddEventListenerOptions<'a>),
     Bool(bool),
@@ -106856,6 +106955,7 @@ impl<'a> AddEventListenerOptionsOrBool<'a> {
 
 /// `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum AllowSharedBufferSource<'a> {
     ArrayBuffer(&'a ArrayBuffer),
     SharedArrayBuffer(&'a SharedArrayBuffer),
@@ -106977,6 +107077,8 @@ impl IntoAllowSharedBufferSource for &Float32Array {}
 impl IntoAllowSharedBufferSource for &Float64Array {}
 impl IntoAllowSharedBufferSource for &DataView {}
 impl IntoAllowSharedBufferSource for AllowSharedBufferSource<'_> {}
+impl IntoAllowSharedBufferSource for ArrayBufferView<'_> {}
+impl IntoAllowSharedBufferSource for BufferSource<'_> {}
 /// A rest parameter of `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`s takes each member (ADR 0640).
 impl<A: IntoAllowSharedBufferSource> Takes<A> for dyn IntoAllowSharedBufferSource {}
 
@@ -106991,6 +107093,7 @@ impl<'a> AllowSharedBufferSource<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ArrayBufferView<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -107110,6 +107213,7 @@ impl<'a> ArrayBufferView<'a> {
 
 /// `Blob | MediaSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BlobOrMediaSource<'a> {
     Blob(&'a Blob),
     MediaSource(&'a MediaSource),
@@ -107156,6 +107260,7 @@ impl<'a> BlobOrMediaSource<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BlobPart<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -107292,6 +107397,13 @@ impl IntoBlobPart for &Blob {}
 impl IntoBlobPart for &File {}
 impl IntoBlobPart for &str {}
 impl IntoBlobPart for BlobPart<'_> {}
+impl IntoBlobPart for FormDataEntryValue<'_> {}
+impl IntoBlobPart for ArrayBufferView<'_> {}
+impl IntoBlobPart for StrOrArrayBuffer<'_> {}
+impl IntoBlobPart for BufferSourceOrBlobOrStr<'_> {}
+impl IntoBlobPart for StrOrBufferSource<'_> {}
+impl IntoBlobPart for BufferSource<'_> {}
+impl IntoBlobPart for BufferSourceOrStr<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`s takes each member (ADR 0640).
 impl<A: IntoBlobPart> Takes<A> for dyn IntoBlobPart {}
 
@@ -107306,6 +107418,7 @@ impl<'a> BlobPart<'a> {
 
 /// `BluetoothServiceUUID`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BluetoothServiceUUID<'a> {
     Str(&'a str),
     Number(f64),
@@ -107331,6 +107444,9 @@ pub trait IntoBluetoothServiceUUID: sealed::Sealed {}
 impl IntoBluetoothServiceUUID for &str {}
 impl IntoBluetoothServiceUUID for f64 {}
 impl IntoBluetoothServiceUUID for BluetoothServiceUUID<'_> {}
+impl IntoBluetoothServiceUUID for StrOrNumber<'_> {}
+impl IntoBluetoothServiceUUID for NumberOrStr<'_> {}
+impl IntoBluetoothServiceUUID for LineAndPositionSetting<'_> {}
 /// A rest parameter of `BluetoothServiceUUID`s takes each member (ADR 0640).
 impl<A: IntoBluetoothServiceUUID> Takes<A> for dyn IntoBluetoothServiceUUID {}
 
@@ -107345,6 +107461,7 @@ impl<'a> BluetoothServiceUUID<'a> {
 
 /// `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BodyInit<'a> {
     ReadableStream(&'a ReadableStream),
     Blob(&'a Blob),
@@ -107512,6 +107629,15 @@ impl IntoBodyInit for &FormData {}
 impl IntoBodyInit for &URLSearchParams {}
 impl IntoBodyInit for &str {}
 impl IntoBodyInit for BodyInit<'_> {}
+impl IntoBodyInit for FormDataEntryValue<'_> {}
+impl IntoBodyInit for BlobPart<'_> {}
+impl IntoBodyInit for ArrayBufferView<'_> {}
+impl IntoBodyInit for FileOrStrOrFormData<'_> {}
+impl IntoBodyInit for StrOrArrayBuffer<'_> {}
+impl IntoBodyInit for BufferSourceOrBlobOrStr<'_> {}
+impl IntoBodyInit for StrOrBufferSource<'_> {}
+impl IntoBodyInit for BufferSource<'_> {}
+impl IntoBodyInit for BufferSourceOrStr<'_> {}
 /// A rest parameter of `ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`s takes each member (ADR 0640).
 impl<A: IntoBodyInit> Takes<A> for dyn IntoBodyInit {}
 
@@ -107526,6 +107652,7 @@ impl<'a> BodyInit<'a> {
 
 /// `boolean | ImportNodeOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BoolOrImportNodeOptions<'a> {
     Bool(bool),
     ImportNodeOptions(ImportNodeOptions<'a>),
@@ -107604,6 +107731,7 @@ impl BoolOrMediaTrackConstraints {
 
 /// `boolean | number | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BoolOrNumberOrStr<'a> {
     Bool(bool),
     Number(f64),
@@ -107637,6 +107765,11 @@ impl IntoBoolOrNumberOrStr for bool {}
 impl IntoBoolOrNumberOrStr for f64 {}
 impl IntoBoolOrNumberOrStr for &str {}
 impl IntoBoolOrNumberOrStr for BoolOrNumberOrStr<'_> {}
+impl IntoBoolOrNumberOrStr for StrOrNumber<'_> {}
+impl IntoBoolOrNumberOrStr for NumberOrStr<'_> {}
+impl IntoBoolOrNumberOrStr for BoolOrStr<'_> {}
+impl IntoBoolOrNumberOrStr for BluetoothServiceUUID<'_> {}
+impl IntoBoolOrNumberOrStr for LineAndPositionSetting<'_> {}
 /// A rest parameter of `boolean | number | string`s takes each member (ADR 0640).
 impl<A: IntoBoolOrNumberOrStr> Takes<A> for dyn IntoBoolOrNumberOrStr {}
 
@@ -107651,6 +107784,7 @@ impl<'a> BoolOrNumberOrStr<'a> {
 
 /// `boolean | ScrollIntoViewOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BoolOrScrollIntoViewOptions<'a> {
     Bool(bool),
     ScrollIntoViewOptions(ScrollIntoViewOptions<'a>),
@@ -107690,6 +107824,7 @@ impl<'a> BoolOrScrollIntoViewOptions<'a> {
 
 /// `boolean | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BoolOrStr<'a> {
     Bool(bool),
     Str(&'a str),
@@ -107729,6 +107864,7 @@ impl<'a> BoolOrStr<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BufferSource<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -107842,6 +107978,7 @@ impl IntoBufferSource for &Float64Array {}
 impl IntoBufferSource for &DataView {}
 impl IntoBufferSource for &ArrayBuffer {}
 impl IntoBufferSource for BufferSource<'_> {}
+impl IntoBufferSource for ArrayBufferView<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`s takes each member (ADR 0640).
 impl<A: IntoBufferSource> Takes<A> for dyn IntoBufferSource {}
 
@@ -107856,6 +107993,7 @@ impl<'a> BufferSource<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BufferSourceOrBlobOrStr<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -107992,6 +108130,13 @@ impl IntoBufferSourceOrBlobOrStr for &Blob {}
 impl IntoBufferSourceOrBlobOrStr for &File {}
 impl IntoBufferSourceOrBlobOrStr for &str {}
 impl IntoBufferSourceOrBlobOrStr for BufferSourceOrBlobOrStr<'_> {}
+impl IntoBufferSourceOrBlobOrStr for FormDataEntryValue<'_> {}
+impl IntoBufferSourceOrBlobOrStr for BlobPart<'_> {}
+impl IntoBufferSourceOrBlobOrStr for ArrayBufferView<'_> {}
+impl IntoBufferSourceOrBlobOrStr for StrOrArrayBuffer<'_> {}
+impl IntoBufferSourceOrBlobOrStr for StrOrBufferSource<'_> {}
+impl IntoBufferSourceOrBlobOrStr for BufferSource<'_> {}
+impl IntoBufferSourceOrBlobOrStr for BufferSourceOrStr<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string`s takes each member (ADR 0640).
 impl<A: IntoBufferSourceOrBlobOrStr> Takes<A> for dyn IntoBufferSourceOrBlobOrStr {}
 
@@ -108127,6 +108272,8 @@ impl IntoBufferSourceOrJsonWebKey for &DataView {}
 impl IntoBufferSourceOrJsonWebKey for &ArrayBuffer {}
 impl IntoBufferSourceOrJsonWebKey for JsonWebKey {}
 impl IntoBufferSourceOrJsonWebKey for BufferSourceOrJsonWebKey<'_> {}
+impl IntoBufferSourceOrJsonWebKey for ArrayBufferView<'_> {}
+impl IntoBufferSourceOrJsonWebKey for BufferSource<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | JsonWebKey`s takes each member (ADR 0640).
 impl<A: IntoBufferSourceOrJsonWebKey> Takes<A> for dyn IntoBufferSourceOrJsonWebKey {}
 
@@ -108141,6 +108288,7 @@ impl<'a> BufferSourceOrJsonWebKey<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum BufferSourceOrStr<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -108262,6 +108410,10 @@ impl IntoBufferSourceOrStr for &DataView {}
 impl IntoBufferSourceOrStr for &ArrayBuffer {}
 impl IntoBufferSourceOrStr for &str {}
 impl IntoBufferSourceOrStr for BufferSourceOrStr<'_> {}
+impl IntoBufferSourceOrStr for ArrayBufferView<'_> {}
+impl IntoBufferSourceOrStr for StrOrArrayBuffer<'_> {}
+impl IntoBufferSourceOrStr for StrOrBufferSource<'_> {}
+impl IntoBufferSourceOrStr for BufferSource<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | string`s takes each member (ADR 0640).
 impl<A: IntoBufferSourceOrStr> Takes<A> for dyn IntoBufferSourceOrStr {}
 
@@ -108276,6 +108428,7 @@ impl<'a> BufferSourceOrStr<'a> {
 
 /// `CanvasImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CanvasImageSource<'a> {
     HTMLImageElement(&'a HTMLImageElement),
     SVGImageElement(&'a SVGImageElement),
@@ -108341,6 +108494,8 @@ impl IntoCanvasImageSource for &ImageBitmap {}
 impl IntoCanvasImageSource for &OffscreenCanvas {}
 impl IntoCanvasImageSource for &VideoFrame {}
 impl IntoCanvasImageSource for CanvasImageSource<'_> {}
+impl IntoCanvasImageSource for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+impl IntoCanvasImageSource for HTMLVideoElementOrVideoFrame<'_> {}
 /// A rest parameter of `CanvasImageSource`s takes each member (ADR 0640).
 impl<A: IntoCanvasImageSource> Takes<A> for dyn IntoCanvasImageSource {}
 
@@ -108355,6 +108510,7 @@ impl<'a> CanvasImageSource<'a> {
 
 /// `CSSNumberish`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CSSNumberish<'a> {
     Number(f64),
     CSSNumericValue(&'a CSSNumericValue),
@@ -108457,6 +108613,7 @@ impl<'a> CSSNumberish<'a> {
 
 /// `CSSNumericValue | CSSKeywordValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CSSNumericValueOrCSSKeywordValue<'a> {
     CSSNumericValue(&'a CSSNumericValue),
     CSSKeywordValue(&'a CSSKeywordValue),
@@ -108559,6 +108716,7 @@ impl<'a> CSSNumericValueOrCSSKeywordValue<'a> {
 
 /// `CSSPerspectiveValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CSSPerspectiveValue<'a> {
     CSSNumericValue(&'a CSSNumericValue),
     Str(&'a str),
@@ -108655,6 +108813,7 @@ impl IntoCSSPerspectiveValue for &CSSUnitValue {}
 impl IntoCSSPerspectiveValue for &str {}
 impl IntoCSSPerspectiveValue for &CSSKeywordValue {}
 impl IntoCSSPerspectiveValue for CSSPerspectiveValue<'_> {}
+impl IntoCSSPerspectiveValue for CSSNumericValueOrCSSKeywordValue<'_> {}
 /// A rest parameter of `CSSPerspectiveValue`s takes each member (ADR 0640).
 impl<A: IntoCSSPerspectiveValue> Takes<A> for dyn IntoCSSPerspectiveValue {}
 
@@ -108669,6 +108828,7 @@ impl<'a> CSSPerspectiveValue<'a> {
 
 /// `CSSStyleValue | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CSSStyleValueOrStr<'a> {
     CSSStyleValue(&'a CSSStyleValue),
     Str(&'a str),
@@ -108792,6 +108952,8 @@ impl IntoCSSStyleValueOrStr for &CSSUnitValue {}
 impl IntoCSSStyleValueOrStr for &CSSUnparsedValue {}
 impl IntoCSSStyleValueOrStr for &str {}
 impl IntoCSSStyleValueOrStr for CSSStyleValueOrStr<'_> {}
+impl IntoCSSStyleValueOrStr for CSSPerspectiveValue<'_> {}
+impl IntoCSSStyleValueOrStr for CSSNumericValueOrCSSKeywordValue<'_> {}
 /// A rest parameter of `CSSStyleValue | string`s takes each member (ADR 0640).
 impl<A: IntoCSSStyleValueOrStr> Takes<A> for dyn IntoCSSStyleValueOrStr {}
 
@@ -108806,6 +108968,7 @@ impl<'a> CSSStyleValueOrStr<'a> {
 
 /// `CSSUnparsedSegment`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum CSSUnparsedSegment<'a> {
     Str(&'a str),
     CSSVariableReferenceValue(&'a CSSVariableReferenceValue),
@@ -108845,6 +109008,7 @@ impl<'a> CSSUnparsedSegment<'a> {
 
 /// `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum DocumentOrXMLHttpRequestBodyInit<'a> {
     Document(&'a Document),
     Blob(&'a Blob),
@@ -109012,6 +109176,15 @@ impl IntoDocumentOrXMLHttpRequestBodyInit for &FormData {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &URLSearchParams {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &str {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for DocumentOrXMLHttpRequestBodyInit<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for FormDataEntryValue<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for BlobPart<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for ArrayBufferView<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for FileOrStrOrFormData<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for StrOrArrayBuffer<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for BufferSourceOrBlobOrStr<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for StrOrBufferSource<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for BufferSource<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for BufferSourceOrStr<'_> {}
 /// A rest parameter of `Document | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string`s takes each member (ADR 0640).
 impl<A: IntoDocumentOrXMLHttpRequestBodyInit> Takes<A> for dyn IntoDocumentOrXMLHttpRequestBodyInit {}
 
@@ -109026,6 +109199,7 @@ impl<'a> DocumentOrXMLHttpRequestBodyInit<'a> {
 
 /// `Element | Document`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ElementOrDocument<'a> {
     Element(&'a Element),
     Document(&'a Document),
@@ -110066,6 +110240,8 @@ impl IntoElementOrDocument for &MathMLElement {}
 impl IntoElementOrDocument for &Document {}
 impl IntoElementOrDocument for &XMLDocument {}
 impl IntoElementOrDocument for ElementOrDocument<'_> {}
+impl IntoElementOrDocument for HTMLOrSVGScriptElement<'_> {}
+impl IntoElementOrDocument for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `Element | Document`s takes each member (ADR 0640).
 impl<A: IntoElementOrDocument> Takes<A> for dyn IntoElementOrDocument {}
 
@@ -110080,6 +110256,7 @@ impl<'a> ElementOrDocument<'a> {
 
 /// `Element | ProcessingInstruction`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ElementOrProcessingInstruction<'a> {
     Element(&'a Element),
     ProcessingInstruction(&'a ProcessingInstruction),
@@ -111113,6 +111290,8 @@ impl IntoElementOrProcessingInstruction for &HTMLUnknownElement {}
 impl IntoElementOrProcessingInstruction for &MathMLElement {}
 impl IntoElementOrProcessingInstruction for &ProcessingInstruction {}
 impl IntoElementOrProcessingInstruction for ElementOrProcessingInstruction<'_> {}
+impl IntoElementOrProcessingInstruction for HTMLOrSVGScriptElement<'_> {}
+impl IntoElementOrProcessingInstruction for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `Element | ProcessingInstruction`s takes each member (ADR 0640).
 impl<A: IntoElementOrProcessingInstruction> Takes<A> for dyn IntoElementOrProcessingInstruction {}
 
@@ -111127,6 +111306,7 @@ impl<'a> ElementOrProcessingInstruction<'a> {
 
 /// `Element | Text`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ElementOrText<'a> {
     Element(&'a Element),
     Text(&'a Text),
@@ -112167,6 +112347,8 @@ impl IntoElementOrText for &MathMLElement {}
 impl IntoElementOrText for &Text {}
 impl IntoElementOrText for &CDATASection {}
 impl IntoElementOrText for ElementOrText<'_> {}
+impl IntoElementOrText for HTMLOrSVGScriptElement<'_> {}
+impl IntoElementOrText for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `Element | Text`s takes each member (ADR 0640).
 impl<A: IntoElementOrText> Takes<A> for dyn IntoElementOrText {}
 
@@ -112181,6 +112363,7 @@ impl<'a> ElementOrText<'a> {
 
 /// `EventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum EventListenerOptionsOrBool {
     EventListenerOptions(EventListenerOptions),
     Bool(bool),
@@ -112207,6 +112390,7 @@ impl IntoEventListenerOptionsOrBool for EventListenerOptions {}
 impl IntoEventListenerOptionsOrBool for AddEventListenerOptions<'_> {}
 impl IntoEventListenerOptionsOrBool for bool {}
 impl IntoEventListenerOptionsOrBool for EventListenerOptionsOrBool {}
+impl IntoEventListenerOptionsOrBool for AddEventListenerOptionsOrBool<'_> {}
 /// A rest parameter of `EventListenerOptions | boolean`s takes each member (ADR 0640).
 impl<A: IntoEventListenerOptionsOrBool> Takes<A> for dyn IntoEventListenerOptionsOrBool {}
 
@@ -112221,6 +112405,7 @@ impl EventListenerOptionsOrBool {
 
 /// `Event | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum EventOrStr<'a> {
     Event(&'a Event),
     Str(&'a str),
@@ -112743,6 +112928,7 @@ impl<'a> EventOrStr<'a> {
 
 /// `File | string | FormData`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum FileOrStrOrFormData<'a> {
     File(&'a File),
     Str(&'a str),
@@ -112776,6 +112962,7 @@ impl IntoFileOrStrOrFormData for &File {}
 impl IntoFileOrStrOrFormData for &str {}
 impl IntoFileOrStrOrFormData for &FormData {}
 impl IntoFileOrStrOrFormData for FileOrStrOrFormData<'_> {}
+impl IntoFileOrStrOrFormData for FormDataEntryValue<'_> {}
 /// A rest parameter of `File | string | FormData`s takes each member (ADR 0640).
 impl<A: IntoFileOrStrOrFormData> Takes<A> for dyn IntoFileOrStrOrFormData {}
 
@@ -112790,6 +112977,7 @@ impl<'a> FileOrStrOrFormData<'a> {
 
 /// `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum FileSystemWriteChunkType<'a> {
     Int8Array(&'a Int8Array),
     Int16Array(&'a Int16Array),
@@ -112934,6 +113122,14 @@ impl IntoFileSystemWriteChunkType for &File {}
 impl IntoFileSystemWriteChunkType for &str {}
 impl IntoFileSystemWriteChunkType for WriteParams<'_> {}
 impl IntoFileSystemWriteChunkType for FileSystemWriteChunkType<'_> {}
+impl IntoFileSystemWriteChunkType for FormDataEntryValue<'_> {}
+impl IntoFileSystemWriteChunkType for BlobPart<'_> {}
+impl IntoFileSystemWriteChunkType for ArrayBufferView<'_> {}
+impl IntoFileSystemWriteChunkType for StrOrArrayBuffer<'_> {}
+impl IntoFileSystemWriteChunkType for BufferSourceOrBlobOrStr<'_> {}
+impl IntoFileSystemWriteChunkType for StrOrBufferSource<'_> {}
+impl IntoFileSystemWriteChunkType for BufferSource<'_> {}
+impl IntoFileSystemWriteChunkType for BufferSourceOrStr<'_> {}
 /// A rest parameter of `Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | Blob | string | WriteParams`s takes each member (ADR 0640).
 impl<A: IntoFileSystemWriteChunkType> Takes<A> for dyn IntoFileSystemWriteChunkType {}
 
@@ -112948,6 +113144,7 @@ impl<'a> FileSystemWriteChunkType<'a> {
 
 /// `Float32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum Float32List<'a> {
     Float32Array(&'a Float32Array),
     List(&'a [f64]),
@@ -112987,6 +113184,7 @@ impl<'a> Float32List<'a> {
 
 /// `FormDataEntryValue`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum FormDataEntryValue<'a> {
     File(&'a File),
     Str(&'a str),
@@ -113026,6 +113224,7 @@ impl<'a> FormDataEntryValue<'a> {
 
 /// `Text | Element | Document`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GeometryNode<'a> {
     Text(&'a Text),
     Element(&'a Element),
@@ -114081,6 +114280,10 @@ impl IntoGeometryNode for &MathMLElement {}
 impl IntoGeometryNode for &Document {}
 impl IntoGeometryNode for &XMLDocument {}
 impl IntoGeometryNode for GeometryNode<'_> {}
+impl IntoGeometryNode for HTMLOrSVGScriptElement<'_> {}
+impl IntoGeometryNode for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
+impl IntoGeometryNode for ElementOrText<'_> {}
+impl IntoGeometryNode for ElementOrDocument<'_> {}
 /// A rest parameter of `Text | Element | Document`s takes each member (ADR 0640).
 impl<A: IntoGeometryNode> Takes<A> for dyn IntoGeometryNode {}
 
@@ -114095,6 +114298,7 @@ impl<'a> GeometryNode<'a> {
 
 /// `GPUBindingResource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUBindingResource<'a> {
     GPUSampler(&'a GPUSampler),
     GPUTexture(&'a GPUTexture),
@@ -114152,6 +114356,7 @@ impl IntoGPUBindingResource for &GPUBuffer {}
 impl IntoGPUBindingResource for GPUBufferBinding<'_> {}
 impl IntoGPUBindingResource for &GPUExternalTexture {}
 impl IntoGPUBindingResource for GPUBindingResource<'_> {}
+impl IntoGPUBindingResource for GPUTextureOrGPUTextureView<'_> {}
 /// A rest parameter of `GPUBindingResource`s takes each member (ADR 0640).
 impl<A: IntoGPUBindingResource> Takes<A> for dyn IntoGPUBindingResource {}
 
@@ -114166,6 +114371,7 @@ impl<'a> GPUBindingResource<'a> {
 
 /// `GPUColor`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUColor<'a> {
     List(&'a [f64]),
     GPUColorDict(GPUColorDict),
@@ -114205,6 +114411,7 @@ impl<'a> GPUColor<'a> {
 
 /// `GPUCopyExternalImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUCopyExternalImageSource<'a> {
     ImageBitmap(&'a ImageBitmap),
     ImageData(&'a ImageData),
@@ -114270,6 +114477,9 @@ impl IntoGPUCopyExternalImageSource for &VideoFrame {}
 impl IntoGPUCopyExternalImageSource for &HTMLCanvasElement {}
 impl IntoGPUCopyExternalImageSource for &OffscreenCanvas {}
 impl IntoGPUCopyExternalImageSource for GPUCopyExternalImageSource<'_> {}
+impl IntoGPUCopyExternalImageSource for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+impl IntoGPUCopyExternalImageSource for HTMLVideoElementOrVideoFrame<'_> {}
+impl IntoGPUCopyExternalImageSource for TexImageSource<'_> {}
 /// A rest parameter of `GPUCopyExternalImageSource`s takes each member (ADR 0640).
 impl<A: IntoGPUCopyExternalImageSource> Takes<A> for dyn IntoGPUCopyExternalImageSource {}
 
@@ -114284,6 +114494,7 @@ impl<'a> GPUCopyExternalImageSource<'a> {
 
 /// `GPUExtent3D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUExtent3D<'a> {
     List(&'a [f64]),
     GPUExtent3DDict(GPUExtent3DDict),
@@ -114323,6 +114534,7 @@ impl<'a> GPUExtent3D<'a> {
 
 /// `GPUOrigin2D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUOrigin2D<'a> {
     List(&'a [f64]),
     GPUOrigin2DDict(GPUOrigin2DDict),
@@ -114362,6 +114574,7 @@ impl<'a> GPUOrigin2D<'a> {
 
 /// `GPUOrigin3D`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUOrigin3D<'a> {
     List(&'a [f64]),
     GPUOrigin3DDict(GPUOrigin3DDict),
@@ -114401,6 +114614,7 @@ impl<'a> GPUOrigin3D<'a> {
 
 /// `GPUPipelineLayout | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUPipelineLayoutOrStr<'a> {
     GPUPipelineLayout(&'a GPUPipelineLayout),
     Str(&'a str),
@@ -114440,6 +114654,7 @@ impl<'a> GPUPipelineLayoutOrStr<'a> {
 
 /// `GPUTexture | GPUTextureView`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum GPUTextureOrGPUTextureView<'a> {
     GPUTexture(&'a GPUTexture),
     GPUTextureView(&'a GPUTextureView),
@@ -114479,6 +114694,7 @@ impl<'a> GPUTextureOrGPUTextureView<'a> {
 
 /// `HTMLCanvasElement | OffscreenCanvas`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLCanvasElementOrOffscreenCanvas<'a> {
     HTMLCanvasElement(&'a HTMLCanvasElement),
     OffscreenCanvas(&'a OffscreenCanvas),
@@ -114518,6 +114734,7 @@ impl<'a> HTMLCanvasElementOrOffscreenCanvas<'a> {
 
 /// `HTMLCollection | Element`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLCollectionOrElement<'a> {
     HTMLCollection(&'a HTMLCollection),
     Element(&'a Element),
@@ -115565,6 +115782,8 @@ impl IntoHTMLCollectionOrElement for &HTMLParamElement {}
 impl IntoHTMLCollectionOrElement for &HTMLUnknownElement {}
 impl IntoHTMLCollectionOrElement for &MathMLElement {}
 impl IntoHTMLCollectionOrElement for HTMLCollectionOrElement<'_> {}
+impl IntoHTMLCollectionOrElement for HTMLOrSVGScriptElement<'_> {}
+impl IntoHTMLCollectionOrElement for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `HTMLCollection | Element`s takes each member (ADR 0640).
 impl<A: IntoHTMLCollectionOrElement> Takes<A> for dyn IntoHTMLCollectionOrElement {}
 
@@ -115579,6 +115798,7 @@ impl<'a> HTMLCollectionOrElement<'a> {
 
 /// `HTMLElement | number`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLElementOrNumber<'a> {
     HTMLElement(&'a HTMLElement),
     Number(f64),
@@ -116101,6 +116321,7 @@ impl IntoHTMLElementOrNumber for &HTMLParamElement {}
 impl IntoHTMLElementOrNumber for &HTMLUnknownElement {}
 impl IntoHTMLElementOrNumber for f64 {}
 impl IntoHTMLElementOrNumber for HTMLElementOrNumber<'_> {}
+impl IntoHTMLElementOrNumber for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `HTMLElement | number`s takes each member (ADR 0640).
 impl<A: IntoHTMLElementOrNumber> Takes<A> for dyn IntoHTMLElementOrNumber {}
 
@@ -116115,6 +116336,7 @@ impl<'a> HTMLElementOrNumber<'a> {
 
 /// `HTMLOptionElement | HTMLOptGroupElement`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLOptionElementOrHTMLOptGroupElement<'a> {
     HTMLOptionElement(&'a HTMLOptionElement),
     HTMLOptGroupElement(&'a HTMLOptGroupElement),
@@ -116154,6 +116376,7 @@ impl<'a> HTMLOptionElementOrHTMLOptGroupElement<'a> {
 
 /// `HTMLOrSVGScriptElement`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLOrSVGScriptElement<'a> {
     HTMLScriptElement(&'a HTMLScriptElement),
     SVGScriptElement(&'a SVGScriptElement),
@@ -116193,6 +116416,7 @@ impl<'a> HTMLOrSVGScriptElement<'a> {
 
 /// `HTMLVideoElement | VideoFrame`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum HTMLVideoElementOrVideoFrame<'a> {
     HTMLVideoElement(&'a HTMLVideoElement),
     VideoFrame(&'a VideoFrame),
@@ -116232,6 +116456,7 @@ impl<'a> HTMLVideoElementOrVideoFrame<'a> {
 
 /// `IDBObjectStore | IDBIndex`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum IDBObjectStoreOrIDBIndex<'a> {
     IDBObjectStore(&'a IDBObjectStore),
     IDBIndex(&'a IDBIndex),
@@ -116271,6 +116496,7 @@ impl<'a> IDBObjectStoreOrIDBIndex<'a> {
 
 /// `IDBObjectStore | IDBIndex | IDBCursor`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum IDBObjectStoreOrIDBIndexOrIDBCursor<'a> {
     IDBObjectStore(&'a IDBObjectStore),
     IDBIndex(&'a IDBIndex),
@@ -116311,6 +116537,7 @@ impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBIndex {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBCursor {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for &IDBCursorWithValue {}
 impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for IDBObjectStoreOrIDBIndexOrIDBCursor<'_> {}
+impl IntoIDBObjectStoreOrIDBIndexOrIDBCursor for IDBObjectStoreOrIDBIndex<'_> {}
 /// A rest parameter of `IDBObjectStore | IDBIndex | IDBCursor`s takes each member (ADR 0640).
 impl<A: IntoIDBObjectStoreOrIDBIndexOrIDBCursor> Takes<A> for dyn IntoIDBObjectStoreOrIDBIndexOrIDBCursor {}
 
@@ -116325,6 +116552,7 @@ impl<'a> IDBObjectStoreOrIDBIndexOrIDBCursor<'a> {
 
 /// `ImageBitmapSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ImageBitmapSource<'a> {
     HTMLImageElement(&'a HTMLImageElement),
     SVGImageElement(&'a SVGImageElement),
@@ -116413,6 +116641,11 @@ impl IntoImageBitmapSource for &Blob {}
 impl IntoImageBitmapSource for &File {}
 impl IntoImageBitmapSource for &ImageData {}
 impl IntoImageBitmapSource for ImageBitmapSource<'_> {}
+impl IntoImageBitmapSource for CanvasImageSource<'_> {}
+impl IntoImageBitmapSource for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+impl IntoImageBitmapSource for HTMLVideoElementOrVideoFrame<'_> {}
+impl IntoImageBitmapSource for GPUCopyExternalImageSource<'_> {}
+impl IntoImageBitmapSource for TexImageSource<'_> {}
 /// A rest parameter of `ImageBitmapSource`s takes each member (ADR 0640).
 impl<A: IntoImageBitmapSource> Takes<A> for dyn IntoImageBitmapSource {}
 
@@ -116427,6 +116660,7 @@ impl<'a> ImageBitmapSource<'a> {
 
 /// `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ImageBufferSource<'a> {
     ArrayBuffer(&'a ArrayBuffer),
     SharedArrayBuffer(&'a SharedArrayBuffer),
@@ -116563,6 +116797,9 @@ impl IntoImageBufferSource for &DataView {}
 impl IntoImageBufferSource for &ReadableStream {}
 impl IntoImageBufferSource for &WebTransportReceiveStream {}
 impl IntoImageBufferSource for ImageBufferSource<'_> {}
+impl IntoImageBufferSource for AllowSharedBufferSource<'_> {}
+impl IntoImageBufferSource for ArrayBufferView<'_> {}
+impl IntoImageBufferSource for BufferSource<'_> {}
 /// A rest parameter of `ArrayBuffer | SharedArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ReadableStream`s takes each member (ADR 0640).
 impl<A: IntoImageBufferSource> Takes<A> for dyn IntoImageBufferSource {}
 
@@ -116577,6 +116814,7 @@ impl<'a> ImageBufferSource<'a> {
 
 /// `Int32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum Int32List<'a> {
     Int32Array(&'a Int32Array),
     List(&'a [f64]),
@@ -116616,6 +116854,7 @@ impl<'a> Int32List<'a> {
 
 /// `LineAndPositionSetting`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum LineAndPositionSetting<'a> {
     Number(f64),
     Str(&'a str),
@@ -116641,6 +116880,9 @@ pub trait IntoLineAndPositionSetting: sealed::Sealed {}
 impl IntoLineAndPositionSetting for f64 {}
 impl IntoLineAndPositionSetting for &str {}
 impl IntoLineAndPositionSetting for LineAndPositionSetting<'_> {}
+impl IntoLineAndPositionSetting for StrOrNumber<'_> {}
+impl IntoLineAndPositionSetting for NumberOrStr<'_> {}
+impl IntoLineAndPositionSetting for BluetoothServiceUUID<'_> {}
 /// A rest parameter of `LineAndPositionSetting`s takes each member (ADR 0640).
 impl<A: IntoLineAndPositionSetting> Takes<A> for dyn IntoLineAndPositionSetting {}
 
@@ -116655,6 +116897,7 @@ impl<'a> LineAndPositionSetting<'a> {
 
 /// `List | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ListOrStr<'a> {
     List(&'a [&'a [String]]),
     Str(&'a str),
@@ -116694,6 +116937,7 @@ impl<'a> ListOrStr<'a> {
 
 /// `MediaList | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum MediaListOrStr<'a> {
     MediaList(&'a MediaList),
     Str(&'a str),
@@ -116733,6 +116977,7 @@ impl<'a> MediaListOrStr<'a> {
 
 /// `MediaProvider`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum MediaProvider<'a> {
     MediaStream(&'a MediaStream),
     MediaSource(&'a MediaSource),
@@ -116773,6 +117018,7 @@ impl IntoMediaProvider for &MediaSource {}
 impl IntoMediaProvider for &Blob {}
 impl IntoMediaProvider for &File {}
 impl IntoMediaProvider for MediaProvider<'_> {}
+impl IntoMediaProvider for BlobOrMediaSource<'_> {}
 /// A rest parameter of `MediaProvider`s takes each member (ADR 0640).
 impl<A: IntoMediaProvider> Takes<A> for dyn IntoMediaProvider {}
 
@@ -116787,6 +117033,7 @@ impl<'a> MediaProvider<'a> {
 
 /// `MediaStreamTrack | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum MediaStreamTrackOrStr<'a> {
     MediaStreamTrack(&'a MediaStreamTrack),
     Str(&'a str),
@@ -116833,6 +117080,7 @@ impl<'a> MediaStreamTrackOrStr<'a> {
 
 /// `MessageEventSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum MessageEventSource<'a> {
     Window(&'a Window),
     MessagePort(&'a MessagePort),
@@ -116880,6 +117128,7 @@ impl<'a> MessageEventSource<'a> {
 
 /// `Node | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NodeOrStr<'a> {
     Node(&'a Node),
     Str(&'a str),
@@ -118004,6 +118253,12 @@ impl IntoNodeOrStr for &ShadowRoot {}
 impl IntoNodeOrStr for &XMLDocument {}
 impl IntoNodeOrStr for &str {}
 impl IntoNodeOrStr for NodeOrStr<'_> {}
+impl IntoNodeOrStr for GeometryNode<'_> {}
+impl IntoNodeOrStr for HTMLOrSVGScriptElement<'_> {}
+impl IntoNodeOrStr for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
+impl IntoNodeOrStr for ElementOrText<'_> {}
+impl IntoNodeOrStr for ElementOrDocument<'_> {}
+impl IntoNodeOrStr for ElementOrProcessingInstruction<'_> {}
 /// A rest parameter of `Node | string`s takes each member (ADR 0640).
 impl<A: IntoNodeOrStr> Takes<A> for dyn IntoNodeOrStr {}
 
@@ -118018,6 +118273,7 @@ impl<'a> NodeOrStr<'a> {
 
 /// `number | CSSNumericValue | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrCSSNumericValueOrStr<'a> {
     Number(f64),
     CSSNumericValue(&'a CSSNumericValue),
@@ -118114,6 +118370,11 @@ impl IntoNumberOrCSSNumericValueOrStr for &CSSMathValue {}
 impl IntoNumberOrCSSNumericValueOrStr for &CSSUnitValue {}
 impl IntoNumberOrCSSNumericValueOrStr for &str {}
 impl IntoNumberOrCSSNumericValueOrStr for NumberOrCSSNumericValueOrStr<'_> {}
+impl IntoNumberOrCSSNumericValueOrStr for StrOrNumber<'_> {}
+impl IntoNumberOrCSSNumericValueOrStr for CSSNumberish<'_> {}
+impl IntoNumberOrCSSNumericValueOrStr for NumberOrStr<'_> {}
+impl IntoNumberOrCSSNumericValueOrStr for BluetoothServiceUUID<'_> {}
+impl IntoNumberOrCSSNumericValueOrStr for LineAndPositionSetting<'_> {}
 /// A rest parameter of `number | CSSNumericValue | string`s takes each member (ADR 0640).
 impl<A: IntoNumberOrCSSNumericValueOrStr> Takes<A> for dyn IntoNumberOrCSSNumericValueOrStr {}
 
@@ -118128,6 +118389,7 @@ impl<'a> NumberOrCSSNumericValueOrStr<'a> {
 
 /// `number | DOMPointInit`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrDOMPointInit {
     Number(f64),
     DOMPointInit(DOMPointInit),
@@ -118167,6 +118429,7 @@ impl NumberOrDOMPointInit {
 
 /// `number | DOMPointInit | List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrDOMPointInitOrList<'a> {
     Number(f64),
     DOMPointInit(DOMPointInit),
@@ -118200,6 +118463,7 @@ impl IntoNumberOrDOMPointInitOrList for f64 {}
 impl IntoNumberOrDOMPointInitOrList for DOMPointInit {}
 impl IntoNumberOrDOMPointInitOrList for &[NumberOrDOMPointInit] {}
 impl IntoNumberOrDOMPointInitOrList for NumberOrDOMPointInitOrList<'_> {}
+impl IntoNumberOrDOMPointInitOrList for NumberOrDOMPointInit {}
 /// A rest parameter of `number | DOMPointInit | List`s takes each member (ADR 0640).
 impl<A: IntoNumberOrDOMPointInitOrList> Takes<A> for dyn IntoNumberOrDOMPointInitOrList {}
 
@@ -118214,6 +118478,7 @@ impl<'a> NumberOrDOMPointInitOrList<'a> {
 
 /// `number | KeyframeAnimationOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrKeyframeAnimationOptions<'a> {
     Number(f64),
     KeyframeAnimationOptions(KeyframeAnimationOptions<'a>),
@@ -118253,6 +118518,7 @@ impl<'a> NumberOrKeyframeAnimationOptions<'a> {
 
 /// `number | KeyframeEffectOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrKeyframeEffectOptions<'a> {
     Number(f64),
     KeyframeEffectOptions(KeyframeEffectOptions<'a>),
@@ -118279,6 +118545,7 @@ impl IntoNumberOrKeyframeEffectOptions for f64 {}
 impl IntoNumberOrKeyframeEffectOptions for KeyframeEffectOptions<'_> {}
 impl IntoNumberOrKeyframeEffectOptions for KeyframeAnimationOptions<'_> {}
 impl IntoNumberOrKeyframeEffectOptions for NumberOrKeyframeEffectOptions<'_> {}
+impl IntoNumberOrKeyframeEffectOptions for NumberOrKeyframeAnimationOptions<'_> {}
 /// A rest parameter of `number | KeyframeEffectOptions`s takes each member (ADR 0640).
 impl<A: IntoNumberOrKeyframeEffectOptions> Takes<A> for dyn IntoNumberOrKeyframeEffectOptions {}
 
@@ -118293,6 +118560,7 @@ impl<'a> NumberOrKeyframeEffectOptions<'a> {
 
 /// `number | List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrList<'a> {
     Number(f64),
     List(&'a [f64]),
@@ -118318,6 +118586,7 @@ pub trait IntoNumberOrList: sealed::Sealed {}
 impl IntoNumberOrList for f64 {}
 impl IntoNumberOrList for &[f64] {}
 impl IntoNumberOrList for NumberOrList<'_> {}
+impl IntoNumberOrList for VibratePattern<'_> {}
 /// A rest parameter of `number | List`s takes each member (ADR 0640).
 impl<A: IntoNumberOrList> Takes<A> for dyn IntoNumberOrList {}
 
@@ -118332,6 +118601,7 @@ impl<'a> NumberOrList<'a> {
 
 /// `number | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum NumberOrStr<'a> {
     Number(f64),
     Str(&'a str),
@@ -118357,6 +118627,9 @@ pub trait IntoNumberOrStr: sealed::Sealed {}
 impl IntoNumberOrStr for f64 {}
 impl IntoNumberOrStr for &str {}
 impl IntoNumberOrStr for NumberOrStr<'_> {}
+impl IntoNumberOrStr for StrOrNumber<'_> {}
+impl IntoNumberOrStr for BluetoothServiceUUID<'_> {}
+impl IntoNumberOrStr for LineAndPositionSetting<'_> {}
 /// A rest parameter of `number | string`s takes each member (ADR 0640).
 impl<A: IntoNumberOrStr> Takes<A> for dyn IntoNumberOrStr {}
 
@@ -118371,6 +118644,7 @@ impl<'a> NumberOrStr<'a> {
 
 /// `OffscreenRenderingContext`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum OffscreenRenderingContext<'a> {
     OffscreenCanvasRenderingContext2D(&'a OffscreenCanvasRenderingContext2D),
     ImageBitmapRenderingContext(&'a ImageBitmapRenderingContext),
@@ -118434,6 +118708,7 @@ impl<'a> OffscreenRenderingContext<'a> {
 
 /// `Path2D | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum Path2DOrStr<'a> {
     Path2D(&'a Path2D),
     Str(&'a str),
@@ -118473,6 +118748,7 @@ impl<'a> Path2DOrStr<'a> {
 
 /// `RadioNodeList | Element`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum RadioNodeListOrElement<'a> {
     RadioNodeList(&'a RadioNodeList),
     Element(&'a Element),
@@ -119506,6 +119782,8 @@ impl IntoRadioNodeListOrElement for &HTMLParamElement {}
 impl IntoRadioNodeListOrElement for &HTMLUnknownElement {}
 impl IntoRadioNodeListOrElement for &MathMLElement {}
 impl IntoRadioNodeListOrElement for RadioNodeListOrElement<'_> {}
+impl IntoRadioNodeListOrElement for HTMLOrSVGScriptElement<'_> {}
+impl IntoRadioNodeListOrElement for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
 /// A rest parameter of `RadioNodeList | Element`s takes each member (ADR 0640).
 impl<A: IntoRadioNodeListOrElement> Takes<A> for dyn IntoRadioNodeListOrElement {}
 
@@ -119520,6 +119798,7 @@ impl<'a> RadioNodeListOrElement<'a> {
 
 /// `ReadableStreamReader`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ReadableStreamReader<'a> {
     ReadableStreamDefaultReader(&'a ReadableStreamDefaultReader),
     ReadableStreamBYOBReader(&'a ReadableStreamBYOBReader),
@@ -119559,6 +119838,7 @@ impl<'a> ReadableStreamReader<'a> {
 
 /// `RenderingContext`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum RenderingContext<'a> {
     CanvasRenderingContext2D(&'a CanvasRenderingContext2D),
     ImageBitmapRenderingContext(&'a ImageBitmapRenderingContext),
@@ -119622,6 +119902,7 @@ impl<'a> RenderingContext<'a> {
 
 /// `RequestInfo`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum RequestInfo<'a> {
     Request(&'a Request),
     Str(&'a str),
@@ -119850,6 +120131,7 @@ impl IntoSanitizerOrSanitizerConfigOrStr for &Sanitizer {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfig {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &str {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerOrSanitizerConfigOrStr<'_> {}
+impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
 /// A rest parameter of `Sanitizer | SanitizerConfig | string`s takes each member (ADR 0640).
 impl<A: IntoSanitizerOrSanitizerConfigOrStr> Takes<A> for dyn IntoSanitizerOrSanitizerConfigOrStr {}
 
@@ -119903,6 +120185,7 @@ impl<'a> SanitizerPI<'a> {
 
 /// `string | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrArrayBuffer<'a> {
     Str(&'a str),
     ArrayBuffer(&'a ArrayBuffer),
@@ -119942,6 +120225,7 @@ impl<'a> StrOrArrayBuffer<'a> {
 
 /// `string | AudioSinkOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrAudioSinkOptions<'a> {
     Str(&'a str),
     AudioSinkOptions(AudioSinkOptions<'a>),
@@ -119981,6 +120265,7 @@ impl<'a> StrOrAudioSinkOptions<'a> {
 
 /// `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrBufferSource<'a> {
     Str(&'a str),
     Int8Array(&'a Int8Array),
@@ -120102,6 +120387,10 @@ impl IntoStrOrBufferSource for &Float64Array {}
 impl IntoStrOrBufferSource for &DataView {}
 impl IntoStrOrBufferSource for &ArrayBuffer {}
 impl IntoStrOrBufferSource for StrOrBufferSource<'_> {}
+impl IntoStrOrBufferSource for ArrayBufferView<'_> {}
+impl IntoStrOrBufferSource for StrOrArrayBuffer<'_> {}
+impl IntoStrOrBufferSource for BufferSource<'_> {}
+impl IntoStrOrBufferSource for BufferSourceOrStr<'_> {}
 /// A rest parameter of `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`s takes each member (ADR 0640).
 impl<A: IntoStrOrBufferSource> Takes<A> for dyn IntoStrOrBufferSource {}
 
@@ -120116,6 +120405,7 @@ impl<'a> StrOrBufferSource<'a> {
 
 /// `string | CanvasGradient | CanvasPattern`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrCanvasGradientOrCanvasPattern<'a> {
     Str(&'a str),
     CanvasGradient(&'a CanvasGradient),
@@ -120163,6 +120453,7 @@ impl<'a> StrOrCanvasGradientOrCanvasPattern<'a> {
 
 /// `string | ElementCreationOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrElementCreationOptions<'a> {
     Str(&'a str),
     ElementCreationOptions(ElementCreationOptions<'a>),
@@ -120202,6 +120493,7 @@ impl<'a> StrOrElementCreationOptions<'a> {
 
 /// `string | List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrList<'a> {
     Str(&'a str),
     List(&'a [String]),
@@ -120241,6 +120533,7 @@ impl<'a> StrOrList<'a> {
 
 /// `string | number`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrNumber<'a> {
     Str(&'a str),
     Number(f64),
@@ -120266,6 +120559,9 @@ pub trait IntoStrOrNumber: sealed::Sealed {}
 impl IntoStrOrNumber for &str {}
 impl IntoStrOrNumber for f64 {}
 impl IntoStrOrNumber for StrOrNumber<'_> {}
+impl IntoStrOrNumber for NumberOrStr<'_> {}
+impl IntoStrOrNumber for BluetoothServiceUUID<'_> {}
+impl IntoStrOrNumber for LineAndPositionSetting<'_> {}
 /// A rest parameter of `string | number`s takes each member (ADR 0640).
 impl<A: IntoStrOrNumber> Takes<A> for dyn IntoStrOrNumber {}
 
@@ -120280,6 +120576,7 @@ impl<'a> StrOrNumber<'a> {
 
 /// `string | PerformanceMeasureOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrPerformanceMeasureOptions<'a> {
     Str(&'a str),
     PerformanceMeasureOptions(PerformanceMeasureOptions<'a>),
@@ -120319,6 +120616,7 @@ impl<'a> StrOrPerformanceMeasureOptions<'a> {
 
 /// `string | SharedWorkerOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrSharedWorkerOptions<'a> {
     Str(&'a str),
     SharedWorkerOptions(SharedWorkerOptions<'a>),
@@ -120358,6 +120656,7 @@ impl<'a> StrOrSharedWorkerOptions<'a> {
 
 /// `string | TaskSignal`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum StrOrTaskSignal<'a> {
     Str(&'a str),
     TaskSignal(&'a TaskSignal),
@@ -120397,6 +120696,7 @@ impl<'a> StrOrTaskSignal<'a> {
 
 /// `TexImageSource`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum TexImageSource<'a> {
     ImageBitmap(&'a ImageBitmap),
     ImageData(&'a ImageData),
@@ -120462,6 +120762,9 @@ impl IntoTexImageSource for &HTMLVideoElement {}
 impl IntoTexImageSource for &OffscreenCanvas {}
 impl IntoTexImageSource for &VideoFrame {}
 impl IntoTexImageSource for TexImageSource<'_> {}
+impl IntoTexImageSource for HTMLCanvasElementOrOffscreenCanvas<'_> {}
+impl IntoTexImageSource for HTMLVideoElementOrVideoFrame<'_> {}
+impl IntoTexImageSource for GPUCopyExternalImageSource<'_> {}
 /// A rest parameter of `TexImageSource`s takes each member (ADR 0640).
 impl<A: IntoTexImageSource> Takes<A> for dyn IntoTexImageSource {}
 
@@ -120476,6 +120779,7 @@ impl<'a> TexImageSource<'a> {
 
 /// `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
     TimelineRangeOffset(TimelineRangeOffset<'a>),
     CSSNumericValue(&'a CSSNumericValue),
@@ -120580,6 +120884,8 @@ impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSUnit
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSKeywordValue {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &str {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'_> {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for CSSPerspectiveValue<'_> {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for CSSNumericValueOrCSSKeywordValue<'_> {}
 /// A rest parameter of `TimelineRangeOffset | CSSNumericValue | CSSKeywordValue | string`s takes each member (ADR 0640).
 impl<A: IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr> Takes<A> for dyn IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr {}
 
@@ -120594,6 +120900,7 @@ impl<'a> TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a> {
 
 /// `TogglePopoverOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum TogglePopoverOptionsOrBool<'a> {
     TogglePopoverOptions(TogglePopoverOptions<'a>),
     Bool(bool),
@@ -120633,6 +120940,7 @@ impl<'a> TogglePopoverOptionsOrBool<'a> {
 
 /// `Uint32List`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum Uint32List<'a> {
     Uint32Array(&'a Uint32Array),
     List(&'a [f64]),
@@ -120711,6 +121019,7 @@ impl<'a> URLPatternInput<'a> {
 
 /// `VibratePattern`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum VibratePattern<'a> {
     Number(f64),
     List(&'a [f64]),
@@ -120736,6 +121045,7 @@ pub trait IntoVibratePattern: sealed::Sealed {}
 impl IntoVibratePattern for f64 {}
 impl IntoVibratePattern for &[f64] {}
 impl IntoVibratePattern for VibratePattern<'_> {}
+impl IntoVibratePattern for NumberOrList<'_> {}
 /// A rest parameter of `VibratePattern`s takes each member (ADR 0640).
 impl<A: IntoVibratePattern> Takes<A> for dyn IntoVibratePattern {}
 
@@ -120750,6 +121060,7 @@ impl<'a> VibratePattern<'a> {
 
 /// `ViewTransitionUpdateCallback | StartViewTransitionOptions`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
     ViewTransitionUpdateCallback(&'a dyn IntoViewTransitionUpdateCallback),
     StartViewTransitionOptions(StartViewTransitionOptions<'a>),
@@ -120789,6 +121100,7 @@ impl<'a> ViewTransitionUpdateCallbackOrStartViewTransitionOptions<'a> {
 
 /// `Worker | WorkerAndParameters`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
 pub enum WorkerOrWorkerAndParameters<'a> {
     Worker(&'a Worker),
     WorkerAndParameters(WorkerAndParameters<'a>),

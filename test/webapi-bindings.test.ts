@@ -1271,3 +1271,49 @@ pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
   expect(mutations).toBe(4);
   expect(await lib.locked({ request: (_: string, f: (lock: unknown) => unknown) => Promise.resolve(f(null)) })).toBe(false);
 });
+
+// React port gap rd208 (ADR 1028): FragmentInstance keeps the listener
+// options it was given and hands the same ones to addEventListener and
+// removeEventListener, upstream's \`optionsOrUseCapture\`. A dictionary or a
+// union a function takes, of numbers, bools and borrows, is \`Copy\`; and a
+// union whose each member is another's, \`AddEventListenerOptions |
+// boolean\`, is one of it, \`EventListenerOptions | boolean\`.
+test("listener options kept are given again, to add and to remove", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-kept-options");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{AddEventListenerOptions, AddEventListenerOptionsOrBool, Event, EventTarget, EventTargetExt};
+
+pub struct Listener {
+    pub kind: String,
+    pub listener: &'static dyn Fn(&'static Event),
+    pub options: AddEventListenerOptionsOrBool<'static>,
+}
+
+pub fn captured(capture: bool) -> AddEventListenerOptionsOrBool<'static> {
+    AddEventListenerOptionsOrBool::AddEventListenerOptions(AddEventListenerOptions {
+        capture: Some(capture),
+        ..Default::default()
+    })
+}
+
+pub fn attach(target: &EventTarget, listener: &Listener) {
+    let options = listener.options;
+    target.add_event_listener_named(&listener.kind, listener.listener, Some(&options));
+}
+
+pub fn detach(target: &EventTarget, listener: &Listener) {
+    target.remove_event_listener_named(&listener.kind, listener.listener, Some(&listener.options));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const options = listener.options;\n  target.addEventListener(listener.kind, listener.listener, options);\n");
+  expect(js).toContain("  target.removeEventListener(listener.kind, listener.listener, listener.options);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const calls: unknown[][] = [];
+  const element = { addEventListener: (...args: unknown[]) => void calls.push(args), removeEventListener: (...args: unknown[]) => void calls.push(args) };
+  const kept = { kind: "load", listener: () => {}, options: lib.captured(true) };
+  lib.attach(element, kept);
+  lib.detach(element, kept);
+  expect(calls).toEqual([["load", kept.listener, { capture: true }], ["load", kept.listener, { capture: true }]]);
+});

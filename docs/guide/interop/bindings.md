@@ -862,7 +862,13 @@ export async function open(other) {
 - **Values are as [JavaScript types](types.md) has them**: a `&str` is a
   string, a tuple an array, a struct an object.
 - **An options object is a struct of `Option` fields**, the rest
-  `..Default::default()`. A `None` field is left out. One of any value,
+  `..Default::default()`. A `None` field is left out. One of numbers,
+  `bool`s and borrows is `Copy`, as a union of them is, so what a program
+  kept it gives again, `add_event_listener_named(.., Some(&options))` and
+  `remove_event_listener_named(.., Some(&options))` of one value; and a
+  union whose each member is another's is one of it, an
+  `AddEventListenerOptionsOrBool` an `EventListenerOptions | boolean`
+  ([ADR 1028](../../decisions/1028-a-dictionary-of-copy-values-is-copy.md)). One of any value,
   TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
   `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
   ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
