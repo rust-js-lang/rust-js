@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `items[index]`; `[v[i], v[j]] = [v[j], v[i]]`, JS's own swap; and of
     /// `v.swap_remove(i)`, the last swapped in, then popped; `v.remove(i)`,
     /// `v.splice(i, 1)[0]`, `v.shift()` of the first, and `v.insert(i, x)`,
-    /// `v.splice(i, 0, x)`, `v.unshift(x)` at the front (rd103). Of
+    /// `combinators::inserted`'s in bounds (rd103). Of
     /// `index_mut_place`'s, the item's place, checked first as `$index`
     /// checks it where it isn't known.
     pub(super) fn index_call(
@@ -138,10 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Comb(Comb::Insert) => {
                 let (i, value) = (exprs.remove(0), exprs.remove(0));
-                let call = match first(&i) {
-                    true => Expr::call(Expr::member(items, "unshift"), vec![value]),
-                    false => Expr::call(Expr::member(items, "splice"), vec![i, Expr::int(0), value]),
-                };
+                let call = crate::lower::combinators::inserted(items, i, value, true);
                 out.push(StmtKind::Expr(call).at(self.js_span(span)));
                 return Ok(Value::Expr(Expr::undefined()));
             }

@@ -7,7 +7,8 @@ mod adapters;
 mod callbacks;
 mod values;
 
-use self::adapters::*;
+// `v.insert(i, x)`'s one form, which `mir::bounds` writes too.
+pub(in crate::lower) use self::adapters::inserted;
 
 use super::calls::apply;
 use super::drops::Drops;
@@ -800,7 +801,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = if left { "$rotateLeft" } else { "$rotateRight" };
                 helper(name, vec![subject, next(), Expr::str(count)])
             }
-            Comb::Insert => inserted(subject, next(), next()),
+            Comb::Insert => inserted(subject, next(), next(), false),
             Comb::Remove => helper("$removeAt", vec![subject, next()]),
             Comb::Swap => helper("$swap", self.deque_marked(vec![subject, next(), next()], subject_ty)),
             Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),

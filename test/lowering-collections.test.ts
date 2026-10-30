@@ -25,7 +25,9 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
 });
 
 // An insert at the front, which no length refuses, is `unshift`, as
-// react.dev's prepareMDX puts its Overview first.
+// react.dev's prepareMDX puts its Overview first: where the body's ranges
+// show it in bounds, as there, and where they don't, `front`'s, each the
+// form `combinators::inserted` gives.
 test("an insert at the front is unshift", async () => {
   const dir = fixture("insert-front");
   writeFileSync(join(dir, "lib.rs"), `pub fn first(mut anchors: Vec<String>) -> Vec<String> {
@@ -33,6 +35,10 @@ test("an insert at the front is unshift", async () => {
         anchors.insert(0, "Overview".to_string());
     }
     anchors
+}
+pub fn front(mut v: Vec<u32>) -> Vec<u32> {
+    v.insert(0, 8);
+    v
 }
 pub fn at(mut v: Vec<u32>, i: usize) -> Vec<u32> {
     v.insert(i, 9);
@@ -42,15 +48,17 @@ pub fn at(mut v: Vec<u32>, i: usize) -> Vec<u32> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('anchors.unshift("Overview");');
+  expect(js).toContain("v.unshift(8);");
   expect(js).toContain("$insertAt(v, i, 9);");
   const lib = await import(join(dir, "mir.js"));
-  expect([lib.first(["a"]), lib.first([]), lib.at([1, 2], 1)]).toEqual([["Overview", "a"], [], [1, 9, 2]]);
+  expect([lib.first(["a"]), lib.first([]), lib.front([]), lib.at([1, 2], 1)]).toEqual([["Overview", "a"], [], [8], [1, 9, 2]]);
   expect(() => lib.at([1], 3)).toThrow();
 });
 
 // Arrays of arrays flattened are `flat()`, as react.dev's page route gathers
 // each directory's Markdown, `files.flat().filter(..)`; of sets, whose items
-// `flat()` wouldn't take apart, or in Rust's order, each item stepped.
+// `flat()` wouldn't take apart, or in Rust's order, each item stepped,
+// of a B-tree its JS caller gives too.
 test("arrays of arrays flattened are flat()", async () => {
   const dir = fixture("flatten-arrays");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
@@ -89,7 +97,31 @@ pub fn logged(groups: Vec<Vec<u32>>) -> (Vec<u32>, Vec<String>) {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.markdown([["a.md", "b"], ["c.md"]]), lib.all([[1], [2, 3]])]).toEqual([["a.md", "c.md"], [1, 2, 3]]);
   expect(lib.logged([[1, 2], [3]])).toEqual([[2, 3], ["m1", "f1", "m2", "f2", "m3", "f3"]]);
-  expect(lib.ofSets([new Set([1, 2]), new Set([3])])).toEqual([1, 2, 3]);
+  // A JS caller's `Set`, in no order of its keys, stepped in Rust's
+  // (ADR 0404, amended).
+  expect(lib.ofSets([new Set([2, 1]), new Set([3])])).toEqual([1, 2, 3]);
+});
+
+// A B-tree given where an `IntoIterator` is taken, to `extend` or `chain`,
+// is stepped in its keys' order, `iterable_items`'s: of a `Set` its JS
+// caller gives too, in no order of its keys (ADR 0404, amended).
+test("a B-tree its JS caller gives to extend or chain is stepped in its keys' order", async () => {
+  const dir = fixture("btree-given-by-js");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeSet;
+pub fn extended(mut v: Vec<u32>, set: BTreeSet<u32>) -> Vec<u32> {
+    v.extend(set);
+    v
+}
+pub fn chained(v: Vec<u32>, set: BTreeSet<u32>) -> Vec<u32> {
+    v.into_iter().chain(set).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.extended([0], new Set([3, 1, 2])), lib.chained([0], new Set([3, 1, 2]))]).toEqual([
+    [0, 1, 2, 3],
+    [0, 1, 2, 3],
+  ]);
 });
 
 // `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,

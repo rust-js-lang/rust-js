@@ -261,3 +261,14 @@ one implementing `Iterator`, is marked `Known::Iterator`, and
 collection's, `eq(other)`'s array, isn't marked: it's made one there. Five
 `Iterator.from(..)`s of the corpus's snapshots are gone with it.
 `step_by_of_a_call_holds_its_items` is the case.
+
+Amended 2026-10-30: with it, `collected_items`' own refusal of a chain
+dropped by closing (`dropped_by_closing(iter_ty)`) went: `collected` lists
+only `Iterator.from(list)`, never a runtime helper's list, and a closing
+chain is `$closing(..)`'s, a JS iterator nothing wraps again. So the rule
+that a chain dropped by closing isn't listed has these owners alone,
+`is_js_iterator` and `collected`'s refusal of a helper's (ADR 0510). The
+mutation `collected-closing-listed` survived: `consumer_drops_what_is_left`'s
+`take(..).filter(..).map(..)` lost its `Iterator.from` here. A compiler that
+panicked where the refusal changed the answer compiled the whole corpus,
+its iterator forms and the lowering suites without panicking.

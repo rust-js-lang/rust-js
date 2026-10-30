@@ -62,11 +62,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-questions-impure",
-    breaks: "`is_empty()` and the like are taken as doing something: a pure chain is lazy",
+    breaks: "`is_empty()` and the like are taken as calls that may panic, so the temporary `make(\"c\").name().is_empty()` reads is dropped in a `try { .. } finally { .. }` (ADR 0301)",
     file: "src/lower/recognition/std_items.rs",
     find: "\"is_err\" if tcx.trait_of_assoc(id).is_none() => {",
     replace: "\"is_err\" if false => {",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_borrows.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_temporaries.rs$"],
     snapshots: true,
   },
   {

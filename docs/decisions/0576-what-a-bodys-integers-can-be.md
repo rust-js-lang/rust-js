@@ -328,6 +328,16 @@ panics); mutations `vec-remove-length-unasked` (`recognition/types.ts`),
 (`mir/bounds.ts`). `loop_ending_branch_loop`'s and two lowering-loops
 tests' removes are JS's own now.
 
+Amended 2026-10-30: an `insert`'s form has one owner,
+`combinators::inserted(v, i, x, in_bounds)`, which `mir/bounds.rs` calls
+with `true` and the combinators' `Comb::Insert` with `false`: `unshift` at
+the front either way, `splice` in bounds, `$insertAt` past what the ranges
+show. `mir/bounds.rs` wrote its own `unshift` of `0`, a second owner of
+the front's form, so the mutation `insert-front-helper` of the
+combinators' survived where the ranges showed the front in bounds. The
+lowering-collections test "an insert at the front is unshift" holds both
+ways in, a front the ranges show and one they don't.
+
 ## Amendment: a table's rows kept through a view of them (#372)
 
 A table's `iter_mut()` loop, javascript-algorithms' `dpUniquePaths` base

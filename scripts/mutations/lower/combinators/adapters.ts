@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "insert-front-helper",
-    "breaks": "`anchors.insert(0, x)` stays `$insertAt(anchors, 0, x)`, not `anchors.unshift(x)`",
+    "breaks": "`anchors.insert(0, x)` is `anchors.splice(0, 0, x)` where the ranges show it in bounds, `$insertAt(anchors, 0, x)` where not, not `anchors.unshift(x)`",
     "file": "src/lower/combinators/adapters.rs",
     "find": "        Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
     "replace": "",
@@ -244,11 +244,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-btree-unordered",
-    breaks: "`flatten` of `BTreeSet`s steps each in its JS set's insertion order",
+    breaks: "`flatten` of `BTreeSet`s steps each in its JS set's order, where a JS caller's `Set` may not be in its keys' (ADR 0404, amended)",
     file: "src/lower/combinators/adapters.rs",
     find: "        if self.is_sorted(inner) {\n            return self.in_order_of(value, inner, span).map(Some);\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+    tests: ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened are flat"],
   },
   {
     name: "map-while-fused",

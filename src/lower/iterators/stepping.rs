@@ -343,7 +343,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);
         }
-        // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).
+        // A B-tree's, in its keys' order: a JS `Set` a caller gives may be in
+        // any (ADR 0404, amended).
         if self.is_sorted(ty) {
             return self.in_order_of(value, ty, span);
         }

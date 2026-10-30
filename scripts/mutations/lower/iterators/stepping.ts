@@ -166,11 +166,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "btree-given-unordered",
-    breaks: "a `BTreeSet` given to `extend` or `chain` is stepped in its JS set's insertion order, not its keys'",
+    breaks: "a `BTreeSet` given to `extend` or `chain` is stepped in its JS set's order, where a JS caller's `Set` may not be in its keys' (ADR 0404, amended)",
     file: "src/lower/iterators/stepping.rs",
     find: "        if self.is_sorted(ty) {\n            return self.in_order_of(value, ty, span);\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+    tests: ["test/lowering-collections.test.ts", "-t", "a B-tree its JS caller gives to extend or chain"],
   },
   {
     name: "js-iterator-rewrapped",

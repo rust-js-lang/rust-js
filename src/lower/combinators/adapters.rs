@@ -136,7 +136,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let items = Expr::array(vec![crate::js::result::held(value)]);
             return Ok(Some(Expr::cond(ok, items, Expr::array(Vec::new()))));
         }
-        // A B-tree's, in its keys' order, which its JS map isn't (ADR 0059).
+        // A B-tree's, in its keys' order: a JS `Set` a caller gives may be in
+        // any (ADR 0404, amended).
         if self.is_sorted(inner) {
             return self.in_order_of(value, inner, span).map(Some);
         }
@@ -561,11 +562,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// `v.insert(at, value)`: `$insertAt`, which refuses an index past the end;
-/// at the front, which no length refuses, `v.unshift(value)`.
-pub(super) fn inserted(subject: Expr, at: Expr, value: Expr) -> Expr {
+/// `v.insert(at, value)`, the one form of it each way it's lowered: at the
+/// front, which no length refuses, `v.unshift(value)`; where the body's
+/// ranges show `at` at most the length (`in_bounds`, ADR 0576),
+/// `v.splice(at, 0, value)`; else `$insertAt`, which refuses an index past
+/// the end.
+pub(in crate::lower) fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool) -> Expr {
     match at.as_int() {
         Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
+        _ if in_bounds => Expr::call(Expr::member(subject, "splice"), vec![at, Expr::int(0), value]),
         _ => Expr::call(Expr::helper("$insertAt"), vec![subject, at, value]),
     }
 }

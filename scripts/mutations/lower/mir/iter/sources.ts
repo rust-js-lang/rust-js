@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     "name": "mir-iterable-collected-generic",
     "breaks": "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
     "file": "src/lower/mir/iter/sources.rs",
-    "find": "        if crate::lower::recognition::known_by_bounds(source) || self.dropped_by_closing(iter_ty) {\n",
-    "replace": "        if self.dropped_by_closing(iter_ty) {\n",
+    "find": "        if crate::lower::recognition::known_by_bounds(source) {\n",
+    "replace": "        if false {\n",
     "tests": ["test/lowering-iterators.test.ts", "-t", "only a next"]
   },
   {
@@ -294,14 +294,6 @@ export const mutations: Mutation[] = [
     find: "        let size = item.and_then(|item| self.room_size_of(&count, item));\n",
     replace: "        let size = item.and_then(|item| self.room_size_of(&count, item)).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
-  },
-  {
-    name: "collected-closing-listed",
-    breaks: "`take(1).step_by(2).map(f).collect()` is `Array.from(..).map(f)`, whose listing drops what the `take`'s source has left before `f` runs (#242)",
-    file: "src/lower/mir/iter/sources.rs",
-    find: "        if crate::lower::recognition::known_by_bounds(source) || self.dropped_by_closing(iter_ty) {\n",
-    replace: "        if crate::lower::recognition::known_by_bounds(source) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },
   {
     name: "made-closure-made-again",
