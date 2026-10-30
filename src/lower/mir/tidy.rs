@@ -746,10 +746,11 @@ mod tests {
                 "nulled as they are",
                 "written jumps",
                 "written ors",
-                "commented jumps"
+                "commented jumps",
+                "stepped slices"
             ]
         );
-        assert!(names.last().is_some_and(|n| n == "finish/commented jumps"));
+        assert!(names.last().is_some_and(|n| n == "finish/stepped slices"));
     }
 
     fn present(x: &str) -> Expr {
