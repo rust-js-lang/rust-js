@@ -1003,7 +1003,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // after.
         let dictionaries = std::mem::take(&mut self.locals.mir.dictionaries);
         let declaring = std::mem::replace(&mut self.locals.mir.declaring, true);
-        let lowered = self.mir_function(mir, captures, seed);
+        // A subject a getter may answer, read once where it's tested (#430).
+        let held = self.held_subjects(mir);
+        let lowered = self.mir_function(held.as_ref().unwrap_or(mir), captures, seed);
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;
         lowered

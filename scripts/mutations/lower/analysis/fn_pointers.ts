@@ -266,4 +266,13 @@ export const mutations: Mutation[] = [
     replace: "            ty::FnDef(..) => return true,\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
   },
+  {
+    name: "binding-body-builds",
+    breaks: "a struct a binding's native body builds, JSON.parse's stand-in, is taken for the program's own, read in place (#430)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            if is_binding(tcx, tcx.typeck_root_def_id(owner.to_def_id())) {\n                continue;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^subject_of_a_struct_js_made_read_once.rs$"],
+    snapshots: true,
+  },
 ];

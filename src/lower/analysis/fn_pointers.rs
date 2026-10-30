@@ -98,6 +98,11 @@ impl<'tcx> FnPointers<'tcx> {
                     found.given_in(recognition, ty);
                 }
             }
+            // A binding's body, and its closures', is native Rust's stand-in
+            // for JS, which JS never runs: what it builds, JS made (#430).
+            if is_binding(tcx, tcx.typeck_root_def_id(owner.to_def_id())) {
+                continue;
+            }
             let mut made = Made {
                 recognition,
                 results: tcx.typeck(owner),

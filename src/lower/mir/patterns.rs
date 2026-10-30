@@ -1236,4 +1236,198 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         patterns
     }
+
+    /// `mir`, each `match`'s and `if let`'s subject a getter may answer, a
+    /// field of a struct JS may have made (`fields_answered_by_getters`),
+    /// `view.margin` of `if let Some(margin) = view.margin`, borrowed once
+    /// where it's tested, and what its patterns read of it, its bindings and
+    /// its parts' tests, read through that borrow: the field read once, as
+    /// Rust reads it, `const margin = view.margin; if (margin != null)`, not
+    /// tested by one read and bound by another, each the getter's (#430; ADR
+    /// 1022, amended). A borrow of the subject, `&view.name`, is read so
+    /// already. `None` where there's none.
+    pub(super) fn held_subjects(&self, mir: &Mir<'tcx>) -> Option<Mir<'tcx>> {
+        use rustc_middle::mir::visit::MutVisitor;
+        let (tcx, body) = (self.tcx, &mir.body);
+        if !body.source.def_id().is_local() {
+            return None;
+        }
+        // Each subject's span, and its patterns', of THIR's matches and lets.
+        let mut subjects: Vec<(Span, Vec<Span>)> = Vec::new();
+        let thir = &self.frame.thir;
+        for expr in thir.exprs.iter() {
+            match &expr.kind {
+                thir::ExprKind::Match { scrutinee, arms, .. } => subjects.push((
+                    thir[*scrutinee].span,
+                    arms.iter().map(|&arm| thir[arm].pattern.span).collect(),
+                )),
+                thir::ExprKind::Let { expr, pat } => subjects.push((thir[*expr].span, vec![pat.span])),
+                _ => {}
+            }
+        }
+        for stmt in thir.stmts.iter() {
+            if let thir::StmtKind::Let {
+                pattern,
+                initializer: Some(init),
+                ..
+            } = &stmt.kind
+            {
+                subjects.push((thir[*init].span, vec![pattern.span]));
+            }
+        }
+        // Whether a read of `place` is a getter's: a field of such a struct.
+        let getters = |place: Place<'tcx>| {
+            (place.iter_projections()).any(|(base, elem)| {
+                let base = base.ty(&body.local_decls, tcx);
+                matches!(elem, PlaceElem::Field(..))
+                    && base.variant_index.is_none()
+                    && self.fields_answered_by_getters(base.ty)
+            })
+        };
+        // Each tested here, its block's last statement read by its switch:
+        // the block, the place, its patterns' spans, and the borrow made.
+        struct Held<'tcx> {
+            block: BasicBlock,
+            place: Place<'tcx>,
+            subject: Span,
+            patterns: Vec<Span>,
+            borrow: Local,
+        }
+        let dominators = body.basic_blocks.dominators();
+        let mut held: Vec<Held<'tcx>> = Vec::new();
+        let mut decls = body.local_decls.clone();
+        for (block, data) in mir::traversal::reverse_postorder(body) {
+            let (Some(last), TerminatorKind::SwitchInt { discr, .. }) =
+                (data.statements.last(), &data.terminator().kind)
+            else {
+                continue;
+            };
+            let StatementKind::Assign(assign) = &last.kind else {
+                continue;
+            };
+            let (tested, Rvalue::Discriminant(place)) = &**assign else {
+                continue;
+            };
+            if discr.place() != Some(*tested) || place.projection.is_empty() || !getters(*place) {
+                continue;
+            }
+            let span = last.source_info.span;
+            let Some((subject, patterns)) = subjects.iter().find(|(subject, _)| *subject == span) else {
+                continue;
+            };
+            // A part of one its match holds already, `Some(Some(x))`'s
+            // inner, is read through its borrow.
+            let within = held.iter().any(|h| {
+                h.subject == span
+                    && h.place.local == place.local
+                    && place.projection.starts_with(h.place.projection)
+                    && dominators.dominates(h.block, block)
+            });
+            if within {
+                continue;
+            }
+            let ty = place.ty(&body.local_decls, tcx).ty;
+            let borrow = decls.push(mir::LocalDecl::new(
+                ty::Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, ty),
+                span,
+            ));
+            held.push(Held {
+                block,
+                place: *place,
+                subject: *subject,
+                patterns: patterns.clone(),
+                borrow,
+            });
+        }
+        if held.is_empty() {
+            return None;
+        }
+        // Reads of a held place, a guard's fake borrow of it, or of its
+        // part, `(place as Some).0`, of its own match: where its subject or
+        // its patterns are, past the borrow, the nearest one.
+        struct Through<'a, 'tcx> {
+            tcx: ty::TyCtxt<'tcx>,
+            held: &'a [Held<'tcx>],
+            dominators: &'a rustc_data_structures::graph::dominators::Dominators<BasicBlock>,
+            span: Span,
+        }
+        impl<'tcx> MutVisitor<'tcx> for Through<'_, 'tcx> {
+            fn tcx(&self) -> ty::TyCtxt<'tcx> {
+                self.tcx
+            }
+            fn visit_place(&mut self, place: &mut Place<'tcx>, _: PlaceContext, location: mir::Location) {
+                let span = self.span;
+                let nearest = (self.held.iter())
+                    .filter(|h| {
+                        h.place.local == place.local
+                            && place.projection.starts_with(h.place.projection)
+                            && (place.projection.get(h.place.projection.len()))
+                                .is_none_or(|elem| matches!(elem, PlaceElem::Downcast(..)))
+                            && (span == h.subject || h.patterns.iter().any(|p| p.contains(span)))
+                            && h.block != location.block
+                            && self.dominators.dominates(h.block, location.block)
+                    })
+                    .reduce(|a, b| match self.dominators.dominates(a.block, b.block) {
+                        true => b,
+                        false => a,
+                    });
+                if let Some(h) = nearest {
+                    let rest = &place.projection[h.place.projection.len()..];
+                    let projection: Vec<PlaceElem<'tcx>> =
+                        std::iter::once(PlaceElem::Deref).chain(rest.iter().copied()).collect();
+                    *place = Place {
+                        local: h.borrow,
+                        projection: self.tcx.mk_place_elems(&projection),
+                    };
+                }
+            }
+        }
+        let mut body = body.clone();
+        body.local_decls = decls;
+        for h in &held {
+            let data = &mut body.basic_blocks_mut()[h.block];
+            let last = data.statements.last_mut().expect("a discriminant read");
+            let source_info = last.source_info;
+            let StatementKind::Assign(assign) = &mut last.kind else {
+                unreachable!("a discriminant read")
+            };
+            let tested = assign.0;
+            let borrowed = Place::from(h.borrow);
+            assign.0 = borrowed;
+            assign.1 = Rvalue::Ref(tcx.lifetimes.re_erased, BorrowKind::Shared, h.place);
+            let through = Place {
+                local: h.borrow,
+                projection: tcx.mk_place_elems(&[PlaceElem::Deref]),
+            };
+            data.statements.push(mir::Statement::new(
+                source_info,
+                StatementKind::Assign(Box::new((tested, Rvalue::Discriminant(through)))),
+            ));
+        }
+        let dominators = body.basic_blocks.dominators().clone();
+        let blocks: Vec<BasicBlock> = body.basic_blocks.indices().collect();
+        for block in blocks {
+            let data = &mut body.basic_blocks_mut()[block];
+            for (i, statement) in data.statements.iter_mut().enumerate() {
+                let mut through = Through {
+                    tcx,
+                    held: &held,
+                    dominators: &dominators,
+                    span: statement.source_info.span,
+                };
+                through.visit_statement(
+                    statement,
+                    mir::Location {
+                        block,
+                        statement_index: i,
+                    },
+                );
+            }
+        }
+        Some(Mir {
+            body,
+            promoted: mir.promoted.clone(),
+            awaits: mir.awaits.clone(),
+        })
+    }
 }

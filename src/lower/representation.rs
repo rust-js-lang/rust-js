@@ -532,6 +532,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a field of a `ty` value, a struct, is a property a getter may
+    /// answer: of a struct JS may have made, not the program's (rd204, ADR
+    /// 1022). What `project` says of each read of one, and a pattern's
+    /// subject asks, read once where it's tested (#430).
+    pub(super) fn fields_answered_by_getters(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()))
+    }
+
     /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
     pub(super) fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
         // What's the value it holds: that field is it, a marker beside it
@@ -560,11 +568,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // answer it (rd204, ADR 1022); Rust's read of a field can't
                 // panic, so it throws only where what it's read of does: a
                 // getter's throw is none Rust sees (rd227, rd228).
-                let field = match ty.kind() {
-                    ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()) => {
-                        field.answered_by_a_getter().never_throws()
-                    }
-                    _ => field,
+                let field = match self.fields_answered_by_getters(ty) {
+                    true => field.answered_by_a_getter().never_throws(),
+                    false => field,
                 };
                 let def = self.struct_field_def(ty, i);
                 match self.nullable_cell_field(ty, (i, fields[i].1)) {

@@ -502,6 +502,32 @@ pub struct Kept {
     pub padding: Option<&'static Unknown>,
 }
 
+/// An \`if let\` of a JS-made struct's field reads it once, into its
+/// binding, then tests it (#430).
+pub fn margin_of(style: &Unknown, props: &Unknown) {
+    // Safety: a style prop is an object of these fields.
+    let view: &StyleProp = unsafe { js::cast(js::get(props, "style")) };
+    if let Some(margin) = view.margin {
+        set_margin(style, Some(margin));
+        // Read again, by a test of its own: another read, its own value.
+        if let Some(again) = view.margin {
+            set_margin(style, Some(again));
+        }
+    }
+    // A guard's arm binds it twice, before the guard and after: one read.
+    match view.padding {
+        Some(padding) if truthy(padding) => set_padding(style, Some(padding)),
+        Some(padding) => set_margin(style, Some(padding)),
+        None => {}
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Boolean")]
+#[allow(unused_variables)]
+fn truthy(value: &Unknown) -> bool {
+    unreachable!()
+}
+
 // What the program stored, given back, React's state: its own object.
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.stored")]
 #[cfg_attr(rust_js, rust_js::gives_back)]
@@ -554,6 +580,24 @@ pub fn own(style: &Unknown, margin: Option<&'static Unknown>) {
   const style: Record<string, unknown> = {};
   lib.restore(style as never, { style: styleProp } as never);
   expect([style.margin, reads]).toEqual(["4px", 1]);
+  // An \`if let\` of one, and a \`match\` with a guard, read it once (#430).
+  expect(js).toContain("  const margin = view.margin;\n  if (margin != null) {\n    style.margin = margin;\n");
+  expect(js).toContain("    const again = view.margin;\n    if (again != null) {\n");
+  expect(js).toContain("  const padding = view.padding;\n  if (padding != null) {\n");
+  reads = 0;
+  let paddings = 0;
+  const viewProp = {
+    get margin() {
+      reads++;
+      return reads === 1 ? "4px" : "changed";
+    },
+    get padding() {
+      paddings++;
+      return paddings === 1 ? "2px" : 0;
+    },
+  };
+  lib.marginOf(style as never, { style: viewProp } as never);
+  expect([style.margin, style.padding, reads, paddings]).toEqual(["changed", "2px", 2, 1]);
   lib.own(style as never, "1px" as never);
   expect(style.margin).toBe("1px");
 });

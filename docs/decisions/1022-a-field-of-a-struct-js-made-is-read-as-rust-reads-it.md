@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -274,3 +274,53 @@ getter's, so it's read as often as Rust reads it and in its order
 (`Known::Getter`); but it may not panic, as Rust's read of a field can't,
 so it throws only where what it's read of does (`Known::NeverThrows`), and
 a guard's scope holds it in its one `finally` (ADR 0693, amended).
+
+## Amendment: a pattern's subject is read once where it's tested (#430)
+
+An `if let` or a `match` of a field of a struct JS made read it twice:
+
+```rust
+let view: &Margin = unsafe { js::cast(Some(js::unknown(style_prop))) };
+if let Some(margin) = view.margin {
+    set_margin(style, Some(margin));
+}
+```
+
+printed `if (view.margin != null) { const margin = view.margin; .. }`.
+MIR tests a place's discriminant and binds its payload by two reads of
+the place, `discriminant(view.margin)` and `(view.margin as Some).0`,
+which are one read in Rust: nothing can change the place between them,
+as the match borrows it. Each was a getter's read. A guard's arm read it
+four times: tested, bound for the guard, fake-borrowed and bound again.
+
+**A pattern's subject that's a field a getter may answer is borrowed once
+where it's tested, and what its patterns read of it is read through that
+borrow**: `const margin = view.margin; if (margin != null) { style.margin
+= margin; }`, as a borrow of the subject, `if let Some(name) =
+&view.name`, already printed. `patterns.rs`'s `held_subjects` makes that
+of the body's MIR before it's lowered: a subject a switch tests, its
+block's last statement, of a field of a struct
+`fields_answered_by_getters` says (the question `project` asks of each
+read, one owner of it in `representation.rs`), and the reads of it, its
+parts' tests, its bindings and its guards' fake borrows, by THIR's spans
+of that match's subject and patterns, the nearest one that dominates
+them. Another test of the same field, an `if let` in the arm, is a read
+of its own. A while let's is read once each time round.
+
+What a binding's body builds is no longer the program's (rd221's
+`built`): a binding's body, and its closures', is native Rust's stand-in
+for JS, which JS never runs. `JSON.parse`'s stand-in, building its struct
+natively, had made the struct the program's, read in place.
+
+Case (ADR 0262): R, results change; a getter's second read may give
+another value or throw.
+
+Held by `test/lowering-moves.test.ts`'s "a field of a struct JS made is
+read as often as Rust reads it" (an `if let`, one inside it, and a
+guard's `match`, their getters counted) and
+`test/corpus/subject_of_a_struct_js_made_read_once.rs` (an `if let`, a
+guard, `Some(Some(..))` and a `let else` of a binding's struct, against
+native Rust); mutations `getter-subject-not-held`,
+`getter-subject-fake-borrow-read`, `getter-subject-within-another-match`,
+`getter-subject-other-match-region` (`lower/mir/patterns.ts`) and
+`binding-body-builds` (`lower/analysis/fn_pointers.ts`).

@@ -608,8 +608,12 @@ program's builds. Each read of it is JS's, as often as Rust reads it, so
 `let margin = style_prop.margin; if margin.is_some() {
 style.set_margin(margin) }` is `const margin = styleProp.margin;` and
 `style.margin = margin`, not `styleProp.margin` again, which a getter
-would answer twice. A struct the program builds, by a literal in its code
-or a rust-js library's, is its own data, read in place, and so is what it
+would answer twice. A `match` or an `if let` of one, `if let Some(margin)
+= view.margin`, reads it once where it's tested, `const margin =
+view.margin; if (margin != null)`, and binds what it read, as a guard's
+arm does. A struct the program builds, by a literal in its code
+or a rust-js library's, is its own data (not one a binding's own body,
+native Rust's stand-in for JS, builds), read in place, and so is what it
 holds, whatever JS gives of its type: React's fiber, cast back from an
 owner of any shape, `js::cast::<&Fiber>(Some(owner))`, is set as
 `fiber.return = parent;`; a view of a value the program has,
