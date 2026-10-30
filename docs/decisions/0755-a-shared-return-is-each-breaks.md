@@ -126,3 +126,8 @@ if (objectName === "Promise") {
   `jumps-past-blocks-return-at-tails`, `jumps-past-blocks-return-into-loops`,
   `returns-into-branches-at-ends-not`, `returns-into-branches-else-kept`
   and `guarded-chains-late-off`.
+- `jumps-past-blocks-return-into-loops`, a loop's `break` of the block
+  taken for the `return`, is held by `test/lowering-loops.test.ts`'s "a
+  while that ends an if's branch keeps its test": ReactFiberLane's
+  getEntangledLanes would return in the `if` its `while` ends as well as
+  after it (2026-10-30).

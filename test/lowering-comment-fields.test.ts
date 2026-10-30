@@ -303,3 +303,50 @@ pub fn two() -> Twice {
   expect(js).not.toContain("Made in two places");
   expect((lib.prototype() as unknown as { isPersistent: () => boolean }).isPersistent()).toBe(true);
 });
+
+// The playground's `Loaded { module: module.await, crates: crate_files, .. }`:
+// a field's value MIR moves through a temporary, `_5 = crate_files`, is the
+// variable read where the temporary was, so the field's doc comment, which
+// is placed by where its value is, stays before it (`alias_variables`).
+test("a field's doc comment is before it where its value is a variable MIR moved", async () => {
+  const { js, lib } = await compiled("field-docs-moved-value", `pub struct Loaded {
+    pub module: u32,
+    /// Each crate a program may use, by its name.
+    pub crates: Vec<(String, u32)>,
+    pub count: u32,
+}
+
+async fn fetch(n: u32) -> u32 {
+    n + 1
+}
+
+pub async fn load(names: Vec<String>) -> Loaded {
+    let module = fetch(0);
+    let files: Vec<_> = names.into_iter().map(|name| (name, fetch(1))).collect();
+    let mut crate_files = Vec::new();
+    for (name, file) in files {
+        crate_files.push((name, file.await));
+    }
+    let count = fetch(2);
+    Loaded {
+        module: module.await,
+        crates: crate_files,
+        count: count.await,
+    }
+}
+`);
+  expect(js).toContain(`  return {
+    module: await module,
+    /** Each crate a program may use, by its name. */
+    crates: crateFiles,
+    count: await count,
+  };`);
+  expect(await (lib.load as (names: string[]) => Promise<unknown>)(["a", "b"])).toEqual({
+    module: 1,
+    crates: [
+      ["a", 2],
+      ["b", 2],
+    ],
+    count: 3,
+  });
+});

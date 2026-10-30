@@ -111,7 +111,13 @@ if (newLast == null) {
   `alias-read-in-a-branch-after-set` (`lower/mir/tidy/bindings.ts`),
   `else-binding-copy-kept` and `binding-copy-kept-where-set-after`
   (`lower/mir/tidy/copied.ts`); `alias-read-placeless` by
-  `test/lowering-written-loops.test.ts`.
+  `test/lowering-comment-fields.test.ts`'s "a field's doc comment is
+  before it where its value is a variable MIR moved", the playground's
+  `crates: crateFiles` after `module: await module`: the read's place,
+  the temporary's, is where the field's doc comment goes. The `if` of a
+  `break` it held first, `test/lowering-written-loops.test.ts`'s, is the
+  program's `if` without it now, `early breaks` keeping it apart from the
+  `while`'s test (2026-10-30).
 
 ## Amendment: a `while let`'s binding too (2026-10-26)
 

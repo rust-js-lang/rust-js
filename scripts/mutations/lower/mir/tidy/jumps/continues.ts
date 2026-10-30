@@ -304,11 +304,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "jumps-past-blocks-return-into-loops",
-    breaks: "a loop's `break` of a block followed by `return` is that `return`, and the loop that ends the block a `while (true)`, not `while (s >= 1)`",
+    breaks: "a loop's `break` of a block followed by `return` is that `return`: ReactFiberLane's getEntangledLanes returns in the `if` its `while` ends, `while (rest > 0) { .. } return entangled; } return entangled;`, not once after the `if`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)\n",
     replace: "            StmtKind::Continue(None) | StmtKind::Break(None)\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "a loop that ends a block breaks as a loop"],
+    tests: ["test/lowering-loops.test.ts", "-t", "a while that ends an if's branch keeps its test"],
   },
   {
     name: "written-break-unplaced",

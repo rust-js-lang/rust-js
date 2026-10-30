@@ -21,12 +21,18 @@ Bound.prototype.atMost = function (x) {
   return this.below(x) || this.same(x);
 };
 
+Bound.prototype.openOrBelow = function (x) {
+  return this.open || this.below(x);
+};
+
 Bound.prototype.shut = function () {
   return !this.open && this.limit > 0;
 };
 
 function main() {
   const bound = new Bound(3);
-  console.log(`${bound.atMost(2)} ${bound.atMost(3)} ${bound.atMost(4)} ${bound.shut()}`);
+  console.log(
+    `${bound.atMost(2)} ${bound.atMost(3)} ${bound.atMost(4)} ${bound.shut()} ${bound.openOrBelow(2)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

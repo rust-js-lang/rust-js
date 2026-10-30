@@ -269,7 +269,10 @@ trekhleb/javascript-algorithms' Comparator, read `!!this.lessThan(a, b) ||
 `receiver_as_this` renames them `this.lessThan()`, and `field_path` reads
 `this` as a variable's name. Held by `test/corpus/class_bool_methods.rs`
 and the mutations `receiver-booleans-unrenamed` and
-`field-path-not-of-this`.
+`field-path-not-of-this`. A call of a function that gives a `bool` is
+known one where it's lowered now (`Known::Boolean`, ADR 0953, amended),
+so the path through `this` holds a read of the class's own `bool` field,
+`this.open || this.below(x)`, the case's `openOrBelow` (2026-10-30).
 
 ## Amendment: a handle on `this`'s field reads the instance (#359)
 

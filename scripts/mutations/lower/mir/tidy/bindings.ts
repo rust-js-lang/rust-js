@@ -464,11 +464,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alias-read-placeless",
-    breaks: "a temporary's read written as its variable has no place, so `if (!words[i]) { i++; continue; } break;` of the program's `if` of a `break` is joined to the `while`'s test",
+    breaks: "a temporary's read written as its variable has no place, so a field's doc comment, placed where its value is, is lost: the playground's `crates: crateFiles` after `module: await module` without its `/** Each crate .. */`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                                *e = of.clone().or_at(e.span).or_at(at);\n",
     replace: "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "a while's test is its own, an if of a break the program wrote its if"],
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "where its value is a variable MIR moved"],
   },
   {
     name: "alias-of-a-given-name-renamed",

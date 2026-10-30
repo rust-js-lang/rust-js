@@ -1251,6 +1251,10 @@ test("a while that ends an if's branch keeps its test", async () => {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    while (rest > 0) {\n");
   expect(js).not.toContain("while (true)");
+  // The block MIR made around the loop, `break`s of which are the `return`
+  // after it, is left by the loop's own way out, not a `return` in its
+  // body: one `return entangled;`, after the `if` (`jumps_past_blocks`).
+  expect(js).toContain("      rest &= rest - 1;\n    }\n  }\n  return entangled;\n}\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.entangled(0b101, 0b100), lib.entangled(0b101, 0)]).toEqual([0b1101, 0b101]);
 });
