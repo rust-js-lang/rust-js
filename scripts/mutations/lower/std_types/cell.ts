@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "value-cell-replaced-whole",
     breaks: "a `RefCell` of an object's `replace` sets its `value`, the old one not taken out of the object every name of it sees",
     file: "src/lower/std_types/cell.rs",
-    find: "                    return Ok(Some(Expr::call(Expr::helper(\"$take\"), vec![cell, next])));\n",
+    find: "                    return Ok(Some(taken(cell, next)));\n",
     replace: "                    return Ok(Some(Expr::call(Expr::helper(\"$cellReplace\"), vec![cell, next])));\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
@@ -593,5 +593,13 @@ export const mutations: Mutation[] = [
     find: "                if !call.momentary || lock {\n",
     replace: "                if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+  },
+  {
+    name: "taken-array-copied",
+    breaks: "an array taken, `queue.take()` of a `RefCell<Vec<_>>`, is `$take(queue, [])`, a copy and a helper, not `queue.splice(0)` (rd264)",
+    file: "src/lower/std_types/cell.rs",
+    find: "        js::ExprKind::Array(items) if items.is_empty() => {\n",
+    replace: "        js::ExprKind::Array(items) if items.is_empty() && false => {\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
   },
 ];

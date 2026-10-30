@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         out_set.push(StmtKind::Expr(assigned).at(js_span));
                         None
                     }
-                    true => Some(Expr::call(Expr::helper("$take"), vec![target, value.clone()])),
+                    true => Some(taken(target, value.clone())),
                     false if checked => Some(Expr::call(Expr::helper("$cellReplace"), vec![target, value.clone()])),
                     false => None,
                 };
@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => cell,
                         false => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
                     };
-                    return Ok(Some(Expr::call(Expr::helper("$take"), vec![cell, next])));
+                    return Ok(Some(taken(cell, next)));
                 }
                 if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held, of_key) {
                     let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell]);
@@ -685,11 +685,7 @@ pub(in crate::lower) fn plain_statics(
 /// emptied into a copy; nothing else holds it, as `$assign`'s `set` above
 /// takes. A `const` of it is that `const`. How many there were.
 fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
-    let taken = |e: &Expr| {
-        matches!(&e.kind, js::ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$take")
-                && matches!(args.as_slice(), [target, _] if matches!(&target.kind, js::ExprKind::Var(v) if v == name)))
-    };
+    let taken = |e: &Expr| matches!(taken_parts(e), Some((target, _)) if matches!(&target.kind, js::ExprKind::Var(v) if v == name));
     let mut count = 0;
     let mut i = 0;
     while i < stmts.len() {
@@ -706,11 +702,8 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             i += 1;
             continue;
         };
-        let js::ExprKind::Call(_, mut args) = std::mem::replace(&mut slot.kind, js::ExprKind::Undefined) else {
-            unreachable!("taken")
-        };
-        let value = args.pop().expect("its new value");
-        let variable = args.pop().expect("the variable");
+        let (variable, value) = taken_parts(slot).map(|(v, value)| (v.clone(), value)).expect("taken");
+        *slot = Expr::undefined();
         let set = StmtKind::Assign(variable.clone(), value).at(span);
         count += 1;
         // What it gave unread: the variable given the new value alone.
@@ -742,6 +735,38 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
         i += 3;
     }
     count
+}
+
+/// What `take()`, `mem::take` or `mem::replace` of `target`, an object a
+/// `&mut` or a `RefCell` of one is, gives, `value` its contents after (ADR
+/// 0147): of an array emptied, `target.splice(0)`, its items, the array
+/// itself left empty (rd264); of others, `$take(target, value)`, a copy.
+pub(in crate::lower) fn taken(target: Expr, value: Expr) -> Expr {
+    match &value.kind {
+        js::ExprKind::Array(items) if items.is_empty() => {
+            Expr::call(Expr::member(target, "splice"), vec![Expr::num(0.0)])
+        }
+        _ => Expr::call(Expr::helper("$take"), vec![target, value]),
+    }
+}
+
+/// What `e`, a `taken` one, takes, and its contents after: `(target,
+/// value)`. The one reader of its forms.
+fn taken_parts(e: &Expr) -> Option<(&Expr, Expr)> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$take") => match args.as_slice() {
+            [target, value] => Some((target, value.clone())),
+            _ => None,
+        },
+        js::ExprKind::Call(callee, args)
+            if let js::ExprKind::Member(target, method) = &callee.kind
+                && method == "splice"
+                && matches!(args.as_slice(), [zero] if matches!(zero.kind, js::ExprKind::Num(n) if n == 0.0)) =>
+        {
+            Some((target, Expr::array(Vec::new())))
+        }
+        _ => None,
+    }
 }
 
 /// Whether `made` is a thread-local's cell as its `{ value }`.

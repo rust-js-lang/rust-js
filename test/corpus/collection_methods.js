@@ -138,7 +138,7 @@ function main() {
   const log = [1];
   const before = $take(log, [2, 3]);
   log.push(4);
-  const after = $take(log, []);
+  const after = log.splice(0);
   console.log(`[${before.join(", ")}] [${after.join(", ")}] [${log.join(", ")}]`);
   const name = { value: "old" };
   const previous = $replaceWith(name, (s) => `${s.value}er`, true);

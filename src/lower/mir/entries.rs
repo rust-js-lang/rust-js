@@ -308,16 +308,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Std::MemTake => self.default_value(pointee, span)?,
                 _ => self.value_expr(values.next().expect("a second"), span)?,
             };
-            let name = match known {
-                Std::Swap => "$exchange",
-                _ => "$take",
-            };
-            let call = Expr::call(Expr::helper(name), vec![a, b]);
             if known == Std::Swap {
-                out.push(StmtKind::Expr(call).at(js_span));
+                out.push(StmtKind::Expr(Expr::call(Expr::helper("$exchange"), vec![a, b])).at(js_span));
                 return Ok(Value::Expr(Expr::undefined()));
             }
-            return Ok(Value::Expr(call));
+            return Ok(Value::Expr(crate::lower::std_types::cell::taken(a, b)));
         };
         let (b, b_place) = match known {
             Std::Swap => match values.next() {

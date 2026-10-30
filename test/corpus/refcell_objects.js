@@ -41,7 +41,7 @@ function main() {
   const borrow = $borrow(shared);
   const value = $borrow(other);
   console.log(`[${old.join(", ")}] [${borrow.join(", ")}] [${value.join(", ")}]`);
-  const taken = $take($borrowMut(other), []);
+  const taken = $borrowMut(other).splice(0);
   const value$1 = $borrow(shared);
   console.log(`[${taken.join(", ")}] ${value$1.length === 0} ${shared === other}`);
   $borrowMut(shared).push(4, 5);

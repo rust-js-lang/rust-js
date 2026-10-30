@@ -2,7 +2,7 @@
 
 import * as Flags from "./flags.js";
 import * as Marks from "./marks.js";
-import { $debugStr, $take } from "@rust-js/runtime";
+import { $debugStr } from "@rust-js/runtime";
 
 export function entry() {
   main();
@@ -23,7 +23,7 @@ if (tries === 0) {
   made = 1;
 }
 
-const taken = $take(names, []);
+const taken = names.splice(0);
 const LIMITED = (LIMIT * 10) >>> 0;
 const COUNTED = (HITS + 1) >>> 0;
 const BASED = (BASE * 2) >>> 0;

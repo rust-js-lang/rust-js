@@ -218,3 +218,19 @@ whose `let` tidy declares `const` where nothing else assigns them. Held by
 the corpus's `swap_replace`, `slice_patterns` and `slice_pattern_mut_rest`
 against native Rust, and the mutations `swap-of-places-held` and
 `swap-of-variables-destructured` (`mir/entries.ts`).
+
+## Amendment: an array taken is its items spliced out (2026-10-30, rd264)
+
+`take()` of a `RefCell` of a `Vec`, which is the array (ADR 0863), and
+`mem::take` of a `&mut Vec`, were `$take(queue, [])`: a copy, then the
+array emptied in place. **An array taken is `queue.splice(0)`**, which
+gives its items as a new array and leaves it empty, as `$take` did, with
+no helper: React DOM's Fizz runtime's restore queue, moved into the
+closure that restores it. One taken to another value, a struct's `{ n:
+0 }`, is still `$take`. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, the same array emptied and the same items given. `cell::taken` makes
+both forms and `taken_parts` reads them, as a module variable's take does
+(ADR 0270). Held by `lowering-cell-borrows.test.ts`'s "an array taken is
+its items spliced out" and the mutation `taken-array-copied`
+(`lower/std_types/cell.ts`).
+

@@ -61,7 +61,7 @@ function main() {
   $assign(counts, [7, 8, 9]);
   try {
     try {
-      const taken = $take(counts, []);
+      const taken = counts.splice(0);
       const old = $take(counts, [4]);
       console.log(`[${taken.join(", ")}] [${old.join(", ")}] [${counts.join(", ")}]`);
 
@@ -122,7 +122,7 @@ function newtypes() {
   const borrow = $borrow(lines);
   console.log(`${linesDebug_fmt(old)} ${linesDebug_fmt(borrow)} ${lines === alias}`);
   $assign($borrowMut(alias), []);
-  const taken = $take($borrowMut(lines), []);
+  const taken = $borrowMut(lines).splice(0);
   const value = $borrow(alias);
   console.log(`${linesDebug_fmt(taken)} ${linesDebug_fmt(value)}`);
   let length = 1.5;

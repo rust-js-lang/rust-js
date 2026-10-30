@@ -827,3 +827,50 @@ pub fn find(cache: &RefCell<Vec<&'static Element>>, props: &Unknown) -> Option<u
   expect(lib.find(nodes, { href: "", title: "x" })).toBeUndefined();
   expect(nodes.length).toBe(1);
 });
+
+// React DOM's Fizz runtime takes its restore queue into a closure,
+// `restore_queue.take()`: an array taken is its items spliced out, the
+// array itself left empty, `queue.splice(0)`, as it is of a `&mut Vec`'s
+// `mem::take` and a borrowed cell's, where it was `$take(queue, [])`, a
+// copy then the array emptied (rd264, ADR 0147, amended).
+test("an array taken is its items spliced out", async () => {
+  const dir = fixture("taken-array");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub fn drained(queue: &RefCell<Vec<u32>>) -> Vec<u32> {
+    queue.take()
+}
+
+pub fn moved(items: &mut Vec<String>) -> usize {
+    let taken = std::mem::take(items);
+    taken.len() + items.len()
+}
+
+pub fn held(queue: &RefCell<Vec<u32>>, f: impl Fn()) -> Vec<u32> {
+    f();
+    let mut q = queue.borrow_mut();
+    let taken = std::mem::take(&mut *q);
+    drop(q);
+    taken
+}
+
+pub fn later(queue: RefCell<Vec<u32>>) -> impl Fn() -> usize {
+    let taken = queue.take();
+    move || taken.len() + queue.borrow().len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return queue.splice(0);");
+  expect(js).toContain("const taken = items.splice(0);");
+  expect(js).not.toContain("$take(");
+  const lib = await import(join(dir, "lib.js"));
+  const queue = [1, 2, 3];
+  const out = lib.drained(queue);
+  expect([out, queue, out === queue]).toEqual([[1, 2, 3], [], false]);
+  const items = ["a", "b"];
+  expect([lib.moved(items), items]).toEqual([2, []]);
+  const kept = [4, 5];
+  expect([lib.held(kept, () => {}), kept]).toEqual([[4, 5], []]);
+  expect(lib.later([6, 7, 8])()).toBe(3);
+});

@@ -423,9 +423,10 @@ amended). Its `take()` and `replace(v)` are its cell's, each a write of
 it as `set` is: of the array its module's variable is, where that's the
 first its statement does, the variable given the new one, `const old =
 pending; pending = [];`, as React's flushPendingUnsafeLifecycleWarnings
-writes it, elsewhere `$take(taskQueue, [])`, the array emptied in place;
-`const old = count; count = 10;` of a number; `$take($borrowMut(ports),
-[])` where a borrow of it may be held, which throws as Rust panics
+writes it, elsewhere `taskQueue.splice(0)`, its items, the array emptied
+in place; `const old = count; count = 10;` of a number;
+`$borrowMut(ports).splice(0)` where a borrow of it may be held, which
+throws as Rust panics
 ([0595](../decisions/0595-a-thread-local-cells-take-is-its-cells.md),
 [0270](../decisions/0270-module-variables.md), amended).
 

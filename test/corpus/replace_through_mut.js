@@ -38,7 +38,7 @@ function swapTwo(a, b) {
 }
 
 function takeAll(v) {
-  return $take(v, []);
+  return v.splice(0);
 }
 
 function pDebug_fmt(p) {

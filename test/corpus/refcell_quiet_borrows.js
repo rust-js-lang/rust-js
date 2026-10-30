@@ -57,7 +57,7 @@ function main() {
   const before = $take(log, [2, 3]);
   log.push(4);
   const total = log.reduce((a, b) => (a + b) | 0, 0);
-  const arg = $take(log, []);
+  const arg = log.splice(0);
   console.log(`[${before.join(", ")}] ${total} [${arg.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
