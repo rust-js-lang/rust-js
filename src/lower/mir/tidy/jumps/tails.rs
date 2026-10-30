@@ -202,8 +202,19 @@ fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u3
 
 /// Each `break label` of `stmts`, however deep, `returned`, at the place
 /// of the `return` the program wrote for that way out, of `written`: the
-/// first after what runs before it, from `at`, so what comes after sees a
-/// `return` written there (`tail_returns`). Where it went on to.
+/// first after what runs just before it, from `at`, so what comes after
+/// sees a `return` written there (`tail_returns`). Where it went on to.
+/// What runs just before it is the statement before it in its list, where
+/// that is written, not the furthest written of all before it; after an
+/// `if` whose branch leaves, the `if`'s test, not its branch. MIR may put
+/// what's written later first: the `_` arm of `match tag { .., 3 | 27 => {
+/// log.push(2); return; } _ => { log.push(3); } }` at a function's end,
+/// `if (tag !== 3 && tag !== 27) { log.push(3); return; } log.push(2);
+/// break bb;`, whose `break` is still the `return` after `log.push(2)`;
+/// and a `let … else`'s `else` after the rest, `if (root != null) { if
+/// (fiber.tag !== 3) { ..; return; } break bb; } log.push(0); break bb;`,
+/// each `break` the `return` after `fiber.tag == 3` and `log.push(0)`
+/// (#435).
 fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, written: &[js::Span], mut at: u32) -> u32 {
     for stmt in stmts {
         if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label) {
@@ -214,7 +225,7 @@ fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, wri
             continue;
         }
         if !stmt.span.is_none() {
-            at = at.max(stmt.span.lo);
+            at = stmt.span.lo;
         }
         let mut inner = |list: &mut Vec<Stmt>| at = returned_as_written(list, label, returned, written, at);
         match &mut stmt.kind {
@@ -236,8 +247,15 @@ fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, wri
             }
             _ => {}
         }
-        if !stmt.span.is_none() {
-            at = at.max(stmt.span.hi);
+        match &stmt.kind {
+            // An `if` whose branch leaves is gone on from by its test alone,
+            // `if (fiber.tag !== 3) { ..; return; } break bb;` of `if
+            // fiber.tag == 3 { return; }`: the `return` after the test.
+            StmtKind::If(test, then, None) if then.last().is_some_and(ends) && !test.span.is_none() => {
+                at = test.span.hi;
+            }
+            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),
+            _ => {}
         }
     }
     at

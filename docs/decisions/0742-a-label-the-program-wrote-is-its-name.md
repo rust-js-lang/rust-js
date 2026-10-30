@@ -203,3 +203,64 @@ true and false, the mutations `loop-end-returns-past-block` and
 lowering suites or React's port. The test and both mutations are gone;
 `joined_returns` is the rule's one owner. "A loop's early return MIR
 joined past a block is a return" and addValueToProperties pass as before.
+
+## Amendment: a joined `return` is the one written after what runs just before it (2026-10-30)
+
+`returned_as_written` placed each `break` of a block MIR joined the
+program's `return`s past at the first written `return` after the furthest
+written statement its walk had passed, an `if`'s branch among them. MIR
+doesn't keep what's written in order: at a function's end, it puts a
+`match`'s `_` arm, which goes on to the function's end, before an arm it
+tests apart, `if (tag !== 3 && tag !== 27) { log.push(3); return; }
+log.push(2); break bb17;`. The walk was then past the `_` arm's
+`log.push(3)`, after every written `return`, so the second arm's `break`
+had no place, `tail_returns` took it for a `return;` MIR made and dropped
+it, and its case printed `break;` out of the `switch` (#435).
+
+A `break`'s `return` is the first written after what runs just before it:
+the statement before it in its list, where that is written, whatever the
+walk passed before; and after an `if` whose branch leaves, which goes on
+to the `break` by its test alone, that test. The two together place each
+of a function's returns, or else none, as before: with the first alone,
+React's recordLegacyContextWarning, `let Some(root) = root else {
+log.push(0); return; }; if fiber.tag == 3 { return; } ..`, MIR's `if
+(root != null) { if (fiber.tag !== 3) { ..; return; } break bb; }
+log.push(0); break bb;`, placed the `else`'s and not the `if`'s, and
+printed `if (fiber.tag !== 3) { .. }` for the guard; with the second
+alone, the other way round.
+
+```js
+switch (fiber.parent.tag) {
+  case 5:
+  case 13:
+    log.push(1);
+    return;
+  case 3:
+  case 27:
+    log.push(2);
+    return;
+  default:
+    log.push(3);
+}
+```
+
+`let_else_guard_released`, whose `let … else`s' `else`s MIR puts after
+the rest, reads as written too: `if (value.value == null) { ..; return; }
+console.log(..)` for the second, not `if (value.value != null) {
+console.log(..); } else { .. }`, and the first's `else { $unborrow(borrow);
+return; }` with the `return;` its program writes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jump: the
+`switch` and the `if`s end the function either way.
+
+The readability ratchet's `return;` share is blessed (10.3 to 10.5 in
+10,000 lines): two are `pop_host`'s, two `let_else_guard_released`'s,
+each a `return;` its program writes.
+
+Held by `test/lowering-switches.test.ts`' "each arm's written return at a
+function's end is its case's return", `test/lowering-early-exits.test.ts`'
+"a unit function's early returns joined to its end are each a guard
+first", `test/corpus/returns_joined_past_blocks.rs`' `pop_host` and
+`test/corpus/let_else_guard_released.rs` against native Rust, and the
+mutations `returns-past-blocks-placed-past-earlier` and
+`returns-past-blocks-placed-past-branch` (`mir/tidy/jumps/tails.ts`).

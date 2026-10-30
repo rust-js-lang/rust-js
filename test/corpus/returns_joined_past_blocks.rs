@@ -5,7 +5,9 @@
 // DOM's attemptExplicitHydrationTarget and
 // dispatchEventForPluginEventSystem). And guards one after another, each
 // returning, MIR joins the same way: each `if (..) { ..; return; }` as
-// written, not an `else` of the rest (the playground's new_file).
+// written, not an `else` of the rest (the playground's new_file). And a
+// `match` at a function's end, two arms of which return, the second's
+// `return` as written though MIR puts the `_` arm before it (#435).
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -112,6 +114,24 @@ fn new_file(answer: Option<&str>, existing: &[&str], log: &RefCell<Vec<String>>)
     log.borrow_mut().push(format!("Created {path}, {module}."));
 }
 
+fn pop_host(fiber: &Fiber, log: &RefCell<Vec<String>>) {
+    if let Some(parent) = fiber.parent.clone() {
+        match parent.tag {
+            5 | 13 => {
+                log.borrow_mut().push("host".to_string());
+                return;
+            }
+            3 | 27 => {
+                log.borrow_mut().push(format!("root {}", parent.tag));
+                return;
+            }
+            _ => {
+                log.borrow_mut().push("other".to_string());
+            }
+        }
+    }
+}
+
 fn fiber(tag: u32, parent: Option<Rc<Fiber>>, containers: Vec<u32>) -> Option<Rc<Fiber>> {
     Some(Rc::new(Fiber { tag, parent, containers }))
 }
@@ -139,5 +159,10 @@ fn main() {
     for answer in [None, Some("  "), Some("a.txt"), Some(" b.rs "), Some("c.rs")] {
         new_file(answer, &["b.rs"], &log);
     }
+    println!("{:?}", log.take());
+    for tag in [5, 13, 3, 27, 0] {
+        pop_host(&Fiber { tag: 0, parent: fiber(tag, None, vec![]), containers: vec![] }, &log);
+    }
+    pop_host(&Fiber { tag: 0, parent: None, containers: vec![] }, &log);
     println!("{:?}", log.take());
 }

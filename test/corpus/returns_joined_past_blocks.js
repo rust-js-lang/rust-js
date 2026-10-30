@@ -105,6 +105,23 @@ function newFile(answer, existing, log) {
   log.push(`Created ${path}, ${module}.`);
 }
 
+function popHost(fiber, log) {
+  if (fiber.parent != null) {
+    switch (fiber.parent.tag) {
+      case 5:
+      case 13:
+        log.push("host");
+        return;
+      case 3:
+      case 27:
+        log.push(`root ${fiber.parent.tag}`);
+        return;
+      default:
+        log.push("other");
+    }
+  }
+}
+
 function fiber(tag, parent, containers) {
   return { tag, parent, containers };
 }
@@ -145,6 +162,16 @@ function main() {
   for (const answer of [undefined, "  ", "a.txt", " b.rs ", "c.rs"]) {
     newFile(answer, ["b.rs"], log);
   }
+  console.log(
+    `[${log
+      .splice(0)
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  for (const tag of [5, 13, 3, 27, 0]) {
+    popHost({ tag: 0, parent: fiber(tag, undefined, []), containers: [] }, log);
+  }
+  popHost({ tag: 0, containers: [] }, log);
   console.log(
     `[${log
       .splice(0)

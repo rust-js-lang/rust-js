@@ -1271,3 +1271,79 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
   }
   expect(log).toEqual([2, 1]);
 });
+
+// ADR 0742, amended (#435): at a function's end, MIR joins the arms'
+// written `return`s into the function's own end, which the `_` arm goes
+// on to too, and puts that arm before the one it tests apart, `if (tag
+// !== 3 && tag !== 27) { log.push(3); return; } log.push(2); break bb;`.
+// Each `break` is the `return` written after what runs just before it,
+// `log.push(2)`, not after the `_` arm: the second arm's case ends with its
+// `return;` as written, as the first's does, not a `break;` of the
+// `switch`.
+test("each arm's written return at a function's end is its case's return", async () => {
+  const dir = fixture("switch-arms-returning-at-end");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub parent: Option<Rc<Fiber>>,
+}
+
+pub fn pop(fiber: &Fiber, log: &mut Vec<u8>) {
+    if let Some(parent) = fiber.parent.clone() {
+        match parent.tag {
+            5 | 13 => {
+                log.push(1);
+                return;
+            }
+            3 | 27 => {
+                log.push(2);
+                return;
+            }
+            _ => {
+                log.push(3);
+            }
+        }
+    }
+}
+
+pub fn skip(fiber: &Fiber, log: &mut Vec<u8>) {
+    if let Some(parent) = fiber.parent.clone() {
+        match parent.tag {
+            5 | 13 => {
+                log.push(1);
+                return;
+            }
+            3 | 27 => return,
+            _ => {
+                log.push(3);
+            }
+        }
+    }
+}
+
+pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, parent })
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "      case 5:\n      case 13:\n        log.push(1);\n        return;\n      case 3:\n      case 27:\n        log.push(2);\n        return;\n      default:\n        log.push(3);\n    }\n  }\n}\n",
+  );
+  // An arm that only returns, its `break` straight after the `_` arm's
+  // `if`: the `return` after that `if`'s test.
+  expect(js).toContain("      case 3:\n      case 27:\n        return;\n      default:\n        log.push(3);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const log: number[] = [];
+  for (const tag of [5, 13, 3, 27, 0]) {
+    lib.pop(lib.fiber(0, lib.fiber(tag, null)), log);
+    lib.skip(lib.fiber(0, lib.fiber(tag, null)), log);
+  }
+  lib.pop(lib.fiber(0, null), log);
+  lib.skip(lib.fiber(0, null), log);
+  expect(log).toEqual([1, 1, 1, 1, 2, 2, 3, 3]);
+});

@@ -50,9 +50,7 @@ function main() {
     console.log(`${x} ${free}`);
     const empty = {};
     const value = $borrow(empty);
-    if (value.value != null) {
-      console.log(`${value.value}`);
-    } else {
+    if (value.value == null) {
       $borrowMut(empty).value = 5;
       const value = $borrow(empty, true);
       try {
@@ -66,9 +64,12 @@ function main() {
       } finally {
         $unborrow(value);
       }
+      return;
     }
+    console.log(`${value.value}`);
   } else {
     $unborrow(borrow);
+    return;
   }
 }
 //# sourceMappingURL=case.js.map

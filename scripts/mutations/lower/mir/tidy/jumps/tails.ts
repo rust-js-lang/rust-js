@@ -575,6 +575,22 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "returns-past-blocks-placed-past-earlier",
+    breaks: "a `break` MIR joined is placed at the first written `return` after the furthest written statement before it, not after the one just before it: recordLegacyContextWarning's `let … else { log.push(0); return; }`, whose `else` MIR puts after the rest, has no place, and its guard is lost to `if (root != null) { .. } else { log.push(0); }` (#435)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            at = stmt.span.lo;\n",
+    replace: "            at = at.max(stmt.span.lo);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "early returns joined to its end are each a guard first"],
+  },
+  {
+    name: "returns-past-blocks-placed-past-branch",
+    breaks: "a `break` MIR joined after an `if` whose branch leaves is placed at the first written `return` after the branch, not after the test: recordLegacyContextWarning's `if fiber.tag == 3 { return; }`, MIR's `if (fiber.tag !== 3) { ..; return; } break bb;`, has no place, and its guard is lost to `if (fiber.tag !== 3) { .. }` (#435)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                at = test.span.hi;\n",
+    replace: "                at = at.max(stmt.span.hi);\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "written return at a function's end is its case's return"],
+  },
+  {
     name: "branch-ends-returning-if-not-an-exit",
     breaks: "a block MIR made whose rest ends in an `if` each branch of which returns, the returns given back past a block, is made an `else` of a guard before it: addValueToProperties' `if (ArrayBuffer.isView(value)) { ..; break; }` nests what follows in an `else` (rd98)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
