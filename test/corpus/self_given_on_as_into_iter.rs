@@ -1,3 +1,4 @@
+//@ library-differs
 // A default's `&mut Self`, given as it is, given on through a dictionary
 // where an `IntoIterator` goes, as itertools' `next_tuple` does.
 

@@ -87,7 +87,9 @@ const run = async (args: string[], env: Record<string, string> = {}) => {
 const ignored = [corpus, ...browsers, ...(atNight ? [] : nightly)].map((file) => `--path-ignore-patterns=${file}`);
 const [rest, ...cases] = await Promise.all([
   run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored]),
-  ...corpusParts.map((part) => run([corpus], { RUST_JS_CASES: part })),
+  // A push's corpus builds as libraries only the cases whose JS as one
+  // differs, `library-differs`; the nightly's builds every case (ADR 0360).
+  ...corpusParts.map((part) => run([corpus], { RUST_JS_CASES: part, ...(atNight ? {} : { RUST_JS_LIBRARIES: "differing" }) })),
 ]);
 const pages = Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...browsers]) : 1;
 watchdog.kill();

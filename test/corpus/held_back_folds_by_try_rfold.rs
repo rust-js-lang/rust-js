@@ -1,3 +1,4 @@
+//@ library-differs
 // What folds std's struct from its back by `try_rfold`, `rfind` and `last`
 // of a `rev()`, asks its source's own `try_rfold`, std's `Take`'s, which
 // skips what it won't give by one `nth_back` of the crate's iterator, as

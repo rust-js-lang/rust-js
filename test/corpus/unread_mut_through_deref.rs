@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut` nothing reads, `let _ = &mut p.y` through `deref_mut`: what makes
 // its place runs, the counter's count, and no handle is made on it.
 use std::ops::{Deref, DerefMut};

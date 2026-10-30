@@ -1,3 +1,4 @@
+//@ library-differs
 // A method's result of a projection, `DerefMut`'s `&mut Self::Target`, of
 // an impl whose parameters a caller's numbers otherwise, a guard's of
 // `impl<'a, T, const CAP: usize>`, as arrayvec's `Drain`: asked of in its

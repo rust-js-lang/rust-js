@@ -1,3 +1,4 @@
+//@ library-differs
 // `impl<T: Trait + ?Sized> Trait for &mut T`, the forwarding impl std
 // writes for `Write` and `Iterator`: `(**self).m()` is given the cell its
 // `&mut T` is, so what the inner method writes, of a number or a

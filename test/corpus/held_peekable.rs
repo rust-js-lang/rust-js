@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Peekable` of a `Fuse` a struct holds, as itertools' `WithPosition`
 // does: its source and what it peeked at kept, so its `Debug` and a clone,
 // where it is, are Rust's (ADR 0543).

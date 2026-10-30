@@ -1,4 +1,5 @@
 //@ native: wasm32
+//@ library-differs
 // Hashers (ADR 0463): a crate's own, given each write std's `Hash` impls
 // make, its provided methods std's over what it writes itself; generic
 // code's `H: Hasher`; a `dyn Hasher`; and std's deprecated `SipHasher`,

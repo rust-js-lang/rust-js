@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait object of std's `Display` or `Error` is a value and its
 // dictionary, `{ value, impl }`, as one of the crate's own traits is: the
 // dictionary generic code is given for the type. It's shown when it's

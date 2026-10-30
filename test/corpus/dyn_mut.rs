@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut dyn Trait` is its pair, `{ impl, value }` (ADR 0049), and its
 // `&mut self` methods are given the pair, whose `value` a box's is: an
 // object's impl changes the object, and a number's the place the pair

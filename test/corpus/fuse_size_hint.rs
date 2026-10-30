@@ -1,3 +1,4 @@
+//@ library-differs
 // `size_hint()` of a `Fuse` no type of the crate's holds: what it steps',
 // and none once it's ended (ADR 0473).
 fn hint<I: Iterator>(it: I) -> (usize, Option<usize>) {

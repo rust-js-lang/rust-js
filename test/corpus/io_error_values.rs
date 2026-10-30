@@ -1,3 +1,4 @@
+//@ library-differs
 // An `io::Error` is a value (ADR 0462): made of a kind and an error or a
 // message, or of its kind alone; its `kind()`, its `{}` and `{:?}`, plain and
 // pretty, as std shows them, and it as a `dyn Error`.

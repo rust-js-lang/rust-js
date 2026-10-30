@@ -1,3 +1,4 @@
+//@ library-differs
 // `mem::replace` of a field holding an iterator given as it is: in a
 // method, the field itself; in a closure, which captures the field, the
 // iterator changed in place, the one it was kept of its kind.

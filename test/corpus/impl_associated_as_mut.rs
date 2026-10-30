@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl's `as_mut()` of its associated type, an array it knows, and a
 // generic caller's through its dictionary.
 

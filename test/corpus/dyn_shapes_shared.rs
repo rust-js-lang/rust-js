@@ -1,3 +1,4 @@
+//@ library-differs
 // Trait objects shared and boxed: `Rc<dyn Shape>`s sorted, scaled into
 // `Box<dyn Shape>`s, given to `T: ?Sized + Shape` as `&dyn Shape`s, kept by
 // kind, and one upcast to `&dyn Debug` where it's indexed out, a call's,

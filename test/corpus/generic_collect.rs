@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code collecting into a type parameter, `B: FromIterator<A>`, as
 // either's `Either` forwards `collect` (ADR 0446): a std collection's, text,
 // a fallible one's and the crate's own.

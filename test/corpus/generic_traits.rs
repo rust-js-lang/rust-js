@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait with type parameters, `Convert<T>` (ADR 0106): each impl of it is
 // a dictionary of its own, named for its arguments too, `metersConvertF64`
 // and `metersConvertString`, and a function bounded by two is given two.

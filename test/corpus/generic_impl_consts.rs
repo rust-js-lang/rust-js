@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic impl's constant of its parameters, as num-traits' `ConstZero`
 // of `Wrapping<T>` is: made from its parameters' constants, each read,
 // through generic code.

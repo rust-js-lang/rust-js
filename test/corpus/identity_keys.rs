@@ -1,3 +1,4 @@
+//@ library-differs
 // A type equal only to itself, its `PartialEq` `ptr::eq` and its `Hash`
 // `ptr::hash`, keys a set or a map by itself, as JS's `Set` and `Map` key
 // an object (ADR 0864): two of equal fields are two keys, one inserted

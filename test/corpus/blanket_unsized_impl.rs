@@ -1,3 +1,4 @@
+//@ library-differs
 // A blanket impl over `?Sized` types, `impl<T: Iterator + ?Sized> Ext for
 // T {}`, as itertools' `Itertools` is: each provided method it keeps, the
 // trait's default, in its dictionary, called of an iterator or of a type

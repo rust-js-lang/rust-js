@@ -1,3 +1,4 @@
+//@ library-differs
 // `type_name` in generic code (ADR 0145): of a type that holds a type
 // parameter, rustc's name with the one its caller gives in its place; of a
 // `T: ?Sized`, as of any; passed on through another generic function; and

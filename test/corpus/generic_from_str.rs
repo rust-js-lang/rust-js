@@ -1,3 +1,4 @@
+//@ library-differs
 // `T: FromStr` in generic code: `parse` of a `T` is its `FromStr`'s, a
 // dictionary each caller gives, std's numbers', `bool`'s, `char`'s and
 // `String`'s, or the crate's own. Its `Err` is the impl's, shown by its

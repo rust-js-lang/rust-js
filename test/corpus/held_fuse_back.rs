@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Fuse` a struct holds, made where its source is only an `Iterator`,
 // stepped from its back where it's double-ended and exact.
 

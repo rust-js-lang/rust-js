@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait whose supertraits are one trait twice, differing only by a
 // reference, as num-traits' `RefNum<Base>: NumOps<Base, Base> + for<'r>
 // NumOps<&'r Base, Base>` is: each its own part of the dictionary, named

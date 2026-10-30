@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait method whose declaration tracks its caller is given where it's
 // called through a dictionary too, generic code's or a `dyn`'s: each entry
 // of it takes `location`, after its arguments, as each impl does. An impl

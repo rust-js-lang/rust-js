@@ -1,3 +1,4 @@
+//@ library-differs
 // A blanket impl of a trait over every iterator, `impl<I: Iterator> Trait
 // for I`, whose `&mut self` method steps it: its dictionary's entry takes
 // the box generic code gives a `&mut Self`, and gives the method what's in

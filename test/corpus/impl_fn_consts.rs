@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl's constant of a function, a closure or a `dyn`, which rustc's
 // value tree can't say, is lowered as code: its type's object's, `S.ID`,
 // or a trait impl's, a constant of its module (ADR 0410).

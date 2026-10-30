@@ -1,3 +1,4 @@
+//@ library-differs
 // A type of the crate's that's a collection: looped over by its own
 // `IntoIterator`, built by `collect()` through its `FromIterator`, grown by
 // its `Extend`, and added up by its `Sum`, as a domain model's are.

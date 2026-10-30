@@ -1,3 +1,4 @@
+//@ library-differs
 // An integer bound by another's value, `i < n`, as by a slice's length: `n
 // - i` can't wrap, nor `n - i - 1` below `n`, so each is JS's own. Where
 // it can, or `n` changed since, each wraps as Rust's does.

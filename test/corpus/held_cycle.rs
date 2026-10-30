@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Cycle` a struct holds, as itertools' `CircularTupleWindows` does: the
 // one it started with and the one it steps kept, so its `Debug`, its clone
 // and an empty one's size hint are Rust's (ADR 0544).

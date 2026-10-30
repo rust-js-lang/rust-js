@@ -1,3 +1,4 @@
+//@ library-differs
 // A function JS calls takes its type parameters as JS gives them, a `Some`
 // of one the value. Where the crate's own Rust gives one what may look
 // like `None`, its call calls a copy that boxes it, and what either passes

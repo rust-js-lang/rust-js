@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic impl's constant of its type parameter's size: its dictionary,
 // made of the parameter's `TSize`, gives it (ADR 0145), where it was
 // refused.

@@ -1,3 +1,4 @@
+//@ library-differs
 // A `RefCell<dyn T>`, in an `Rc` or a `Box`, is its cell with its `impl`:
 // the pair a `dyn` is, its guard too (ADR 0397). An `Rc` of the cell made
 // before it's a `dyn` is the same cell: what's changed through one is seen

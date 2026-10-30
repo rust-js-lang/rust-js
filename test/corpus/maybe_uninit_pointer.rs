@@ -1,3 +1,4 @@
+//@ library-differs
 // A `MaybeUninit`'s `as_ptr()` and `as_mut_ptr()`, a pointer to its value's
 // place (ADR 0332): of a type parameter's array, smallvec's inline
 // `MaybeUninit<A>`, cast to its first item's (ADR 0417); and of a number.

@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Enumerate` a struct holds, as itertools' `Positions` does: its
 // source and its count kept, so what's asked of it later, its size hint,
 // its `Debug`, and its back where the impl's bounds give it, is Rust's

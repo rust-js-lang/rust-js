@@ -1,3 +1,4 @@
+//@ library-differs
 // A `MaybeUninit` of a type parameter that's an array, smallvec's
 // `A: Array`, each of whose impls is an array (ADR 0417): an array of slots,
 // none written yet, written an item at a time through a pointer to its

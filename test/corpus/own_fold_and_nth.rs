@@ -1,3 +1,4 @@
+//@ library-differs
 // An iterator whose impl writes its own `fold` and `nth`: std's consumers
 // that route through them call them, through each adapter whose own does,
 // and those that step by `next` don't (#162).

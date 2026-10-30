@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's dictionary of the crate's own is cached in a `$` name, as the
 // runtime's helpers are named: one named as a helper the module imports,
 // a generic `Duration`'s `Add` and std's `Duration` added, is given apart

@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default method, lowered in an impl's dictionary, calling a
 // method of its `Self`, `Holder<T, CAP>`: given the impl's `CAP`, which
 // `Self` names, as arrayvec's `ArrayVecImpl::as_slice` calls `self.len()`

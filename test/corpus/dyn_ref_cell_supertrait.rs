@@ -1,3 +1,4 @@
+//@ library-differs
 // A cell made a `dyn` of a trait and, through another `Rc`, of its
 // supertrait: one `impl`, both's methods, which are the same where they
 // share a name (ADR 0397).

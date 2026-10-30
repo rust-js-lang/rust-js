@@ -1,3 +1,4 @@
+//@ library-differs
 // `TypeId`s and downcasts of generic code: a `T: 'static`'s `TypeId`, given
 // by its caller, a downcast to a type parameter, an `Rc<dyn Any>` and a
 // `dyn Any + Send` (ADR 0331).

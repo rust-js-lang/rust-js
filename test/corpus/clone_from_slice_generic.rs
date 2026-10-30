@@ -1,3 +1,4 @@
+//@ library-differs
 // `clone_from_slice` of a type parameter's items: each by its
 // dictionary's `clone_from` where its impl writes one, as std's calls it,
 // else a clone, arrayvec's `Clone::clone_from` of its prefix. A `Clone`

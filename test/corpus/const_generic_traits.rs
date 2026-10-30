@@ -1,3 +1,4 @@
+//@ library-differs
 // Const generics of traits and of their methods (ADR 0135): a trait's const
 // parameter is part of which trait an impl is, and a method's is given its
 // value, as a function's is (ADR 0107), through a dictionary too.

@@ -1,3 +1,4 @@
+//@ library-differs
 // A typed payload, `resume_unwind(Box::new(v))` of a `v` that's not text,
 // downcasts to its own type, as Rust's does, though it downcasts as the
 // `&JsError` thrown too (ADR 0710): `is`, `downcast_ref`, `downcast_mut`

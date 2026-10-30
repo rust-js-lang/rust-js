@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Rc<RefCell<C>>` made an `Rc<RefCell<dyn T>>` where it's shared, a
 // listener a bus and its owner both hold, beside a tree whose parent is a
 // `Weak`, which counts `Rc`s (ADR 0320). Where no implementor of `T` drops

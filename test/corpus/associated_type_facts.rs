@@ -1,3 +1,4 @@
+//@ library-differs
 // `size_of` of an associated type in generic code, `<A as Array>::Item`,
 // smallvec's: a fact its trait's dictionary carries, `AArray.ItemSize`,
 // each impl's of its own type, `T`'s, given its factory (ADR 0145). Asked

@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Formatter`'s options are handed on (ADR 0058): a `fmt` that gives its
 // `Formatter` to another `fmt` gives it the placeholder's width, precision
 // and sign, as a generic `T`'s, a `dyn`'s, a derived `Debug`'s and a

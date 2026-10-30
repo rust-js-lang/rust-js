@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default kept by a blanket impl steps `Self::Iter`, which the
 // impl says is its `I`: a range, the crate's iterator or a `Vec`'s, each
 // stepped by the dictionary it's given, as `I` is stepped (ADR 0977).

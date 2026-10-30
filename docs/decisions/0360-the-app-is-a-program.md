@@ -89,3 +89,32 @@ do, so they're the same with a consumer as without, and a consumer that
 gives one more compiles its own. What a library still writes that its
 program wouldn't, its consumers' trait impls and copies of what they may
 change in place, ADR 0914 lists.
+
+## Amendment: each push builds as libraries the cases whose JS differs
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; this decides which
+corpus cases each push builds as libraries, not what the JS does.
+
+Building every corpus case as a library too was about 30% of the corpus's
+CPU, and the corpus is the longest part of each push's check (ADR 1030).
+Of 200 cases sampled, 181 were the same JS as a library as as a program,
+byte for byte: running that JS a second time compares nothing new.
+
+**A case whose JS as a library isn't its program's says so, `//@
+library-differs`. Each push's corpus, and `check:fast`'s
+(`RUST_JS_LIBRARIES=differing`), builds only those cases, and any
+`library-refused` one, as libraries. Every other run builds every case:
+the nightly's, a mutation's, and one by hand.**
+
+- A run that builds a case as a library compares the two JS. A difference
+  the case doesn't state, or a stated one that's gone, is an error;
+  `bun run bless` writes or removes the directive.
+- The library build is run against native Rust only where its JS differs:
+  the same JS was run as the program.
+- 120 of the corpus's 1,319 cases are marked: generic trait methods a
+  consumer may give a destructor, `dyn` and `Any` values, type facts.
+- A change that makes a case's library JS differ where it didn't is found
+  by the nightly, up to a day later, instead of by its push. Each push still
+  checks the marked cases, and `test/crates.test.ts` still checks libraries
+  and their consumers.
+- A local run of the 1,319 cases went from 47 s to 26 s.

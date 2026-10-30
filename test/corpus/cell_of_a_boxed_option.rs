@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Cell` of an `Option` of what could look like `None`, `Option<u8>`'s or
 // a type parameter's: `take`, `replace` and `get` give what it held as it's
 // kept, `Some(None)` apart from `None`, as Rust's do (ADR 0537).

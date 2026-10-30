@@ -1,3 +1,4 @@
+//@ library-differs
 // A bound of any lifetime, `for<'a> &'a Self: IntoIterator`, read where a
 // call is checked for a collection of the crate's: its lifetime erased, not
 // left unbound, which rustc can't select an impl for. From rustc's

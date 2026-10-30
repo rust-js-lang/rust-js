@@ -1,3 +1,4 @@
+//@ library-differs
 // A `dyn ToString` is a pair, as a `dyn Display` is (ADR 0141): its value
 // and the dictionary of its type's `ToString`, whose `to_string` gives its
 // text. Of numbers, text and the crate's own `Display`, boxed, borrowed, in

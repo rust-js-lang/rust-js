@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl's `IntoIterator` bound that some of its methods' results hold as
 // it is, `make`'s and `pair`'s `Pair<A::IntoIter>`, and others' don't,
 // `first`'s, which gives `A` to `pair`: each is given `A` as its own

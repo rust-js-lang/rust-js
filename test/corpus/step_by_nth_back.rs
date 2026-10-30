@@ -1,3 +1,4 @@
+//@ library-differs
 // A `step_by` stepped from its back by `nth`, `rev().nth(k)`, asks its
 // source's `nth_back` once, past `k` steps and its back's index, as std's
 // `StepBy::nth_back` does (#245).

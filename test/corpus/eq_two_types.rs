@@ -1,3 +1,4 @@
+//@ library-differs
 // `==` of two types' items, `[A::Item] == [B::Item]`, smallvec's
 // `PartialEq<SmallVec<B>>`: each by its bound, `A::Item: PartialEq<B::Item>`,
 // its dictionary's (ADR 0053); each side evaluated once.

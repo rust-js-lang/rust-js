@@ -1,3 +1,4 @@
+//@ library-differs
 // `Borrow` in generic code, as a map's key lookup is: a dictionary each
 // caller gives, std's for a value as itself, a `String` as a `str`, a `Vec`
 // or an array as a slice, and the crate's own for its types.

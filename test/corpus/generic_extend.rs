@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code extending a type parameter, `C: Extend<A>`, as either's
 // Either does (ADR 0164).
 

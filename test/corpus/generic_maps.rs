@@ -1,3 +1,4 @@
+//@ library-differs
 // A map or a set keyed by a type parameter, or by an associated type of
 // one, `Self::Item`, is of the class its caller's type says, `Map` or
 // `$KeyMap`, given as `KMap` (ADR 0466): in a generic function, a trait's

@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic function's field of its type parameter's associated type,
 // `Option<I::Item>`, called where that type has a name of the caller's,
 // `I: Iterator<Item = A>`: its fields are read in the function's own terms.

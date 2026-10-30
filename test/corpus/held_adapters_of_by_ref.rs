@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut` of an iterator, `by_ref()`'s, held by std's adapter, steps by
 // what std's impl for `&mut I` passes on to its `I`: its `next`,
 // `size_hint` and `nth`, not its `fold`, which is `I`'s `try_fold` (ADR

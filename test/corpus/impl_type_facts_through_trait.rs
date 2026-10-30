@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait impl's method that asks `size_of::<T>()`, called through its
 // trait from another impl's, of a type naming the caller's `T`: arrayvec's
 // `FromIterator::from_iter` calling `array.extend(iter)`. The call is its

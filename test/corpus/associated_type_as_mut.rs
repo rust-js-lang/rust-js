@@ -1,3 +1,4 @@
+//@ library-differs
 // `as_mut()` and `as_ref()` of an associated type, `T::Buffer`, bound by
 // `AsMut` and `AsRef`: its dictionary's, as a type parameter's is, here an
 // array's own items, changed in place (ADR 0533).

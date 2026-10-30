@@ -1,3 +1,4 @@
+//@ library-differs
 // A writer of bytes, `io::Write` (ADR 0392): generic code, a `W: Write`, is
 // given its dictionary, and a `dyn Write` is the pair of it and its writer;
 // a `Vec<u8>`'s bytes are added to it, a standard stream's written, and a

@@ -1,3 +1,4 @@
+//@ library-differs
 // `Default` of an array of a caller's `N`, which Rust asks a where clause
 // for, `[T; N]: Default`: that bound's dictionary's, which the caller makes
 // of its own `N` (ADR 0107; rustc's const-generics/type-dependent/issue-69816.rs).

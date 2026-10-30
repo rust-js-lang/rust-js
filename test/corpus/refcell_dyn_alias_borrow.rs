@@ -1,4 +1,5 @@
 //@ run-fail: RefCell already mutably borrowed
+//@ library-differs
 // An `Rc<RefCell<Circle>>` made an `Rc<RefCell<dyn Shape>>` shares its
 // cell: a borrow of the `dyn` one held while the concrete one is borrowed
 // is the same cell's, and the second finds it borrowed (ADRs 0397, 0863).

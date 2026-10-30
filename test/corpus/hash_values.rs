@@ -1,4 +1,5 @@
 //@ native: wasm32
+//@ library-differs
 // What `hash` writes, through std's `DefaultHasher` (ADR 0463): std's types
 // as std's impls write them, a `usize` as a 32-bit target's, a derived
 // `Hash`, a type's own, generic code's of a `T: Hash`, and a type's own

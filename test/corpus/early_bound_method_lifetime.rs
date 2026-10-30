@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait method with a lifetime of its own that a `where` clause makes
 // early-bound, `fn pick<'b>(..) where 'a: 'b`, called through a trait
 // object and a generic. rust-js resolved it without that lifetime, and rustc

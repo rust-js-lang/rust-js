@@ -1,3 +1,4 @@
+//@ library-differs
 // A type parameter bound by the crate's trait that extends `Iterator`,
 // `T: Sorted`, is given as it is, as `Sorted`'s impl takes it, and given
 // `Iterator`'s dictionary too where it's stepped, as one bound by std's

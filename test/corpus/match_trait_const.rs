@@ -1,3 +1,4 @@
+//@ library-differs
 // A pattern of a trait's constant, `<u8 as Level>::HIGH`, of a type: its
 // value, which needs no Self to say (ADR 0590). A crate's own constant is
 // still its name.

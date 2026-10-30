@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic iterator of the crate's that a `for` loop steps, std's code
 // running its `next`: what its `next` borrows and drops is of its own
 // impl's parameters, which no type at the call gives, so it's not known

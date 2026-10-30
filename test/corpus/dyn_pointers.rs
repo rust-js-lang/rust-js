@@ -1,3 +1,4 @@
+//@ library-differs
 // A raw pointer to a `dyn Trait` is the `dyn`'s pair, as a `&dyn Trait` and
 // a `Box<dyn Trait>` are (ADR 0562): made from a thin pointer, called and
 // written through, made thin again, and a boxed one taken apart and put

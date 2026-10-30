@@ -1,3 +1,4 @@
+//@ library-differs
 // `*b = b_orig.clone()` of a `&mut J` to a type parameter given as it is
 // (ADR 0411), its caller's own value, an object: written in place, as a
 // `&mut` to any object is, `$assign`, as itertools' `Product` restarts its

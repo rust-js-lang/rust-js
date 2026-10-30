@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default that calls its trait on an adapter of `Self`,
 // `self.enumerate().minmax()` as itertools' `position_minmax` does, of a
 // blanket impl over `?Sized` types: its `Self: Sized` is the impl's, which

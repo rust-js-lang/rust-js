@@ -1,3 +1,4 @@
+//@ library-differs
 // A reference given where a generic parameter is: std's impls for `&T` pass
 // each trait on to what it refers to, which is the value itself in JS, so
 // its dictionary is that one's; std's `AsRef` of a path or text as a

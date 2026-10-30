@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default method comparing `Self`, or computing with it, as
 // num-traits' `Signed`, `Float` and `One` do: `<` through a `PartialOrd` supertrait, of a number in the impl
 // it's copied into, and `==` by the method's own `where Self: PartialEq`, of

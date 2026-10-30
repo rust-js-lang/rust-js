@@ -1,3 +1,4 @@
+//@ library-differs
 // A program's errors: an enum of them with `Display`, `Error` and a `From`
 // that `?` converts by, boxed as a `dyn Error` where they meet, and a
 // `Result` collected (ADRs 0141, 0187).

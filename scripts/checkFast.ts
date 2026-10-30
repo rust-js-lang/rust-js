@@ -73,7 +73,9 @@ const inParts = (name: string, file: string) =>
   Array.from({ length: parts }, (_, i): [string, string[], Record<string, string>] => [
     `${name} ${i + 1}/${parts}`,
     ["bun", "test", file],
-    { RUST_JS_CASES: `${i + 1}/${parts}` },
+    // As a push's: of the corpus's, only the cases whose JS as a library
+    // differs are built as one (ADR 0360).
+    { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing" },
   ]);
 const jobs: [string, string[], Record<string, string>][] = [
   ["fmt", ["bun", "run", "fmt:check"], {}],

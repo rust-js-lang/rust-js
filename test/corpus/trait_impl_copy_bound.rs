@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait impl's own `T: Copy` bound takes its copy function with its
 // dictionary, as rustc's traits/conditional-dispatch.rs dispatches through
 // one: a copy of an `Option<Point>`, or of a `[Point; 2]`, made by the

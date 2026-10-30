@@ -1,3 +1,4 @@
+//@ library-differs
 // An associated type, `type Item` (ADR 0106), is a type only a caller knows
 // in generic code, as a type parameter is: `drain`'s `Vec<S::Item>` is a
 // `Vec<u32>` of one caller's and a `Vec<String>` of another's. std's are the

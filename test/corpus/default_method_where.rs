@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default method whose `where` clauses an impl's type can't meet,
 // `where Self::Item: Deref`, isn't in that impl's dictionary, as rustc
 // leaves it out of the vtable: nothing can call it. An impl that meets them

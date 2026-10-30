@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's constant, `const SIDES: u32` (ADR 0106): where the type is
 // known, `Square::SIDES`, it's the value rustc computes, written in place,
 // as a type's own constant is (ADR 0031); in generic code, `S::SIDES`, it's

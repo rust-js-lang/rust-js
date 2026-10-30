@@ -1,3 +1,4 @@
+//@ library-differs
 // The crate's own `fmt` traits besides `Display` and `Debug`: `{:x}`, `{:X}`,
 // `{:o}`, `{:b}`, `{:e}` and `{:p}` of its types call its impls, given the
 // placeholder's options, as uuid's and thiserror's are. And `write_str`

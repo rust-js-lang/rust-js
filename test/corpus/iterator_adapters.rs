@@ -1,3 +1,4 @@
+//@ library-differs
 // A struct of a type parameter bound by `Iterator`, an adapter, steps it
 // through the parameter's dictionary, `{ next }`, as it is: a range in
 // place, the crate's own by its impl, a JS iterator by `$next` (ADR 0411).

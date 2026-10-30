@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default, copied into its impl, indexing a slice of its own
 // type parameter by the crate's `Index<Id> for [T]`, as aho-corasick's
 // `Automaton::try_replace_all` does.

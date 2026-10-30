@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic associated type is a type only a caller knows, as an associated
 // type is (ADR 0146): its own lifetimes are erased, as JS has none, and a
 // bound on one is in its trait's dictionary, one for every `Iter<'a>`. One

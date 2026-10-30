@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's generic method, `describe<T: Display>` (ADR 0106): called where
 // the impl is known, it's the impl's method, given `T`'s evidence; called
 // through a dictionary, the evidence comes after the arguments, in the

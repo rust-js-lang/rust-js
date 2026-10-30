@@ -1,3 +1,4 @@
+//@ library-differs
 // The crate's own `nth_back` and `rfold`, as std's `Rev` asks them for its
 // `nth` and its `fold` (#217): `rev().nth(n)`, a `skip`'s first step, is
 // its `nth_back`; `rev()`'s sum, count and last fold by its `rfold`;

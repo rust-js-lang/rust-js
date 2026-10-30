@@ -1,3 +1,4 @@
+//@ library-differs
 // A bound on a reference to a type parameter, `for<'a> &'a mut C:
 // IntoIterator`, as either's `iter_mut` and generic collection code write
 // it: the caller's `into_iter` of a `&C` or a `&mut C`, std's or the

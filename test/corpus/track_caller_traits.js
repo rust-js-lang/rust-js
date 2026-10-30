@@ -9,7 +9,7 @@ const unitTracked = {
   inherited: unitTracked_inherited,
   onlyImpl: (
     arg0,
-    location = { file: "test/corpus/track_caller_traits.rs", line: 40, column: 5 },
+    location = { file: "test/corpus/track_caller_traits.rs", line: 41, column: 5 },
   ) => unitTracked_onlyImpl(arg0, location),
   boxed: unitTracked_boxed,
   unread: unitTracked_unread,
@@ -55,7 +55,7 @@ function flagTracked_inherited(flag, location) {
 }
 
 function flagTracked_onlyImpl(flag) {
-  return { file: "test/corpus/track_caller_traits.rs", line: 75, column: 9 };
+  return { file: "test/corpus/track_caller_traits.rs", line: 76, column: 9 };
 }
 
 function flagTracked_boxed(box, location) {
@@ -75,14 +75,14 @@ function generic(t, TTracked) {
     `${TTracked.tagged(
       t,
       5,
-      { file: "test/corpus/track_caller_traits.rs", line: 95, column: 22 },
+      { file: "test/corpus/track_caller_traits.rs", line: 96, column: 22 },
       { fmt: String },
     )}`,
   );
   return [
-    TTracked.fromDefault(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 8 }),
-    TTracked.inherited(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 26 }),
-    TTracked.onlyImpl(t, { file: "test/corpus/track_caller_traits.rs", line: 96, column: 41 }),
+    TTracked.fromDefault(t, { file: "test/corpus/track_caller_traits.rs", line: 97, column: 8 }),
+    TTracked.inherited(t, { file: "test/corpus/track_caller_traits.rs", line: 97, column: 26 }),
+    TTracked.onlyImpl(t, { file: "test/corpus/track_caller_traits.rs", line: 97, column: 41 }),
   ];
 }
 
@@ -91,7 +91,7 @@ function passedOn(t, location, TTracked) {
 }
 
 function pointerInside(location) {
-  const f = () => here({ file: "test/corpus/track_caller_traits.rs", line: 111, column: 1 });
+  const f = () => here({ file: "test/corpus/track_caller_traits.rs", line: 112, column: 1 });
   return f();
 }
 
@@ -103,19 +103,19 @@ function main() {
   const unit = undefined;
   const value = unitTracked.fromDefault(unit, {
     file: "test/corpus/track_caller_traits.rs",
-    line: 117,
+    line: 118,
     column: 25,
   });
   console.log(`${value.file}:${value.line}:${value.column}`);
   const value$1 = unitTracked_inherited(unit, {
     file: "test/corpus/track_caller_traits.rs",
-    line: 118,
+    line: 119,
     column: 25,
   });
   console.log(`${value$1.file}:${value$1.line}:${value$1.column}`);
   const value$2 = unitTracked_onlyImpl(unit, {
     file: "test/corpus/track_caller_traits.rs",
-    line: 119,
+    line: 120,
     column: 25,
   });
   console.log(`${value$2.file}:${value$2.line}:${value$2.column}`);
@@ -129,12 +129,12 @@ function main() {
   for (const object of objects) {
     const fromDefault = object.impl.fromDefault(object.value, {
       file: "test/corpus/track_caller_traits.rs",
-      line: 128,
+      line: 129,
       column: 37,
     });
     const inherited = object.impl.inherited(object.value, {
       file: "test/corpus/track_caller_traits.rs",
-      line: 128,
+      line: 129,
       column: 60,
     });
     const value = object.impl.onlyImpl(object.value);
@@ -145,26 +145,26 @@ function main() {
   }
   const value$3 = passedOn(
     unit,
-    { file: "test/corpus/track_caller_traits.rs", line: 131, column: 20 },
+    { file: "test/corpus/track_caller_traits.rs", line: 132, column: 20 },
     unitTracked,
   );
   console.log(`${value$3.file}:${value$3.line}:${value$3.column}`);
   const boxed = { impl: unitTracked };
   const value$4 = boxed.impl.boxed(boxed.value, {
     file: "test/corpus/track_caller_traits.rs",
-    line: 133,
+    line: 134,
     column: 26,
   });
   console.log(`${value$4.file}:${value$4.line}:${value$4.column}`);
   const value$5 = flagTracked_boxed([true], {
     file: "test/corpus/track_caller_traits.rs",
-    line: 134,
+    line: 135,
     column: 41,
   });
   console.log(`${value$5.file}:${value$5.line}:${value$5.column}`);
   const value$6 = pointerInside({
     file: "test/corpus/track_caller_traits.rs",
-    line: 135,
+    line: 136,
     column: 20,
   });
   console.log(`${value$6.file}:${value$6.line}:${value$6.column}`);

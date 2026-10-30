@@ -1,3 +1,4 @@
+//@ library-differs
 // A `dyn Any` and its downcasts: `is`, `downcast_ref`, `downcast_mut`,
 // `Box::downcast`, `TypeId`, `type_name`, and a trait whose supertrait is
 // `Any`, upcast to it.

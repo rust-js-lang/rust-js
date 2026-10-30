@@ -1,3 +1,4 @@
+//@ library-differs
 // A bound of `Index<J>` or `IndexMut<J>` on a `Vec<T>`, a slice or an
 // array, by an index generic code is given: its `J: SliceIndex<[T]>`'s
 // dictionary, an item or a range of them, as std's one impl of them holds

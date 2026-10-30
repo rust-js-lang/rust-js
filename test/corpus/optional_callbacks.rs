@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Option` of a type parameter bound by `FnOnce`, `FnMut` or `Fn` is
 // the function or `None`: a function is never `undefined` or `null`, so
 // its `Some` isn't boxed and what it holds is read as it is. React's

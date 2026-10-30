@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl whose associated type is an iterator, `IntoIterator`'s `IntoIter`
 // or a trait's own `type Out: Iterator`, steps what that type's `next`
 // steps, its type parameter given as it is: its dictionary gives that

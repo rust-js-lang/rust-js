@@ -1,3 +1,4 @@
+//@ library-differs
 // `?` of std's own errors into a `Box<dyn Error>`: a parse error is its
 // message (ADR 0063), and its `dyn Error` shows it as Rust does, `{}` the
 // message and `{:?}` its `ParseIntError { kind: .. }`.

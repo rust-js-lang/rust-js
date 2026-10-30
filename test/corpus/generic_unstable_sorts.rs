@@ -1,3 +1,4 @@
+//@ library-differs
 // An unstable sort, or `select_nth_unstable`, of a type parameter's items:
 // std's algorithm, as its caller's type picks it by its layout, `TSort`,
 // which leaves equal items where std's does (ADR 0471).

@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait method that gives a `&mut` to its associated type, called through
 // a dictionary: generic code has it in a box, whatever the impl gives.
 

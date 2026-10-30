@@ -1,3 +1,4 @@
+//@ library-differs
 // A placeholder's width, precision and sign reach what std's `Display`
 // hands them to: what a `Box`, an `Rc` or an `Arc` holds, a `Wrapping`'s
 // number, a `Cow<str>`'s or a path's text, and a parse error's message,

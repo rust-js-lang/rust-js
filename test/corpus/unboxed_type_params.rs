@@ -1,3 +1,4 @@
+//@ library-differs
 // A type parameter no call gives what may look like `None` is never boxed
 // in a `Some`: `last::<i32>`'s is the last item or `undefined`, and a JS
 // caller of an export gets the value its callback gives, `undefined` too

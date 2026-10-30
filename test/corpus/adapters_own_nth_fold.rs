@@ -1,3 +1,4 @@
+//@ library-differs
 // The crate's own `nth` and `fold`, as std asks them through its adapters
 // (#214): a `skip_while`'s fold is its source's after its first item; an
 // adapter's `nth` is `advance_by` then `next`, and `advance_by` its

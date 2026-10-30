@@ -1,3 +1,4 @@
+//@ library-differs
 // A higher-ranked bound, `for<'a> T: Named<'a>`, is one dictionary a
 // generic function passes on: lifetimes aren't in the JS. rust-js asked
 // rustc about it with `'a` still bound, and rustc panicked. Found by rustc's

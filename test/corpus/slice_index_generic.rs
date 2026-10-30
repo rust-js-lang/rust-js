@@ -1,3 +1,4 @@
+//@ library-differs
 // `Index` and `IndexMut` of an index of a type parameter's, `I:
 // SliceIndex<[T]>`, smallvec's: its dictionary's `index` and `index_mut`,
 // the runtime's for `usize` and each kind of range (ADR 0418).

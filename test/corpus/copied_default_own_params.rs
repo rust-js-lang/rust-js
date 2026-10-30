@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait's default with parameters of its own, a `const N`, kept by a
 // blanket impl whose parameters are numbered apart from its trait's, `'a`
 // first, as rustc's `issue-71805` is: what it drops named in its trait's

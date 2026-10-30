@@ -1,3 +1,4 @@
+//@ library-differs
 // A guard of a lock of a type parameter's, `MutexGuard<C>`, is its value
 // through `Deref`, as one of a known type's is: std's `Deref` of a guard
 // doesn't depend on what it guards, uuid's clock sequence's (ADR 0450).

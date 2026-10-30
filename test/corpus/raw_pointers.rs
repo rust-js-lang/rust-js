@@ -1,3 +1,4 @@
+//@ library-differs
 // A raw pointer is a handle on its place, one for each place, or `null`:
 // `*p` reads and writes the place, `p == q` is whether it's the same one,
 // and a local a pointer is taken to is a cell (ADR 0407).

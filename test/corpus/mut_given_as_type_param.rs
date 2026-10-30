@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut` given as a type parameter's value is a box, as one given as a
 // `&mut T` is (ADR 0180): copied back after the call, and what's in it
 // taken out where the call gives it back; an impl for `&mut T` reads

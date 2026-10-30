@@ -6,7 +6,7 @@ As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 |---|---|---|---|
 | `bun run test` | 3,725 tests in 161 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |
 | ↳ the nightly's files (`nightly` in `scripts/shard.ts`, ADR 1030) | 19 files, ~170 tests: tidy's stages, iterator forms, fuzz's seeds, the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness, build history, limitations | What each says; a mutation that names one still runs it | ~1,000 s of CPU, run only by the nightly's suite, `--nightly` |
-| ↳ corpus | 1,319 Rust programs (`test/corpus/*.rs`) | Each one's JS prints what native Rust prints, and matches its snapshot | about half the suite |
+| ↳ corpus | 1,319 Rust programs (`test/corpus/*.rs`) | Each one's JS prints what native Rust prints, and matches its snapshot; built as a library too, each push only the 120 marked `library-differs`, the nightly every one (ADR 0360) | about half the suite |
 | ↳ the other 160 files | ~2,350 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), React's ported modules against their snapshots, docs, architecture | the rest |
 | `cargo test` | 57 unit tests | Tidy's passes and decisions | <1 min |
 | Mutations | ~7,700 (`scripts/mutations/`) | Each rule has a test that fails without it | a check runs only the changed ones: ~10 min on up to 16 machines |

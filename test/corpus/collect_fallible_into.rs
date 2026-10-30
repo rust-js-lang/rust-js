@@ -1,3 +1,4 @@
+//@ library-differs
 // `collect()` into a `Result` or an `Option` of a collection that isn't
 // an array, a map, a set, text or one of the crate's own: the first `Err`
 // or `None`, or all the values made into it, `$collectResults(items,

@@ -1,3 +1,4 @@
+//@ library-differs
 // `{:p}`, `{:x}` and the like through generic code, as thiserror's `Var`
 // forwards them: a `T: Pointer`'s or a `T: LowerHex`'s dictionary, given
 // the placeholder's options.

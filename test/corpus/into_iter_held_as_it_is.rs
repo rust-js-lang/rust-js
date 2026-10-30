@@ -1,3 +1,4 @@
+//@ library-differs
 // What an `IntoIterator` makes, held as it is where its function bounds it
 // by `Clone`: of a type parameter's, and of an associated type's, as
 // itertools' `multi_cartesian_product` holds it.

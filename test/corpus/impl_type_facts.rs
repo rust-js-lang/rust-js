@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait impl's method that asks the size of its impl's type parameter,
 // through a generic function, as arrayvec's `try_from` steps by bytes:
 // its impl's dictionary is made of it, `wrapFootprint(TSize)`, one for

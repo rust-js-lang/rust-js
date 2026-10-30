@@ -1,3 +1,4 @@
+//@ library-differs
 // A trait object given to generic code, `T: Trait + ?Sized`: its evidence
 // is Rust's built-in `impl Trait for dyn Trait`, a dictionary whose methods
 // call the pair's own, as a call on the `dyn` does, and a supertrait's, a

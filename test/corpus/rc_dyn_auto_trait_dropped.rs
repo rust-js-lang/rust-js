@@ -1,3 +1,4 @@
+//@ library-differs
 // A counted `Rc<dyn Sub + Send>` as an `Rc<dyn Sub>`, an auto trait left
 // out (#186): the same `Rc`, its counts shared.
 use std::rc::Rc;

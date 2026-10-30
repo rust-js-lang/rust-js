@@ -1,3 +1,4 @@
+//@ library-differs
 // An `IntoIterator` given to generic code that holds what it makes as it is
 // (ADR 0552), of a type only bounds know: an iterator, `J::IntoIter`, whose
 // `IntoIterator` is std's for every iterator, itself; and an impl's bound,

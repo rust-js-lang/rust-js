@@ -1,3 +1,4 @@
+//@ library-differs
 // A wrapper of a generic iterator, as the `either` crate's `IterEither`
 // is: its `fold` and its `rfold` each map the iterator it holds, one map
 // type stepped from its back by one impl and folded forward by the other,

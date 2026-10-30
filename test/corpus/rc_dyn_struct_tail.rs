@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Rc` of a struct whose last field is a `dyn` (ADR 0409): the struct
 // given its `impl`, itself where the `Rc` is never counted, in the cell of
 // one that is (ADR 0320), its fields read through either, and a method of

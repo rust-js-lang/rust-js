@@ -1,3 +1,4 @@
+//@ library-differs
 // What a trait's generic method asks of its own type parameter, its
 // `type_name`, is given by its caller, through the trait's dictionary too
 // (ADR 0466).

@@ -1,3 +1,4 @@
+//@ library-differs
 // A closure that writes to the `Formatter` its writer captured, `|disp|
 // disp.fmt(f)`, called there or given to another as a `&mut dyn FnMut`, in
 // a closure that writes to it too, as itertools' `FormatWith` does: what it

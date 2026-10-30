@@ -1,3 +1,4 @@
+//@ library-differs
 // A generic `&mut T` kept or returned is a cell, a box or a handle, as a
 // `&mut` to a number is (ADR 0099): generic code is compiled once, and its
 // `T` may be a number. A caller whose `T` is a number is given the cell; one

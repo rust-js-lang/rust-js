@@ -379,7 +379,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0357 A local reuses a name where JS's scopes keep each read its own](0357-scoped-local-names.md)
 - [0358 A number from a `bool` or a `char` is its cast](0358-numbers-from-bool-and-char.md)
 - [0359 next/font: each Google Font a function, generated](0359-next-font.md)
-- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built; amended by 0914: its generic functions are its program's)*
+- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built; amended by 0914: its generic functions are its program's; amended: each push builds as libraries only the corpus cases whose JS differs)*
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
