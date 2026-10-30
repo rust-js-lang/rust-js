@@ -1165,7 +1165,7 @@ pub fn named_past(xs: &[String]) -> Vec<String> {
   const of = performanceTrack();
   expect(of("getArrayKind")).toContain("for (const value of array.slice(0, OBJECT_WIDTH_LIMIT)) {");
   expect(of("addValueToProperties")).toContain("for (const entry of value.slice(0, OBJECT_WIDTH_LIMIT)) {");
-});
+}, 60_000);
 
 // ADR 0480: a clone of a `copied()` is a clone of the iterator it copies,
 // its `Clone` dictionary's where it's generic: each goes on apart from

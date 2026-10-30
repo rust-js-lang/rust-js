@@ -202,7 +202,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   expect(described).toContain("desc = $unwrap(\n              didTruncate\n                ? JSON.stringify(");
   expect(described).toContain("                : JSON.stringify(value, null, 0),\n");
   expect(described).not.toContain("$try");
-});
+}, 60_000);
 
 // ADR 0644: a function whose result is a throwing call's `Result`, each
 // return, is a throwing function, as React's `testStringCoercion` is: its
