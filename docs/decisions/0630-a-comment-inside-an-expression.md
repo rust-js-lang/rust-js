@@ -200,3 +200,16 @@ the argument as written.** Not of another reborrow: one of a constant,
 "a block comment before an argument given by reference is before it" and
 the mutation `reborrow-argument-unplaced` (`lower/mir/rvalues.ts`); no
 corpus case changes.
+
+## Amendment: a constant has its place in the map (2026-10-30, rd220)
+
+A line comment after code on its line is placed by the JS the map gives
+that line. A call written an argument a line whose last is a constant,
+`true, // We let the helper apply the translate` of React's
+`startGestureTransition`, had none: a constant's JS had no span, so the
+comment was lost. **A constant's JS has the span MIR gives its operand**,
+where it has none and no macro wrote it, so the comment is after it,
+`true, // ..` then `)`. No corpus case's JS changed. Held by
+`lowering-comments-ends.test.ts`'s "a comment after a call's last argument,
+a constant, is after it" and the mutation `constant-unplaced`
+(`lower/mir/operands.ts`).

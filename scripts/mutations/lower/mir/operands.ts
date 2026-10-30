@@ -204,4 +204,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
   },
+  {
+    name: "constant-unplaced",
+    breaks: "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
+    file: "src/lower/mir/operands.rs",
+    find: "                if made.span.is_none() && !c.span.from_expansion() {\n",
+    replace: "                if false && made.span.is_none() && !c.span.from_expansion() {\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after a call's last argument, a constant"],
+  },
 ];

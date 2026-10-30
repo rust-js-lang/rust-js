@@ -263,7 +263,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
             }
-            Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
+            // Where it's written, which the map gives a line comment after it
+            // on its line the JS of, `true, // why` of a call's last argument
+            // (rd220).
+            Operand::Constant(c) => {
+                let mut made = self.mir_const(state, c)?;
+                if made.span.is_none() && !c.span.from_expansion() {
+                    made.span = self.js_span(c.span);
+                }
+                Ok(Value::Expr(made))
+            }
             // Whether a build checks UB, contracts or overflow at run time:
             // none, as `std_coverage::reachable` reads it, and as a release
             // build's integers wrap (ADR 0364).

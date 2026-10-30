@@ -296,3 +296,31 @@ pub fn count(n: u32, odd: bool) -> u32 {
   expect(js).toContain("    i++;\n    // Then the next.\n  }");
   expect([lib.scan([null] as never, false as never), lib.count(4 as never, true as never)]).toEqual([[false, true], 2]);
 });
+
+// React's ReactFiberConfigDOM's startGestureTransition writes a call an
+// argument a line, its last a constant with a comment after it: `true, //
+// We let the helper apply the translate`. A constant had no place in the
+// map, so the comment, placed by its line, was lost (rd220).
+test("a comment after a call's last argument, a constant, is after it", async () => {
+  const { js, lib } = await compiled("comments-after-a-last-constant", `#[allow(clippy::too_many_arguments)]
+fn animate(a: u32, b: u32, c: u32, d: u32, e: u32, f: u32, g: u32, h: bool, i: bool) -> u32 {
+    a + b + c + d + e + f + g + h as u32 + i as u32
+}
+
+pub fn run(keyframes: u32, target: u32, timeline: u32, start: u32) -> u32 {
+    animate(
+        keyframes,
+        target,
+        timeline,
+        1,
+        2,
+        start,
+        3,
+        false,
+        true, // We let the helper apply the translate
+    )
+}
+`);
+  expect(js).toContain("    false,\n    true, // We let the helper apply the translate\n  );");
+  expect(lib.run(1 as never, 2 as never, 3 as never, 4 as never)).toBe(17);
+});
