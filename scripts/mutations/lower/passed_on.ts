@@ -67,11 +67,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "passed-on-without-fact",
-    breaks: "an arrow MIR made no fact of, one calling a binding, `xs.map((x) => parseFloat(x))`, is the function, `xs.map(parseFloat)`, which reads the index",
+    breaks: "an arrow MIR made no fact of, one rust-js writes itself, `(x) => f(x)`, is the function it calls, `f`, which then reads the index and array JS's `map` gives it too",
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
-    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false });\n",
-    tests: callback,
+    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false });\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_map.rs$"],
   },
   {
     name: "optional-handler-kept",
