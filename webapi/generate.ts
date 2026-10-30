@@ -2102,16 +2102,26 @@ module("global", functionsOf(globalScope));
 
 line();
 line("/// What a window's global scope has besides, called bare: `confirm(message)`.");
-module("window_global", functionsOf(windowScope));
+// Each with its options, an `Option`, a trailing `None` no argument (ADR 0443).
+const addOptions = ", options: Option<&dyn IntoAddEventListenerOptionsOrBool>";
+const removeOptions = ", options: Option<&dyn IntoEventListenerOptionsOrBool>";
+// A window's own listener functions, called bare too, as TypeScript's DOM
+// declares them globals, `addEventListener('submit', ..)` of React DOM's
+// Fizz runtime: the global scope's, where a page's `window` may be another
+// (#431), each typed by a window's event map.
+const windowListeners = [
+  typed([`[MDN](${mdn("EventTarget", "addEventListener")}): the global scope's, the event type a window's.`], "addEventListener",
+    `add_event_listener<E>(event: E, listener: impl IntoEventListener<<Window as Listen<E>>::Event>${addOptions}) where Window: Listen<E>`),
+  typed([`[MDN](${mdn("EventTarget", "removeEventListener")}): the global scope's, the event type a window's.`], "removeEventListener",
+    `remove_event_listener<E>(event: E, listener: impl IntoAddedEventListener<<Window as Listen<E>>::Event>${removeOptions}) where Window: Listen<E>`),
+];
+module("window_global", functionsOf(windowScope), windowListeners);
 
 // Typed methods need the concrete receiver, not a Deref-erased EventTarget.
 // One extension trait supplies them to every target without copying the map.
 line();
 line("/// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).");
 line("pub trait EventTargetExt: IsA<EventTarget> {");
-// Each with its options, an `Option`, a trailing `None` no argument (ADR 0443).
-const addOptions = ", options: Option<&dyn IntoAddEventListenerOptionsOrBool>";
-const removeOptions = ", options: Option<&dyn IntoEventListenerOptionsOrBool>";
 for (const [name, js, callback, extra] of [
   ["add_event_listener", "addEventListener", listener, addOptions],
   ["remove_event_listener", "removeEventListener", shared, removeOptions],

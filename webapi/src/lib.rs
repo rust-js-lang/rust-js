@@ -101819,6 +101819,22 @@ pub mod window_global {
     pub fn push_manager() -> &'static PushManager {
         unreachable!()
     }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener): the global scope's, the event type a window's.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn add_event_listener<E>(event: E, listener: impl IntoEventListener<<Window as Listen<E>>::Event>, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) where Window: Listen<E> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener): the global scope's, the event type a window's.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remove_event_listener<E>(event: E, listener: impl IntoAddedEventListener<<Window as Listen<E>>::Event>, options: Option<&dyn IntoEventListenerOptionsOrBool>) where Window: Listen<E> {
+        unreachable!()
+    }
 }
 
 /// Event listener methods. Import this trait to keep the receiver's event map (ADR 0282).

@@ -295,6 +295,59 @@ pub fn asked() -> bool {
   expect(js).toContain('return window.confirm("Sure?");');
 });
 
+// React DOM's Fizz runtime listens on the global scope, bare, where a
+// page's `window` may be another, as React's tests' JSDOM window is (#431).
+test("a window's listener functions are called bare, typed by its events", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("window-global-listeners");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::events::Submit;
+use webapi::{SubmitEvent, listener, window_global};
+
+pub fn listen() {
+    window_global::add_event_listener(
+        Submit,
+        |event: &SubmitEvent| {
+            if event.submitter().is_none() {
+                event.prevent_default();
+            }
+        },
+        None,
+    );
+}
+
+pub fn listened() -> &'static dyn Fn(&SubmitEvent) {
+    let submitted = listener(|event: &SubmitEvent| event.prevent_default());
+    window_global::add_event_listener(Submit, submitted, None);
+    window_global::remove_event_listener(Submit, submitted, None);
+    submitted
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  addEventListener("submit", (event) => {');
+  expect(js).toContain('  removeEventListener("submit", submitted);');
+  expect(js).not.toContain("window.addEventListener");
+  const added: [string, unknown][] = [];
+  const removed: [string, unknown][] = [];
+  const g = globalThis as Record<string, unknown>;
+  const before = [g.addEventListener, g.removeEventListener];
+  g.addEventListener = (type: string, f: unknown) => added.push([type, f]);
+  g.removeEventListener = (type: string, f: unknown) => removed.push([type, f]);
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.listen();
+    const submitted = lib.listened();
+    expect(added.map(([type]) => type)).toEqual(["submit", "submit"]);
+    expect(removed).toEqual([["submit", submitted]]);
+    let prevented = 0;
+    (added[0][1] as (e: unknown) => void)({ submitter: null, preventDefault: () => prevented++ });
+    (added[0][1] as (e: unknown) => void)({ submitter: {}, preventDefault: () => prevented++ });
+    expect(prevented).toBe(1);
+  } finally {
+    [g.addEventListener, g.removeEventListener] = before;
+  }
+});
+
 // ADR 0640: a TypeScript rest parameter, `error(...data: any[])`, is a
 // variadic binding of a tuple, each argument of its own type: React's
 // `console.error(format, propName, typeName(value))`, an element's

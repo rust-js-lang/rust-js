@@ -147,7 +147,9 @@ The crates bind the standard ones, called bare:
 - `webapi::global`: what every global scope has, a window's and a worker's,
   `fetch`, `queue_microtask`, `atob`, `report_error`, and its attributes,
   each read when it's called, `is_secure_context()`, `isSecureContext`.
-- `webapi::window_global`: a window's own, `confirm`, `alert`, and its
+- `webapi::window_global`: a window's own, `confirm`, `alert`, its
+  listener functions, `add_event_listener(Submit, |e: &SubmitEvent| ..,
+  None)`, `addEventListener("submit", ..)`, and its
   attributes, `device_pixel_ratio()`, `devicePixelRatio`, which a program
   tests where there may be no window, `js::is_number(device_pixel_ratio)`
   ([ADR 0269](../../decisions/0269-global-scope.md), amended). Not those a

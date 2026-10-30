@@ -80,3 +80,18 @@ what isn't a number.
 Held by `test/compiler.test.ts`, "the webapi crate's bindings become plain
 JS" (web_forms' `pixel_ratio`, its JS, run with and without the global),
 and `test/webapi-coverage.test.ts`. No mutation: the generator's.
+
+## Amendment: a window's listener functions are called bare (2026-10-30, #431)
+
+TypeScript's DOM declares `addEventListener` and `removeEventListener`
+globals, of a window's event map, and React DOM's Fizz runtime calls the
+bare one, `addEventListener('submit', ..)`: the global scope's, where a
+page's `window` may be another, as React's tests' JSDOM window is, so
+`window.addEventListener` listens elsewhere. **`window_global::add_event_listener(event,
+listener, options)` and `remove_event_listener` are those globals**,
+each typed as a window's method is (`Window: Listen<E>`), its listener a
+closure of the event or one JS gave (ADR 1021). Case
+([0262](0262-when-rust-and-js-disagree.md)): none, the JS the program
+names. Held by `webapi-bindings.test.ts`'s "a window's listener functions
+are called bare, typed by its events", run in Node.
+
