@@ -2019,7 +2019,8 @@ export function forget(props) {
 }
 ```
 - `js::object::spread(value)` is `{ ...value }`, a new object of its own
-  enumerable properties, a `__proto__` key one of them, where
+  enumerable properties, and of `None` written, `{}`, a new object of
+  none, as animation keyframes' `[{}, {}]` are; a `__proto__` key one of them, where
   `Object.assign({}, value)` would set the prototype; `js::array::splice(
   value, start, n)` is `value.splice(start, n)` of any value an array,
   each a number, as JS's is, a negative `start` counted from the end; and

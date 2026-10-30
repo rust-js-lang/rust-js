@@ -1460,6 +1460,10 @@ pub fn copy_with_delete(obj: &'static Unknown, path: &[&'static Unknown]) -> &'s
 pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
     js::object::spread(value)
 }
+
+pub fn keyframes() -> Vec<&'static js::JsObject> {
+    vec![js::object::spread(None), js::object::spread(None)]
+}
 `);
   expect(warnings).toEqual([]);
   expect(js).toContain("  const updated = Array.isArray(obj) ? obj.slice() : { ...obj };\n");
@@ -1481,4 +1485,8 @@ pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
   const spread = lib.copied(keyed as never) as any;
   expect([Object.getPrototypeOf(spread) === Object.prototype, Object.keys(spread), spread.x]).toEqual([true, ["__proto__", "y"], undefined]);
   expect(lib.copied(undefined as never)).toEqual({});
+  // Of \`None\`, a new object of nothing, \`{}\`: animateGesture's \`[{}, {}]\` (rd210).
+  expect(js).toContain("  return [{}, {}];\n");
+  const [a, b] = lib.keyframes() as unknown[];
+  expect([a, a === b]).toEqual([{}, false]);
 });

@@ -1,6 +1,6 @@
 # 0967. An object spread, a splice and a set by any key
 
-Status: Accepted. Amended: `js::array::join` (below); `js::array::splice` takes numbers; a `Dict` spread, and a tuple of them in order (the user's decision, 2026-10-28); an `f64` is a key (rd101).
+Status: Accepted. Amended: `js::array::join` (below); `js::array::splice` takes numbers; a `Dict` spread, and a tuple of them in order (the user's decision, 2026-10-28); an `f64` is a key (rd101); a spread of `None` written is `{}` (rd210).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, JS's own
 operation on a JS value, as TypeScript has it of an `any`'s.
@@ -228,3 +228,16 @@ the number as JS has it, `1.5`'s `"1.5"` and `NaN`'s `"NaN"` as JS names
 them. Held by `test/js-any-values.test.ts`'s "an f64 is a property key,
 its index as JS writes it", run on an array; no lowering changed, so no
 mutation: without the impl the test doesn't compile.
+
+## Amendment: a spread of `None` written is `{}` (rd210)
+
+React DOM's animateGesture gives `[{}, {}]` where `effect.getKeyframes()`
+gives a `Vec<&JsObject>`: two new objects of nothing. `spread(None)` made
+each, which printed `{ ...undefined }`. A spread of `undefined` or `null`
+defines nothing (ECMAScript's CopyDataProperties), so **a spread of a
+`None` written, a literal `undefined` or `null`, is left out: `spread(None)`
+is `{}`**. Case N of ADR 0262: the same object either way. Held by
+`test/js-object.test.ts`'s "an object spread, a splice and a set by any
+key are JS's" (run: two objects, each `{}`, not one) and mutation
+`spread-of-none-written` (`mir/calls.ts`).
+

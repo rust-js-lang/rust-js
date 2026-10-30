@@ -376,7 +376,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         fields: &mut Vec<Prop>,
     ) -> R<()> {
         let ty::Tuple(tys) = *ty.kind() else {
-            fields.push(Prop::Spread(self.value_expr(value, span)?));
+            // `None` written, `undefined`, spreads nothing: `spread(None)`
+            // is `{}`, a new object of no properties, React's keyframes'
+            // `[{}, {}]` (rd210).
+            let value = self.value_expr(value, span)?;
+            if !matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null) {
+                fields.push(Prop::Spread(value));
+            }
             return Ok(());
         };
         let parts = match value {

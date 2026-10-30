@@ -647,4 +647,12 @@ export const mutations: Mutation[] = [
     replace: "                    .and_then(|_| None)\n            }\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
   },
+  {
+    name: "spread-of-none-written",
+    breaks: "`js::object::spread(None)`, a new object of nothing, is `{ ...undefined }`, not `{}` (rd210)",
+    file: "src/lower/mir/calls.rs",
+    find: "            if !matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null) {\n                fields.push(Prop::Spread(value));\n            }\n",
+    replace: "            fields.push(Prop::Spread(value));\n",
+    tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
+  },
 ];
