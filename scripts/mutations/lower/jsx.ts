@@ -310,9 +310,17 @@ export const mutations: Mutation[] = [
     "name": "attribute-value-unmapped",
     "breaks": "an attribute's value MIR gives no span, a `concat!`'s, maps to no Rust line, `alt=` the line of what's before it in the source map",
     "file": "src/lower/jsx.rs",
-    "find": "let mut value = value.or_at(self.js_span(value_span));",
+    "find": "let mut value = value.or_at(at);",
     "replace": "let mut value = value;",
     "tests": ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"]
+  },
+  {
+    name: "held-prop-at-its-block",
+    breaks: "a prop held from a block is where the block starts, before its loop: a `let title` the loop's way out sets, not a `const title` after the loop (#434)",
+    file: "src/lower/jsx.rs",
+    find: "self.js_span(self.frame.thir[super::body_queries::tail(self.frame.thir, e)].span)",
+    replace: "self.js_span(self.frame.thir[e].span)",
+    tests: ["test/jsx-react-dev.test.ts", "-t", "a value held for a prop is named after it"],
   },
   {
     name: "props-read-in-jsx-order",

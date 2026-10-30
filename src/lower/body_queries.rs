@@ -261,7 +261,7 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
 
 /// Skip THIR's wrapper nodes that don't change meaning.
 /// What `e` gives, a block's of its value, `strip`ped.
-fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
+pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
     let e = strip(thir, e);
     match thir[e].kind {
         ExprKind::Block { block } if let Some(value) = thir[block].expr => tail(thir, value),

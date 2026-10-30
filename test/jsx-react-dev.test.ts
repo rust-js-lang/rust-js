@@ -957,6 +957,13 @@ pub fn Looped() -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain('const href = made("h");');
+  // One held from a block is where the block's value is written, after its
+  // loop: a `const` there, not a `let` the loop's way out sets (#434).
+  expect(jsx).toContain(`  while (n < 2) {
+    n++;
+  }
+  const title = n === 2 ? "two" : "other";
+`);
   // A child's too.
   expect(jsx).toContain('const children = made("L");');
   const lib = await import(join(dir, "lib.jsx"));

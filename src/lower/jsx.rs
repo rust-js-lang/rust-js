@@ -733,6 +733,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx.dcx().span_err(span, message)
     }
 
+    /// Where `e`'s value is written: a block's, its value's, after what the
+    /// block does first, `{ let mut n = 0; while .. {} n }`'s `n`. A value
+    /// held there is made after the block's loop, as a `const` (#434).
+    fn value_at(&self, e: ExprId) -> js::Span {
+        self.js_span(self.frame.thir[super::body_queries::tail(self.frame.thir, e)].span)
+    }
+
     /// An element's attribute, `name`, given: the element made, its value,
     /// what that needs done first, and whether it's simple.
     pub(super) fn jsx_prop_values(
@@ -744,6 +751,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let value_span = given.span;
+        // Where it's written, which MIR's value, a constant's, doesn't say:
+        // a block's, its value's, after what the block does first (#434).
+        let at = (given.expr).map_or_else(|| self.js_span(value_span), |e| self.value_at(e));
         let (children, mut lowered) = match name.as_str() {
             "children" => (self.jsx_children(given, &mut first), None),
             _ => (Vec::new(), Some(given.value)),
@@ -786,8 +796,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             jsx.children.extend(children);
             return Ok(element);
         };
-        // Where it's written, which MIR's value, a constant's, doesn't say.
-        let mut value = value.or_at(self.js_span(value_span));
+        let mut value = value.or_at(at);
         // An event's handler that only passes on what it's given is the
         // function it passes on to, `onClick={onClear}` (ADR 0198): held in
         // a `const` of its own, or written in place.

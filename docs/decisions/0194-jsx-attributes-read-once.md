@@ -41,6 +41,15 @@ tidy answered again.)
 before a later one's statements was `tmp`; of a tuple struct's, `0`, no
 JS name, `tmp`. (Amended.)
 
+**A value read first is where its value is written**: a block's, its
+tail's, `title={{ let mut n = 0; while n < 2 { n += 1; } label(n) }}`'s
+`label(n)`, after what the block does first. Its `const title` is after
+the loop, as a person writes it, and maps to the tail's line. The whole
+block's place starts before the loop, and a statement placed there was
+left in the loop's way out (ADR 0702): `let title;` before the loop,
+assigned in it. A value MIR gives no place of its own, a `concat!`'s,
+takes the attribute's. (Amended, issue #434.)
+
 **Only a child that does more than read, and whose JS needs a statement,
 reads the attributes before it first**, its statements lowered aside and
 looked at: one without, a `<Link>` whose props flatten an anchor's in
