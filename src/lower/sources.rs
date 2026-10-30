@@ -104,35 +104,55 @@ pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Spa
     })
 }
 
-/// Where a loop's body that ends with comments ends, `// TODO ..` before
-/// the `}` of `for x in v { if c { .. } else { .. } // TODO .. }`, of the
-/// loop's span, `for`'s to its body's `}`: as `comments_end`'s, at that
-/// `}` (rd219). Not a loop a macro wrote.
-pub(super) fn loop_comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
-    use rustc_lexer::TokenKind;
-    let span = span.source_callsite();
-    if span.from_expansion() {
-        return None;
+/// Of each block of `body`'s that ends with comments after an `if`, its
+/// last, which gives no `()` of its own that marks them (ADR 0753): where
+/// the `if` is written, its keyword to its test's end, as its JS `if` is
+/// spanned, and where the comments end, its block's `}`, which tidy puts
+/// them at, after the `if` (`commented_jumps`): `// TODO: ..` after the
+/// `if`/`else` that ends a loop's body or an `if`'s block (rd219, #428).
+pub(super) fn tail_if_comments(
+    tcx: TyCtxt<'_>,
+    sources: &CapturedSources,
+    body: rustc_span::def_id::DefId,
+) -> Vec<(js::Span, js::Span)> {
+    use rustc_hir::intravisit::{self, Visitor};
+    struct Tails<'a, 'tcx> {
+        tcx: TyCtxt<'tcx>,
+        sources: &'a CapturedSources,
+        found: Vec<(js::Span, js::Span)>,
     }
-    let text = tcx.sess.source_map().span_to_snippet(span).ok()?;
-    let inner = text.strip_suffix('}')?;
-    // Those after its last code, which isn't the body's `{`.
-    let (mut comments, mut opened) = (0, false);
-    for token in rustc_lexer::tokenize(inner, rustc_lexer::FrontmatterAllowed::No) {
-        match token.kind {
-            TokenKind::Whitespace => {}
-            TokenKind::LineComment { .. } | TokenKind::BlockComment { terminated: true, .. } => comments += 1,
-            kind => {
-                comments = 0;
-                opened = kind == TokenKind::OpenBrace;
+    impl<'tcx> Visitor<'tcx> for Tails<'_, 'tcx> {
+        type NestedFilter = rustc_middle::hir::nested_filter::OnlyBodies;
+        fn maybe_tcx(&mut self) -> Self::MaybeTyCtxt {
+            self.tcx
+        }
+        fn visit_block(&mut self, block: &'tcx rustc_hir::Block<'tcx>) {
+            if let Some(tail) = block.expr
+                && let rustc_hir::ExprKind::If(test, ..) = tail.kind
+                && !tail.span.from_expansion()
+                && let Some(end) = comments_end(self.tcx, self.sources, block.span)
+            {
+                let written = self.sources.span(tail.span.with_hi(test.span.hi()));
+                if !written.is_none() {
+                    self.found.push((written, end));
+                }
             }
+            intravisit::walk_block(self, block);
         }
     }
-    let at = sources.span(span);
-    (comments > 0 && !opened && !at.is_none()).then(|| js::Span {
-        lo: at.hi - 1,
-        hi: at.hi,
-    })
+    let Some(local) = body.as_local() else {
+        return Vec::new();
+    };
+    let Some(owned) = tcx.hir_maybe_body_owned_by(local) else {
+        return Vec::new();
+    };
+    let mut tails = Tails {
+        tcx,
+        sources,
+        found: Vec::new(),
+    };
+    tails.visit_expr(owned.value);
+    tails.found
 }
 
 /// Where what a function gives at its end is, `None` of `// Don't return
@@ -260,4 +280,11 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
         at += token.len;
     }
     found
+}
+
+impl<'tcx> super::FnCx<'_, 'tcx> {
+    /// `tail_if_comments` of `body`, its sources this crate's (rd219, #428).
+    pub(super) fn tail_if_comments(&self, body: rustc_span::def_id::DefId) -> Vec<(js::Span, js::Span)> {
+        tail_if_comments(self.tcx, self.krate.sources, body)
+    }
 }

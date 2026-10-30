@@ -202,15 +202,17 @@ Held by `test/lowering-comments-jumps.test.ts`, run, and the mutations
 `commented-break-unplaced`, `commented-continue-unkept`
 (`mir/structure.ts`) and `commented-jump-uncommented` (`sources.ts`).
 
-## Amendment: a loop's body that ends with comments (2026-10-30, rd219)
+## Amendment: a block that ends with comments after an `if` (2026-10-30, rd219, #428)
 
-A loop's body that ends with comments after an `if`/`else`, its last,
-gives no `()` of its own whose span marks where they end: the `if`/`else`'s
+A block that ends with comments after an `if`/`else`, its last, gives no
+`()` of its own whose span marks where they end: the `if`/`else`'s
 branches give theirs. So the comment, `// TODO: ..` of React's
-`startGestureTransition`, had no statement after it in the body and was
-printed before the `for`. Now **the loop's back edge, whose span is the
-loop's to its body's `}`, puts its comments there** where the body ends
-with them (`sources::loop_comments_end`), as a block's `()` does. Held
-by `lowering-comments-ends.test.ts`'s "a comment ending a loop's body after
-an if/else is at its end" and the mutation `loop-comments-end-unseen`
-(`lower/sources.ts`).
+`startGestureTransition`, had no statement after it in the block and was
+printed before the loop it's in. Now **each such block of a body's
+(`sources::tail_if_comments`, of its HIR) puts its comments after its
+`if`**: where the `if` is written, its keyword to its test's end, as its JS
+`if` is spanned, and where they end, the block's `}`, which tidy puts after
+that `if` (`commented_jumps`, rd109). A loop's body is such a block, as an
+`if`'s is. Held by `lowering-comments-ends.test.ts`'s "a comment ending a
+loop's body after an if/else is at its end" and the mutation
+`tail-if-comments-unseen` (`lower/sources.ts`).

@@ -1066,7 +1066,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body: mir_body,
             facts,
             left: Default::default(),
-            commented_jumps: Vec::new(),
+            commented_jumps: self.tail_if_comments(mir_body.source.def_id()),
             argument_spans: Vec::new(),
             locals,
             pending: Vec::new(),

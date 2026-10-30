@@ -256,10 +256,10 @@ pub fn pick(flag: bool) -> u8 {
   expect([lib.visit([1, 5] as never), lib.pick(true as never), lib.pick(false as never)]).toEqual([[2, 5], 3, 4]);
 });
 
-// React's ReactFiberConfigDOM's startGestureTransition ends a `for` body
-// with a comment after an `if`/`else`, which gives no `()` of its own that
-// marks where the body's comments end (ADR 0753): it was before the `for`
-// (rd219).
+// React's ReactFiberConfigDOM's startGestureTransition ends a `for` body,
+// and an `if`'s block in it, with a comment after an `if`/`else`, which
+// gives no `()` of its own that marks where the block's comments end (ADR
+// 0753): it was before the `for` (rd219, #428).
 test("a comment ending a loop's body after an if/else is at its end", async () => {
   const { js, lib } = await compiled("comments-ending-a-loop", `pub fn scan(names: &[Option<&str>], first: bool) -> (bool, bool) {
     let mut grouped = false;
@@ -291,10 +291,26 @@ pub fn count(n: u32, odd: bool) -> u32 {
     }
     seen
 }
+
+pub fn walk_last(items: &[u32], found: bool) -> u32 {
+    let mut seen = 0;
+    for item in items {
+        if *item > 1 {
+            if found {
+                seen += item;
+            } else {
+                seen += 1;
+            }
+            // TODO: a comment ending the if's block.
+        }
+    }
+    seen
+}
 `);
   expect(js).toContain("      exited = true;\n    }\n    // TODO: If this has only an old state and no new state,\n  }\n  return [grouped, exited];");
+  expect(js).toContain("        seen = (seen + 1) >>> 0;\n      }\n      // TODO: a comment ending the if's block.\n    }\n  }");
   expect(js).toContain("    i++;\n    // Then the next.\n  }");
-  expect([lib.scan([null] as never, false as never), lib.count(4 as never, true as never)]).toEqual([[false, true], 2]);
+  expect([lib.scan([null] as never, false as never), lib.count(4 as never, true as never), lib.walkLast([1, 2, 3] as never, false as never)]).toEqual([[false, true], 2, 2]);
 });
 
 // React's ReactFiberConfigDOM's startGestureTransition writes a call an
