@@ -71,6 +71,7 @@ branch's one running, and no branch's run touches another's.
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
 | `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once | yes, before each commit | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
+| `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
 | `bun run test`, the whole suite but the nightly's files | | **test** job, or shards | with them, `--nightly` |

@@ -17,6 +17,7 @@ As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 - **A check** (each push to `main`, which runs to its end; `bun run ci:check` of another branch) runs everything except the full rustc suite, fuzz and the nightly's files, in parallel: about **15 min**.
 - **The nightly** runs the suite with its own files, every mutation, the 600 programs, every corpus case after each of tidy's stages, and every case with std's iterator structs alone: **~2–3.5 h**.
+- **The nightly, here**: `bun run nightly` runs each of its jobs on the Mac's cores, the suite with its own files, tidy's stages and the iterator forms of every case, the day's 600 programs, rustc's tests, the examples, the WASM compiler and every mutation; `bun run nightly <job>..` some of them.
 - **On the Mac**, each command has a timeout of about twice its usual time, and runs on all the cores: the suite in parallel groups took about 3 minutes (2026-10-30), the corpus in 8 parts 90 s (AGENTS.md).
 
 To recount: the test totals are the `Ran N tests` lines in a check's `test (k/2)` logs. The corpus is `ls test/corpus/*.rs | wc -l`, the mutations are `grep -rc 'name:' scripts/mutations`, and the rustc counts are the line counts of `test/rustc-*.txt`.

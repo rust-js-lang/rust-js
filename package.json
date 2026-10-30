@@ -58,6 +58,7 @@
     "bench:lowering": "cargo build --locked && bun bench/lowering.ts",
     "typecheck": "tsc --noEmit",
     "check:fast": "bun scripts/checkFast.ts",
+    "nightly": "cargo build --quiet && bun scripts/nightly.ts",
     "port": "bun scripts/port.ts",
     "timings": "bun scripts/timing.ts",
     "architecture": "bun scripts/architecture-report.ts",

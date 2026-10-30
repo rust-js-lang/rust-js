@@ -6,6 +6,7 @@ import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
+import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -44,6 +45,18 @@ test("the files only the nightly runs are test files, which its check runs", () 
   const suites = check.split("\n").filter((line) => /bun (run test|scripts\/test\.ts) --shard=/.test(line));
   expect(suites).toHaveLength(2);
   for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || '' }}");
+});
+
+// `bun run nightly` runs what the nightly does, here: each of nightly.yml's
+// jobs and of the check it calls, check.yml's, by name, but `plan`, which
+// picks the mutations a branch's check runs, and `seeds`, the day's number.
+test("the nightly, here, has each job the nightly has", () => {
+  const ids = (file: string) => {
+    const text = readFileSync(join(root, ".github/workflows", file), "utf8");
+    return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
+  };
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check"].includes(id));
+  expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
 const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });
