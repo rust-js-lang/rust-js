@@ -416,6 +416,79 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
     Some(None)
 }
 
+/// `if (a) { if (b) { r } } t`, MIR's of an `if` the program wrote without
+/// an `else` that exits, `if !a || !b { t } r`, as it shares the exit `t`
+/// with what follows: as written, `if (!a || !b) { t } r`, its tests each
+/// negated, joined by `||`, the `if` the program wrote first, what it
+/// wrote after it next. React DOM's isScriptDataBlock's two `if`s of
+/// `return false;`, `if (lower === "module" || lower === "importmap") {
+/// return false; } if (lower === "text/javascript" || ..) { return false;
+/// } return true;`, not one `if` of the four tests (rd237). Only where `t`
+/// is all the `then` of an `if` the program wrote (`Written::thens`), each
+/// test of its condition, `r` after it, and both exit, so each way runs
+/// the same: `t` where a test fails, `r` where all pass.
+pub(super) fn turned_returns(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let rest = &stmts[i + 1..];
+        let mut tests = Vec::new();
+        let mut body: &[Stmt] = std::slice::from_ref(&stmts[i]);
+        while let [
+            Stmt {
+                kind: StmtKind::If(test, then, None),
+                ..
+            },
+        ] = body
+        {
+            tests.push(test);
+            body = then;
+        }
+        let spans = |list: &[Stmt]| {
+            let mut spans = Vec::new();
+            js::each_list(list, &mut |l| {
+                spans.extend(l.iter().map(|s| s.span).filter(|s| !s.is_none()))
+            });
+            spans
+        };
+        let (taken, after) = (spans(rest), spans(body));
+        let written = thens.iter().find(|(cond, then)| {
+            tests.iter().all(|t| within(cond, written_at(t)))
+                && !taken.is_empty()
+                && taken.iter().all(|s| within(then, *s))
+                && !after.is_empty()
+                && after.iter().all(|s| s.lo >= then.hi)
+        });
+        if tests.is_empty() || written.is_none() || !body.last().is_some_and(ends) || !rest.last().is_some_and(ends) {
+            i += 1;
+            continue;
+        }
+        let exit = stmts.split_off(i + 1);
+        let mut first = stmts.pop().expect("matched");
+        let span = first.span;
+        let mut tests = Vec::new();
+        let mut body = vec![];
+        while let StmtKind::If(test, then, None) = first.kind {
+            tests.push(test.negated_test());
+            match <[Stmt; 1]>::try_from(then) {
+                Ok([inner]) if matches!(inner.kind, StmtKind::If(_, _, None)) => first = inner,
+                Ok([inner]) => {
+                    body = vec![inner];
+                    break;
+                }
+                Err(then) => {
+                    body = then;
+                    break;
+                }
+            }
+        }
+        let test = (tests.into_iter()).reduce(|a, b| Expr::bin(Op::Or, a, b)).expect("one");
+        stmts.push(StmtKind::If(test, exit, None).at(span));
+        stmts.extend(body);
+        i += 1;
+    }
+}
+
 /// Where a function ends, a `return;` the program didn't write, `written`
 /// where those it did are: nothing, as it falls off the end there; and
 /// `if (c) { s; return; } rest`, `if (c) { s } else { rest }`, as the

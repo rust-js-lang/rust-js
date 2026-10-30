@@ -3,6 +3,25 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "turned-returns-left-turned",
+    breaks: "two `if`s the program wrote of `return false` are one `if` of all four tests, `if (lower === \"module\" || .. || lower === \"text/ecmascript\")`, as MIR nests them (rd237)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        if tests.is_empty() || written.is_none() ||",
+    replace: "        if true || tests.is_empty() || written.is_none() ||",
+    tests: ["test/corpus.test.ts", "-t", "^written_ifs_of_one_exit.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "turned-returns-unnegated",
+    breaks: "a turned `if`'s tests aren't negated, so it exits where they pass (rd237)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            tests.push(test.negated_test());\n",
+    replace: "            tests.push(test);\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_ifs_of_one_exit.rs$"],
+  },
+
+
+  {
     name: "early-break-going-on-unbroken",
     breaks: "a written `if n > 99 { break; }` before an `if` with an `else` that goes on to the `break` after it stays nested, `if (n != null) { if (n <= 99) { if (n === 0) { .. } else { .. } } } break;`, not `while ((n = ..) != null) { if (n > 99) { break; } .. }` (uz2)",
     file: "src/lower/mir/tidy/jumps.rs",

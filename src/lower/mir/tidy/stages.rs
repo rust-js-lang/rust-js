@@ -221,6 +221,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returned in branches", |b, h| {
                 js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))
             }),
+            // An `if` the program wrote of an exit, which MIR turned as it
+            // shares the exit with what follows, as written (rd237).
+            pass("turned returns", |b, h| {
+                js::statement_lists(b, &mut |s| turned_returns(s, &h.written.thens))
+            }),
             pass("shared tails", |b, h| {
                 js::statement_lists(b, &mut |s| {
                     shared_tails(

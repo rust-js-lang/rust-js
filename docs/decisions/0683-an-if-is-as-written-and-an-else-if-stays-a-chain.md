@@ -5,7 +5,8 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md), whose
 leaves too; extends [0575](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md)
 and [0364](0364-mir-lowering.md)'s tidy. Amended below: an `||`'s block
 that gives one value is the conditional (#413); and an `if` of `||` whose
-branch jumps is one `if` (rd225).
+branch jumps is one `if` (rd225); and two `if`s the program wrote of one
+exit stay two (rd237).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each rewrite changes
 how the JS reads, not what runs.
@@ -150,3 +151,49 @@ corpus case `borrowed_loop_value_if` (`apart`, two `if`s) against native
 Rust; mutations `written-ors-kept-apart`, `written-ors-of-any-ifs`
 (`mir/tidy/logicals.ts`). The jump alike in each is checked but has no
 mutation: MIR makes no two `if`s of one condition jump apart.
+
+## Amendment: two `if`s the program wrote of one exit stay two (rd237)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each way through
+runs the same statements in the same order.
+
+React DOM's isScriptDataBlock writes two `if`s of `return false;`, a
+comment between them, then `return true;`. MIR shares the one exit, so
+each `if` the program wrote is the negation around what follows it:
+`if (lower !== "module" && lower !== "importmap") { if (lower !==
+"text/javascript") { if (lower !== "text/ecmascript") { return true; } }
+return false; } return false;`. `shared tails` took the second `return
+false` as the first's, and `branch values` joined the nest into one `if`
+of the four tests, `lower === "module" || .. || lower ===
+"text/ecmascript"`; the comment between them had no place left (rd237,
+where the regression was in the comment's place, its cause this).
+
+**`if (a) { if (b) { r } } t`, where `t` is all the `then` of an `if` the
+program wrote without an `else` (`Written::thens`), each test is of its
+condition, `r` is written after it, and both exit, is `if (!a || !b) { t }
+r`** (`jumps::turned_returns`, before `shared tails`): the `if` as written,
+its tests each negated and joined by `||`, then what the program wrote
+after it, as it does it. Where a test fails, `t`; where all pass, `r`;
+each exits, so nothing else runs either way.
+
+```js
+// Special keywords
+if (lower === "module" || lower === "importmap") {
+  return false;
+}
+// JavaScript MIME types
+if (lower === "text/javascript" || lower === "text/ecmascript") {
+  return false;
+}
+// Any other type is a data block
+return true;
+```
+
+No other corpus case or port file changes. Held by
+`test/corpus/written_ifs_of_one_exit.rs` against native Rust and the
+mutations `turned-returns-left-turned` and `turned-returns-unnegated`
+(`mir/tidy/jumps.ts`). No mutation holds that `r` exits or that `t` is
+the written `then`'s: MIR makes no turned `if` whose body goes on, nor
+one whose exit is written elsewhere and its body after the `then`, so a
+test can't tell either check gone; both keep the rewrite to what's the
+same each way.
