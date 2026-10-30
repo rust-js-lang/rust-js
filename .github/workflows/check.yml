@@ -27,7 +27,7 @@ on:
         options: ['1', '2', '4', '8', '16']
         default: '1'
   # By nightly.yml, of `main`: every mutation, where a branch's check runs
-  # only its own.
+  # only its own, and the test files only the nightly runs (ADR 1030).
   workflow_call:
     inputs:
       test_shards:
@@ -106,6 +106,7 @@ jobs:
   # each file took in the last run that kept its timings (`bun test
   # --shard`): each shard uploads what it measured, `timings-<shard>`, and
   # the next run's shards read them all, so the shards finish together.
+  # The nightly's adds the files only it runs (`--nightly`, ADR 1030).
   test:
     name: test (${{ matrix.shard }}/${{ inputs.test_shards || '2' }})
     runs-on: ubuntu-latest
@@ -149,7 +150,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts timings
       - id: test
-        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}
+        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }}
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -161,7 +162,7 @@ jobs:
       - name: Bless what differs
         if: failure() && steps.test.outcome == 'failure'
         run: |
-          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }} || true
+          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }} || true
           git add -A
           git diff --cached --binary > bless.patch
       - if: failure() && steps.test.outcome == 'failure'

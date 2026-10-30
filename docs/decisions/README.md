@@ -969,6 +969,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0032 The playground is written in Rust, compiled by rust-js, a part at a time](0032-dogfooding-the-playground.md)
 - [0044 The playground on React, one component per file](0044-playground-on-react.md)
 - [0045 The playground is a Vite app, with React Compiler and Tailwind](0045-playground-on-vite.md)
+- [1030 What only the nightly runs](1030-what-only-the-nightly-runs.md)
 
 **Architecture boundaries**
 

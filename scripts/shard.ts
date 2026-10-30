@@ -43,3 +43,32 @@ export function shardArg(args: string[]): { index: number; count: number } | und
  * scripts/ci.ts timings` downloads them there, and `bun run test` gives
  * each file in it. */
 export const shardTimings = "target/shard-timings";
+
+/** What only the nightly's suite runs, `bun run test --nightly`, not each
+ * push's (ADR 1030): what the nightly runs in full anyway, tidy's stages,
+ * the iterator forms and generated programs; the release's packaging, which
+ * qualification runs too; and the ratchets, React's releases and the
+ * harness's own checks. Each is CPU a push's corpus waits on, guards no
+ * mutation or a few, and failed none of the 80 red checks before it was
+ * moved: a mutation that names one still runs it. */
+export const nightly = [
+  "tidy-stages",
+  "iterator-forms",
+  "fuzz",
+  "packages",
+  "create",
+  "npm-crates",
+  "release",
+  "stable",
+  "crates-io",
+  "registry-crates",
+  "react-versions",
+  "next-coverage",
+  "react-coverage",
+  "webapi-coverage",
+  "node-coverage",
+  "editor-check",
+  "harness",
+  "history",
+  "limitations",
+].map((name) => `test/${name}.test.ts`);

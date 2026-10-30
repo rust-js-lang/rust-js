@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
 import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
-import { caseParts, caseShardParts, shard } from "../scripts/shard";
+import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
 import { root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -32,6 +32,18 @@ test("each shard runs its share of a file of cases' parts, each part once", () =
     ["2/4", "4/4"],
   ]);
   expect(shards.flat().sort()).toEqual(caseShardParts(1, 1, 4));
+});
+
+// What only the nightly's suite runs (ADR 1030): each a test file there is,
+// and run, by the check the nightly calls, which says `--nightly` to the
+// suite and to its bless, where a push's check says neither.
+test("the files only the nightly runs are test files, which its check runs", () => {
+  const tests = readdirSync(join(root, "test")).map((file) => `test/${file}`);
+  for (const file of nightly) expect(tests).toContain(file);
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  const suites = check.split("\n").filter((line) => /bun (run test|scripts\/test\.ts) --shard=/.test(line));
+  expect(suites).toHaveLength(2);
+  for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || '' }}");
 });
 
 const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });

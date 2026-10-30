@@ -73,12 +73,13 @@ branch's one running, and no branch's run touches another's.
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
-| `bun run test`, the whole suite | | **test** job, or shards | |
+| `bun run test`, the whole suite but the nightly's files | | **test** job, or shards | with them, `--nightly` |
+| The files only the nightly runs, `nightly` in `scripts/shard.ts` (ADR 1030): the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness's own, build history | `bun test test/<file>.test.ts` when a change touches what one checks | | in the suite |
 | WASM compiler parity | | **wasm** job | |
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
 | The Vite example's build | | **examples** job | |
-| Generated programs (fuzz) | | | yes |
-| Each corpus case after each of tidy's stages, `test/tidy-stages.test.ts` | its six cases, in `check:fast` when tidy changes | its six cases, in the suite | every case, on 6 machines |
+| Generated programs (fuzz) | | | yes, and the suite's 12 seeds |
+| Each corpus case after each of tidy's stages, `test/tidy-stages.test.ts` | its six cases, in `check:fast` when tidy changes | | its six cases in the suite; every case, on 6 machines |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
@@ -445,7 +446,8 @@ gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 
 ### `nightly.yml`, each night at 02:00 UTC+7, of `main`
 
-Every test there is: `check.yml`'s jobs, its suite in 2 shards and every
+Every test there is: `check.yml`'s jobs, its suite in 2 shards with the
+files only the nightly runs (`--nightly`, ADR 1030), and every
 mutation on 16 machines where a branch's check runs only its own, 600
 generated programs, new ones each night, from the day's number, and every
 corpus case after each of tidy's stages on 6 machines (ADR 0659). It's a

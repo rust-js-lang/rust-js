@@ -5,14 +5,15 @@
 // with the corpus's compiles they starve each other, and a page or a Fast
 // Refresh waits past its test's timeout: each passes alone, and with only
 // each other. `bun run test --shard=2/4` runs a quarter of each, as CI
-// splits the suite across its machines (DEVELOPMENT.md).
+// splits the suite across its machines (DEVELOPMENT.md). The files only the
+// nightly runs (scripts/shard.ts's `nightly`) run with `--nightly`.
 import { existsSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { pruneKept } from "../test/kept";
-import { caseParts, caseShardParts, shardArg, shardTimings } from "./shard";
+import { caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
 
 const root = join(import.meta.dir, "..");
 
@@ -34,6 +35,7 @@ while true; do
 done`], { stdout: "inherit", stderr: "inherit" });
 
 const browsers = ["browser", "next", "playground", "pilot", "vite", "webapi-events"].map((name) => `test/${name}.test.ts`);
+const atNight = process.argv.includes("--nightly");
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
 // The corpus, in parts, each a process of its own, as `check:fast` runs it
 // (scripts/shard.ts), beside the rest: a file of 1,300 cases one after
@@ -82,7 +84,7 @@ const run = async (args: string[], env: Record<string, string> = {}) => {
   running.delete(suite.pid);
   return code;
 };
-const ignored = [corpus, ...browsers].map((file) => `--path-ignore-patterns=${file}`);
+const ignored = [corpus, ...browsers, ...(atNight ? [] : nightly)].map((file) => `--path-ignore-patterns=${file}`);
 const [rest, ...cases] = await Promise.all([
   run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored]),
   ...corpusParts.map((part) => run([corpus], { RUST_JS_CASES: part })),
