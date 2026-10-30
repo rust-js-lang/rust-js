@@ -441,7 +441,7 @@ async function build(files?: Map<string, string>, slot = 0): Promise<string | { 
 async function withRuntime<T>(compiler: string, work: () => Promise<T>): Promise<T> {
   const file = join(root, "runtime", "index.js");
   const original = readFileSync(file, "utf8");
-  const written = runtimeOf(compiler);
+  const written = await runtimeOf(compiler);
   if (written === undefined || written === original) return work();
   writeFileSync(file, written);
   try {
@@ -451,10 +451,19 @@ async function withRuntime<T>(compiler: string, work: () => Promise<T>): Promise
   }
 }
 
-/** The `@rust-js/runtime` `compiler` writes, or none. */
-function runtimeOf(compiler: string): string | undefined {
-  const written = runSync([compiler, "--runtime-module"], root, buildTimeout);
-  return written.code !== 0 || stopped(written, buildTimeout) ? undefined : written.stdout;
+/** The `@rust-js/runtime` `compiler` writes, or none: asked once of each,
+ * and never in a way that stops the run, as a `runSync` of each of 8,000
+ * mutants' did, its tests waiting while it was asked. */
+const runtimes = new Map<string, Promise<string | undefined>>();
+function runtimeOf(compiler: string): Promise<string | undefined> {
+  let written = runtimes.get(compiler);
+  if (written === undefined) {
+    written = run([compiler, "--runtime-module"], root, buildTimeout).then((p) =>
+      p.code !== 0 || stopped(p, buildTimeout) ? undefined : p.stdout,
+    );
+    runtimes.set(compiler, written);
+  }
+  return written;
 }
 
 
@@ -728,7 +737,7 @@ async function main() {
       } catch {
         cpSync(kept, mutant);
       }
-      const own = runtimeOf(mutant) !== original;
+      const own = (await runtimeOf(mutant)) !== original;
       let started = 0;
       const { ran, output, exit } = await (own ? byItself : beside)(() => {
         started = performance.now();
@@ -736,6 +745,7 @@ async function main() {
       });
       took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
       rmSync(mutant, { force: true });
+      runtimes.delete(mutant);
       // Its log, whatever it says, for what it caught or didn't.
       const log = join(work, "logs", `${mutation.name}.log`);
       mkdirSync(join(work, "logs"), { recursive: true });
