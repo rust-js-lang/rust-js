@@ -362,10 +362,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-from-box-unsupported",
-    breaks: "`Rc::from` of a `Box`, a bound function's `Box<dyn Fn>` shared, is refused, where it's the value (ADR 0907, amended)",
+    breaks: "`Rc::from` of a `Box` of a sized value, `Rc::from(Box::new(5u32))`, is refused, where it's the value (ADR 0907, amended)",
     file: "src/lower/recognition/wrappers.rs",
     find: "        _ if from.boxed_ty().is_some_and(|inner| erased(inner) == erased(pointee)) => true,\n",
     replace: "",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: ["test/corpus.test.ts", "-t", "^rc_from_box.rs$"],
   },
 ];
