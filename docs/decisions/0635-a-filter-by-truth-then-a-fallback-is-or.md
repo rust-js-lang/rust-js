@@ -218,3 +218,17 @@ keeps its `const`, `const name = componentName; .. name ? clearedName(name)
 : ""`; `test/corpus/let_else_read_truth.rs`, run against native Rust; and
 the mutations `mir-tidy-filtered-read-kept` and
 `mir-tidy-filtered-exit-reads-kept`.
+
+## Amendment: each of a list's (2026-10-30)
+
+A list's `filter`s by truth were tidied to their tests one alone: the
+pass stopped at its first, so React DOM's Fizz runtime's
+`clientRenderBoundary`, `if let Some(error_stack) =
+error_stack.filter(|stack| !stack.is_empty())` after its `error_msg`'s,
+was `errorStack = errorStack || undefined; if (errorStack != null)` where
+the first was upstream's `if (errorMsg)`. **Each of a list's is its test**,
+`if (errorMsg)`, `if (errorStack)`. Held by
+`lowering-option-truth.test.ts`'s "each text a list filters by its truth
+is tested by its truth" and the mutation `mir-tidy-filtered-first-alone`
+(`lower/mir/tidy/branches.ts`).
+

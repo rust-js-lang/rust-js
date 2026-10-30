@@ -644,4 +644,12 @@ export const mutations: Mutation[] = [
     replace: "                    && (false || !written_as_statement(&test, span, program)) =>",
     tests: ["test/port-performance-track.test.ts", "-t", "holds no temporary"],
   },
+  {
+    name: "mir-tidy-filtered-first-alone",
+    breaks: "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    ..Expr::var(&x)\n                };\n            }\n        });\n    }\n}",
+    replace: "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "each text a list filters"],
+  },
 ];

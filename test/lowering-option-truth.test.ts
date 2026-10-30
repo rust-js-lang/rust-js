@@ -364,6 +364,37 @@ pub fn masked(r#type: &Unknown) -> u32 {
   expect(masked).toEqual([2, 0, 0, 0, 0]);
 });
 
+// React DOM's Fizz runtime's clientRenderBoundary tests each of its error's
+// texts by its truth, `if (errorMsg) ..; if (errorStack) ..`: each `filter`
+// of a list's, not its first alone, which left the next `stack = stack ||
+// undefined; if (stack != null)` (ADR 0635, amended).
+test("each text a list filters by its truth is tested by its truth", async () => {
+  const dir = fixture("filtered-truths");
+  writeFileSync(join(dir, "lib.rs"), `pub fn tagged(log: &mut Vec<String>, msg: Option<&str>, stack: Option<&str>, component: Option<&str>) {
+    if let Some(msg) = msg.filter(|msg| !msg.is_empty()) {
+        log.push(format!("msg {msg}"));
+    }
+    if let Some(stack) = stack.filter(|stack| !stack.is_empty()) {
+        log.push(format!("stck {stack}"));
+    }
+    if let Some(component) = component.filter(|stack| !stack.is_empty()) {
+        log.push(format!("cstck {component}"));
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (msg) {\n");
+  expect(js).toContain("  if (stack) {\n");
+  expect(js).toContain("  if (component) {\n");
+  expect(js).not.toContain("|| undefined");
+  const lib = await import(join(dir, "lib.js"));
+  const log: string[] = [];
+  lib.tagged(log, "m", "", "c");
+  lib.tagged(log, undefined, "s", null);
+  expect(log).toEqual(["msg m", "cstck c", "stck s"]);
+});
+
 // ADR 0953: React's shouldConstruct, `return !!(prototype &&
 // prototype.isReactComponent);`: the truths of two values joined are the
 // truth of the two joined, `||` too.

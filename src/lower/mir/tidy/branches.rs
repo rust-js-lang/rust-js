@@ -912,14 +912,16 @@ fn kept_by_truth(e: &Expr) -> Option<&Expr> {
     }
 }
 
-/// `const h = x || undefined; if (h == null) { exit }`, a `let … else`
+/// Each `const h = x || undefined; if (h == null) { exit }`, a `let … else`
 /// of what `filter` keeps: `if (!x) { exit }`, `h` and
 /// what binds it then `x`, which it is; and `if (h != null) { s }`, `h`
 /// read there alone, `if (x) { s }`. Of an `x` that's no variable, a
 /// read, `type.contextTypes`, `h` is kept, its value `x`, which it is where
 /// the test lets it be read: `const h = x; if (!h) { exit }`.
 pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
-    for i in 1..stmts.len() {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        i += 1;
         let [made, checked] = &stmts[i - 1..=i] else {
             unreachable!("two")
         };
@@ -978,15 +980,15 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
             Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&x)),
             _ => Expr::var(&x),
         };
-        // `h`, read as `x`: it goes.
+        // `h`, read as `x`: it goes, the test where it was.
         let h = h.clone();
         stmts.remove(i - 1);
-        let mut rest = stmts.split_off(i - 1);
-        let StmtKind::If(guard, ..) = &mut rest[0].kind else {
+        i -= 1;
+        let StmtKind::If(guard, ..) = &mut stmts[i].kind else {
             unreachable!("the test, where the `const` was")
         };
         *guard = truth;
-        js::each_expr_mut(&mut rest, &mut |e| {
+        js::each_expr_mut(&mut stmts[i..], &mut |e| {
             if matches!(&e.kind, ExprKind::Var(v) if *v == h) {
                 *e = Expr {
                     span: e.span,
@@ -994,8 +996,6 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>)
                 };
             }
         });
-        stmts.extend(rest);
-        return;
     }
 }
 
