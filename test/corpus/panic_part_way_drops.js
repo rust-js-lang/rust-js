@@ -648,15 +648,20 @@ function main() {
       dDrop_drop,
       $dropEach(dDrop_drop),
     );
-    const x = $foldToArray(
-      $roomForHint(iter, 8, true),
-      (value) => {
-        dDrop_drop(value[0]);
-        dDrop_drop(value[1]);
-      },
-      true,
-    );
-    iter.return();
+    let result;
+    try {
+      result = $foldToArray(
+        $roomForHint(iter, 8, true),
+        (value) => {
+          dDrop_drop(value[0]);
+          dDrop_drop(value[1]);
+        },
+        true,
+      );
+    } finally {
+      iter.return();
+    }
+    const x = result;
     console.log(`${x.length}`);
     for (const item of x) {
       dDrop_drop(item[0]);
@@ -992,8 +997,13 @@ function main() {
         map.return();
       },
     );
-    const out = $foldToArray($roomForHint(iter, 8, true));
-    iter.return();
+    let result;
+    try {
+      result = $foldToArray($roomForHint(iter, 8, true));
+    } finally {
+      iter.return();
+    }
+    const out = result;
     console.log(`[${out.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   });
   run("string of chars", () => {

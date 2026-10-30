@@ -526,4 +526,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
   },
+  {
+    name: "compiled-fold-given-no-unwind",
+    breaks: "a compiled std fold, a `Fuse`'s, is given no drop of its accumulator, so a stage's panic inside it leaves it undropped (#424)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            \"fold\" => {\n                params.push(\"unwind\");",
+    replace: "            \"never\" => {\n                params.push(\"unwind\");",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

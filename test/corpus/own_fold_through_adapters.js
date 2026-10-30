@@ -77,11 +77,13 @@ function plainIterator_next(plain) {
 const Holder = {
   total(holder, IIterator, dropI) {
     const iter = holder.it;
-    const result = $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
-    if (IIterator.fold === undefined) {
-      dropI?.(iter);
+    try {
+      return $given(iter, IIterator).reduce((a, b) => (a + b) >>> 0, 0);
+    } finally {
+      if (IIterator.fold === undefined) {
+        dropI?.(iter);
+      }
     }
-    return result;
   },
 };
 
@@ -288,8 +290,12 @@ function main() {
       map.return();
     },
   );
-  const result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
-  iter$1.return();
+  let result$1;
+  try {
+    result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
+  } finally {
+    iter$1.return();
+  }
   console.log(`${result$1}`);
   // A held flat map's fold, std's: its source's, through its `map`, the
   // crate's own, each item's array folded in turn (#297).

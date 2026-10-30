@@ -33,8 +33,11 @@ function splitFirst(iter, k, dropI, dropIItem) {
   }
   let result;
   try {
-    result = $count(Iterator.from(iter), dropIItem);
-    dropI?.(iter);
+    try {
+      result = $count(Iterator.from(iter), dropIItem);
+    } finally {
+      dropI?.(iter);
+    }
   } catch (error) {
     $dropItems(first, (item) => {
       dropIItem?.(item);

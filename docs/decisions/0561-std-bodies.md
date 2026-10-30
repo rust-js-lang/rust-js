@@ -434,3 +434,32 @@ a dictionary's `fold`, which drops neither as a panic unwinds. Held by
 `cleanup-discriminant-written` and `cleanup-flag-tested-negated`
 (`lower/mir/drops.ts`), and
 `inlined-closures-unfound` (`lower/analysis.ts`).
+
+## Amendment: what a compiled body moves into a fold, dropped as it unwinds (2026-10-30, #424)
+
+With cleanups in std's compiled bodies, what they move into a call was
+still lost on a panic. `inspect(..).fuse().fold(..)` dropped the
+inspected item alone, where native drops it, then the accumulator, then
+what's left. `fuse().count()` lost what's left. Results change, so Rust's
+behavior is kept (ADR 0262):
+- **An iterator a std method takes by value, which rust-js drops after it**
+  (`dropped_consumed`), is dropped though the call throws, in a `finally`,
+  as the method that took it drops it as it unwinds. That applies to one a type
+  parameter's or one whose steps run what may panic (`steps_may_panic`):
+  `try { return Array.from(iter); } finally { iter.return(); }`.
+- **A compiled `fold`'s accumulator is dropped by the runtime fold's
+  `unwind`:** its dictionary entry, `(iterator, init, f, unwind) => ..`,
+  gives `unwind` as its `B`'s drop (`evidence_args_given`'s drops given by
+  index), and `$stdIterator`'s `fold` passes it on. A fold of a type
+  parameter's iterator, `Fuse::fold`'s of what it fuses, is
+  `$foldDropping`, whose steps are anyone's. An `rfold`'s is the caller's,
+  as before.
+
+15 corpus cases read so, 83 lines more, each a consumed iterator's
+`finally`. Held by `panic_in_std_bodies_drops.rs` against native Rust and
+the mutations `consumed-unclosed-on-throw` and
+`consumed-unwinding-everywhere` (`lower/mir/iter.ts`),
+`compiled-fold-given-no-unwind` (`lower/iterators/knowing.ts`),
+`given-drop-ignored` (`lower/traits/calls.ts`),
+`std-iterator-fold-unwind-lost` (`runtime/std_iterator.ts`) and
+`fold-of-a-param-unwinding-unseen` (`lower/mir/iter/collect.ts`).

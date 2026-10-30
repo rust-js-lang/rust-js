@@ -276,7 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as its type shows where its JS is still a variable: a closure or a
     /// function of its type's, each but one of the crate's functions that
     /// never unwinds (ADR 0902) or a constructor (#423).
-    fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
+    pub(in crate::lower::mir) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         iter_ty
             .walk()
             .filter_map(|part| part.as_type())
@@ -533,8 +533,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => item,
         };
         let receiver = arg_tys.first().copied();
-        let may_throw =
-            crate::lower::iterators::chain_may_throw(&it) || receiver.is_some_and(|ty| self.steps_may_panic(ty));
+        // Of a type parameter's too, whose steps are anyone's (#424).
+        let may_throw = crate::lower::iterators::chain_may_throw(&it)
+            || receiver.is_some_and(|ty| ty.has_param() || self.steps_may_panic(ty));
         let unwind = match acc {
             Some(acc) if may_throw && self.drops(acc) != crate::lower::drops::Drops::Nothing => {
                 self.drop_function(acc, span)?

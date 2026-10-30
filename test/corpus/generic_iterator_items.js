@@ -15,9 +15,11 @@ function deltaAdd_add(delta, other) {
 }
 
 function deltaSum_sum(iter, dropI) {
-  const result = Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
-  dropI?.(iter);
-  return result;
+  try {
+    return Iterator.from(iter).reduce((acc, x) => deltaAdd_add(acc, x), [0n]);
+  } finally {
+    dropI?.(iter);
+  }
 }
 
 function firstLong(items, BAsRefStr) {

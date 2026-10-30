@@ -27,9 +27,11 @@ function scaled(v) {
     it.return();
     console.log(`drop ${factor[0]}`);
   });
-  const result = Array.from(iter);
-  iter.return();
-  return result;
+  try {
+    return Array.from(iter);
+  } finally {
+    iter.return();
+  }
 }
 
 function kept(f, v, dropF) {
@@ -49,9 +51,11 @@ function kept(f, v, dropF) {
     it.return();
     dropF?.(f);
   });
-  const result = Array.from(iter);
-  iter.return();
-  return result;
+  try {
+    return Array.from(iter);
+  } finally {
+    iter.return();
+  }
 }
 
 function countBy(it, f, dropF) {
@@ -62,9 +66,11 @@ function countBy(it, f, dropF) {
       dropF?.(f);
     },
   );
-  const result = iter.reduce((n) => n + 1, 0);
-  iter.return();
-  return result;
+  try {
+    return iter.reduce((n) => n + 1, 0);
+  } finally {
+    iter.return();
+  }
 }
 
 function main() {
@@ -90,8 +96,13 @@ function main() {
     it.return();
     console.log(`drop ${shared[0]}`);
   });
-  const total = iter.reduce((a, b) => (a + b) >>> 0, 0);
-  iter.return();
+  let result;
+  try {
+    result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+  } finally {
+    iter.return();
+  }
+  const total = result;
   console.log(`total ${total}`);
   const base = [5];
   console.log(

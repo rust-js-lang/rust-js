@@ -920,7 +920,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The compiled `fold` or `rfold`, `method`, of std's struct `ty`, a
     /// held `Map`'s (ADRs 0871, 0912), as a dictionary's entry,
-    /// `(iterator, init, f) => ..`. `None` where it isn't compiled.
+    /// `(iterator, init, f, unwind) => ..`, a `fold` given `unwind`, the
+    /// runtime's fold's, as what drops its accumulator, its `B`, where a
+    /// stage's panic strands it inside its closure, before what's left (#423,
+    /// #424).
+    /// `None` where it isn't compiled.
     pub(in crate::lower) fn compiled_fold(
         &mut self,
         ty: ty::Ty<'tcx>,
@@ -930,10 +934,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((fold, args)) = self.compiled_fold_of(ty, (trait_id, method))? else {
             return Ok(None);
         };
-        let params = ["iterator", "init", "f"];
-        let call = self.impl_call(fold, args, params.map(Expr::var).to_vec(), span)?;
+        let instance =
+            (self.resolve_instance(fold, args)?).ok_or_else(|| self.unsupported(span, "this implementation"))?;
+        // The method's own first type parameter, its `B`.
+        let acc = self.tcx.generics_of(instance.def_id()).parent_count as u32;
+        // Of a `fold`, which the runtime's folds give theirs; an `rfold`'s
+        // the caller's, as before.
+        let mut params = vec!["iterator", "init", "f"];
+        let dropped = match method {
+            "fold" => {
+                params.push("unwind");
+                vec![(acc, Expr::var("unwind"))]
+            }
+            _ => Vec::new(),
+        };
+        let mut values = params[..3].iter().map(|&name| Expr::var(name)).collect::<Vec<_>>();
+        let location = self.caller_location(span);
+        values.extend(self.evidence_args_given(
+            instance.def_id(),
+            instance.args,
+            location,
+            crate::lower::traits::GivenEvidence {
+                bounds: &[],
+                drops: &dropped,
+            },
+            span,
+        )?);
+        let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
-            params.map(Into::into).to_vec(),
+            params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }
@@ -981,7 +1010,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )];
         let mut values = ["iterator", "init", "f"].map(Expr::var).to_vec();
         let location = self.caller_location(span);
-        values.extend(self.evidence_args_given(instance.def_id(), instance.args, location, &given, span)?);
+        values.extend(self.evidence_args_given(
+            instance.def_id(),
+            instance.args,
+            location,
+            crate::lower::traits::GivenEvidence {
+                bounds: &given,
+                drops: &[],
+            },
+            span,
+        )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
             ["iterator", "init", "f", "broke"].map(Into::into).to_vec(),

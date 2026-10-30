@@ -390,4 +390,12 @@ export const mutations: Mutation[] = [
     replace: "            || crate::lower::recognition::is_compiled_std",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
+  {
+    name: "given-drop-ignored",
+    breaks: "a drop given for a type parameter by index, a compiled fold's `B`'s, is the type's own, `undefined` of `()` (#424)",
+    file: "src/lower/traits/calls.rs",
+    find: "                Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
+    replace: "                Slot::Drop(index) if false && let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

@@ -118,18 +118,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         location: Expr,
         span: Span,
     ) -> R<Vec<Expr>> {
-        self.evidence_args_given(id, args, location, &[], span)
+        self.evidence_args_given(id, args, location, GivenEvidence::default(), span)
     }
 
     /// `evidence_args_with`, of the bounds `given` names, the dictionary it
     /// gives for each: one made where it's called, as what a JS iterator's
-    /// `tryFold` folds into is `$tryOf(broke)` (ADR 0913).
+    /// `tryFold` folds into is `$tryOf(broke)` (ADR 0913); and of the type
+    /// parameters `dropped` names by index, the drop it gives, a compiled
+    /// fold's `B`'s, the runtime fold's `unwind` (#424).
     pub(in crate::lower) fn evidence_args_given(
         &mut self,
         id: DefId,
         args: ty::GenericArgsRef<'tcx>,
         location: Expr,
-        given: &[(ty::TraitRef<'tcx>, Expr)],
+        GivenEvidence {
+            bounds: given,
+            drops: dropped,
+        }: GivenEvidence<'_, 'tcx>,
         span: Span,
     ) -> R<Vec<Expr>> {
         self.check_drops_given(id, args, span)?;
@@ -185,6 +190,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.unsupported(span, &format!("a type's fact of `{of}` given to generic code")));
                     }
                     values.push(self.type_fact_value(of, fact, span)?);
+                }
+                Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {
+                    drops.push(Some(drop.clone()));
                 }
                 Slot::Drop(index) => {
                     let ty = self.drop_slot_of(id, index, args);
@@ -707,4 +715,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(Expr::optional_args(values, drops))
     }
+}
+
+/// What a call's caller gives of its evidence (`evidence_args_given`): a
+/// dictionary for each bound it names, and a drop for each type parameter
+/// it names by index.
+#[derive(Default, Clone, Copy)]
+pub(in crate::lower) struct GivenEvidence<'g, 'tcx> {
+    pub(in crate::lower) bounds: &'g [(ty::TraitRef<'tcx>, Expr)],
+    pub(in crate::lower) drops: &'g [(u32, Expr)],
 }

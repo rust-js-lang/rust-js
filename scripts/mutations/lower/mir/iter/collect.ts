@@ -395,4 +395,12 @@ export const mutations: Mutation[] = [
     replace: "            .filter_map(|part| part.as_type())\n            .all(|part| match *part.kind() {\n                ty::Closure(def_id, _) | ty::FnDef(def_id, _) => {\n                    !self.krate.never_unwinding",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
+  {
+    name: "fold-of-a-param-unwinding-unseen",
+    breaks: "a fold of a type parameter's iterator, std's `Fuse::fold`'s of what it fuses, is given no drop of its accumulator (#424)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            || receiver.is_some_and(|ty| ty.has_param() || self.steps_may_panic(ty));",
+    replace: "            || receiver.is_some_and(|ty| self.steps_may_panic(ty));",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

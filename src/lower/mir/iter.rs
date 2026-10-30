@@ -50,12 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let held = self.spill_marked(values.remove(0), made);
             values.insert(0, held.clone());
-            let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, made)? else {
-                return Ok(None);
-            };
-            let result = self.spill("result", result, made);
-            self.dropped_consumed(held, (receiver_ty, def_id, output), span, made)?;
-            return Ok(Some(result));
+            return self.consumed_call(held, (def_id, trait_id, arg_tys), values, output, span, made);
         }
         self.cloned_apart_call(def_id, (trait_id, arg_tys), values, output, span, made)
     }
@@ -281,6 +276,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "$closing",
             vec![adapter, Expr::arrow(vec!["it".into()], body)],
         ))
+    }
+
+    /// `mir_iter_method`'s call of `values`, `held` first, an iterator a
+    /// std method took by value and rust-js drops after it: dropped though
+    /// the call throws, a panic, as the method that took it drops it as it
+    /// unwinds, of one whose steps may, a type parameter's, or one running
+    /// what may panic (#424).
+    fn consumed_call(
+        &mut self,
+        held: Expr,
+        (def_id, trait_id, arg_tys): (DefId, DefId, &[Ty<'tcx>]),
+        values: Vec<Expr>,
+        output: Ty<'tcx>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let receiver_ty = arg_tys.first().copied().unwrap_or(self.tcx.types.unit);
+        let mut call = Vec::new();
+        let Some(result) = self.mir_iter_method(def_id, (trait_id, arg_tys), values, output, span, &mut call)? else {
+            made.extend(call);
+            return Ok(None);
+        };
+        let result = self.spill("result", result, &mut call);
+        let mut dropped = Vec::new();
+        self.dropped_consumed(held, (receiver_ty, def_id, output), span, &mut dropped)?;
+        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) {
+            true => self.unwinding(call, dropped.clone(), self.js_span(span), made),
+            false => made.extend(call),
+        }
+        made.extend(dropped);
+        Ok(Some(result))
     }
 
     /// `held`, an iterator of type `receiver` its std method `method` took

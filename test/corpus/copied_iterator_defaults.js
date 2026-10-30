@@ -70,17 +70,21 @@ function tTotals(TIterator, dropT) {
   return $traitImpl($tTotals, [TIterator, dropT], () => ({
     total(self) {
       const iter = self;
-      const result = $given(iter, TIterator).reduce((a, b) => (a + b) & 255, 0);
-      if (TIterator.fold === undefined) {
-        dropT?.(iter);
+      try {
+        return $given(iter, TIterator).reduce((a, b) => (a + b) & 255, 0);
+      } finally {
+        if (TIterator.fold === undefined) {
+          dropT?.(iter);
+        }
       }
-      return result;
     },
     doubled(self) {
       const iter = $closing($given(self, TIterator), dropT).map((x) => (x * 2) & 255);
-      const result = Array.from(iter);
-      iter.return();
-      return result;
+      try {
+        return Array.from(iter);
+      } finally {
+        iter.return();
+      }
     },
     looped(self) {
       let n = 0;

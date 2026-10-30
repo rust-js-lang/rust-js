@@ -32,8 +32,10 @@ function $stdIterator(struct, steps) {
     if (steps.takes?.includes(method)) it.$closed = true;
     return made;
   };
+  // Given `unwind`, the compiled fold's accumulator's drop, where a stage's
+  // panic strands it (#424).
   if (steps.fold !== undefined) {
-    it.fold = (init, f) => taking("fold", steps.fold(it, init, f));
+    it.fold = (init, f, unwind) => taking("fold", steps.fold(it, init, f, unwind));
   }
   // Its `try_fold`, std's, where it passes it on to its source's (#214).
   if (steps.tryFold !== undefined) {

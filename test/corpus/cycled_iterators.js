@@ -54,16 +54,20 @@ function counterIterator_next(counter) {
 
 function firsts(iter, n, IIterator, IClone, dropI) {
   const iter$1 = $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n);
-  const result = Array.from(iter$1);
-  iter$1.return();
-  return result;
+  try {
+    return Array.from(iter$1);
+  } finally {
+    iter$1.return();
+  }
 }
 
 function two(iter, dropI) {
   const iter$1 = $closing(Iterator.from(iter), dropI).take(2);
-  const result = Array.from(iter$1);
-  iter$1.return();
-  return result;
+  try {
+    return Array.from(iter$1);
+  } finally {
+    iter$1.return();
+  }
 }
 
 function main() {

@@ -52,24 +52,30 @@ function rank(l) {
 
 function greatest(items, IItemOrd, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
-  const result = $maxBy(iter, IItemOrd.cmp, true, dropIItem);
-  dropIIntoIter?.(iter);
-  return result;
+  try {
+    return $maxBy(iter, IItemOrd.cmp, true, dropIItem);
+  } finally {
+    dropIIntoIter?.(iter);
+  }
 }
 
 function finalOne(items, dropIItem, dropIIntoIter) {
   const iter = $intoIter(items);
-  const result = $lastDropping(iter, dropIItem, true);
-  dropIIntoIter?.(iter);
-  return result;
+  try {
+    return $lastDropping(iter, dropIItem, true);
+  } finally {
+    dropIIntoIter?.(iter);
+  }
 }
 
 // An iterator itself, not an `IntoIterator`, consumed: dropped after too.
 function howMany(items, dropI, dropIItem) {
   const iter = items;
-  const result = $count(Iterator.from(iter), dropIItem);
-  dropI?.(iter);
-  return result;
+  try {
+    return $count(Iterator.from(iter), dropIItem);
+  } finally {
+    dropI?.(iter);
+  }
 }
 
 function countdownIterator_next(countdown) {

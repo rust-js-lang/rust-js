@@ -24,9 +24,11 @@ function counterIterator_next(counter) {
 
 function consumed(it, dropI) {
   const iter = iterator_peekable(it, { next: $next }, dropI);
-  const result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-  iter.return();
-  return result;
+  try {
+    return iter.reduce((a, b) => (a + b) >>> 0, 0);
+  } finally {
+    iter.return();
+  }
 }
 
 function main() {

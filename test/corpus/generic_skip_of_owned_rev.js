@@ -27,9 +27,11 @@ function skipped(it, dropI) {
     noisyDrop_drop(n);
     return result;
   });
-  const result = Array.from(iter);
-  iter.return();
-  return result;
+  try {
+    return Array.from(iter);
+  } finally {
+    iter.return();
+  }
 }
 
 function nthOf(it, dropI) {

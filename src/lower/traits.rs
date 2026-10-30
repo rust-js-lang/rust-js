@@ -11,7 +11,7 @@ mod impls;
 mod routes;
 mod words;
 
-pub(super) use self::{drop_params::*, evidence::*, given::*, routes::*, words::*};
+pub(super) use self::{calls::GivenEvidence, drop_params::*, evidence::*, given::*, routes::*, words::*};
 
 use super::bindings;
 use super::display::Pretty;

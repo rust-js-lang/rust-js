@@ -134,28 +134,31 @@ function concat(
   dropIItemIntoIter,
 ) {
   const iter$1 = $intoIter(iter);
-  const result = $reduce(
-    iter$1,
-    (a, b) => {
-      const self = { value: a };
-      try {
-        IItemExtendIItemItem.extend(
-          self,
-          $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
-          dropIItem,
-          dropIItemIntoIter,
-        );
-        $assign(a, self.value);
-      } catch (error) {
-        dropIItem?.(a);
-        throw error;
-      }
-      return a;
-    },
-    true,
-  );
-  dropIIntoIter?.(iter$1);
-  return result;
+  try {
+    return $reduce(
+      iter$1,
+      (a, b) => {
+        const self = { value: a };
+        try {
+          IItemExtendIItemItem.extend(
+            self,
+            $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
+            dropIItem,
+            dropIItemIntoIter,
+          );
+          $assign(a, self.value);
+        } catch (error) {
+          dropIItem?.(a);
+          throw error;
+        }
+        return a;
+      },
+      true,
+      dropIItem,
+    );
+  } finally {
+    dropIIntoIter?.(iter$1);
+  }
 }
 
 const $groupsFirstOfNext = new WeakMap();

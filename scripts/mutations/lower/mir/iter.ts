@@ -429,4 +429,21 @@ export const mutations: Mutation[] = [
     replace: "        let own_count = false && matches!(self.reveal(iter_ty).kind(), ty::Param(_))\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "consumed-unclosed-on-throw",
+    breaks: "an iterator a std method took by value, dropped after it, is left undropped where the method throws, a panic, `fuse().count()`'s inner (#424)",
+    file: "src/lower/mir/iter.rs",
+    find: "            true => self.unwinding(call, dropped.clone(), self.js_span(span), made),\n",
+    replace: "            true => made.extend(call),\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
+  {
+    name: "consumed-unwinding-everywhere",
+    breaks: "an iterator a std method took by value is dropped in a `finally` though nothing it steps may panic, `Array.from` of a `filter` that can't (#424)",
+    file: "src/lower/mir/iter.rs",
+    find: "        match receiver_ty.has_param() || self.steps_may_panic(receiver_ty) {\n",
+    replace: "        match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
+    snapshots: true,
+  },
 ];

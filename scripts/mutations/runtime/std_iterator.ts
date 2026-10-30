@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
+  {
+    name: "std-iterator-fold-unwind-lost",
+    breaks: "a std struct's compiled fold is given no `unwind`, so a stage's panic inside it leaves the accumulator undropped (#424)",
+    file: "src/runtime/std_iterator.js",
+    find: "    it.fold = (init, f, unwind) => taking(\"fold\", steps.fold(it, init, f, unwind));",
+    replace: "    it.fold = (init, f, unwind) => taking(\"fold\", steps.fold(it, init, f));",
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_std_bodies_drops.rs$"],
+  },
 ];

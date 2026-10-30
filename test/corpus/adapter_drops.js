@@ -135,15 +135,17 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
     throw error;
   }
   const iter = tmp;
-  const result = $iterEq(
-    $closing(iter, dropIIntoIter),
-    $closing(Iterator.from(b), dropJ),
-    (a, b) => IItemPartialEqJItem.eq(a, b),
-    dropIItem,
-    dropJItem,
-  );
-  dropIIntoIter?.(iter);
-  return result;
+  try {
+    return $iterEq(
+      $closing(iter, dropIIntoIter),
+      $closing(Iterator.from(b), dropJ),
+      (a, b) => IItemPartialEqJItem.eq(a, b),
+      dropIItem,
+      dropJItem,
+    );
+  } finally {
+    dropIIntoIter?.(iter);
+  }
 }
 
 function louds(base, n) {
