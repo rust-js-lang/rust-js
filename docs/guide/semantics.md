@@ -1056,3 +1056,10 @@ React and JSX are [their own pages](README.md#react).
     conditions, `react-server`, gets that condition's module, where the
     Rust names the default entry's (ADR 1008, amended, the user's
     decision).
+32. A closure that captures nothing as a `fn`, which only calls one host
+    function with what it's given, its optional parameters `None`, is
+    that function, `|callback| { js::set_timeout(callback, None); }` is
+    `setTimeout`: a JS caller of an exported value sees what it gives,
+    setTimeout's id, where the closure gave `undefined`, and may give it
+    more, a delay, which the closure would drop (ADR 0605, amended, the
+    user's decision).

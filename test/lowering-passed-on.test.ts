@@ -559,3 +559,49 @@ fn record(n: u32) {
     await browser.close();
   }
 }, 60_000);
+
+// React DOM's scheduleMicrotask and localRequestAnimationFrame hold a host
+// function itself, `queueMicrotask : scheduleTimeout`. Ported, a closure as
+// a `fn` that only calls one host function with what it's given, in order,
+// its optional ones `None`, `|callback| { js::set_timeout(callback, None);
+// }`, is that function, `setTimeout`, as the user decided (rd158): a JS
+// caller of an exported value sees what it gives, setTimeout's id, and may
+// give it more, its delay (ADR 0262's exception). A method, which reads its
+// `this`, and a listener's stay arrows.
+test("a closure as a fn that only calls one host function with what it's given is that function", async () => {
+  const dir = fixture("fn-pointer-host-passed-on");
+  writeFileSync(join(dir, "lib.rs"), `type Schedule = fn(Box<dyn FnOnce()>);
+
+pub static SCHEDULE_TIMEOUT: Schedule = |callback| {
+    js::set_timeout(callback, None);
+};
+
+pub static SCHEDULE_MICROTASK: Schedule = webapi::global::queue_microtask;
+
+pub static SCHEDULE_LOGGED: Schedule = |callback| {
+    record(0);
+    js::set_timeout(callback, None);
+};
+
+pub fn schedule(schedule: Schedule, n: u32) {
+    schedule(Box::new(move || record(n)));
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+fn record(n: u32) {
+    unreachable!()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export const SCHEDULE_TIMEOUT = setTimeout;");
+  expect(js).toContain("export const SCHEDULE_MICROTASK = queueMicrotask;");
+  expect(js).toContain("export const SCHEDULE_LOGGED = (callback) => {");
+  const seen: number[] = [];
+  (globalThis as Record<string, unknown>).record = (n: number) => void seen.push(n);
+  const lib = await import(join(dir, "lib.js"));
+  lib.schedule(lib.SCHEDULE_TIMEOUT, 1);
+  lib.schedule(lib.SCHEDULE_MICROTASK, 2);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(seen).toEqual([2, 1]);
+});

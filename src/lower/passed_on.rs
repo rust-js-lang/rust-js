@@ -91,6 +91,11 @@ pub(in crate::lower) enum Callee {
     Generic,
     /// A `dyn Fn`, a prop's, a JS caller's function as its type says.
     Dyn,
+    /// A binding's global function, not a method, of no rest arguments:
+    /// JS's own, which a JS caller of the closure's `fn` may give more and
+    /// read what it gives, the one taker that takes it, a `fn`'s, as the
+    /// user decided (rd158, ADR 0262's exception).
+    Host,
 }
 
 impl Taker {
@@ -133,9 +138,9 @@ impl Taker {
     fn takes(self, callee: Callee) -> bool {
         match self {
             Taker::ArrayMethod => matches!(callee, Callee::Own | Callee::Generic),
-            Taker::Handler => true,
+            Taker::Handler => callee != Callee::Host,
             Taker::OnceCallback => callee == Callee::Own,
-            Taker::FnPointer => callee == Callee::Own,
+            Taker::FnPointer => matches!(callee, Callee::Own | Callee::Host),
             Taker::Made | Taker::FnValue => false,
         }
     }
@@ -317,16 +322,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>, span: js::Span) -> Option<Forwarding> {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.root()?);
-        if let ExprKind::Block { block } = thir[call].kind
-            && thir[block].stmts.is_empty()
-            && let Some(value) = thir[block].expr
-        {
-            call = super::body_queries::strip(thir, value);
+        // Of a statement alone, `{ js::set_timeout(callback, None); }`, what
+        // it gives is none of the closure's: a host function's alone (rd158).
+        let mut statement = false;
+        if let ExprKind::Block { block } = thir[call].kind {
+            match (&thir[block].stmts[..], thir[block].expr) {
+                ([], Some(value)) => call = super::body_queries::strip(thir, value),
+                (&[only], None) if let rustc_middle::thir::StmtKind::Expr { expr, .. } = thir[only].kind => {
+                    call = super::body_queries::strip(thir, expr);
+                    statement = true;
+                }
+                _ => {}
+            }
         }
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
             return None;
         };
         let (def_id, generic_args) = fn_def(thir[fun].ty)?;
+        if statement && !super::bindings::is_binding(self.tcx, def_id) {
+            return None;
+        }
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
                 let callee = match thir[args[0]].ty.peel_refs().kind() {
@@ -346,13 +361,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     binds: false,
                 })
             }
+            // A binding's global function, JS's own, called as a function,
+            // not of `this` (rd158).
+            _ if super::bindings::is_binding(self.tcx, def_id) => (matches!(
+                super::bindings::js_form(self.tcx, def_id),
+                super::bindings::JsForm::Call(_)
+            ) && !super::bindings::is_method(self.tcx, def_id)
+                && !super::bindings::is_variadic(self.tcx, def_id))
+            .then(|| Forwarding {
+                span,
+                callee: Callee::Host,
+                adapts: self.adapts(body.def_id, (def_id, generic_args)),
+                item: false,
+                binds: false,
+            }),
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended). One
             // of rest arguments reads all JS gives it, so only where the
             // closure gathers them all too, and the arrow's shape then
             // says it spreads them all (`js::passes_on`).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
-                && !super::bindings::is_binding(self.tcx, def_id)
                 && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))
             .then(|| Forwarding {
                 span,

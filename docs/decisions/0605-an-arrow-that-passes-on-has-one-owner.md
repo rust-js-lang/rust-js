@@ -360,3 +360,42 @@ asks `recognition::function_kind` whether a binding's type parameter is
 called by `FnOnce` alone, its own reading of the bounds gone; of a
 union's whose `Function` member is called once, `js::set_timeout`'s,
 too: `js::set_timeout(|| ping(), None)` is `setTimeout(ping)`.
+
+## Amendment: a closure as a `fn` that only calls one host function is that function (rd158)
+
+React DOM holds host functions themselves, `scheduleMicrotask =
+queueMicrotask`, `localRequestAnimationFrame = typeof requestAnimationFrame
+=== 'function' ? requestAnimationFrame : scheduleTimeout`. Rust holds them
+as one `fn` type, so the port adapts the one whose signature differs,
+`|callback| { js::set_timeout(callback, None); }`, which printed `(callback)
+=> { setTimeout(callback); }`.
+
+**A closure that captures nothing, made a `fn` or lent as a `&dyn Fn`,
+that only calls one binding's global function, not a method, of no rest
+arguments, with what it's given in order, its optional parameters `None`,
+and gives what that call gives or nothing, is that function**, as one of
+the crate's is (ADR 0605, amended): `setTimeout`. The user's decision
+(2026-10-30), an exception of ADR 0262's second case: Rust's own calls of
+the `fn` give it what the closure takes and read nothing it gives, so
+nothing tells them apart; a JS caller of an exported value does, which
+sees what the host function gives, setTimeout's id where the closure gave
+`undefined`, and may give it more than the closure takes, setTimeout's
+delay. A closure of the binding's own signature, `|cb| queue_microtask(cb)`,
+is one the program wrote to be a function of its own, as written; the
+binding itself, `webapi::queue_microtask`, is `queueMicrotask`. A
+listener's, a handler's or a once-callback's taker keeps its rule.
+
+`forwarded_to` gives a binding's call `Callee::Host`, which only
+`Taker::FnPointer` takes; a statement alone, `{ g(a); }`, is passed on
+only to a host function, whose value the closure discarded and which a
+JS caller of an exported `fn` sees (one of the crate's function stays
+its arrow, `|a| { first(a); }`). Held by `test/lowering-passed-on.test.ts`'s
+"a closure as a fn that only calls one host function with what it's
+given is that function" (run: `setTimeout` and `queueMicrotask` held as
+one `fn` type), and mutations `host-callee-not-a-fn`,
+`host-statement-unread`, `own-statement-passed-on`, `host-callee-a-handler`,
+`binding-callee-passed-on` (`passed_on.ts`).
+
+The guide's global-scope example, `queueTask`'s `typeof queueMicrotask !==
+"undefined" ? queueMicrotask : runNow`, is upstream's now, where it was
+`(callback) => queueMicrotask(callback)`.
