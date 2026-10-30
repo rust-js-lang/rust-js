@@ -518,7 +518,9 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
 // A \`Cell<fn()>\` field the crate sets of its own functions alone is called
 // through it, as React's \`ReactStrictModeWarnings.discardPendingWarnings()\`;
 // one it sets of a host function is held first (#427).
-test("a fn field that may hold a host function is called with no this, in Chromium", async () => {
+let hostFieldJs: string | undefined;
+const compileHostField = (): string => {
+  if (hostFieldJs !== undefined) return hostFieldJs;
   const dir = fixture("fn-pointer-field-host");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 
@@ -573,11 +575,22 @@ fn record(n: u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  hostFieldJs = readFileSync(join(dir, "lib.js"), "utf8");
+  return hostFieldJs;
+};
+
+// Its JS, apart from the browser that runs it: what the mutations check,
+// whose machines have none (#427).
+test("a fn field that may hold a host function is held first, its own called through it", () => {
+  const js = compileHostField();
   expect(js).toContain("  const schedule = CONFIG.schedule;\n  schedule(() => {");
   expect(js).toContain("return CONFIG.count(n);");
   expect(js).toContain("  const schedule = hooks.schedule;\n  schedule(() => {");
   expect(js).toContain("  hooks.flush();\n  const ended = hooks.ended;\n  ended();\n");
+});
+
+test("a fn field that may hold a host function is called with no this, in Chromium", async () => {
+  const js = compileHostField();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();

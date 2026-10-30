@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),\n",
     replace: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false)),\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "own-fn-pointer-field-unseen",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            Called::Pointer(_) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
     replace: "",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "cell-set-unwritten",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            (CellMethod::Writes, [value]) => self.field_written(def, Some(value)),\n",
     replace: "                            (CellMethod::Writes, [_]) => {}\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "cell-other-method-unwritten",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                self.field_written(def, None);\n            }\n            // An operator",
     replace: "            }\n            // An operator",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "cell-new-not-own",
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                || cell_own_method(tcx, id) == Some(CellMethod::New)\n",
     replace: "",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "binding-fn-def-own",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            ty::FnDef(f, _) => return !is_binding(tcx, f),\n",
     replace: "            ty::FnDef(..) => return true,\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "binding-body-builds",

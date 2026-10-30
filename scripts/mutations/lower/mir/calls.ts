@@ -613,7 +613,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                                == Some(crate::lower::recognition::CellMethod::Get) =>\n",
     replace: "                                == Some(crate::lower::recognition::CellMethod::Other) =>\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "host-fn-temporary-unheld",
@@ -621,7 +621,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                if super::tidy::is_temporary(name)\n",
     replace: "                if super::tidy::is_temporary(name) && false\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
   },
   {
     name: "path-step-superclass-refused",
