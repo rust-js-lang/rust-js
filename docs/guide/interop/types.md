@@ -2340,8 +2340,9 @@ const callRender = {
 
 export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRender);
 ```
-- **Of some, it's a `Box<dyn Fn(..)>` of the parameters `f` has left**,
-  as long-lived as what it keeps: each argument a value of a `Copy` type,
+- **Of some, it's a `&dyn Fn(..)` of the parameters `f` has left**, the
+  JS function itself, as `with_this`'s is, which JS keeps as long as what
+  it keeps: each argument a value of a `Copy` type,
   or what a parameter borrows, an `Rc` of a `&Rc`, an `Option<Rc>` of an
   `Option<&Rc>`, lent to each call as a closure lends what it keeps. A
   function of up to 16 parameters binds any number of them. `Rc::from`

@@ -420,3 +420,16 @@ binds too, so one whose signature holds a `dyn Fn`, React's
 `Children.forEach`'s, is known as any other is; and a consumer reads a
 library's field its contract says holds only Rust functions as such. See
 [1007](1007-a-libraries-own-fn-pointers-are-rust-functions.md).
+
+## Amendment: a function bound to arguments is the JS function itself, `&'l dyn Fn(..)` (rd209)
+
+`function::with_this` gives the JS function itself, `&'l dyn Fn(..)`
+(ADR 0972, amended), which JS keeps. `bind` of some arguments gave a
+`Box<dyn Fn(..)>`: two forms of a function JS makes. **It gives `&'l (dyn
+Fn(..) -> R + 'l)` too**, the parameters left and `R` bound by `'l`; of
+none, `F` itself as before. What it keeps is never dropped, as JS keeps
+the function. `Rc::from(function::bind(..))` still shares it, an
+`Rc<&dyn Fn>` unsized to `Rc<dyn Fn>`; a program holds the reference
+itself where nothing else needs an `Rc`. Held by `test/js-functions.test.ts`'s
+"a function bound to fifteen arguments" (its return type migrated) and
+`test/js-object.test.ts`'s bind tests. No mutation: a binding's signature.

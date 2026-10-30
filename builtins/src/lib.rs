@@ -453,8 +453,9 @@ pub mod function {
     /// of `f`'s own type, `OmitThisParameter<T>`, `f` one that's `Copy`, a
     /// `fn` pointer or a `&dyn Fn`: React keeps a frame's function so,
     /// `function::bind(CALL_COMPONENT.react_stack_bottom_frame,
-    /// Some(&CALL_COMPONENT), ())`. Of some, a `Box<dyn Fn(..) -> R>` of the
-    /// parameters `f` has left, which lives as long as what it keeps: each
+    /// Some(&CALL_COMPONENT), ())`. Of some, a `&dyn Fn(..) -> R` of the
+    /// parameters `f` has left, the JS function itself, as
+    /// [`with_this`]'s is, which JS keeps as long as what it keeps: each
     /// argument a value of a `Copy` type, or what a parameter borrows, lent
     /// to each call ([`Keeps`]), as a closure `move |action|
     /// dispatch(&fiber, action)` lends what it keeps. React's
@@ -575,8 +576,8 @@ pub mod function {
     /// but none: `$k`, each kept as an `$x`, and `$r` left.
     macro_rules! bound {
         (@split [$($k:ident $x:ident),+] [$($r:ident),*]) => {
-            impl<'l, F, $($k, $x: Keeps<$k> + 'l,)* $($r,)* Ret> Bound<'l, ($($x,)*)> for (F, fn($($k,)* $($r),*) -> Ret) {
-                type Rest = Box<dyn Fn($($r),*) -> Ret + 'l>;
+            impl<'l, F, $($k, $x: Keeps<$k> + 'l,)* $($r: 'l,)* Ret: 'l> Bound<'l, ($($x,)*)> for (F, fn($($k,)* $($r),*) -> Ret) {
+                type Rest = &'l (dyn Fn($($r),*) -> Ret + 'l);
             }
         };
         (@walk [$($k:ident $x:ident),*] [] []) => {

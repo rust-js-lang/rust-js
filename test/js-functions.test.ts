@@ -295,7 +295,7 @@ pub fn later(
     nested: Option<Option<u32>>,
     unit: Option<()>,
     name: Option<String>,
-) -> Box<dyn Fn() -> String> {
+) -> &'static dyn Fn() -> String {
     function::bind(
         complete,
         Some(&Kind::Null),
