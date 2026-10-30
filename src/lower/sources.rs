@@ -104,6 +104,37 @@ pub(super) fn comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Spa
     })
 }
 
+/// Where a loop's body that ends with comments ends, `// TODO ..` before
+/// the `}` of `for x in v { if c { .. } else { .. } // TODO .. }`, of the
+/// loop's span, `for`'s to its body's `}`: as `comments_end`'s, at that
+/// `}` (rd219). Not a loop a macro wrote.
+pub(super) fn loop_comments_end(tcx: TyCtxt<'_>, sources: &CapturedSources, span: Span) -> Option<js::Span> {
+    use rustc_lexer::TokenKind;
+    let span = span.source_callsite();
+    if span.from_expansion() {
+        return None;
+    }
+    let text = tcx.sess.source_map().span_to_snippet(span).ok()?;
+    let inner = text.strip_suffix('}')?;
+    // Those after its last code, which isn't the body's `{`.
+    let (mut comments, mut opened) = (0, false);
+    for token in rustc_lexer::tokenize(inner, rustc_lexer::FrontmatterAllowed::No) {
+        match token.kind {
+            TokenKind::Whitespace => {}
+            TokenKind::LineComment { .. } | TokenKind::BlockComment { terminated: true, .. } => comments += 1,
+            kind => {
+                comments = 0;
+                opened = kind == TokenKind::OpenBrace;
+            }
+        }
+    }
+    let at = sources.span(span);
+    (comments > 0 && !opened && !at.is_none()).then(|| js::Span {
+        lo: at.hi - 1,
+        hi: at.hi,
+    })
+}
+
 /// Where what a function gives at its end is, `None` of `// Don't return
 /// anything\n None`, where a comment is right before it, nothing but
 /// whitespace and other comments between: the comment's place, once the

@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "    Some(jump)\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a match whose arm breaks its loop has no label the program didn't write"],
   },
+  {
+    name: "loop-comments-end-unseen",
+    breaks: "a comment ending a loop's body after an `if`/`else` is printed before the loop (rd219)",
+    file: "src/lower/sources.rs",
+    find: "    (comments > 0 && !opened && !at.is_none()).then(|| js::Span {",
+    replace: "    (false && comments > 0 && !opened && !at.is_none()).then(|| js::Span {",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "ending a loop"],
+  },
 ];

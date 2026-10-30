@@ -118,6 +118,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.facts.graph().backward(from, to) {
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
+            // A loop's body that ends with comments, after an `if`/`else`
+            // its last, which gives no `()` of its own that marks them
+            // (ADR 0753): where they end, its `}`, as its back edge is the
+            // loop's (rd219).
+            let looped = state.body.basic_blocks[from].terminator().source_info.span;
+            if let Some(end) = crate::lower::sources::loop_comments_end(self.tcx, self.krate.sources, looped) {
+                out.push(StmtKind::Comments.at(end));
+            }
             out.push(StmtKind::Continue(Some(label(to))).at(js::Span::NONE));
             return Ok(out);
         }

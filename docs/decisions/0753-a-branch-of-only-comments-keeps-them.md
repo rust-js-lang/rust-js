@@ -201,3 +201,16 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N. Comments only.
 Held by `test/lowering-comments-jumps.test.ts`, run, and the mutations
 `commented-break-unplaced`, `commented-continue-unkept`
 (`mir/structure.ts`) and `commented-jump-uncommented` (`sources.ts`).
+
+## Amendment: a loop's body that ends with comments (2026-10-30, rd219)
+
+A loop's body that ends with comments after an `if`/`else`, its last,
+gives no `()` of its own whose span marks where they end: the `if`/`else`'s
+branches give theirs. So the comment, `// TODO: ..` of React's
+`startGestureTransition`, had no statement after it in the body and was
+printed before the `for`. Now **the loop's back edge, whose span is the
+loop's to its body's `}`, puts its comments there** where the body ends
+with them (`sources::loop_comments_end`), as a block's `()` does. Held
+by `lowering-comments-ends.test.ts`'s "a comment ending a loop's body after
+an if/else is at its end" and the mutation `loop-comments-end-unseen`
+(`lower/sources.ts`).
