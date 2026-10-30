@@ -2,12 +2,12 @@
 // shards, the mutations a change touches, and each branch's latest run.
 
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
-import { type Change, changedLines, changedMutations, enclosingFunction, testBlocks } from "../scripts/mutations";
+import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, site, type Sited, testBlocks } from "../scripts/mutations";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
-import { root } from "./support";
+import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
 
@@ -125,6 +125,90 @@ test("a function is where rustfmt and Prettier lay it out", () => {
   expect(enclosingFunction(source, 14, 14)).toEqual([14, 14]);
   // In none: its lines, and ten each side.
   expect(enclosingFunction(source, 1, 1)).toEqual([1, 11]);
+});
+
+// A build of many mutations (ADR 1031): each in a copy of its function's
+// body, or of its helper's `include_str!`, chosen by the compiler's file
+// name as it runs; one in no body, or in one that can't choose, alone.
+const program = `use std::fmt::Display;
+
+fn sum(values: &[u32]) -> u32 {
+    let mut total = 0;
+    for value in values {
+        total += value;
+    }
+    total
+}
+
+fn shown<T: Display>(
+    value: T,
+    unit: &str,
+) -> String {
+    format!("{value}{unit}")
+}
+
+const fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+fn main() {
+    println!("{} {} {}", sum(&[1, 2, 3]), shown(4, "px"), twice(5));
+}
+`;
+const inProgram = (name: string, find: string, replace: string) => ({ name, breaks: "", file: "src/main.rs", find, replace, tests: [] });
+const sumOff = inProgram("sum-off", "total += value;", "total += value + 1;");
+const sumFirst = inProgram("sum-first", "    total\n", "    total - values[0]\n");
+const shownUnit = inProgram("shown-unit", 'format!("{value}{unit}")', 'format!("{unit}{value}")');
+const readProgram = (file: string) => {
+  if (file !== "src/main.rs") throw new Error(`no ${file}`);
+  return program;
+};
+
+test("a mutation goes in a build of many where it's in a function's body that can choose", () => {
+  const [a, b, c] = [sumOff, sumFirst, shownUnit].map((mutation) => site(mutation, readProgram));
+  expect(a).toEqual(b!);
+  expect(a!.file).toBe("src/main.rs");
+  expect(program.slice(a!.start, a!.end)).toStartWith("\n    let mut total = 0;");
+  expect(program.slice(a!.start, a!.end)).toEndWith("    total\n");
+  expect(program.slice(c!.start, c!.end).trim()).toBe('format!("{value}{unit}")');
+  // A `const fn` can't ask which it is; a signature is no body.
+  expect(site(inProgram("twice-thrice", "n * 2", "n * 3"), readProgram)).toBeUndefined();
+  expect(site(inProgram("sum-signature", "fn sum(values: &[u32]) -> u32 {", "fn sum(values: &[u32]) -> u32 {"), readProgram)).toBeUndefined();
+  expect(site(inProgram("nowhere", "not in the program", ""), readProgram)).toBeUndefined();
+});
+
+test("a build of many has each site once, with all its mutations, and no site inside another", () => {
+  const sited: Sited[] = [sumOff, sumFirst, shownUnit].map((mutation) => ({ mutation, site: site(mutation, readProgram) }));
+  expect(batches(sited, 32).map((batch) => batch.map((s) => s.mutation.name))).toEqual([["sum-off", "sum-first", "shown-unit"]]);
+  expect(batches(sited, 2).map((batch) => batch.map((s) => s.mutation.name))).toEqual([["sum-off", "sum-first"], ["shown-unit"]]);
+  const outer: Sited = { mutation: inProgram("outer", "", ""), site: { file: "src/a.rs", start: 0, end: 100 } };
+  const inner: Sited = { mutation: inProgram("inner", "", ""), site: { file: "src/a.rs", start: 10, end: 20 } };
+  const elsewhere: Sited = { mutation: inProgram("elsewhere", "", ""), site: { file: "src/b.rs", start: 10, end: 20 } };
+  expect(batches([outer, inner, elsewhere], 32).map((batch) => batch.map((s) => s.mutation.name))).toEqual([["outer", "elsewhere"], ["inner"]]);
+});
+
+test("a build of many runs as each mutation's own build where it's chosen, and as none where none is", () => {
+  const sited: Sited[] = [sumOff, sumFirst, shownUnit].map((mutation) => ({ mutation, site: site(mutation, readProgram) }));
+  const files = schema(sited, readProgram);
+  if (!(files instanceof Map)) throw new Error(files.problem);
+  expect([...files.keys()]).toEqual(["src/main.rs"]);
+  const dir = fixture("mutation-schema");
+  writeFileSync(join(dir, "main.rs"), files.get("src/main.rs")!);
+  const built = Bun.spawnSync(["rustc", "--edition=2021", "-Awarnings", join(dir, "main.rs"), "-o", join(dir, "built")], { cwd: root });
+  expect(built.stderr.toString()).toBe("");
+  const runAs = (name: string, env: Record<string, string> = {}) => {
+    cpSync(join(dir, "built"), join(dir, name));
+    return Bun.spawnSync([join(dir, name)], { env: { ...process.env, ...env } }).stdout.toString().trim();
+  };
+  expect(runAs("unmutated")).toBe("6 4px 10");
+  expect(runAs("sum-off")).toBe("9 4px 10");
+  expect(runAs("sum-first")).toBe("5 4px 10");
+  expect(runAs("shown-unit")).toBe("6 px4 10");
+  // A test's copy of its own, under another name, is chosen by what it's told.
+  expect(runAs("copy", { RUST_JS_MUTANT: "sum-off" })).toBe("9 4px 10");
+  // One mutation is a build of its own, as it was.
+  const alone = schema([{ mutation: sumOff }], readProgram);
+  expect(alone instanceof Map && alone.get("src/main.rs")).toBe(program.replace("total += value;", "total += value + 1;"));
 });
 
 test("a test file's tests are their comments and bodies", () => {

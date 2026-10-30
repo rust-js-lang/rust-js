@@ -8,6 +8,7 @@
 //   bun scripts/mutations.ts copy-on-read ..  # the ones named
 //   bun scripts/mutations.ts --changed=main   # a change's, since where it left main
 //   bun scripts/mutations.ts --shard=2/6      # a sixth of them, as CI splits them
+//   bun scripts/mutations.ts --batch=1        # each built alone, not 32 to a build
 //
 // The mutations themselves are in `mutations/`, one list for each source
 // file. Each builds natively a few test programs: on macOS, with the app
@@ -244,8 +245,129 @@ export function mutate(source: string, mutation: Mutation): string | { problem: 
   return source.slice(0, at) + mutation.replace + source.slice(at + mutation.find.length);
 }
 
+/** Where a mutation goes in a build of many (ADR 1031): the text of the
+ * crate's `file` from `start` to `end`, a function's body or the
+ * `include_str!` of a runtime helper, which that build has once for each of
+ * its mutations and once as it is, each chosen by name as it runs. */
+export type Site = { file: string; start: number; end: number };
+
+/** A mutation, and where it goes in a build of many, if it can be in one. */
+export type Sited = { mutation: Mutation; site?: Site };
+
+/** Where `mutation` goes in a build of many, or nowhere: one outside a
+ * function's body is built alone, as is one in a body that can't choose as
+ * it runs, a `const fn`'s, which can't ask, or one returning `impl Trait`,
+ * whose two bodies are two types. `read` gives a file of the crate. */
+export function site(mutation: Mutation, read: (file: string) => string): Site | undefined {
+  const source = read(mutation.file);
+  const at = source.indexOf(mutation.find);
+  if (at < 0 || source.indexOf(mutation.find, at + 1) >= 0) return undefined;
+  // A helper's JS is the compiler's by its one `include_str!`.
+  if (mutation.file.startsWith("src/runtime/") && mutation.file.endsWith(".js")) {
+    const call = `include_str!("runtime/${mutation.file.slice("src/runtime/".length)}")`;
+    const including = read("src/runtime.rs");
+    const start = including.indexOf(call);
+    if (start < 0 || including.indexOf(call, start + 1) >= 0) return undefined;
+    return { file: "src/runtime.rs", start, end: start + call.length };
+  }
+  if (!mutation.file.endsWith(".rs")) return undefined;
+  const lines = source.split("\n");
+  const first = source.slice(0, at).split("\n").length;
+  const [from, to] = enclosingFunction(source, first, first + mutation.find.split("\n").length - 1);
+  if (!/\bfn\s/.test(lines[from - 1] ?? "") || to <= from) return undefined;
+  const offset = (line: number) => lines.slice(0, line - 1).reduce((n, text) => n + text.length + 1, 0);
+  // Its body: from the `{` that ends its signature, as rustfmt lays one
+  // out, to the `}` at its indent.
+  let open = -1;
+  for (let line = from; line < to && open < 0; line++) {
+    const text = lines[line - 1].trimEnd();
+    if (text.endsWith("{")) open = offset(line) + text.length - 1;
+  }
+  if (open < 0) return undefined;
+  const close = offset(to) + lines[to - 1].indexOf("}");
+  if (/\bconst\s+(?:unsafe\s+)?fn\b|->\s*impl\b/.test(source.slice(offset(from), open))) return undefined;
+  if (at <= open || at + mutation.find.length > close) return undefined;
+  return { file: mutation.file, start: open + 1, end: close };
+}
+
+/** `sited` in builds of at most `size`, in the order they're given: each
+ * site once in a build, with all its mutations there, and none of a build's
+ * sites in another, as a function's in one it holds. */
+export function batches(sited: Sited[], size: number): Sited[][] {
+  const overlap = (a: Site, b: Site) => a.file === b.file && a.start !== b.start && a.start < b.end && b.start < a.end;
+  const made: Sited[][] = [];
+  let left = sited.filter((s) => s.site !== undefined);
+  while (left.length > 0) {
+    const batch: Sited[] = [];
+    const rest: Sited[] = [];
+    for (const s of left) {
+      if (batch.length < size && !batch.some((other) => overlap(other.site!, s.site!))) batch.push(s);
+      else rest.push(s);
+    }
+    made.push(batch);
+    left = rest;
+  }
+  return made;
+}
+
+/** Which mutation a build of many is, as it runs: its file's name, which
+ * the runner gives each mutation's copy, or `RUST_JS_MUTANT`, for a test
+ * that runs a copy of its own. Written at the end of the crate's root. */
+const chooser = `
+/// Which of the mutations built in this compiler is (scripts/mutations.ts).
+#[doc(hidden)]
+pub(crate) fn __mutant_is(name: &str) -> bool {
+    static CHOSEN: std::sync::OnceLock<(String, String)> = std::sync::OnceLock::new();
+    let (file, said) = CHOSEN.get_or_init(|| {
+        let file = std::env::current_exe().ok().and_then(|path| path.file_name().map(|name| name.to_string_lossy().into_owned()));
+        (file.unwrap_or_default(), std::env::var("RUST_JS_MUTANT").unwrap_or_default())
+    });
+    file == name || said == name
+}
+`;
+
+/** The crate's files a build of `batch` writes, by their paths: of one
+ * mutation, it in place; of more, each site once as it is and once for each
+ * of its mutations, chosen by name as the compiler runs. Or why it can't be. */
+export function schema(batch: Sited[], read: (file: string) => string): Map<string, string> | { problem: string } {
+  const files = new Map<string, string>();
+  if (batch.length === 1) {
+    const [{ mutation }] = batch;
+    const mutated = mutate(read(mutation.file), mutation);
+    if (typeof mutated !== "string") return mutated;
+    return files.set(mutation.file, mutated);
+  }
+  const bySite = new Map<string, Sited[]>();
+  for (const s of batch) {
+    const key = `${s.site!.file}:${s.site!.start}`;
+    bySite.set(key, [...(bySite.get(key) ?? []), s]);
+  }
+  const sites = [...bySite.values()].sort((a, b) => b[0].site!.start - a[0].site!.start);
+  for (const at of sites) {
+    const { file, start, end } = at[0].site!;
+    const text = files.get(file) ?? read(file);
+    const original = text.slice(start, end);
+    let chain = "";
+    for (const { mutation } of at) {
+      let arm: string | { problem: string };
+      if (mutation.file.endsWith(".js")) {
+        const mutated = mutate(read(mutation.file), mutation);
+        if (typeof mutated !== "string") return mutated;
+        files.set(`${mutation.file}.mutant-${mutation.name}`, mutated);
+        arm = original.replace(/"\)$/, `.mutant-${mutation.name}")`);
+      } else {
+        arm = mutate(original, mutation);
+        if (typeof arm !== "string") return arm;
+      }
+      chain += `if crate::__mutant_is(${JSON.stringify(mutation.name)}) {${arm}} else `;
+    }
+    files.set(file, text.slice(0, start) + `${chain}{${original}}` + text.slice(end));
+  }
+  return files.set("src/main.rs", (files.get("src/main.rs") ?? read("src/main.rs")) + chooser);
+}
+
 /** Each file under `paths` of `dir`, a file or a directory's, by its path from `dir`. */
-function files(dir: string, paths: string[]): string[] {
+function listed(dir: string, paths: string[]): string[] {
   const found: string[] = [];
   const walk = (path: string) => {
     const full = join(dir, path);
@@ -262,7 +384,7 @@ function files(dir: string, paths: string[]): string[] {
  * rebuilds only what changed. The files written or removed. */
 export function syncTree(from: string, to: string, paths: string[]): string[] {
   const touched: string[] = [];
-  const wanted = new Set(files(from, paths));
+  const wanted = new Set(listed(from, paths));
   for (const path of wanted) {
     const source = readFileSync(join(from, path));
     const target = join(to, path);
@@ -271,7 +393,7 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
     writeFileSync(target, source);
     touched.push(path);
   }
-  for (const path of files(to, paths)) {
+  for (const path of listed(to, paths)) {
     if (wanted.has(path)) continue;
     rmSync(join(to, path));
     touched.push(path);
@@ -279,36 +401,35 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
   return touched;
 }
 
-/** A compiler built from this checkout's crate, with `mutation` in it, or
- * without one; or why it can't be built. The crate is kept from the last
- * build, the last mutation's file put back: one built without one is kept
- * too, while the crate's sources are what it was built from. */
-async function build(mutation?: Mutation, slot = 0): Promise<string | { problem: string }> {
+/** A compiler built from this checkout's crate with `files` written over
+ * it, or as it is; or why it can't be built. The crate is kept from the
+ * last build, what it wrote put back: one built as it is is kept too, while
+ * the crate's sources are what it was built from. */
+async function build(files?: Map<string, string>, slot = 0): Promise<string | { problem: string }> {
   // Each worker builds in a crate and a target of its own (`--jobs`).
   const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
   mkdirSync(crate, { recursive: true });
   syncTree(root, crate, crateFiles);
-  const kept = join(work, "bin", mutation?.name ?? "unmutated");
+  const kept = join(work, "bin", "unmutated");
   const sources = createHash("sha256");
-  for (const path of files(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
+  for (const path of files ? [] : listed(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
   const built = sources.digest("hex");
   const stamp = join(work, "unmutated.stamp");
-  if (!mutation && existsSync(kept) && existsSync(stamp) && readFileSync(stamp, "utf8") === built) return kept;
-  if (mutation) {
-    const file = join(crate, mutation.file);
-    const mutated = mutate(readFileSync(file, "utf8"), mutation);
-    if (typeof mutated !== "string") return mutated;
-    writeFileSync(file, mutated);
+  if (!files && existsSync(kept) && existsSync(stamp) && readFileSync(stamp, "utf8") === built) return kept;
+  for (const [path, text] of files ?? []) {
+    mkdirSync(dirname(join(crate, path)), { recursive: true });
+    writeFileSync(join(crate, path), text);
   }
   const p = await run(["cargo", "build", "--quiet", "--locked", "--target-dir", target], crate, buildTimeout);
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
   }
+  if (files) return join(target, "debug", "rust-js");
   mkdirSync(join(work, "bin"), { recursive: true });
   cpSync(join(target, "debug", "rust-js"), kept);
-  if (!mutation) writeFileSync(stamp, built);
+  writeFileSync(stamp, built);
   return kept;
 }
 
@@ -368,6 +489,9 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
   const p = await withRuntime(compiler, () =>
     run([process.execPath, "test", ...tests], root, testTimeout, {
       RUST_JS_COMPILER: compiler,
+      // Which mutation of a build of many it is, for a test that runs a
+      // copy of the compiler under another name.
+      RUST_JS_MUTANT: basename(compiler),
       RUST_JS_TARGET: own,
       // A compile that takes long, as an exponential one, is stopped, and
       // its test fails, before the runner runs out of time on it, which
@@ -431,55 +555,110 @@ async function main() {
       throw new Error(`\`bun test ${tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
     }
   }
-  // Each mutation by one of `--jobs` workers, each building in a crate of its
+  // Each build by one of `--jobs` workers, each building in a crate of its
   // own: one for each two cores, up to four, as a build uses about two, two
   // on a CI machine's four, the second's first build cold, a minute or two
-  // of the hours its shard takes. One whose compiler
-  // writes another runtime, which the checkout's `runtime/index.js` holds
-  // while its tests run, waits for the others and runs alone.
+  // of the hours its shard takes.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
   const jobs = said >= 1 ? said : Math.min(4, Math.max(1, Math.floor(availableParallelism() / 2)));
+  // And of up to `--batch` mutations each, every one chosen by name as the
+  // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
+  // `--batch=1` builds each alone.
+  const size = Number(args.find((arg) => arg.startsWith("--batch="))?.slice("--batch=".length)) || 32;
+  const read = (file: string) => readFileSync(join(root, file), "utf8");
+  const sited: Sited[] = chosen.map((mutation) => ({ mutation, site: size > 1 ? site(mutation, read) : undefined }));
+  const queue: Sited[][] = [...batches(sited, size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   const results = new Map<Mutation, string>();
-  // What each took, its build and its tests, in seconds.
+  // What each took, its build's share and its tests, in seconds.
   const took = new Map<Mutation, { build: number; tests: number }>();
-  const alone: Mutation[] = [];
   const original = readFileSync(join(root, "runtime", "index.js"), "utf8");
-  const one = async (mutation: Mutation, slot: number, shared: boolean) => {
-    const began = performance.now();
-    const compiler = await build(mutation, slot);
-    const built = performance.now();
-    if (typeof compiler !== "string") {
-      results.set(mutation, compiler.problem);
-      return;
+  // A mutant whose compiler writes another runtime, which the checkout's
+  // `runtime/index.js` holds while its tests run, runs while no other's do.
+  let testing = 0;
+  let alone = false;
+  let waitingAlone = 0;
+  const waiters: (() => void)[] = [];
+  const wake = () => waiters.splice(0).forEach((resume) => resume());
+  const turn = () => new Promise<void>((resume) => waiters.push(resume));
+  const beside = async <T>(work: () => Promise<T>) => {
+    while (alone || waitingAlone > 0) await turn();
+    testing++;
+    try {
+      return await work();
+    } finally {
+      testing--;
+      wake();
     }
-    if (shared && runtimeOf(compiler) !== original) {
-      alone.push(mutation);
-      rmSync(compiler, { force: true });
-      return;
-    }
-    const { ran, output, exit } = await test(mutation.tests, compiler, mutation.snapshots);
-    took.set(mutation, { build: (built - began) / 1000, tests: (performance.now() - built) / 1000 });
-    // A mutant's compiler is its tests' alone: a debug build, hundreds of
-    // megabytes, which kept for each of hundreds would fill a disk.
-    rmSync(compiler, { force: true });
-    // Its log, whatever it says, for what it caught or didn't.
-    const log = join(work, "logs", `${mutation.name}.log`);
-    mkdirSync(join(work, "logs"), { recursive: true });
-    writeFileSync(log, output);
-    const verdict = judge(exit, output);
-    results.set(
-      mutation,
-      verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
-    );
   };
-  const queue = [...chosen];
-  const workers = Math.min(jobs, chosen.length);
+  const byItself = async <T>(work: () => Promise<T>) => {
+    waitingAlone++;
+    while (alone || testing > 0) await turn();
+    waitingAlone--;
+    alone = true;
+    try {
+      return await work();
+    } finally {
+      alone = false;
+      wake();
+    }
+  };
+  const one = async (batch: Sited[], slot: number) => {
+    const began = performance.now();
+    const files = schema(batch, read);
+    const compiler = files instanceof Map ? await build(files, slot) : files;
+    const building = (performance.now() - began) / 1000;
+    if (typeof compiler !== "string") {
+      // A build of many that fails is two of half as many: the mutation that
+      // doesn't build alone says so as its own.
+      if (batch.length > 1) {
+        console.log(`a build of ${batch.length} mutations ${compiler.problem}: as two of ${Math.ceil(batch.length / 2)}`);
+        queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
+      } else results.set(batch[0].mutation, compiler.problem);
+      return;
+    }
+    for (const { mutation } of batch) {
+      // Each mutation's copy is named for it, which chooses it.
+      const mutant = join(work, "bin", mutation.name);
+      mkdirSync(join(work, "bin"), { recursive: true });
+      cpSync(compiler, mutant);
+      const started = performance.now();
+      const own = runtimeOf(mutant) !== original;
+      const { ran, output, exit } = await (own ? byItself : beside)(() => test(mutation.tests, mutant, mutation.snapshots));
+      took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
+      // A mutant's compiler is its tests' alone: a debug build, hundreds of
+      // megabytes, which kept for each of hundreds would fill a disk.
+      rmSync(mutant, { force: true });
+      // Its log, whatever it says, for what it caught or didn't.
+      const log = join(work, "logs", `${mutation.name}.log`);
+      mkdirSync(join(work, "logs"), { recursive: true });
+      writeFileSync(log, output);
+      const verdict = judge(exit, output);
+      results.set(
+        mutation,
+        verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
+      );
+    }
+  };
+  // A worker with nothing to take waits while another's build may yet split.
+  let busy = 0;
   await Promise.all(
-    Array.from({ length: workers }, async (_, slot) => {
-      for (let next = queue.shift(); next; next = queue.shift()) await one(next, slot, workers > 1);
+    Array.from({ length: Math.min(jobs, queue.length) }, async (_, slot) => {
+      for (;;) {
+        const next = queue.shift();
+        if (!next) {
+          if (busy === 0) return;
+          await new Promise((resume) => setTimeout(resume, 1000));
+          continue;
+        }
+        busy++;
+        try {
+          await one(next, slot);
+        } finally {
+          busy--;
+        }
+      }
     }),
   );
-  for (const mutation of alone) await one(mutation, 0, false);
   const rows: [Mutation, string][] = chosen.map((mutation) => [mutation, results.get(mutation) ?? "not run"]);
   for (const [mutation, result] of rows) console.log(`${mutation.name}\t${result}`);
   const summary = process.env.GITHUB_STEP_SUMMARY;

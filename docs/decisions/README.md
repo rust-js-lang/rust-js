@@ -111,7 +111,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0089 rustc's own `run-pass` tests run as JS, with a list of what fails that only shrinks](0089-rustc-tests.md)
 - [0091 What rust-js writes depends only on what it's given](0091-build-history.md)
 - [0092 Generated programs, each from a seed, and reduced when they fail](0092-generated-programs.md)
-- [0093 Known bugs put back into the compiler, which the tests must catch](0093-mutations.md)
+- [0093 Known bugs put back into the compiler, which the tests must catch](0093-mutations.md) *(amended by 1031: built many to a build)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
 - [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place)*
@@ -970,6 +970,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0044 The playground on React, one component per file](0044-playground-on-react.md)
 - [0045 The playground is a Vite app, with React Compiler and Tailwind](0045-playground-on-vite.md)
 - [1030 What only the nightly runs](1030-what-only-the-nightly-runs.md)
+- [1031 Mutations are built many to a build](1031-mutations-are-built-many-to-a-build.md)
 
 **Architecture boundaries**
 

@@ -273,8 +273,14 @@ What keeps them there:
   took 43 s and 4 took 31 s; CI's four cores run two), each with a crate
   and a target of its own (`--jobs=N` says how many). Each one's build and
   tests are timed: CI's summary shows them, and each shard uploads
-  `mutation-timings-<shard>`. A runtime helper's mutation, whose tests the
-  checkout's `runtime/index.js` serves, runs alone after the others.
+  `mutation-timings-<shard>`, each a share of its build. A runtime helper's
+  mutation, whose tests the checkout's `runtime/index.js` serves, runs its
+  tests while no other's run.
+- **Mutations are built up to 32 to a compiler** (ADR 1031), each chosen
+  by the name of its copy of it: on CI, where one built alone took 28 s, a
+  build of many takes about as long as one. `--batch=1` builds each alone.
+  A build of many that fails is built again as two halves, so a mutation
+  that doesn't build alone says so.
 
 ## Keeping the loop fast
 
