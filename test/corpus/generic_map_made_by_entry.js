@@ -8,9 +8,7 @@ import {
   $eq,
   $extendMap,
   $index,
-  $iter,
   $mutGet,
-  $next,
   $orInsertWith,
   $sortedEntries,
   $treeFrom,
@@ -41,9 +39,9 @@ function singles(pairs, VOrd, VCopy, VTreeMap) {
 
 function neighbours(edges, VPartialEq, VHash, VCopy, VMap) {
   const all = new VMap();
-  const iter = $iter(edges);
+  const iter = edges.values();
   let value;
-  while ((value = $next(iter)) != null) {
+  while ((value = iter.next().value) != null) {
     const a = VCopy ? VCopy.copy(value[0]) : value[0];
     const b = VCopy ? VCopy.copy(value[1]) : value[1];
     const key = VCopy ? VCopy.copy(a) : a;

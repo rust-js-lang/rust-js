@@ -10,9 +10,9 @@ const numbersSecond = {
   items: numbersSecond_items,
   second(self) {
     const items = numbersSecond_items(self);
-    const it = $iter(items);
-    $next(it);
-    return $next(it) ?? 0;
+    const it = items.values();
+    it.next().value;
+    return it.next().value ?? 0;
   },
 };
 function numbersSecond_items(numbers) {

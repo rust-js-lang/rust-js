@@ -47,6 +47,12 @@ impl Span {
 /// `b.value` (ADR 0099): a `&mut` to what JS can't change in place, a
 /// `Cell`'s, an `Rc`'s, a guard's.
 pub const HELD: &str = "value";
+
+/// `it.next().value`: what a step of a JS iterator gives, `undefined` at
+/// its end, its result's own `value`, not a box's (rd270).
+pub fn next_value(it: Expr) -> Expr {
+    Expr::member(Expr::call(Expr::member(it, "next"), Vec::new()), "value")
+}
 /// How a place stores what's written to it, which a handle on it keeps,
 /// wherever it's written through (`ExprKind::Handle`, ADR 0791).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -684,6 +690,10 @@ pub enum Known {
     /// (`mir_iter_call`, ADR 0871): a step past that call, which takes its
     /// form apart, reads it here, not from its form.
     InPlace,
+    /// A `$iter` of a slice's own `Iter`, of the array it steps from its
+    /// start, as Rust's types tell: what the array's `values()` steps too,
+    /// `iterators::stepped_slices`'s (rd270).
+    SliceItems,
     /// One of the program's functions, its own or a library's, by its
     /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the
     /// same function wherever and whenever it's read (`Expr::is_fixed`,

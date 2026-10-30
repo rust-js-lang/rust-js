@@ -1188,3 +1188,50 @@ pub fn each(v: Vec<u32>) -> [(u32, u32); 3] {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.each([1, 2, 3])).toEqual([[5, 3], [3, 2], [3, 3]]);
 });
+
+// React DOM's Fizz runtime reads a stylesheet's descriptor part by part,
+// `parts.next()` of a slice's `iter()`: the array's own iterator, each step
+// its `next().value`, no helper; not one asked its length too, nor one of
+// items that may be `undefined`, which `$next` tells from its end (rd270,
+// ADR 0071, amended).
+test("a slice's iterator only stepped is the array's own", async () => {
+  const dir = fixture("stepped-slices");
+  writeFileSync(join(dir, "lib.rs"), `pub fn firsts(descriptor: &[String]) -> Vec<String> {
+    let mut parts = descriptor.iter();
+    let href = parts.next().expect("an href");
+    let mut out = vec![href.clone()];
+    while let Some(attr) = parts.next().filter(|attr| !attr.is_empty()) {
+        out.push(attr.clone());
+        if let Some(value) = parts.next() {
+            out.push(value.clone());
+        }
+    }
+    out
+}
+
+pub fn left(items: &[u32]) -> (Option<u32>, usize) {
+    let mut it = items.iter();
+    let first = it.next().copied();
+    (first, it.len())
+}
+
+pub fn maybe(items: &[Option<u32>]) -> Option<Option<u32>> {
+    let mut it = items.iter();
+    it.next().copied()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const parts = descriptor.values();\n");
+  expect(js).toContain("while ((attr = parts.next().value)) {");
+  expect(js).toContain("const value = parts.next().value;");
+  expect(js).toContain("const it = $iter(items);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.firsts(["a.css", "media", "all", "", "x"])).toEqual(["a.css", "media", "all"]);
+  expect(lib.firsts(["a.css", "id"])).toEqual(["a.css", "id"]);
+  expect(() => lib.firsts([])).toThrow("an href");
+  expect(lib.left([4, 5, 6])).toEqual([4, 2]);
+  // `Some(None)`, an item that's `undefined`, apart from `None`, its end.
+  expect([lib.maybe([undefined]) !== undefined, lib.maybe([])]).toEqual([true, undefined]);
+});
+

@@ -6,8 +6,6 @@ import {
   $dropItems,
   $dynCell,
   $index,
-  $iter,
-  $next,
   $rcClone,
   $rcDrop,
   $unborrow,
@@ -59,9 +57,9 @@ function main() {
   const sinks = [tmp, rc];
   try {
     try {
-      const iter = $iter(sinks);
+      const iter = sinks.values();
       let sink;
-      while ((sink = $next(iter)) != null) {
+      while ((sink = iter.next().value) != null) {
         const receiver = $borrowMut(sink.value, true);
         try {
           receiver.impl.take(receiver, 2);

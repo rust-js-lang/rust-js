@@ -676,6 +676,65 @@ pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
     }
 }
 
+/// Each `const it = $iter(items)` of a slice's `Iter` that's only stepped,
+/// every read of it a `$next(it)` of an item that's never `undefined`,
+/// the array's own iterator, `const it = items.values()`, each step
+/// `it.next().value`, `undefined` at its end as `$next`'s is: React DOM's
+/// Fizz runtime's stylesheet descriptor read part by part, with no helper
+/// (rd270). Not of a name declared twice, which one read may be another's.
+pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
+    let mut made = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, e) = &stmt.kind
+                && e.facts.has(js::Known::SliceItems)
+                && fresh_iter_source(e).is_some()
+            {
+                made.push(name.clone());
+            }
+        }
+    });
+    for name in made {
+        let stepped = |e: &Expr| {
+            matches!(&e.kind, js::ExprKind::Call(callee, args)
+                if callee.helper_name() == Some("$next")
+                    && matches!(args.as_slice(), [it] if matches!(&it.kind, js::ExprKind::Var(v) if *v == name)))
+        };
+        let (mut steps, mut declared) = (0, 0);
+        js::each_expr(body, &mut |e| steps += usize::from(stepped(e)));
+        js::each_list(body, &mut |stmts| {
+            declared += stmts
+                .iter()
+                .filter(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == name))
+                .count();
+        });
+        if declared != 1 || steps == 0 || js::mentions_in(body, &name) != steps {
+            continue;
+        }
+        js::statement_lists(body, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Const(n, e) = &mut stmt.kind
+                    && *n == name
+                    && let Some(items) = fresh_iter_source(e).cloned()
+                {
+                    *e = Expr {
+                        span: e.span,
+                        ..Expr::call(Expr::member(items, "values"), Vec::new())
+                    };
+                }
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if stepped(e) {
+                *e = Expr {
+                    span: e.span,
+                    ..js::next_value(Expr::var(&name))
+                };
+            }
+        });
+    }
+}
+
 /// `$iter(items)`, `stepped_items`'s, where no `FnCx` is.
 pub(super) fn array_stepped(items: Expr) -> Expr {
     Expr::call(Expr::helper("$iter"), vec![items])

@@ -177,3 +177,23 @@ Two ways what's taken through `by_ref()` went missing from its lender
 ADR 0262's case: results would change, so Rust's. Held by
 `test/corpus/by_ref_steps.rs` and the mutations
 `range-by-ref-a-js-iterator` and `lent-chain-listed`.
+
+## Amendment: a slice's iterator only stepped is the array's own (2026-10-30, rd270)
+
+A slice's `iter()` held and stepped by hand, `parts.next()` after
+`parts.next()`, as React DOM's Fizz runtime reads a stylesheet's
+descriptor, was `$iter(descriptor)` and `$next(parts)`: two helpers, which
+a page's inline script, compiled on its own, can't carry (rd274). **One
+whose every read is a `$next`, of items that are never `undefined`, is the
+array's own iterator, `descriptor.values()`, each step `parts.next().value`**,
+`undefined` at its end as `$next`'s is. Rust's borrow keeps the slice as it
+is while its `Iter` lives, so the array's iterator, which reads its length
+as it steps, steps the items `$iter` would. One asked anything else, its
+`len()`, a `rev()`, given on, or of items that may be `undefined`
+(`$nextSome`), is still `$iter`. MIR says which it is, `std_iterator`'s
+`Known::SliceItems`; `iterators::stepped_slices`, the last tidy pass,
+makes it. Case ([0262](0262-when-rust-and-js-disagree.md)): none. Held by
+`lowering-iterators.test.ts`'s "a slice's iterator only stepped is the
+array's own" and the mutations `stepped-slices-length-kept` and
+`stepped-slices-unmade` (`lower/iterators.ts`, `lower/mir/iter/sources.ts`).
+

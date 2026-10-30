@@ -587,6 +587,35 @@ export function loggedFirst(xs) {
 }
 ```
 
+An iterator you step by hand, one `next()` after another, is the array's
+own, `values()`, each step its `next().value`
+([ADR 0071](../../decisions/0071-stepping-iterators.md), amended):
+
+```rust
+pub fn attributes(descriptor: &[String]) -> Vec<(String, String)> {
+    let mut parts = descriptor.iter();
+    let mut pairs = Vec::new();
+    while let Some(name) = parts.next().filter(|name| !name.is_empty()) {
+        let value = parts.next().cloned().unwrap_or_default();
+        pairs.push((name.clone(), value));
+    }
+    pairs
+}
+```
+
+```js
+export function attributes(descriptor) {
+  const parts = descriptor.values();
+  const pairs = [];
+  let name;
+  while ((name = parts.next().value)) {
+    const value = parts.next().value ?? "";
+    pairs.push([name, value]);
+  }
+  return pairs;
+}
+```
+
 A range is an iterator too. In a `for` it's a counting loop; in a chain
 it's a lazy range:
 

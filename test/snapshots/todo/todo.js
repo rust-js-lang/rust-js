@@ -4,16 +4,7 @@
 // The todos live in one `Rc<RefCell<State>>`; after every change, the list
 // is drawn again from it (ADR 0025).
 
-import {
-  $borrow,
-  $borrowMut,
-  $iter,
-  $next,
-  $retain,
-  $trim,
-  $unborrow,
-  $unwrap,
-} from "@rust-js/runtime";
+import { $borrow, $borrowMut, $retain, $trim, $unborrow, $unwrap } from "@rust-js/runtime";
 
 /**
  * An element by its tag's name: `create_element(document, Button)` is one by
@@ -95,9 +86,9 @@ function render(state, view) {
   try {
     view.list.textContent = "";
     let left = 0;
-    const iter = $iter(s.todos);
+    const iter = s.todos.values();
     let todo;
-    while ((todo = $next(iter)) != null) {
+    while ((todo = iter.next().value) != null) {
       if (!todo.done) {
         left = (left + 1) | 0;
       }

@@ -233,8 +233,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             value
         } else if made_array(&value) || self.steps_an_array(ty) {
             // An array made of it, `s.split(",")`'s, or one `steps_an_array`
-            // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's.
-            self.stepped_items(value)
+            // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's;
+            // a slice's, said so (`Known::SliceItems`).
+            let slice = self.is_std_type(ty, StdItem::SliceIter);
+            let mut it = self.stepped_items(value);
+            if slice {
+                it.facts = it.facts.with(js::Known::SliceItems);
+            }
+            it
         } else {
             self.js_iterator(value)
         }

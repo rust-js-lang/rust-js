@@ -140,10 +140,10 @@ function firstEven(values) {
 
 // A name the loop's test shadows, its early `break`s each its own.
 function shadowInLoop(values) {
-  const it = $iter(values);
+  const it = values.values();
   let total = 0;
   while (true) {
-    let v = $next(it);
+    let v = it.next().value;
     if (v == null) {
       break;
     }

@@ -905,6 +905,9 @@ pub(super) const STAGES: &[Stage] = &[
             // The comments before a `break` or `continue` the program wrote,
             // after what's before it, where the jumps are settled (rd109).
             pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),
+            // A slice's iterator only stepped, the array's own, once the
+            // loops that may take it for theirs are made (rd270).
+            pass("stepped slices", |b, _| crate::lower::iterators::stepped_slices(b)),
         ],
         // What `settled` ensured, kept: what's printed is checked as it is.
         ensures: &[

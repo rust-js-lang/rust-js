@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
   },
+  {
+    name: "stepped-slices-length-kept",
+    breaks: "a slice's iterator asked its length too, `it.len()`, is made the array's own `values()`, which has none, a TypeError (rd270)",
+    file: "src/lower/iterators.rs",
+    find: "        if declared != 1 || steps == 0 || js::mentions_in(body, &name) != steps {\n",
+    replace: "        if declared != 1 || steps == 0 {\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
+  },
 ];

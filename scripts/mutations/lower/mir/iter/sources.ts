@@ -335,4 +335,12 @@ export const mutations: Mutation[] = [
     replace: "if name != \"map\" ",
     tests: ["test/corpus.test.ts", "-t", "^range_map_collected.rs$"],
   },
+  {
+    name: "stepped-slices-unmade",
+    breaks: "a slice's iterator only stepped is `$iter(items)` and `$next(it)`, helpers a page's inline script can't carry, not `items.values()` (rd270)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            let slice = self.is_std_type(ty, StdItem::SliceIter);\n",
+    replace: "            let slice = false && self.is_std_type(ty, StdItem::SliceIter);\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
+  },
 ];
