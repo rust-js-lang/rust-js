@@ -502,13 +502,13 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/hints.rs": ["locals"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals"],
-  "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],
+  "src/lower/mir/operands.rs": ["argument_spans", "body", "locals", "pending", "taken"],
   "src/lower/mir/patterns.rs": ["in_place", "locals"],
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named"],
   "src/lower/mir/queries.rs": ["body", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
-  "src/lower/mir/structure.rs": ["at", "body", "commented_jumps", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
+  "src/lower/mir/structure.rs": ["argument_spans", "at", "body", "commented_jumps", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
   "src/lower/mir/writer.rs": ["body", "builders", "built", "thrown_writes", "writer", "writes_captured"],
 };
@@ -715,7 +715,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 100], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 229], // Whether `?` is written as it is, `tried_as_written` (ADR 0913).
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).
-  ["src/lower/mir.rs", "    fn mir_function(", 343], // Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
+  ["src/lower/mir.rs", "    fn mir_function(", 344], // Where a call's arguments are written, `argument_spans` (rd220). Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 583],

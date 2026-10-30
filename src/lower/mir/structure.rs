@@ -597,6 +597,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(refuse(self.tcx, *fn_span, Refused::Because(&what, why)));
                 }
                 let mut called = Vec::new();
+                state.argument_spans = args.iter().map(|arg| arg.span).collect();
                 let value = match state.facts.awaits().contains(&block) {
                     true => self.mir_await(state, func, args, *destination, *fn_span, &mut called),
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),

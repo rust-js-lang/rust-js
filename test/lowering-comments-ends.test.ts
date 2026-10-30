@@ -324,3 +324,19 @@ pub fn run(keyframes: u32, target: u32, timeline: u32, start: u32) -> u32 {
   expect(js).toContain("    false,\n    true, // We let the helper apply the translate\n  );");
   expect(lib.run(1 as never, 2 as never, 3 as never, 4 as never)).toBe(17);
 });
+
+// React's ReactFiberHooks' rerenderActionState gives a tuple at its end
+// with a comment above it: never inside the array, as a constant that
+// isn't a call's argument has no place in the map (rd220's follow-up).
+test("a comment before a tail tuple with a constant is never inside its array", async () => {
+  const { js, lib } = await compiled("comments-before-a-tail-tuple", `pub fn rerender(state: u32) -> (u32, bool) {
+    let s = state + 1;
+
+    // For mount, pending is always false.
+    (s, false)
+}
+`);
+  expect(js).not.toContain("[\n    // For mount, pending is always false.");
+  expect(js).toContain("return [s, false];");
+  expect(lib.rerender(1 as never)).toEqual([2, false]);
+});

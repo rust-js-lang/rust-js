@@ -263,12 +263,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
             }
-            // Where it's written, which the map gives a line comment after it
-            // on its line the JS of, `true, // why` of a call's last argument
-            // (rd220).
+            // A call's argument where it's written, which the map gives a
+            // line comment after it on its line the JS of, `true, // why` of
+            // a call's last (rd220); not another, a tuple's or a comparison's,
+            // which a comment before its statement would be placed at.
             Operand::Constant(c) => {
                 let mut made = self.mir_const(state, c)?;
-                if made.span.is_none() && !c.span.from_expansion() {
+                if made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {
                     made.span = self.js_span(c.span);
                 }
                 Ok(Value::Expr(made))

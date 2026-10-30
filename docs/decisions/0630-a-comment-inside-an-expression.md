@@ -207,9 +207,14 @@ A line comment after code on its line is placed by the JS the map gives
 that line. A call written an argument a line whose last is a constant,
 `true, // We let the helper apply the translate` of React's
 `startGestureTransition`, had none: a constant's JS had no span, so the
-comment was lost. **A constant's JS has the span MIR gives its operand**,
-where it has none and no macro wrote it, so the comment is after it,
-`true, // ..` then `)`. No corpus case's JS changed. Held by
+comment was lost. **A constant given as a call's argument has the span
+MIR gives its operand** (`State::argument_spans`), where it has none and
+no macro wrote it, so the comment is after it, `true, // ..` then `)`. Not
+another constant, a tuple's or a comparison's: a comment above its
+statement would be placed at it, inside the array of
+`rerenderActionState`'s `(state, dispatch, false)`, or between a
+`lower ===` and its string. No corpus case's JS changed. Held by
 `lowering-comments-ends.test.ts`'s "a comment after a call's last argument,
-a constant, is after it" and the mutation `constant-unplaced`
-(`lower/mir/operands.ts`).
+a constant, is after it" and "a comment before a tail tuple with a
+constant is never inside its array", and the mutations `constant-unplaced`
+and `constant-placed-anywhere` (`lower/mir/operands.ts`).
