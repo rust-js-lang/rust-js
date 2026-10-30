@@ -2979,7 +2979,10 @@ export function describe(v) {
 ```
 
 `$displayF64` prints an `f64` as Rust does, which differs from JS's
-`String(n)` for very large and very small numbers.
+`String(n)` for very large and very small numbers. A counter, an `f64`
+written a whole number from -2^53 to 2^53, not `-0`, and one more or
+less each time, `index += 1.0`, is whole and never past 2^53, where
+JS's text is Rust's: `` `id-${index}` ``.
 
 A value from JavaScript whose type you don't know, what an `any` API
 returns, is a `js::Unknown`, or `None` where it's `undefined` or `null`,

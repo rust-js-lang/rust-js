@@ -1,7 +1,7 @@
 # 0994. A number a binding takes is TypeScript's `number`, an `f64`
 
 Status: Accepted; amended (below; the last: a nullable one's `Some`, and
-a variable given one). Amends [0024](0024-web-crate.md), whose WebIDL integer
+a variable given one; and a counter, rd266). Amends [0024](0024-web-crate.md), whose WebIDL integer
 parameters were Rust integers, an `unsigned long` a `u32`; and
 [0283](0283-js-crate-covers-typescripts-es-library.md), whose typed
 arrays took their element's type and `u32`/`i32` lengths, indices and
@@ -264,3 +264,29 @@ its type's range" (`status_text`, `selection`, `selection_end`,
 `whole-variable-unknown`, `whole-some-payload-unread`,
 `whole-parameter-trusted`, `whole-cast-some-binding-unranged`;
 `whole-fact-unset` moved.
+
+## Amendment: a counter is whole (rd266)
+
+React DOM's Fizz instruction set names its nodes by a counter, `let
+index = 0; .. '' + index ..; index++`, an `f64` in the port, whose `{}`
+was `$displayF64(index)`, a helper Closure's ES5 build must take in.
+
+**A local `f64` each of whose writes is a whole number from -2^53 to
+2^53, not `-0`, a copy of another such, or such a number plus or minus
+one, `index += 1.0`, is whole** (`mir_wholes`, whose `Known::Whole` its
+reads have), so `{}` of it is JS's text, `` `${index}` ``. By induction
+each value is whole and not `-0` (one plus or minus `-1`'s one is `+0`),
+and none is further than 2^53 from zero, where adding one gives the same
+number: JS's text of a whole number below 1e21 is its digits, as Rust's
+is. The locals are found as the largest set whose writes are each of
+the set or a whole number, as a counter's writes are of itself. One of
+another step, `big += 4e20`, which passes 1e21, one that starts past
+2^53, and `-0` keep `$displayF64`.
+
+Case (ADR 0262): N, no difference: the text is Rust's for every value
+the counter can hold.
+
+Held by `test/corpus/counter_shown_as_js_text.rs` (native comparison of
+counters up and down and of each kept case); mutations
+`counter-past-2-53`, `counter-negative-zero`, `counter-any-step` and
+`counter-of-itself-unknown` (`lower/mir/local_facts.ts`).

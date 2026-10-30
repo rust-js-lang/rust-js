@@ -364,9 +364,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each of whose writes gives what a `#[rust_js::whole]` binding gives:
     /// its call, or a copy of another such, an `Option`'s `Some` number's
     /// too, `let Some(start) = input.selection_start()`'s `start`; borrowed
-    /// only to be read, as a `format!` borrows it. Never a parameter, which
-    /// its caller gives first, nor one written any other way, in part,
-    /// through a `&mut` or a pointer (ADR 0994, amended).
+    /// only to be read, as a `format!` borrows it. Or a counter's, of a
+    /// whole number written, `0.0`, at most 2^53 from zero and not `-0`, or
+    /// such a number and one, `index += 1.0`: whole, never `-0`, and never
+    /// further than 2^53 from zero, where one more is the same number, so
+    /// JS's text of it is Rust's (rd266). Never a parameter, which its
+    /// caller gives first, nor one written any other way, in part, through
+    /// a `&mut` or a pointer (ADR 0994, amended).
     fn mir_wholes(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashSet<Local> {
         let tcx = self.tcx;
         // What each write gives: a binding's whole number, or another's.
@@ -384,16 +388,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Rvalue::RawPtr(_, of) | Rvalue::Ref(_, BorrowKind::Mut { .. }, of) = &assign.1 {
                 unknown.insert(of.local);
             }
+            // A whole `f64` constant, from 2^53 to -2^53, not `-0`.
+            let whole = |c: &mir::ConstOperand<'tcx>| {
+                c.ty() == tcx.types.f64
+                    && (c.const_.try_to_scalar_int()).is_some_and(|scalar| {
+                        let n = f64::from_bits(scalar.to_bits_unchecked() as u64);
+                        n.fract() == 0.0 && n.abs() <= 9007199254740992.0 && !(n == 0.0 && n.is_sign_negative())
+                    })
+            };
+            let one = |c: &mir::ConstOperand<'tcx>| {
+                c.ty() == tcx.types.f64
+                    && (c.const_.try_to_scalar_int())
+                        .is_some_and(|scalar| f64::from_bits(scalar.to_bits_unchecked() as u64) == 1.0)
+            };
+            // Each write's: a whole number written (`Some(None)`), or what
+            // it's of (`Some(Some(of))`).
             let given = match &assign.1 {
                 Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) => match read.projection.as_slice() {
-                    [] => Some(read.local),
-                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => Some(read.local),
+                    [] => Some(Some(read.local)),
+                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => {
+                        Some(Some(read.local))
+                    }
+                    _ => None,
+                },
+                Rvalue::Use(Operand::Constant(c), _) if whole(c) => Some(None),
+                Rvalue::BinaryOp(BinOp::Add | BinOp::Sub, operands) => match &**operands {
+                    (Operand::Copy(of) | Operand::Move(of), Operand::Constant(c))
+                        if of.projection.is_empty() && one(c) =>
+                    {
+                        Some(Some(of.local))
+                    }
                     _ => None,
                 },
                 _ => None,
             };
             match given {
-                Some(of) if assign.0.projection.is_empty() => writes.entry(assign.0.local).or_default().push(Some(of)),
+                Some(of) if assign.0.projection.is_empty() => writes.entry(assign.0.local).or_default().push(of),
                 _ => _ = unknown.insert(assign.0.local),
             }
         }
@@ -418,22 +448,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && bindings::whole_output(tcx, body.local_decls[local].ty)
                 && writes.get(&local).is_some_and(|w| w.len() == locals.writes[local])
         };
-        // Those of a binding's first, then each of what those are, until no
-        // more are.
-        let mut wholes: HashSet<Local> = HashSet::new();
+        // Each known, but those of a write of what isn't, until none is: a
+        // counter's writes are of itself, whole where each is (rd266).
+        let mut wholes: HashSet<Local> = writes.keys().copied().filter(|&local| known(local)).collect();
         loop {
-            let more: Vec<Local> = (writes.iter())
-                .filter(|&(&local, each)| {
-                    !wholes.contains(&local)
-                        && known(local)
-                        && each.iter().all(|of| of.is_none_or(|of| wholes.contains(&of)))
+            let gone: Vec<Local> = (wholes.iter().copied())
+                .filter(|local| {
+                    writes[local]
+                        .iter()
+                        .any(|of| of.is_some_and(|of| !wholes.contains(&of)))
                 })
-                .map(|(&local, _)| local)
                 .collect();
-            if more.is_empty() {
+            if gone.is_empty() {
                 return wholes;
             }
-            wholes.extend(more);
+            for local in gone {
+                wholes.remove(&local);
+            }
         }
     }
 
