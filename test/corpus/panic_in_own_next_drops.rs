@@ -29,6 +29,24 @@ impl Iterator for Panicky {
     }
 }
 
+// Its item bound by `?`, a variable with a drop flag (#425).
+struct Questioned {
+    items: std::vec::IntoIter<D>,
+    at: u32,
+}
+
+impl Iterator for Questioned {
+    type Item = D;
+
+    fn next(&mut self) -> Option<D> {
+        let d = self.items.next()?;
+        if d.0 == self.at {
+            panic!("boom");
+        }
+        Some(d)
+    }
+}
+
 fn ds(r: std::ops::Range<u32>) -> Vec<D> {
     r.map(D).collect()
 }
@@ -43,6 +61,14 @@ fn main() {
         let x = Panicky {
             items: ds(170..174).into_iter(),
             at: 172,
+        }
+        .last();
+        println!("{}", x.is_some());
+    });
+    run("own next by ? last", || {
+        let x = Questioned {
+            items: ds(190..194).into_iter(),
+            at: 192,
         }
         .last();
         println!("{}", x.is_some());

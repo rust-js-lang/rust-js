@@ -36,6 +36,18 @@ function panickyIterator_next(panicky) {
   return next;
 }
 
+function questionedIterator_next(questioned) {
+  const d = $next(questioned.items);
+  if (d == null) {
+    return;
+  }
+  if (d[0] === questioned.at) {
+    dDrop_drop(d);
+    throw new Error("boom");
+  }
+  return d;
+}
+
 function ds(r) {
   return Array.from($iterator(r, $rangeNext).map((value) => [value]));
 }
@@ -53,6 +65,27 @@ function main() {
     };
     const x = $lastDropping(
       $closing($iterator(iter, panickyIterator_next), (it) => {
+        for (const item of it.of.items) {
+          dDrop_drop(item);
+        }
+      }),
+      dDrop_drop,
+    );
+    for (const item of iter.items) {
+      dDrop_drop(item);
+    }
+    console.log(`${x != null}`);
+    if (x != null) {
+      dDrop_drop(x);
+    }
+  });
+  run("own next by ? last", () => {
+    const iter = {
+      items: $iter(ds({ start: 190, end: 194 })),
+      at: 192,
+    };
+    const x = $lastDropping(
+      $closing($iterator(iter, questionedIterator_next), (it) => {
         for (const item of it.of.items) {
           dDrop_drop(item);
         }
@@ -129,14 +162,14 @@ function main() {
   run("flatten fold", () => {
     let tmp$1;
     const value = ds({ start: 70, end: 72 });
-    let item$2$live = true;
+    let item$3$live = true;
     let tmp;
     try {
       tmp = ds({ start: 72, end: 74 });
-      item$2$live = false;
+      item$3$live = false;
       tmp$1 = [value, tmp];
     } catch (error) {
-      if (item$2$live) {
+      if (item$3$live) {
         for (const item of value) {
           dDrop_drop(item);
         }

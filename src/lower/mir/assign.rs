@@ -594,16 +594,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut tried = tried.clone();
             // An `Option`'s held, which is what a `let` binds of it, `let f =
             // xs.find(..)?;`: held under that name, `f`, bound there already.
+            // One declared first, written again or a drop flag's, `let d;`:
+            // assigned there, `d = it.next()`, not declared again (#425).
             if let js::ExprKind::Var(held) = &tried.kind
                 && self.option_of(*ty).is_some_and(|inner| !self.boxed_payload(inner))
                 && let Some((bound, from)) = continued_binding(state, local)
-                && let Some(Stmt {
-                    kind: StmtKind::Const(name, _),
-                    ..
-                }) = (out.iter_mut().rev()).find(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == held))
+                && let Some(stmt) =
+                    (out.iter_mut().rev()).find(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == held))
             {
-                *name = state.locals.names[bound].clone();
-                tried = Expr::var(name);
+                let name = state.locals.names[bound].clone();
+                stmt.kind = match std::mem::replace(&mut stmt.kind, StmtKind::Break(None)) {
+                    StmtKind::Const(_, made) if state.locals.declared[bound] => {
+                        StmtKind::Assign(Expr::var(&name), made)
+                    }
+                    StmtKind::Const(_, made) => StmtKind::Const(name.clone(), made),
+                    kind => kind,
+                };
+                tried = Expr::var(&name);
                 state.parts.insert(bound, from);
                 state.locals.declared[bound] = true;
             }

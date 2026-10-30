@@ -705,4 +705,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
     snapshots: true,
   },
+  {
+    name: "continued-declared-again",
+    breaks: "`let d = it.next()?;` of a variable declared first, a drop flag's, declares it again, `const d`, which tidy refuses (#425)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    StmtKind::Const(_, made) if state.locals.declared[bound] => {\n                        StmtKind::Assign(Expr::var(&name), made)\n                    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
+  },
 ];
