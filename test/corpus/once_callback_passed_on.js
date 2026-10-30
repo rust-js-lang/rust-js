@@ -24,6 +24,7 @@ function main() {
   console.log(`${((x) => many(x)).call(undefined, 5, 6)}`);
   console.log(`${count.call()}`);
   console.log(`${count.call(undefined, 5)}`);
+  console.log(`${((x) => shown(x)).call(undefined, 5)}`);
   const mapped = [4, 5].map((x) => many(x));
   console.log(`[${mapped.join(", ")}]`);
 }

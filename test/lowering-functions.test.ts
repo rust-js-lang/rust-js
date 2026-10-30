@@ -1182,6 +1182,9 @@ pub fn kept(items: &[u32]) -> (Vec<Vec<u32>>, Vec<u32>) {
   expect(js).toContain("  const t = a;\n  a = b;\n  b = t;");
   expect(js).toContain("$exchange(a, b);");
   expect(js).toContain("      const old = current;\n      current = [];\n      all.push(old);");
+  // A closure's `&mut` of its maker's variable is the variable, which it
+  // assigns as the maker does.
+  expect(js).toContain("  items.forEach((item) => {\n    if (item === 0) {\n      const old = current;\n      current = [];\n      all.push(old);");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.direct([1, 2, 0, 3, 0]), lib.captured([1, 0, 0])]).toEqual([[[1, 2], [3]], [[1], []]]);
   expect(lib.kept([1, 0, 2, 3])).toEqual([[[1]], [2, 3]]);

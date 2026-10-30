@@ -10,6 +10,7 @@ import {
   $lazyRange,
   $lazyZip,
   $rangeFromStep,
+  $rangeInclusiveNext,
   $roomForHint,
   $sortedKeys,
 } from "@rust-js/runtime";
@@ -38,6 +39,23 @@ function main() {
   );
   console.log(
     `[${$foldToArray($roomForHint($lazyZip(5 == null ? [] : [5], [1, 2]), 8, true))
+      .map((item) => `(${item[0]}, ${item[1]})`)
+      .join(", ")}]`,
+  );
+  // Either side's: the second's a range's and an Option's too.
+  console.log(
+    `[${$foldToArray(
+      $roomForHint(
+        $lazyZip([1, 2, 3], $iterator({ start: "a", end: "c" }, $rangeInclusiveNext)),
+        8,
+        true,
+      ),
+    )
+      .map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`)
+      .join(", ")}]`,
+  );
+  console.log(
+    `[${$foldToArray($roomForHint($lazyZip([1, 2], 5 == null ? [] : [5]), 8, true))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

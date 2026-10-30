@@ -78,6 +78,9 @@ fn main() {
     check("collect endless", || (0..).map(made).collect::<Vec<u8>>().len());
     let endless = (0..).map(made);
     check("collect held endless", move || endless.collect::<Vec<u8>>().len());
+    // Of items of no size too, whose room its lower bound fits.
+    let units = (0..).map(|i| assert!(i < 3, "ran on"));
+    check("collect endless units", move || units.collect::<Vec<()>>().len());
     let n = std::hint::black_box(3);
     check("collect(3)", || (0..n).map(made).collect::<Vec<u8>>());
     check("collect empty", || (n..1).collect::<Vec<usize>>());

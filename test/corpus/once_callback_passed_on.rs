@@ -4,7 +4,9 @@
 // function reads no more of than the closure gives it. A function of rest
 // arguments reads all JS gives it, so the closure that gives it one of
 // them stays an arrow, an array method's callback too (ADR 0279, amended).
-// A listener, an `Fn`'s, keeps its arrow, as JS may keep and compare it.
+// A listener, an `Fn`'s, keeps its arrow where it passes on what it's
+// given, as JS may keep and compare it and give it more; one that ignores
+// what it's given is the function it calls (ADR 0605, amended).
 
 fn count() -> u32 {
     println!("count");
@@ -55,6 +57,7 @@ fn main() {
     println!("{}", once_with_two(Box::new(|x, _| many(&[x])), (), 5, 6));
     println!("{}", once(|| count()));
     println!("{}", listened(Box::new(|_| count()), (), 5));
+    println!("{}", listened(Box::new(|x| shown(x)), (), 5));
     let mapped: Vec<u32> = [4, 5].iter().map(|x| many(&[*x])).collect();
     println!("{mapped:?}");
 }

@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-mut-capture-copied",
-    "breaks": "a closure's `&mut` capture of its maker's variable is a copy, `let current$1 = current`, so taking it only rebinds the copy",
+    "breaks": "a closure's `&mut` capture of its maker's variable isn't the variable, so `std::mem::take(&mut current)` in it empties the array in place, `current.splice(0)`, where the maker's own assigns it, `current = []`",
     "file": "src/lower/mir/closures.rs",
     "find": "                        upvars.get(i).map(|t| t.kind()),\n",
     "replace": "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n",

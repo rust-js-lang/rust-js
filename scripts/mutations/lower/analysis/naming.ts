@@ -311,7 +311,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-module-jsx-macro-unread",
-    breaks: "a module of components whose props `jsx!` writes a macro of isn't the namespace's, so `<Menu.Item>` is `<menu.Item>`",
+    breaks: "a module of components whose props `jsx!` writes a macro of isn't the namespace's, so `<Menu.Item>` is `<Parts.Item>`, named after its file",
     file: "src/lower/analysis/naming.rs",
     find: " | DefKind::Trait | DefKind::Macro(_)\n",
     replace: " | DefKind::Trait\n",

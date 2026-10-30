@@ -308,11 +308,11 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "attribute-value-unmapped",
-    "breaks": "an attribute's constant value from MIR maps to no Rust line, `allow=` none in the source map",
+    "breaks": "an attribute's value MIR gives no span, a `concat!`'s, maps to no Rust line, `alt=` the line of what's before it in the source map",
     "file": "src/lower/jsx.rs",
     "find": "let mut value = value.or_at(self.js_span(value_span));",
     "replace": "let mut value = value;",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"]
   },
   {
     name: "props-read-in-jsx-order",

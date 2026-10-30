@@ -222,7 +222,9 @@ pub fn App() -> JSX::Element {
 
 // A namespace import's component, \`Menu.Item\`, is its tag where it's
 // written: JS never lets another module change an import, so what's made
-// before it can't change what it reads.
+// before it can't change what it reads. It's named after the module that
+// holds its bindings, `Menu`, not its file, `parts.js`: the companions
+// `jsx!` writes of its props are no code of the module's (ADR 0256).
 test("a namespace import's component is a tag where it's written", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -231,11 +233,11 @@ pub mod Menu {
     pub struct PartProps<C> {
         pub children: C,
     }
-    #[rust_js::link_name = "./menu.js#*.Root"]
+    #[rust_js::link_name = "./parts.js#*.Root"]
     pub fn Root<C: ReactNode>(props: PartProps<C>) -> JSX::Element {
         unreachable!()
     }
-    #[rust_js::link_name = "./menu.js#*.Item"]
+    #[rust_js::link_name = "./parts.js#*.Item"]
     pub fn Item<C: ReactNode>(props: PartProps<C>) -> JSX::Element {
         unreachable!()
     }
@@ -253,7 +255,7 @@ pub fn Nav() -> JSX::Element {
 }
 `;
   const { dir, args } = compile(source, {
-    "menu.js": "export function Root({ children }) { return children; }\nexport function Item({ children }) { return children; }\n",
+    "parts.js": "export function Root({ children }) { return children; }\nexport function Item({ children }) { return children; }\n",
   });
   run(args);
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");

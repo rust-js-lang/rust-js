@@ -9,6 +9,9 @@ fn main() {
     println!("{:?}", zip(&v, &s).map(|(a, b)| format!("{a}{b}")).collect::<Vec<_>>());
     println!("{:?}", zip(1..4, v.iter().rev()).collect::<Vec<_>>());
     println!("{:?}", zip(Some(5), [1, 2]).collect::<Vec<_>>());
+    // Either side's: the second's a range's and an Option's too.
+    println!("{:?}", zip([1, 2, 3], 'a'..='c').collect::<Vec<_>>());
+    println!("{:?}", zip([1, 2], Some(5)).collect::<Vec<_>>());
     let names = ["a", "b", "c"];
     for (i, n) in zip(0.., names) {
         println!("{i} {n}");

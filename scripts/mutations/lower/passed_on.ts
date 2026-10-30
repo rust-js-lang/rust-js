@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-callback-of-boxed-fn",
-    breaks: "a binding's `Box<dyn Fn>` parameter, a listener's, is the function the closure passes on to, which JS may keep and compare",
+    breaks: "a binding's `Box<dyn Fn>` parameter, a listener's, is a once-callback, so `|x| shown(x)` given to it is `shown`, which JS may keep and compare, and give more",
     file: "src/lower/passed_on.rs",
     find: "                ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(only_once),\n",
     replace: "                ty::Dynamic(..) => true,\n",

@@ -4,15 +4,15 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "union-function-member-unseen",
-    breaks: "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't a once-callback, so `js::set_timeout(|| ping(), None)` is `setTimeout(() => ping())`, not `setTimeout(ping)` (ADR 1020)",
+    breaks: "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't called once, so a closure rustc infers `Fn` given to it, `move || { let s = &second; .. }`, isn't one whose call drops what it took, and is refused (ADR 1020)",
     file: "src/lower/recognition/traits.rs",
     find: "                (tcx.fn_trait_kind_from_def_id(bound.def_id())).or_else(|| member_function_kind(tcx, bound.def_id()))\n",
     replace: "                tcx.fn_trait_kind_from_def_id(bound.def_id())\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
   },
   {
     name: "union-function-member-of-any-trait",
-    breaks: "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(count)`, which says nothing of how JS calls it (ADR 1020)",
+    breaks: "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(shown)` of `|x| shown(x)`, which JS may give more, where the trait says nothing of how JS calls it (ADR 1020)",
     file: "src/lower/recognition/traits.rs",
     find: "    tcx.get_attrs_by_path(trait_id, &union).next()?;\n",
     replace: "",

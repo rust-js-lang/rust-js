@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "zip-function-side-as-given",
-    breaks: "`std::iter::zip`'s second side is given as it is, so a B-tree's items are its JS set's order, not their own",
+    breaks: "`std::iter::zip`'s second side is given as it is, so a range's `{ start, end }` or an `Option`'s value is zipped, not their items",
     file: "src/lower/iterators/ends.rs",
     find: "                let b = self.iterable_items(b, tys[1], span, out)?;\n",
     replace: "",

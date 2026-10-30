@@ -119,6 +119,17 @@ function main() {
     );
     const endless = iterator_map({ start: 0 }, made, { next: $rangeFromStep(0, 4294967295) });
     check("collect held endless", () => $foldToArray($roomForHint(endless, 1, true, true)).length);
+    // Of items of no size too, whose room its lower bound fits.
+    const units = iterator_map(
+      { start: 0 },
+      (i) => {
+        if (i >= 3) {
+          throw new Error("ran on");
+        }
+      },
+      { next: $rangeFromStep(-2147483648, 2147483647) },
+    );
+    check("collect endless units", () => $foldToArray($roomForHint(units, 0, true, true)).length);
     const n = 3;
     check("collect(3)", () => $range(0, n, 1).map(made));
     check("collect empty", () => $range(n, 1, 4));

@@ -271,11 +271,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "joined-text-own-items",
-    breaks: "a `String` extended by a `BTreeSet` of `char`s takes them in insertion order, not as `iterable_items` steps them",
+    breaks: "a `String` extended by a range of `char`s or an `Option` takes `Array.from` of the range's object or of the `Option`'s value, not their items as `iterable_items` steps them",
     file: "src/lower/std_types/text.rs",
     find: "                let items = self.iterable_items(items, ty, span, out)?;\n                self.by_its_fold(items, ty)\n",
     replace: "                self.by_its_fold(items, ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^btree_given_in_order.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
   },
   {
     name: "found-tested-against-null",

@@ -43,10 +43,11 @@ fn listen_once(f: impl FnOnce(u32) -> u32 + 'static) {
 }
 
 /// What a trait of the program's takes, which says nothing of how JS calls
-/// it: a union's \`Function\` member is one of a binding's
-/// \`#[rust_js::types]\` alone (ADR 1020).
+/// it, so a closure that passes on what it's given keeps its arrow: a
+/// union's \`Function\` member is one of a binding's \`#[rust_js::types]\`
+/// alone (ADR 1020).
 pub trait Kept {}
-impl<F: FnOnce() -> u32 + 'static> Kept for F {}
+impl<F: FnOnce(u32) -> u32 + 'static> Kept for F {}
 
 #[cfg_attr(rust_js, rust_js::link_name = "keepAny")]
 #[allow(unused_variables)]
@@ -82,7 +83,7 @@ pub fn later() {
 pub fn listened() {
     listen_once(|_| count());
     listen_every(|_| count());
-    keep_any(|| count());
+    keep_any(|x| shown(x));
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
@@ -91,16 +92,16 @@ pub fn listened() {
   expect(js).toContain("return p.then(count, count);");
   expect(js).toContain("return p.then(shown, () => 0);");
   expect(js).toContain("  setTimeout(ping);\n  setTimeout(ping);\n  queueMicrotask(ping);\n");
-  expect(js).toContain("  listenOnce(count);\n  listenEvery(count);\n  keepAny(count);\n");
+  expect(js).toContain("  listenOnce(count);\n  listenEvery(count);\n  keepAny((x) => shown(x));\n");
   const given: unknown[] = [];
   Object.assign(globalThis, {
     listenOnce: (f: (x: number) => number) => given.push(f(5)),
     listenEvery: (f: (x: number) => number) => given.push(f(5)),
-    keepAny: (f: () => number) => given.push(f()),
+    keepAny: (f: (x: number) => number) => given.push(f(5)),
   });
   const lib = await import(join(dir, "lib.js"));
   lib.listened();
-  expect(given).toEqual([7, 7, 7]);
+  expect(given).toEqual([7, 7, 6]);
   expect(await Promise.all([lib.counted(Promise.resolve(1)), lib.counted(Promise.reject(new Error("no"))), lib.shownOf(Promise.resolve(1))])).toEqual([7, 7, 2]);
   expect(await lib.pinged(Promise.resolve(1))).toBeUndefined();
 });

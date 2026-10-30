@@ -422,7 +422,8 @@ pub fn Count() -> JSX::Element {
 
 // A `{" "}` the formatter makes text pairs with nothing, and a tag it breaks
 // onto lines keeps its mappings in order, as react.dev's LanguageList and
-// YouTubeIframe have them.
+// YouTubeIframe have them: an attribute MIR gives no span of its own, a
+// `concat!`'s, maps to where it's written too.
 test("a tag broken onto lines keeps its mappings in order", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::IframeHTMLAttributes;
@@ -453,6 +454,14 @@ pub fn YouTubeIframe(props: IframeHTMLAttributes<'static>) -> JSX::Element {
         </div>
     }
 }
+pub fn Pictured() -> JSX::Element {
+    jsx! {
+        <img
+            src="p.png"
+            alt={concat!("a ", "picture")}
+        />
+    }
+}
 pub fn After() -> JSX::Element {
     jsx! { <hr /> }
 }
@@ -462,7 +471,7 @@ pub fn After() -> JSX::Element {
   const js = readFileSync(join(dir, "lib.jsx"), "utf8").split("\n");
   const map = JSON.parse(readFileSync(join(dir, "lib.jsx.map"), "utf8"));
   const segments = decodeMappings(map.mappings);
-  for (const text of ["<li>", "<b", "<i", "allow=", "title=", "<hr"]) {
+  for (const text of ["<li>", "<b", "<i", "allow=", "title=", "alt=", "<hr"]) {
     const line = js.findIndex(l => l.includes(text));
     expect(lookup(segments, line, js[line].indexOf(text))?.srcLine, text).toBe(source.split("\n").findIndex(l => l.includes(text)));
   }
@@ -578,8 +587,7 @@ pub fn Named(name: &'static str) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // MIR's key read in place, what's after it doing nothing (ADR 0364).
-  expect(jsx).toContain("<Panel key={described(name)} title={name} wide />");
-  const { Named } = await import(join(dir, "lib.jsx"));
+  expect(jsx).toContain("<Panel key={described(name)} title={name} wide />");  const { Named } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Named("n"))).toBe('<p title="n" data-wide="true"></p>');
 });
 

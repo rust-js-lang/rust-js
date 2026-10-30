@@ -167,11 +167,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-inclusive-end-excluded",
-    breaks: "`2..=5`'s end is `Excluded`, one short",
+    breaks: "`2..=5`'s end is `Excluded`, one short: a B-tree's `range(2..=3)` of constants misses `3`, and `&b[2..=3]` through a generic `SliceIndex` is `$sliceIndexes.range`'s",
     file: "src/lower/recognition/types.rs",
     find: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Included\", \"end\")),\n",
     replace: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Excluded\", \"end\")),\n",
-    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(btree_range_bounds|index_bound_generic).rs$"],
   },
   {
     name: "bound-pair-items-swapped",
