@@ -534,6 +534,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-moves.test.ts", "-t", "a call's value is read in a method's arguments"],
   },
   {
+    name: "one-assignment-through-temporary-unseen",
+    breaks: "a value's chain of five plain arms, each after the first MIR's temporary given through the next, is `if (u > 5) { c = \"o\"; } else if (t < 1) { c = \"x\"; } else { c = t > 9 ? .. }`, half a chain, not one conditional (#436, ADR 0969, amended)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    let (y, no) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))?;\n",
+    replace: "    let (y, no) = assigned_only(otherwise)?;\n",
+    tests: ["test/lowering-returned-chains.test.ts", "-t", "chain of five arms or more"],
+  },
+  {
     name: "plain-chain-statement-folded",
     breaks: "a late `let`'s `if` the program wrote as a statement, its `then` a value's conditional, is one conditional, `const level = c ? (m ? 3 : 2) : 1;`, not as written (rd187, ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",

@@ -452,16 +452,16 @@ pub(super) struct OneAssignment {
 }
 
 /// Whether the arms of an `if` of `test`, at `span`, are one assignment,
-/// and how: both assign one variable alone; not of more branches, which
-/// read best as they are, but where it's a temporary's, an `if` the
-/// program wrote as a value; the function's result only where it folds
-/// into its `return` (`returned_values`); not one adding to it, `out +=
+/// and how: both assign one variable alone, the `else` maybe through the
+/// temporary MIR gives a chain's rest in (`assigned_through`, #436); not of
+/// more branches, which read best as they are, but where it's a temporary's,
+/// an `if` the program wrote as a value; the function's result only where it
+/// folds into its `return` (`returned_values`); not one adding to it, `out +=
 /// a`, as written (ADR 0657, amended); nor a `switch`'s arms (ADR 0629). The value the program
 /// wrote first comes first: `a || b ? x : y` of `if a || b { x } else { y }`
 /// MIR tests `!a && !b` of; each branch of an `if` written with an
 /// `else` where it's written (`elses`), a conditional in its `then` too;
-/// and otherwise a chain's next test in the `else` whichever comes first,
-/// as a match's arms are written.
+/// and otherwise a chain's next test in the `else` whichever comes first, as a match's arms are written.
 pub(super) fn one_assignment(
     test: &Expr,
     (then, otherwise): (&[Stmt], &[Stmt]),
@@ -470,7 +470,7 @@ pub(super) fn one_assignment(
     elses: &[(js::Span, js::Span, js::Span)],
 ) -> Option<OneAssignment> {
     let (x, yes) = assigned_only(then)?;
-    let (y, no) = assigned_only(otherwise)?;
+    let (y, no) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))?;
     let one = x == y
         && !(super::logicals::alike_branches(yes, no) && test.has_effects())
         && ((small(yes) && small(no)) || is_temporary(x))

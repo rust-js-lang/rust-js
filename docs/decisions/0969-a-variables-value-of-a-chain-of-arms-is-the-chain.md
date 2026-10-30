@@ -333,3 +333,33 @@ one owner: `!(t < 1) ? (u < 2 ? "y" : ..) : "x"`, held by
 `test/lowering-returned-chains.test.ts`'s "a value's chain keeps an arm
 the program wrote negated where it's written". Case N: the same arm is
 chosen for every value, `NaN` too.
+
+## Amendment: a chain of five arms or more is one form too (#436)
+
+MIR gives a chain's value through a temporary for each arm after the
+first, each the next's, `let _9; if (t > 9) { _9 = "q"; } else { ..; _9
+= _12; } _6 = _9;`. Tidy took them apart a level a stage: `branch values`
+folds a temporary's `if` whose `else` assigns it alone, and the
+temporary of the `else` before it was read in place (`in place/inlined`)
+only once declared a `const`. Four arms were folded by the last stage
+that asks, five or more weren't, and `written/forwarded values` gave the
+variable the rest, `if (u > 5) { c = "o"; } else if (t < 1) { c = "x"; }
+else { c = t > 9 ? "q" : u < 2 ? "y" : "z"; }`: half a chain and half a
+conditional, the form this ADR removes.
+
+**A temporary's `if` whose `else` gives its value through the next
+temporary, `let _9; _9 = v; _6 = _9;`, is one value as one assigning it
+directly is** (`branches::one_assignment` asks `assigned_through`, as
+`branch_values`' chain arms already did): a chain is folded in one pass
+however many arms it has, `const c = u > 5 ? "o" : t < 1 ? "x" : t > 9 ?
+"q" : u < 2 ? "y" : "z";` of plain values, and the whole `else if` chain
+of arms that are more. Only the `else`, where MIR puts the rest of a
+chain; a `then` keeps its rule (rd217).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order, each once, and the same arm's value.
+
+Held by `test/lowering-returned-chains.test.ts`' "a value's chain of five
+arms or more is one form" (five and seven plain arms, five with a
+template, against values Rust gives, `NaN` too) and mutation
+`one-assignment-through-temporary-unseen` (`mir/tidy/branches.ts`).

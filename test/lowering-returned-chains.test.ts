@@ -402,3 +402,75 @@ test("a value's chain keeps an arm the program wrote negated where it's written"
   const pick = lib.pick as (t: number, u: number) => string;
   expect([[0, 6], [0.5, 0], [2, 1], [10, 3], [5, 3], [NaN, 3]].map(([t, u]) => pick(t, u))).toEqual(["o", "x", "y", "q", "z", "z"]);
 });
+
+// #436: MIR gives a chain's every arm after the first through a temporary
+// of its own, `let _9; if (t > 9) { _9 = "q"; } else { .. } _6 = _9;`, one
+// more for each arm. A temporary's `if` whose `else` gives its value
+// through the next is one value as one assigning it directly is, so a chain
+// of five arms or more is one form, as one of four is: one conditional of
+// plain values, not an `if` chain of its first arms and a conditional of the
+// rest; and with an arm more than a plain value, the whole `else if` chain
+// (ADR 0969, amended).
+test("a value's chain of five arms or more is one form", async () => {
+  const { js, lib } = await compiled("value-chains-long", `pub fn five(t: f64, u: f64) -> String {
+    let c = if u > 5.0 {
+        "o"
+    } else if t < 1.0 {
+        "x"
+    } else if t > 9.0 {
+        "q"
+    } else if u < 2.0 {
+        "y"
+    } else {
+        "z"
+    };
+    c.to_string()
+}
+
+pub fn seven(t: f64, u: f64) -> String {
+    let c = if u > 5.0 {
+        "o"
+    } else if t < 1.0 {
+        "x"
+    } else if t > 9.0 {
+        "q"
+    } else if u < 2.0 {
+        "y"
+    } else if u < 3.0 {
+        "w"
+    } else if t > 7.0 {
+        "v"
+    } else {
+        "z"
+    };
+    c.to_string()
+}
+
+pub fn named(t: f64, u: f64) -> String {
+    let c = if u > 5.0 {
+        "o".to_owned()
+    } else if t < 1.0 {
+        "x".to_owned()
+    } else if t > 9.0 {
+        format!("q{t}")
+    } else if u < 2.0 {
+        "y".to_owned()
+    } else {
+        "z".to_owned()
+    };
+    c + "!"
+}
+`);
+  expect(js).toContain('  const c = u > 5 ? "o" : t < 1 ? "x" : t > 9 ? "q" : u < 2 ? "y" : "z";\n');
+  expect(js).toContain('  const c = u > 5 ? "o" : t < 1 ? "x" : t > 9 ? "q" : u < 2 ? "y" : u < 3 ? "w" : t > 7 ? "v" : "z";\n');
+  expect(js).toContain(
+    '  if (u > 5) {\n    c = "o";\n  } else if (t < 1) {\n    c = "x";\n  } else if (t > 9) {\n    c = `q${$displayF64(t)}`;\n  } else if (u < 2) {\n    c = "y";\n  } else {\n    c = "z";\n  }\n',
+  );
+  const tu = [[0, 6], [0.5, 0], [10, 3], [5, 1], [5, 2.5], [8, 4], [5, 4], [NaN, NaN]];
+  const five = lib.five as (t: number, u: number) => string;
+  const seven = lib.seven as (t: number, u: number) => string;
+  const named = lib.named as (t: number, u: number) => string;
+  expect(tu.map(([t, u]) => five(t, u))).toEqual(["o", "x", "q", "y", "z", "z", "z", "z"]);
+  expect(tu.map(([t, u]) => seven(t, u))).toEqual(["o", "x", "q", "y", "w", "v", "z", "z"]);
+  expect(tu.map(([t, u]) => named(t, u))).toEqual(["o!", "x!", "q10!", "y!", "z!", "z!", "z!", "z!"]);
+});
