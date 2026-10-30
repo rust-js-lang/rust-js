@@ -165,11 +165,15 @@ Commit on `main` and push directly: **no branches or pull requests**. If
 a push fails, keep committing locally and push later
 ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)).
 
-**Every local command has a timeout of at most five minutes**, enforced by
-the tool or `timeout 300`. This overrides other instructions here and in
-CONTRIBUTING.md. Never retry a timeout with more time: split the work or
-send it to CI. Full suites, all mutations, all rustc tests and WASM builds
-belong in CI.
+**Every local command has a timeout that fits it**, about twice what it
+usually takes, enforced by the tool or `timeout`, so a hang ends instead
+of being waited on. Run what makes the loop fastest, with all of the
+machine's cores: a whole suite in parallel parts here is fine where it's
+quicker than CI's round trip. A command past its timeout is a hang or a
+slow spot: find out which and fix it, or list it in
+[DEVELOPMENT.md](DEVELOPMENT.md#slow-spots-still-to-fix); never just
+retry it with more time. This overrides other instructions here and in
+CONTRIBUTING.md.
 
 | To | On the Mac | On CI |
 |---|---|---|

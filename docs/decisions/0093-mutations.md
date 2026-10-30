@@ -1,6 +1,6 @@
 # 0093. Known bugs put back into the compiler, which the tests must catch
 
-Status: Accepted. Extends [0088](0088-corpus.md), [0089](0089-rustc-tests.md) and [0092](0092-generated-programs.md).
+Status: Accepted. Extends [0088](0088-corpus.md), [0089](0089-rustc-tests.md) and [0092](0092-generated-programs.md). Amended by [1031](1031-mutations-are-built-many-to-a-build.md): mutations are built many to a build.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -84,9 +84,9 @@ branch's one running, and no branch's run touches another's.
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
 
-Every local run is five minutes at most
-([AGENTS.md](AGENTS.md#five-minutes-per-local-command)); what may take
-longer is CI's.
+Every local run has a timeout that fits it, about twice its usual time
+([AGENTS.md](AGENTS.md#making-and-checking-changes)), and uses all the
+cores: what's quicker here than CI's round trip runs here.
 
 ## The Mac, with the scan off
 
@@ -414,8 +414,9 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   starts the check. Don't wait for the run, poll it, or schedule a check of
   it: read it with `bun run ci:status` before each commit, and fix a red
   run first, so nothing is built on what's broken.
-- **Five minutes per local command, at most** ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)):
-  each is run with a timeout; what may take longer is CI's.
+- **A timeout that fits each local command** ([AGENTS.md](AGENTS.md#making-and-checking-changes)):
+  about twice its usual time, so a hang ends; one past it is a hang or a
+  slow spot to fix, never retried with more time.
 - **The inner loop is never delegated.** The failing test is seen to fail
   here, before the fix, and its mutations caught here, before the push.
 - **Read every bless patch before committing it.**
