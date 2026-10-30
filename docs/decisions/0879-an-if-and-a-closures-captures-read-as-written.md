@@ -777,3 +777,53 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements.
 
 Held by `test/corpus/written_tails_apart.rs` against native Rust, and
 `written-thens-end-return-unwritten` (`tidy/jumps/tails.ts`).
+
+## Amendment: a unit function's written guards and a written `if`'s `return` are `returns past blocks`' (2026-10-30, #437)
+
+`tails::written_exits`, which turned `if (!t) { rest } return;` at a unit
+function's end back into the guard the program wrote, `if (t) { return; }
+rest`, and `written_thens`' giving MIR's joined `return;` the place of the
+one written in the `then` (wl6), both put back the place of a written
+`return` that `returns past blocks` (ADR 0742) had left without one. Since
+ADR 0742's 2026-10-30 amendments, `returns past blocks` places each such
+`return` itself: after the statement before the `break` MIR joined it
+into, or after the test of the `if` whose branch leaves before it, or,
+where that test says no place, a call's value, after where the `if` is
+written. Their mutations, `written-exits-at-the-end-nested` and
+`written-thens-end-return-unwritten`, then survived the nightly. With
+both applied, nothing changed: the whole corpus (snapshots compared), the
+lowering suites, the port tests, or any of React's port's 224 modules
+(react-in-rust, each compiled both ways and compared byte for byte).
+
+**`returns past blocks` is the one owner of where a joined written
+`return` is.** `written_exits` and its two mutations
+(`written-exits-at-the-end-nested`, `written-exits-of-a-then-written`)
+are gone. So are `written_thens`' placing of a `return;`, its `returns`
+argument and its mutation `written-thens-end-return-unwritten`.
+
+So is the `let else first` pass's `return;` pushed onto a unit function
+that goes on to its end, and `let_else_first`'s `if (c) { e } else { s }
+return;` turned into `if (c) { e return; } s` for it, with their
+mutations `let-else-first-unit-end-unseen` (`stages.ts`),
+`let-else-first-at-the-end-nested` and `let-else-first-at-the-end-unended`
+(`jumps/tried.ts`), which survived the same way. With all three applied,
+the corpus, the lowering suites and the port tests were unchanged, and so
+were all of React's port's modules but one. That one,
+workLoopConcurrent, reads better: `if (value != null) { ..; do { .. }
+while (..); }` without the `return;` the pushed one left at its end,
+which neither its Rust nor upstream writes. With no `return;` pushed,
+the pass's `ended_returns`, which takes away the `return;`s MIR made at
+the end of a body's last statement, runs on every body, not only on one
+that ends: that is the `return;` it takes away.
+
+recordLegacyContextWarning and `written_tails_apart` read as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same statements.
+
+Held by `test/lowering-early-exits.test.ts`' "a unit function's early
+returns joined to its end are each a guard first", "a unit function's
+written guards joined to its end are each where written" and "a unit
+function's last if has no return MIR made at its end", run on each path;
+`test/corpus/written_tails_apart.rs` against native Rust; ADR 0742's
+mutations of `returns past blocks`; and
+`let-else-first-ended-returns-of-ended-only` (`mir/tidy/stages.ts`).

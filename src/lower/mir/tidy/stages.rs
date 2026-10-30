@@ -440,7 +440,7 @@ pub(super) const STAGES: &[Stage] = &[
             // too that goes on to the function's end, the `return;` `returns
             // past blocks` gave it (ADR 0879, amended).
             pass("written thens", |b, h| {
-                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
             }),
             // A check MIR wrote first in a chain's last `else`: the chain's arm.
             pass("chained checks", |b, h| {
@@ -630,7 +630,7 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` the program wrote without an `else` that a loop
             // `while heads` made ends, its body in it (ADR 0879, amended).
             pass("written thens", |b, h| {
-                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))
+                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
             }),
             pass("written order steps", |b, _| {
                 js::statement_lists(b, &mut |s| written_order_steps(s))
@@ -648,22 +648,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| tail_continues(s, h.written))
             }),
             pass("let else first", |b, h| {
-                // And where a unit function goes on to its end, as to the
-                // `return;` it ends with, each `if` the program wrote before
-                // it that returns: its guard (ADR 0879, amended).
-                let goes_on = !b.last().is_some_and(ends);
-                if goes_on {
-                    b.push(StmtKind::Return(None).at(js::Span::NONE));
-                }
+                // A unit function's `let … else`s and `if`s that return
+                // before it goes on to its end are their guards already,
+                // `returns past blocks`' (ADR 0742, 0879, amended); the
+                // `return;`s MIR made where it ends, nothing.
                 js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));
-                if goes_on {
-                    written_exits(b, &h.written.thens, h.returns);
-                    if b.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {
-                        b.pop();
-                    }
-                } else {
-                    ended_returns(b, h.returns);
-                }
+                ended_returns(b, h.returns);
             }),
             pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),
             // What its passes emptied, an `if` of nothing, gone, its test kept

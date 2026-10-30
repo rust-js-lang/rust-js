@@ -21,12 +21,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "let-else-first-unit-end-unseen",
-    breaks: "a unit function that goes on to its end has no `return;` there for its `let … else`s and `if`s that return, each nested in an `else` (ADR 0879, amended)",
+    name: "let-else-first-ended-returns-of-ended-only",
+    breaks: "the `return;` MIR made at the end of a unit function's last `if`'s branch, of a function that goes on to its end, stays: workLoopConcurrent's `if (value != null) { ..; do { .. } while (..); return; }` (ADR 0879, amended, #437)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                let goes_on = !b.last().is_some_and(ends);\n",
-    replace: "                let goes_on = false;\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
+    find: "                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));\n                ended_returns(b, h.returns);\n",
+    replace: "                let ended = b.last().is_some_and(ends);\n                js::statement_lists(b, &mut |s| let_else_first(s, &h.written.let_elses));\n                if ended {\n                    ended_returns(b, h.returns);\n                }\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "last if has no return MIR made at its end"],
   },
   {
     name: "mir-tidy-branch-values-kept",
@@ -685,8 +685,8 @@ export const mutations: Mutation[] = [
     name: "written-thens-not-after-while-heads",
     breaks: "getHostSibling's `if (node.flags & Placement) == 0 { return .. }`, after a loop `while heads` made, is `if (node.flags & PLACEMENT) { continue; } return ..`, a guard (ADR 0879, amended)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens, h.returns))\n            }),\n            pass(\"written order steps\"",
-    replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[], h.returns))\n            }),\n            pass(\"written order steps\"",
+    find: "                js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))\n            }),\n            pass(\"written order steps\"",
+    replace: "                js::statement_lists(b, &mut |s| written_thens(s, &[]))\n            }),\n            pass(\"written order steps\"",
     tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
   },
   {

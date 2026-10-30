@@ -214,7 +214,11 @@ fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u3
 /// and a `let … else`'s `else` after the rest, `if (root != null) { if
 /// (fiber.tag !== 3) { ..; return; } break bb; } log.push(0); break bb;`,
 /// each `break` the `return` after `fiber.tag == 3` and `log.push(0)`
-/// (#435).
+/// (#435). An `if` whose test says no place, a call's value, is placed by
+/// where the `if` is written (#438); and a block its own `break`s leave is
+/// gone on from by more than one way, so from the furthest written in it.
+/// This is the one owner of where a joined written `return` is (ADR 0742,
+/// 0879, amended, #437).
 fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, written: &[js::Span], mut at: u32) -> u32 {
     for stmt in stmts {
         if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label) {
@@ -250,9 +254,31 @@ fn returned_as_written(stmts: &mut [Stmt], label: &str, returned: &StmtKind, wri
         match &stmt.kind {
             // An `if` whose branch leaves is gone on from by its test alone,
             // `if (fiber.tag !== 3) { ..; return; } break bb;` of `if
-            // fiber.tag == 3 { return; }`: the `return` after the test.
-            StmtKind::If(test, then, None) if then.last().is_some_and(ends) && !test.span.is_none() => {
-                at = test.span.hi;
+            // fiber.tag == 3 { return; }`: the `return` after the test, where
+            // it's written; of a test that doesn't say, a closure's value,
+            // `if DID_WARN.with(|d| d.has(..)) { return; }`, the `if`'s own
+            // place, its condition's.
+            StmtKind::If(test, then, None)
+                if then.last().is_some_and(ends) && !(test.span.is_none() && stmt.span.is_none()) =>
+            {
+                at = if test.span.is_none() {
+                    stmt.span.hi
+                } else {
+                    test.span.hi
+                };
+            }
+            // A block its own `break`s leave is gone on from by each of them
+            // as well as by its end, not from one place: from the furthest
+            // written in it, as before any `if`'s test. React's
+            // diffHydratedStyles' `bb50: { if (a !== b) { if (c) { break
+            // bb50; } ..; return; } } break bb;` goes on from both its
+            // guards, and its `break` is neither's `return`.
+            StmtKind::Labeled(own, body) if js::names_jump(body, own) => {
+                js::each_list(body, &mut |list| {
+                    for s in list.iter().filter(|s| !s.span.is_none()) {
+                        at = at.max(s.span.hi);
+                    }
+                });
             }
             _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),
             _ => {}
@@ -1048,11 +1074,7 @@ pub(in crate::lower::mir::tidy) fn returned_values(
 /// the same either way round. MIR's structure
 /// makes a guard of it where `exit` is short, `if __DEV__ { .. } return
 /// None;`'s `if (!__DEV__) { return null; } ..` (ADR 0879, amended).
-pub(in crate::lower::mir::tidy) fn written_thens(
-    stmts: &mut Vec<Stmt>,
-    thens: &[(js::Span, js::Span)],
-    returns: &[js::Span],
-) {
+pub(in crate::lower::mir::tidy) fn written_thens(stmts: &mut Vec<Stmt>, thens: &[(js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for at in 0..stmts.len() {
         let (if_stmt, rest) = (&stmts[at], &stmts[at + 1..]);
@@ -1070,66 +1092,13 @@ pub(in crate::lower::mir::tidy) fn written_thens(
         {
             continue;
         }
-        let mut rest = stmts.split_off(at + 1);
-        // The `return;` the rest goes on to, MIR's, is the one the program
-        // wrote in its `then`, which MIR joined to it.
-        if let Some(
-            last @ Stmt {
-                kind: StmtKind::Return(None),
-                ..
-            },
-        ) = rest.last_mut()
-            && last.span.is_none()
-            && let Some(&written) = returns.iter().find(|r| within(then, **r))
-        {
-            last.span = written;
-        }
+        let rest = stmts.split_off(at + 1);
         let StmtKind::If(test, exit, None) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
         stmts[at].kind = StmtKind::If(test.negated_test(), rest, None);
         stmts.extend(exit);
         break;
-    }
-}
-
-/// `if (t) { rest } return;`, a unit function's end, of an `if !t { return;
-/// }` the program wrote (`Written::thens`, its `return` written there),
-/// `rest` written after it: `if (!t) { return; } rest`, as written, which
-/// runs the same either way round, and so each such `if` the rest ends with
-/// in turn. React's recordLegacyContextWarning's `if (didWarn.has(..)) {
-/// return; }`, which MIR joins to the function's end (ADR 0879, amended).
-pub(in crate::lower::mir::tidy) fn written_exits(
-    stmts: &mut Vec<Stmt>,
-    thens: &[(js::Span, js::Span)],
-    returns: &[js::Span],
-) {
-    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
-    loop {
-        let [.., if_stmt, exit] = stmts.as_slice() else {
-            return;
-        };
-        let (StmtKind::If(_, rest, None), StmtKind::Return(None)) = (&if_stmt.kind, &exit.kind) else {
-            return;
-        };
-        let Some((_, then)) = thens.iter().find(|(cond, _)| within(cond, if_stmt.span)) else {
-            return;
-        };
-        if !returns.iter().any(|r| within(then, *r)) || !first_written(rest).is_some_and(|at| at >= then.hi) {
-            return;
-        }
-        let exit = stmts.pop().expect("matched");
-        let if_stmt = stmts.pop().expect("matched");
-        let StmtKind::If(test, rest, None) = if_stmt.kind else {
-            unreachable!("matched")
-        };
-        let goes_on = !rest.last().is_some_and(ends);
-        stmts.push(StmtKind::If(test.negated_test(), vec![exit.clone()], None).at(if_stmt.span));
-        stmts.extend(rest);
-        if !goes_on {
-            return;
-        }
-        stmts.push(exit);
     }
 }
 

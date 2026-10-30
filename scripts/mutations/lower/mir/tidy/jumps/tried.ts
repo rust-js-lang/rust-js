@@ -12,22 +12,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "let-else-first-at-the-end-nested",
-    breaks: "a `let … else`'s `else`, first, of a unit function whose `return` MIR joined to where it ends, stays `if (c) { e } else { s }`, the rest nested (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            && written_first(then, otherwise)\n            && fits_in_place(stmts, i, otherwise)\n",
-    replace: "            && false\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
-  },
-  {
-    name: "let-else-first-at-the-end-unended",
-    breaks: "a `let … else`'s guard at a unit function's end leaves out its `return;`, so the rest runs after it (ADR 0879, amended)",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            then.push(exit.clone());\n",
-    replace: "",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "unit function's early returns"],
-  },
-  {
     name: "let-else-joined-break-nested",
     breaks: "a `let … else` whose `break` MIR joined with the next's is no guard first, each nested in the one before, its comment before the loop (ADR 0879, amended)",
     file: "src/lower/mir/tidy/jumps/tried.rs",

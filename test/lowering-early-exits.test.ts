@@ -728,6 +728,168 @@ pub fn fiber(tag: u8, root: Option<Rc<Fiber>>) -> Rc<Fiber> {
   expect(js).toContain("  if (fiber.tag !== 3) {\n    if (root == null) {\n      return;\n    }\n    log.push(fiber.tag);\n  }\n");
 });
 
+// ADR 0742, amended (#438): a unit function's guards MIR joins to its end,
+// each `return;` as written. `if did_warn.contains(..) { return; }`, a test
+// of a call's value, which says no place of its own, is React's
+// recordLegacyContextWarning's `if (didWarnAboutLegacyContext.has(..)) {
+// return; }`: its `return` is the one after where the `if` is written,
+// not `if (!didWarn.has(..)) { rest }`. And diffHydratedStyles' two guards,
+// `if a == b { return; } if c && d { // .. return; }`, MIR's block that the
+// second leaves as well as the first's test: the `return` after it neither
+// guard's, each as upstream writes it with its comment, not `if (a === b ||
+// (c && d)) { return; }`.
+test("a unit function's written guards joined to its end are each where written", async () => {
+  const { js, lib } = await compiled("joined-guards-as-written", `use std::collections::HashSet;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub root: Option<Rc<Fiber>>,
+}
+
+fn find_root(fiber: &Fiber) -> Option<Rc<Fiber>> {
+    fiber.root.clone()
+}
+
+pub fn record(fiber: &Fiber, did_warn: &mut HashSet<u8>, log: &mut Vec<u8>) {
+    let root = find_root(fiber);
+    if root.is_none() {
+        log.push(0);
+        return;
+    }
+    if did_warn.contains(&fiber.tag) {
+        return;
+    }
+    if fiber.tag > 2 {
+        log.push(fiber.tag);
+        did_warn.insert(fiber.tag);
+    }
+}
+
+pub fn fiber(tag: u8, root: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, root })
+}
+
+fn normalize(s: Option<&str>) -> String {
+    s.unwrap_or("").trim().to_string()
+}
+
+fn has_transition(n: &u32) -> bool {
+    *n > 3 || *n == 0
+}
+
+pub fn diff_styles(value: Option<u32>, client: Option<String>, server: Option<String>, n: &u32, out: &mut Vec<String>) {
+    if value.is_some() && !matches!(value, Some(1 | 2)) {
+        if n > &5 {
+            out.push("expects a mapping".to_string());
+        }
+        return;
+    }
+    if server == client {
+        return;
+    }
+    let normalized_client = normalize(client.as_deref());
+    let normalized_server = normalize(server.as_deref());
+    if normalized_server == normalized_client {
+        return;
+    }
+
+    if js::string::get(&normalized_server, f64::from(js::string::length(&normalized_server)) - 1.0) == Some(";")
+        && has_transition(n)
+    {
+        // A view transition's style.
+        return;
+    }
+
+    out.push(normalized_server);
+}
+`);
+  expect(js).toContain(
+    "  if (root == null) {\n    log.push(0);\n    return;\n  }\n  if (didWarn.has(fiber.tag)) {\n    return;\n  }\n  if (fiber.tag > 2) {\n",
+  );
+  expect(js).toContain(
+    '  if (normalizedServer === normalizedClient) {\n    return;\n  }\n\n  if (normalizedServer[normalizedServer.length - 1] === ";" && hasTransition(n)) {\n    // A view transition\'s style.\n    return;\n  }\n\n  out.push(normalizedServer);\n}\n',
+  );
+  const log: number[] = [];
+  const warned = new Set<number>([4]);
+  const root = lib.fiber(9 as never, null as never);
+  for (const [tag, rooted] of [
+    [1, false],
+    [4, true],
+    [3, true],
+    [3, true],
+    [1, true],
+  ] as const) {
+    lib.record(lib.fiber(tag as never, (rooted ? root : null) as never) as never, warned as never, log as never);
+  }
+  expect(log).toEqual([0, 3]);
+  const out: string[] = [];
+  for (const [value, client, server, n] of [
+    [7, "a", "b", 6],
+    [null, "a", "a", 4],
+    [null, " a ", "a", 4],
+    [null, "a", "b;", 4],
+    [null, "a", "b;", 2],
+    [1, "a", "b", 0],
+  ] as const) {
+    lib.diffStyles(value as never, client as never, server as never, n as never, out as never);
+  }
+  expect(out).toEqual(["expects a mapping", "b;", "b"]);
+});
+
+// ADR 0879, amended (#437): React's workLoopConcurrent, `if let Some(mut
+// w) = WORK.with_borrow(Clone::clone) { ..; loop { .. } }`, a unit function
+// that goes on to its end: the `return;` MIR made at the end of its `if`'s
+// branch is nothing, as falling off the end, `if (value != null) { ..; do {
+// .. } while (..); }`, as upstream writes it.
+test("a unit function's last if has no return MIR made at its end", async () => {
+  const { js, lib } = await compiled("last-if-no-return", `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u32,
+    pub next: Option<Rc<Fiber>>,
+}
+
+thread_local! {
+    static WORK: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
+}
+
+fn perform(fiber: &Rc<Fiber>, log: &mut Vec<u32>) {
+    log.push(fiber.tag);
+    WORK.set(fiber.next.clone());
+}
+
+pub fn work_loop(budget: u32, log: &mut Vec<u32>) {
+    if let Some(mut work) = WORK.with_borrow(Clone::clone) {
+        let until = log.len() as u32 + budget;
+        loop {
+            perform(&work, log);
+            match WORK.with_borrow(Clone::clone) {
+                Some(next) if (log.len() as u32) < until => work = next,
+                _ => break,
+            }
+        }
+    }
+}
+
+pub fn start(tags: Vec<u32>) {
+    let mut next = None;
+    for tag in tags.into_iter().rev() {
+        next = Some(Rc::new(Fiber { tag, next }));
+    }
+    WORK.set(next);
+}
+`);
+  expect(js).toContain("    } while (work$1 != null && !(log.length >= until));\n  }\n}\n");
+  const log: number[] = [];
+  lib.workLoop(2 as never, log as never);
+  lib.start([1, 2, 3, 4, 5] as never);
+  lib.workLoop(2 as never, log as never);
+  lib.workLoop(9 as never, log as never);
+  expect(log).toEqual([1, 2, 3, 4, 5]);
+});
+
 // React's commitDeletedPairViewTransitions, `while (child !== null) { ..
 // if (pairs.size === 0) { break; } .. }`, the loop its function ends with:
 // MIR's jump of the `break` goes to the function's end, which printed

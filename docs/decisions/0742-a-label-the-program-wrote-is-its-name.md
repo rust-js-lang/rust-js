@@ -264,3 +264,47 @@ first", `test/corpus/returns_joined_past_blocks.rs`' `pop_host` and
 `test/corpus/let_else_guard_released.rs` against native Rust, and the
 mutations `returns-past-blocks-placed-past-earlier` and
 `returns-past-blocks-placed-past-branch` (`mir/tidy/jumps/tails.ts`).
+
+## Amendment: a test that says no place, and a block left by its own `break`s (2026-10-30, #437, #438)
+
+Compiling React's port (react-in-rust) with the amendment above changed
+six of its modules. Three changes were for the better and three were not:
+- recordLegacyContextWarning's `if (didWarnAboutLegacyContext.has(..)) {
+  return; }` was lost to `if (!didWarnAboutLegacyContext.has(..)) { rest
+  }`.
+- ScrollEndEventPlugin's `else { // .. return; }` lost its comment.
+- diffHydratedStyles' two guards were merged into `if (a === b || (c &&
+  d)) { return; }`, losing the second's comment.
+
+Two refinements of "what runs just before the `break`" fix them:
+
+- **An `if` whose test says no place of its own** (a call's value, `if
+  DID_WARN.with(|d| d.has(..)) { return; }`, `if
+  did_warn.contains(&fiber.tag) { return; }`) is placed by where the `if`
+  is written, its condition's place. Its `break` is the `return` after
+  that, not one after its branch (#438, the same shape outside the port).
+- **A block that its own `break`s leave** goes on to what follows from
+  each of them as well as from its end, so not from one place: from the
+  furthest point written in it, as before #435. diffHydratedStyles' `bb50:
+  { if (a !== b) { if (c) { if (d) { break bb50; } } ..; return; } } break
+  bb;` goes on to the `break` from both of its guards, so that `break` is
+  neither's `return`, and the inner block places each guard's own.
+
+With both, React's port differs from its committed JS in four modules,
+each closer to upstream or to its Rust:
+- diffHydratedStyles: its two guards, as upstream writes them.
+- EnterLeaveEventPlugin's `// Nothing pertains to our managed
+  components.` before its `return;`.
+- SimpleEventPlugin's `if (withBorrow == null) { return; }`, upstream's
+  guard, not the rest nested in its negation.
+- throwAndUnwindWorkLoop's `if (didFatal) { return; }`, as its Rust
+  writes it.
+
+The corpus is as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+Held by `test/lowering-early-exits.test.ts`' "a unit function's written
+guards joined to its end are each where written", run on each path, and
+the mutations `returns-past-blocks-unspanned-test-past-branch` and
+`returns-past-blocks-left-block-one-place` (`mir/tidy/jumps/tails.ts`).
