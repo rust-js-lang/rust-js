@@ -41,3 +41,21 @@ is Index, options[i]", run in Node, and the mutation
 `index-of-a-binding-impl-refused` (`lower/mir/dispatch.ts`). A loop to a
 collection's `length()`, an `f64` (ADR 0994), is still `0..options.length()
 as usize`, `$f64ToInt(options.length, ..)`.
+
+## Amendment: a named property is `get`, `set` and `delete` (2026-10-30, #429)
+
+`DOMStringMap`, an element's `dataset`, is WebIDL's unnamed specials
+alone: `getter DOMString (DOMString name)`, its setter and its deleter.
+The generator skipped every unnamed operation, so a port read
+`node.dataset['precedence']` as `js::get(dataset, "precedence")`, an
+`Option<&Unknown>` where TypeScript's is `string | undefined`. **A named
+property of text is `get(name)`, `this[name]`, an `Option<String>` whose
+`None` is a name it lacks, `undefined`; `set(name, value)`, `this[name] =
+value`; and `delete(name)`, `delete this[name]`**, each the form that
+owns its JS (`"get []"`, `"set []"`, `"delete []"`). A `delete` gives
+`true`, so it isn't `returns_undefined`: a closure of it, `move ||
+dataset.delete("x")`, gives nothing, as Rust's does. A document's and a
+window's named getters, of what JS names on them, and a form's, a union,
+are still skipped. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none. Held by `webapi-bindings.test.ts`'s "a DOMStringMap's named
+properties are get, set and delete, dataset[name]", run in Node.

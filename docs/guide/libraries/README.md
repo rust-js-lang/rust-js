@@ -305,6 +305,12 @@ How WebIDL maps to Rust, one rule for each:
   on it throws JS's `TypeError`, not Rust's panic; `item(i)`, an
   `Option`, asks
   ([ADR 1011](../../decisions/1011-a-bindings-index-signature-is-index.md)).
+- **A named property is `get`, `set` and `delete`:** an element's
+  `dataset`, a `DOMStringMap`, is `dataset.get("precedence")`,
+  `dataset["precedence"]`, an `Option<String>`, `None` of a name it
+  lacks; `dataset.set(name, value)` and `dataset.delete(name)` are
+  `dataset[name] = value` and `delete dataset[name]`
+  ([ADR 1011](../../decisions/1011-a-bindings-index-signature-is-index.md), amended).
 - **Inheritance is `Deref`:** an `&HTMLButtonElement` has `Element`'s and
   `Node`'s methods, and goes where an `&Element` does.
 - **A number is TypeScript's `number`, an `f64`,** given and taken, an

@@ -57345,6 +57345,34 @@ impl PartialEq for DOMStringMap {
 
 impl Eq for DOMStringMap {}
 
+impl DOMStringMap {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringMap): its named property, `getter (DOMString name)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    #[cfg_attr(rust_js, rust_js::optional)]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get(&self, name: &str) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringMap): its named property, `setter (DOMString name)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "set []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set(&self, name: &str, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringMap): its named property, `deleter (DOMString name)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "delete []")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn delete(&self, name: &str) {
+        unreachable!()
+    }
+
+}
+
 /// [`DataTransferItem`](https://developer.mozilla.org/docs/Web/API/DataTransferItem)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItem")]
 pub struct DataTransferItem(PhantomData<JsObject>);

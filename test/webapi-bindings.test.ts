@@ -807,6 +807,41 @@ pub fn first_tag(root: &Element) -> String {
   expect(lib.firstTag({ querySelectorAll: () => [{ tagName: "INPUT" }] })).toBe("INPUT");
 });
 
+// React DOM's Fizz runtime reads and writes `element.dataset[name]`:
+// DOMStringMap's IDL is all unnamed specials, a getter, a setter and a
+// deleter of a name, each `this[name]` (#429).
+test("a DOMStringMap's named properties are get, set and delete, dataset[name]", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-named-property");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::HTMLElement;
+
+pub fn moved(node: &HTMLElement, from: &str, to: &str) -> Option<String> {
+    let dataset = node.dataset();
+    let value = dataset.get(from)?;
+    dataset.set(to, &value);
+    dataset.delete(from);
+    Some(value)
+}
+
+pub fn cleared(node: &HTMLElement) -> impl Fn() + '_ {
+    move || node.dataset().delete("x")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const value = dataset[from];");
+  expect(js).toContain("dataset[to] = value;");
+  expect(js).toContain("delete dataset[from];");
+  const lib = await import(join(dir, "lib.js"));
+  const dataset: Record<string, string> = { precedence: "high" };
+  expect(lib.moved({ dataset }, "precedence", "p")).toBe("high");
+  expect(dataset).toEqual({ p: "high" });
+  expect(lib.moved({ dataset }, "missing", "q")).toBeUndefined();
+  expect(dataset).toEqual({ p: "high" });
+  // A closure of a delete gives what Rust's does, nothing: not `true`.
+  expect(lib.cleared({ dataset: { x: "1" } })()).toBeUndefined();
+});
+
 // The user's decision (React port gap d13a): a value the DOM makes text of,
 // whatever TypeScript's `string` says, takes any value, `impl IntoUnknown`,
 // as React DOM gives it, `node.setAttribute(name, value)` of a number or a

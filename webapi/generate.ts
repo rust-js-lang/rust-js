@@ -1186,6 +1186,28 @@ function iterated(i: Interface): string | undefined {
   return parent ? iterated(parent) : undefined;
 }
 
+/** What a named property's unnamed special is (#429): its getter,
+ * `get(name)`, `this[name]`, of what the name holds, `None` where it holds
+ * nothing, `undefined`; its setter, `set(name, value)`, `this[name] =
+ * value`; its deleter, `delete(name)`, `delete this[name]`. */
+function namedProperty(i: Interface, m: Member, self: string[]): Fn | { skip: string } {
+  const doc = [`[MDN](${mdn(i.name)}): its named property, \`${m.special} (DOMString name)\`.`];
+  if (m.special === "getter") {
+    const item = rustType(m.idlType!, "result");
+    if (typeof item !== "string") return item;
+    // Of text alone, `DOMStringMap`'s: a document's and a window's are
+    // what JS names on them, elements and windows, not what they hold.
+    if (item !== "String") return { skip: "a named getter not of text" };
+    return { name: "get", jsName: "get []", params: [...self, "name: &str"], result: `Option<${item}>`, doc, none: "undefined" };
+  }
+  if (m.special === "setter") {
+    const value = m.arguments?.[1] && paramType(m.arguments[1].idlType);
+    if (!value) return { skip: "a named setter's value" };
+    return { name: "set", jsName: "set []", params: [...self, "name: &str", `value: ${value}`], result: "()", doc };
+  }
+  return { name: "delete", jsName: "delete []", params: [...self, "name: &str"], result: "()", doc };
+}
+
 /** A stringifier's `toString()`, `url.to_string()`, its text. */
 const toString = (i: Interface): Fn => ({
   name: "to_string",
@@ -1517,6 +1539,15 @@ function functionsOf(declared: Interface): Fn[] {
         fns.push(toString(i));
         continue;
       }
+      // A named property's `getter DOMString (DOMString name)`, its setter
+      // and its deleter, `DOMStringMap`'s: `dataset.get("x")`, `this[name]`,
+      // `None` of a name it lacks, `undefined`; `set` and `delete` (#429).
+      if (!m.name && m.arguments?.[0]?.idlType.idlType === "DOMString" && m.special && ["getter", "setter", "deleter"].includes(m.special)) {
+        const named = namedProperty(i, m, self);
+        if ("skip" in named) skip(named.skip);
+        else fns.push(named);
+        continue;
+      }
       if (!m.name) {
         skip("unnamed");
         continue;
@@ -1804,7 +1835,8 @@ function generic(f: Fn): string {
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose
     // assignment's value is what it's given.
-    ...(f.result === "()" && !f.jsName.startsWith("set ") ? ["    #[cfg_attr(rust_js, rust_js::returns_undefined)]"] : []),
+    // Not a setter's, nor a `delete`'s, which gives `true` (#429).
+    ...(f.result === "()" && !f.jsName.startsWith("set ") && f.jsName !== "delete []" ? ["    #[cfg_attr(rust_js, rust_js::returns_undefined)]"] : []),
     "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
     "    #[allow(unused_variables)]",
     `    pub fn ${f.name}${names.length > 0 ? `<${names.join(", ")}>` : ""}(${params.join(", ")})${result} {`,
