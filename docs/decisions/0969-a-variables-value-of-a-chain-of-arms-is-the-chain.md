@@ -5,7 +5,9 @@ variable's value of three arms a chain) to chains of any length. Amended
 below: a chain whose every arm is a plain value is one nested conditional
 (the user's decision of 2026-10-27), and a function's value of a chain is
 the chain's too (the user's decision of 2026-10-28, rd23); and a
-conditional in a written `then` stays there (rd217).
+conditional in a written `then` stays there (rd217); and a module's
+static's or thread-local's initializer of a chain is one nested
+conditional whatever its arms (the user's decision, rd234).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -257,3 +259,62 @@ the same order, the same value. Held by corpus case
 `plain-chain-statement-folded` (`mir/tidy/branches.ts`). The corpus'
 `drop_functions` re-blessed: its `match` of a `Cons` first, `made.TAG ===
 "Cons" ? (made._1.TAG === "Cons" ? 1 : 0) : 0`, as its arms are written.
+
+## Amendment: a module's initializer of a chain is one nested conditional (rd234, the user's decision)
+
+React DOM's ReactFiberConfigDOM writes
+
+```js
+export const scheduleMicrotask: any =
+  typeof queueMicrotask === 'function'
+    ? queueMicrotask
+    : typeof localPromise !== 'undefined'
+      ? callback =>
+          localPromise.resolve(null).then(callback).catch(handleErrorInNextTick)
+      : scheduleTimeout; // TODO: Determine the best fallback here.
+```
+
+and its port a thread-local's `if .. { .. } else if .. { |callback| .. }
+else { .. }`, which printed an arrow called in place, `(() => { if (..) {
+return queueMicrotask; } else if (..) { return (callback) => { .. }; } ..
+})()`: the pt3 rule makes a chain one conditional only where every arm is
+a plain value, and a module has no statement form of a value but that
+arrow (or, not exported, ADR 0601's `let` each arm assigns). The user
+decided: **a module-level static's or thread-local's initializer that is
+an `if` chain is one nested conditional whatever its arms**, an arrow, a
+call or a chain of its own, `t ? a : b ? (c ? d : e) : f`. Inside a
+function the pt3 rule stays.
+
+- `prepare/initializers.rs`' `chained`, which `declared_at_top` asks where
+  its closure is no value alone (`valued`): each arm one `return` of its
+  value; a guard's arm, `if (t) { return a; } ..`, the rest the
+  conditional's second value, its `then` never falling through to what
+  follows; a guard MIR turned, `if (!t) { return a; } return b;`, as
+  written, `t ? b : a`. Not where an arm does more than give its value, a
+  `const` first (the closure called in place still, or ADR 0601's `let`),
+  nor, not exported, where an arm gives `undefined` or the chain ends with
+  nothing, which ADR 0704 leaves unassigned, `let cache; if (__DEV__) {
+  cache = .. }` as React's componentFrameCache is. An exported one's
+  `None` arm is `undefined`, as ADR 0870's `__DEV__ ? f : undefined`.
+- A comment above an arm's value is before it in the conditional, `? //
+  The promise's.` (ADR 0658).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the tests run in the same order, each once, and then the one
+arm, as the chain's statements did, when the module loads either way.
+
+Alternatives: keep the arrow called in place (no JS module writes it), or
+ADR 0601's `let` for a private one (upstream's for a chain of statements,
+which stays it).
+
+Held by `test/lowering-returned-chains.test.ts`' "a thread-local's
+initializer of an if chain is one nested conditional, whatever its arms"
+(arrows, a chain in an arm, a turned guard, a guard going on past its
+tests, an arm of statements, `None` arms exported and private, and a
+function's chain of arrows, which stays the chain), corpus
+`initializer_chains` against native Rust, the guide's `scale`, and
+mutations `initialized-chain-called-in-place`,
+`initialized-chain-guard-falls-through`,
+`initialized-chain-arm-statements-dropped`,
+`initialized-chain-none-arm-folded` and
+`initialized-chain-turned-guard-kept` (`prepare/initializers.ts`).

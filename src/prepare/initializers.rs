@@ -82,9 +82,14 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
             continue;
         }
         // An exported one's value of a test, which no `let` the test
-        // assigns can be (`assigned_in_place`), a conditional.
-        let Some(([], value)) = valued(body, constant.export) else {
-            continue;
+        // assigns can be (`assigned_in_place`), a conditional; one of an
+        // `if` chain, one nested conditional.
+        let value = match valued(body, constant.export) {
+            Some(([], value)) => value,
+            _ => match chained(body, constant.export) {
+                Some(value) => value,
+                None => continue,
+            },
         };
         constant.value = Expr {
             span: constant.value.span,
@@ -122,6 +127,64 @@ fn valued(body: &[Stmt], guarded: bool) -> Option<(&[Stmt], Expr)> {
         [consts @ .., last] if let Some((test, yes)) = guard(last) => {
             Some((consts, Expr::cond(test, yes, Expr::undefined())))
         }
+        _ => None,
+    }
+}
+
+/// What a closure's `body` of one `if` chain gives, each arm a `return` of
+/// its value, whatever that is, an arrow, a call or a chain of its own: one
+/// nested conditional, `t ? a : b ? c : d`, which runs each test in turn
+/// and then the one arm, as the chain did, as React DOM's scheduleMicrotask
+/// is written (rd234, the user's decision; ADR 0969, amended), a guard of a
+/// test MIR turned, `!t`, its arms the other way round. Not where an
+/// arm does more than give its value; nor, not `exported`, where one gives
+/// `undefined`, or the chain ends with nothing, which `assigned_in_place`
+/// leaves unassigned, `let cache; if (__DEV__) { cache = .. }` (ADR 0704).
+fn chained(body: &[Stmt], exported: bool) -> Option<Expr> {
+    // The value of `list`, whose end, where `end`, is the body's, where
+    // its function gives `undefined`; and otherwise falls through to what
+    // follows, which no arm may.
+    fn value(list: &[Stmt], end: bool, exported: bool) -> Option<Expr> {
+        let cond = |t: &Expr, yes: Expr, no: Expr, at: js::Span| Expr::cond(t.clone(), yes, no).or_at(at);
+        match list {
+            [] => (end && exported).then(Expr::undefined),
+            [
+                Stmt {
+                    kind: StmtKind::Return(Some(v)),
+                    ..
+                },
+            ] => (exported || !matches!(v.kind, ExprKind::Undefined)).then(|| v.clone()),
+            [
+                Stmt {
+                    kind: StmtKind::If(t, then, Some(otherwise)),
+                    span,
+                },
+            ] => Some(cond(
+                t,
+                value(then, end, exported)?,
+                value(otherwise, end, exported)?,
+                *span,
+            )),
+            [
+                Stmt {
+                    kind: StmtKind::If(t, then, None),
+                    span,
+                },
+                rest @ ..,
+            ] => {
+                let (yes, no) = (value(then, false, exported)?, value(rest, end, exported)?);
+                // A guard MIR turned, `if (!t) { return a; } return b;`,
+                // as the program wrote it, `t ? b : a`.
+                Some(match &t.kind {
+                    ExprKind::Unary(js::UnaryOp::Not, inner) => cond(inner, no, yes, *span),
+                    _ => cond(t, yes, no, *span),
+                })
+            }
+            _ => None,
+        }
+    }
+    match body.first()?.kind {
+        StmtKind::If(..) => value(body, true, exported),
         _ => None,
     }
 }

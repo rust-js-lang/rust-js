@@ -231,3 +231,152 @@ pub fn is_fallback(instance: &Comment) -> bool {
     "  return (\n    instance.data === FALLBACK ||\n    (instance.data === PENDING && instance.ownerDocument.readyState !== LOADING)\n  );\n",
   );
 });
+
+// React DOM's scheduleMicrotask is one nested conditional, `typeof
+// queueMicrotask === 'function' ? queueMicrotask : .. ? callback => .. :
+// scheduleTimeout`: a module's thread-local's or static's initializer of an
+// `if` chain is one nested conditional whatever its arms, an arrow's too,
+// where the chain's statements would be an arrow called in place (rd234, the
+// user's decision; ADR 0969, amended). An arm that does more than give its
+// value keeps it so, as one whose arm goes on past its tests does; a guard
+// MIR turned is as written; a private one's of an arm of `None` is assigned
+// where it's something (ADR 0704); a function's chain keeps the rule of its
+// arms.
+test("a thread-local's initializer of an if chain is one nested conditional, whatever its arms", async () => {
+  const { js, lib } = await compiled("initialized-chains", `fn double(x: u32) -> u32 {
+    x * 2
+}
+
+fn triple(x: u32) -> u32 {
+    x * 3
+}
+
+fn level() -> u32 {
+    2
+}
+
+thread_local! {
+    pub static PICK: fn(u32) -> u32 = if level() > 2 {
+        double
+    } else if level() > 1 {
+        |x| {
+            let y = x + 1;
+            y * 10
+        }
+    } else {
+        triple
+    };
+    pub static SCALE: fn(u32) -> u32 = if level() > 1 { |x| x + 100 } else { triple };
+    pub static NAME: String = if level() > 5 {
+        "big".to_owned()
+    } else if level() > 1 {
+        if level() == 2 { format!("level {}", level()) } else { "odd".to_owned() }
+    } else {
+        String::new()
+    };
+    static MAYBE: Option<fn(u32) -> u32> = if level() > 5 {
+        Some(double)
+    } else if level() > 1 {
+        Some(triple)
+    } else {
+        None
+    };
+    pub static TURNED: fn(u32) -> u32 = match level() > 1 {
+        true if level() > 5 => double,
+        false => |x| x + 1,
+        _ => triple,
+    };
+    pub static GUARDED: fn(u32) -> u32 = match level() > 1 {
+        true if level() > 5 => double,
+        true if level() > 3 => |x| x + 1,
+        _ => triple,
+    };
+    pub static OPTIONAL: Option<fn(u32) -> u32> = if level() > 5 {
+        Some(double)
+    } else if level() > 3 {
+        Some(triple)
+    } else {
+        None
+    };
+    pub static WORKED: u32 = if level() > 1 {
+        let n = level();
+        n * n + n
+    } else {
+        0
+    };
+}
+
+pub fn picked(n: u32) -> u32 {
+    PICK.with(|f| *f)(n)
+}
+
+pub fn scaled(n: u32) -> u32 {
+    SCALE.with(|f| *f)(n)
+}
+
+pub fn name() -> String {
+    NAME.with(|n| n.clone())
+}
+
+pub fn maybe(n: u32) -> Option<u32> {
+    MAYBE.with(|f| f.map(|f| f(n)))
+}
+
+pub fn turned(n: u32) -> u32 {
+    TURNED.with(|f| *f)(n)
+}
+
+pub fn guarded(n: u32) -> u32 {
+    GUARDED.with(|f| *f)(n)
+}
+
+pub fn optional(n: u32) -> Option<u32> {
+    OPTIONAL.with(|f| f.map(|f| f(n)))
+}
+
+pub fn worked() -> u32 {
+    WORKED.with(|w| *w)
+}
+
+pub fn chosen(n: u32) -> fn(u32) -> u32 {
+    if n > 2 {
+        double
+    } else if n > 1 {
+        |x| x + 1
+    } else {
+        triple
+    }
+}
+`);
+  expect(js).toContain(`export const pick =
+  level() > 2
+    ? double
+    : level() > 1
+      ? (x) => {
+          const y = (x + 1) >>> 0;
+          return (y * 10) >>> 0;
+        }
+      : triple;
+`);
+  expect(js).toContain("export const scale = level() > 1 ? (x) => (x + 100) >>> 0 : triple;\n");
+  expect(js).toContain(
+    'export const NAME =\n  level() > 5 ? "big" : level() > 1 ? (level() === 2 ? `level ${level()}` : "odd") : "";\n',
+  );
+  expect(js).toContain("let MAYBE;\nif (level() > 5) {\n  MAYBE = double;\n} else if (level() > 1) {\n  MAYBE = triple;\n}\n");
+  expect(js).toContain("export const TURNED = level() > 1 ? (level() > 5 ? double : triple) : (x) => (x + 1) >>> 0;\n");
+  expect(js).toContain("export const GUARDED = (() => {\n  if (level() > 1) {\n    if (level() > 5) {\n");
+  expect(js).toContain("export const OPTIONAL = level() > 5 ? double : level() > 3 ? triple : undefined;\n");
+  expect(js).toContain("export const WORKED = (() => {\n  if (level() > 1) {\n    const n = level();\n");
+  expect(js).toContain(`export function chosen(n) {
+  if (n > 2) {
+    return double;
+  } else if (n > 1) {
+    return (x) => (x + 1) >>> 0;
+  } else {
+    return triple;
+  }
+}`);
+  const call = (name: string, ...args: number[]) => (lib[name] as (...a: number[]) => unknown)(...args);
+  expect([call("picked", 4), call("scaled", 4), call("name"), call("worked"), call("maybe", 2)]).toEqual([50, 104, "level 2", 6, 6]);
+  expect([call("turned", 4), call("guarded", 4), call("optional", 4)]).toEqual([12, 12, undefined]);
+});

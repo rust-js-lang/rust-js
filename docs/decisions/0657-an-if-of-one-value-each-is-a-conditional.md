@@ -8,7 +8,9 @@ which took no function as a branch. Amended by
 a branch with a comment is a conditional too, its comment before its value;
 and by [0870](0870-a-let-chains-value-reads-its-binding-first.md): a let
 chain's value too, its binding read first. Amended: a branch that adds to
-the variable it assigns keeps the `if`, as written.
+the variable it assigns keeps the `if`, as written. A module's initializer of an `else if`
+chain is one nested conditional whatever its arms ([0969](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md),
+amended, rd234).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the same value,
 written as a person writes it.
