@@ -1390,7 +1390,10 @@ export const $BTreeSet = $btreeSet($cmp);
 // asks it, and a `map`, a `take` and a `flatMap` pass it to their source,
 // and a `filter` steps its source's `find`, as std's do, so a `drop`'s is
 // std's `Skip`'s: its source's `nth(n - 1)`, then its source's `tryFold`.
-export class $Steps extends Iterator {
+// Its base read as a pure call's value, not the global itself, which a
+// bundler can't tell is there, so that one importing no `$Steps` drops it
+// (rd274).
+export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   constructor(next, close) {
     super();
     this.next = next;
@@ -9979,29 +9982,33 @@ export function $fromJsonValue(value, read) {
 // serde's `missing_field`: what a field that isn't there reads as, which is
 // `None` for an `Option`, and otherwise an error. An adjacently tagged
 // enum's content that isn't there is read so too, and is nothing for a
-// unit variant.
-export class $JsonMissing {
-  constructor(name) {
-    this.name = name;
-  }
+// unit variant. Made by a pure call, its methods set in it, so that a
+// bundler drops it where nothing makes one (rd274).
+export const $JsonMissing = /* @__PURE__ */ (() => {
+  class JsonMissing {
+    constructor(name) {
+      this.name = name;
+    }
 
-  option() {
-    return undefined;
-  }
+    option() {
+      return undefined;
+    }
 
-  untaggedUnit() {
-    return undefined;
+    untaggedUnit() {
+      return undefined;
+    }
   }
-}
-for (const method of [
-  "bool", "int", "f64", "f32", "string", "char", "borrowedStr", "unit", "unitStruct", "vec", "tuple", "array", "map",
-  "struct", "untaggedStruct", "tupleStruct", "enum", "taggedUnit", "internallyTagged",
-  "adjacentlyTagged", "untagged",
-]) {
-  $JsonMissing.prototype[method] = function () {
-    throw $jsonError(`missing field \`${this.name}\``);
-  };
-}
+  for (const method of [
+    "bool", "int", "f64", "f32", "string", "char", "borrowedStr", "unit", "unitStruct", "vec", "tuple", "array", "map",
+    "struct", "untaggedStruct", "tupleStruct", "enum", "taggedUnit", "internallyTagged",
+    "adjacentlyTagged", "untagged",
+  ]) {
+    JsonMissing.prototype[method] = function () {
+      throw $jsonError(`missing field \`${this.name}\``);
+    };
+  }
+  return JsonMissing;
+})();
 
 // A string's text, a U+FEFF at its start too, which `TextDecoder` would drop
 // as a byte order mark, where serde_json keeps every character. Made when
@@ -10012,7 +10019,8 @@ export function $jsonUtf8(bytes) {
   if ($jsonUtf8Decoder === undefined) $jsonUtf8Decoder = new TextDecoder("utf-8", { ignoreBOM: true });
   return $jsonUtf8Decoder.decode(bytes);
 }
-export const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
+// Pure, so a bundler drops it where nothing reads it (rd274).
+export const $JSON_POW10 = /* @__PURE__ */ Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.
 export function $jsonGrow(significand, digit) {
@@ -11538,7 +11546,8 @@ export class $Hasher {
     this.writeU8(0xff);
   }
 }
-export const $hasherProvided = Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");
+// Pure, so a bundler drops it where nothing reads it (rd274).
+export const $hasherProvided = /* @__PURE__ */ Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");
 
 // A crate's `Hasher`'s dictionary, the provided methods its impl doesn't
 // write filled in, each `$Hasher`'s over the dictionary's own entries.
@@ -11621,8 +11630,8 @@ export class $SipHasher extends $Hasher {
   }
 }
 // A std hasher's dictionary, of its `&mut`, `{ value }`: its own methods.
-export const $sipHasher = Object.fromEntries(
-  ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
+export const $sipHasher = /* @__PURE__ */ Object.fromEntries(
+  /* @__PURE__ */ ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
 );
 
 // What drops each item an iterator, or an array, hasn't given, by `drop`,

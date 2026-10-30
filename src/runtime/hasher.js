@@ -46,7 +46,8 @@ class $Hasher {
     this.writeU8(0xff);
   }
 }
-const $hasherProvided = Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");
+// Pure, so a bundler drops it where nothing reads it (rd274).
+const $hasherProvided = /* @__PURE__ */ Object.getOwnPropertyNames($Hasher.prototype).filter((name) => name !== "constructor");
 
 // A crate's `Hasher`'s dictionary, the provided methods its impl doesn't
 // write filled in, each `$Hasher`'s over the dictionary's own entries.
@@ -129,6 +130,6 @@ class $SipHasher extends $Hasher {
   }
 }
 // A std hasher's dictionary, of its `&mut`, `{ value }`: its own methods.
-const $sipHasher = Object.fromEntries(
-  ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
+const $sipHasher = /* @__PURE__ */ Object.fromEntries(
+  /* @__PURE__ */ ["write", "finish", ...$hasherProvided].map((name) => [name, (hasher, ...args) => hasher.value[name](...args)]),
 );

@@ -90,6 +90,27 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
 // the web's: a module that imports `$swap` runs where `TextDecoder`
 // isn't, as React's scheduler's tests run under Jest's jsdom (ADR 0574).
 // What a helper needs of the host it makes when it's first asked.
+// A bundler keeps only the helpers a module imports and what they call:
+// none of the package's own values is made where nothing reads it, as
+// React DOM's inline Fizz runtime, of `$unwrap` alone, takes a few hundred
+// bytes, not the 16 KB its classes, tables and dictionaries were (rd274).
+test("@rust-js/runtime is tree-shakable, a helper bundled alone", async () => {
+  const { build } = await import("vite");
+  const dir = fixture("runtime-tree-shaking");
+  writeFileSync(join(dir, "runtime.js"), run([compiler, "--runtime-module"]));
+  const entry = join(dir, "entry.js");
+  writeFileSync(entry, `import { $unwrap } from "./runtime.js";\nglobalThis.unwrap = $unwrap;\n`);
+  const out = await build({
+    logLevel: "silent",
+    configFile: false,
+    build: { write: false, minify: false, lib: { entry, formats: ["es"], fileName: "bundle" } },
+  });
+  const code = ((Array.isArray(out) ? out[0] : out) as { output: { code: string }[] }).output[0].code;
+  const declared = [...code.matchAll(/^(?:export )?(?:async )?(?:function\*? |class |const |let |var )(\$\w+)/gm)].map((m) => m[1]);
+  expect(declared).toEqual(["$unwrap"]);
+  expect(code.length).toBeLessThan(1000);
+});
+
 test("@rust-js/runtime loads in a host with none of the web's APIs", () => {
   const web = ["TextDecoder", "TextEncoder", "URL", "URLSearchParams", "fetch", "crypto", "performance", "navigator",
     "structuredClone", "queueMicrotask", "setTimeout", "setInterval", "atob", "btoa", "Intl", "WebAssembly", "process"];

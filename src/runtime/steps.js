@@ -17,7 +17,10 @@
 // asks it, and a `map`, a `take` and a `flatMap` pass it to their source,
 // and a `filter` steps its source's `find`, as std's do, so a `drop`'s is
 // std's `Skip`'s: its source's `nth(n - 1)`, then its source's `tryFold`.
-class $Steps extends Iterator {
+// Its base read as a pure call's value, not the global itself, which a
+// bundler can't tell is there, so that one importing no `$Steps` drops it
+// (rd274).
+class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   constructor(next, close) {
     super();
     this.next = next;

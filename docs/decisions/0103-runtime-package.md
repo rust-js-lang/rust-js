@@ -150,3 +150,22 @@ not npm's.
 
 - [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way
 - [0919](0919-the-runtime-survives-loose-transforms.md): The runtime spreads only arrays, so an app's loose transforms, Babel's in React's Jest, leave its answers as they are
+
+## Amendment: the package is tree-shakable (2026-10-30, rd274)
+
+A bundler keeps a module's statements it can't prove do nothing, and the
+package had five: `class $Steps extends Iterator`, of a global a bundler
+can't tell is there; `$JSON_POW10`'s `Array.from(..)`; the hasher's
+`Object.getOwnPropertyNames(..)` and `Object.fromEntries(..)`; and the
+`for` loop that sets `$JsonMissing`'s methods. So a module that imports
+`$unwrap` alone bundled 16 KB with Vite (rolldown) and 29 KB with rollup,
+those and every helper they call, where React DOM's inline Fizz runtime's
+upstream strings are a few hundred bytes. **None of the package's values is
+made where nothing reads it**: `$Steps`'s base is a pure call's value,
+`/* @__PURE__ */ (() => Iterator)()`; the table and the dictionaries are
+`/* @__PURE__ */` calls; `$JsonMissing` is a pure call's class, its methods
+set in it. Its syntax is what it was (ADR 0919). Held by
+`runtime-package.test.ts`'s "@rust-js/runtime is tree-shakable, a helper
+bundled alone", which bundles an import of `$unwrap` with Vite and finds
+it alone, and the mutation `steps-base-global` (`runtime/steps.ts`).
+

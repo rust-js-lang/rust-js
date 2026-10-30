@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "steps-base-global",
+    breaks: "`$Steps` extends the `Iterator` global itself, which a bundler can't tell is there, so it keeps the class, and every helper it calls, in a module that imports none (rd274)",
+    file: "src/runtime/steps.js",
+    find: "class $Steps extends /* @__PURE__ */ (() => Iterator)() {\n",
+    replace: "class $Steps extends Iterator {\n",
+    tests: ["test/runtime-package.test.ts", "-t", "tree-shakable"],
+  },
+  {
     name: "steps-nth-drop-ungiven",
     breaks: "std's default `nth` of a `$Steps` advances without the items' drop, so a `skip` of a `take_while` never drops what it passes (#294)",
     file: "src/runtime/steps.js",

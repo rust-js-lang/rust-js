@@ -264,26 +264,30 @@ function $fromJsonValue(value, read) {
 // serde's `missing_field`: what a field that isn't there reads as, which is
 // `None` for an `Option`, and otherwise an error. An adjacently tagged
 // enum's content that isn't there is read so too, and is nothing for a
-// unit variant.
-class $JsonMissing {
-  constructor(name) {
-    this.name = name;
-  }
+// unit variant. Made by a pure call, its methods set in it, so that a
+// bundler drops it where nothing makes one (rd274).
+const $JsonMissing = /* @__PURE__ */ (() => {
+  class JsonMissing {
+    constructor(name) {
+      this.name = name;
+    }
 
-  option() {
-    return undefined;
-  }
+    option() {
+      return undefined;
+    }
 
-  untaggedUnit() {
-    return undefined;
+    untaggedUnit() {
+      return undefined;
+    }
   }
-}
-for (const method of [
-  "bool", "int", "f64", "f32", "string", "char", "borrowedStr", "unit", "unitStruct", "vec", "tuple", "array", "map",
-  "struct", "untaggedStruct", "tupleStruct", "enum", "taggedUnit", "internallyTagged",
-  "adjacentlyTagged", "untagged",
-]) {
-  $JsonMissing.prototype[method] = function () {
-    throw $jsonError(`missing field \`${this.name}\``);
-  };
-}
+  for (const method of [
+    "bool", "int", "f64", "f32", "string", "char", "borrowedStr", "unit", "unitStruct", "vec", "tuple", "array", "map",
+    "struct", "untaggedStruct", "tupleStruct", "enum", "taggedUnit", "internallyTagged",
+    "adjacentlyTagged", "untagged",
+  ]) {
+    JsonMissing.prototype[method] = function () {
+      throw $jsonError(`missing field \`${this.name}\``);
+    };
+  }
+  return JsonMissing;
+})();

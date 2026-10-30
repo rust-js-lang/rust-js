@@ -8,7 +8,8 @@ function $jsonUtf8(bytes) {
   if ($jsonUtf8Decoder === undefined) $jsonUtf8Decoder = new TextDecoder("utf-8", { ignoreBOM: true });
   return $jsonUtf8Decoder.decode(bytes);
 }
-const $JSON_POW10 = Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
+// Pure, so a bundler drops it where nothing reads it (rd274).
+const $JSON_POW10 = /* @__PURE__ */ Array.from({ length: 309 }, (_, i) => Number(`1e${i}`));
 
 // `significand * 10 + digit`, a BigInt once it's past 2^53.
 function $jsonGrow(significand, digit) {
