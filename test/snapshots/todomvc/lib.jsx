@@ -24,7 +24,7 @@ function useFilter() {
 }
 
 export function App() {
-  const [todos, dispatch] = useReducer(reduce, undefined, () => load());
+  const [todos, dispatch] = useReducer(reduce, undefined, load);
   const filter = useFilter();
   const [draft, setDraft] = useState("");
   useEffect(() => save(todos), [todos]);

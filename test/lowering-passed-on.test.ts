@@ -17,8 +17,8 @@ const externs = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, 
 // binding's `FnOnce` callback that only passes on its call to a function
 // of the crate's is that function, `p.then(ping, ping)`. A callback JS
 // calls once and never compares can't tell it from a fresh closure. An
-// `Fn` parameter's, a listener's, keeps its arrow: `addEventListener`
-// de-duplicates by identity.
+// `Fn` parameter's, a listener's, is too where the closure ignores what
+// it's given (rd212, the user's decision, 2026-10-30).
 test("a closure given to a binding's FnOnce callback that only passes its call on is the function", async () => {
   const dir = fixture("once-callbacks");
   writeFileSync(join(dir, "lib.rs"), `use js::Promise;
@@ -91,7 +91,7 @@ pub fn listened() {
   expect(js).toContain("return p.then(count, count);");
   expect(js).toContain("return p.then(shown, () => 0);");
   expect(js).toContain("  setTimeout(ping);\n  setTimeout(ping);\n  queueMicrotask(ping);\n");
-  expect(js).toContain("  listenOnce(count);\n  listenEvery(() => count());\n  keepAny(() => count());\n");
+  expect(js).toContain("  listenOnce(count);\n  listenEvery(count);\n  keepAny(count);\n");
   const given: unknown[] = [];
   Object.assign(globalThis, {
     listenOnce: (f: (x: number) => number) => given.push(f(5)),
@@ -678,4 +678,76 @@ fn record(n: u32) {
   lib.schedule(lib.SCHEDULE_MICROTASK, 2);
   await new Promise((resolve) => setTimeout(resolve, 5));
   expect(seen).toEqual([2, 1]);
+});
+
+// ADR 0262's exception, the user's (rd196, rd212, 2026-10-30): a closure
+// that ignores what it's given and calls, with nothing, a function that
+// reads no \`this\` and nothing it's given more, a function of the crate's
+// or one bound, \`function::bind\`'s of a \`with_this\` function, is that
+// function wherever it's given, a listener's too: React DOM's \`const ping
+// = onUnsuspend.bind(state); loadingState.then(ping, ping);
+// preloadEl.addEventListener('load', ping);\`. Not a binding's JS
+// function bound, which may read what it's given, nor a \`with_this\`
+// function unbound, which reads the \`this\` a listener is called with.
+test("a closure that ignores what it's given is the function it calls", async () => {
+  const dir = fixture("ignoring-callbacks");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::{Promise, function};
+use webapi::{EventTarget, EventTargetExt};
+
+pub struct SuspendedState {
+    pub count: Cell<f64>,
+}
+
+unsafe impl js::Defined for SuspendedState {}
+
+thread_local! {
+    static ON_UNSUSPEND: &'static dyn Fn() = function::with_this(|this, ()| {
+        // Safety: it's bound to a suspended state.
+        let state: &SuspendedState = unsafe { js::cast(this) };
+        state.count.set(state.count.get() - 1.0);
+    });
+}
+
+pub fn suspend_on(state: &'static SuspendedState, loading: Promise<()>, target: &EventTarget) -> Promise<()> {
+    let ping = function::bind(ON_UNSUSPEND.with(|f| *f), Some(state), ());
+    target.add_event_listener_named("load", move |_| ping(), None);
+    target.add_event_listener_named("error", move |_| ping(), None);
+    loading.then_with(move |_| ping(), move |_| ping())
+}
+
+fn layout_callback() {
+    println!("layout");
+}
+
+pub fn listen(target: &EventTarget) {
+    target.add_event_listener_named("layout", |_| layout_callback(), None);
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "console.log")]
+#[allow(unused_variables)]
+fn log(text: &str) {
+    unreachable!()
+}
+
+pub fn kept(target: &EventTarget) {
+    let host = function::bind(log, None, ("host",));
+    target.add_event_listener_named("host", move |_| host(), None);
+    let unbound = ON_UNSUSPEND.with(|f| *f);
+    target.add_event_listener_named("unbound", move |_| unbound(), None);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  const ping = onUnsuspend.bind(state);\n  target.addEventListener("load", ping);\n  target.addEventListener("error", ping);\n  return loading.then(ping, ping);\n');
+  expect(js).toContain('  target.addEventListener("layout", layoutCallback);\n');
+  expect(js).toContain('  target.addEventListener("host", () => {\n    host();\n  });\n');
+  expect(js).toContain('  target.addEventListener("unbound", () => {\n    unbound();\n  });\n');
+  const lib = await import(join(dir, "lib.js"));
+  const state = { count: 3 };
+  const target = new EventTarget();
+  await lib.suspendOn(state, Promise.resolve(), target);
+  target.dispatchEvent(new Event("load"));
+  expect(state.count).toBe(1);
 });

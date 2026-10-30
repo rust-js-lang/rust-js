@@ -131,7 +131,7 @@ export function Refs() {
   const onLog = useEffectEvent(() => {
     globalThis.log(shown ? "shown" : "hidden");
   });
-  useEffect(() => onLog(), [shown]);
+  useEffect(onLog, [shown]);
   return (
     <div>
       <FancyInput handle={handle} />

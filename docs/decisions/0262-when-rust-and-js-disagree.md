@@ -86,7 +86,16 @@ react.dev's TopNav passes the same closure instead.
   a closure, `p.then(|_| ping(), |_| ping())`, is
   `p.then(ping, ping)`. Only the callback's identity tells it from a fresh
   closure's, which JS doesn't compare of a callback it calls once. Listed
-  in the guide's differences (`semantics.md`, 27), below.
+  in the guide's differences (`semantics.md`, 27), below. Widened, the
+  user's decision (2026-10-30, gaps rd196, rd212, ADR 0605, amended): a
+  closure that ignores what it's given and calls, with nothing, a
+  function that reads no `this` and nothing it's given more, the crate's
+  or one bound, is that function wherever it's given, a listener's too,
+  `addEventListener("load", ping)`. Its `.length` and its identity tell
+  them apart: a JS caller of an exported value sees one function where
+  Rust made a closure each time, and `addEventListener` given it twice
+  for one event and target keeps one listener where two closures were
+  two.
 - **A `RegExp`'s `test` and `replace` take text, as TypeScript types
   them**, the second case's, which the user decided (2026-10-28, gap rd33):
   React's warnValidStyle tests `badStyleValueWithSemicolonPattern.test(value)`

@@ -411,9 +411,69 @@ it. The arrow stays:
   JS caller's, and a function of rest arguments, which reads them all.
 - **Where the closure doesn't give the function's value:** `|_| {
   count(); }` fulfils with `undefined`, `then(count)` with the count.
-- **Of an `Fn` or `FnMut` callback, a listener's:** JS may keep it and
-  compare it, as `removeEventListener` finds the listener
-  `addEventListener` was given by its identity.
+- **Of an `Fn` or `FnMut` callback, a listener's, that reads what it's
+  given:** JS may keep it and compare it, as `removeEventListener` finds
+  the listener `addEventListener` was given by its identity.
+
+A closure that ignores what it's given, of parameters it never reads,
+and calls, with nothing, a function that reads no `this` and nothing it's
+given more is that function wherever it's given, a listener's too: a
+function of the crate's, a closure, a fn pointer only those fill, or one
+of them bound, `function::bind`'s, a `function::with_this` function's
+too, whose `this` is the one bound. React DOM's suspensey resources ping
+so:
+
+```rust
+use std::cell::Cell;
+
+use js::{Promise, function};
+use webapi::{Element, EventTargetExt};
+
+pub struct SuspendedState {
+    pub count: Cell<f64>,
+}
+
+unsafe impl js::Defined for SuspendedState {}
+
+thread_local! {
+    static ON_UNSUSPEND: &'static dyn Fn() = function::with_this(|this, ()| {
+        // Safety: it's only called bound to a suspended state.
+        let state: &SuspendedState = unsafe { js::cast(this) };
+        state.count.set(state.count.get() - 1.0);
+    });
+}
+
+pub fn suspend_on(state: &'static SuspendedState, loading: Promise<()>, preload: &Element) {
+    let ping = function::bind(ON_UNSUSPEND.with(|f| *f), Some(state), ());
+    loading.then_with::<(), _, _>(move |_| ping(), move |_| ping());
+    preload.add_event_listener_named("load", move |_| ping(), None);
+    preload.add_event_listener_named("error", move |_| ping(), None);
+}
+```
+
+```js
+const onUnsuspend = function () {
+  // Safety: it's only called bound to a suspended state.
+  const state = this;
+  state.count--;
+};
+
+export function suspendOn(state, loading, preload) {
+  const ping = onUnsuspend.bind(state);
+  loading.then(ping, ping);
+  preload.addEventListener("load", ping);
+  preload.addEventListener("error", ping);
+}
+```
+
+Only the function's `.length` and its identity tell them apart, the
+user's decided exception ([ADR 0262](../../decisions/0262-when-rust-and-js-disagree.md)'s,
+[semantics](../semantics.md#the-javascript-boundary)): a JS caller of an
+exported value sees the one function where Rust made a closure each
+time, and `addEventListener` given it twice for one event and target
+keeps one listener, where two closures were two. A binding's JS function
+bound, which may read what it's given, keeps its arrow, and so does a
+`with_this` function unbound, which reads the `this` it's called with.
 
 An array method's callback, `xs.iter().map(|x| double(x))`, is the
 function too, `xs.map(double)` ([ADR 0279](../../decisions/0279-callbacks-passed-on.md)),

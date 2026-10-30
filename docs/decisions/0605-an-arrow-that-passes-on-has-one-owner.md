@@ -9,7 +9,10 @@ captures nothing as a `fn`, or lent as a `&dyn Fn`, is the function of
 the crate's it only adapts; and a closure that passes on what it took by
 value, then its parameters, is the crate's function bound, `g.bind(null,
 a)`; and a closure of rest arguments that passes them all on to a
-function's rest is that function.
+function's rest is that function; and a closure that ignores what it's
+given, calling with nothing a function that reads no `this` and nothing
+more, is that function wherever it's given (rd196, rd212, the user's
+decision).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -399,3 +402,48 @@ one `fn` type), and mutations `host-callee-not-a-fn`,
 The guide's global-scope example, `queueTask`'s `typeof queueMicrotask !==
 "undefined" ? queueMicrotask : runNow`, is upstream's now, where it was
 `(callback) => queueMicrotask(callback)`.
+
+## Amendment: a closure that ignores what it's given is the function it calls (rd196, rd212)
+
+React DOM pings a commit's suspensey resources with one bound function,
+`const ping = onUnsuspend.bind(state); loadingState.then(ping, ping);
+preloadEl.addEventListener('load', ping);`, and its view transitions
+pass on functions JS calls with what they ignore, `.then(layoutCallback,
+layoutCallback)`. Rust's types need a closure of the callback's
+parameters, `move |_| ping()`, which printed `() => { ping(); }`: a
+listener's taker kept its arrow, and a `dyn Fn` callee was any JS
+function's.
+
+**A closure whose parameters are all unread, whose body only calls,
+with nothing, a function that reads no `this` and none of what it's
+given more, giving what that gives, is that function, wherever it's
+given** (the user's decision, 2026-10-30, an exception of ADR 0262's
+second case): `then(ping, ping)`, `addEventListener("load", ping)`. That
+function, `Callee::Own`, is one of the crate's or of a library rust-js
+compiled, of no rest arguments; a closure; a fn pointer only those fill
+(`FnPointers::rust_only`, ADR 0330); or one of them bound,
+`function::bind`'s, a `function::with_this` function's too, whose `this`
+is the one bound, through `let`s that never change and a thread-local's
+value, `ON_UNSUSPEND.with(|f| *f)` (`bound_own`, `own_target`).
+`forwarded_to` says so of a closure, `Forwarding::ignores`, which each
+taker takes, a binding's `Fn` or `FnMut` callback's too, now
+`Taker::Callback`, which takes nothing else.
+
+A JS caller may call that function with any `this` and arguments, as it
+would the closure; the closure gives what it gives. Only its `.length`
+and its identity tell them apart: a JS caller of an exported value sees
+one function where Rust made a closure each time, and `addEventListener`
+given it twice for one event and target keeps one listener where two
+closures were two, as `removeEventListener` given it removes the one
+added (the identity a listener's taker was kept for, which the user's
+rule takes). A binding's JS function bound, which may read what it's
+given, keeps its arrow, and so does a `with_this` function unbound,
+which reads the `this` it's called with.
+
+Held by `test/lowering-passed-on.test.ts`'s "a closure that ignores
+what it's given is the function it calls" (run: a bound `with_this`
+function pinged by `then` and a listener) and its "a closure given to a
+binding's FnOnce callback .." (`listenEvery(count)`, `keepAny(count)`);
+mutations `ignoring-listener-kept`, `ignoring-not-taken`,
+`ignoring-item-given`, `bound-own-dyn`, `bound-host-own` and
+`bound-with-this-not-own` (`passed_on.ts`).

@@ -6,6 +6,7 @@
 //! passes its call on to is MIR's fact, read once where it's made
 //! (`forwarded_to`), which each taker reads.
 
+use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -56,6 +57,12 @@ pub(in crate::lower) enum Taker {
     /// runtime helper, which may read an optional parameter; an arrow made
     /// here of as many parameters too.
     FnValue,
+    /// Another callback a binding or a function of the crate's takes, an
+    /// `Fn`'s, a listener's, `el.addEventListener("load", ping)`: only a
+    /// closure that ignores what it's given (`Forwarding`'s `ignores`) is
+    /// the function it calls, as any taker's is (rd196, rd212, ADR 0262's
+    /// exception, the user's decision).
+    Callback,
 }
 
 /// What a closure MIR makes passes its call on to, where it's written: its
@@ -77,14 +84,26 @@ pub(in crate::lower) struct Forwarding {
     /// captured by value (`binds`), which `bound` writes once the body is
     /// tidied, where nothing calls the arrow in place any more.
     pub(in crate::lower) binds: bool,
+    /// Whether it ignores what it's given, reading none of its parameters,
+    /// and calls, with nothing, a function that reads no `this` and none
+    /// of what it's given more (`Callee::Own`), giving what that gives:
+    /// `move |_| ping()` of a bound function, `|_| layout_callback()`. A JS
+    /// caller may call that function with any `this` and arguments, as it
+    /// would the closure, so the closure is that function wherever it's
+    /// given, `then(ping, ping)` (rd196, rd212, ADR 0262's exception, the
+    /// user's decision): only its `.length` and its identity tell them
+    /// apart.
+    pub(in crate::lower) ignores: bool,
 }
 
 /// What a closure's one call calls.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(in crate::lower) enum Callee {
     /// A function of the crate's, or of a library rust-js compiled, that
-    /// takes no rest arguments, or a closure: its JS takes the arguments
-    /// Rust gives it alone.
+    /// takes no rest arguments, a closure, a fn pointer only those fill
+    /// (`FnPointers::rust_only`), or such a function bound, `function::bind`'s
+    /// (`bound_own`): its JS takes the arguments Rust gives it alone, and
+    /// reads no `this`.
     Own,
     /// A generic `impl Fn`'s, which a JS caller may give a JS function of
     /// more parameters than its type says.
@@ -117,9 +136,10 @@ impl Taker {
     /// once, a parameter of a type parameter called by `FnOnce` alone
     /// (`recognition::function_kind`), `impl FnOnce(T) -> U`, or a union's
     /// whose `Function` member is, `js::set_timeout`'s `H:
-    /// IntoTimerHandler`, or a `Box<dyn FnOnce(..)>`. Not an `Fn` or
+    /// IntoTimerHandler`, or a `Box<dyn FnOnce(..)>`. Another, an `Fn` or
     /// `FnMut`'s, a listener's, which JS may keep and compare,
-    /// `removeEventListener`'s.
+    /// `removeEventListener`'s, is a `Callback`, which takes only a closure
+    /// that ignores what it's given.
     pub(in crate::lower) fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
         let ty = *tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i)?;
         let only_once = |id: DefId| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce);
@@ -131,7 +151,10 @@ impl Taker {
             },
             _ => false,
         };
-        once.then_some(Taker::OnceCallback)
+        Some(match once {
+            true => Taker::OnceCallback,
+            false => Taker::Callback,
+        })
     }
 
     /// Whether the arrow may pass on to a closure's call of `callee`.
@@ -141,7 +164,7 @@ impl Taker {
             Taker::Handler => callee != Callee::Host,
             Taker::OnceCallback => callee == Callee::Own,
             Taker::FnPointer => matches!(callee, Callee::Own | Callee::Host),
-            Taker::Made | Taker::FnValue => false,
+            Taker::Made | Taker::FnValue | Taker::Callback => false,
         }
     }
 }
@@ -163,7 +186,9 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
         Taker::Made | Taker::FnValue => false,
         _ => {
             let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;
-            if !taker.takes(fact.callee) {
+            // One that ignores what it's given is the function it calls,
+            // whoever takes it (rd196, rd212).
+            if !taker.takes(fact.callee) && !fact.ignores {
                 return None;
             }
             // A closure as a `fn` of a function Rust could have named there
@@ -171,13 +196,16 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
             if taker == Taker::FnPointer && !fact.adapts {
                 return None;
             }
-            matches!(taker, Taker::Handler | Taker::OnceCallback | Taker::FnPointer)
+            matches!(
+                taker,
+                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback
+            )
         }
     };
     let (callee, arity) = passed_to(f, statement)?;
     let named = callee.is_named();
     let takes = match taker {
-        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer => named,
+        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback => named,
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
         Taker::FnValue => match &callee.kind {
             js::ExprKind::Var(_) => callee.helper_name().is_none(),
@@ -271,6 +299,18 @@ fn passed_to(f: &Expr, statement: bool) -> Option<(&Expr, usize)> {
     js::passes_on(params, body, statement).map(|callee| (callee, params.len()))
 }
 
+/// The variable a closure captured that `e` reads, through its borrows
+/// and what they point to, `ping` of `(&*ping)()`; not its own parameter.
+fn captured(thir: &rustc_middle::thir::Thir<'_>, mut e: rustc_middle::thir::ExprId) -> Option<rustc_hir::HirId> {
+    loop {
+        match thir[super::body_queries::strip(thir, e)].kind {
+            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+            ExprKind::UpvarRef { var_hir_id, .. } => return Some(var_hir_id.0),
+            _ => return None,
+        }
+    }
+}
+
 /// `f` of `(e) => { if (f != null) { f(e); } }`: a handler that calls
 /// another, if there is one, with what it's given (ADR 0198).
 fn optional_handler(value: &Expr) -> Option<Expr> {
@@ -338,20 +378,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
             return None;
         };
+        // A fn pointer it captured, only the crate's functions fill (ADR
+        // 0330), called with nothing: `move |_| f()`.
+        if let ty::FnPtr(..) = thir[fun].ty.kind() {
+            let own = self.krate.cell_borrows.pointers().rust_only(self.tcx, thir[fun].ty);
+            return (own && args.is_empty() && captured(thir, fun).is_some()).then_some(Forwarding {
+                span,
+                callee: Callee::Own,
+                adapts: true,
+                item: false,
+                binds: false,
+                ignores: true,
+            });
+        }
         let (def_id, generic_args) = fn_def(thir[fun].ty)?;
         if statement && !super::bindings::is_binding(self.tcx, def_id) {
             return None;
         }
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
-                let callee = match thir[args[0]].ty.peel_refs().kind() {
+                // What it calls, a variable it captured, not its own
+                // parameter, `move |_| ping()`'s `ping`.
+                let captured = captured(thir, args[0]);
+                let ty = thir[args[0]].ty.peel_refs();
+                let callee = match ty.kind() {
                     ty::Closure(..) => Callee::Own,
                     ty::Param(_) => Callee::Generic,
+                    // One only the crate's functions fill (ADR 0330).
+                    ty::FnPtr(..) if self.krate.cell_borrows.pointers().rust_only(self.tcx, ty) => Callee::Own,
+                    // A bound function of the crate's (rd196).
+                    ty::Dynamic(..) if captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,
                     ty::Dynamic(..) => Callee::Dyn,
                     ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)) => {
                         Callee::Dyn
                     }
                     _ => return None,
+                };
+                let given = match thir[super::body_queries::strip(thir, args[1])].kind {
+                    ExprKind::Tuple { ref fields } => fields.is_empty(),
+                    _ => false,
                 };
                 Some(Forwarding {
                     span,
@@ -359,6 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     adapts: false,
                     item: false,
                     binds: false,
+                    ignores: callee == Callee::Own && given && captured.is_some(),
                 })
             }
             // A binding's global function, JS's own, called as a function,
@@ -374,6 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 adapts: self.adapts(body.def_id, (def_id, generic_args)),
                 item: false,
                 binds: false,
+                ignores: false,
             }),
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended). One
@@ -388,7 +455,129 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 adapts: self.adapts(body.def_id, (def_id, generic_args)),
                 item: true,
                 binds: false,
+                ignores: args.is_empty(),
             }),
+        }
+    }
+
+    /// Whether variable `var`, never changed, is a function of the crate's
+    /// bound, `let ping = function::bind(on_unsuspend, Some(state), ())`:
+    /// what reads no `this`, the one it's bound to, and none of what it's
+    /// given more, as the function it binds doesn't (`own_target`). A JS
+    /// function bound may read what it's given more.
+    fn bound_own(&self, var: rustc_hir::HirId) -> bool {
+        self.let_value(var).is_some_and(|init| self.bound_value(init, 0))
+    }
+
+    /// What variable `var` is, of a `let` that never changes it: its
+    /// initializer.
+    fn let_value(&self, var: rustc_hir::HirId) -> Option<&'tcx rustc_hir::Expr<'tcx>> {
+        use rustc_hir as hir;
+        let hir::Node::Pat(pat) = self.tcx.hir_node(var) else {
+            return None;
+        };
+        let hir::PatKind::Binding(hir::BindingMode(hir::ByRef::No, rustc_hir::Mutability::Not), _, _, None) = pat.kind
+        else {
+            return None;
+        };
+        match self.tcx.parent_hir_node(var) {
+            hir::Node::LetStmt(local) => local.init,
+            _ => None,
+        }
+    }
+
+    /// Whether `e` is a bound function of what `own_target` says, through
+    /// variables that never change, at `depth`.
+    fn bound_value(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize) -> bool {
+        use rustc_hir as hir;
+        if depth > 8 {
+            return false;
+        }
+        let results = self.tcx.typeck(e.hir_id.owner.def_id);
+        match e.peel_drop_temps().kind {
+            hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
+                hir::def::Res::Local(var) => self
+                    .let_value(var)
+                    .is_some_and(|init| self.bound_value(init, depth + 1)),
+                _ => false,
+            },
+            hir::ExprKind::Call(callee, [target, ..]) => match *results.expr_ty_adjusted(callee).kind() {
+                ty::FnDef(f, _) if super::recognition::is_function_bind(self.tcx, f) => {
+                    self.own_target(target, depth + 1)
+                }
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
+    /// Whether `e`, a function `function::bind` binds, reads none of what
+    /// it's given more than its parameters: a function of the crate's, or
+    /// a library's rust-js compiled, of no rest arguments; a closure; a fn
+    /// pointer only those fill (ADR 0330); a function `function::with_this`
+    /// makes, whose `this` is the one bound; or one bound itself. Through
+    /// variables that never change, and a thread-local's value,
+    /// `ON_UNSUSPEND.with(|f| *f)`.
+    fn own_target(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize) -> bool {
+        use rustc_hir as hir;
+        if depth > 8 {
+            return false;
+        }
+        let tcx = self.tcx;
+        let results = tcx.typeck(e.hir_id.owner.def_id);
+        let ty = results.expr_ty(e);
+        match *ty.kind() {
+            ty::FnDef(f, _) => {
+                return (f.is_local() || self.krate.foreign.is_library(f.krate))
+                    && !super::bindings::is_binding(tcx, f)
+                    && !self.takes_rest(f);
+            }
+            ty::Closure(..) => return true,
+            ty::FnPtr(..) => return self.krate.cell_borrows.pointers().rust_only(tcx, ty),
+            _ => {}
+        }
+        match e.peel_drop_temps().kind {
+            hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
+                hir::def::Res::Local(var) => self.let_value(var).is_some_and(|init| self.own_target(init, depth + 1)),
+                _ => false,
+            },
+            hir::ExprKind::Call(callee, _) => match *results.expr_ty_adjusted(callee).kind() {
+                ty::FnDef(f, _) if super::recognition::is_function_bind(tcx, f) => self.bound_value(e, depth + 1),
+                ty::FnDef(f, _) => matches!(super::bindings::js_form(tcx, f), super::bindings::JsForm::WithThis),
+                _ => false,
+            },
+            // A thread-local's value, `KEY.with(|f| *f)`: its initializer.
+            hir::ExprKind::MethodCall(segment, key, [read], _) if segment.ident.name.as_str() == "with" => {
+                let Some(with) = results.type_dependent_def_id(e.hir_id) else {
+                    return false;
+                };
+                let is_key = tcx.opt_parent(with).is_some_and(|imp| {
+                    matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                        ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), super::recognition::StdItem::LocalKey))
+                });
+                let hir::ExprKind::Path(ref key_path) = key.peel_borrows().kind else {
+                    return false;
+                };
+                let hir::def::Res::Def(_, key) = results.qpath_res(key_path, key.hir_id) else {
+                    return false;
+                };
+                let hir::ExprKind::Closure(closure) = read.kind else {
+                    return false;
+                };
+                let read_body = tcx.hir_body(closure.body);
+                let copied = matches!((read_body.params, read_body.value.peel_blocks().kind),
+                    ([param], hir::ExprKind::Unary(hir::UnOp::Deref, of))
+                        if matches!(of.kind, hir::ExprKind::Path(hir::QPath::Resolved(None, path))
+                            if path.res == hir::def::Res::Local(param.pat.hir_id)));
+                let Some(key) = key.as_local().filter(|_| is_key && copied) else {
+                    return false;
+                };
+                let init = tcx.hir_body_owners().find(|&owner| {
+                    tcx.def_kind(owner) == DefKind::Fn && super::analysis::init_of(tcx, owner) == Some(key)
+                });
+                init.is_some_and(|init| self.own_target(tcx.hir_body_owned_by(init).value.peel_blocks(), depth + 1))
+            }
+            _ => false,
         }
     }
 

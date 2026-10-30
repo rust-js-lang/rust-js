@@ -69,11 +69,11 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
-pub(super) use validation::is_thread_local;
 use validation::{
-    in_thread_local, init_of, reject_flatten_misuse, reject_parameter_name_misuse, reject_rest_misuse,
-    reject_static_references, reject_unsupported,
+    in_thread_local, reject_flatten_misuse, reject_parameter_name_misuse, reject_rest_misuse, reject_static_references,
+    reject_unsupported,
 };
+pub(super) use validation::{init_of, is_thread_local};
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.

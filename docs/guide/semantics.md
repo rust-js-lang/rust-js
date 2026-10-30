@@ -919,7 +919,10 @@ export function hasSetImmediate() {
   never compares it, so its identity can't be told, the user's decided
   exception to Rust's ([ADR 0262](../decisions/0262-when-rust-and-js-disagree.md),
   amended). An `Fn` or `FnMut` callback, a listener's, which JS may keep
-  and compare, keeps its arrow ([Promises and async](interop/async.md#a-callback-that-passes-its-call-on)).
+  and compare, keeps its arrow, but for a closure that ignores what it's
+  given and calls, with nothing, a function that reads no `this` and
+  nothing more, the crate's or one bound: `addEventListener("load",
+  ping)` of `move |_| ping()` ([Promises and async](interop/async.md#a-callback-that-passes-its-call-on)).
 - **A binding is trusted as declared.** One returning
   `Result<T, &JsError>` makes what JS throws an `Err`; any other lets it
   propagate, as a panic. Declare `Option` where JS may give `null`. A
@@ -1033,7 +1036,14 @@ React and JSX are [their own pages](README.md#react).
     compiled, or a closure, is that function,
     `p.then(ping)`, not a fresh closure: only comparing the callback's
     identity tells them apart, which JS doesn't do to a callback it calls
-    once (ADR 0262, amended).
+    once (ADR 0262, amended). So is a closure that ignores what it's given
+    and calls, with nothing, a function that reads no `this` and nothing
+    more, the crate's or one bound, wherever it's given, a listener's too,
+    `addEventListener("load", ping)` of `move |_| ping()`: its `.length`
+    and its identity tell them apart, as a JS caller of an exported value
+    sees one function where Rust made a closure each time, and
+    `addEventListener` given it twice for one event keeps one listener
+    (ADR 0262, amended, the user's decision, rd196, rd212).
 28. A `RegExp`'s `test` and `reg_exp::replace` take text, as TypeScript
     types them, so a port of code that gives them any value converts it
     first, `pattern.test(&js::string(value))`, `pattern.test(String(value))`:
