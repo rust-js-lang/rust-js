@@ -35,7 +35,7 @@ function main() {
     (x) => x === 3,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = $rposition($iter($iter(v.toReversed())), (x) => x === 2);
+  const value$2 = $rposition($iter(v.toReversed()), (x) => x === 2);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = $rposition(
     $iter(Array.from(new TextEncoder().encode("héllo"))),

@@ -286,12 +286,10 @@ function main() {
   function inspect(loud) {
     console.log(`see ${loud[0]}`);
   }
-  const value$12 = Iterator.from(
-    $skipping(value$11, tmp$7, loudDrop_drop).map((item) => {
-      inspect(item);
-      return item;
-    }),
-  );
+  const value$12 = $skipping(value$11, tmp$7, loudDrop_drop).map((item) => {
+    inspect(item);
+    return item;
+  });
   let tmp$8;
   try {
     tmp$8 = id(2);
@@ -413,12 +411,10 @@ function main() {
     console.log(`see ${loud[0]}`);
   }
   const value$19 = $held(
-    Iterator.from(
-      $skipping(value$18, tmp$14, loudDrop_drop).map((item) => {
-        inspect$1(item);
-        return item;
-      }),
-    ),
+    $skipping(value$18, tmp$14, loudDrop_drop).map((item) => {
+      inspect$1(item);
+      return item;
+    }),
   );
   try {
     nth = $nthDropping($lent(value$19), id(3), loudDrop_drop, false);

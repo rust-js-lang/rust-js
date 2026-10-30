@@ -343,4 +343,12 @@ export const mutations: Mutation[] = [
     replace: "            let slice = false && self.is_std_type(ty, StdItem::SliceIter);\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
   },
+  {
+    name: "std-iterator-unsaid",
+    breaks: "a std iterator's value isn't said to be a JS iterator, so `step_by(step())` of a held `take_while` makes it one again, dropping what's left before the statement ends (generated program 12454000)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "                facts: value.facts.with(js::Known::Iterator),\n",
+    replace: "                facts: value.facts,\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_call_holds_its_items.rs$"],
+  },
 ];

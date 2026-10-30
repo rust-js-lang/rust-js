@@ -239,3 +239,25 @@ The readability baseline's `while (true)` share grows 10.4 to 10.5 in
 10,000 lines, the new case's alone: its `zipped`, moved after its loop,
 is stepped in the `while (true)` a variable's `$live` flag has had since
 ADR 0570.
+
+## Amendment: an iterator its type says is one isn't made one again
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change:
+what a held iterator's source has left is dropped where Rust drops it.
+
+Generated program 12454000 printed `vec![D(34), D(35), D(36)].into_iter()
+.rev().take_while(|d| d.0 < 36).step_by(id(2)).next()` with `drop 34` and
+`drop 35` before `None`, where Rust drops them after the line. The call in
+`step_by`'s argument put the `take_while` in a variable first, which
+`is_js_iterator` couldn't tell is an iterator from how it's written, so the
+`filter` made of it was given `Iterator.from(..)`. That returns a `$Steps`
+as it is, but calls its `[Symbol.iterator]`, which makes it close as it's
+done, as JS's own loops step it: the held temporary dropped what was left
+at its end, not its statement's.
+
+**A value `as_js_iterator` passes on as an iterator its type says it is,
+one implementing `Iterator`, is marked `Known::Iterator`, and
+`is_js_iterator` answers it before it reads how one is written.** A
+collection's, `eq(other)`'s array, isn't marked: it's made one there. Five
+`Iterator.from(..)`s of the corpus's snapshots are gone with it.
+`step_by_of_a_call_holds_its_items` is the case.

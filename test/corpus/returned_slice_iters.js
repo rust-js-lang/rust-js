@@ -40,7 +40,7 @@ function bag() {
 function main() {
   const b = bag();
   console.log(`[${Array.from(Bag.items(b).map((x) => (x * 2) | 0)).join(", ")}]`);
-  console.log(`[${Array.from($rev($filterEnds($iter(Bag.items(b)), (x) => x > 1))).join(", ")}]`);
+  console.log(`[${Array.from($rev($filterEnds(Bag.items(b), (x) => x > 1))).join(", ")}]`);
   const it$1 = Bag.items(b);
   const len = it$1.end - it$1.at;
   const count = Bag.items(b).reduce((n) => n + 1, 0);
@@ -61,7 +61,7 @@ function main() {
     `[${Array.from($lazyZip(Bag.items(b), Bag.items(b).drop(1)).map(([a, c]) => (a - c) | 0)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($enumerate($iter(Bag.items(b)))).take(2))
+    `[${Array.from($rev($enumerate(Bag.items(b))).take(2))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
@@ -77,14 +77,12 @@ function main() {
   console.log(
     `[${it.items.slice(it.at, it.end).join(", ")}] [${$rest(it).toReversed().join(", ")}]`,
   );
-  for (const [i, x] of $rev($enumerate($iter(refBagIntoIterator_intoIter(b))))) {
+  for (const [i, x] of $rev($enumerate(refBagIntoIterator_intoIter(b)))) {
     $print(`${i}:${x} `);
   }
   console.log("");
   console.log(`[${$rest(Bag.owned(bag())).toReversed().join(", ")}]`);
-  console.log(
-    `[${Array.from($rev($mapEnds($iter(Bag.owned(bag())), (x) => (x + 1) | 0))).join(", ")}]`,
-  );
+  console.log(`[${Array.from($rev($mapEnds(Bag.owned(bag()), (x) => (x + 1) | 0))).join(", ")}]`);
   const o = Bag.owned(bag());
   const nextBack = $nextBack(o);
   const next = $next(o);
@@ -97,7 +95,7 @@ function main() {
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const held = Bag.items(b);
   console.log(
-    `[${Array.from($rev($enumerate($iter(held))))
+    `[${Array.from($rev($enumerate(held)))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );

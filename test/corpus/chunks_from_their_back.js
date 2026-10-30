@@ -41,7 +41,7 @@ function main() {
       .map((c) => c.reduce((a, b) => (a + b) | 0, 0))
       .join(", ")}]`,
   );
-  const rposition = $rposition($iter($iter($windows(v, 2))), (w) => $index(w, 0) < 3);
+  const rposition = $rposition($iter($windows(v, 2)), (w) => $index(w, 0) < 3);
   const value$2 = $chunks(v, 3).at(-1);
   console.log(
     `${rposition == null ? "None" : `Some(${rposition})`} ${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`,

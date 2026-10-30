@@ -191,20 +191,18 @@ function main() {
       boom(d, 52);
     }
     const x = $foldDropping(
-      Iterator.from(
-        $lazyChain(
-          $closing(value, $dropEach(dDrop_drop)),
-          $closing($iter(tmp), $dropEach(dDrop_drop)),
-        ).map((item) => {
-          try {
-            inspect(item);
-          } catch (error) {
-            dDrop_drop(item);
-            throw error;
-          }
-          return item;
-        }),
-      ),
+      $lazyChain(
+        $closing(value, $dropEach(dDrop_drop)),
+        $closing($iter(tmp), $dropEach(dDrop_drop)),
+      ).map((item) => {
+        try {
+          inspect(item);
+        } catch (error) {
+          dDrop_drop(item);
+          throw error;
+        }
+        return item;
+      }),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -737,17 +735,15 @@ function main() {
     }
     try {
       const x = $foldDropping(
-        Iterator.from(
-          $lent(it).map((item) => {
-            try {
-              inspect(item);
-            } catch (error) {
-              dDrop_drop(item);
-              throw error;
-            }
-            return item;
-          }),
-        ),
+        $lent(it).map((item) => {
+          try {
+            inspect(item);
+          } catch (error) {
+            dDrop_drop(item);
+            throw error;
+          }
+          return item;
+        }),
         [],
         push,
         $dropEach(dDrop_drop),

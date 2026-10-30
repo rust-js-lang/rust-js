@@ -275,4 +275,12 @@ export const mutations: Mutation[] = [
     replace: "        if declared != 1 || steps == 0 {\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
   },
+  {
+    name: "known-iterator-made-again",
+    breaks: "a variable its type says is a JS iterator, a held `take_while`'s, is made one again by `Iterator.from`, whose `[Symbol.iterator]` makes it close as it's done, dropping what's left before the statement ends (generated program 12454000)",
+    file: "src/lower/iterators.rs",
+    find: "    if e.facts.has(js::Known::Iterator) {\n        return true;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_call_holds_its_items.rs$"],
+  },
 ];

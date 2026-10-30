@@ -478,11 +478,15 @@ pub(crate) const ITERATOR_HELPERS: [&str; 32] = [
     "$keysIn",
 ];
 
-/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
+/// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),
+/// or as it's made, `Iterator.from(..)`, a
 /// `$iter`, an `ITERATOR_HELPERS`' own, a range's `$iterator` or a
 /// `$lazyChain`'s generator, a collection's `values()`, `keys()` or
 /// `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
 pub(super) fn is_js_iterator(e: &Expr) -> bool {
+    if e.facts.has(js::Known::Iterator) {
+        return true;
+    }
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };

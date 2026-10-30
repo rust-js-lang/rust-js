@@ -33,7 +33,11 @@ function main() {
   console.log(`${some} ${$debugStr(arg)}`);
   const items = [1, 2, 3, 4, 5, 6];
   const rest = $iter(items);
-  const odd = Array.from(Iterator.from($lent(rest).filter((_, i) => i % 2 === 0)).take(2));
+  const odd = Array.from(
+    $lent(rest)
+      .filter((_, i) => i % 2 === 0)
+      .take(2),
+  );
   const arg$1 = Array.from(rest);
   console.log(`[${odd.join(", ")}] [${arg$1.join(", ")}]`);
 }

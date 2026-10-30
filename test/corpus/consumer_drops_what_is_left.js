@@ -211,21 +211,20 @@ function consume(n) {
   const value$3 = $iter(three());
   const value$4 = limit();
   const kept = Array.from(
-    Iterator.from(
-      $closing(value$3, $dropEach(loudDrop_drop))
-        .take(value$4)
-        .filter((item, i) => {
-          if (i % 2 === 0) {
-            return true;
-          }
-          loudDrop_drop(item);
-          return false;
-        }),
-    ).map((l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }),
+    $closing(value$3, $dropEach(loudDrop_drop))
+      .take(value$4)
+      .filter((item, i) => {
+        if (i % 2 === 0) {
+          return true;
+        }
+        loudDrop_drop(item);
+        return false;
+      })
+      .map((l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      }),
   ).length;
   console.log(`kept ${kept}`);
   const peekable = $held(

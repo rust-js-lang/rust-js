@@ -309,7 +309,7 @@ function main() {
 
   // Made in place, stepped where it's made; asked its hint where it's
   // made, std's, which knows it.
-  const total = $flattenEnds($iter($iter([[1, 2], [3]])), (item) => $iter(item)).reduce(
+  const total = $flattenEnds($iter([[1, 2], [3]]), (item) => $iter(item)).reduce(
     (a, b) => (a + b) | 0,
     0,
   );

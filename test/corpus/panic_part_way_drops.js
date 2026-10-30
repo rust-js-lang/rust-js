@@ -487,20 +487,18 @@ function main() {
       boom(d, 193);
     }
     const x = $collectDropping(
-      Iterator.from(
-        $lazyChain(
-          $closing(value, $dropEach(dDrop_drop)),
-          $closing($iter(tmp), $dropEach(dDrop_drop)),
-        ).map((item) => {
-          try {
-            inspect(item);
-          } catch (error) {
-            dDrop_drop(item);
-            throw error;
-          }
-          return item;
-        }),
-      ),
+      $lazyChain(
+        $closing(value, $dropEach(dDrop_drop)),
+        $closing($iter(tmp), $dropEach(dDrop_drop)),
+      ).map((item) => {
+        try {
+          inspect(item);
+        } catch (error) {
+          dDrop_drop(item);
+          throw error;
+        }
+        return item;
+      }),
       dDrop_drop,
       true,
     );

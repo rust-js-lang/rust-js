@@ -781,6 +781,12 @@ pub enum Known {
     /// A comparison of integers, `n < 0`, never of a NaN: its negation is
     /// its converse, `n >= 0` (`Expr::negated_test`, #366).
     Integers,
+    /// A JS iterator already, as its Rust type tells (`as_js_iterator`'s):
+    /// a variable holding a std adapter, `takeWhile` of `takeWhile.filter(..)`,
+    /// is never made one again by `Iterator.from`, whose call of its
+    /// `[Symbol.iterator]` makes a held `$Steps` close as it's done, before
+    /// the statement that holds it ends (ADR 0570, amended).
+    Iterator,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

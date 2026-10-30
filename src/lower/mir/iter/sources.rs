@@ -29,6 +29,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // iterator of it. An associated type's is what a dictionary
             // gives, a JS iterator already.
             None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),
+            // A std iterator's, which its call made one (`std_value_as`): one
+            // already, said so, so what's made of it isn't made one again. Not
+            // a collection's, an array still, which `eq(other)` is given.
+            None if self.implements_iterator(ty) => Ok(Expr {
+                facts: value.facts.with(js::Known::Iterator),
+                ..value
+            }),
             None => Ok(value),
         }
     }

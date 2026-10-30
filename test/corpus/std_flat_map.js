@@ -124,12 +124,10 @@ function main() {
   // Its function holds what it drops with it, after its items.
   const tag = "tag";
   try {
-    const tagged = Iterator.from(
-      $iter([1, 2]).flatMap((n) => {
-        console.log(`map ${n} ${tag}`);
-        return new Array(2).fill(n);
-      }),
-    );
+    const tagged = $iter([1, 2]).flatMap((n) => {
+      console.log(`map ${n} ${tag}`);
+      return new Array(2).fill(n);
+    });
     const value = $next(tagged);
     console.log(`took ${value == null ? "None" : `Some(${value})`}`);
     console.log("dropped");
