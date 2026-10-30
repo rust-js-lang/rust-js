@@ -712,7 +712,9 @@ pub fn App() -> JSX::Element {
     expect(Bun.spawnSync(versionArgs, { cwd: dir }).exitCode).not.toBe(0);
     expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toBe(code);
   }
-}, 30_000);
+  // Four compiles against React 18's crate: 19 s on a CI shard, past 30 s
+  // on one loaded with most of the suite's files (check run 41028605713).
+}, 60_000);
 
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
