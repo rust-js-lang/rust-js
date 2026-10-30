@@ -541,6 +541,8 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // for a moment, is no `Vec` that function holds: it imports the library's
   // `add_type`, not a copy compiled of its own (ADR 0914, amended).
   expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
+  expect(app).toContain('  Dep.addType(outer, "a");\n');
+  expect(app).not.toContain("function addType(");
   expect(app).toContain("  const queue = [\"q\"];\n");
   expect(app).toContain("  queue.push(\"s\");\n");
   expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");
