@@ -363,7 +363,11 @@ fn main() -> ExitCode {
         let _ = rustc_interface::util::STACK_SIZE.set(STACK);
     }
     let stack = *rustc_interface::util::STACK_SIZE.get().unwrap_or(&STACK);
-    match std::thread::Builder::new().name("rust-js".into()).stack_size(stack).spawn(run) {
+    match std::thread::Builder::new()
+        .name("rust-js".into())
+        .stack_size(stack)
+        .spawn(run)
+    {
         // A panic ends it as one on the main thread would, 101, which says
         // a crash where 1 says a refusal.
         Ok(thread) => thread.join().unwrap_or(ExitCode::from(101)),
