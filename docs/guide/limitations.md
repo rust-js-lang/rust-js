@@ -137,6 +137,7 @@ depends on what the program does:
 - A `&mut` from `flatten()` of an `iter_mut()`: `let mut g = vec![vec![1u64], vec![2]]; for x in g.iter_mut().flatten() { *x += 1; } println!("{g:?}");`
 - `sum()` or `product()` of `Wrapping`s: `let s: std::num::Wrapping<u8> = [std::num::Wrapping(200u8), std::num::Wrapping(100)].into_iter().sum(); println!("{s}");`
 - `slice::from_mut`; `slice::from_ref` compiles: `let mut x = 5; std::slice::from_mut(&mut x)[0] += 1; println!("{x}");`
+- `collect()` into a `Vec` of what has no end only as what it holds says: a `cycle()` chained with what has an end, a `cycle()` of what's partly filtered, or a `step_by(n)` of what has no end. std's hint makes these panic `capacity overflow` or not as they run (#433, [ADR 0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended): `let v = [1, 2]; let c = v.iter().cycle(); let all: Vec<&i32> = c.chain([3].iter()).collect(); println!("{}", all.len());`
 - `extend()` of a pair of collections: `let mut p: (Vec<i32>, Vec<char>) = (vec![], vec![]); p.extend([(1, 'a')]); println!("{p:?}");`
 - `collect()` into a `Box<str>`: `let b: Box<str> = ['a', 'b'].into_iter().collect(); println!("{b}");`
 - `collect()` into an `Rc<[T]>`: `let r: std::rc::Rc<[i32]> = (1..4).collect(); println!("{r:?}");`

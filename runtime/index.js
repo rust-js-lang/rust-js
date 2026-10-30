@@ -7953,9 +7953,19 @@ export function $roomFor(count, size) {
 // bound where its hint has one; of one whose type has no end, `endless`,
 // a `capacity overflow` panic; else its lower bound and one more. A JS
 // iterator's hint of no upper bound is no hint, not an endless one (ADR
-// 0940).
-export function $roomForHint(it, size, trusted, endless = false) {
-  if (endless) throw new Error("capacity overflow");
+// 0940). Of one that isn't `TrustedLen` but is `endless` once it gives an
+// item, a `cycle()`'s, std steps it once first: with an item, its lower
+// bound then is `usize::MAX`, so the same panic, as it unwinds the item
+// dropped, `drop`, then what's left of it, closed (ADR 0940, amended).
+export function $roomForHint(it, size, trusted, endless = false, drop) {
+  if (endless && trusted) throw new Error("capacity overflow");
+  if (endless) {
+    const first = it.next();
+    if (first.done) return it;
+    drop?.(first.value);
+    it.return?.();
+    throw new Error("capacity overflow");
+  }
   const [lower, upper] = $sizeHint(it);
   if (trusted && upper !== undefined) $roomFor(upper, size);
   else $roomFor(Math.min(lower + 1, 2 ** 32 - 1), size);

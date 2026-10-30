@@ -376,21 +376,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `capacity overflow` a `TrustedLen`'s none asks (ADR 0940). Not
             // of a `LinkedList`, whose `from_iter` extends a new one, asking
             // none.
-            let endless = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
-                && self.recognition().endless_by_type(iter_ty);
+            let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            let endless = trusted && self.recognition().endless_by_type(iter_ty);
+            // Of another whose hint has no end once it gives an item, a
+            // `cycle()`'s, std steps it once, then asks room for its lower
+            // bound and one more, `usize::MAX`: a `capacity overflow` of
+            // items of any size, the item it made dropped (ADR 0940,
+            // amended). Of items of no size, room for any number, so it goes
+            // on as JS does.
+            let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
             let asks_room = !self.is_std_type(output, StdItem::LinkedList);
+            let endless_once = match !trusted && asks_room && item.is_some_and(sized) {
+                true => self.recognition().endless_once_stepped(iter_ty).ok_or_else(|| {
+                    self.unsupported(
+                        span,
+                        "`collect()` into a `Vec` of what may have no end only as what it holds says, a `cycle()` chained with what has an end, a `cycle()` of what's partly filtered or a `step_by(n)` of what has no end, which panics `capacity overflow` only then",
+                    )
+                })?,
+                false => false,
+            };
             let it = match item {
                 Some(item)
                     if asks_room
                         && (endless
+                            || endless_once
                             || self.compiled_struct_at(iter_ty, span)
                                 && !self.recognition().bounded_by_items(iter_ty)) =>
                 {
-                    let trusted = crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
                     let size = self.room_item_size(item);
                     let mut given = vec![it, size, Expr::bool(trusted)];
-                    if endless {
+                    if endless || endless_once {
                         given.push(Expr::bool(true));
+                    }
+                    if endless_once
+                        && self.drops(item) != crate::lower::drops::Drops::Nothing
+                        && let Some(drop) = self.drop_function(item, span)?
+                    {
+                        given.push(drop);
                     }
                     Expr::call_helper("$roomForHint", given)
                 }

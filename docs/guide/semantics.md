@@ -594,8 +594,14 @@ What's refused is in [the limitations](limitations.md).
   `SpecFromIter` does, but of one over a slice's or a `Vec`'s items; and of
   one that has no end its type knows, `(0..).map(f)`, a `TrustedLen` of no
   upper bound, panics `capacity overflow` before any item's made
-  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). So does a
-  `collect()` of a count the program gives, made in place:
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md)). One that
+  isn't `TrustedLen` but has no end once it gives an item is stepped once
+  first, as std does, and then panics the same way, dropping that item:
+  `items.iter().cycle().map(f)` of items that has some, or `(0..).skip(n)`.
+  This doesn't happen with a `filter` before or after the `cycle()`, or
+  with items of no size, which std collects as it goes
+  ([0940](../decisions/0940-collect-asks-room-of-its-hint.md), amended). A
+  `collect()` of a count the program gives, made in place, asks room too:
   `repeat_n(x, n)`, `repeat(x).take(n)` or a range's `step_by(s)`, through
   adapters that keep its count, `$roomFor(n, 1)` before it's stepped
   ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
