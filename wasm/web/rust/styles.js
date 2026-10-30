@@ -6,7 +6,6 @@
 /** The example picker and the buttons. */
 export const CONTROL =
   "rounded-md border border-line bg-panel px-3 py-1 enabled:cursor-pointer enabled:hover:bg-selected disabled:opacity-50";
-
 export const HEADING = "mb-1.5 text-[13px] font-semibold text-muted";
 /** A file explorer's row, or a folder's name, indented by `padding-left`. */
 export const ROW = "px-2 py-0.5";

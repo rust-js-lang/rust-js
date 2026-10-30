@@ -13,27 +13,34 @@ import { $displayF64, $f64Max, $f64Min } from "@rust-js/runtime";
 
 export function ResultFrame({ program, onOutcome }) {
   const frame = useRef(undefined);
-  const [run, page] = program ? [program.run, program.page] : [0, ""];
+  let run;
+  let page;
+  if (program != null) {
+    run = program.run;
+    page = program.page;
+  } else {
+    run = 0;
+    page = "";
+  }
   // Listen for this run's report. If there's none, say so: something
   // stopped its script.
   useEffect(() => {
     const controller = new AbortController();
     if (run > 0) {
       let reported = false;
-      const told = onOutcome;
       listen(
         window,
         "message",
         (e) => {
           const frame$1 = frame.current;
-          const fromFrame = frame$1 && Object.is(e.source, frame$1.contentWindow);
+          const fromFrame = frame$1 != null && Object.is(e.source, frame$1.contentWindow);
           const report = readReport(e);
-          if (report && fromFrame) {
+          if (report != null && fromFrame) {
             if (report.run === run) {
               // As tall as its page, from the height it starts with.
-              if (report.height != null && frame.current) {
-                const height = report.height;
-                const frame$1 = frame.current;
+              const height = report.height;
+              const frame$1 = frame.current;
+              if (height != null && frame$1 != null) {
                 const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
                 frame$1.setAttribute("style", style);
                 return;
@@ -41,7 +48,7 @@ export function ResultFrame({ program, onOutcome }) {
               const outcome = outcome$1(report);
               if (outcome != null) {
                 reported = true;
-                told(outcome);
+                onOutcome(outcome);
               }
               return;
             }
@@ -50,19 +57,16 @@ export function ResultFrame({ program, onOutcome }) {
         controller,
       );
       const signal = controller.signal;
-      const silent = onOutcome;
       setTimeout(() => {
         if (!signal.aborted && !reported) {
-          silent("Silent");
+          onOutcome("Silent");
         }
       }, 3000);
     }
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [run]);
   return (
-    <section id="result-section" className="mt-3" hidden={!program}>
+    <section id="result-section" className="mt-3" hidden={program == null}>
       <h2 className={HEADING}>
         Result{" "}
         <span className="font-normal">

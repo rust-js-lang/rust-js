@@ -2,32 +2,26 @@
 
 // File paths as a tree, for the file explorers.
 
-import { $cmp, $iter, $lent, $rsplitOnce } from "@rust-js/runtime";
+import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
-export function build_tree(paths) {
+export function buildTree(paths) {
   const tree = [];
-  let tmp;
-  let tmp$1;
   for (const path of paths) {
     let folder = tree;
-    const value = $rsplitOnce(path, "/");
+    const rsplitOnce = $rsplitOnce(path, "/");
     let name;
-    if (value) {
-      const folders = value[0];
-      const name$1 = value[1];
+    if (rsplitOnce != null) {
+      const folders = rsplitOnce[0];
+      const name$1 = rsplitOnce[1];
       for (const part of folders.split("/")) {
-        tmp = $iter(folder);
-        if (!$lent(tmp).some(([n]) => n === part)) {
+        if (!folder.some(([n]) => n === part)) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
-        tmp$1 = $iter(folder);
-        const value = $lent(tmp$1).find(([n]) => n === part);
-        if (value) {
-          if (value[1].TAG === "Folder") {
-            const children = value[1]._0;
-            folder = children;
-            continue;
-          }
+        const find = folder.find(([n]) => n === part);
+        if (find != null && find[1].TAG === "Folder") {
+          const children = find[1]._0;
+          folder = children;
+          continue;
         }
         throw new Error("internal error: entered unreachable code: a folder, found or just made");
       }
@@ -45,23 +39,18 @@ export function build_tree(paths) {
  * then by name, a module's file just before its folder: `geometry.rs`, then
  * `geometry/` ("." sorts before "/").
  */
-export function in_order(tree, first) {
-  const key = ([name, entry]) => {
-    if (entry.TAG === "Folder") {
-      return `${name}/`;
-    }
-    return name;
-  };
+export function inOrder(tree, first) {
+  const key = ([name, entry]) => (entry.TAG === "Folder" ? `${name}/` : name);
   const isFirst = (entry) => entry.TAG === "File" && entry._0 === first;
   const entries = tree.slice();
   entries.sort((a, b) => {
     if (isFirst(a[1])) {
       return -1;
-    }
-    if (isFirst(b[1])) {
+    } else if (isFirst(b[1])) {
       return 1;
+    } else {
+      return $cmp(key(a), key(b));
     }
-    return $cmp(key(a), key(b));
   });
   return entries;
 }

@@ -6,7 +6,6 @@
 import { ROW } from "../styles.js";
 
 export function FileItem({ name, path, depth, open, root, onOpen, onDelete }) {
-  const opened = path;
   let end;
   if (onDelete != null) {
     end = root ? (
@@ -23,13 +22,14 @@ export function FileItem({ name, path, depth, open, root, onOpen, onDelete }) {
   } else {
     end = undefined;
   }
+  // `group`: its delete button shows while the row is hovered.
   return (
     <li className="group flex items-center">
       <button
         className={`min-w-0 flex-1 cursor-pointer truncate ${ROW} text-left aria-[current=true]:bg-selected`}
-        style={{ paddingLeft: (8 + (Math.imul(depth, 12) >>> 0)) >>> 0 }}
+        style={{ paddingLeft: (8 + ((depth * 12) >>> 0)) >>> 0 }}
         aria-current={open}
-        onClick={() => onOpen(opened)}
+        onClick={() => onOpen(path)}
       >
         {name}
       </button>

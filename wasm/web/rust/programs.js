@@ -10,7 +10,7 @@
 // results through postMessage, but cannot access the editor's DOM or storage.
 
 import { transform } from "sucrase";
-import { $extend, $iter, $lent, $next } from "@rust-js/runtime";
+import { $extend, $iter, $next } from "@rust-js/runtime";
 
 /**
  * `from`'s directory joined with a relative specifier like `../lib.js`. A
@@ -40,23 +40,23 @@ export function resolve(from, specifier) {
 export function link(files) {
   const imports = /^import ([^;]+?) from "([^"]+)";/gm;
   const sourceMap = /^\/\/# sourceMappingURL=.*$/m;
-  const entries = [];
-  for (const [path, code] of files.values().map((item) => item)) {
+  let entries = [];
+  for (const [path, code] of files.values().map((item) => [item[0], item[1]])) {
     const from = path;
-    const body = code.replace(imports, (_, names, specifier) => {
+    let body = code.replace(imports, (_, names, specifier) => {
       const target = JSON.stringify(`rust-js:${resolve(from, specifier)}`);
       return `import ${names} from ${target};`;
     });
-    const body$1 = body.replace(sourceMap, "");
+    body = body.replace(sourceMap, "");
     const specifier = JSON.stringify(`rust-js:${path}`);
     // Identical module bodies must still have separate state.
     const url = JSON.stringify(
-      `data:text/javascript,${encodeURIComponent(body$1)}#${encodeURIComponent(path)}`,
+      `data:text/javascript,${encodeURIComponent(body)}#${encodeURIComponent(path)}`,
     );
     entries.push(`${specifier}: ${url}`);
   }
-  const entries$1 = entries.join(",");
-  return `<script type="importmap">{"imports":{${entries$1}}}<\/script>`;
+  entries = entries.join(",");
+  return `<script type="importmap">{"imports":{${entries}}}<\/script>`;
 }
 
 /**
@@ -111,7 +111,6 @@ const FRAME_STYLE = `<style>
  * (`main`), or with `test`, the crate's tests by their runner (`tests`),
  * as the compiler's manifest says, and reports as run number `run`.
  */
-
 export function prepare(files, modules, styles, rootFile, main, tests, test, run) {
   // The program's modules, its JSX as JS (Sucrase's), and what they import
   // of the page's: the runtime, and React's.
@@ -119,13 +118,21 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     .map(([path, code]) => [path, code])
     .map(([path, code]) => {
       if (path.endsWith(".jsx")) {
-        const options = { transforms: ["jsx"], jsxRuntime: "automatic", production: true };
+        const options = {
+          transforms: ["jsx"],
+          jsxRuntime: "automatic",
+          production: true,
+        };
         const code$1 = transform(code, options).code;
         return [path, code$1];
+      } else {
+        return [path, code];
       }
-      return [path, code];
     });
-  $extend(sources, Array.from(modules.values().map((item) => item)));
+  $extend(
+    sources,
+    modules.values().map((item) => [item[0], item[1]]),
+  );
   let runnable;
   if (test) {
     runnable = tests;
@@ -143,39 +150,28 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   const cssImports = /^import "([^"]+\.css)"(;)/gm;
   const css = [];
   const iter = $iter(sources);
-  let tmp;
-  while (true) {
-    const value$1 = $next(iter);
-    if (!value$1) {
-      break;
-    }
-    for (const [, specifier] of Array.from(value$1[1].matchAll(cssImports))) {
-      tmp = $iter(styles);
-      const value = $lent(tmp).find(([name]) => name === specifier);
-      if (value && !css.includes(value[1])) {
-        css.push(value[1]);
+  let value;
+  while ((value = $next(iter)) != null) {
+    for (const [, specifier] of Array.from(value[1].matchAll(cssImports))) {
+      const find = styles.find(([name]) => name === specifier);
+      if (find != null && !css.includes(find[1])) {
+        css.push(find[1]);
       }
     }
     const known = styles.map(([name]) => name);
-    const value = value$1[1].replace(cssImports, (whole, specifier) => {
-      if (known.includes(specifier)) {
-        return "";
-      }
-      return whole;
-    });
-    value$1[1] = value;
+    value[1] = value[1].replace(cssImports, (whole, specifier) =>
+      known.includes(specifier) ? "" : whole,
+    );
   }
   const look = css.length === 0 ? FRAME_STYLE : `<style>\n${css.join("")}</style>`;
   // Imports from JS modules (ADR 0028) name packages or files the page
   // doesn't have. A bundler would bring them in; the playground has none.
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   const external = [];
-  let tmp$1;
   for (const [path, code] of sources) {
     for (const [, specifier] of Array.from(code.matchAll(imports))) {
       const target = resolve(path, specifier);
-      tmp$1 = $iter(sources);
-      if (!$lent(tmp$1).some(([p]) => p === target) && !external.includes(specifier)) {
+      if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {
         external.push(specifier);
       }
     }
@@ -223,15 +219,16 @@ ${start}
 
 /** What a report says happened. */
 export function outcome(report) {
-  if (report.error != null) {
-    return { TAG: "Failed", _0: report.error };
-  }
-  if (report.ran) {
+  const error = report.error;
+  if (error != null) {
+    return { TAG: "Failed", _0: error };
+  } else if (report.ran) {
     return "Ran";
+  } else {
+    const tested = report.tested;
+    if (tested != null) {
+      return { TAG: "Tested", _0: tested };
+    }
   }
-  if (report.tested) {
-    return { TAG: "Tested", _0: report.tested };
-  }
-  return;
 }
 //# sourceMappingURL=programs.js.map

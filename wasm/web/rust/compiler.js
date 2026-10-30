@@ -24,17 +24,7 @@ import {
   WASI,
 } from "@bjorn3/browser_wasi_shim";
 import { reactLibs } from "../../../tooling/crates.js";
-import {
-  $borrow,
-  $borrowMut,
-  $extend,
-  $rsplitOnce,
-  $stripPrefix,
-  $stripSuffix,
-  $try,
-  $unborrow,
-  $unwrap,
-} from "@rust-js/runtime";
+import { $extend, $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
 
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
@@ -52,11 +42,11 @@ export async function load(stat) {
   const start = performance.now();
   // All downloads start here, together: a JS promise runs as soon as it's made
   // (ADR 0029). Awaiting them one by one below only collects the results.
-  const module = load_compiler(start, stat);
-  const sysroot = load_sysroot(start, stat);
-  const crates = reactLibs.map((name) => [name, load_binding_crate(name, start, stat)]);
-  const packages = load_packages(start, stat);
-  const examples = load_examples();
+  const module = loadCompiler(start, stat);
+  const sysroot = loadSysroot(start, stat);
+  const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
+  const packages = loadPackages(start, stat);
+  const examples = loadExamples();
   const [modules, styles] = await packages;
   const crateFiles = [];
   for (const [name, file] of crates) {
@@ -65,8 +55,14 @@ export async function load(stat) {
   const loaded = {
     module: await module,
     sysroot: await sysroot,
+    /** Each crate a program may use, by its library's name, its metadata. */
     crates: crateFiles,
+    /**
+     * What the programs it compiles import of the page's, by specifier:
+     * `@rust-js/runtime` (ADR 0103), and React's modules.
+     */
     modules,
+    /** The stylesheets a program may import, TodoMVC's, by specifier. */
     styles,
     examples: await examples,
   };
@@ -74,24 +70,24 @@ export async function load(stat) {
   return loaded;
 }
 
-async function load_compiler(start, stat) {
+async function loadCompiler(start, stat) {
   const module = await WebAssembly.compileStreaming(window.fetch("./rust-js.wasm"));
   stat("download + compile rust-js.wasm", ms(performance.now() - start));
   return module;
 }
 
-async function load_sysroot(start, stat) {
+async function loadSysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
   // Every file's download starts before the first is awaited.
   const downloads = [];
   for (const name of names) {
-    downloads.push(load_sysroot_file(name));
+    downloads.push(loadSysrootFile(name));
   }
   const entries = [];
   let size = 0;
   for (const download of downloads) {
     const entry = await download;
-    size = (size + entry[1].data.length) >>> 0;
+    size += entry[1].data.length;
     entries.push(entry);
   }
   stat(
@@ -101,7 +97,7 @@ async function load_sysroot(start, stat) {
   return new Map(entries);
 }
 
-async function load_sysroot_file(name) {
+async function loadSysrootFile(name) {
   const response = await window.fetch(`./sysroot/${name}`);
   const bytes = new Uint8Array(await response.arrayBuffer());
   return [name, new File(bytes, { readonly: true })];
@@ -111,37 +107,37 @@ async function load_sysroot_file(name) {
  * `@rust-js/runtime` and React's modules, and the stylesheets, for a
  * program to import (ADR 0044).
  */
-async function load_packages(start, stat) {
+async function loadPackages(start, stat) {
   const runtime = (await window.fetch("./runtime.js")).text();
-  const packages = (await window.fetch("./packages.json")).json();
+  let packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
-  const packages$1 = await packages;
-  $extend(modules, Array.from(Object.entries(packages$1.modules)));
+  packages = await packages;
+  $extend(modules, Object.entries(packages.modules));
   stat("download runtime and packages", ms(performance.now() - start));
-  return [modules, Object.entries(packages$1.styles)];
+  return [modules, Object.entries(packages.styles)];
 }
 
-async function load_binding_crate(name, start, stat) {
+async function loadBindingCrate(name, start, stat) {
   const bytes = await (await window.fetch(`./crates/lib${name}.rmeta`)).arrayBuffer();
   stat(`download ${name} crate`, `${ms(performance.now() - start)} (${mb(bytes.byteLength)})`);
   return new File(new Uint8Array(bytes), { readonly: true });
 }
 
-async function load_examples() {
+async function loadExamples() {
   return await (await window.fetch("./examples.json")).json();
 }
 
-async function fetch_example_file(name, path) {
+async function fetchExampleFile(name, path) {
   const response = await window.fetch(`./examples/${name}/${path}`);
   return [path, await response.text()];
 }
 
 /** An example's files, `path → text`, in the order it lists them. */
-export async function load_example(name, paths) {
+export async function loadExample(name, paths) {
   // All at once: each download starts as it's made (ADR 0029).
   const downloads = [];
   for (const path of paths) {
-    downloads.push(fetch_example_file(name, path));
+    downloads.push(fetchExampleFile(name, path));
   }
   const texts = [];
   for (const download of downloads) {
@@ -156,22 +152,21 @@ function dir(name, entry) {
 }
 
 /** A WASI directory tree from `path → text`, e.g. `geometry/area.rs`. */
-function directory_of(sources) {
+function directoryOf(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
-    const value = $rsplitOnce(path, "/");
+    const rsplitOnce = $rsplitOnce(path, "/");
     let name;
-    if (value) {
-      const folders = value[0];
-      const name$1 = value[1];
+    if (rsplitOnce != null) {
+      const folders = rsplitOnce[0];
+      name = rsplitOnce[1];
       for (const part of folders.split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
         folder = $unwrap(folder.get(part), "no entry found for key").contents;
       }
-      name = name$1;
     } else {
       name = path;
     }
@@ -182,10 +177,10 @@ function directory_of(sources) {
 }
 
 /** Every file under a WASI directory, as `path → text`. */
-function texts_in(folder, prefix, found) {
+function textsIn(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
-      texts_in(entry, `${prefix}${name}/`, found);
+      textsIn(entry, `${prefix}${name}/`, found);
     } else if (entry instanceof File) {
       const text = new TextDecoder().decode(entry.data);
       found.set(prefix + name, text);
@@ -199,7 +194,7 @@ function texts_in(folder, prefix, found) {
  * ends in a trap. With `test`, the crate's `#[test]` functions too (ADR 0026).
  */
 export async function compile(loaded, sources, rootFile, test) {
-  const stderr = { value: [] };
+  const stderr = [];
   const stdoutLines = stderr;
   const stderrLines = stderr;
   const outDir = new PreopenDirectory("/out", new Map());
@@ -207,22 +202,12 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
-      const value = $borrowMut(stdoutLines, true);
-      try {
-        value.value.push(line);
-      } finally {
-        $unborrow(value);
-      }
+      stdoutLines.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
-      const value = $borrowMut(stderrLines, true);
-      try {
-        value.value.push(line);
-      } finally {
-        $unborrow(value);
-      }
+      stderrLines.push(line);
     }), // stderr
-    new PreopenDirectory("/in", directory_of(sources)),
+    new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
     new PreopenDirectory(
       "/sysroot",
@@ -233,8 +218,9 @@ export async function compile(loaded, sources, rootFile, test) {
       new Map(loaded.crates.values().map(([name, file]) => [`lib${name}.rmeta`, file])),
     ),
   ];
-  const stem = $stripSuffix(rootFile, ".rs");
-  const outFile = stem != null ? `/out/${stem}.js` : `/out/${rootFile}`;
+  const outFile = rootFile.endsWith(".rs")
+    ? `/out/${rootFile.slice(0, -3)}.js`
+    : `/out/${rootFile}`;
   // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
   // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
   // too (ADR 0027). Every program may use the webapi and js crates; rustc
@@ -263,7 +249,10 @@ export async function compile(loaded, sources, rootFile, test) {
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
 
   const t0 = performance.now();
-  const imports = { wasi_snapshot_preview1: wasi.wasiImport };
+  const imports = {
+    /** WASI's own name for its imports. */
+    wasi_snapshot_preview1: wasi.wasiImport,
+  };
   const instance = await WebAssembly.instantiate(loaded.module, imports);
   const t1 = performance.now();
   const started = $try(() => wasi.start(instance));
@@ -281,7 +270,7 @@ export async function compile(loaded, sources, rootFile, test) {
   // What it wrote, as its manifest says: each module's JS, and the runner.
   const written = new Map();
   if (ok) {
-    texts_in(outDir.dir, "", written);
+    textsIn(outDir.dir, "", written);
   }
   const path = (file) => $stripPrefix(file, "/out/") ?? file;
   const files = new Map();
@@ -312,30 +301,21 @@ export async function compile(loaded, sources, rootFile, test) {
     }
   }
   const memory = instance.exports.memory.buffer;
-  const value = $borrow(stderr, true);
-  let tmp;
-  let tmp$1;
-  let tmp$2;
-  let memory$1;
-  try {
-    tmp = value.value.join("\n");
-    tmp$1 = t1 - t0;
-    tmp$2 = t2 - t1;
-    memory$1 = memory.byteLength;
-  } finally {
-    $unborrow(value);
-  }
   return {
     exit,
     ok,
+    /** The JS files, `path → text`. */
     files,
+    /** The root module's, `lib.js` or `lib.jsx`. */
     root,
+    /** Whether it exports `main`, what running the program calls. */
     main,
+    /** The `#[test]` functions' runner, of a compile with `test`. */
     tests,
-    stderr: tmp,
-    instantiate: tmp$1,
-    run: tmp$2,
-    memory: memory$1,
+    stderr: stderr.join("\n"),
+    instantiate: t1 - t0,
+    run: t2 - t1,
+    memory: memory.byteLength,
   };
 }
 //# sourceMappingURL=compiler.js.map

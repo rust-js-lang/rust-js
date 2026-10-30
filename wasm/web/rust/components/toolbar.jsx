@@ -8,7 +8,6 @@ import { ExamplePicker } from "./example_picker.jsx";
 import { StatusLine } from "./status_line.jsx";
 
 export function Toolbar({ examples, example, onExample, ready, compiling, onCompile, status }) {
-  const onTest = onCompile;
   return (
     <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
       <ExamplePicker examples={examples} chosen={example} onChoose={onExample} />
@@ -20,7 +19,7 @@ export function Toolbar({ examples, example, onExample, ready, compiling, onComp
         className={CONTROL}
         disabled={!ready}
         title="Compile with --test and run the #[test] functions"
-        onClick={() => onTest(true)}
+        onClick={() => onCompile(true)}
       >
         Test
       </button>

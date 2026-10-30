@@ -6,32 +6,41 @@
 // `App` renders with it. In JS, the methods are `Project`'s object of them
 // (ADR 0047): `project.opening(path, live)` is `Project.opening(project, path, live)`.
 
-import { source_state, text_of } from "./codemirror.js";
-import { $stripSuffix } from "@rust-js/runtime";
+import { sourceState, textOf } from "./codemirror.js";
 
 function copy(files) {
-  return files.map((f) => ({ path: f.path, state: f.state }));
+  return files.map((f) => ({
+    path: f.path,
+    state: f.state,
+  }));
 }
 
 /** The file that becomes the root module's JS, `lib.rs` → `lib.js`. */
-export function js_name(path) {
-  const stem = $stripSuffix(path, ".rs");
-  if (stem != null) {
-    return `${stem}.js`;
-  }
-  return path;
+export function jsName(path) {
+  return path.endsWith(".rs") ? `${path.slice(0, -3)}.js` : path;
 }
 
 export const Project = {
   /** Before an example has loaded. */
   empty() {
-    return { root: "lib.rs", files: [], current: "" };
+    return {
+      root: "lib.rs",
+      files: [],
+      current: "",
+    };
   },
 
   /** An example's files, with its root open. */
   of(root, texts) {
-    const files = texts.map(([path, text]) => ({ path, state: source_state(text) }));
-    return { root, files, current: root };
+    const files = texts.map(([path, text]) => ({
+      path,
+      state: sourceState(text),
+    }));
+    return {
+      current: root,
+      root,
+      files,
+    };
   },
 
   has(project, path) {
@@ -43,9 +52,9 @@ export const Project = {
   },
 
   /** The open file's state, as it was stored: its editor has the latest. */
-  current_state(project) {
+  currentState(project) {
     const file = project.files.find((f) => f.path === project.current);
-    if (file) {
+    if (file != null) {
       return file.state;
     }
   },
@@ -53,7 +62,7 @@ export const Project = {
   /** With the open file's `live` state kept, since the editor has it. */
   keeping(project, live) {
     const files = copy(project.files);
-    if (live) {
+    if (live != null) {
       for (const file of files) {
         if (file.path === project.current) {
           file.state = live;
@@ -65,29 +74,47 @@ export const Project = {
 
   /** `path` open instead. */
   opening(project, path, live) {
-    return { root: project.root, files: Project.keeping(project, live), current: path };
+    return {
+      root: project.root,
+      files: Project.keeping(project, live),
+      current: path,
+    };
   },
 
   /** With a new, empty file at `path`, open. */
   adding(project, path, live) {
     const files = Project.keeping(project, live);
-    files.push({ path, state: source_state("") });
-    return { root: project.root, files, current: path };
+    files.push({
+      path,
+      state: sourceState(""),
+    });
+    return {
+      root: project.root,
+      files,
+      current: path,
+    };
   },
 
   /** Without `path`; if it was open, the root is. */
   removing(project, path) {
     const files = project.files
       .filter((f) => f.path !== path)
-      .map((f) => ({ path: f.path, state: f.state }));
+      .map((f) => ({
+        path: f.path,
+        state: f.state,
+      }));
     const current = project.current === path ? project.root : project.current;
-    return { root: project.root, files, current };
+    return {
+      root: project.root,
+      files,
+      current,
+    };
   },
 
   /** The crate as text, `path → text`, with the open file's `live` edits. */
   sources(project, live) {
     const files = Project.keeping(project, live);
-    return new Map(files.values().map((f) => [f.path, text_of(f.state)]));
+    return new Map(files.values().map((f) => [f.path, textOf(f.state)]));
   },
 };
 //# sourceMappingURL=projects.js.map

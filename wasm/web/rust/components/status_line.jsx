@@ -4,12 +4,15 @@
 
 export function StatusLine({ status }) {
   let color;
-  if (status.tone === "Plain") {
-    color = "";
-  } else if (status.tone === "Good") {
-    color = "text-good";
-  } else {
-    color = "text-bad";
+  switch (status.tone) {
+    case "Plain":
+      color = "";
+      break;
+    case "Good":
+      color = "text-good";
+      break;
+    case "Bad":
+      color = "text-bad";
   }
   return (
     <span id="status" role="status" className={color}>

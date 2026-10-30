@@ -10,58 +10,62 @@ import { Compartment, EditorState } from "@codemirror/state";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
 
-const THEME = new Compartment();
-
-const SOURCE = [
+// Made once: as the module loads, or what runs the crate's code where it's
+// first used (ADR 0037, amended). One theme compartment serves
+// both editors: it only names the slot a view reconfigures.
+const theme = new Compartment();
+const source = [
   basicSetup,
   rust(),
-  THEME.of(theme_for(false)),
+  theme.of(themeFor(false)),
   EditorView.contentAttributes.of({ "aria-label": "Rust source" }),
 ];
-
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
-const JS_OUTPUT = output(javascript());
-const PLAIN_OUTPUT = output(undefined);
+const jsOutput = output(javascript());
+const plainOutput = output(undefined);
 
 function output(language) {
   const extensions = [basicSetup];
-  if (language) {
+  if (language != null) {
     extensions.push(language);
   }
-  extensions.push(THEME.of(theme_for(false)));
+  extensions.push(theme.of(themeFor(false)));
   extensions.push(EditorState.readOnly.of(true));
   extensions.push(EditorView.contentAttributes.of({ "aria-label": "Generated JavaScript" }));
   return extensions;
 }
 
-function theme_for(dark) {
-  if (dark) {
-    return oneDark;
-  }
-  return [];
+function themeFor(dark) {
+  return dark ? oneDark : [];
 }
 
 /**
  * A Rust file's editor state. Each file keeps its own, so its undo history
  * survives switching.
  */
-export function source_state(text) {
-  return EditorState.create({ doc: text, extensions: SOURCE });
+export function sourceState(text) {
+  return EditorState.create({
+    doc: text,
+    extensions: source,
+  });
 }
 
 /** A generated file's, highlighted as JS; or rustc's diagnostics, as text. */
-export function output_state(text, js) {
-  const extensions = js ? JS_OUTPUT : PLAIN_OUTPUT;
-  return EditorState.create({ doc: text, extensions });
+export function outputState(text, js) {
+  const extensions = js ? jsOutput : plainOutput;
+  return EditorState.create({
+    doc: text,
+    extensions,
+  });
 }
 
-export function text_of(state) {
+export function textOf(state) {
   return state.doc.toString();
 }
 
 /** A view of `state` in `parent`. */
-export function open_view(parent, state) {
+export function openView(parent, state) {
   return new EditorView({ state, parent });
 }
 
@@ -79,8 +83,10 @@ export function show(view, state) {
  * Follow the system's light or dark setting. A state keeps the theme it was
  * made with, so this runs after `show` too.
  */
-export function set_theme(view, dark) {
-  const theme = THEME;
-  view.dispatch({ effects: theme.reconfigure(theme_for(dark)) });
+export function setTheme(view, dark) {
+  const theme$1 = theme;
+  view.dispatch({
+    effects: theme$1.reconfigure(themeFor(dark)),
+  });
 }
 //# sourceMappingURL=codemirror.js.map

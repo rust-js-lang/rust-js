@@ -10,11 +10,11 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { compileInWorker } from "../../compiler-client.js";
-import { output_state, source_state } from "../codemirror.js";
-import { load, load_example, mb, ms } from "../compiler.js";
+import { outputState, sourceState } from "../codemirror.js";
+import { load, loadExample, mb, ms } from "../compiler.js";
 import { prepare } from "../programs.js";
-import { Project, js_name } from "../projects.js";
-import { build_tree } from "../tree.js";
+import { Project, jsName } from "../projects.js";
+import { buildTree } from "../tree.js";
 import { Editor } from "./editor.jsx";
 import { FileTree } from "./file_tree.jsx";
 import { Pane } from "./pane.jsx";
@@ -33,22 +33,23 @@ function appended(rows, label, value) {
   return next;
 }
 
-function tests_summary(passed, failed, ignored) {
+function testsSummary(passed, failed, ignored) {
   const total = (passed + failed) >>> 0;
   const ignoredText = ignored > 0 ? `, ${ignored} ignored` : "";
   if (total === 0) {
     return say("No tests.", "Good");
+  } else {
+    const tone = failed > 0 ? "Bad" : "Good";
+    return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
   }
-  const tone = failed > 0 ? "Bad" : "Good";
-  return say(`Tests: ${passed} passed, ${failed} failed${ignoredText}.`, tone);
 }
 
 export function App() {
   const [loaded, setLoaded] = useState(undefined);
   const [stats, setStats] = useState([]);
-  const [status, setStatus] = useState(say("Loading…", "Plain"));
+  const [status, setStatus] = useState(() => say("Loading…", "Plain"));
   const [example, setExample] = useState("");
-  const [project, setProject] = useState(Project.empty());
+  const [project, setProject] = useState(() => Project.empty());
   const [output, setOutput] = useState("Nothing");
   const [program, setProgram] = useState(undefined);
   const [compiling, startTransition] = useTransition();
@@ -70,11 +71,11 @@ export function App() {
     (async () => {
       const loaded = await load(stat);
       const e = loaded.examples[0];
-      const first = e ? [e.name, e.root, e.files.slice()] : undefined;
-      if (first) {
+      const first = e != null ? [e.name, e.root, e.files.slice()] : undefined;
+      if (first !== undefined) {
         const [name, root, files] = first;
         if (!cancelled) {
-          const texts = await load_example(name, files);
+          const texts = await loadExample(name, files);
           if (!cancelled) {
             setExample(name);
             setProject(Project.of(root, texts));
@@ -93,11 +94,11 @@ export function App() {
   const live = () => source.current?.state;
 
   // Run what a compile wrote, in the Result frame.
-  const run = (compiled, loaded, test) => {
+  function run(compiled, loaded, test) {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
     const tests = compiled.tests;
-    const value = prepare(
+    const prepared = prepare(
       compiled.files,
       loaded.modules,
       loaded.styles,
@@ -107,27 +108,27 @@ export function App() {
       test,
       n,
     );
-    if (value === "Nothing") {
+    if (prepared === "Nothing") {
       setProgram(undefined);
-    } else if (value.TAG === "Blocked") {
+    } else if (prepared.TAG === "Blocked") {
       setProgram(undefined);
-      const names = value._0.map((s) => `"${s}"`);
-      const names$1 = names.join(", ");
+      let names = prepared._0.map((s) => `"${s}"`);
+      names = names.join(", ");
       setStatus((s) => {
-        const text = `${s.text} Not run: it imports ${names$1}, which the playground can't load. Bundle it with bun build.`;
+        const text = `${s.text} Not run: it imports ${names}, which the playground can't load. Bundle it with bun build.`;
         return say(text, "Bad");
       });
     } else {
-      setProgram({ run: n, page: value._0 });
+      setProgram({ run: n, page: prepared._0 });
     }
-  };
+  }
 
   // Compile the crate, or with `test`, its tests too, and run it.
   const onCompile = (test) => {
-    if (!loaded) {
+    const loaded$1 = loaded;
+    if (loaded$1 == null) {
       return;
     }
-    const loaded$1 = loaded;
     if (compiling) {
       return;
     }
@@ -169,7 +170,7 @@ export function App() {
     } else if (outcome === "Ran") {
       setStatus((s) => say(`${s.text} Ran main().`, "Good"));
     } else if (outcome.TAG === "Tested") {
-      setStatus(tests_summary(outcome._0.passed, outcome._0.failed, outcome._0.ignored));
+      setStatus(testsSummary(outcome._0.passed, outcome._0.failed, outcome._0.ignored));
     } else {
       const text =
         "The Result frame didn't run. Is something blocking its script? See the console.";
@@ -178,13 +179,13 @@ export function App() {
   };
 
   const onExample = (name) => {
-    const chosen = loaded ? loaded.examples.find((e) => e.name === name) : undefined;
-    if (chosen) {
+    const chosen = loaded != null ? loaded.examples.find((e) => e.name === name) : undefined;
+    if (chosen != null) {
       const { root } = chosen;
       const files = chosen.files.slice();
       setExample(name);
       (async () => {
-        const texts = await load_example(name, files);
+        const texts = await loadExample(name, files);
         setProject(Project.of(root, texts));
         setOutput("Nothing");
         setProgram(undefined);
@@ -193,43 +194,43 @@ export function App() {
     }
   };
 
-  const openFile = (path) => {
-    setProject(Project.opening(project, path, live()));
-  };
+  const openFile = (path) => setProject(Project.opening(project, path, live()));
   const deleteFile = (path) => {
     if (window.confirm(`Delete ${path}?`)) {
       setProject(Project.removing(project, path));
     }
   };
-  const newFile = () => {
+  function newFile() {
     const answer = window.prompt("New file, e.g. math.rs or geometry/shape.rs:");
-    if (answer == null) {
+    if (answer === null) {
       return;
     }
     const path = $trim(answer);
-    if (path) {
-      const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
-      if (!modulePath.test(path)) {
-        const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
-        setStatus(say(text, "Bad"));
-      } else if (!Project.has(project, path)) {
-        setProject(Project.adding(project, path, live()));
-        const value = $rsplitOnce(path, "/");
-        let file;
-        if (value) {
-          const file$1 = value[1];
-          file = file$1;
-        } else {
-          file = path;
-        }
-        const module = $stripSuffix(file, ".rs") ?? file;
-        const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
-        setStatus(say(text, "Plain"));
-      } else {
-        setStatus(say(`${path} already exists.`, "Bad"));
-      }
+    if (!path) {
+      return;
     }
-  };
+    const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
+    if (!modulePath.test(path)) {
+      const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
+      setStatus(say(text, "Bad"));
+      return;
+    }
+    if (Project.has(project, path)) {
+      setStatus(say(`${path} already exists.`, "Bad"));
+      return;
+    }
+    setProject(Project.adding(project, path, live()));
+    const rsplitOnce = $rsplitOnce(path, "/");
+    let file;
+    if (rsplitOnce != null) {
+      file = rsplitOnce[1];
+    } else {
+      file = path;
+    }
+    const module = $stripSuffix(file, ".rs") ?? file;
+    const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
+    setStatus(say(text, "Plain"));
+  }
   const openOutput = (path) => {
     if (output.TAG === "Files") {
       const files = output.files.map(([p, t]) => [p, t]);
@@ -239,25 +240,32 @@ export function App() {
 
   // What the editors show. A state is made once for each output, so the
   // editor only changes when it does.
-  const blank = useMemo(() => source_state(""), []);
-  const state = Project.current_state(project);
-  const current = state || blank;
+  const blank = useMemo(() => sourceState(""), []);
+  const state = Project.currentState(project);
+  const current = state ?? blank;
   const shownState = useMemo(() => {
     if (output === "Nothing") {
-      return output_state("", true);
+      return outputState("", true);
     }
     if (output.TAG === "Files") {
-      const value = output.files.find(([path]) => path === output.shown);
-      const text = value ? value[1] : "";
-      return output_state(text, true);
+      const find = output.files.find(([path]) => path === output.shown);
+      const text = find != null ? find[1] : "";
+      return outputState(text, true);
     }
-    return output_state(output._0, false);
+    return outputState(output._0, false);
   }, [output]);
-  const sourceTree = useMemo(() => build_tree(Project.paths(project)), [project]);
-  const [outputPaths, shown] =
-    output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
-  const outputTree = useMemo(() => build_tree(outputPaths), [output]);
-  const examples = loaded ? loaded.examples : [];
+  const sourceTree = useMemo(() => buildTree(Project.paths(project)), [project]);
+  let outputPaths;
+  let shown;
+  if (output.TAG === "Files") {
+    outputPaths = output.files.map(([path]) => path);
+    shown = output.shown;
+  } else {
+    outputPaths = [];
+    shown = "";
+  }
+  const outputTree = useMemo(() => buildTree(outputPaths), [output]);
+  const examples = loaded != null ? loaded.examples : [];
   const submit = onCompile;
   const children =
     outputTree.length === 0 ? (
@@ -266,11 +274,12 @@ export function App() {
       <FileTree
         tree={outputTree}
         depth={0}
-        first={js_name(project.root)}
+        first={jsName(project.root)}
         selected={shown}
         onOpen={openOutput}
       />
     );
+
   return (
     <>
       <h1 className="mb-1 text-lg font-bold">rust-js playground</h1>
@@ -281,7 +290,7 @@ export function App() {
         examples={examples}
         example={example}
         onExample={onExample}
-        ready={!!loaded && !compiling}
+        ready={loaded != null && !compiling}
         compiling={compiling}
         onCompile={onCompile}
         status={status}
