@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "own-field-held",
     breaks: "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "        if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {\n",
-    replace: "        if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {\n",
+    find: "            Called::Function(..) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
+    replace: "            Called::Function(..) if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
     tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
   },
   {
@@ -209,5 +209,13 @@ export const mutations: Mutation[] = [
     find: "                if adt.is_struct() && !std {\n",
     replace: "                if adt.is_struct() {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+  },
+  {
+    name: "host-fn-field-called-through",
+    breaks: "a field's fn that may be a host function, `CONFIG.schedule`, is called through its object, which a browser's `queueMicrotask` refuses, Illegal invocation (#427)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),\n",
+    replace: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false)),\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host"],
   },
 ];

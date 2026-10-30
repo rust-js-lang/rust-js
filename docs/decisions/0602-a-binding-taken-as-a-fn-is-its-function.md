@@ -51,3 +51,28 @@ no more than Rust does, as it did: `.map((item) => parse(item))`.
   called, and a pointer handed to `map` gets no index.
 - The guide's [binding as a value](../guide/interop/bindings.md#a-binding-as-a-value).
 - Mutations: the arrow kept, the cast not asked.
+
+## Amendment: called through what holds it, with no `this` (#427)
+
+A binding's JS function held in a field, `Config { schedule:
+webapi::global::queue_microtask }`, and called through it,
+`(CONFIG.schedule)(cb)`, was `CONFIG.schedule(cb)`: JS gave the host
+function the config as its `this`, which a browser's own refuses,
+`TypeError: Illegal invocation` (Chromium's `queueMicrotask`, `setTimeout`,
+`requestAnimationFrame`), where Rust's call runs. The second case of ADR
+0262 (results change): Rust's behavior is kept.
+
+**A fn pointer that may be a binding's JS function the crate made one of
+is called with no `this`, its callee held first, `const schedule =
+CONFIG.schedule; schedule(cb)`**, by the one rule a `with_this` function's
+call through a field is (#402, `called_unbound`): `FnPointers::may_read_this`
+answers both, `Called::Function` of a `dyn Fn`'s signature, `Called::Pointer`
+of a fn pointer's type. A temporary MIR holds the read in, which tidy would
+read in place, is held named as its field. A fn pointer the crate's
+functions alone may be is called through its field as before,
+`CONFIG.count(n)`.
+
+Held by `test/lowering-passed-on.test.ts`'s "a fn field that may hold a
+host function is called with no this, in Chromium" (run in Chromium, the
+real `queueMicrotask`), and mutations `host-fn-field-called-through`
+(`analysis/fn_pointers.ts`), `host-fn-temporary-unheld` (`mir/calls.ts`).

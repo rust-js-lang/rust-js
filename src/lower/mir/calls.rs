@@ -7,15 +7,18 @@ use crate::lower::bindings::Asked;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of what may be a with_this function, a `dyn Fn`'s or a
-    /// generic one's of its signature, whose callee is read as a member,
+    /// generic one's of its signature, or a binding's JS function a fn
+    /// pointer holds (`may_read_this`), whose callee is read as a member,
     /// `s.f`, or an item, `fs[i]`, which JS would give it as its `this`:
     /// its callee held first, `const f = s.f; f()`, so it's called with
-    /// none, as Rust calls it (#402, ADR 0972). Not of a field the crate
-    /// fills with its own closures alone (#405).
+    /// none, as Rust calls it (#402, ADR 0972; #427). A temporary MIR holds
+    /// the read in, which tidy reads in place, is held as its field is
+    /// named. Not of a field the crate fills with its own closures alone
+    /// (#405).
     pub(super) fn called_unbound(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        (call, signature): (Value<'tcx>, (Ty<'tcx>, Ty<'tcx>)),
+        (call, called): (Value<'tcx>, Called<'tcx>),
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let Value::Expr(Expr {
@@ -25,13 +28,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(call);
         };
-        let (pointers, field) = (self.krate.cell_borrows.pointers(), self.called_field(state));
-        if !pointers.may_read_this(self.tcx, signature, field) {
+        let (pointers, field) = (self.krate.cell_borrows.pointers(), self.called_field(state, called));
+        if !pointers.may_read_this(self.tcx, called, field) {
             return Ok(Value::Expr(Expr::call(*callee, args)));
         }
         let name = match &callee.kind {
             js::ExprKind::Member(_, property) | js::ExprKind::OptionalMember(_, property) => property.clone(),
             js::ExprKind::Index(..) => "f".to_string(),
+            js::ExprKind::Var(name)
+                if super::tidy::is_temporary(name)
+                    && let Some(field) = field =>
+            {
+                crate::lower::camel_case(self.tcx.item_name(field).as_str())
+            }
             _ => return Ok(Value::Expr(Expr::call(*callee, args))),
         };
         self.flush(state, out)?;
@@ -40,13 +49,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The field of the crate's struct the call that ends `state.at` calls,
-    /// `(s.f)()`'s `f`: of its first argument's place, or the place a
-    /// temporary of it borrows, `_3 = &(*((*_1).0))`.
-    fn called_field(&self, state: &State<'_, 'tcx>) -> Option<rustc_span::def_id::DefId> {
-        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
+    /// `(s.f)()`'s `f`: of the place of what it calls, a function's its
+    /// first argument, a fn pointer's itself, or the place a temporary of
+    /// it borrows or copies, `_3 = &(*((*_1).0))`.
+    fn called_field(&self, state: &State<'_, 'tcx>, called: Called<'tcx>) -> Option<rustc_span::def_id::DefId> {
+        let mir::TerminatorKind::Call { func, args, .. } = &state.body[state.at].terminator().kind else {
             return None;
         };
-        let mut place = args.first()?.node.place()?;
+        let through = match called {
+            Called::Function(..) => &args.first()?.node,
+            Called::Pointer(_) => func,
+        };
+        let mut place = through.place()?;
         if place.projection.is_empty() {
             let statements = state.body.basic_blocks.iter().flat_map(|block| &block.statements);
             place = statements.into_iter().find_map(|statement| match &statement.kind {
@@ -133,7 +147,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let call = Value::Expr(Expr::call(callee, exprs));
         match unbound {
-            Some((state, out, output)) if !own => self.called_unbound(state, (call, (arg_tys[1], output)), out),
+            Some((state, out, output)) if !own => {
+                self.called_unbound(state, (call, Called::Function(arg_tys[1], output)), out)
+            }
             _ => Ok(call),
         }
     }

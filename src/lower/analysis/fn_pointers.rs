@@ -165,27 +165,36 @@ impl<'tcx> FnPointers<'tcx> {
             && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() && !is_binding(tcx, f))
     }
 
-    /// Whether a function called with `args`, a tuple, giving `output`,
-    /// may be one `js::function::with_this` makes in the crate's code, of
-    /// that signature, which reads the `this` Rust gives it, `None`: a call
-    /// of one through a field, `(s.f)()`, gives it none, `const f = s.f;
-    /// f()`. Another, JS's own, is called through its object, `s.f()`, as
-    /// JS calls it (#402, the user's decision, #404).
+    /// Whether a function called through what holds it, `(s.f)()`, must
+    /// be called with no `this`, `const f = s.f; f()`, which JS would give
+    /// it the holder as: a `dyn Fn` or generic one, `Called::Function` of
+    /// the tuple it's called with and what it gives, that may be one
+    /// `js::function::with_this` makes in the crate's code, of that
+    /// signature, which reads the `this` Rust gives it, `None` (#402, the
+    /// user's decision, #404); or a fn pointer, `Called::Pointer`, that may
+    /// be a binding's JS function the crate made one of, `queueMicrotask`,
+    /// which a browser refuses of another `this`, "Illegal invocation"
+    /// (#427, ADR 0602). Another, JS's own, is called through its object,
+    /// `s.f()`, as JS calls it.
     pub(in crate::lower) fn may_read_this(
         &self,
         tcx: TyCtxt<'tcx>,
-        (args, output): (Ty<'tcx>, Ty<'tcx>),
+        called: Called<'tcx>,
         field: Option<DefId>,
     ) -> bool {
-        // A field the crate fills with its own closures alone (#405).
-        if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) {
-            return false;
+        match called {
+            Called::Pointer(ptr) => key(tcx, ptr)
+                .is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),
+            // A field the crate fills with its own closures alone (#405).
+            Called::Function(..) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,
+            Called::Function(args, output) => {
+                self.with_this_generic
+                    || self.with_this.contains(&(
+                        tcx.erase_and_anonymize_regions(args),
+                        tcx.erase_and_anonymize_regions(output),
+                    ))
+            }
         }
-        self.with_this_generic
-            || self.with_this.contains(&(
-                tcx.erase_and_anonymize_regions(args),
-                tcx.erase_and_anonymize_regions(output),
-            ))
     }
 
     /// What its contract says of its structs' fields (ADR 0330, amended):
@@ -367,6 +376,15 @@ impl JsMade {
 /// `fn(&dyn for<'a> Fn(&'a u32))` and `fn(&dyn Fn(&'static u32))`, which
 /// subtyping may make one of the other. `None` of one that's not a fn
 /// pointer.
+/// What a call through what holds it calls, which `may_read_this` asks
+/// of: a function of the tuple it's called with and what it gives, a `dyn
+/// Fn`'s or a generic one's, or a fn pointer of its type.
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum Called<'tcx> {
+    Function(Ty<'tcx>, Ty<'tcx>),
+    Pointer(Ty<'tcx>),
+}
+
 fn key<'tcx>(tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let ty::FnPtr(..) = ptr.kind() else { return None };
     Some(ptr.fold_with(&mut Lifetimeless(tcx)))

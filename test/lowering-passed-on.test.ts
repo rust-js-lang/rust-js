@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { chromium } from "playwright";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -508,3 +509,53 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
     "root false x", "lent",
   ]);
 });
+
+// #427: a host function held as a \`fn\` in a field, called through it, is
+// given no \`this\`, which a browser's own refuses of another, "Illegal
+// invocation": its callee held first, \`const schedule = CONFIG.schedule;
+// schedule(..)\`, as a with_this function's is (#402, \`called_unbound\`).
+// One the crate's functions alone may be is called through its field.
+test("a fn field that may hold a host function is called with no this, in Chromium", async () => {
+  const dir = fixture("fn-pointer-field-host");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Config {
+    pub schedule: fn(Box<dyn FnOnce()>),
+    pub count: fn(u32) -> u32,
+}
+
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+
+pub static CONFIG: Config = Config { schedule: webapi::global::queue_microtask, count: twice };
+
+pub fn run(n: u32) -> u32 {
+    (CONFIG.schedule)(Box::new(move || record(n)));
+    (CONFIG.count)(n)
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
+fn record(n: u32) {
+    unreachable!()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const schedule = CONFIG.schedule;\n  schedule(() => {");
+  expect(js).toContain("return CONFIG.count(n);");
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    const result = await page.evaluate(async (js) => {
+      const seen: number[] = [];
+      Object.assign(globalThis, { record: (n: number) => seen.push(n) });
+      const url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
+      const lib = await import(url);
+      const counted = lib.run(3);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return [counted, seen];
+    }, js);
+    expect(result).toEqual([6, [3]]);
+  } finally {
+    await browser.close();
+  }
+}, 60_000);

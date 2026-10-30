@@ -49,7 +49,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
             crate::lower::calls::given_to_js(&mut exprs);
         }
-        Ok(Value::Expr(Expr::call(callee, exprs)))
+        // One that may be a binding's JS function, called through what holds
+        // it, is called with no `this`, which a host's own may refuse (#427).
+        let call = Value::Expr(Expr::call(callee, exprs));
+        self.called_unbound(state, (call, Called::Pointer(fn_ptr)), out)
     }
 
     pub(super) fn mir_call(

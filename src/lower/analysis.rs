@@ -13,7 +13,7 @@ mod debug;
 mod drops;
 mod fmt_failures;
 mod fn_pointers;
-pub(super) use fn_pointers::FnPointers;
+pub(super) use fn_pointers::{Called, FnPointers};
 mod held_adapters;
 mod iterator_steps;
 mod js_given;

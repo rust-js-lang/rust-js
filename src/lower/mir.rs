@@ -42,6 +42,7 @@ pub(in crate::lower) use tidy::settle_unthrown_catches;
 mod writer;
 
 use self::queries::*;
+use super::analysis::Called;
 
 use std::collections::{HashMap, HashSet};
 
