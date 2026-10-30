@@ -77,14 +77,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
-    name: "while-heads-else-kept",
-    breaks: "a `while` whose body goes round where it ends, what's after it its `else`, stays `while (true)`",
-    file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "        ] if written => (test, then.as_slice(), rest.as_slice(), true),\n",
-    replace: "        ] if false => (test, then.as_slice(), rest.as_slice(), true),\n",
-    tests: ["test/lowering-written-loops.test.ts", "-t", "findFirstSuspended"],
-  },
-  {
     name: "mir-tidy-for-mut-binding-unread",
     breaks: "a `for` of a `mut` binding, `row = value` each turn, stays a `while (true)` of `$next`",
     file: "src/lower/mir/tidy/jumps/tried.rs",

@@ -503,7 +503,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A loop's test those read in place now, `while (true) { if
             // (!(m.length > n)) { .. } }`'s of `const _7 = m.length;`.
             pass("while tests", |b, h| {
-                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
             }),
             // A block MIR made that a loop's body ends with, then its
             // `break;`: the block's `break`s the loop's, as an arm's `break`
@@ -703,7 +703,7 @@ pub(super) const STAGES: &[Stage] = &[
             // (!(t)) { break; } .. }` of one that ends an `if`'s branch with
             // code after the `if`, whose `break` left the block: its test.
             pass("tests of loops ending blocks", |b, h| {
-                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops, &h.written.breaks))
+                js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
             }),
             // A test the program wrote `!(a && b)`, MIR's `!a || !b`: as
             // written (ADR 0879, amended).
@@ -742,7 +742,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A block the program labeled that a `break` in a `switch` or
             // a loop of a case leaves: the label of the `switch` it leaves
             // (ADR 0944).
-            pass("labeled switches", |b, h| labeled_switches(b, &h.written.elses)),
+            pass("labeled switches", |b, _| labeled_switches(b)),
             // A block one case alone reaches, after its `switch`: that
             // case's (ADR 0905).
             pass("blocks one case reaches", |b, _| {
@@ -758,15 +758,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("breaks past switches", |b, h| {
                 js::statement_lists(b, &mut |s| switches::breaks_past_switches(s, &h.written.switches))
             }),
-            // A case's `break` to the `return;` after its `switch`, of an
-            // arm the program wrote a `return` in: that `return;` (ADR
-            // 0905, amended). And each `continue` the stage left where its
-            // loop's turn ends anyway, a default's and React's `if (i !== j)
-            // { ..; continue; }` that ends a `for`'s body (ADR 0961).
-            pass("returns of cases", |b, h| {
-                js::statement_lists(b, &mut |s| {
-                    case_rests::returns_of_cases(s, &h.written.switches, h.returns)
-                });
+            // Each `continue` the stage left where its loop's turn ends
+            // anyway, a default's and React's `if (i !== j) { ..; continue;
+            // }` that ends a `for`'s body (ADR 0961). A case's `return` the
+            // program wrote is its own already, `returns past blocks`'
+            // (ADR 0905, amended).
+            pass("tail continues", |b, h| {
                 js::statement_lists(b, &mut |s| tail_continues(s, h.written))
             }),
             // A `switch` that ends a function of no value: the `return;`s MIR

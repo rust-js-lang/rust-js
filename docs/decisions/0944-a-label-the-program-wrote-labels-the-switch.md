@@ -105,3 +105,13 @@ nothing names once the case's own `break`s are plain is gone.
 - The guide's [`switch` and `match`](../guide/for-js-developers/basics.md#switch-and-match).
 - Mutations: `labeled-switch-*`, `never-goes-on-past-a-label`,
   `written-label-snake-case`.
+
+## Amendment: a labeled `switch`'s case's `else` is `blocks ending cases`' (2026-10-30)
+
+`labeled_cases` took out the `else` the program didn't write of an `if`
+a labeled `switch`'s case ends with once its `then`'s `break` was the
+case's (ADR 0805). `blocks ending cases` (`switches::unwritten_else`)
+does the same of every `switch` a list ends with, a labeled one's too,
+later in the stage: the snapshots and the labeled-switch tests are the
+same without the first, whose mutation `labeled-switch-else-kept`
+survived. It's removed, with `labeled_switches`' `elses`.

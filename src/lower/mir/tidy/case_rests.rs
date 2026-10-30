@@ -197,57 +197,6 @@ pub(super) fn rest_one_case_reaches(stmts: &mut Vec<Stmt>, at_end: bool) {
     }
 }
 
-/// `switch (t) { case A: ..; break; .. } return;`, the `return` MIR joined
-/// each arm's into after the `switch`: each case of an arm the program wrote
-/// a `return` in (`returns`, `Written::switches`) ending with that `return;`,
-/// not a `break;`, as React's popToNextHostParent's `case HostRoot:
-/// rootOrSingletonContext = true; return;`, and the `return;` after the
-/// `switch` gone where nothing reaches it then (ADR 0905, amended). The
-/// same jump either way: the `switch`'s `break` goes on to that `return;`.
-pub(super) fn returns_of_cases(stmts: &mut Vec<Stmt>, switches: &[Switch], returns: &[js::Span]) {
-    let within = |outer: js::Span, inner: js::Span| {
-        !outer.is_none() && !inner.is_none() && outer.lo <= inner.lo && inner.hi <= outer.hi
-    };
-    let mut i = 0;
-    while i + 1 < stmts.len() {
-        if !matches!(stmts[i + 1].kind, StmtKind::Return(None)) {
-            i += 1;
-            continue;
-        }
-        let returned = stmts[i + 1].clone();
-        let StmtKind::Switch { cases, .. } = &mut stmts[i].kind else {
-            i += 1;
-            continue;
-        };
-        let mut changed = false;
-        for case in cases.iter_mut() {
-            // The arm a case is of, where its first constant is written.
-            let arm = (case.values.first())
-                .and_then(|value| (switches.iter().flat_map(|s| &s.arms)).find(|arm| within(arm.pattern, value.span)));
-            if !arm.is_some_and(|arm| returns.iter().any(|r| within(arm.span, *r))) {
-                continue;
-            }
-            // Its end, a `break;` the printer writes where it neither leaves
-            // nor falls through, or one tidy wrote.
-            if case
-                .body
-                .last()
-                .is_some_and(|last| matches!(last.kind, StmtKind::Break(None)))
-            {
-                case.body.pop();
-            } else if case.falls || case.body.last().is_some_and(js::ends) {
-                continue;
-            }
-            case.body.push(returned.clone());
-            changed = true;
-        }
-        if changed && js::ends(&stmts[i]) {
-            stmts.remove(i + 1);
-        }
-        i += 1;
-    }
-}
-
 /// `stmts`, a function's body of no value, ending in a `switch`: each
 /// `return;` MIR made in its cases, the way to the function's end, the
 /// `switch`'s `break;`, as upstream writes `case HostText: if (..) { .. }

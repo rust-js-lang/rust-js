@@ -663,11 +663,7 @@ fn broken_after(body: &mut Vec<Stmt>) {
 /// `rest` leaving the loop, nor in `exit` going on with it: `while (!t) {
 /// rest } exit`, as the program wrote it; of an `exit` that ends with the
 /// loop's `break`, without it.
-pub(super) fn while_tests(
-    stmts: &mut Vec<Stmt>,
-    loops: &[(js::Span, bool, Option<String>)],
-    written_breaks: &[(js::Span, js::Span)],
-) {
+pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Option<String>)]) {
     // The loop the program wrote that starts where it does, innermost, a
     // `while`: not a `loop` it wrote, which stays `while (true)`.
     let written_while = |span: js::Span| written_loop(loops, span).is_some_and(|&(_, w, _)| w);
@@ -731,9 +727,6 @@ pub(super) fn while_tests(
             if ended {
                 broken_after(&mut rest);
             }
-            // The program's own `if`s of a `break` apart (`broken_apart`).
-            let (test, broken) = broken_apart(test, Op::And, written_breaks);
-            rest.splice(0..0, broken);
             *cond = match cond.kind {
                 ExprKind::Bool(true) => test,
                 _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::undefined()), test),
@@ -776,13 +769,10 @@ pub(super) fn while_tests(
             if matches!(exit.last().map(|s| &s.kind), Some(StmtKind::Break(_))) {
                 exit.pop();
             }
-            // The program's own `if`s of a `break` apart (`broken_apart`):
-            // each goes on to the exit after the loop as the test does.
-            let (test, broken) = broken_apart(test, Op::Or, written_breaks);
             stmts[i] = StmtKind::While {
                 label,
                 cond: test.negated_test(),
-                body: broken.into_iter().chain(body).collect(),
+                body: body.collect(),
             }
             .at(span);
             let n = exit.len();
@@ -851,51 +841,6 @@ fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
     }
     body.swap(0, 1);
     Some(original)
-}
-
-/// A `while`'s test, `test`, of the tests `op` joins, `&&` of those it
-/// goes on by, `||` of those it leaves by: the loop's own, and an `if` of
-/// the `break` of each `if` the program wrote of one (`Written::breaks`)
-/// those after it test, first to last, in the loop's body where they're
-/// written (ADR 0702, amended). `while (i < n && !(c && i === 3))` of
-/// `while i < n { if c && i == 3 { break; } .. }` is `while (i < n) { if (c
-/// && i === 3) { break; } .. }`. The same tests, in the same order.
-fn broken_apart(test: Expr, op: Op, written_breaks: &[(js::Span, js::Span)]) -> (Expr, Vec<Stmt>) {
-    fn operands(e: &Expr, op: Op, out: &mut Vec<Expr>) {
-        match &e.kind {
-            ExprKind::Binary(o, a, b) if *o == op => {
-                operands(a, op, out);
-                operands(b, op, out);
-            }
-            _ => out.push(e.clone()),
-        }
-    }
-    let mut all = Vec::new();
-    operands(&test, op, &mut all);
-    // Of which `if` the program wrote each is the test of, if one.
-    let written = |e: &Expr| super::jumps::jump_tested(written_breaks, super::jumps::written_at(e));
-    let own = all.iter().rposition(|e| written(e).is_none()).map_or(0, |k| k + 1);
-    if own == 0 || own == all.len() {
-        return (test, Vec::new());
-    }
-    let tested = all.split_off(own);
-    let join = |es: Vec<Expr>| es.into_iter().reduce(|a, b| Expr::bin(op, a, b)).expect("one or more");
-    let mut ifs = Vec::new();
-    let mut tested = tested.into_iter().peekable();
-    while let Some(first) = tested.next() {
-        let of = written(&first);
-        let mut group = vec![first];
-        while let Some(next) = tested.next_if(|e| written(e) == of) {
-            group.push(next);
-        }
-        let at = super::jumps::written_at(&group[0]);
-        let exit = match op {
-            Op::And => join(group).negated_test(),
-            _ => join(group),
-        };
-        ifs.push(StmtKind::If(exit, vec![StmtKind::Break(None).at(at)], None).at(at));
-    }
-    (join(all), ifs)
 }
 
 /// Whether loop `stmt`'s own test, start or what it steps names `name`.

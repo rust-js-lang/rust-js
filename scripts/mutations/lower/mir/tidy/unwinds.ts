@@ -163,14 +163,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
   {
-    name: "declaration-taken-for-drop",
-    breaks: "a `catch` holding only a drop function's declaration is taken as a scope's drop, so its `finally` scopes the name away from the code after it",
-    file: "src/lower/mir/tidy/unwinds.rs",
-    find: "    (rethrown && !declares && !leaves(inner, 0)",
-    replace: "    (rethrown && !leaves(inner, 0)",
-    tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
-  },
-  {
     name: "return-place-out-of-scope",
     breaks: "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",

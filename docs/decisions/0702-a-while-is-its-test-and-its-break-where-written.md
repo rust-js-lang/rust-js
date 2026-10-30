@@ -1001,3 +1001,20 @@ No other corpus case's JS changes. Held by
 against native Rust, and the mutations `written-before-then-unbroken`,
 `written-before-copy-kept` and `written-before-written-copy-dropped`
 (`mir/tidy/jumps/continues.ts`).
+
+## Amendment: no `while`'s test holds an `if` the program wrote (2026-10-30)
+
+`while_tests` took a `while`'s test apart into its own and an `if` of a
+`break` for each `if` the program wrote of one (`broken_apart`), and
+`while_heads` read a `while (true) { if (c) { body } else { rest } }`
+whose `body` goes round where it ends as `while (c) { body } rest`. Since
+`early breaks` keeps each `if` the program wrote of a `break` apart from
+the loop's test before the test is made, and the stages before
+`while_heads` take such an `else` apart, neither had anything to do:
+their mutations `while-written-breaks-joined`,
+`while-written-breaks-ungrouped` and `while-heads-else-kept` survived
+every check, and no corpus case, lowering suite or port reached either
+path. Both are removed, with `while_tests`' `written_breaks`. The tests
+that held them, "a while's test is its own, an if of a break the program
+wrote its if" and "React's findFirstSuspended's loops are upstream's",
+pass as before.

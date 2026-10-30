@@ -49,3 +49,12 @@ guards guarded nothing. What the text is made of keeps its own answer: a
   `catch` whose drops a later stage found never run, as main's snapshots
   already had it (`drop_functions.js`).
 - Mutations: `print-may-throw`, `declaration-taken-for-drop`.
+
+## Amendment: no `catch` declares a drop function (2026-10-30)
+
+Since a function lowered from its MIR declares each drop function once,
+at its top (ADR 0098, amended), no `catch` holds `const dropMany = ..`,
+and a drop taken for a scope's is never a declaration by construction:
+`dropped_last`'s check that it isn't one decided nothing, its mutation
+`declaration-taken-for-drop` surviving every check, the corpus's JS the
+same without it. Both are gone; the hoisting is the rule's one owner.

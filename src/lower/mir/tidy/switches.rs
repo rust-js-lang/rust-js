@@ -1437,7 +1437,7 @@ pub(super) fn blocks_ending_cases(stmts: &mut [Stmt], elses: &[(js::Span, js::Sp
 /// leaves, `if (c) { a } b`. What `b` declares is a body's name of its
 /// own, given apart from the rest, `name$1`, which preparation names
 /// `name` again only where JS's scopes let it (ADR 0352).
-pub(super) fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
+fn unwritten_else(stmts: &mut Vec<Stmt>, elses: &[(js::Span, js::Span, js::Span)]) {
     let Some(last) = stmts.last() else {
         return;
     };

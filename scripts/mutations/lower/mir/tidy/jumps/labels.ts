@@ -228,15 +228,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
-  {
-    name: "labeled-switch-else-kept",
-    breaks: "the `if` a labeled `switch`'s case ends with gets an `else` the program didn't write once its `then`'s `break` is the case's (ADRs 0805, 0944)",
-    file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        super::super::switches::unwritten_else(case, elses);\n",
-    replace: "",
-    tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
-  },
-
 
 
   {

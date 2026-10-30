@@ -318,3 +318,18 @@ mutations `initialized-chain-called-in-place`,
 `initialized-chain-arm-statements-dropped`,
 `initialized-chain-none-arm-folded` and
 `initialized-chain-turned-guard-kept` (`prepare/initializers.ts`).
+
+## Amendment: no arm is turned round by its `!` (2026-10-30)
+
+`chained_arms` and `plain_chain` read a conditional `!t ? e : r` as MIR's
+arms the other way round, `t ? r : e`. Since `written_order` gives
+`plain_chain_of` an `if`'s arms as the program wrote them, no arm MIR
+turned reaches them so: their mutation `chain-negated-arm-kept` survived
+every check, no corpus case's JS changed without it. What it still did
+was turn round an arm the program wrote negated itself, `else if !(t <
+1.0) { .. chain .. } else { "x" }` read `t < 1 ? "x" : ..`, against the
+order it's written in. The reading is gone, `written_order` the rule's
+one owner: `!(t < 1) ? (u < 2 ? "y" : ..) : "x"`, held by
+`test/lowering-returned-chains.test.ts`'s "a value's chain keeps an arm
+the program wrote negated where it's written". Case N: the same arm is
+chosen for every value, `NaN` too.

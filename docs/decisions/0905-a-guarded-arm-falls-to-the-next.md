@@ -756,3 +756,18 @@ lines, which nothing runs.
   `stacked-case-starts-of-one-pattern` (`to_oxc/cases.ts`, caught by
   `switch_guard_skips_its_case.rs`) and `stacked-case-blank-line-between`
   (`to_oxc.ts`).
+
+## Amendment: a case's written `return` is `returns past blocks`' (2026-10-30)
+
+`case_rests::returns_of_cases` ended each case of an arm the program wrote
+a `return` in with that `return;`, in place of a `break` to the `return;`
+MIR joined after the `switch`. `returns past blocks` (`jumps::tails`, ADR
+0742, amended) puts each `return` MIR joined back where the program wrote
+it before that stage, so no `switch` reached it followed by such a
+`return;`: its mutations `case-returns-joined-after-switch` and
+`case-returns-joined-return-kept` survived every check, and nothing in
+the corpus, the lowering suites or React's port reached the pass. It is
+removed; its stage's pass is `tail continues` alone. React's
+popToNextHostParent is still `case 27: log.push(2); return;`, held by
+`test/lowering-switches.test.ts`'s "a case of an arm that returns ends
+with its return".

@@ -1,8 +1,9 @@
-// A function's value of an `else if` chain: one nested conditional where
-// every arm is a plain value, a string or a number literal or a name, and
-// otherwise the whole chain, each arm returning its own, never half a chain
-// and half a conditional (ADR 0969, amended, the user's decision of
-// React's rd23). Each test is a program of its own, compiled and run.
+// A function's or a variable's value of an `else if` chain: one nested
+// conditional where every arm is a plain value, a string or a number
+// literal or a name, and otherwise the whole chain, each arm returning its
+// own, never half a chain and half a conditional (ADR 0969, amended, the
+// user's decision of React's rd23). Each test is a program of its own,
+// compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -379,4 +380,25 @@ pub fn chosen(n: u32) -> fn(u32) -> u32 {
   const call = (name: string, ...args: number[]) => (lib[name] as (...a: number[]) => unknown)(...args);
   expect([call("picked", 4), call("scaled", 4), call("name"), call("worked"), call("maybe", 2)]).toEqual([50, 104, "level 2", 6, 6]);
   expect([call("turned", 4), call("guarded", 4), call("optional", 4)]).toEqual([12, 12, undefined]);
+});
+
+// A variable's chain's arm whose test the program wrote negated,
+// `!(t < 1.0)`, keeps it and its place: its chain in its `then`, `"x"`
+// after, not turned round to `t < 1 ? "x" : ..`, MIR's arms being in
+// written order already (`written_order`, ADR 0969, amended).
+test("a value's chain keeps an arm the program wrote negated where it's written", async () => {
+  const { js, lib } = await compiled("mir-negated-arm", `pub fn pick(t: f64, u: f64) -> String {
+    let c = if u > 5.0 {
+        "o"
+    } else if !(t < 1.0) {
+        if u < 2.0 { "y" } else if t > 9.0 { "q" } else { "z" }
+    } else {
+        "x"
+    };
+    c.to_string()
+}
+`);
+  expect(js).toContain(`!(t < 1) ? (u < 2 ? "y" : t > 9 ? "q" : "z") : "x"`);
+  const pick = lib.pick as (t: number, u: number) => string;
+  expect([[0, 6], [0.5, 0], [2, 1], [10, 3], [5, 3], [NaN, 3]].map(([t, u]) => pick(t, u))).toEqual(["o", "x", "y", "q", "z", "z"]);
 });

@@ -438,11 +438,12 @@ pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
 /// (c) { body } rest`, where nothing else jumps in it
 /// to the loop, as `rest`'s jumps would go to another once it's outside.
 /// Of a `while` the program wrote, of `written`, its `body` may go round
-/// by a `continue` inside it too, or where it ends, its `rest` an `else`,
-/// `while (true) { if (c) { body } else { rest } }`: a `body` that goes on
-/// with the loop, never by a `break`, which would run `rest` once it's
-/// outside. React's `findFirstSuspended` walks up while a fiber has no
-/// sibling, its `rest` a `continue` of the loop around (ADR 0702, amended).
+/// by a `continue` inside it too: a `body` that goes on with the loop,
+/// never by a `break`, which would run `rest` once it's outside. React's
+/// `findFirstSuspended` walks up while a fiber has no sibling, its `rest`
+/// a `continue` of the loop around (ADR 0702, amended). No `body` here goes
+/// round where it ends, its `rest` an `else`, `while (true) { if (c) { body
+/// } else { rest } }`: the stages before take such an `else` apart.
 /// Its `rest`'s own `break`, which left the loop to what follows it,
 /// falls out to there (`fallen`).
 pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &[(js::Span, bool, Option<String>)]) {
@@ -490,30 +491,25 @@ fn tested_at_head<'s>(
 ) -> Option<(&'s Expr, &'s [Stmt], &'s [Stmt])> {
     let own_continue =
         |s: &Stmt| matches!(&s.kind, StmtKind::Continue(l) if l.as_deref().is_none_or(|l| Some(l) == label));
-    let (test, then, rest, otherwise) = match body {
-        [
-            Stmt {
-                kind: StmtKind::If(test, then, None),
-                ..
-            },
-            rest @ ..,
-        ] => (test, then.as_slice(), rest, false),
-        [
-            Stmt {
-                kind: StmtKind::If(test, then, Some(rest)),
-                ..
-            },
-        ] if written => (test, then.as_slice(), rest.as_slice(), true),
-        _ => return None,
+    let [
+        Stmt {
+            kind: StmtKind::If(test, then, None),
+            ..
+        },
+        rest @ ..,
+    ] = body
+    else {
+        return None;
     };
     let (last, before) = then.split_last()?;
     if own_continue(last) {
         let kept = !own_jumps(before, label) || (written && !breaks(before, label));
         return kept.then_some((test, before, rest));
     }
-    // Going round where it ends, as an `else`'s `then` does, never on to
-    // `rest`; or by a `continue` inside.
-    let falls = !ends(last);
-    let goes_round = (falls && otherwise) || js::continues(then, label);
-    (written && goes_round && (otherwise || !falls) && !breaks(then, label)).then_some((test, then, rest))
+    // Going round by a `continue` inside, never on to `rest`.
+    (written && ends(last) && js::continues(then, label) && !breaks(then, label)).then_some((
+        test,
+        then.as_slice(),
+        rest,
+    ))
 }

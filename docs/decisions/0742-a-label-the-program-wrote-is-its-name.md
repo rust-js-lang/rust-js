@@ -189,3 +189,17 @@ None`.
 Held by `test/corpus/returns_joined_keep_comments.rs` against native Rust
 and the mutation `joined-returns-end-at-last-statement`
 (`mir/tidy/jumps/tails.ts`).
+
+## Amendment: a loop's `return` MIR joined past a block is `joined_returns`' (2026-10-30)
+
+`returns_past_blocks` took a block whose `break` is in a loop a written
+`return` is in (`left_by_a_return`) for one of returns, besides those
+`joined_returns` finds MIR joined there. Since `joined_returns` reads each
+`return` the program wrote that MIR joined past the block, a loop's among
+them (the amendment above), it found appendAllChildren's too, and no
+block reached the pass that only the loop's test held: forcing that test
+true and false, the mutations `loop-end-returns-past-block` and
+`loop-returns-past-block-kept`, changed nothing in the corpus, the
+lowering suites or React's port. The test and both mutations are gone;
+`joined_returns` is the rule's one owner. "A loop's early return MIR
+joined past a block is a return" and addValueToProperties pass as before.
