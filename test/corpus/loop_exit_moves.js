@@ -89,14 +89,16 @@ function gridFind(grid, want) {
 // A name declared before the loop, set once in it, read after it.
 function setInLoop(values) {
   let i = 0;
+  let found;
   while (true) {
     if ($index(values, i) % 7 === 0) {
-      const found = $index(values, i);
-      console.log(`found ${found} at ${i}`);
-      return found;
+      found = $index(values, i);
+      break;
     }
     i = (i + 1) >>> 0;
   }
+  console.log(`found ${found} at ${i}`);
+  return found;
 }
 
 // A name shadowed after the loop by one that doesn't read it.

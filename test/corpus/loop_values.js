@@ -14,27 +14,32 @@ function pick(x) {
 
 function main() {
   let n = 0;
+  let doubled;
   while (true) {
     n++;
     if (n === 3) {
-      const doubled = n * 2;
-      while (true) {
-        for (let i = 0; i < 100; i++) {
-          if (i * i > 20) {
-            const found = i;
-            let m = 0;
-            while (true) {
-              m++;
-              if (m > 2) {
-                const given = pick(m);
-                console.log(`${doubled} ${found} ${given}`);
-                return;
-              }
-            }
-          }
-        }
+      doubled = n * 2;
+      break;
+    }
+  }
+  let found;
+  outer: while (true) {
+    for (let i = 0; i < 100; i++) {
+      if (i * i > 20) {
+        found = i;
+        break outer;
       }
     }
   }
+  let m = 0;
+  let given;
+  while (true) {
+    m++;
+    if (m > 2) {
+      given = pick(m);
+      break;
+    }
+  }
+  console.log(`${doubled} ${found} ${given}`);
 }
 //# sourceMappingURL=case.js.map

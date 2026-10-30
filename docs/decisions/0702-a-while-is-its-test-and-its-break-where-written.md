@@ -8,7 +8,9 @@ is its test too; and an `if` of a `break` the program wrote first in a
 `while`'s body is that `if`, not the loop's test (#298); and what's written
 after a loop that `break`s is after it; and an inner loop's tail moves out
 before `decisions` (rd141c); and a `break 'rows` in an inner loop is the
-outer's, by its label (uz3).
+outer's, by its label (uz3); and a loop's value is declared before it, and
+a `break 'outer` from a loop inside leaves the outer, what follows each
+after its loop (rd148).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads;
 nothing that runs changes.
@@ -784,3 +786,87 @@ Held by `test/corpus/while_let_written_break.rs`'s `until_due` against
 native Rust, and the mutations `early-break-joined-test-kept`,
 `early-break-split-part-placed-first` and `early-break-and-parts-one`
 (`mir/tidy/jumps.ts`).
+
+## Amendment: a loop's value, and a `break 'outer` from a loop inside (rd148, 2026-10-30)
+
+React DOM's getModernOffsetsFromPoints, ported as written:
+
+```rust
+'outer: loop {
+    loop { .. let Some(next) = node.first_child() else { break; }; .. }
+    let next = loop {
+        if node == outer_node {
+            // If `outerNode` has children, ..
+            break 'outer;
+        }
+        ..
+        if let Some(next) = node.next_sibling() {
+            break next;
+        }
+        ..
+    };
+    node = next;
+}
+if start == -1.0 || end == -1.0 { .. }
+```
+
+MIR goes on from each `break` where it's written: the function's tail at
+`break 'outer`, in the inner loop, and `node = next; continue 'outer` at
+`break next`, the `let`'s value `const next = ..` there. `exits_after`
+looked for a loop's way out only in its own body's `if`s, so the tail
+stayed in the inner loop, `if (node !== outerNode) { .. continue outer; }
+if (start === -1 ..) { .. } return ..`, its comment before the loop; and a
+way out reading a name the loop declares stayed where it was.
+
+**A loop the program labeled is left from a loop inside it too**: where
+its one way out is in a loop of its own, it's `break outer;` there, where
+the program wrote it (`Written::breaks`, so the comment above it is before
+it), and what follows after the outer loop. And **a loop's value is
+declared before it**: where what's moved reads the `const name = v;` its
+way out declares, the Rust's `let name = loop { .. break v; }`, that's
+`let name;` before the loop and `name = v;` at its `break`:
+
+```js
+outer: while (true) {
+  while (true) { .. }
+  let next;
+  while (true) {
+    if (node === outerNode) {
+      // If `outerNode` has children, ..
+      break outer;
+    }
+    ..
+    const nextSibling = node.nextSibling;
+    if (nextSibling !== null) {
+      next = nextSibling;
+      break;
+    }
+    ..
+  }
+  // Moving from `node` to its next sibling `next`.
+  node = next;
+}
+if (start === -1 || end === -1) { .. }
+```
+
+as upstream's, but its `let next = null;` at the turn's start and its
+`(next = node.nextSibling) !== null`. The name is the Rust's, apart from
+what's beside the loop (as `exits_after` says), and declared where the
+Rust's block declares it; MIR assigns it only at the way out, which runs
+once, and `aliases` gives it to the binding it's given only where nothing
+else, no closure either, reads that. A way out in a loop of its own of a
+loop with no label the program wrote stays, as a label the Rust lacks
+isn't made. `loop_values`, `loop_exit_moves` and the guide's
+`firstSquareOver` read so too, `let square; while (true) { if (..) {
+square = ..; break; } n++; } return ..;`, where everything after was
+nested at the `break`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each way out goes on
+to what it did, and the value is the one given.
+
+Held by `test/corpus/loop_value_then_tail.rs` against native Rust, with
+closures made in the loop; mutations `exit-after-nested-loops-unsought`,
+`exit-after-loop-value-unhoisted` and `exit-after-nested-break-unplaced`
+(`mir/tidy/jumps/labels.ts`). `exits-after-reads-loop-names` went: the
+name it let what's moved read, `setInLoop`'s `found`, is now the value's,
+and no case reaches a way out that reads another, which still stays.

@@ -2192,7 +2192,11 @@ A variant with unnamed fields, `Text(String)`, keeps them as `_0`, `_1`:
 ## Loops
 
 `for ... of` is `for ... in`. `while` is `while`. `loop` is
-`while (true)`, and its `break` can carry a value out.
+`while (true)`, and its `break` can carry a value out: `let square = loop
+{ .. break v; }` is `let square;` before the loop, `square = v; break;`
+in it, and what follows after it; a `break 'outer` from a loop inside
+is `break outer;`, as written
+([ADR 0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md)).
 
 ```js
 for (const name of names) console.log(name);
@@ -2264,13 +2268,15 @@ export function countdown(n) {
 
 export function firstSquareOver(limit) {
   let n = 1;
+  let square;
   while (true) {
     if (Math.imul(n, n) >>> 0 > limit) {
-      const square = Math.imul(n, n) >>> 0;
-      return `${n} squared is ${square}`;
+      square = Math.imul(n, n) >>> 0;
+      break;
     }
     n = (n + 1) >>> 0;
   }
+  return `${n} squared is ${square}`;
 }
 
 export function findPair(grid, target) {

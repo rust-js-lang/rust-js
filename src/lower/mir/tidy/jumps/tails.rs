@@ -696,11 +696,14 @@ pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &str, 
 /// way out a `break`, and what it does, after the loop, as written. Not of
 /// what reads a name the loop declares; what it declares is its Rust
 /// block's, named apart from what's beside the loop already.
-pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>) {
+pub(in crate::lower::mir::tidy) fn exits_after(stmts: &mut Vec<Stmt>, breaks: &[(js::Span, js::Span)]) {
     let mut i = 0;
     while i < stmts.len() {
-        if let Some(after) = exit_after(stmts, i) {
+        if let Some((before, after)) = exit_after(stmts, i, breaks) {
             stmts.splice(i + 1..i + 1, after);
+            let n = before.len();
+            stmts.splice(i..i, before);
+            i += n;
         }
         i += 1;
     }

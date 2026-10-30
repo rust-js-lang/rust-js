@@ -120,7 +120,9 @@ pub(super) const STAGES: &[Stage] = &[
             // ends a `break` of the loop: an inner loop's tail that leaves
             // the outer, `if (count > 10) { break bb18; } continue bb1;`, is
             // no way out of its own then, and stays in it (rd141c).
-            pass("exits after", |b, _| js::statement_lists(b, &mut exits_after)),
+            pass("exits after", |b, h| {
+                js::statement_lists(b, &mut |s| exits_after(s, &h.written.breaks))
+            }),
             // A match's tree of tests, its arms reached through a block MIR
             // made: the chain of its arms, now that the loops are made.
             pass("decisions", |b, h| {

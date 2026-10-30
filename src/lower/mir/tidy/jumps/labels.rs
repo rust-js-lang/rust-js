@@ -6,8 +6,13 @@ use crate::lower::mir::tidy::bindings::declared;
 use std::collections::{HashMap, HashSet};
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
-/// way out made a `break`.
-pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
+/// way out made a `break`, and the `let`s it's put after, of what the loop
+/// gave it.
+pub(super) fn exit_after(
+    stmts: &mut [Stmt],
+    i: usize,
+    written_breaks: &[(js::Span, js::Span)],
+) -> Option<(Vec<Stmt>, Vec<Stmt>)> {
     let Stmt {
         kind: StmtKind::While { label, cond, body },
         span,
@@ -39,6 +44,12 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         }
     });
     let end = span.hi;
+    // A loop the program labeled is left from a loop inside it too, `break
+    // 'outer`, which MIR goes on from where it's written, as from a way out
+    // of its own: its label's, where the program wrote one (rd148).
+    let written = (label.as_deref())
+        .filter(|l| !crate::lower::mir::is_block_label(l))
+        .map(str::to_string);
     // The spans of what a block MIR made holds, which has none of its own:
     // where it's written is where they are.
     let held = |s: &Stmt| {
@@ -95,6 +106,7 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         path: &mut Vec<(usize, bool)>,
         found: &mut Vec<(Vec<(usize, bool)>, usize)>,
         at: &dyn Fn(&[Stmt]) -> Option<usize>,
+        deep: bool,
     ) {
         // What's moved, its own ways out too, moves with it.
         let mut end = stmts.len();
@@ -106,17 +118,27 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
             match &stmt.kind {
                 StmtKind::If(_, then, otherwise) => {
                     path.push((i, false));
-                    sites(then, path, found, at);
+                    sites(then, path, found, at, deep);
                     path.pop();
                     if let Some(otherwise) = otherwise {
                         path.push((i, true));
-                        sites(otherwise, path, found, at);
+                        sites(otherwise, path, found, at, deep);
                         path.pop();
                     }
                 }
                 StmtKind::Labeled(_, body) => {
                     path.push((i, false));
-                    sites(body, path, found, at);
+                    sites(body, path, found, at, deep);
+                    path.pop();
+                }
+                StmtKind::While { body, .. }
+                | StmtKind::DoWhile { body, .. }
+                | StmtKind::ForOf { body, .. }
+                | StmtKind::For { body, .. }
+                    if deep =>
+                {
+                    path.push((i, false));
+                    sites(body, path, found, at, deep);
                     path.pop();
                 }
                 _ => {}
@@ -156,14 +178,18 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         (written && after(last)).then_some(k)
     };
     let mut found = Vec::new();
-    sites(body, &mut Vec::new(), &mut found, &at);
+    sites(body, &mut Vec::new(), &mut found, &at, written.is_some());
     let [(path, k)] = found.as_slice() else {
         return None;
     };
     let (path, k) = (path.clone(), *k);
-    // What the loop declares, but what's moved: none of it read there.
     let mut kept = body.clone();
     let moved = at_path(&mut kept, &path).split_off(k);
+    // From a loop inside it, its `break` is of its label. What's moved
+    // has no jump of no label, which would be that inner loop's: it's
+    // written after the outer one, and `unlabeled` takes a label only from
+    // a jump of the innermost loop.
+    let nested = in_loop(&kept, &path);
     // Its `break`, where what's moved ends, its last character's, however
     // deep: what's written before it, a comment, is the moved code's, after
     // the loop, and the `break` is no part of the loop's body as written
@@ -176,20 +202,97 @@ pub(super) fn exit_after(stmts: &mut [Stmt], i: usize) -> Option<Vec<Stmt>> {
         lo: moved_end.saturating_sub(1),
         hi: moved_end,
     };
-    let jump = StmtKind::Break(None).at(at);
+    // From a loop inside, where the program wrote it, `break 'outer;` in
+    // the `if` around, whose comment it's after.
+    let jump = match nested {
+        true => {
+            let around = around_span(&kept, &path);
+            // An `if`'s span is its test's.
+            let written_at = (written_breaks.iter()).find(|(test, _)| !around.is_none() && *test == around);
+            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))
+        }
+        false => StmtKind::Break(None).at(at),
+    };
+    // What the loop declares, but what's moved: none of it read there, but
+    // the value it gives, `let next = loop { .. break v; };`, which MIR
+    // declares where it's given, `const next = v;`, and what's moved reads:
+    // declared before the loop, `let next;`, and given at the `break`.
     let made: HashSet<&str> = declared(&moved).collect();
     let mut own: HashSet<String> = HashSet::new();
     js::statement_lists(&mut kept, &mut |list| own.extend(declared(list).map(str::to_string)));
-    if (own.iter()).any(|name| !made.contains(name.as_str()) && js::mentions_in(&moved, name) > 0) {
-        return None;
+    let mut given: Vec<String> = (own.into_iter())
+        .filter(|name| !made.contains(name.as_str()) && js::mentions_in(&moved, name) > 0)
+        .collect();
+    given.sort();
+    // Its name is apart from what's beside the loop, as the Rust's is,
+    // whose block the loop is in (`exits_after`).
+    let mut before = Vec::new();
+    for name in &given {
+        if !given_at_break(&mut kept, &path, name) {
+            return None;
+        }
+        before.push(StmtKind::Let(name.clone(), None).at(js::Span::NONE));
     }
     let StmtKind::While { body, .. } = &mut stmts[i].kind else {
         unreachable!("matched")
     };
-    let list = at_path(body, &path);
-    list.truncate(k);
-    list.push(jump);
-    Some(moved)
+    *body = kept;
+    at_path(body, &path).push(jump);
+    Some((before, moved))
+}
+
+/// The span of the statement whose list is at `path` in `stmts`.
+fn around_span(stmts: &[Stmt], path: &[(usize, bool)]) -> js::Span {
+    let mut list = stmts;
+    let mut span = js::Span::NONE;
+    for &(at, otherwise) in path {
+        span = list[at].span;
+        list = match &list[at].kind {
+            StmtKind::If(_, _, Some(branch)) if otherwise => branch,
+            StmtKind::If(_, then, _) | StmtKind::Labeled(_, then) => then,
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. } => body,
+            _ => unreachable!("a path"),
+        };
+    }
+    span
+}
+
+/// Whether the list at `path` in `stmts` is in a loop of its own.
+fn in_loop(stmts: &[Stmt], path: &[(usize, bool)]) -> bool {
+    let mut list = stmts;
+    for &(at, otherwise) in path {
+        list = match &list[at].kind {
+            StmtKind::If(_, _, Some(branch)) if otherwise => branch,
+            StmtKind::If(_, then, _) | StmtKind::Labeled(_, then) => then,
+            StmtKind::While { .. } | StmtKind::DoWhile { .. } | StmtKind::ForOf { .. } | StmtKind::For { .. } => {
+                return true;
+            }
+            _ => unreachable!("a path"),
+        };
+    }
+    false
+}
+
+/// Of the loop body `kept`, `const name = v;` in the list at `path`, the
+/// way out's, made `name = v;`. It's the Rust's `let name = loop { ..
+/// break v; }`, declared outside the loop, given at its `break`: nothing in
+/// the loop reads it but what follows there, nor a closure, as `aliases`
+/// gives the binding it's given, `if let Some(next) = ..`, its name only
+/// where nothing else reads that.
+fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &str) -> bool {
+    let list = at_path(kept, path);
+    let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) if n == name);
+    let Some(d) = list.iter().position(declares) else {
+        return false;
+    };
+    let StmtKind::Const(_, value) = std::mem::replace(&mut list[d].kind, StmtKind::Comments) else {
+        unreachable!("found")
+    };
+    list[d].kind = StmtKind::Assign(Expr::var(name), value);
+    true
 }
 
 /// The list at `path` in `stmts`: each step an `if`'s branch, its `else` of
@@ -200,6 +303,10 @@ fn at_path<'a>(stmts: &'a mut Vec<Stmt>, path: &[(usize, bool)]) -> &'a mut Vec<
         list = match &mut list[at].kind {
             StmtKind::If(_, _, Some(branch)) if otherwise => branch,
             StmtKind::If(_, then, _) | StmtKind::Labeled(_, then) => then,
+            StmtKind::While { body, .. }
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. } => body,
             _ => unreachable!("a path"),
         };
     }
