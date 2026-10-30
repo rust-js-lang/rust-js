@@ -18,14 +18,13 @@ function main() {
   const a = shared(hello);
   try {
     const b = shared(hello);
-    const value$1 = a === b;
+    const value = a === b;
     try {
-      const value = $rcClone(a);
-      const value$2 = a === value;
+      const value$1 = $rcClone(a);
       try {
-        console.log(`${value$1} ${value$2} ${(a.value() + b.value()) >>> 0}`);
+        console.log(`${value} ${a === value$1} ${(a.value() + b.value()) >>> 0}`);
       } finally {
-        $rcDrop(value);
+        $rcDrop(value$1);
       }
     } finally {
       $rcDrop(b);

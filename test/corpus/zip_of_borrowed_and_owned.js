@@ -67,9 +67,8 @@ function until(by) {
 
 function main() {
   const items = [[1], [2]];
-  const value = [[10], [20], [30]];
   try {
-    louds(items, value);
+    louds(items, [[10], [20], [30]]);
     console.log(`${$index(items, 0)[0]} ${$index(items, 1)[0]}`);
     const iter = $lazyZip(
       $iter(Array.from("ab")),

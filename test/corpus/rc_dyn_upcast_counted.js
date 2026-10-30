@@ -59,10 +59,8 @@ function main() {
     });
     throw error;
   }
-  const value = n1 === n2;
-  const strong = a.strong;
   try {
-    console.log(`${value} ${strong} ${n1.impl.Base().id(n1.value)}`);
+    console.log(`${n1 === n2} ${a.strong} ${n1.impl.Base().id(n1.value)}`);
   } catch (error) {
     $rcDrop(n2, (value) => {
       value.impl.$drop?.(value.value);
@@ -110,10 +108,10 @@ function main() {
     });
     throw error;
   }
-  const value$1 = n2.strong;
+  const strong = n2.strong;
   let tmp$3;
   try {
-    tmp$3 = [undefined, value$1, show(n2)];
+    tmp$3 = [undefined, strong, show(n2)];
   } catch (error) {
     $rcDrop(b, (value) => {
       value.impl.$drop?.(value.value);

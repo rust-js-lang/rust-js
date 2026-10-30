@@ -214,10 +214,9 @@ function main() {
     }
     throw error;
   }
-  const value$4 = tmp$4.TAG === "Err";
   try {
     console.log(
-      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${value$4}`,
+      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(reading.value)} ${tmp$4.TAG === "Err"}`,
     );
   } catch (error) {
     if (tmp$4.TAG === "Ok") {

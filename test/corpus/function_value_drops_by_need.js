@@ -31,10 +31,9 @@ function main() {
     loudDrop_drop,
   );
   console.log(`${kept.length}`);
-  const value = [[[3], [4]]];
   try {
     const firsts = $collectDropping(
-      $closing($iter(value), (intoIter) => {
+      $closing($iter([[[3], [4]]]), (intoIter) => {
         for (const item of intoIter) {
           for (const item$1 of item) {
             loudDrop_drop(item$1);

@@ -90,11 +90,10 @@ function main() {
   });
   run("extend", () => {
     const a = [[14]];
-    const value = [[15], [16], [17]];
     try {
       $extend(
         a,
-        $closing($iter(value), $dropEach(dDrop_drop)).map((d) => {
+        $closing($iter([[15], [16], [17]]), $dropEach(dDrop_drop)).map((d) => {
           if (d[0] === 16) {
             try {
               throw new Error("16");

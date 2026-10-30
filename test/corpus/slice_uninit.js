@@ -68,10 +68,9 @@ function main() {
   }
   const held = new Array(2).fill(mainConst$1);
   held[1] = "h";
-  const assumeInitRef = held[0];
   try {
     console.log(
-      `[${lists.map((item) => `[${item.join(", ")}]`).join(", ")}] ${$debugStr(assumeInitRef)} ${$debugStr(held[1])}`,
+      `[${lists.map((item) => `[${item.join(", ")}]`).join(", ")}] ${$debugStr(held[0])} ${$debugStr(held[1])}`,
     );
     console.log("end");
   } finally {

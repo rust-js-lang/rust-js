@@ -123,10 +123,9 @@ function main() {
 
   // Its function holds what it drops with it, after its items.
   const tag = "tag";
-  const value$5 = [1, 2];
   try {
     const tagged = Iterator.from(
-      $iter(value$5).flatMap((n) => {
+      $iter([1, 2]).flatMap((n) => {
         console.log(`map ${n} ${tag}`);
         return new Array(2).fill(n);
       }),

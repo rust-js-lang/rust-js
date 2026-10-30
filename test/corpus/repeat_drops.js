@@ -165,9 +165,8 @@ function main() {
       }
       throw error;
     }
-    const value = [["g"]];
     try {
-      $extend(v, value);
+      $extend(v, [["g"]]);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -200,10 +199,10 @@ function main() {
       }
       throw error;
     }
-    const value$1 = [["j"]];
+    const value = [["j"]];
     let tmp$3;
     try {
-      tmp$3 = $iter(value$1);
+      tmp$3 = $iter(value);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

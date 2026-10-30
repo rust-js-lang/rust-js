@@ -1203,9 +1203,8 @@ export function peekableDoubleEndedIterator_tryRfold(
         throw error;
       }
       if (branch.TAG === "Continue") {
-        const _0 = branch._0;
         try {
-          result = f(_0, v);
+          result = f(branch._0, v);
         } catch (error) {
           dropF?.(f);
           throw error;
@@ -1471,9 +1470,8 @@ export function fuseFuseImplI_tryFold(
     return result;
   }
   tmp = false;
-  const value = acc;
   try {
-    result = RTry.fromOutput(value);
+    result = RTry.fromOutput(acc);
   } catch (error) {
     if (tmp$1) {
       dropFold?.(fold);
@@ -8661,9 +8659,8 @@ export function fuseFuseImplI_tryRfold(
     return result;
   }
   tmp = false;
-  const value = acc;
   try {
-    result = RTry.fromOutput(value);
+    result = RTry.fromOutput(acc);
   } catch (error) {
     if (tmp$1) {
       dropFold?.(fold);

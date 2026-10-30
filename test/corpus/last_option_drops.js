@@ -29,10 +29,9 @@ function main() {
   const value = $someValue(noneLast);
   console.log(`${noneLast != null} ${noneLast != null && value == null}`);
 
-  const value$1 = [undefined, [2]];
   try {
     const someLast = $lastDropping(
-      $closing($iter(value$1), (intoIter) => {
+      $closing($iter([undefined, [2]]), (intoIter) => {
         for (const item of intoIter) {
           if (item != null) {
             loudDrop_drop(item);

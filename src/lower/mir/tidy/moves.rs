@@ -41,17 +41,25 @@ pub(super) fn inlined(stmts: &mut Vec<Stmt>, facts: &MoveFacts) {
 /// `stmt`'s temporary read in its place in `rest`, where `moved` says it
 /// may be; or in a block that `rest` starts with and reads it in alone,
 /// `const _183 = f(); bb200: { if (_183) .. }`, which entering runs
-/// nothing before (ADR 0750). Whether it was.
+/// nothing before (ADR 0750). Of a value that can't throw, a `try`'s
+/// too, whose `catch` it can't reach, as `unwinding` made it outside it
+/// for: `const focus = element.focus; try { (focus || ..).call(..) }`
+/// is `try { (element.focus || ..).call(..) }` (rd233). Whether it was.
 fn entered(stmt: &Stmt, rest: &mut [Stmt], facts: &MoveFacts) -> bool {
     if let Some((Moved { at, read, replaced }, _)) = moved(stmt, rest, facts) {
         *read.of_mut(&mut rest[at]) = replaced;
         return true;
     }
-    let (StmtKind::Const(name, _), [first, after @ ..]) = (&stmt.kind, rest) else {
+    let (StmtKind::Const(name, value), [first, after @ ..]) = (&stmt.kind, rest) else {
         return false;
     };
     match &mut first.kind {
         StmtKind::Labeled(_, body) if js::mentions_in(after, name) == 0 => entered(stmt, body, facts),
+        StmtKind::Try(body, caught) | StmtKind::TryCatch(body, _, caught)
+            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>
+        {
+            entered(stmt, body, facts)
+        }
         _ => false,
     }
 }

@@ -162,10 +162,9 @@ function main() {
       }
     }
     const value = $upgrade(weak);
-    const strong = weak.strong;
     try {
       console.log(
-        `${value == null ? "None" : `Some(${value.value})`} ${strong} ${$weakCount(weak)}`,
+        `${value == null ? "None" : `Some(${value.value})`} ${weak.strong} ${$weakCount(weak)}`,
       );
     } finally {
       if (value != null) {
@@ -233,13 +232,13 @@ function main() {
             return result;
           }
           const value$2 = value != null ? map(value) : undefined;
-          const value$3 = branch.strong;
-          const value$4 = branch.weak;
-          const value$5 = $borrow(branch.value.children, true);
+          const strong = branch.strong;
+          const value$3 = branch.weak;
+          const value$4 = $borrow(branch.value.children, true);
           console.log(
-            `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${value$3} ${value$4} ${value$5.length}`,
+            `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${strong} ${value$3} ${value$4.length}`,
           );
-          $unborrow(value$5);
+          $unborrow(value$4);
         } finally {
           $unborrow(value$1);
         }

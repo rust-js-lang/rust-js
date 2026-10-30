@@ -4,6 +4,30 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "try-not-entered",
+    breaks: "a value that can't throw made before a guard's `try` stays held there, `const focus = element.focus; try { (focus || ..).call(..) }`, not read in the `try` where its call is (rd233)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    replace: "            if false =>\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::method of a path reads"],
+  },
+  {
+    name: "try-entered-of-what-throws",
+    breaks: "a value that may throw, made before a guard exists, is read in the guard's `try`, so its panic drops the guard it ran before (rd233)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    replace: "            if js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
+  },
+  {
+    name: "try-entered-read-in-catch",
+    breaks: "a value its `try`'s `catch` reads too is read only in the `try`, so the `catch` reads a variable nothing declares (rd233)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    replace: "            if !value.may_throw() && js::mentions_in(after, name) == 0 =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
+  },
+  {
     name: "stable-value-held-past-target",
     breaks: "a closure given to a setter under a drop guard stays a temporary, `function value() { .. } channel.port1.onmessage = value;`, as the setter's target reads a getter first (#393)",
     file: "src/lower/mir/tidy/moves.rs",

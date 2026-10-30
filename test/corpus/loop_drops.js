@@ -172,9 +172,8 @@ function main() {
     }
     if (tmp != null) {
       const row = tmp;
-      const value = [["x1"], ["x2"]];
       try {
-        iter$1 = $iter(value);
+        iter$1 = $iter([["x1"], ["x2"]]);
       } catch (error) {
         noisyDrop_drop(row);
         for (const item of iter) {

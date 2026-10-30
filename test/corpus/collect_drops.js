@@ -67,9 +67,8 @@ function main() {
         );
         console.log(`none ${none.length} ${fragments.length}`);
 
-        const value = [["m1"], ["m2"]];
         try {
-          const names = value.map((n) => {
+          const names = [["m1"], ["m2"]].map((n) => {
             const result = n[0];
             noisyDrop_drop(n);
             return result;

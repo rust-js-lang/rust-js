@@ -13,15 +13,14 @@ function hello() {
 function main() {
   const a = { value: hello, strong: 1, weak: 0 };
   const b = { value: hello, strong: 1, weak: 0 };
-  const value$1 = a === b;
+  const value = a === b;
   try {
     try {
-      const value = $rcClone(a);
-      const value$2 = a === value;
+      const value$1 = $rcClone(a);
       try {
-        console.log(`${value$1} ${value$2} ${(a.value() + b.value()) >>> 0}`);
+        console.log(`${value} ${a === value$1} ${(a.value() + b.value()) >>> 0}`);
       } finally {
-        $rcDrop(value);
+        $rcDrop(value$1);
       }
     } finally {
       $rcDrop(b);

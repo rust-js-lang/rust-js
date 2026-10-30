@@ -37,9 +37,8 @@ function main() {
   const firsts = Array.from($rev($closing($iter(x), $dropEach(loudDrop_drop))).take(1));
   console.log(`${firsts.length}`);
   console.log("end");
-  const value = [[10], [11], [12], [13]];
   try {
-    const held = $iter(value);
+    const held = $iter([[10], [11], [12], [13]]);
     let loud;
     try {
       loud = $next(held);

@@ -451,7 +451,8 @@ pub fn either(a: f64) -> f64 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n");
   expect(js).toContain("const fallback = globalThis.counted();\n  return a || fallback;");
-  expect(js).toContain("    (focus || HTMLElement.prototype.focus).call(element, focusOptions);\n  } finally {\n    globalThis.done();\n  }");
+  // The method read in the guard's \`try\`, where its call is (rd233).
+  expect(js).toContain("  try {\n    (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n  } finally {\n    globalThis.done();\n  }");
   const calls: unknown[] = [];
   const g = globalThis as Record<string, unknown>;
   const saved = g.HTMLElement;

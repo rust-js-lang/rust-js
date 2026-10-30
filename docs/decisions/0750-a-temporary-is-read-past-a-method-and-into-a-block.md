@@ -1,7 +1,7 @@
 # 0750. A temporary is read past a method, and in the block after it
 
 Status: Accepted. Extends [0689](0689-a-moves-decision-is-apart-from-the-move.md):
-two more places `moves.rs` reads a temporary in its place. Amended below: a value that's the same anywhere is read past what a target does (#393).
+two more places `moves.rs` reads a temporary in its place. Amended below: a value that's the same anywhere is read past what a target does (#393); one that can't throw is read in the `try` after it (rd233).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 JS runs the same code in the same order.
@@ -179,3 +179,37 @@ Four corpus snapshots read their value in place
 given to a setter under a drop guard is written where it's given", which
 runs it, the getter, then the guard's drop, then the closure, and the
 mutation `stable-value-held-past-target`.
+
+## Amendment: a value that can't throw is read in the `try` after it (rd233)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: entering a `try` runs nothing, and a value that can't throw
+can't reach its `catch` or end its body early, so it gives the same, in
+the same order, inside the `try` as before it.
+
+React DOM's setFocusIfFocusable calls `(element.focus ||
+HTMLElement.prototype.focus).call(element, focusOptions)` while a guard
+that removes its listener is live. Each of MIR's calls is in the guard's
+`try`, but `unwinding` writes what only makes values before it, as it
+needs no `catch`: `element.focus`, which MIR held apart from the class
+it's `||` of, became `const focus = element.focus;` before the `try`,
+which `inlined` read nothing into, as `entered` went into a labeled block
+only.
+
+- **A temporary the `try` after it reads, and neither its `catch` or
+  `finally` nor what follows does, is read in the `try`**, as `moved` says
+  of its body, where its value can't throw (`Expr::may_throw`, the one
+  answer `unwinding` asks too): `try { (element.focus ||
+  HTMLElement.prototype.focus).call(element, focusOptions); } finally {
+  .. }`. One that may throw stays where it was made, before the guard it
+  ran before, which a panic in it doesn't drop: `const value =
+  made(fail); try { return after(value); } finally { .. }`.
+- Twenty-six corpus snapshots and std's `iter.js` read a value in its
+  `try` (`const count = counter(5); try { .. count .. }`, `const _0 =
+  branch._0; try { result = f(_0, v); }`), where nothing else changed.
+- Held by `test/lowering-is-function.test.ts`'s "js::method of a path
+  reads its method as a value" (its guarded form), the corpus case
+  `value_read_in_a_guards_try` (a panic in a value made before its guard,
+  and a value the `finally` drops, run natively), and the mutations
+  `try-not-entered`, `try-entered-of-what-throws` and
+  `try-entered-read-in-catch`.

@@ -502,13 +502,12 @@ function held(n) {
               }, 0)}`,
             );
           }
-          const count = counter(5);
           try {
             const stepped = $held(
               $stepBy(
                 $closing(
                   $iterator(
-                    count,
+                    counter(5),
                     countIterator_next,
                     false,
                     undefined,
@@ -548,13 +547,12 @@ function held(n) {
                     .reduce((k) => (k + 1) | 0, 0)}`,
                 );
               }
-              const value = counter(5);
               try {
                 const stepped = $held(
                   $stepBy(
                     $closing(
                       $iterator(
-                        value,
+                        counter(5),
                         countIterator_next,
                         false,
                         undefined,

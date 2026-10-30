@@ -385,9 +385,8 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const value$2 = shared.value;
   try {
-    console.log(`[${value$2.join(", ")}] ${count(shared)}`);
+    console.log(`[${shared.value.join(", ")}] ${count(shared)}`);
   } catch (error) {
     $rcDrop(other$1);
     $rcDrop(shared);
@@ -423,7 +422,7 @@ function main() {
     throw error;
   }
   const owned = tmp$6;
-  const value$3 = other$1.value;
+  const value$2 = other$1.value;
   let arg$1;
 
   try {
@@ -444,7 +443,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`[${owned.join(", ")}] [${value$3.join(", ")}] ${arg$1}`);
+    console.log(`[${owned.join(", ")}] [${value$2.join(", ")}] ${arg$1}`);
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -605,12 +604,12 @@ function main() {
     throw error;
   }
   const defaulted = { value: 0, strong: 1, weak: 0 };
-  const value$4 = { value: 5, strong: 1, weak: 0 };
+  const value$3 = { value: 5, strong: 1, weak: 0 };
   let arg$2;
   try {
-    arg$2 = $cmp(value$4.value, defaulted.value) > 0;
+    arg$2 = $cmp(value$3.value, defaulted.value) > 0;
   } catch (error) {
-    $rcDrop(value$4);
+    $rcDrop(value$3);
     $rcDrop(defaulted);
     $rcDrop(owner, (value) => {
       $weakDrop(value.me);
@@ -630,7 +629,7 @@ function main() {
     throw error;
   }
   console.log(`${defaulted.value} ${arg$2}`);
-  $rcDrop(value$4);
+  $rcDrop(value$3);
   let w;
   try {
     w = $downgrade(defaulted);

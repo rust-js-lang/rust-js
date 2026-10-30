@@ -48,13 +48,11 @@ function main() {
     }
     const y = third($iter([["p"], ["q"], ["r"]]), $dropEach(noisyDrop_drop));
     console.log(`got ${y?.[0] ?? "none"}`);
-    const value = [["s"]];
     try {
-      const z = third($iter(value), $dropEach(noisyDrop_drop));
+      const z = third($iter([["s"]]), $dropEach(noisyDrop_drop));
       console.log(`none ${z == null}`);
-      const value$1 = [["e"], ["f"], ["g"]];
       try {
-        const value = $iter(value$1);
+        const value = $iter([["e"], ["f"], ["g"]]);
         let f;
         try {
           f = $findDropping($lent(value), (n) => n[0] === "f", noisyDrop_drop, false);
@@ -71,9 +69,12 @@ function main() {
           console.log(`found ${f?.[0] ?? "none"}`);
           const g = named($iter([["h"], ["i"]]), "i", $dropEach(noisyDrop_drop));
           console.log(`found ${g?.[0] ?? "none"}`);
-          const value$1 = [["j"], ["kk"], ["l"]];
           try {
-            const [kept, rest] = $partition(value$1, (n) => $byteLen(n[0]) === 1, noisyDrop_drop);
+            const [kept, rest] = $partition(
+              [["j"], ["kk"], ["l"]],
+              (n) => $byteLen(n[0]) === 1,
+              noisyDrop_drop,
+            );
             console.log(`${kept.length} ${rest.length}`);
             console.log("end");
             try {

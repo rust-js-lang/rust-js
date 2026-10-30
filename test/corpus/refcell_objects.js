@@ -83,10 +83,9 @@ function main() {
   const reading = $borrow(totals, true);
   try {
     const tryBorrowMut = $tryBorrow(totals, true);
-    const value = tryBorrowMut.TAG === "Err";
     try {
       console.log(
-        `${reading.sum} ${value} RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} }`,
+        `${reading.sum} ${tryBorrowMut.TAG === "Err"} RefCell { value: ${$showBorrowed(totals, (value) => totalsDebug_fmt(value), true)} }`,
       );
     } finally {
       if (tryBorrowMut.TAG === "Ok") {

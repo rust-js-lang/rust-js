@@ -10,15 +10,14 @@ function main() {
   const add = (x) => (x + 1) >>> 0;
   const a = { value: add, strong: 1, weak: 0 };
   const b = { value: add, strong: 1, weak: 0 };
-  const value$1 = a === b;
+  const value = a === b;
   try {
     try {
-      const value = $rcClone(b);
-      const value$2 = b === value;
+      const value$1 = $rcClone(b);
       try {
-        console.log(`${value$1} ${value$2} ${(a.value(1) + b.value(2)) >>> 0}`);
+        console.log(`${value} ${b === value$1} ${(a.value(1) + b.value(2)) >>> 0}`);
       } finally {
-        $rcDrop(value);
+        $rcDrop(value$1);
       }
     } finally {
       $rcDrop(b);

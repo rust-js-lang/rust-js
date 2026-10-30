@@ -84,9 +84,8 @@ function main() {
   made(noisyDefault, noisyDrop_drop);
   made({ default: () => 0 });
   const kept = handOn(["b"], 2);
-  const value = [["c"], ["d"]];
   try {
-    const copy = first(value, { clone: (value) => value }, noisyDrop_drop);
+    const copy = first([["c"], ["d"]], { clone: (value) => value }, noisyDrop_drop);
     try {
       relay(["e"], noisyDrop_drop);
       relay("text");

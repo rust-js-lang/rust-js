@@ -68,9 +68,8 @@ function lastSquare(n) {
 
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const value = [1, 2];
   const pad = {
-    iter: iterator_fuse($iter(value), { next: $next }, true),
+    iter: iterator_fuse($iter([1, 2]), { next: $next }, true),
     min: 4,
     filler: (i) => (i * 10) >>> 0,
   };
@@ -87,10 +86,10 @@ function main() {
       intoIterExactSizeIterator,
     ).join(", ")}]`,
   );
-  const value$1 = lastSquare(5);
-  const value$2 = lastSquare(1);
+  const value = lastSquare(5);
+  const value$1 = lastSquare(1);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(
     `${Counted.doubledLen({ inner: $iter([1, 2, 3]) }, { next: $next }, intoIterExactSizeIterator, {

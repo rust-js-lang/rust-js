@@ -14,11 +14,10 @@ function shown(v) {
 }
 function made(s, flag) {
   const g = 1;
-  const len = flag ? $byteLen(s) : 0;
   try {
     return shown({
       label: s,
-      n: len,
+      n: flag ? $byteLen(s) : 0,
     });
   } finally {
     console.log(`drop ${g}`);
