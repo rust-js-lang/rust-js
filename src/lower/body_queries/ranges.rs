@@ -1023,6 +1023,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     // It never goes on: nothing it learns is known after.
                     let mut gone = known.clone();
                     self.block(otherwise, &mut gone);
+                    // What goes on has its item, `let Some(x) = v.get(i) else
+                    // { break };`: `i` below a length, as of a `while let`'s.
+                    if let Some(init) = initializer
+                        && present::some_pattern(self.tcx, pattern)
+                        && let Some(var) = present::present_index(self.tcx, self.thir, init, self.bodies)
+                    {
+                        present::below_most(var, self.volatile.contains(&var), known);
+                    }
                 }
                 // What it's made of whose cells it then reaches (ADR 0847).
                 let made_of: Vec<LocalVarId> = match (initializer, else_block) {

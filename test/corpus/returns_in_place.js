@@ -95,7 +95,7 @@ function firstEven(values) {
     if (v == null) {
       return { TAG: "Err", _0: "Empty" };
     }
-    i = (i + 1) >>> 0;
+    i++;
     const result = parse(v);
     if (result.TAG === "Err") {
       return result;

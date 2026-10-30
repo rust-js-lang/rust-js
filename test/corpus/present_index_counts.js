@@ -43,6 +43,20 @@ function summed(items) {
   return total;
 }
 
+function untilZero(counts) {
+  let i = 0;
+  let total = 0;
+  let n;
+  while ((n = counts[i]) != null) {
+    if (n === 0) {
+      break;
+    }
+    total = (total + n) >>> 0;
+    i++;
+  }
+  return total;
+}
+
 function skipped(items, i) {
   const item = items[i];
   return item ?? (i + 1) >>> 0;
@@ -55,6 +69,7 @@ function main() {
   const arg = log.join(", ");
   console.log(`${flushed} ${arg}`);
   console.log(`${summed([1n, 2n, 3n, 18446744073709551609n])} ${summed([])}`);
+  console.log(`${untilZero([3, 4, 0, 5])} ${untilZero([1, 2])}`);
   console.log(`${skipped([7], 0)} ${skipped([7], 5)} ${skipped([7], 4294967295)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "let-else-present-index-unknown",
+    breaks: "past `let Some(&n) = counts.get(i) else { break };` the index isn't known below a length, so `i += 1` wraps, `i = (i + 1) >>> 0`, where a `while let`'s is `i++` (ADR 0881)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    if let Some(init) = initializer\n                        && present::some_pattern(self.tcx, pattern)\n",
+    replace: "                    if let Some(init) = initializer\n                        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^present_index_counts.rs$"],
+    snapshots: true,
+  },
+  {
     name: "insert-index-below-length",
     breaks: "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
     file: "src/lower/body_queries/ranges.rs",

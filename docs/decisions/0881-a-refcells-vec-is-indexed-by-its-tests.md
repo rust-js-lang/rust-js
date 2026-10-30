@@ -125,6 +125,19 @@ against native Rust, and the mutations `present-index-unknown`,
 `present-not-through-a-closure` and `present-below-most-itself`
 (`body_queries/ranges/present.ts`).
 
+## Amendment: past a `let … else` of an item, its index counts on too (2026-10-30)
+
+`loop { let Some(&n) = counts.get(i) else { break }; ..; i += 1; }`
+printed `i = (i + 1) >>> 0` where the same loop as a `while let` printed
+`i++`: the range walk read the item's test only of a `Let` expression,
+an `if let`'s or `while let`'s, not of a `let` statement's pattern whose
+`else` never goes on. Now what follows a `let … else` of a `Some`
+pattern of `v.get(i)` has `i` below a length, as a `while let`'s body
+does (`ranges.rs`, `stmt`; `present::below_most`). Case N: the wrap
+can't happen there. returns_in_place's `firstEven` is `i++` too. `present_index_counts.rs`'s `until_zero` runs it
+against native Rust; mutation `let-else-present-index-unknown`
+(`body_queries/ranges.ts`).
+
 ## Amendment: a cell an `Rc` holds is read through it
 
 A `RefCell` shared by its `Rc`, `listeners: Rc<RefCell<Vec<&dyn Fn()>>>`,

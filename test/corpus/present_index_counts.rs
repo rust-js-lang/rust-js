@@ -1,7 +1,8 @@
 // An index an item is there at counts on without its wrap (ADR 0881,
 // amended): `while let Some(x) = v.get(i)`, of a thread-local's
 // `with_borrow` too, as React's ReactPostPaintCallback flushes its
-// callbacks; where it isn't there, `i + 1` still wraps.
+// callbacks, and past a `let Some(x) = v.get(i) else { break };`; where
+// it isn't there, `i + 1` still wraps.
 
 use std::cell::RefCell;
 
@@ -44,6 +45,20 @@ fn summed(items: &[u64]) -> u64 {
     total
 }
 
+fn until_zero(counts: &[u32]) -> u32 {
+    let mut i = 0;
+    let mut total = 0;
+    loop {
+        let Some(&n) = counts.get(i) else { break };
+        if n == 0 {
+            break;
+        }
+        total += n;
+        i += 1;
+    }
+    total
+}
+
 fn skipped(items: &[u32], i: usize) -> usize {
     if let Some(&item) = items.get(i) {
         item as usize
@@ -60,5 +75,6 @@ fn main() {
     let flushed = flush(16.5);
     LOG.with_borrow(|log| println!("{flushed} {}", log.join(", ")));
     println!("{:?} {:?}", summed(&[1, 2, 3, u64::MAX - 6]), summed(&[]));
+    println!("{} {}", until_zero(&[3, 4, 0, 5]), until_zero(&[1, 2]));
     println!("{} {} {}", skipped(&[7], 0), skipped(&[7], 5), skipped(&[7], usize::MAX));
 }
