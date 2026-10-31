@@ -32,6 +32,11 @@ pub(super) enum Kind {
     /// What a function says is one, `isValidElement(v)`: its JS path, a
     /// JS object type's `#[rust_js::test]`. An object no other kind is.
     Test(String),
+    /// A struct the program declares one of its fields tells apart,
+    /// `#[rust_js::test]`: an object whose member, by its key, is of a
+    /// kind, `Array.isArray(child.children)`, as TypeScript narrows a union
+    /// of object types (rd291). An object no other kind is.
+    Member(String, Box<Kind>),
     /// A variant without fields, its name's string, `"blocking"`.
     Literal(String),
     /// A variant without fields that's `undefined`, `#[rust_js::undefined]`,
@@ -63,7 +68,7 @@ impl Kind {
             Kind::Object => Some("object"),
             Kind::Literal(_) => Some("string"),
             Kind::Undefined => Some("undefined"),
-            Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Null => None,
+            Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Null => None,
         }
     }
 
@@ -81,6 +86,7 @@ impl Kind {
             Kind::Array => "an array".into(),
             Kind::Class(name, _) => format!("a `{name}`"),
             Kind::Test(test) => format!("what `{test}` says is one"),
+            Kind::Member(key, kind) => format!("an object whose `{key}` is {}", kind.describe()),
             Kind::Object => "an object".into(),
             Kind::Literal(name) => format!("the string {name:?}"),
             Kind::Null => "`null`".into(),
@@ -218,7 +224,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// object, the array a `RefCell<Vec<T>>` is (ADRs 0844, 0863): of one
     /// that's a box where the crate's code has it, `{ value }` or counted,
     /// refused once that's known (`held_payloads`).
-    fn untagged_payload(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub(super) fn untagged_payload(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         let ty = ty.peel_refs();
         let ty = ty.boxed_ty().unwrap_or(ty);
         if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {
@@ -326,11 +332,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => Some(Kind::Function),
             ty::Dynamic(predicates, ..) if predicates.principal_def_id().is_some_and(fn_trait) => Some(Kind::Function),
             // A struct of fields is an object, and of a tuple's an array (ADR 0033).
-            ty::Adt(adt, _) if adt.is_struct() && !self.is_std(adt.did()) => match adt.non_enum_variant().ctor_kind() {
-                None => Some(Kind::Object),
-                Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
-                Some(_) => None,
-            },
+            ty::Adt(adt, args) if adt.is_struct() && !self.is_std(adt.did()) => {
+                match adt.non_enum_variant().ctor_kind() {
+                    // One a field of which tells it apart, an object whose
+                    // member is of that field's kind (rd291).
+                    None => Some(
+                        match (adt.non_enum_variant().fields.iter()).find(|f| bindings::is_test_field(self.tcx, f.did))
+                        {
+                            Some(field) => Kind::Member(
+                                bindings::field_key(self.tcx, field),
+                                Box::new(self.untagged_kind(field.ty(self.tcx, args).skip_normalization())?),
+                            ),
+                            None => Kind::Object,
+                        },
+                    ),
+                    Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
+                    Some(_) => None,
+                }
+            }
             // A fieldless enum is its variant's name (ADR 0013), a string; a
             // numbered one its number (ADR 0722).
             ty::Adt(adt, _)
@@ -364,7 +383,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(kind) = unit_kind(self.tcx, variant) {
             return Some(kind);
         }
-        self.untagged_kind(variant.fields.iter().next()?.ty(self.tcx, args).skip_normalization())
+        let kind = self.untagged_kind(variant.fields.iter().next()?.ty(self.tcx, args).skip_normalization())?;
+        // A member another variant's object has too tells nothing apart
+        // here: it's an object, what the others aren't, React's `Container
+        // | Instance` an instance where its `rootID` isn't a string (rd291).
+        let Kind::Member(key, _) = &kind else { return Some(kind) };
+        let adt = self.tcx.adt_def(self.tcx.parent(variant.def_id));
+        let has_key = |v: &VariantDef| {
+            let payload = v
+                .fields
+                .iter()
+                .next()
+                .map(|f| self.untagged_payload(f.ty(self.tcx, args).skip_normalization()));
+            matches!(payload.map(|ty| *ty.kind()), Some(ty::Adt(s, _)) if s.is_struct()
+                && s.non_enum_variant().fields.iter().any(|f| bindings::field_key(self.tcx, f) == *key))
+        };
+        match adt.variants().iter().any(|v| v.def_id != variant.def_id && has_key(v)) {
+            true => Some(Kind::Object),
+            false => Some(kind),
+        }
     }
 
     /// A `From` into an untagged enum, or `into()` to one: the trait's method,
@@ -460,11 +497,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             };
         }
         let test = |kind: &Kind| self.kind_test(kind, value, class);
+        // Of an enum each variant of which is a struct, an object, a plain
+        // one's is only what tells the others apart, `!Array.isArray(
+        // child.children)`: that it's an object holds of each (rd291).
+        let objects = (adt.variants().iter()).all(|v| {
+            matches!(
+                self.untagged_variant_kind(v, args),
+                Some(Kind::Object | Kind::Member(..))
+            )
+        });
         (self.union_parts(adt, args, variants, present).iter())
             .map(|&(i, ref own, ref narrower)| {
-                let tested = narrower.iter().fold(test(own), |all, kind| {
-                    Expr::bin(Op::And, all, Expr::unary(UnaryOp::Not, test(kind)))
-                });
+                let not = |kind: &Kind| Expr::unary(UnaryOp::Not, test(kind));
+                let tested = match narrower.split_first() {
+                    Some((first, rest)) if objects && *own == Kind::Object => rest
+                        .iter()
+                        .fold(not(first), |all, kind| Expr::bin(Op::And, all, not(kind))),
+                    _ => narrower
+                        .iter()
+                        .fold(test(own), |all, kind| Expr::bin(Op::And, all, not(kind))),
+                };
                 at(i, tested)
             })
             .reduce(|either, test| Expr::bin(Op::Or, either, test))
@@ -557,7 +609,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {
-                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,
+                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,
                 (Kind::Object, Kind::Null) => !present,
                 (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),
                 _ => false,
@@ -586,6 +638,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
+            Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),
             Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
             // `null` and `undefined` by `===`, as each is one value: never
             // `== null`, which is both.
@@ -869,6 +922,21 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                     );
                 }
                 seen.push((kind, variant.name.to_string()));
+            }
+            // A variant told apart by a member is told by its kind (rd291).
+            for variant in adt.variants() {
+                let Some(Kind::Member(key, told)) = recognition.untagged_variant_kind(variant, args) else {
+                    continue;
+                };
+                if matches!(*told, Kind::Object | Kind::Member(..) | Kind::Null | Kind::Undefined) {
+                    error(
+                        tcx.def_span(variant.def_id),
+                        format!(
+                            "an untagged enum's `{}` is told apart by its `{key}`, `#[rust_js::test]`, which holds a string, a number, a `bool`, an array or a class (rd291)",
+                            variant.name
+                        ),
+                    );
+                }
             }
         }
         if let Some(message) = untagged_from_misuse(tcx, def_id.to_def_id()) {

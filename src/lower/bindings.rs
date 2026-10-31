@@ -932,6 +932,16 @@ pub(super) fn test_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     Some(test.to_string())
 }
 
+/// Whether `field`, a struct's, tells its struct apart in an untagged
+/// enum, a bare `#[rust_js::test]`: the struct is an object whose
+/// `field` is of its kind, `Array.isArray(child.children)` (rd291).
+pub(super) fn is_test_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
+    tcx.get_attrs_by_path(field, &path)
+        .next()
+        .is_some_and(|attr| attr.value_str().is_none())
+}
+
 /// A JS object type's class, as `instanceof` names it: its
 /// `#[rust_js::name = ".."]`, `WebAssembly.Module` of `WebAssemblyModule`, or its name.
 pub(super) fn class_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {

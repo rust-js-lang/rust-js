@@ -794,6 +794,17 @@ export function size(input) {
   tested as that kind. A `match` of three cases or more of kinds `typeof`
   tells is a `switch (typeof value)`, as a `match` of constants is a
   `switch` ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
+  Two structs, each an object, are told apart by a member one declares,
+  `#[rust_js::test]` on its field, of a kind JS tells: React's noop
+  renderer's `Instance | TextInstance` by `children`, a `Vec`,
+  `Array.isArray(child.children)`, its `Container | Instance` by
+  `rootID`, a `String`, `typeof parent.rootID === "string"`, as TypeScript
+  narrows a union of object types. A struct whose member another
+  variant's struct has too is told as what the others aren't, as that
+  `Instance` beside a `Container` is; of an enum of structs alone, a
+  plain one's test is only what the others aren't, `!Array.isArray(child
+  .children)`
+  ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md)).
   A `match` whose arms are alike in JS, each calling its member's method
   of the same name, is that one call, no test: an `IntersectionObserver |
   ResizeObserver`'s `Observer::Intersection(o) => o.observe(child),

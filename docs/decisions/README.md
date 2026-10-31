@@ -233,7 +233,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0211 `Option::as_deref` of a `String` or a `Vec` is the option](0211-option-as-deref.md)
 - [0212 A props field's default is where JS takes them apart](0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](0213-props-as-written.md)
-- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`)*
+- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`; extended by 1036: a struct told by a member it declares)*
 - [0215 The webapi crate's unions are untagged enums](0215-webapi-unions.md)
 - [0216 A slice's `concat` of parts written out is an array of them, spread](0216-concat-spread.md)
 - [0217 `enumerate()` then a callback's method is the method, given each index](0217-enumerate-index.md)
@@ -817,6 +817,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1033 A binding's path may quote a key, which a minifier keeps](1033-a-bindings-path-may-quote-a-key.md) *(rd273)*
 - [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [1035 A trait of classes is each class's prototype's](1035-a-trait-of-classes-is-each-classs-prototypes.md) *(rd283)*
+- [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
