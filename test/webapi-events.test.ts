@@ -20,6 +20,8 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   // A shared callback is the function itself, made once, not a copy of it.
   expect(js).toContain('function listener(e) {\n    globalThis.record(e.clientX);\n  }\n  button.addEventListener("click", listener);\n  button.removeEventListener("click", listener);');
   expect(js).toContain('button.removeEventListener("click", listener, true);');
+  // A named `fn` is the function itself, added and removed.
+  expect(js).toContain('button.addEventListener("custom", onCustom);\n  button.removeEventListener("custom", onCustom);');
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
   // A listener JS gave is passed as it is, and called as JS would (rd185).
   expect(js).toContain('export function givenRemoved(button, given) {\n  button.addEventListener("custom", given);\n  button.removeEventListener("custom", given);\n}');
@@ -68,10 +70,18 @@ test("event methods keep target types and retained callback lifetimes", () => {
     ['webapi::event_target::add_event_listener(button, Click, |_| {});', 'cannot find function `add_event_listener`'],
     ['button.add_listener(Click, |_| {});', 'no method named `add_listener`'],
     ['button.add_event_listener(Click, |e| webapi::event::prevent_default(e), None);', 'cannot find function `prevent_default`'],
-    // Removal finds the same function, so a closure made for it, a new one,
-    // never removes anything: only a shared callback, `listener(..)`'s, can.
-    ['button.remove_event_listener(Click, |_: &PointerEvent| {}, None);', 'is not a listener added before'],
-    ['button.remove_event_listener_named("custom", |_: &Event| {}, None);', 'is not a listener added before'],
+    // Removal finds the same function, so a closure written in place, a new
+    // one, never removes anything, by value or borrowed, which rustc makes
+    // `'static` as it captures nothing: Scala.js's listener leak, refused.
+    // A shared one, `listener(..)`'s, or a named `fn` can (ADR 1021).
+    ['button.remove_event_listener(Click, |_: &PointerEvent| {}, None);', 'a closure written in place is a new function, which `remove_event_listener` never finds'],
+    ['button.remove_event_listener_named("custom", |_: &Event| {}, None);', 'a closure written in place is a new function'],
+    ['let n = 1; button.remove_event_listener_named("custom", move |_: &Event| record(n), None);', 'a closure written in place is a new function'],
+    ['let held = String::new(); button.remove_event_listener_named("custom", move |_: &Event| record(held.len() as i32), None);', '`std::string::String: std::marker::Copy` is not satisfied'],
+    ['button.remove_event_listener(Click, &|_: &PointerEvent| {}, None);', 'a closure written in place is a new function'],
+    ['button.remove_event_listener_named("custom", &|e: &Event| e.prevent_default(), Some(&true));', 'hold the function `webapi::listener(..)` makes, or pass a named `fn`'],
+    ['button.remove_event_listener_named("custom", webapi::EventListenerOrEventListenerObject::EventListener(&|_| {}), None);', 'a closure written in place is a new function'],
+    ['fn off(button: &HTMLButtonElement, l: impl webapi::IntoAddedEventListener<Event>) { button.remove_event_listener_named("custom", l, None); } off(button, &|_: &Event| {});', 'a closure written in place is a new function'],
     // An event handler property's setter takes the same union, a handler
     // borrowed, which JS keeps: a closure owning what it would drop isn't
     // one, and a JS function of another argument isn't either (rd192).
@@ -95,7 +105,7 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
   const js = compileEvents();
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedCaptureRemoved: [] })) {
+    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedFnRemoved: [], namedCaptureRemoved: [] })) {
       const page = await browser.newPage();
       await page.setContent('<button id="button">Test</button>');
       const result = await page.evaluate(async ({ js, name }) => {

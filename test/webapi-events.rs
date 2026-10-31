@@ -116,6 +116,16 @@ pub fn named_removed(button: &HTMLButtonElement) {
     button.remove_event_listener_named("custom", callback, None);
 }
 
+fn on_custom(_: &Event) {
+    record(3);
+}
+
+// A named `fn` is the function itself, the one added and removed.
+pub fn named_fn_removed(button: &HTMLButtonElement) {
+    button.add_event_listener_named("custom", on_custom, None);
+    button.remove_event_listener_named("custom", on_custom, None);
+}
+
 pub fn named_capture_removed(button: &HTMLButtonElement) {
     let callback = listener::<Event>(|_| record(1));
     button.add_event_listener_named("custom", callback, Some(&true));

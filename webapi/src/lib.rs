@@ -101957,13 +101957,15 @@ impl<E> IntoEventListener<E> for EventListenerOrEventListenerObject {}
 impl<E> IntoEventListener<E> for &'static EventListenerObject {}
 
 /// What a listener parameter of `remove_event_listener` takes: one added
-/// before, as it was, `listener(..)`'s shared function, a reference to a
-/// function of the event of any lifetime, or a listener JS gave (ADR 1021).
-/// A closure made for the call is a new function, which removes nothing.
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a listener added before", note = "removal finds the listener added: a shared one, `listener(..)`'s, or one JS gave, an `EventListenerOrEventListenerObject`")]
+/// before, as it was, `listener(..)`'s shared function, a named `fn` of
+/// the event, or a listener JS gave (ADR 1021). A closure written in place
+/// is a new function, which removes nothing: rust-js refuses it
+/// (`rust_js::given_before`).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a listener added before", note = "removal finds the listener added: a shared one, `listener(..)`'s, a named `fn`, or one JS gave, an `EventListenerOrEventListenerObject`")]
 #[cfg_attr(rust_js, rust_js::types = "EventListenerOrEventListenerObject")]
+#[cfg_attr(rust_js, rust_js::given_before)]
 pub trait IntoAddedEventListener<E>: listeners::Sealed<E> {}
-impl<E: 'static, F: ?Sized + Fn(&'static E) + 'static> IntoAddedEventListener<E> for &'static F {}
+impl<E: 'static, F: Fn(&'static E) + Copy + 'static> IntoAddedEventListener<E> for F {}
 impl<E> IntoAddedEventListener<E> for EventListenerOrEventListenerObject {}
 impl<E> IntoAddedEventListener<E> for &'static EventListenerObject {}
 

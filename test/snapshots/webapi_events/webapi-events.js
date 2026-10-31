@@ -124,6 +124,16 @@ export function namedRemoved(button) {
   button.removeEventListener("custom", callback);
 }
 
+function onCustom() {
+  globalThis.record(3);
+}
+
+// A named `fn` is the function itself, the one added and removed.
+export function namedFnRemoved(button) {
+  button.addEventListener("custom", onCustom);
+  button.removeEventListener("custom", onCustom);
+}
+
 export function namedCaptureRemoved(button) {
   function callback() {
     globalThis.record(1);

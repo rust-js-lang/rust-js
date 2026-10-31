@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 mod effects;
 mod forms;
+mod given_before;
 mod given_names;
 mod imports;
 mod nullable;
@@ -24,6 +25,7 @@ pub(super) use effects::{
     cannot_throw, gives_back, gives_plain_data, iterates_receiver, runs_nothing, runs_only_given,
 };
 pub(super) use forms::{Asked, JsForm, js_form};
+pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, stem_binding};

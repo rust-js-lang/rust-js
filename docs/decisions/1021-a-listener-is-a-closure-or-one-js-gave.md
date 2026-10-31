@@ -1,6 +1,6 @@
 # 1021. A listener is a closure or one JS gave, each as it is
 
-Status: Accepted (the user's decision, rd185); amended (rd192): an event handler property's setter takes a union too. Amends
+Status: Accepted (the user's decision, rd185); amended (rd192): an event handler property's setter takes a union too; amended (2026-10-31, the user's decision): a closure written in place for removal is refused. Amends
 [0282](0282-event-listener-methods.md) (one method API for event
 listeners): a listener parameter is TypeScript's
 `EventListenerOrEventListenerObject`, a union, so a closure's parameter
@@ -233,3 +233,50 @@ let attached = EventListenerOrEventListenerObject::EventListener(attached);
 `listener(..)` makes a JS-owned function of a closure; `with_this(..)` one
 of a closure given its `this`: each the one way for what it's given. Held
 by `test/webapi-events.test.ts`'s `kept_wrapped`, the same JS.
+
+## Amendment: a closure written in place for removal is refused, `#[rust_js::given_before]` (the user's decision, 2026-10-31)
+
+This reverses an earlier call. Removal took any `&'static` function of
+the event, so a closure written in place and borrowed,
+`button.remove_event_listener(Click, &|e: &PointerEvent| .., None)`,
+compiled: rustc makes a closure of no captures `'static`. It's a new
+function, which `removeEventListener` never finds, so it removed nothing,
+and the listener added stayed: Scala.js's well-known listener leak. The
+user's decision: refuse it.
+
+Removal's trait says what it takes, **`#[rust_js::given_before]`**: a
+value JS finds by its identity among those it was given before. rust-js
+refuses a closure written in place where a parameter so bound is given,
+by value, borrowed or reborrowed, or the one field of what's made there,
+`EventListener(&|_| {})`, of any call, a binding's or the program's own
+function whose parameter's bound is the trait:
+
+```text
+error: rust-js: a closure written in place is a new function, which `remove_event_listener` never finds among those given before
+help: hold the function `webapi::listener(..)` makes, or pass a named `fn`, and give the same one to both (ADR 1021)
+```
+
+No type can say it: a closure and a named `fn` are each a type of its
+own that implements `Fn`, and rustc lets no impl tell them apart. So the
+trait's impl takes **any `Copy` function of the event**, `impl<F:
+Fn(&'static E) + Copy + 'static> for F`, in place of `&'static F`: a named
+`fn` is given as it is, `remove_event_listener(Click, on_click, None)`, as
+`add_event_listener(Click, on_click, None)` gives it, both `onClick`;
+`listener(..)`'s `&'static dyn Fn(&E)` is one, as a `with_this(..)`
+function is. A closure held, `let off = |e: &Event| ..;` given to both,
+is the same function to both, and compiles; one written in place doesn't.
+One that owns what isn't `Copy` is rustc's error, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Removal of a
+closure written in place removes nothing in Rust's terms too, where a
+function is compared by identity; the refusal is of a program that can't
+do what it says.
+
+Held by `test/webapi-events.test.ts`'s "event methods keep target types"
+(each form refused: by value, a moved capture, borrowed, the field of an
+`EventListener`, and given through the program's own function of an
+`impl IntoAddedEventListener<Event>`), and "event methods and reusable
+listeners" with Chromium's run (`namedFnRemoved`: a named `fn` added and
+removed, `onCustom` both, nothing called). Mutations in
+`scripts/mutations/lower/bindings/given_before.ts`. No caller in rust-js or
+react-in-rust wrote one: each removes what it holds.

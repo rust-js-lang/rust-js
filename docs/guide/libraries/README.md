@@ -354,8 +354,12 @@ How WebIDL maps to Rust, one rule for each:
   it; `match` it to call it as JS would,
   `function::call(f, this, (event,))` or `object.handle_event(event)`.
   A shared listener is typed as Rust types a function of the event,
-  `&'static dyn Fn(&Event)`, and removal takes it or any reference to a
-  function of the event JS keeps. A function of its `this` kept to add and
+  `&'static dyn Fn(&Event)`, and removal takes it, a named `fn` of the
+  event, `remove_event_listener(Click, on_click, None)`, or any function
+  of the event JS keeps. Removal finds the one added by its identity, so a
+  closure written in place, `remove_event_listener(Click, &|e: &PointerEvent|
+  ..)`, a new function, is refused: hold `listener(..)`'s, or name a `fn`,
+  and give the same one to add and remove. A function of its `this` kept to add and
   remove is `function::with_this`'s as it is, `EventListener(function::with_this(move
   |this, (event,): (&'static Event,)| ..))`, the function itself
   ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md), amended).
