@@ -248,6 +248,61 @@ pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
   expect(of({}, "Map", ["a", "b", "c", "d", "e", "f"])).toEqual(["a", "b", "c", "d", "e", "f", "view"]);
 });
 
+// The same block's `match` of the status's strings, ending in `return;`, is
+// a `switch` of the value (ADR 0629, amended): MIR's `typeof status ===
+// "string"` around it goes, once the `return;` is in each branch that goes on
+// to it, where the `if` the block ends with leaves an `else` of nothing
+// (ADRs 0754, 0755); and no label is left.
+test("a block MIR made followed by a return around a match of strings is a switch alone", async () => {
+  const dir = fixture("labeled-block-switch-returns");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn settled(value: &Unknown, name: &str, out: &mut Vec<String>) {
+    let desc = 'desc: {
+        let object_name = name.to_string();
+        if out.len() > 5 {
+            break 'desc "view".to_string();
+        }
+        match js::classify(js::get(value, "status")) {
+            Kind::String("fulfilled") => {
+                let idx = out.len();
+                out.push(object_name);
+                if out.len() > idx {
+                    out[idx] = "Promise<".to_string() + &out[idx] + ">";
+                    return;
+                }
+            }
+            Kind::String("rejected") => {
+                let idx = out.len();
+                out.push(object_name);
+                if out.len() > idx {
+                    out[idx] = "Rejected<".to_string() + &out[idx] + ">";
+                    return;
+                }
+            }
+            _ => {}
+        }
+        out.push("Promise".to_string());
+        return;
+    };
+    out.push(desc);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).not.toContain("typeof");
+  expect(js).toContain("  } else {\n    switch (value.status) {\n");
+  expect(js).toContain("    out.push(\"Promise\");\n    return;\n  }\n}\n");
+  const lib = await import(join(dir, "lib.js"));
+  const of = (value: unknown, name: string, out: string[] = []) => (lib.settled(value, name, out), out);
+  expect(of({ status: "fulfilled" }, "a")).toEqual(["Promise<a>"]);
+  expect(of({ status: "rejected" }, "b")).toEqual(["Rejected<b>"]);
+  expect(of({ status: "pending" }, "c")).toEqual(["Promise"]);
+  expect(of({ status: 1 }, "d")).toEqual(["Promise"]);
+  expect(of({}, "e", ["1", "2", "3", "4", "5", "6"])).toEqual(["1", "2", "3", "4", "5", "6", "view"]);
+});
+
 // ADR 0790: React's addValueToProperties is a `switch (typeof value)`,
 // leaving its case early, `desc = ..; break;`. Its port's one `match
 // js::classify(value)`: the object arm's guard, `if let Some(value) =

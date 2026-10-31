@@ -131,3 +131,11 @@ if (objectName === "Promise") {
   while that ends an if's branch keeps its test": ReactFiberLane's
   getEntangledLanes would return in the `if` its `while` ends as well as
   after it (2026-10-30).
+- `returns-into-branches-at-ends-not`, `returns-into-branches-else-kept`
+  and `guarded-chains-late-off` are held by `test/lowering-labels.test.ts`'s
+  "a block MIR made followed by a return around a match of strings is a
+  switch alone", the port's former `match` of the status's strings
+  (2026-10-31): since ADR 0629's amendment (1cb3b4baa) wrote the first
+  test's chain as `if let`s, whose `===` of each string has no `typeof`
+  before it to remove, and a `match` of them as a `switch`, that test told
+  none of the three apart.
