@@ -23321,6 +23321,7 @@ impl Window {
     /// window's own, as React's SchedulerPostTask holds it at load (rd314):
     /// called, of a `Box<dyn FnOnce()>`, the handler that's a `TimerGone`.
     #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
+    #[cfg_attr(rust_js, rust_js::value_only = "a window's timers are gone: a timer is the js crate's global, `js::set_timeout(handler, ms)`, `js::clear_timeout(id)`, `js::set_interval(callback, ms)` and `js::clear_interval(id)`, which take a function as it is (ADR 1020)")]
     #[allow(unused_variables)]
     pub fn set_timeout<G: TimerGone<fn()>>(&self, handler: G, timeout: Option<f64>) -> &'static js::TimeoutId {
         unreachable!()

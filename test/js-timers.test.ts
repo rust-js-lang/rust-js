@@ -135,9 +135,11 @@ pub fn later(task: Box<dyn FnOnce()>) {
   expect(js).toContain("    scheduleTimeout(task, 5);\n");
 });
 
-// One way: a window's timers were a second, of text only (ADR 1020).
+// One way: a window's timers were a second, of text only (ADR 1020); its
+// `setTimeout` read as a value alone, a call of it refused whatever it's
+// given (`#[rust_js::value_only]`, rd314).
 test("webapi's window.set_timeout is gone, an error naming js::set_timeout", () => {
-  for (const call of [`webapi::window.set_timeout("tick()", None)`, `webapi::window.set_timeout(|| (), None)`, `webapi::window.clear_timeout(Some(1.0))`, `webapi::window.set_interval("tick()", None, ())`]) {
+  for (const call of [`webapi::window.set_timeout("tick()", None)`, `webapi::window.set_timeout(|| (), None)`, `let task: Box<dyn FnOnce()> = Box::new(|| ()); webapi::window.set_timeout(task, None)`, `webapi::window.clear_timeout(Some(1.0))`, `webapi::window.set_interval("tick()", None, ())`]) {
     const { code, stderr } = compiled("window-timers-gone", `pub fn later() {
     ${call};
 }

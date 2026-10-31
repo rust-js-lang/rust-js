@@ -185,16 +185,18 @@ only `Box<dyn FnOnce()>` is, so a call of it as a method,
 `js::set_timeout` still, one way to set a timer; its value, held, is
 called as any function value is. `clear_timeout` and the intervals stay
 gone (nothing reads them). A call given a `Box<dyn FnOnce()>` that's
-already one, `window.set_timeout(task, ms)` of a `task: Box<dyn
-FnOnce()>`, type-checks and is `window.setTimeout(task)`, the window's,
-as its value's call is: rustc can't tell it from the value's, and
-refusing it in rust-js would need a second form of the error (recorded
-for the user). `TimerGone` takes what it's a handler of,
+already one, which `TimerGone<fn()>` takes, is refused too, with the same
+message: the binding is `#[rust_js::value_only = ".."]`, which refuses
+each call of it, saying what its value says (`bindings::value_only`, the
+user's decision: one way to set a timer). `js::method` reads it, as
+naming it is no call. `TimerGone` takes what it's a handler of,
 `TimerGone<Of = ()>`, so no other timer takes a box.
 
 Held by `test/js-timers.test.ts`'s "a window's setTimeout is read as a
 value, the window's own" (run: a `window` of the test's own given the
 handler) and "webapi's window.set_timeout is gone, an error naming
-js::set_timeout" (a closure's call too). No mutation: a binding's
-signature, read by `js::method` as every method is.
+js::set_timeout" (a closure's call, and a `Box<dyn FnOnce()>`'s), and
+the mutation `value-only-called` (`bindings/value_only.ts`). The message
+is one, `webapi/generate.ts`'s `TIMERS_GONE_MESSAGE`, which writes both
+`TimerGone`'s and the attribute's.
 

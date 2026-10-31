@@ -20,6 +20,7 @@ mod imports;
 mod nullable;
 mod paths;
 mod rest_values;
+mod value_only;
 mod whole;
 
 pub(super) use effects::{
@@ -38,6 +39,7 @@ pub(super) use nullable::{
 };
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
+pub(super) use value_only::reject_value_only_calls;
 use whole::whole_refused;
 pub(in crate::lower) use whole::{whole_output, whole_range};
 

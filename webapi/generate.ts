@@ -1747,10 +1747,16 @@ const shared = "impl IntoAddedEventListener<<Self as Listen<E>>::Event>";
 // which takes a function as it is, where these took text alone. Each takes
 // what it did, of a type that's never a `TimerGone`, so a call is the error
 // that says what to write.
+// What a call of a window's timer says to write, `TimerGone`'s, and of one
+// read as a value alone, its `#[rust_js::value_only]`'s.
+const TIMERS_GONE_MESSAGE =
+  "a window's timers are gone: a timer is the js crate's global, `js::set_timeout(handler, ms)`, `js::clear_timeout(id)`, `js::set_interval(callback, ms)` and `js::clear_interval(id)`, which take a function as it is (ADR 1020)";
 const gone = (doc: string, signature: string, read?: string) =>
   [
     `    /// Gone (ADR 1020): ${doc}`,
-    ...(read ? [`    #[cfg_attr(rust_js, rust_js::link_name = "${read}")]`] : []),
+    ...(read
+      ? [`    #[cfg_attr(rust_js, rust_js::link_name = "${read}")]`, `    #[cfg_attr(rust_js, rust_js::value_only = ${JSON.stringify(TIMERS_GONE_MESSAGE)})]`]
+      : []),
     "    #[allow(unused_variables)]",
     `    pub fn ${signature} {`,
     `        unreachable!()`,
@@ -2524,7 +2530,7 @@ line();
 line(`/// What a window's timer took, which nothing is: they're gone, a timer is the`);
 line(`/// js crate's, every JS runtime's, which takes a function as it is (ADR 1020).`);
 line(`#[diagnostic::on_unimplemented(`);
-line(`    message = "a window's timers are gone: a timer is the js crate's global, \`js::set_timeout(handler, ms)\`, \`js::clear_timeout(id)\`, \`js::set_interval(callback, ms)\` and \`js::clear_interval(id)\`, which take a function as it is (ADR 1020)",`);
+line(`    message = ${JSON.stringify(TIMERS_GONE_MESSAGE)},`);
 line(`    label = "write the js crate's timer, \`js::set_timeout\`, \`js::clear_timeout\`, \`js::set_interval\` or \`js::clear_interval\`"`);
 line(`)]`);
 line(`pub trait TimerGone<Of: ?Sized = ()> {}`);
