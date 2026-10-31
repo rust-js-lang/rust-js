@@ -60,9 +60,7 @@ function clampTo(r, x) {
 }
 
 function firstSquareOver(limit) {
-  const iter = { start: 1 };
-  let n;
-  while ((n = $rangeFromNext(iter, 0, 4294967295)) != null) {
+  for (const n of $iterator({ start: 1 }, $rangeFromStep(0, 4294967295))) {
     if (Math.imul(n, n) >>> 0 > limit) {
       return n;
     }

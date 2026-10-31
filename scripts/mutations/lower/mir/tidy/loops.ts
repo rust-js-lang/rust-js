@@ -576,6 +576,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
   },
   {
+    name: "range-from-loop-unmade",
+    breaks:
+      "a loop of `a..` stays `const iter = { start: 1 }; let n; while ((n = $rangeFromNext(iter, 0, 4294967295)) != null)`, not `for (const n of $iterator({ start: 1 }, $rangeFromStep(0, 4294967295)))`, and isn't counted to a length (rd260)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: '        Some("$rangeFromNext") => Some("$rangeFromNext"),\n',
+    replace: '        Some("$rangeFromNext") => None,\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(range_values|range_from_wraps|stepped_index_to_length).rs$",
+    ],
+    snapshots: true,
+  },
+  {
     name: "stepped-range-for-unmade",
     breaks: "a range's `step_by(n)` in a `for` stays `for (const i of $lazyRange(0, v.length, 2))`, not `for (let i = 0; i < v.length; i += 2)` (rd260)",
     file: "src/lower/mir/tidy/loops.rs",

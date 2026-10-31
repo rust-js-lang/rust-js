@@ -583,13 +583,16 @@ pub(in crate::lower) struct SteppedRange<'e> {
 
 /// Of `(s..).step_by(n)`, made where it's stepped, `$stepBy($iterator({
 /// start: s }, $rangeFromStep(..)), n)`: `s` and `n`, a whole number from
-/// 1 up, which every step adds (rd260).
+/// 1 up, which every step adds (rd260); of `s..` itself, `$iterator({
+/// start: s }, $rangeFromStep(..))`, `s` and 1.
 pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
-    let (Some("$stepBy"), [made, n]) = (callee.helper_name(), &args[..]) else {
-        return None;
+    let (made, n) = match (callee.helper_name(), &args[..]) {
+        (Some("$stepBy"), [made, n]) => (made, n.as_int().filter(|&n| n >= 1)?),
+        (Some("$iterator"), [_, _]) => (e, 1),
+        _ => return None,
     };
     let js::ExprKind::Call(iterator, parts) = &made.kind else {
         return None;
@@ -606,7 +609,6 @@ pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
     let [js::Prop::Field(s, start)] = &bounds[..] else {
         return None;
     };
-    let n = n.as_int().filter(|&n| n >= 1)?;
     (s == "start").then_some((start, n))
 }
 

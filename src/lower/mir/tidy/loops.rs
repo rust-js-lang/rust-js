@@ -117,7 +117,8 @@ pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
 const DICTIONARY: &str = "dictionary";
 
 /// Of a call's `callee`, the step `loops` makes a `for` of: a helper's,
-/// `$next`, `$nextSome`, `$rangeNext` or `$rangeInclusiveNext`, or an
+/// `$next`, `$nextSome`, `$rangeNext`, `$rangeInclusiveNext` or
+/// `$rangeFromNext`, or an
 /// `Iterator` dictionary's, `IIterator.next(it)`, of one given as it is
 /// (ADR 0411).
 pub(super) fn step_of(callee: &Expr) -> Option<&'static str> {
@@ -126,6 +127,7 @@ pub(super) fn step_of(callee: &Expr) -> Option<&'static str> {
         Some("$nextSome") => Some("$nextSome"),
         Some("$rangeNext") => Some("$rangeNext"),
         Some("$rangeInclusiveNext") => Some("$rangeInclusiveNext"),
+        Some("$rangeFromNext") => Some("$rangeFromNext"),
         Some(_) => None,
         None => {
             matches!(&callee.kind, ExprKind::Member(of, name) if name == "next" && matches!(of.kind, ExprKind::Var(_)))
@@ -168,7 +170,8 @@ pub(super) fn for_of(
     let ExprKind::Call(callee, args) = &next.kind else {
         return None;
     };
-    let step = match (step_of(callee), args.as_slice()) {
+    // An `a..`'s step is given its type's bounds after it (`range_next`).
+    let (step, bounds) = match (step_of(callee), args.as_slice()) {
         (
             Some(f),
             [
@@ -176,8 +179,9 @@ pub(super) fn for_of(
                     kind: ExprKind::Var(it),
                     ..
                 },
+                bounds @ ..,
             ],
-        ) if it == iter => f,
+        ) if it == iter => (f, bounds),
         _ => return None,
     };
     if js::mentions_in(std::slice::from_ref(looped), iter) != 1 || js::mentions_in(after, iter) != 0 {
@@ -333,6 +337,22 @@ pub(super) fn for_of(
                 }
             }
         }
+        // An `a..`'s, which never ends: its numbers as an iterator,
+        // `$iterator(r, $rangeFromStep(0, 255))`, as `(a..).step_by(n)`
+        // steps them, which `counted_to_lengths` counts to a length (rd260).
+        "$rangeFromNext" => StmtKind::ForOf {
+            label: label.clone(),
+            pattern,
+            mutable,
+            iterable: crate::lower::iterators::stepped(
+                source.clone(),
+                crate::lower::std_types::range::range_from_stepper(bounds),
+                false,
+                None,
+            ),
+            body,
+            keys: false,
+        },
         // A range's numbers, `a..b`'s, `a..=b`'s: a counting `for`.
         _ => {
             let ExprKind::Object(props, ..) = &source.kind else {

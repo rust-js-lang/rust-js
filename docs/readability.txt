@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1396
-lines	137685
+lines	137714
 temporaries	1	0.1
 labeled blocks	15	1.1
 while (true)	123	8.9
 $iter	1176	85.4
 Iterator.from	116	8.4
 return;	147	10.7
-renamed x$1	8582	623.3
+renamed x$1	8582	623.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -892,7 +892,7 @@ test/corpus/question_early_returns.js	51	0	0	0	0	0	1	10
 test/corpus/radix_negative.js	22	0	0	0	0	0	0	0
 test/corpus/radix_out_of_range.js	18	0	0	0	0	0	0	0
 test/corpus/range_bounds_generic.js	85	0	0	0	0	0	0	0
-test/corpus/range_from_wraps.js	104	0	0	0	0	0	0	21
+test/corpus/range_from_wraps.js	111	0	0	0	0	0	0	21
 test/corpus/range_hints_given.js	110	0	0	0	1	0	0	20
 test/corpus/range_inclusive_exhausted.js	198	0	0	0	0	0	0	23
 test/corpus/range_inclusive_next.js	25	0	0	0	0	0	0	0
@@ -906,7 +906,7 @@ test/corpus/range_searches.js	20	0	0	0	0	0	0	2
 test/corpus/range_size_hint.js	42	0	0	0	0	0	0	11
 test/corpus/range_steps_anywhere.js	49	0	0	0	0	1	0	4
 test/corpus/range_steps_known.js	73	0	0	0	0	0	0	13
-test/corpus/range_values.js	226	0	0	0	1	1	0	0
+test/corpus/range_values.js	224	0	0	0	1	1	0	0
 test/corpus/raw_pointers.js	190	0	0	0	0	0	0	11
 test/corpus/raw_string_escapes.js	40	0	0	0	0	0	0	0
 test/corpus/rc_as_ptr.js	95	0	0	0	0	0	0	2
@@ -1141,7 +1141,7 @@ test/corpus/step_by_nth_back.js	97	0	0	0	0	0	0	2
 test/corpus/step_by_of_a_call_holds_its_items.js	97	0	0	0	2	0	0	9
 test/corpus/step_by_range_size_hint.js	44	0	0	0	0	0	0	0
 test/corpus/step_by_zero.js	23	0	0	0	0	0	0	2
-test/corpus/stepped_index_to_length.js	83	0	0	0	0	0	0	0
+test/corpus/stepped_index_to_length.js	107	0	0	0	0	0	0	0
 test/corpus/stepped_nested.js	31	0	0	0	1	0	0	0
 test/corpus/stepped_range_loops.js	81	0	0	0	0	0	0	0
 test/corpus/stock_orders.js	311	0	0	0	0	0	1	12

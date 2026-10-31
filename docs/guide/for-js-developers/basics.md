@@ -2368,7 +2368,8 @@ export function lastNamed(names) {
 - A loop that steps past a length a body may grow, `for (let i = 0; i <
   batch.length; i += 2)`, is `for i in (0..).step_by(2)` whose body starts
   with `let Some(&id) = batch.get(i) else { break };`, which reads the
-  length each turn as the `for`'s test does
+  length each turn as the `for`'s test does; `for i in 0..`, stepped by
+  one, is `for (let i = 0; i < batch.length; i++)` so too
   ([ADR 1029](../../decisions/1029-a-stepped-index-to-an-item-is-counted-to-the-length.md)):
 
 ```rust

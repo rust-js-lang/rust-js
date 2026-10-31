@@ -202,11 +202,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn range_stepper(&self, range: Ty<'tcx>, back: bool) -> Option<Expr> {
         let kind = self.range_kind(range)?;
         let step = kind.step(back)?;
-        let bounds = self.range_from_bounds(range, kind);
-        Some(match bounds.is_empty() {
-            true => Expr::helper(step),
-            false => Expr::call_helper("$rangeFromStep", bounds),
-        })
+        Some(stepper(step, self.range_from_bounds(range, kind)))
     }
 
     /// Whether an iterator of type `ty` steps an inclusive range it's lent,
@@ -566,6 +562,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
         })
     }
+}
+
+/// A range's step as a value, `step` given the bounds an `a..` of integers
+/// wraps by: the helper, or `$rangeFromStep(0, 255)`.
+fn stepper(step: &'static str, bounds: Vec<Expr>) -> Expr {
+    match bounds.is_empty() {
+        true => Expr::helper(step),
+        false => Expr::call_helper("$rangeFromStep", bounds),
+    }
+}
+
+/// Of an `a..`'s step as `range_next` calls it, `$rangeFromNext(r, 0, 255)`,
+/// given what it's given after `r`, its bounds: the step as a value,
+/// `range_stepper`'s, `$rangeFromStep(0, 255)`, which a `for` of the range
+/// steps it by, `$iterator(r, $rangeFromStep(0, 255))` (rd260).
+pub(in crate::lower) fn range_from_stepper(bounds: &[Expr]) -> Expr {
+    stepper(RangeKind::From.step(false).expect("an `a..` steps"), bounds.to_vec())
 }
 
 /// How many numbers a range of `start` and `end` has left, of `kind`:

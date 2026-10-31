@@ -48,4 +48,12 @@ fn main() {
         print!("{b} ");
     }
     println!();
+    // A `char`'s, stepped past the surrogates.
+    for c in '\u{D7FE}'.. {
+        if c > '\u{E001}' {
+            break;
+        }
+        print!("{:x} ", c as u32);
+    }
+    println!();
 }

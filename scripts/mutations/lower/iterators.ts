@@ -3,6 +3,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "range-from-uncounted",
+    breaks:
+      "`for i in 0.. { let Some(&x) = v.get(i) else { break }; .. }` stays `for (const i of $iterator({ start: 0 }, ..)) { if (v[i] == null) { break; } .. }`, not `for (let i = 0; i < v.length; i++)` (rd260)",
+    file: "src/lower/iterators.rs",
+    find: '        (Some("$iterator"), [_, _]) => (e, 1),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_index_to_length.rs$"],
+    snapshots: true,
+  },
+  {
     name: "reversal-of-range-chain-as-items",
     breaks:
       "a map of a range stepped from its end, made in place, is read as its source's map, which steps the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987)",

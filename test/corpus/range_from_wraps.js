@@ -2,6 +2,7 @@
 
 import {
   $catchUnwind,
+  $cmp,
   $debugStr,
   $iterator,
   $print,
@@ -89,14 +90,20 @@ function main() {
   console.log(`${chars}`);
 
   let seen = 0;
-  const iter = { start: 250 };
-  let b;
-  while ((b = $rangeFromNext(iter, 0, 255)) != null) {
+  for (const b of $iterator({ start: 250 }, $rangeFromStep(0, 255))) {
     seen++;
     if (seen > 8) {
       break;
     }
     $print(`${b} `);
+  }
+  console.log("");
+  // A `char`'s, stepped past the surrogates.
+  for (const c of $iterator({ start: "퟾" }, $rangeFromNext)) {
+    if ($cmp(c, "\ue001") > 0) {
+      break;
+    }
+    $print(`${c.codePointAt(0).toString(16)} `);
   }
   console.log("");
 }

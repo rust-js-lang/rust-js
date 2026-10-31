@@ -69,14 +69,38 @@ function kept(batch) {
   return later.map((f) => f());
 }
 
+function from(batch, start) {
+  const seen = [];
+  for (let i = start; i < batch.length; i++) {
+    const id = batch[i];
+    if (id === 7) {
+      batch.push(8);
+    }
+    seen.push(id);
+  }
+  return seen;
+}
+
+function all(batch) {
+  let sum = 0;
+  for (let i = 0; i < batch.length; i++) {
+    const slot = batch[i];
+    sum = (sum + (slot ?? 100)) >>> 0;
+  }
+  return sum;
+}
+
 function main() {
   console.log(`${pairs([1, 2, 3, 4, 5])}`);
   console.log(`${pairs([])}`);
-  const cell = [0, 7, 0, 0, 2, 0, 0];
+  let cell = [0, 7, 0, 0, 2, 0, 0];
   console.log(`[${grown(cell).join(", ")}]`);
   console.log(`${slots([1, 2, undefined, undefined, 5])}`);
   console.log(`${flat([1, 2, undefined, undefined, 5])}`);
   console.log(`${units([undefined, undefined, undefined, undefined, undefined])}`);
   console.log(`[${kept([3, 0, 4, 0, 5]).join(", ")}]`);
+  cell = [1, 7, 2];
+  console.log(`[${from(cell, 1).join(", ")}] [${from(cell, 9).join(", ")}]`);
+  console.log(`${all([1, undefined, 5])}`);
 }
 //# sourceMappingURL=case.js.map

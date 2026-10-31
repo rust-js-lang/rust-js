@@ -152,3 +152,46 @@ stepped from its end, items that may be `None`) and the mutations
 `stepped-range-index-unknown` (`body_queries/ranges.ts`).
 
 Left: `for i in 0..` with the same `let`, a `while` of `$rangeFromNext`.
+
+## Amendment: a loop of `a..` is a `for…of`, and counted to a length too (2026-10-31)
+
+`for i in s.. { let Some(&x) = v.get(i) else { break }; .. }`, the
+loop `(s..).step_by(n)`'s is of a step of 1, printed
+
+```js
+const iter = { start: s };
+let i;
+while ((i = $rangeFromNext(iter, 0, 4294967295)) != null) {
+  if (v[i] == null) {
+    break;
+  }
+  ..
+}
+```
+
+as tidy's `loops` (`loops::for_of`) made no loop of a step of an `a..`,
+`$rangeFromNext(iter, 0, 4294967295)`, which is given its type's bounds
+after the range. It now makes one: the range's numbers as the iterator
+`(a..).step_by(n)` steps, `for (const i of $iterator({ start: s },
+$rangeFromStep(0, 4294967295)))`, the step as a value the ranges' owner
+makes it (`range::range_from_stepper`, `range_stepper`'s), a `char`'s
+`$iterator({ start: c }, $rangeFromNext)`. `counted_to_lengths` reads
+that iterator as `(s..).step_by(1)` (`iterators::stepped_from`), so the
+loop that breaks where `v.get(i)` has none is `for (let i = s; i <
+v.length; i++) { const x = v[i]; .. }`. A loop of `a..` that ends
+otherwise is the `for…of` of it, one statement in place of three and a
+`let`, as a loop of `(a..).step_by(n)` already was.
+
+Why it's the same: the iterator is the one `(a..)` is as a value, which
+wraps past its type's last as `$rangeFromNext` does (ADR 0129); counted
+to a length, `i` stays below it, at most `usize`'s most, so the `i++`
+that `$rangeFromNext` would wrap isn't reached.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by the corpus cases `stepped_index_to_length` (`from`, of a slice
+grown while it's stepped, from past its end too; `all`, items that may
+be `None`), `range_from_wraps` (a `u8`'s past its last, a `char`'s past
+the surrogates) and `range_values`, and the mutations
+`range-from-loop-unmade` (`mir/tidy/loops.ts`) and `range-from-uncounted`
+(`iterators.ts`).

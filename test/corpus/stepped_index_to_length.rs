@@ -3,7 +3,8 @@
 // 2)`, as React's Fizz runtime counts its batch: the length read each turn,
 // so items pushed while it runs are visited too; an item that's `None` is
 // visited, not taken for the end, where one `flatten()` gives ends it; and
-// each turn's `i` is its own.
+// each turn's `i` is its own. A loop of `s..` itself, stepped by one, is
+// counted so too, `for (let i = s; i < v.length; i++)`.
 
 use std::cell::RefCell;
 
@@ -77,6 +78,31 @@ fn kept(batch: &[u32]) -> Vec<u32> {
     later.iter().map(|f| f()).collect()
 }
 
+fn from(batch: &RefCell<Vec<u32>>, start: usize) -> Vec<u32> {
+    let mut seen = Vec::new();
+    for i in start.. {
+        let Some(&id) = batch.borrow().get(i) else {
+            break;
+        };
+        if id == 7 {
+            batch.borrow_mut().push(8);
+        }
+        seen.push(id);
+    }
+    seen
+}
+
+fn all(batch: &[Option<u32>]) -> u32 {
+    let mut sum = 0;
+    for i in 0.. {
+        let Some(slot) = batch.get(i) else {
+            break;
+        };
+        sum += slot.unwrap_or(100);
+    }
+    sum
+}
+
 fn main() {
     println!("{}", pairs(&[1, 2, 3, 4, 5]));
     println!("{}", pairs(&[]));
@@ -86,4 +112,7 @@ fn main() {
     println!("{}", flat(&[Some(1), Some(2), None, None, Some(5)]));
     println!("{}", units(&[(), (), (), (), ()]));
     println!("{:?}", kept(&[3, 0, 4, 0, 5]));
+    let cell = RefCell::new(vec![1, 7, 2]);
+    println!("{:?} {:?}", from(&cell, 1), from(&cell, 9));
+    println!("{}", all(&[Some(1), None, Some(5)]));
 }
