@@ -574,11 +574,10 @@ export const mutations: Mutation[] = [
     find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))\n",
     replace:
       "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "let-else from MIR is a guard",
-    ],
+    // lowering-matches' let-else test prints the same JS without it; this
+    // case's `let .. else { return None; }` doesn't.
+    tests: ["test/corpus.test.ts", "-t", "^local_borrow_nested_option.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-let-else-of-written-returns",
