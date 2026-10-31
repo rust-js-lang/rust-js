@@ -108,3 +108,27 @@ the class held, as upstream's. Held by
 constructor's binding", which runs it with WeakMap and, loaded again
 where the host has none, with Map; mutations `static-constructor-refused`,
 `static-constructor-called` and `static-none-given`.
+
+## Amendment: `call_static` is the one way to make a class held (2026-10-31)
+
+Two forms made a class held, an untyped `&Class`: `js::new(class, ())`,
+which made a value of any shape a program then cast, and
+`class.call_static(webapi::abort_controller::new, ())`, typed by the
+constructor's binding. One way, the coordinator's decision: **a class held
+is made by its constructor's binding, `call_static`**. The js crate no
+longer implements `Construct` of an untyped `Class`, so rustc refuses
+`js::new(class, ..)` of one, its note naming `call_static`; and
+`js::new(js::unknown(class), ())` of one is refused naming it too
+(`recognition::is_untyped_class`). `js::new` keeps its other uses: a class
+`Class::of` makes, typed, and a value of any shape. A class the program
+knows is made by its constructor, `abort_controller::new()`, or the
+crate's `Shim::new()`.
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)), one form for one
+job. Held by `test/js-constructors.test.ts`' "new of a class held is
+refused, naming its constructor's binding" and "a constructor held as a
+value of any shape is refused", `test/webapi-bindings.test.ts`' "a
+binding's class is the global class TypeScript names", migrated; mutations
+`held-class-as-unknown-named-new` (`classes.ts`) and `untyped-class-never`
+(`recognition/types.ts`). The port's React DOM `replayChangeEvent` writes
+`event_ctr.call_static(event::new, ("click", Some(&init)))`.

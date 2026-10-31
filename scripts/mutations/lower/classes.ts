@@ -297,6 +297,14 @@ export const mutations: Mutation[] = [
     tests: ["test/js-constructors.test.ts", "-t", "a constructor held as a value of any shape is refused"],
   },
   {
+    name: "held-class-as-unknown-named-new",
+    breaks: "a class held, an untyped `js::Class`, constructed as a value of any shape is told to be given to `js::new` as it is, which rustc refuses, not to its constructor's binding, `call_static`",
+    file,
+    find: "                (\"new\", _, true) if is_untyped_class(tcx, held) => {\n",
+    replace: "                (\"new\", _, true) if false => {\n",
+    tests: ["test/js-constructors.test.ts", "-t", "a constructor held as a value of any shape is refused"],
+  },
+  {
     name: "class-of-a-closure",
     breaks: "`Class::of` of a closure compiles, an arrow `new` throws a `TypeError` of where it runs",
     file,

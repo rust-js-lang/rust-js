@@ -584,7 +584,7 @@ pub fn asked() -> bool {
 // ADR 0911: `js::class::<T>()` of a binding's class is the global class
 // TypeScript names, as React's ReactFiberCacheComponent keeps
 // `AbortController` where the host has one, and its shim where it hasn't;
-// `js::new` of either constructs it.
+// the binding's constructor makes either, `call_static` (ADR 1027, amended).
 test("a binding's class is the global class TypeScript names", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("binding-class");
@@ -615,8 +615,7 @@ thread_local! {
 }
 
 pub fn made() -> &'static AbortController {
-    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(*class, ()));
-    unsafe { js::cast(Some(controller)) }
+    ABORT_CONTROLLER_LOCAL.with(|class| class.call_static(webapi::abort_controller::new, ()))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -625,7 +624,7 @@ pub fn made() -> &'static AbortController {
 // replace it with a lightweight shim that only has the features we use.
 const AbortControllerLocal =
   typeof AbortController !== "undefined" ? AbortController : AbortControllerShim;`);
-  expect(js).toContain("const controller = new AbortControllerLocal();");
+  expect(js).toContain("return new AbortControllerLocal();");
   // Where the host has one, its own; where it hasn't, the shim.
   const host = globalThis as any;
   expect((await import(join(dir, "lib.js"))).made()).toBeInstanceOf(AbortController);

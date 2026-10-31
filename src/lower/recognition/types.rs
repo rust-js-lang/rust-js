@@ -1211,6 +1211,20 @@ pub(in crate::lower) fn is_js_class(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
 
+/// Whether `ty` is an untyped `js::Class`, `Class<AnyConstructor>`: a
+/// class held, a binding's or the crate's, of no constructor's signature,
+/// which its constructor's binding makes (ADR 1027, amended).
+pub(in crate::lower) fn is_untyped_class(tcx: TyCtxt<'_>, ty: ty::Ty<'_>) -> bool {
+    let ty::Adt(class, args) = ty.kind() else {
+        return false;
+    };
+    is_js_class(tcx, class.did())
+        && args.types().next().is_some_and(|of| {
+            matches!(of.kind(), ty::Adt(of, _)
+                if tcx.crate_name(of.did().krate).as_str() == "js" && tcx.item_name(of.did()).as_str() == "AnyConstructor")
+        })
+}
+
 /// Whether `did` is `js::Class::of`, a function the program writes as the
 /// constructor it is (ADR 1009).
 pub(in crate::lower) fn is_class_of(tcx: TyCtxt<'_>, did: DefId) -> bool {

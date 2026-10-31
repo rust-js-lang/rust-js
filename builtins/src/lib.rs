@@ -923,11 +923,13 @@ pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool 
 /// typed [`Class`], `Class<fn(A, B) -> T>`, its arguments a tuple of what
 /// its constructor takes, `(a, b)`, each checked as a call's is, and what
 /// it makes a `&'static T`: React's `new SyntheticEventCtor(reactName, ..)`
-/// of `js::new(ctor, (react_name, ..))`. Of an untyped `Class`, a binding's
-/// global class or a crate's, `js::class::<T>()`, or of a value of any
-/// shape, a function JS gives, as TypeScript's `new` is of an `any`'s, its
+/// of `js::new(ctor, (react_name, ..))`. Of a value of any shape, a
+/// function JS gives, as TypeScript's `new` is of an `any`'s, its
 /// arguments a rest parameter's, a tuple of them, `()` of none, or a slice
-/// spread, and what it makes a value of any shape (ADR 0695, amended). A
+/// spread, and what it makes a value of any shape (ADR 0695, amended). Not
+/// of an untyped `Class`, a binding's global class or a crate's held,
+/// `js::class::<T>()`, which its constructor's binding makes,
+/// [`Class::call_static`], typed by it (ADR 1027, amended). A
 /// constructor the program writes is held as a `Class`, [`Class::of`]: a
 /// `js::unknown(&fake)` of one is refused, naming it. Of what's no
 /// constructor, an arrow, JS's `TypeError`, a panic.
@@ -939,11 +941,14 @@ pub fn new<C: Construct<A> + ?Sized, A>(this: &C, arguments: A) -> C::Instance {
 }
 
 /// What [`new`] constructs, given `A`, and what that makes: a typed
-/// [`Class`] of the tuple of its constructor's parameters, an untyped one,
-/// or a value of any shape of rest arguments. No program names it.
+/// [`Class`] of the tuple of its constructor's parameters, or a value of
+/// any shape of rest arguments. Not an untyped `Class`, a class held, which
+/// its constructor's binding makes, [`Class::call_static`]. No program
+/// names it.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` isn't a constructor `new` is given `{A}` of",
-    note = "a `Class<fn(A, B) -> T>` is given a tuple of its parameters, `(a, b)`, `(a,)` of one and `()` of none; a constructor the program writes is held as `Class::of(&f)`"
+    note = "a `Class<fn(A, B) -> T>` is given a tuple of its parameters, `(a, b)`, `(a,)` of one and `()` of none; a constructor the program writes is held as `Class::of(&f)`",
+    note = "a class held, an untyped `&Class`, is made by its constructor's binding, `class.call_static(webapi::abort_controller::new, ())`, typed by it (ADR 1027)"
 )]
 pub trait Construct<A> {
     /// What `new` of it makes.
@@ -951,10 +956,6 @@ pub trait Construct<A> {
 }
 
 impl<A: Rest<dyn IntoUnknown>> Construct<A> for Unknown {
-    type Instance = &'static Unknown;
-}
-
-impl<A: Rest<dyn IntoUnknown>> Construct<A> for Class {
     type Instance = &'static Unknown;
 }
 
@@ -1080,7 +1081,8 @@ pub fn throw(this: Option<&Unknown>) -> ! {
 /// A JS class's constructor function, `Component`, which [`class`] gives
 /// of a struct marked `#[rust_js::class]`, or of a binding's class: its
 /// `prototype`, which a port sets as JS does, `ComponentDummy.prototype =
-/// Component.prototype` (ADR 0761), and what [`new`] makes one of. Typed by
+/// Component.prototype` (ADR 0761), and what [`Class::call_static`] of its
+/// constructor's binding makes, or, of one typed, [`new`]. Typed by
 /// its constructor's signature, `Class<fn(A, B) -> T>`, its parameters and
 /// what `new` makes, where [`Class::of`] makes it of a function the program
 /// writes; of none, `Class`, any constructor's.

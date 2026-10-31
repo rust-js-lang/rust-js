@@ -515,8 +515,10 @@ of its type: the global class TypeScript names it,
 `#[rust_js::types]` names that class, as webapi's each do
 ([ADR 0911](../../decisions/0911-a-bindings-class-is-the-global-typescript-names.md)).
 A program keeps one where the host has it, and its own where it hasn't,
-as React keeps `AbortController`, and makes one with `js::new`, as of
-[the crate's class](export-to-javascript.md#js-classes). Its shim is the
+as React keeps `AbortController`, and makes one with its constructor's
+binding, `class.call_static(webapi::abort_controller::new, ())`, typed by
+it, the one way: `js::new` of a class held is refused, naming it
+([ADR 1027](../../decisions/1027-a-held-classs-static-is-called-on-it.md), amended). Its shim is the
 module's own, as React's is, which only `js::class::<T>()` names: JS makes
 it and reads its fields, so they and its `new` are used, to rustc's
 dead-code lint and `rust-js clippy` too

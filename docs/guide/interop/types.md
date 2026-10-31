@@ -2010,8 +2010,9 @@ export function removed(prev, next) {
 ```
 - `js::new(value, arguments)` is `new value(..)`, its arguments a tuple,
   `()` of none, or a slice spread, as a rest parameter's, of a value of
-  any shape or an untyped `js::Class`; of a typed one, what its
-  constructor takes, as below
+  any shape; of a typed `js::Class`, what its constructor takes, as below;
+  not of an untyped one, a class held, which its constructor's binding
+  makes, `class.call_static(webapi::abort_controller::new, ())`
   ([ADR 0695](../../decisions/0695-new-of-a-function-value-is-jss-new.md)):
 
 ```rust

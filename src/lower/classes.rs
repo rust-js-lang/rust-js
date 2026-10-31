@@ -428,11 +428,12 @@ pub(super) fn reject_misuse<'tcx>(
 /// holds, the one way (ADR 1009): a function constructed, `js::new(js::unknown(&fake), ())`,
 /// or whose prototype is read, `js::get(js::unknown(&fake), "prototype")`,
 /// of `Class::of(&fake)`; and a `Class` constructed as any value,
-/// `js::new(js::unknown(class), ())`, of `js::new(class, ..)`. False if
-/// there was one.
+/// `js::new(js::unknown(class), ())`, of `js::new(class, ..)`, or of a
+/// class held, `class.call_static(..)` of its constructor's binding.
+/// False if there was one.
 pub(super) fn reject_constructors_as_values<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
     use crate::lower::body_queries::strip;
-    use crate::lower::recognition::{is_class_of, is_js_class, js_root_fn};
+    use crate::lower::recognition::{is_class_of, is_js_class, is_untyped_class, js_root_fn};
     let mut valid = true;
     for body in bodies {
         let thir = &body.thir;
@@ -492,6 +493,11 @@ pub(super) fn reject_constructors_as_values<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&
                 }
                 ("get", true, _) if prototype() => {
                     "a constructor is held as a `js::Class`, whose prototype is `Class::of(&f).prototype()`, not as a value of any shape"
+                }
+                // An untyped one, a class held, by its constructor's
+                // binding (ADR 1027, amended).
+                ("new", _, true) if is_untyped_class(tcx, held) => {
+                    "a class held, an untyped `js::Class`, is made by its constructor's binding, `class.call_static(webapi::abort_controller::new, ())`, not as a value of any shape"
                 }
                 ("new", _, true) => {
                     "a `js::Class` is constructed as it is, `js::new(class, ..)`, not as a value of any shape"

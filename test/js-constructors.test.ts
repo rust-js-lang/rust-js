@@ -212,6 +212,23 @@ test("a typed class is declared as its constructor's type", () => {
   );
 });
 
+// ADR 1027, amended: a class held, an untyped `Class`, a binding's or the
+// crate's, is made by its constructor's binding, `call_static`, the one way;
+// rustc refuses `js::new` of it, naming that.
+test("new of a class held is refused, naming its constructor's binding", () => {
+  const error = refused(
+    "held-class-new",
+    `use js::{Class, Unknown};
+
+pub fn made(class: &'static Class) -> &'static Unknown {
+    js::new(class, ())
+}
+`,
+  );
+  expect(error).toContain("`js::Class` isn't a constructor `new` is given `()` of");
+  expect(error).toContain("a class held, an untyped `&Class`, is made by its constructor's binding, `class.call_static(webapi::abort_controller::new, ())`");
+});
+
 // rustc checks what `new` of a typed class is given, as a call's arguments.
 test("new of a typed class is given what its constructor takes", () => {
   const error = refused(
@@ -264,7 +281,17 @@ pub fn made(class: &'static js::Class) -> &'static Unknown {
 }
 `,
   );
-  expect(ofClass).toContain("`js::new(class, ..)`");
+  expect(ofClass).toContain("a class held, an untyped `js::Class`, is made by its constructor's binding, `class.call_static(webapi::abort_controller::new, ())`");
+  const typed = refused(
+    "typed-class-as-unknown",
+    `use js::Unknown;
+
+pub fn made(class: &'static js::Class<fn() -> Unknown>) -> &'static Unknown {
+    js::new(js::unknown(class), ())
+}
+`,
+  );
+  expect(typed).toContain("`js::new(class, ..)`");
   const arrow = refused(
     "class-of-a-closure",
     `use js::{Class, Unknown};
