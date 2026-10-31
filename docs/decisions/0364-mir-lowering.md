@@ -518,6 +518,42 @@ and the mutations `empty-arm-else-only` and `empty-arm-of-a-turn-negated`
 (`mir/tidy/decisions.ts`). `default_values` and its mutations moved to
 `decisions/defaults.rs` (`decisions/defaults.ts`), the file at its cap.
 
+## Amendment: a presence test each of a chain's tests says is the chain's (bb11, 2026-10-31)
+
+A `match` of `Some`s of constants whose other arm leaves its loop, its
+value used after, `match tag(value) { Some(A | B) => level = 1, Some(C)
+=> level = 2, _ => { seen.push(0); break; } } seen.push(level);`, kept
+MIR's block: `bb11: { if (symbolFor != null) { if (symbolFor === A ||
+symbolFor === B) { level = 1; } else if (symbolFor === C) { level = 2; }
+else { break bb11; } seen.push(level); continue; } } seen.push(0);
+break;`. The decision tree of the whole block makes more tests than the
+tree (the arms' shared `seen.push(level)` is no jump to copy), and a
+`switch` can't take the loop's `break` in a `default`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each `===` of a value
+fails where the subject isn't there, so a `null` reaches the chain's
+`else` as it reached what follows the block; a test of the chain that
+doesn't say so is the presence test's too, as it was inside it.
+
+- **`l: { if (x != null) { lets; chain; rest } } e`, the chain's last
+  `else` `break l;` alone and no other `break l`, `rest` and `e` each
+  leaving: `lets; chain; rest`, the chain's `else` `e`**
+  (`decisions/presence.rs`, pass `presence said` before `switches`). A
+  test that says `x` is there, `x === v` of a value (`decisions::valued`,
+  now shared with the tree's `present_said`, and `says`), stays; one that
+  doesn't is `x != null && t`: `if (value === 1) { .. } else if (value !=
+  null && value !== 3 && value !== 9) { .. } else { seen.push(0); break; }`.
+  The block's `let`s declared first go before the chain, where no `let`
+  of their names is before it.
+
+Held by `test/corpus/presence_said_by_chain.rs` against native Rust,
+`test/lowering-switch-symbols.test.ts`' "a match of symbols whose other
+arm breaks its loop leaves the loop" (no label), and mutations
+`presence-said-never`, `presence-said-of-every-test`
+(`tidy/decisions/presence.ts`). The shape's other requirements (`rest` and
+`e` leaving, no other `break l`, no `let` of the name before) no known
+MIR shape reaches; they keep the transform exact where one would.
+
 ## Amendment: all of rust-js runs with rustc's stack
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; where the work

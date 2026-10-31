@@ -355,6 +355,11 @@ console.log(JSON.stringify([
 ]));
 `);
   const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  // The presence test each `===` of a symbol says, gone with its labeled
+  // block: the `_` arm's `break` is the chain's `else` (bb11).
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toContain("    } else {\n      seen.push(0);\n      break;\n    }\n    seen.push(level);\n");
   // Native Rust's, of `Some(1)`, `Some(2)`, `Some(3)` and `Some(9)` for `a`,
   // `b`, `c` and `x`, and `None` for `{}`.
   expect(JSON.parse(ran.stdout)).toEqual([

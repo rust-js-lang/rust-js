@@ -715,6 +715,11 @@ pub(super) const STAGES: &[Stage] = &[
             // Inner lists first, as an `if` is emptied by what's taken in it.
             pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
             pass("holed lists", |b, _| holed_lists(b)),
+            // A presence test around a chain each of whose tests says it:
+            // the chain alone, its `else` what follows the block (bb11).
+            pass("presence said", |b, h| {
+                js::statement_lists(b, &mut |s| decisions::presence_said(s, &h.written.switches))
+            }),
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
             pass("switches", |b, h| {
                 switches::switches(b, &h.written.switches, &h.written.loops)

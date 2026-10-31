@@ -17,9 +17,11 @@ use super::{ends, first_written, made_where, names_break};
 
 mod calls;
 mod defaults;
+mod presence;
 
 use calls::Model;
 pub(super) use defaults::default_values;
+pub(super) use presence::presence_said;
 
 /// More leaves than a match a person writes has: a tree of tests that
 /// aren't one.
@@ -164,15 +166,7 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     };
     tree_walk.walk(vec![tree], Vec::new())?;
     // A path no value takes, `c < "0" && c >= "A"`, goes.
-    let valued = |e: &Expr| {
-        Value::of(e).is_some()
-            || (told.switches.iter()).any(|switch| {
-                switch.valued
-                    && (switch.arms.iter())
-                        .flat_map(|arm| &arm.constants)
-                        .any(|c| matches!(c, Constant::Value(at) if !e.span.is_none() && *at == e.span))
-            })
-    };
+    let valued = |e: &Expr| valued(e, told.switches);
     // Only of a tree no `switch` takes, a `break` of the loop around it in
     // an arm or what follows, which a case would take for the `switch`'s
     // (#412): of the others, the `switch` of the value reads as written.
@@ -942,19 +936,35 @@ fn simplified(tests: &[Expr]) -> Option<Vec<Expr>> {
     Some(out)
 }
 
+/// Whether `e` is a value, never `null` nor `undefined`: one written,
+/// `3` or `"a"`, or a constant a `match` of values names, `REACT_MEMO_TYPE`
+/// of `Some(REACT_MEMO_TYPE)` (`Switch::valued`).
+fn valued(e: &Expr, switches: &[Switch]) -> bool {
+    Value::of(e).is_some()
+        || (switches.iter()).any(|switch| {
+            switch.valued
+                && (switch.arms.iter())
+                    .flat_map(|arm| &arm.constants)
+                    .any(|c| matches!(c, Constant::Value(at) if !e.span.is_none() && *at == e.span))
+        })
+}
+
+/// Whether `e` holds only where `subject` is there: `subject === v` of a
+/// value `v`, or an `||` of such tests.
+fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
+    match &e.kind {
+        ExprKind::Binary(Op::Eq, a, b) => {
+            (same_subject(a, subject) && valued(b)) || (same_subject(b, subject) && valued(a))
+        }
+        ExprKind::Binary(Op::Or, a, b) => says(subject, a, valued) && says(subject, b, valued),
+        _ => false,
+    }
+}
+
 /// Of a path's `tests`, each `x != null` where another is `x === k` of a
 /// `k` never `null` or `undefined` (`valued`), which says it: gone,
 /// `symbolFor === C` alone, as a `switch` takes `None` in no case (#412).
 fn present_said(mut tests: Vec<Expr>, valued: &dyn Fn(&Expr) -> bool) -> Vec<Expr> {
-    fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
-        match &e.kind {
-            ExprKind::Binary(Op::Eq, a, b) => {
-                (same_subject(a, subject) && valued(b)) || (same_subject(b, subject) && valued(a))
-            }
-            ExprKind::Binary(Op::Or, a, b) => says(subject, a, valued) && says(subject, b, valued),
-            _ => false,
-        }
-    }
     let said: Vec<bool> = (tests.iter())
         .map(|t| match &t.kind {
             ExprKind::Binary(Op::LooseNe, subject, none)
