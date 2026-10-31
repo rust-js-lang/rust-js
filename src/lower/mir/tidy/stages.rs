@@ -913,7 +913,7 @@ pub(super) const STAGES: &[Stage] = &[
             // it wrote it, which its comment is before, once nothing moves
             // them (ADR 0684, amended).
             pass("written jumps", |b, h| {
-                kept_jumps(b, h.written);
+                kept_jumps(b, h.written, h.returns);
                 js::statement_lists(b, &mut |s| written_jumps(s, &h.written.continues, &h.written.breaks))
             }),
             // An `if` whose condition the program wrote with `||`, of `if`s

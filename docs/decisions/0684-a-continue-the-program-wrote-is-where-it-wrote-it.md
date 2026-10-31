@@ -401,3 +401,31 @@ follows it but the function's end. Held by the corpus case
 `written_jumps_kept` (`in_dev`) and the mutations
 `kept-breaks-of-a-branchs-loop-unrun` and
 `kept-breaks-of-an-elses-loop-unrun`.
+
+## Amendment: a `break` that is an arm of a `match` (rd165b, 2026-10-31)
+
+React DOM's hideOrUnhideDehydratedBoundary ends its loop's turn with
+`match next_node { Some(next_node) => node = next_node, None => break }`,
+the port's `node = nextNode; } while (node)`, and printed `if (nextNode
+=== null) { return; } node = nextNode;`: `Written::breaks` held the `if`s
+and `let … else`s the program wrote of a `break`, not a `match`'s arm.
+`Written::arm_breaks` now holds each arm of a `match` that is, or ends a
+block with, a `break` (`jump_arms`), tested at each of the `match`'s
+patterns, which is where the `if` MIR made of it is, whichever arm it
+tests; `kept_jumps` reads it with `breaks`. Only it: the passes that read
+`breaks` take a `match`'s as MIR made it, `if`s of its arms that one test
+may join, `do_while_advances.rs`'s `Some(next) if .. => update = next, _
+=> break` as `} while (update != null && update !== first)`. Not a
+`continue` that ends an arm, which tidy takes where the turn ends anyway
+([ADR 0753](0753-a-branch-of-only-comments-keeps-them.md)). The
+`break` is `break;` again, and the `do … while` it makes, as for
+clearHydrationBoundary: `do { .. node = nextNode; } while (node !=
+null);`. Another arm of the `match` may be a `return` the program wrote,
+`Some(0) => return`, whose `if` is tested at the same patterns; it stays
+`return;`, as `kept_in_branch` gives back no `return` the program wrote
+(`Kept::Breaks` carries where those are). Case
+([0262](0262-when-rust-and-js-disagree.md)): N, a `break` where nothing
+follows it but the function's end. Held by the corpus case
+`written_jumps_kept` (`unhide`, `arm_ends`) and the mutations
+`mir-match-arm-jumps-unknown`, `mir-match-arm-jump-of-blocks-end-unknown`
+and `kept-breaks-written-return-broken`.

@@ -69,6 +69,13 @@ pub(super) struct Written {
     pub else_continues: Vec<(js::Span, js::Span)>,
     /// And each whose `else` ends in a loop's `break`, `} else { break; }`.
     pub else_breaks: Vec<(js::Span, js::Span)>,
+    /// Each arm of a `match` that is, or ends a block with, a loop's
+    /// `break`, `None => break`: where the `if` MIR makes of it tests, and
+    /// where the `break` is (`jump_arms`). Only the loop a function ends
+    /// with gives it back for MIR's `return;` (`kept_jumps`, rd165b); the
+    /// passes that read `breaks` take a `match`'s as MIR made it, `if`s of
+    /// its arms that one test may join (`do_while_advances.rs`).
+    pub arm_breaks: Vec<(js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each block the program labeled, `'desc: { .. }` (`labeled_blocks`).
@@ -378,6 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let break_of = |kind: &thir::ExprKind<'tcx>| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id));
         let breaks = self.jump_ifs(&break_of, false);
         let else_breaks = self.jump_ifs(&break_of, true);
+        let arm_breaks = self.jump_arms(&break_of);
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
         let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
@@ -528,6 +536,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             breaks,
             else_continues,
             else_breaks,
+            arm_breaks,
             loops,
             blocks: self.labeled_blocks(),
             switches,
@@ -1092,6 +1101,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .chain(lets)
+            .collect()
+    }
+
+    /// Where each `match` the program wrote of an arm that is, or ends a
+    /// block with, a `jump`, `None => break`, tests, which MIR tests as an
+    /// `if` of either branch, and where that jump is (`jump_ifs`; React
+    /// DOM's hideOrUnhideDehydratedBoundary, rd165b). Of a `break`: a
+    /// `continue` an arm ends with where the turn ends anyway, tidy takes
+    /// (ADR 0753).
+    fn jump_arms(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool) -> Vec<(js::Span, js::Span)> {
+        let stripped = |mut e: thir::ExprId| {
+            while let thir::ExprKind::Scope { value: inner, .. } | thir::ExprKind::NeverToAny { source: inner } =
+                self.frame.thir[e].kind
+            {
+                e = inner;
+            }
+            e
+        };
+        (self.frame.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Match {
+                    ref arms,
+                    match_source: rustc_hir::MatchSource::Normal,
+                    ..
+                } => Some(arms),
+                _ => None,
+            })
+            .flat_map(|arms| {
+                let jumps = arms.iter().filter_map(move |&arm| {
+                    let mut only = stripped(self.frame.thir[arm].body);
+                    if let thir::ExprKind::Block { block } = self.frame.thir[only].kind {
+                        let block = &self.frame.thir[block];
+                        only = stripped(match (block.stmts.last(), block.expr) {
+                            (_, Some(e)) => e,
+                            (Some(s), None) => match self.frame.thir[*s].kind {
+                                thir::StmtKind::Expr { expr, .. } => expr,
+                                _ => return None,
+                            },
+                            _ => return None,
+                        });
+                    }
+                    jump(&self.frame.thir[only].kind).then(|| self.js_span(self.frame.thir[only].span))
+                });
+                // Each arm's pattern, which the `if` MIR made of it tests.
+                let tests: Vec<js::Span> = (arms.iter())
+                    .map(|&arm| self.js_span(self.frame.thir[arm].pattern.span))
+                    .collect();
+                jumps.flat_map(move |at| tests.clone().into_iter().map(move |test| (test, at)))
+            })
             .collect()
     }
 

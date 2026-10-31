@@ -2446,7 +2446,7 @@ export function pairs(v) {
   and a label you wrote are: `if blocked.is_none() { i += 3; continue; }
   else { break; }` is `if (blocked == null) { i += 3; continue; } else {
   break; }`, a `break` of the loop a function ends with a `break`, not
-  `return;`, and what follows an `if` you wrote without an `else` after
+  `return;`, a `match`'s `None => break` too, and what follows an `if` you wrote without an `else` after
   it, as React DOM's replayUnblockedFormActions reads (ADR 0684, amended).
 - A `while`'s test is the loop's own: an `if` of a `break` first in its
   body is the `if` the program wrote, not joined to the test, and a

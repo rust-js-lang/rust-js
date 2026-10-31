@@ -150,6 +150,45 @@ function inDev(xs, dev, out) {
   }
 }
 
+// A `match`'s `None => break` in the loop a function ends with, React
+// DOM's hideOrUnhideDehydratedBoundary: a `break`, not MIR's `return;`.
+function unhide(next, start, out) {
+  let node = start;
+  let depth = 0;
+  do {
+    const nextNode = next[node] != null && next[node] !== 0 ? next[node] : undefined;
+    out.push(node);
+    if (node > 4) {
+      if (depth === 0) {
+        return;
+      } else {
+        depth = (depth - 1) | 0;
+      }
+    } else if (node === 2) {
+      depth = (depth + 1) | 0;
+    }
+    node = nextNode;
+  } while (node != null);
+}
+
+// And where the arm does more first, or another arm returns.
+function armEnds(next, start, out) {
+  let node = start;
+  while (true) {
+    out.push(node);
+    const nextNode = next[node];
+    if (nextNode != null) {
+      if (nextNode === 0) {
+        return;
+      }
+      node = nextNode;
+    } else {
+      out.push(99);
+      break;
+    }
+  }
+}
+
 function main() {
   const value = [7, 1, 2, 3, -2, 0, 0, 8, -20, 9];
   const value$1 = [1, 0, 0, 6, -11, 5];
@@ -180,5 +219,12 @@ function main() {
   inDev([2, 0, -1], true, dev);
   inDev([3, 4, 0, 6], false, dev);
   console.log(`[${dev.join(", ")}]`);
+  const walked = [];
+  unhide([3, 0, 6, 2, 9, 1, 7, 0, 0, 0], 0, walked);
+  unhide([1, 2, 5, 0, 0, 7, 0, 8, 0], 0, walked);
+  unhide([1, 3], 0, walked);
+  armEnds([2, 0, 1], 0, walked);
+  armEnds([2, 0, 5], 0, walked);
+  console.log(`[${walked.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

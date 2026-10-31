@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `return` the program wrote in the loop a function ends with prints `break;`, not as written (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                && let Some(at) = tested(breaks)\n",
+    find: "                && !super::written(returns, last.span)\n                && let Some(at) = tested(breaks).or_else(|| tested(arms))\n",
     replace:
       "                && let Some(at) = tested(breaks).or(Some(last.span))\n",
     tests: [
@@ -81,16 +81,26 @@ export const mutations: Mutation[] = [
     breaks:
       "React DOM's replayUnblockedFormActions' `} else { break; }` prints `} else { return; }`, not as written (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        kept_in_turn(body, written, Kept::Breaks, true);\n",
+    find: "                kept_in_turn(body, written, Kept::Breaks(returns, &written.arm_breaks), true);\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "tidy takes"],
+  },
+  {
+    name: "kept-breaks-written-return-broken",
+    breaks:
+      "a `return` the program wrote in an arm of a `match` another arm of which is a `break`, in the loop a function ends with, prints `break;`, not as written (rd165b)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                && !super::written(returns, last.span)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
   },
   {
     name: "kept-breaks-of-a-branchs-loop-unrun",
     breaks:
       "a loop a branch of the function's last `if` ends with, React DOM's warnForBlockInsideInline's in its `if (__DEV__)`, has MIR's `return;` for each `break` it wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                ending_loops(then, written);\n",
+    find: "                ending_loops(then, written, returns);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
     snapshots: true,
@@ -99,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "kept-breaks-of-an-elses-loop-unrun",
     breaks: "a loop the `else` of the function's last `if` ends with has MIR's `return;` for each `break` it wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    ending_loops(otherwise, written);\n",
+    find: "                    ending_loops(otherwise, written, returns);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
     snapshots: true,
@@ -137,8 +147,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a written `break` is given to the branch of an `if` tidy turned whose statements are written after it",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                && let Some(at) = tested(breaks)\n                && !after(at)\n",
-    replace: "                && let Some(at) = tested(breaks)\n",
+    find: "                && let Some(at) = tested(breaks).or_else(|| tested(arms))\n                && !after(at)\n",
+    replace: "                && let Some(at) = tested(breaks).or_else(|| tested(arms))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
     snapshots: true,
   },

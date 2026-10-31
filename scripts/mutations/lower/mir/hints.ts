@@ -208,6 +208,26 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "tidy takes"],
   },
   {
+    name: "mir-match-arm-jumps-unknown",
+    breaks:
+      "a `match`'s `None => break` in the loop a function ends with isn't known, so React DOM's hideOrUnhideDehydratedBoundary prints MIR's `return;` (rd165b)",
+    file: "src/lower/mir/hints.rs",
+    find: "        let arm_breaks = self.jump_arms(&break_of);\n",
+    replace: "        let arm_breaks = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-match-arm-jump-of-blocks-end-unknown",
+    breaks:
+      "an arm of a `match` that ends a block with a `break`, `None => { ..; break; }`, isn't known, so it prints MIR's `return;` (rd165b)",
+    file: "src/lower/mir/hints.rs",
+    find: "                        only = stripped(match (block.stmts.last(), block.expr) {\n",
+    replace: "                        only = stripped(match (None::<&thir::StmtId>, block.expr) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
     name: "mir-label-of-scope",
     breaks:
       "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
