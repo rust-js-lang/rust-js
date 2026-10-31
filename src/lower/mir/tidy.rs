@@ -85,10 +85,8 @@ pub(super) struct Hints<'h> {
     /// Whether the body is a closure's, tidied again in its function's.
     pub(super) closure: bool,
     pub(super) returns: &'h [js::Span],
-    /// The `const`s MIR's lowering made of what an element it made ahead
-    /// of a branch reads (`capture_jsx`): as its temporaries, read where
-    /// they're used where nothing between tells.
-    pub(super) captured: &'h HashSet<String>,
+    /// The `const`s MIR's lowering made that are as its temporaries.
+    pub(super) made: &'h super::Made,
     /// The variables a `clone()` made (`hints.rs::clone_names`).
     pub(super) clones: &'h HashSet<String>,
     /// Of a closure, the variables it captured by value, which its maker
@@ -898,6 +896,7 @@ mod tests {
             set: &none,
             plain: &none,
             captured: &none,
+            fixed: &none,
             paired: &paired,
         };
         inlined(&mut body, &facts);

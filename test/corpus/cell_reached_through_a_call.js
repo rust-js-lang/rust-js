@@ -64,30 +64,29 @@ function main() {
   item$3.value = 0;
   const arg$2 = calls();
   console.log(`take ${taken} ${arg$2}`);
+  get(c).value = 5;
   const item$4 = get(c);
-  item$4.value = 5;
-  const item$5 = get(c);
   const value = {
     get value() {
-      return item$5.value;
+      return item$4.value;
     },
     set value(value) {
-      item$5.value = value;
+      item$4.value = value;
     },
   };
-  const item$6 = get(c);
+  const item$5 = get(c);
   $cellSwap(value, {
     get value() {
-      return item$6.other;
+      return item$5.other;
     },
     set value(value) {
-      item$6.other = value;
+      item$5.other = value;
     },
   });
   console.log(`swap ${c.value} ${c.other} ${calls()}`);
-  const item$7 = valueOf(c);
-  const given = item$7.value;
-  item$7.value = 3;
+  const item$6 = valueOf(c);
+  const given = item$6.value;
+  item$6.value = 3;
   const value$1 = c.value;
   const arg$3 = calls();
   console.log(`returned ${given} ${value$1} ${arg$3}`);

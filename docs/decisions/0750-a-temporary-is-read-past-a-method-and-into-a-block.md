@@ -242,3 +242,28 @@ made after it", run with a getter that changes what the call reads, and
 the mutation `call-moved-past-a-getters-read` (`mir/tidy/moves.ts`). No
 corpus case's JS changes: a getter is JS's, which a native program has
 none of.
+
+## Amendment: what holds a place lowering fixed is read in place (rd202, 2026-10-31)
+
+React DOM's mayResourceSuspendCommit, `resource.type === 'stylesheet' &&
+(resource.state.loading & Inserted) === NotLoaded`, written as Rust reads
+a `Cell`'s field through `resource.state.as_ref().unwrap()`, printed `if
+(resource.kind !== "stylesheet") { return false; } const item =
+$unwrap(resource.state); return (item.loading & 4) === 0;`, the chain
+split around a `const` (preloadResource, acquireResource and
+suspendResource too). MIR's lowering holds the object a reference's place
+is in, `fixed_place_of`'s `item`, so a call between can't change which
+object it is (ADR 0099); but it named it, so `moved` never read it in
+place, as it reads a temporary MIR made.
+
+**What holds a place lowering fixed is one of its temporaries** (`Made`,
+`fixed`, beside the elements' `captured`): read in place where it's read
+once and `moved` says nothing between tells, `resource.kind ===
+"stylesheet" && ($unwrap(resource.state).loading & INSERTED) >>> 0 === 0`.
+Read and written, `const item = get(c); const old = item.value;
+item.value = 9;`, it's named still. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the same evaluation as
+the `const`'s, where it was. Held by the corpus case
+`unwrapped_cell_in_a_chain` (a resource of no state never unwrapped), and
+`cell_reached_through_a_call`'s `get(c).value = 5;`, and the mutation
+`fixed-place-holder-kept` (`mir/tidy/moves.ts`).

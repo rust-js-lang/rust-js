@@ -4,6 +4,16 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fixed-place-holder-kept",
+    breaks:
+      "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) {\n",
+    replace: "    if !is_temporary(name) && !element {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(cell_reached_through_a_call|unwrapped_cell_in_a_chain).rs$"],
+    snapshots: true,
+  },
+  {
     name: "call-moved-past-a-getters-read",
     breaks:
       "a call's value is read past a `const` of a getter's read made after it, `const unknown = props.href == null ..; if (attr(\"href\") === unknown)`, so the getter runs first and the call sees what it did (rd178)",
@@ -97,8 +107,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name) && !element {\n",
-    replace: "    if !is_temporary(name) {\n",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) {\n",
+    replace: "    if !is_temporary(name) && !facts.fixed.contains(name) {\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

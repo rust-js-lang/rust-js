@@ -108,14 +108,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for stmt in &made[before..] {
                     match &stmt.kind {
                         StmtKind::Const(name, _) => {
-                            self.locals.mir.captured.insert(name.clone());
+                            self.locals.mir.made.captured.insert(name.clone());
                             self.locals.mir.alike.insert(name.clone());
                             state.own_names.insert(name.clone());
                         }
                         // What a branch's element reads, set where its test
                         // holds: no `const`, but MIR's too.
                         StmtKind::Let(name, None) => {
-                            self.locals.mir.captured.insert(name.clone());
+                            self.locals.mir.made.captured.insert(name.clone());
                             state.own_names.insert(name.clone());
                         }
                         _ => {}

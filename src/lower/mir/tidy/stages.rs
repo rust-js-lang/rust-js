@@ -79,7 +79,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("guarded", |b, _| js::statement_lists(b, &mut guarded)),
             pass("declarations", |b, _| declarations(b)),
             pass("aliases", |b, h| {
-                aliases(b, h.captured, (&h.params.borrow(), h.kept), (h.clones, &h.named.given))
+                aliases(
+                    b,
+                    &h.made.captured,
+                    (&h.params.borrow(), h.kept),
+                    (h.clones, &h.named.given),
+                )
             }),
             // A `let` of a closure that's the function it calls, the program's
             // own, `const onSuccess = handleNavigateComplete;`: that function,
@@ -201,7 +206,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("alias variables", |b, _| alias_variables(b)),
             pass("read handles", |b, _| read_handles(b)),
             pass("plain reads", |b, h| {
-                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, h.captured))
+                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
             }),
             pass("destructured", |b, h| {
                 js::statement_lists(b, &mut |s| {
@@ -288,7 +293,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tuple reads", |b, h| {
                 let changing = changing(b);
                 let set_elsewhere = set_elsewhere(b);
-                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, h.captured))
+                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))
             }),
             // `dyn` values given to JS, `[{ value, impl }].map((item) =>
             // item.value)`: the values.
@@ -313,7 +318,7 @@ pub(super) const STAGES: &[Stage] = &[
             // What an element MIR made only where a test holds reads, as one
             // value, read in place below, where the test holds.
             pass("guarded lets", |b, h| {
-                js::statement_lists(b, &mut |s| guarded_lets(s, h.captured))
+                js::statement_lists(b, &mut |s| guarded_lets(s, &h.made.captured))
             }),
             // A chain, each step of which the next needs (ADR 0659): `inlined`
             // reads MIR's temporaries in place, which leaves an `if` each of
@@ -1047,7 +1052,8 @@ fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
         changing: &changed,
         set: &set,
         plain: hints.plain,
-        captured: hints.captured,
+        captured: &hints.made.captured,
+        fixed: &hints.made.fixed,
         paired: &paired,
     };
     js::statement_lists(body, &mut |s| inlined(s, &facts));

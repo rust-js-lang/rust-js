@@ -416,6 +416,18 @@ enum Value<'tcx> {
 /// binds each name the pattern binds to.
 type ParamPattern = (usize, js::Pattern, Vec<(Local, String)>);
 
+/// The `const`s MIR's lowering made of a body that tidy reads as its
+/// temporaries, read where they're used where nothing between tells.
+#[derive(Default)]
+pub(super) struct Made {
+    /// Of what an element made ahead of a branch reads (`capture_jsx`).
+    pub(super) captured: HashSet<String>,
+    /// Of what holds a place it fixed, `const item =
+    /// $unwrap(resource.state);` of a cell's field it reads through a
+    /// reference (`fixed_place_of`): read in place where that's once.
+    pub(super) fixed: HashSet<String>,
+}
+
 /// What's known of a body's locals.
 /// What lowering a body from its MIR found of its variables, which goes
 /// with them where a body inside it is lowered (`Locals`): each read and
@@ -450,10 +462,9 @@ pub(super) struct Found {
     /// And the temporaries such a `test && value` tests: read for their
     /// truth alone.
     pub(super) tested: HashSet<String>,
-    /// Of a body lowered from its MIR, the `const`s it made of what an
-    /// element made ahead of a branch reads, which tidy reads in place
-    /// where it can.
-    pub(super) captured: HashSet<String>,
+    /// Of a body lowered from its MIR, the `const`s it made that tidy
+    /// reads in place where it can, as its temporaries.
+    pub(super) made: Made,
     /// Of a body lowered from its MIR, each dictionary it made of a type
     /// known whole that holds a function, and the name it would have: one
     /// written twice or more is declared once at the body's top and named
@@ -1065,7 +1076,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.check_closure_drops()?;
         let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
         let outer_tested = std::mem::take(&mut self.locals.mir.tested);
-        let outer_captured = std::mem::take(&mut self.locals.mir.captured);
+        let outer_made = std::mem::take(&mut self.locals.mir.made);
         let drops = self.mir_elaboration(mir_body);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
@@ -1348,7 +1359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        let captured = std::mem::replace(&mut self.locals.mir.captured, outer_captured);
+        let made = std::mem::replace(&mut self.locals.mir.made, outer_made);
         // The names of `bool`s, of integers, and of floats.
         let (mut booleans, numbers, floats) = self.typed_names(mir_body, &state);
         // And each field path that's a `bool` each time it's read.
@@ -1375,7 +1386,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_some_and(|local| matches!(mir_body.local_decls[local].ty.peel_refs().kind(), ty::Closure(..))),
                 lets: &self.let_names(mir_body, &state),
                 returns: &state.facts.jumps().returns,
-                captured: &captured,
+                made: &made,
                 clones: &self.clone_names(mir_body, &state),
                 kept: &hints::kept_captures(&state),
                 booleans: &booleans,

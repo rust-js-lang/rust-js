@@ -1122,9 +1122,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// index that isn't a constant or a name named too.
     pub(in crate::lower) fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
         let (span, facts) = (place.span, place.facts);
+        // What holds it, named, a temporary of MIR's lowering's, which tidy
+        // reads in place where it's read once.
         let mut fixed = |e: Expr, name: &str, this: &mut Self| match fixed_place(&e) {
             true => e,
-            false => this.spill(name, e, out),
+            false => {
+                let held = this.spill(name, e, out);
+                if let js::ExprKind::Var(name) = &held.kind {
+                    this.locals.mir.made.fixed.insert(name.clone());
+                }
+                held
+            }
         };
         // The same place, what's known of it kept: a nullable field's read
         // never `undefined` (ADR 0620, amended).

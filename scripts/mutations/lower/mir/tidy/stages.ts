@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an element MIR makes only where a test holds stays `let className$2; if (error != null) { .. }`, the props before it held too",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("guarded lets", |b, h| {\n                js::statement_lists(b, &mut |s| guarded_lets(s, h.captured))\n            }),\n',
+    find: '            pass("guarded lets", |b, h| {\n                js::statement_lists(b, &mut |s| guarded_lets(s, &h.made.captured))\n            }),\n',
     replace: "",
     tests: [
       "test/jsx-children.test.ts",
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     breaks:
       "children MIR holds as a tuple stay `const children = [..]`, read `children[0]`, and its `then` closure a `const value`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("tuple reads", |b, h| {\n                let changing = changing(b);\n                let set_elsewhere = set_elsewhere(b);\n                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, h.captured))\n            }),\n',
+    find: '            pass("tuple reads", |b, h| {\n                let changing = changing(b);\n                let set_elsewhere = set_elsewhere(b);\n                js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))\n            }),\n',
     replace: "",
     tests: [
       "test/jsx-children.test.ts",
@@ -398,7 +398,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field of plain data MIR holds, `const t = q.title`, stays held, destructured, not read in place",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("plain reads", |b, h| {\n                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, h.captured))\n            }),\n',
+    find: '            pass("plain reads", |b, h| {\n                js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
     snapshots: true,

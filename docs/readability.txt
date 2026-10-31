@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1396
-lines	137803
+files	1397
+lines	137835
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.9
 $iter	1176	85.3
 Iterator.from	116	8.4
 return;	147	10.7
-renamed x$1	8582	622.8
+renamed x$1	8580	622.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -133,7 +133,7 @@ test/corpus/cell_deque_char_methods.js	120	0	0	0	2	1	0	12
 test/corpus/cell_drops.js	107	0	0	0	0	0	0	13
 test/corpus/cell_from_mut.js	53	0	0	0	0	0	0	0
 test/corpus/cell_of_a_boxed_option.js	62	0	0	0	0	0	0	10
-test/corpus/cell_reached_through_a_call.js	96	0	0	0	0	0	0	26
+test/corpus/cell_reached_through_a_call.js	95	0	0	0	0	0	0	24
 test/corpus/chain_nth_drops_what_it_passes.js	172	0	0	0	4	0	0	20
 test/corpus/chain_rev_own_back.js	132	0	0	0	2	0	0	0
 test/corpus/chain_sides_own_steps.js	550	0	0	0	34	0	0	134
@@ -1280,6 +1280,7 @@ test/corpus/unwrap_dropping.js	153	0	0	0	0	0	0	6
 test/corpus/unwrap_none.js	20	0	0	0	0	0	0	0
 test/corpus/unwrap_string_debug.js	14	0	0	0	0	0	0	0
 test/corpus/unwrap_typed_debug.js	24	0	0	0	0	0	0	0
+test/corpus/unwrapped_cell_in_a_chain.js	33	0	0	0	0	0	0	0
 test/corpus/unzip_into_maps.js	57	0	0	0	0	0	0	6
 test/corpus/use_renames_own_item.js	13	0	0	0	0	0	0	0
 test/corpus/user_as_mut.js	49	0	0	0	0	0	0	0

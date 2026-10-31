@@ -16,6 +16,9 @@ pub(super) struct MoveFacts<'a> {
     pub plain: &'a HashSet<String>,
     /// The elements made ahead of a branch, which may be read where it is.
     pub captured: &'a HashSet<String>,
+    /// What holds a place MIR's lowering fixed, `const item =
+    /// $unwrap(resource.state);`: a temporary of its, named.
+    pub fixed: &'a HashSet<String>,
     /// The temporaries each of whose values is read once, by the statement
     /// after it (`paired_temporaries`).
     pub paired: &'a HashSet<String>,
@@ -154,7 +157,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
     let element = facts.captured.contains(name);
-    if !is_temporary(name) && !element {
+    if !is_temporary(name) && !element && !facts.fixed.contains(name) {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
