@@ -2448,6 +2448,10 @@ export function pairs(v) {
   break; }`, a `break` of the loop a function ends with a `break`, not
   `return;`, a `match`'s `None => break` too, and what follows an `if` you wrote without an `else` after
   it, as React DOM's replayUnblockedFormActions reads (ADR 0684, amended).
+  Nor is there one you didn't write: an `if` your body ends with is that
+  `if`, `if (key > 0 && (!seen || last !== key)) { for (..) { .. } }`, not
+  `if (key > 0) { if (seen && last === key) { continue; } .. }` ([ADR
+  0946](../../decisions/0946-an-if-of-mixed-logicals-is-its-one-test.md), amended).
 - A `while`'s test is the loop's own: an `if` of a `break` first in its
   body is the `if` the program wrote, not joined to the test, and a
   comment before a `break` or a `continue` is before it, inside its `if`,

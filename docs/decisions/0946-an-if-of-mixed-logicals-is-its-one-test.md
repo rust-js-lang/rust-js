@@ -157,3 +157,25 @@ without it; nor one that breaks in its `else`, `!m || ..`, which with it
 gone no input reaches. `guarded` reads `if (c) { break l; }`s alone; the
 mutations `break-test-nested-unread` and `break-test-else-unnegated` go
 with the rest.
+
+## Amended (2026-10-31): a loop's body that ends in the block (rd72b)
+
+CSSPropertyOperations' validateShorthandPropertyCollisionInDev writes
+`if (hasOwnProperty.call(nextStyles, key) && (!prevStyles ||
+prevStyles[key] !== nextStyles[key])) { for (..) { .. } }` as the last
+statement of a loop's body. Its block MIR made ends the body, so the
+loops stage's `continued` read each `break` of it as the loop's
+`continue` before `skipped_tests` ran: `if (a) { if (b && c === d) {
+continue; } for (..) { .. } }`, a `continue` the program didn't write.
+The inner loop's way out, `break` of the same block, is its end by
+then.
+
+**`continued` asks `skipped_test` of a block a loop's body ends in
+first**, the one reader of the shape: where it's an `if` of a logical the
+program wrote, that `if` ends the body, `if (a && (!b || c !== d)) {
+for (..) { .. } }`. Not where one of its `if`s is of a `continue` the
+program wrote (`Written::continues`), `if !(a && ..) { continue; }`,
+whose `continue` stays. Held by `mixed_condition_around_inner_loop.rs`
+(native-compared) and the mutations
+`mixed-condition-ending-a-loop-continued` and
+`written-continue-of-a-mixed-condition-folded`.

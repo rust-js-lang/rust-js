@@ -7,7 +7,11 @@ use super::*;
 /// the loop's `continue`: the block's statements in its place. And one that
 /// ends `if (!c) { a; b }`, as MIR has a `continue` the program wrote,
 /// `if (c) { continue; } a; b`.
-pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::Span, js::Span)]) {
+pub(in crate::lower::mir::tidy) fn continued(
+    stmts: &mut [Stmt],
+    guards: &[(js::Span, js::Span)],
+    logicals: &[js::Span],
+) {
     for stmt in stmts.iter_mut() {
         let (looped, body) = match &mut stmt.kind {
             StmtKind::While { label, body, .. }
@@ -27,6 +31,15 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
                     else {
                         unreachable!("matched")
                     };
+                    // A condition the program wrote, of `&&`, `||` and
+                    // `!` mixed, whose tests leave the block: its `if`, as
+                    // written, not a `continue` it didn't write.
+                    if !continue_tested(&inner, guards)
+                        && let Some(test) = logicals::skipped_test(&block, &inner, logicals)
+                    {
+                        body.push(test);
+                        break;
+                    }
                     let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
                     if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
                         body.push(StmtKind::Labeled(block, inner).at(span));
@@ -65,6 +78,19 @@ pub(in crate::lower::mir::tidy) fn continued(stmts: &mut [Stmt], guards: &[(js::
             }
         }
     }
+}
+
+/// Whether an `if` of `stmts`, or of their `if`s', tests a `continue` the
+/// program wrote (`Written::continues`).
+fn continue_tested(stmts: &[Stmt], guards: &[(js::Span, js::Span)]) -> bool {
+    stmts.iter().any(|s| match &s.kind {
+        StmtKind::If(_, then, otherwise) => {
+            tests_continue(guards, s.span)
+                || continue_tested(then, guards)
+                || otherwise.as_deref().is_some_and(|o| continue_tested(o, guards))
+        }
+        _ => false,
+    })
 }
 
 /// Whether `span` is of the test of an `if` of a `continue` the program

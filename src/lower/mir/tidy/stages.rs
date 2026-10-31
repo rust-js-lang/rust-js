@@ -161,7 +161,7 @@ pub(super) const STAGES: &[Stage] = &[
             // loop held: a `const` there.
             pass("declarations", |b, _| declarations(b)),
             pass("continued", |b, h| {
-                js::statement_lists(b, &mut |s| continued(s, &h.written.continues))
+                js::statement_lists(b, &mut |s| continued(s, &h.written.continues, &h.written.logicals))
             }),
             pass("tail jumps", |b, _| js::statement_lists(b, &mut |s| tail_jumps(s))),
             pass("innermost jumps", |b, _| {

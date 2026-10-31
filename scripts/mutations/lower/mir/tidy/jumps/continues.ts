@@ -9,6 +9,26 @@ const keysIn = [
 
 export const mutations: Mutation[] = [
   {
+    name: "mixed-condition-ending-a-loop-continued",
+    breaks:
+      "an `if` ending a loop's body, of `&&`, `||` and `!` mixed, around a loop, is `if (a) { if (b && c === d) { continue; } for .. }`, a `continue` the program didn't write (rd72b, validateShorthandPropertyCollisionInDev)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    if !continue_tested(&inner, guards)\n                        && let Some(test)",
+    replace: "                    if false\n                        && let Some(test)",
+    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-continue-of-a-mixed-condition-folded",
+    breaks:
+      "an `if` of a `continue` the program wrote, `if (seen && last === key) { continue; }`, is folded into the `if` around the rest, `if (key > 0 && (!seen || last !== key))`, a test it didn't write",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    if !continue_tested(&inner, guards)\n",
+    replace: "                    if true\n",
+    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
     name: "jumps-into-branches-past-a-written-jump",
     breaks:
       "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",

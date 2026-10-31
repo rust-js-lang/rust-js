@@ -714,19 +714,27 @@ pub(super) fn written_ors(stmts: &mut Vec<Stmt>, ifs: &[js::Span]) {
 /// of a logical the program wrote; and where a path's value isn't one of
 /// `&&` or `||` alone, `c ? x : y`, as it was.
 pub(super) fn skipped_tests(stmts: &mut [Stmt], logicals: &[js::Span]) {
-    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     for stmt in stmts.iter_mut() {
-        let StmtKind::Labeled(label, body) = &stmt.kind else {
-            continue;
-        };
-        if !crate::lower::mir::is_block_label(label) {
-            continue;
+        if let StmtKind::Labeled(label, body) = &stmt.kind
+            && let Some(test) = skipped_test(label, body, logicals)
+        {
+            *stmt = test;
         }
-        let Some((test, then, span)) = skipped(body, label, &within) else {
-            continue;
-        };
-        *stmt = StmtKind::If(test, then, None).at(span);
     }
+}
+
+/// Of a block MIR made, `label`, the one `if` `skipped_tests` makes of it.
+/// Read too where a loop's body ends in it, before `continued` makes each
+/// `break label` a `continue`: `if (a && (!b || c)) { for (..) { .. } }`,
+/// as written, not `if (a) { if (b && !c) { continue; } for .. }`, the
+/// inner loop's way out, `break label`, its end now (rd72b).
+pub(super) fn skipped_test(label: &str, body: &[Stmt], logicals: &[js::Span]) -> Option<Stmt> {
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+    if !crate::lower::mir::is_block_label(label) {
+        return None;
+    }
+    let (test, then, span) = skipped(body, label, &within)?;
+    Some(StmtKind::If(test, then, None).at(span))
 }
 
 /// Of a block `label`'s `body`, `if (p) { tree; t }` or `tree; t`, each
