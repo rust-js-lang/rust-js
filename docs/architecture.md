@@ -212,7 +212,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
-| JS classes, `#[rust_js::class]`, objects of methods, `#[rust_js::object]` (ADR 0943), and module namespaces, `#[rust_js::namespace]` (ADR 1037) | `classes.rs` |
+| JS classes, `#[rust_js::class]`, objects of methods, `#[rust_js::object]` (ADR 0943), and module namespaces, `#[rust_js::namespace]` (ADR 1037), whose calls' `self` naming one, and what holds it then, is `classes/namespaces.rs`' | `classes.rs` |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;

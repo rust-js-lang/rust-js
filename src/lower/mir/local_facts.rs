@@ -61,7 +61,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// meet another (`quiet_cells`).
     quiet_cells: QuietCells,
     /// What it writes nothing of, a closure's handle on itself, its cell
-    /// (`analysis/self_handles.rs`, ADR 0843, amended).
+    /// (`analysis/self_handles.rs`, ADR 0843, amended), and what holds a
+    /// namespace only the calls that name it read, which leave their `self`
+    /// out (`classes::unread_namespaces`, rd310).
     unlowered: HashSet<mir::Location>,
     /// Of a closure that reads its handle on itself: each block whose
     /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
@@ -184,7 +186,7 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     }
 
     /// Whether the statement or terminator `at` is no JS, of a handle on
-    /// itself's cell.
+    /// itself's cell or of what holds a namespace nothing reads.
     pub(super) fn unlowered(&self, at: mir::Location) -> bool {
         self.unlowered.contains(&at)
     }
@@ -288,6 +290,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
         let held_arms = self.mir_held_arms(body, &options.held, &bound);
         let payload_tests = self.mir_payload_tests(body);
+        let mut unlowered = handles.unlowered(def_id);
+        unlowered.extend(crate::lower::classes::unread_namespaces(self.tcx, body));
         let facts = LocalFacts {
             awaits: &mir.awaits,
             promoted: &mir.promoted,
@@ -309,7 +313,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             drops,
             captures,
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
-            unlowered: handles.unlowered(def_id),
+            unlowered,
             own,
             wholes: self.mir_wholes(body, locals),
             made_pointers: self.mir_made_pointers(body),

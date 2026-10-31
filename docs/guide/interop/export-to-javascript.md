@@ -1238,7 +1238,9 @@ export function updateContainer(n) {
   method is the arrow of that call.
 - **Its value is the module's namespace**, `import * as Reconciler`, a
   library's too, and its type `typeof Reconciler`, imported so: `import
-  type * as Reconciler from "./reconciler.js"`. A `use` that renames the
+  type * as Reconciler from "./reconciler.js"`. Only a value is: a
+  module that only calls it by name, `let r = &Reconciler;
+  r.create_container(1)` too, imports the functions it calls alone. A `use` that renames the
   struct names the import, `use reconciler::Reconciler as DefaultConfig`
   `import * as DefaultConfig`, as it names any.
 - **A method that only passes its parameters on, in order, to another

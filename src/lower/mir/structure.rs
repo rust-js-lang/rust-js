@@ -268,8 +268,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             state.statement = index;
             self.flag_sets(state, at, &mut made)?;
-            // A closure's handle on itself, its cell: no JS
-            // (`analysis/self_handles.rs`).
+            // A closure's handle on itself, its cell, or what holds a
+            // namespace only the calls that name it read: no JS
+            // (`analysis/self_handles.rs`, `classes::unread_namespaces`).
             if state.facts.unlowered(at) {
                 out.extend(made);
                 state.unwind = unwind;

@@ -267,3 +267,28 @@ Mutations `flattened-alike-read`, `flattened-alike-callee-read`,
 (`classes.ts`), `through-flattened-unmarked` and
 `through-flattened-js-alike` (`mir/calls.ts`).
 
+## Amendment: a namespace only named calls read is no value (rd310)
+
+React DOM calls the reconciler's namespace by name, another crate's,
+`ReactFiberReconciler.attempt_synchronous_hydration(fiber)`, which is
+`attemptSynchronousHydration(fiber)` as decided; but MIR holds `&Reconciler`
+in a temporary first, `_2 = const &ReactFiberReconciler`, whose lowering
+asked for the library's namespace, `import * as ReactFiberReconciler`,
+which nothing read. The crate's own namespace was a module symbol, which
+linking writes only where it's read, so only a library's showed it.
+
+Now what holds a namespace that only the calls naming it read, each such
+call's `self`, or another such holder's write, a `let reconciler =
+&Reconciler;` (its fake read no read), is written nowhere
+(`classes/namespaces.rs`' `unread_namespaces`, beside `names_namespace`, whose holders it
+reads; `LocalFacts::unlowered`): no JS, and no import. One read
+otherwise, returned or given, is written as before, `const reconciler =
+Reconciler;`. Case ([0262](0262-when-rust-and-js-disagree.md)): N, a
+unit struct's value is nothing to compute, and the calls leave it out.
+
+Held by `test/namespaces.test.ts`'s "a library's namespace is called by
+name or through the value a binding gives" (its `named` crate and
+`kept`), and the mutations `unread-namespace-written`,
+`read-namespace-unwritten`, `namespace-let-fake-read-a-read` and
+`namespace-chain-write-a-read`.
+

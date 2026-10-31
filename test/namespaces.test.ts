@@ -261,6 +261,12 @@ pub fn namespace() -> &'static Reconciler {
     &Reconciler
 }
 
+pub fn kept(roots: &mut Vec<u32>) -> &'static Reconciler {
+    let reconciler = &Reconciler;
+    roots.push(reconciler.create_container(1));
+    reconciler
+}
+
 pub fn noop() -> u32 {
     let noop_renderer = create_reconciler(&Config { base: 100 });
     noop_renderer.create_container(4) + noop_renderer.update_container(1)
@@ -299,9 +305,51 @@ pub fn noop() -> u32 {
   expect(app).toContain(
     'import * as Reconciler from "../dep/reconciler.js";\n',
   );
-  expect([lib.dom(), lib.noop(), lib.namespace().updateContainer(2)]).toEqual([
-    7, 105, 4,
+  const roots: number[] = [];
+  expect([lib.dom(), lib.noop(), lib.namespace().updateContainer(2), lib.kept(roots).updateContainer(3), roots]).toEqual([
+    7, 105, 4, 6, [3],
   ]);
+  // Called by name alone, as React DOM calls the reconciler's
+  // `ReactFiberReconciler.attempt_synchronous_hydration(fiber)`: its named
+  // import alone, no namespace's that nothing reads (rd310).
+  writeFileSync(
+    join(dir, "named.rs"),
+    `use dep::reconciler::Reconciler;
+
+pub fn dom() -> u32 {
+    Reconciler.create_container(3) + Reconciler.update_container(1)
+}
+
+pub fn held() -> u32 {
+    let reconciler = &Reconciler;
+    reconciler.create_container(1) + reconciler.update_container(2)
+}
+`,
+  );
+  run([
+    compiler,
+    join(dir, "named.rs"),
+    "-o",
+    join(dir, "named", "lib.js"),
+    "--dependency",
+    join(dir, "dep", "lib.manifest.json"),
+    "--",
+    "--crate-name",
+    "named",
+    "--extern",
+    `dep=${join(dir, "libdep.rmeta")}`,
+    "-L",
+    dir,
+    ...js,
+  ]);
+  const named = readFileSync(join(dir, "named", "lib.js"), "utf8");
+  expect(named).toContain(
+    'import { createContainer, updateContainer } from "../dep/reconciler.js";\n',
+  );
+  expect(named).not.toContain("import * as");
+  expect(named).toContain("  return (createContainer(1) + updateContainer(2)) >>> 0;\n");
+  const { dom, held } = await import(join(dir, "named", "lib.js"));
+  expect([dom(), held()]).toEqual([9, 7]);
 });
 
 // React's reconciler re-exports the work loop's functions, `export {
