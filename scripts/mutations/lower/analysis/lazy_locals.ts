@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return true;\n            }\n            for &imp in impls.of_trait",
     tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local of a dyn Fn's call"],
   },
+  {
+    name: "type-argument-dyn-followed",
+    breaks: "a `dyn Fn` a binding's call names only as a type argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, is taken for one it may call, so React's componentFrameCache is `$local(() => ..)` and each read a call (rd281)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn only as a type argument"],
+  },
+  {
+    name: "fn-item-arguments-walked",
+    breaks: "a function item's type arguments, `js::weak_map::new::<dyn Fn() -> .., String>` given to `call_static`, are taken for values it holds, so a `dyn Fn` among them makes the thread-local `$local` (rd281)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                walker.skip_current_subtree();\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn only as a type argument"],
+  },
 ];

@@ -281,3 +281,30 @@ Held by `test/next.test.ts`'s app (`catchError`, `withRouter`) and
 `test/react.test.ts`'s "React's createContext and cache keep what they're
 given, made at load", and `test/js-collections.test.ts`'s "whether the host
 has a FinalizationRegistry is is_defined of its constructor".
+
+## Amendment: a `dyn` named only as a type argument runs nothing (rd281)
+
+React's componentFrameCache, written as upstream's, `let
+possibly_weak_map = if js::is_function(js::class::<WeakMap<Key, String>>)
+{ .. } else { js::class::<js::Map<Key, String>>() };
+Some(possibly_weak_map.call_static(js::weak_map::new, ()))` of `type Key
+= dyn Fn() -> Option<&'static Unknown>`, was made where it's first used,
+`$local(() => ..)`, each read a call: `loaded_by` took the `dyn Fn` in
+the type arguments of a binding's call, `js::class::<WeakMap<Key, ..>>`,
+and of a function item given one, `js::weak_map::new::<Key, String>`, for
+a `dyn Fn` the binding may call, which rust-js can't follow. Neither is a
+value: a type argument names a type, and a function item holds none.
+**What a call of a library's or a binding's is given is the values of
+its inputs, not a function item's type arguments (`values_in`); of its
+own type arguments, the closures and functions they name, and the drops
+of their types, but no `dyn`, of which it's given no value.** The crate's
+function given is followed of its arguments where it's called, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: nothing of the crate's runs that didn't, and it's made as its
+module loads, as each one that runs only what rust-js follows is.
+
+Held by `test/lowering-module-variables.test.ts`' "a thread-local that
+names a dyn Fn only as a type argument is made as its module loads", and
+mutations `type-argument-dyn-followed` and `fn-item-arguments-walked`
+(`analysis/lazy_locals.ts`).

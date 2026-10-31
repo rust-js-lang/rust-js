@@ -175,6 +175,51 @@ pub fn named() -> String {
   }
 });
 
+// rd281: React's componentFrameCache, upstream's `const PossiblyWeakMap =
+// typeof WeakMap === 'function' ? WeakMap : Map; componentFrameCache = new
+// PossiblyWeakMap();`, names its keys' type, `dyn Fn`, only as a type
+// argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, of no value
+// a binding may call: it's made as its module loads, not `$local`, each
+// read a call (ADR 1006, amended).
+test("a thread-local that names a dyn Fn only as a type argument is made as its module loads", () => {
+  const dir = fixture("dyn-named-at-load");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, WeakMap};
+
+unsafe extern "Rust" {
+    pub safe static __DEV__: bool;
+}
+
+type Key = dyn Fn() -> Option<&'static Unknown>;
+
+thread_local! {
+    static COMPONENT_FRAME_CACHE: Option<&'static WeakMap<Key, String>> = if __DEV__ {
+        #[cfg_attr(rust_js, rust_js::name = "PossiblyWeakMap")]
+        let possibly_weak_map = if js::is_function(js::class::<WeakMap<Key, String>>) {
+            js::class::<WeakMap<Key, String>>()
+        } else {
+            js::class::<js::Map<Key, String>>()
+        };
+        Some(possibly_weak_map.call_static(js::weak_map::new, ()))
+    } else {
+        None
+    };
+}
+
+pub fn cached(key: &Key) -> Option<String> {
+    COMPONENT_FRAME_CACHE.with(|cache| cache.and_then(|cache| cache.get(key)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain(`let componentFrameCache;
+if (__DEV__) {
+  const PossiblyWeakMap = typeof WeakMap === "function" ? WeakMap : Map;
+  componentFrameCache = new PossiblyWeakMap();
+}
+`);
+  expect(out).toContain("return componentFrameCache?.get(key);");
+});
+
 // rd137: a module that reads a function another re-exports, through the
 // re-exporting module's namespace, `A.f()`, imports that module, so a
 // thread-local of it whose initializer runs the reader is of an import

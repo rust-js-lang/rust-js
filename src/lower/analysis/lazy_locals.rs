@@ -206,7 +206,7 @@ fn loaded_by<'tcx>(
         // its modules load before the crate's.
         let given = |tys: &[ty::Ty<'tcx>], work: &mut Vec<_>| {
             for &ty in tys {
-                for part in ty.walk().filter_map(|part| part.as_type()) {
+                for part in values_in(ty) {
                     match *part.kind() {
                         ty::Closure(f, f_args) if bodies.contains_key(&f) => work.push((f, f_args)),
                         ty::FnDef(..) => {
@@ -281,12 +281,16 @@ fn loaded_by<'tcx>(
                 }
                 None => {}
             }
+            // Of its type arguments, `js::class::<WeakMap<dyn Fn(), String>>()`'s,
+            // what they name, of no value given: a `dyn` among them nothing
+            // it may call (rd281).
             let sig = tcx.fn_sig(callee).instantiate(tcx, callee_args).skip_normalization();
-            let tys: Vec<ty::Ty<'tcx>> = callee_args
-                .types()
-                .chain(sig.skip_binder().inputs().iter().copied())
+            let named: Vec<ty::Ty<'tcx>> = (callee_args.types())
+                .flat_map(values_in)
+                .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
                 .collect();
-            given(&tys, work)
+            callee_args.types().for_each(|ty| dropped(ty, work));
+            given(&named, work) && given(sig.skip_binder().inputs(), work)
         };
         for data in mir.basic_blocks.iter() {
             match &data.terminator().kind {
@@ -331,6 +335,24 @@ fn loaded_by<'tcx>(
     }
     reached.retain(|&id| id != init);
     Some(reached)
+}
+
+/// The types of the values a value of `ty` may hold or be, itself among
+/// them: not a function item's type arguments, which name types,
+/// `js::class::<WeakMap<dyn Fn(), String>>`'s, of no value (rd281); the
+/// crate's function is followed of them where it's called.
+fn values_in<'tcx>(ty: ty::Ty<'tcx>) -> Vec<ty::Ty<'tcx>> {
+    let mut found = Vec::new();
+    let mut walker = ty.walk();
+    while let Some(part) = walker.next() {
+        if let Some(part) = part.as_type() {
+            found.push(part);
+            if matches!(part.kind(), ty::FnDef(..)) {
+                walker.skip_current_subtree();
+            }
+        }
+    }
+    found
 }
 
 /// What `body` reads by its name of the crate's: each thread-local, by its
