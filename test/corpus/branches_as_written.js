@@ -135,7 +135,7 @@ function main() {
   const make = thenable([1, 2]);
   const [resolve, reject] = make();
   console.log(`${resolve(3)} ${reject(4)}`);
-  const [resolve$1, reject$1] = thenable(undefined)();
+  const [resolve$1, reject$1] = thenable()();
   console.log(`${resolve$1(3)} ${reject$1(4)}`);
   console.log(`${borrowedThenGivenAnother()}`);
 }

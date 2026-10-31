@@ -15,8 +15,8 @@ function nested(o) {
 }
 
 function main() {
-  console.log(`${unit($some(undefined))} ${unit(undefined)}`);
-  console.log(`${nested($some(undefined))} ${nested(1)} ${nested(undefined)}`);
+  console.log(`${unit($some(undefined))} ${unit()}`);
+  console.log(`${nested($some(undefined))} ${nested(1)} ${nested()}`);
   const a = 2;
   console.log(`${a === 2} ${a !== 3}`);
 }

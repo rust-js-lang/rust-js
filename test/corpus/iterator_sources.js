@@ -83,7 +83,7 @@ function main() {
   console.log(`${dashes} [${words.map((item) => $debugStr(item)).join(", ")}]`);
   const padded = Array.from($lazyChain($iter([1, 2]), $repeating(0)).take(5));
   console.log(`[${padded.join(", ")}]`);
-  console.log(`[${maybeItems(4).join(", ")}] [${maybeItems(undefined).join(", ")}]`);
+  console.log(`[${maybeItems(4).join(", ")}] [${maybeItems().join(", ")}]`);
   const total =
     ((3 == null ? [] : [3]).reduce((a, b) => (a + b) | 0, 0) +
       [].reduce((a, b) => (a + b) | 0, 0)) |

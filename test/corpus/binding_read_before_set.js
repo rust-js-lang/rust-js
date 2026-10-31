@@ -97,7 +97,7 @@ function retested(raw) {
 
 function main() {
   console.log(`${argued(1, true)} ${argued(1, false)}`);
-  console.log(`${retested(5)} ${retested(1)} ${retested(undefined)}`);
+  console.log(`${retested(5)} ${retested(1)} ${retested()}`);
   let walk = linked([1, 2, 3, 4]);
   const seen = [];
   while (walk != null) {

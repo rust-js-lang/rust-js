@@ -23,7 +23,7 @@ const source = [
 // Read-only, but still selectable and copyable. Highlighted as JS for a
 // generated file, plain text when it shows rustc's diagnostics.
 const jsOutput = output(javascript());
-const plainOutput = output(undefined);
+const plainOutput = output();
 
 function output(language) {
   const extensions = [basicSetup];

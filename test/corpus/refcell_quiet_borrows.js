@@ -25,7 +25,7 @@ function nested(prev) {
 }
 
 function main() {
-  const outer = nested(undefined);
+  const outer = nested();
   addType(outer, "a");
   addType(outer, "b");
   addType(outer, "a");

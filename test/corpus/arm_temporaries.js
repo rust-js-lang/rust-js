@@ -158,7 +158,7 @@ function main() {
                 try {
                   console.log(`none ${Mapped.count(none)}`);
                   console.log(`first ${first("g")}`);
-                  console.log(`first ${first(undefined)}`);
+                  console.log(`first ${first()}`);
                   console.log("end");
                 } finally {
                   if (none.TAG === "Single") {

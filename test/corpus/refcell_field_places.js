@@ -63,7 +63,7 @@ function main() {
   setCurrentFiber(parent);
   const value = currentTag();
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  setCurrentFiber(undefined);
+  setCurrentFiber();
   const value$1 = currentTag();
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   current = parent;

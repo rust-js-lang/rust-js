@@ -72,7 +72,7 @@ function nested(take, inner) {
 function main() {
   console.log(`${pick(false)} ${pick(true)}`);
   console.log(`${both(false)} ${both(true)}`);
-  console.log(`${guard(undefined)} ${guard(1)} ${guard(2)}`);
+  console.log(`${guard()} ${guard(1)} ${guard(2)}`);
   console.log(`${nested(false, true)} ${nested(true, false)} ${nested(true, true)}`);
   let x = 0;
   const x$1 = { value: x };

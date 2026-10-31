@@ -77,7 +77,7 @@ function main() {
   console.log(`${tailMatch(other, wip)} ${wip.lanes}`);
   statementMatch(undefined, wip);
   statementMatch(other, wip);
-  console.log(`${valueMatch(4)} ${valueMatch(undefined)}`);
+  console.log(`${valueMatch(4)} ${valueMatch()}`);
   console.log(`${summed([1, undefined, 5])}`);
   const v = [];
   console.log(`${turned(true, v)} ${turned(false, v)} [${v.join(", ")}]`);

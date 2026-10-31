@@ -52,7 +52,7 @@ function main() {
   console.log(`${$debugStr(currentStack(true))}`);
   current = "app";
   console.log(`${$debugStr(currentStack(true))} ${$debugStr(currentStack(false))}`);
-  console.log(`${named("ab")} ${named(undefined)}`);
+  console.log(`${named("ab")} ${named()}`);
   console.log(`${both(undefined, 1)} ${both(2)} ${both(2, 3)}`);
   console.log(`${firstEven([1, 4])} ${firstEven([1, undefined, 2])} ${firstEven([3])}`);
 }

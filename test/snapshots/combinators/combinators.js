@@ -180,13 +180,13 @@ export function report() {
     out += `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
     const value$4 = nameOf(named);
-    const value$5 = nameOf(undefined);
+    const value$5 = nameOf();
     out += `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
     const value$6 = otherName(undefined, named);
     const value$7 = otherName(n, named);
     out += `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`}\n`;
-    out += `${$debugStr(labelOf(named))} ${$debugStr(labelOf(undefined))}\n`;
-    out += `${$debugStr(labelOrElse(named))} ${$debugStr(labelOrElse(undefined))}\n`;
+    out += `${$debugStr(labelOf(named))} ${$debugStr(labelOf())}\n`;
+    out += `${$debugStr(labelOrElse(named))} ${$debugStr(labelOrElse())}\n`;
   }
   return out;
 }

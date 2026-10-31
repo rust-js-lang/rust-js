@@ -33,7 +33,19 @@ function each(f) {
   return f(undefined, 4);
 }
 
+const u32Label = { label: u32Label_label };
+function u32Label_label(self) {
+  return `#${self}`;
+}
+
+function labelled(x, TLabel) {
+  return x != null ? TLabel.label(x) : "unlabelled";
+}
+
 function main() {
+  console.log(`${shown()} ${shown(7)}`);
+  done();
+  console.log(`${labelled(undefined, u32Label)} ${labelled(8, u32Label)}`);
   const named = (x) => (x != null ? (x + 1) >>> 0 : 0);
   console.log(`${named()} ${named(1)}`);
   function g(n, label) {

@@ -227,3 +227,23 @@ and `test/runtime-package.test.ts`'s "an undefined given to JS is an
 argument, never left out", whose `Math.max` given from JS gives `1` and
 whose pointer of it `NaN`.
 
+
+## Amendment: the crate's own function's call leaves it out (2026-10-31)
+
+Point 3 says a trailing `None` is no argument in a call of the crate's
+own function as in a binding's, but a call of one given it alone printed
+`own(undefined)`: only prepare's rule left out a trailing `undefined`, and
+only after another argument (ADR 0313). A trailing `()` was given too,
+`done(undefined)`. **A call of the crate's own function leaves out a
+trailing `None` of an `Option` parameter and a trailing `()`**, `own()`,
+`done()`, `calls::left_out`, as a function value's call does (rd271),
+where each argument is its parameter's and no dictionary comes after it:
+a generic function's `labelled(undefined, u32Label)` keeps it, as the
+dictionary is its next argument. The coordinator's decision, for one rule
+of every call.
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): the function is
+the crate's, whose Rust reads no `arguments.length`, so it can't tell.
+Held by the corpus's `option_arguments` (against native Rust) and
+mutations `own-call-none-given` and
+`own-call-none-before-dictionary-left-out` (`mir/calls.ts`).

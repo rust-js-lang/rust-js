@@ -28,7 +28,7 @@ function main() {
   console.log(`${best == null ? "None" : `Some(${best})`}`);
   scaledOrLast();
   heldCopied(probe(6));
-  heldCopied(undefined);
+  heldCopied();
 }
 
 // Of `names`' stage, an `if let` of a borrow whose binding is only copied:

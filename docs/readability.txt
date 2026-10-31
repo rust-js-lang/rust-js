@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1380
-lines	136571
+files	1383
+lines	136915
 temporaries	1	0.1
-labeled blocks	15	1.1
-while (true)	125	9.2
-$iter	1178	86.3
+labeled blocks	16	1.2
+while (true)	129	9.4
+$iter	1178	86
 Iterator.from	116	8.5
 return;	145	10.6
-renamed x$1	8579	628.2
+renamed x$1	8588	627.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -76,6 +76,7 @@ test/corpus/blanket_unsized_impl.js	44	0	0	0	2	0	0	6
 test/corpus/block_modules.js	28	0	0	0	0	0	0	4
 test/corpus/bool_call_of_another_module.js	21	0	0	0	0	0	0	0
 test/corpus/bool_ops_by_ref.js	30	0	0	0	1	0	0	0
+test/corpus/borrow_loop_inner_break_outer.js	46	0	1	0	0	0	0	0
 test/corpus/borrow_mut_supertrait.js	97	0	0	0	0	0	0	0
 test/corpus/borrowed_loop_value_if.js	108	0	0	0	0	0	0	2
 test/corpus/bounds_by_a_value.js	123	0	0	0	0	0	0	0
@@ -151,7 +152,7 @@ test/corpus/class_cell_fields.js	56	0	0	0	0	0	0	0
 test/corpus/class_constructor_statements.js	51	0	0	0	0	0	1	0
 test/corpus/class_display.js	58	0	0	0	0	0	0	0
 test/corpus/class_getters.js	70	0	0	0	0	0	0	0
-test/corpus/class_local_named_as_self.js	40	0	0	0	0	0	0	0
+test/corpus/class_local_named_as_self.js	38	0	0	0	0	0	0	0
 test/corpus/class_methods.js	70	0	0	0	0	0	1	0
 test/corpus/class_to_string.js	35	0	0	0	0	0	0	0
 test/corpus/clock.js	57	0	0	0	0	0	0	2
@@ -675,6 +676,7 @@ test/corpus/loop_value_after_loop.js	38	0	0	2	0	0	1	0
 test/corpus/loop_value_given_in_its_test.js	110	0	0	5	0	0	0	6
 test/corpus/loop_value_then_tail.js	121	0	0	5	0	0	1	4
 test/corpus/loop_values.js	46	0	0	3	0	0	0	0
+test/corpus/looped_drops_jumps.js	242	0	0	4	0	0	0	9
 test/corpus/manually_drop_through_mut.js	31	0	0	0	0	0	0	0
 test/corpus/manually_drop_unsized.js	38	0	0	0	0	0	0	0
 test/corpus/manually_drop_values.js	31	0	0	0	0	0	0	0
@@ -780,6 +782,7 @@ test/corpus/once_cells.js	157	0	0	0	0	0	0	24
 test/corpus/opaque_iterators.js	59	0	0	0	1	0	0	11
 test/corpus/operands_before_replace.js	23	0	0	0	0	0	0	2
 test/corpus/operator_output_drops.js	27	0	0	0	0	0	0	0
+test/corpus/option_arguments.js	62	0	0	0	0	0	0	0
 test/corpus/option_as_deref.js	27	0	0	0	0	0	0	3
 test/corpus/option_as_mut_generic.js	152	0	0	0	0	0	0	14
 test/corpus/option_bool_tested.js	39	0	0	0	0	0	0	0
@@ -1194,7 +1197,7 @@ test/corpus/thread_local_exported_made.js	17	0	0	0	0	0	0	0
 test/corpus/thread_local_made_by_boxed_closure.js	28	0	0	0	0	0	0	0
 test/corpus/thread_local_made_by_constructor.js	67	0	0	0	0	0	0	0
 test/corpus/thread_local_made_where_used.js	81	0	0	0	0	0	0	0
-test/corpus/thread_local_reads_another_set.js	89	0	0	0	0	0	0	2
+test/corpus/thread_local_reads_another_set.js	85	0	0	0	0	0	0	2
 test/corpus/thread_local_refcell_set.js	54	0	0	0	0	0	0	2
 test/corpus/thread_local_refcell_set_borrowed.js	25	0	0	0	0	0	0	3
 test/corpus/thread_local_refcell_take.js	86	0	0	0	0	0	0	18

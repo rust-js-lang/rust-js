@@ -36,7 +36,7 @@ function plainRunner_run(plain, f) {
 
 function main() {
   const three = flushSync(() => 3);
-  const none = flushSync(undefined);
+  const none = flushSync();
   const someNone = flushSync(() => undefined);
   const someFive = flushSync(() => 5);
   const unit = flushSync(() => {});

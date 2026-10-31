@@ -18,7 +18,7 @@ function main() {
   );
   const value = first([4, 5]);
   const value$1 = first([]);
-  const value$2 = first(undefined);
+  const value$2 = first();
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );

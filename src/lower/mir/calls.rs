@@ -449,7 +449,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its rest arguments, the slice spread (ADR 0664), which nothing
         // comes after.
         self.rest_given(def_id, &mut exprs);
-        exprs.extend(self.evidence_args(def_id, generic_args, span)?);
+        let evidence = self.evidence_args(def_id, generic_args, span)?;
+        // A trailing `None` or `()` is no argument, `own()` of `own(None)`,
+        // as a binding's and a function value's are (ADRs 0443, 0441): of a
+        // parameter declared an `Option` or `()`, TypeScript's `x?`, not a
+        // type parameter's, `createCursor(undefined)`; where nothing comes
+        // after it, a dictionary, and each argument is its parameter's.
+        let declared = self.tcx.fn_sig(def_id).instantiate_identity().skip_binder();
+        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {
+            crate::lower::calls::left_out(self.tcx, &mut exprs, declared.inputs(), &[]);
+        }
+        exprs.extend(evidence);
         // The copy of it, where JS calls it too, that takes what this call
         // gives as it gives it (ADR 0051, amended).
         let copy = self.called_copy((def_id, generic_args), span)?;

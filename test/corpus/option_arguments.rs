@@ -4,7 +4,9 @@
 // another argument. Only `arguments.length` tells, which no Rust function
 // reads. A `None` before a given argument stays, and a `Some(())` is given.
 // A pointer's trailing `()` is no argument either, as a closure's (ADR 0441);
-// a unit struct's, `undefined` too, is a value given.
+// a unit struct's, `undefined` too, is a value given. The crate's own
+// function's call leaves them out too, `shown()`, `done()`, but where a
+// dictionary comes after them, a generic one's.
 fn shown(x: Option<u32>) -> String {
     match x {
         Some(n) => format!("some {n}"),
@@ -37,7 +39,24 @@ fn each<F: Fn(Option<u32>, u32) -> String>(f: F) -> String {
     f(None, 4)
 }
 
+trait Label {
+    fn label(&self) -> String;
+}
+
+impl Label for u32 {
+    fn label(&self) -> String {
+        format!("#{self}")
+    }
+}
+
+fn labelled<T: Label>(x: Option<T>) -> String {
+    x.map_or("unlabelled".to_string(), |x| x.label())
+}
+
 fn main() {
+    println!("{} {}", shown(None), shown(Some(7)));
+    done(());
+    println!("{} {}", labelled::<u32>(None), labelled(Some(8)));
     let named = |x: Option<u32>| x.map_or(0, |n| n + 1);
     println!("{} {}", named(None), named(Some(1)));
     let g = |n: u32, label: Option<&str>| println!("g {n} {}", label.unwrap_or("none"));

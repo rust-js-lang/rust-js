@@ -148,17 +148,17 @@ function main() {
   }
   console.log(`${countValues(values)}`);
   // Numbers, text and bigints that are falsy are there too.
-  console.log(`${numberBranch(0)} ${numberBranch(1)} ${numberBranch(undefined)}`);
-  console.log(`${floatBranch(0)} ${floatBranch(-0)} ${floatBranch(NaN)} ${floatBranch(undefined)}`);
-  console.log(`${bigBranch(0n)} ${bigBranch(undefined)}`);
-  console.log(`${textBranch("")} ${textBranch("a")} ${textBranch(undefined)}`);
+  console.log(`${numberBranch(0)} ${numberBranch(1)} ${numberBranch()}`);
+  console.log(`${floatBranch(0)} ${floatBranch(-0)} ${floatBranch(NaN)} ${floatBranch()}`);
+  console.log(`${bigBranch(0n)} ${bigBranch()}`);
+  console.log(`${textBranch("")} ${textBranch("a")} ${textBranch()}`);
   const value = stringTried("");
-  const value$1 = stringTried(undefined);
+  const value$1 = stringTried();
   console.log(
     `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  console.log(`${flagBranch(false)} ${flagBranch(true)} ${flagBranch(undefined)}`);
-  console.log(`${flagPresent(false)} ${flagPresent(undefined)}`);
+  console.log(`${flagBranch(false)} ${flagBranch(true)} ${flagBranch()}`);
+  console.log(`${flagPresent(false)} ${flagPresent()}`);
   console.log(
     `${countSome([0, undefined, 0])} ${countSome(["", undefined])} ${countSome([
       false,
@@ -168,10 +168,10 @@ function main() {
   );
   // Objects, arrays and functions: never falsy, an empty one too.
   const origin = { x: 0 };
-  console.log(`${pointBranch(origin)} ${pointBranch({ x: 2 })} ${pointBranch(undefined)}`);
-  console.log(`${listBranch([])} ${listBranch([0])} ${listBranch(undefined)}`);
+  console.log(`${pointBranch(origin)} ${pointBranch({ x: 2 })} ${pointBranch()}`);
+  console.log(`${listBranch([])} ${listBranch([0])} ${listBranch()}`);
   const zero = () => 0;
-  console.log(`${called(zero)} ${called(undefined)}`);
+  console.log(`${called(zero)} ${called()}`);
   const value$2 = firstPoint([origin]);
   const value$3 = firstPoint([undefined]);
   const value$4 = firstPoint([]);

@@ -145,7 +145,7 @@ function main() {
   const value = nested($some(undefined));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   caught("nested", () => {
-    const value = nested(undefined);
+    const value = nested();
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   });
 }

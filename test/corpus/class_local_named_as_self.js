@@ -30,9 +30,7 @@ export const Plain = {
 function main() {
   const point = new Point(1.5);
   console.log(`${$displayF64(point.moved(2))} ${$displayF64(point.x)}`);
-  console.log(
-    `${$displayF64(point.either(undefined))} ${$displayF64(point.either(new Point(10)))}`,
-  );
+  console.log(`${$displayF64(point.either())} ${$displayF64(point.either(new Point(10)))}`);
   const plain = { x: 3 };
   console.log(`${$displayF64(Plain.moved(plain, 1))} ${$displayF64(plain.x)}`);
 }

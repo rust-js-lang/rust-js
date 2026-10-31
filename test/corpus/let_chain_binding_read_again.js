@@ -41,7 +41,7 @@ function clearedFirst(fiber) {
 function main() {
   const task = { runs: 0 };
   const fiber = { task };
-  console.log(`${once(fiber)} ${once(fiber)} ${once(undefined)}`);
+  console.log(`${once(fiber)} ${once(fiber)} ${once()}`);
   console.log(`${twice(fiber)} ${fiber.task == null}`);
   fiber.task = task;
   console.log(`${clearedFirst(fiber)} ${fiber.task == null} ${once(fiber)}`);

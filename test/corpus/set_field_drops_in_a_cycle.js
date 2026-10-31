@@ -53,12 +53,12 @@ function main() {
   }
   const first = {
     name: "first",
-    step: step(undefined),
+    step: step(),
   };
   try {
     const held = step({
       name: "inner",
-      step: step(undefined),
+      step: step(),
     });
     console.log(`${first.step.tags.size} ${held.seen.size} ${held.next != null}`);
     dropStep(held);

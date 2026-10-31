@@ -62,7 +62,7 @@ function main() {
   console.log(`${firstOver([1, 5, 9], 4)}`);
   console.log(`${firstOver([1, 2], 4)}`);
   console.log(`${copied(true)} ${copied(false)}`);
-  console.log(`${given(0)} ${given(undefined)}`);
+  console.log(`${given(0)} ${given()}`);
   const slot = {};
   const value = elsewhere(slot, [1, 3]);
   console.log(`(${value[0]}, ${value[1]}, ${value[2]})`);

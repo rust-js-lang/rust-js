@@ -15,6 +15,6 @@ function main() {
   console.log(`${JSON.stringify(null)}`);
   const frames = { opacity: [1, 0] };
   console.log(`${mapped(frames)}`);
-  console.log(`${mapped(undefined)}`);
+  console.log(`${mapped()}`);
 }
 //# sourceMappingURL=case.js.map

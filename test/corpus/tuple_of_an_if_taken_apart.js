@@ -62,6 +62,6 @@ function main() {
   const log = [];
   console.log(`${three(5, log)} ${three(2, log)} ${three(1, log)}`);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
-  console.log(`${matched(3)} ${matched(undefined)}`);
+  console.log(`${matched(3)} ${matched()}`);
 }
 //# sourceMappingURL=case.js.map

@@ -33,7 +33,7 @@ function kept(fiber, min) {
 function main() {
   const fiber = { task: "render" };
   console.log(`${probed(fiber)} ${fiber.task == null ? "None" : `Some(${$debugStr(fiber.task)})`}`);
-  console.log(`${probed(fiber)} ${probed(undefined)}`);
+  console.log(`${probed(fiber)} ${probed()}`);
   fiber.task = "commit";
   const value = kept(fiber, 2);
   const task = fiber.task;

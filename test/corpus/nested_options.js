@@ -63,7 +63,7 @@ function main() {
   const found = table.length > 1 ? $some(undefined) : undefined;
   console.log(`${found == null ? "None" : "Some(())"} ${found !== undefined}`);
   console.log(
-    `${depth(undefined)} ${depth($some(undefined))} ${depth($some($some(undefined)))} ${depth(4)}`,
+    `${depth()} ${depth($some(undefined))} ${depth($some($some(undefined)))} ${depth(4)}`,
   );
   let units = [$some(undefined), undefined];
   const firsts = [$someAt(units, 0), $someAt(units, 1), $someAt(units, 5)];
@@ -109,7 +109,7 @@ function main() {
   console.log(
     `${NOTHING_FOUND == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(NOTHING_FOUND))})`} ${value$7} ${FOUND_UNIT == null ? "None" : `Some(${unitDebug_fmt($someValue(FOUND_UNIT))})`} ${arg}`,
   );
-  console.log(`${describe(undefined)} ${describe($some(undefined))} ${describe(2)}`);
+  console.log(`${describe()} ${describe($some(undefined))} ${describe(2)}`);
   const o = $some(undefined);
   const value$8 = o != null ? $someValue(o) : undefined;
   const value$9 = o != null ? $someValue(o) : 1;

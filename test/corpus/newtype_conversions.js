@@ -52,7 +52,7 @@ function main() {
     console.log(`${doubledDebug_fmt(doubled)} ${boxedDebug_fmt(value$1)}`);
   }
   const eventPriority = maybe(4);
-  const value = maybe(undefined);
+  const value = maybe();
   console.log(
     `${eventPriority == null ? "None" : `Some(${eventPriorityDebug_fmt(eventPriority)})`} ${value == null ? "None" : `Some(${eventPriorityDebug_fmt(value)})`}`,
   );
