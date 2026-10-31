@@ -554,6 +554,22 @@ arm breaks its loop leaves the loop" (no label), and mutations
 `e` leaving, no other `break l`, no `let` of the name before) no known
 MIR shape reaches; they keep the transform exact where one would.
 
+**Amended: a guard whose failing breaks the block.** `match value {
+Some(1.0) => level = 10.0, Some(x) if x.is_nan() => level = 0.5, _ => {
+seen.push(0.0); break; } }` kept the block, its guard's link MIR's way
+round: `bb10: { if (value != null) { let level; if (value === 1) { level
+= 10; } else if (!Number.isNaN(value)) { break bb10; } else { level =
+0.5; } seen.push(level); continue; } } seen.push(0); break;`. A link
+whose branch is the block's `break` alone is turned first, its test the
+guard's and that `break` its `else`, which is the chain's last then, so
+the rule above takes it: `let level; if (value === 1) { level = 10; }
+else if (value != null && Number.isNaN(value)) { level = 0.5; } else {
+seen.push(0); break; } seen.push(level);`, the test as written and no
+label. Turning an `if`'s test and swapping its branches changes nothing
+it runs (case N). Held by the same case's `halves` (NaN and other
+numbers, `None`) and mutations `presence-guard-link-unturned` and
+`presence-guard-link-turned-untested`.
+
 ## Amendment: all of rust-js runs with rustc's stack
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; where the work

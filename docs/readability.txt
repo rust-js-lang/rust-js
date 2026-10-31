@@ -1,8 +1,8 @@
 # shape	count	per 10,000 lines
 files	1396
-lines	137714
+lines	137708
 temporaries	1	0.1
-labeled blocks	15	1.1
+labeled blocks	14	1
 while (true)	123	8.9
 $iter	1176	85.4
 Iterator.from	116	8.4
@@ -879,7 +879,7 @@ test/corpus/poison_error.js	55	0	0	0	0	0	0	0
 test/corpus/powf_of_a_constant.js	33	0	0	0	0	0	0	0
 test/corpus/powi_square.js	81	0	0	0	0	0	0	0
 test/corpus/prepared_places.js	60	0	0	0	0	0	0	7
-test/corpus/presence_said_by_chain.js	148	0	1	0	0	0	0	0
+test/corpus/presence_said_by_chain.js	142	0	0	0	0	0	0	0
 test/corpus/present_index_counts.js	76	0	0	0	0	0	0	0
 test/corpus/pretty_debug.js	298	0	0	0	0	0	0	16
 test/corpus/pretty_debug_derived.js	37	0	0	0	0	0	0	3

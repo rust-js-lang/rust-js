@@ -24,4 +24,23 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: corpus,
   },
+  {
+    name: "presence-guard-link-unturned",
+    breaks:
+      "a guard's link whose failing breaks the block, `Some(x) if x.is_nan()`, keeps the labeled block, `bb10: { if (value != null) { .. else if (!Number.isNaN(value)) { break bb10; } else { level = 0.5; } .. } }`",
+    file: "src/lower/mir/tidy/decisions/presence.rs",
+    find: "        if matches!(&then[..], [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label) {\n",
+    replace: "        if false {\n",
+    tests: corpus,
+    snapshots: true,
+  },
+  {
+    name: "presence-guard-link-turned-untested",
+    breaks:
+      "a guard's link turned keeps its failing's test, `else if (value != null && !Number.isNaN(value)) { level = 0.5; }`, so a number that isn't NaN takes the guard's arm",
+    file: "src/lower/mir/tidy/decisions/presence.rs",
+    find: "            *test = std::mem::replace(test, Expr::undefined()).negated_test();\n",
+    replace: "",
+    tests: corpus,
+  },
 ];

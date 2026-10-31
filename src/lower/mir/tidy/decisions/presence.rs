@@ -74,6 +74,14 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
         let StmtKind::If(test, then, Some(otherwise)) = &mut link.kind else {
             return None;
         };
+        // A link where a guard's failing goes on, `else if
+        // (!Number.isNaN(x)) { break l; } else { a }` of `Some(x) if
+        // x.is_nan() => a`: its test as the guard's, `else if
+        // (Number.isNaN(x)) { a } else { break l; }`, the last link then.
+        if matches!(&then[..], [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label) {
+            *test = std::mem::replace(test, Expr::undefined()).negated_test();
+            std::mem::swap(then, otherwise);
+        }
         if names_break(then, label) {
             return None;
         }

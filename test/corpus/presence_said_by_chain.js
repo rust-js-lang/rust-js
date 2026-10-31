@@ -82,22 +82,16 @@ function shadowed(values) {
 function halves(values) {
   const seen = [];
   for (const value of values) {
-    bb10: {
-      if (value != null) {
-        let level;
-        if (value === 1) {
-          level = 10;
-        } else if (!Number.isNaN(value)) {
-          break bb10;
-        } else {
-          level = 0.5;
-        }
-        seen.push(level);
-        continue;
-      }
+    let level;
+    if (value === 1) {
+      level = 10;
+    } else if (value != null && Number.isNaN(value)) {
+      level = 0.5;
+    } else {
+      seen.push(0);
+      break;
     }
-    seen.push(0);
-    break;
+    seen.push(level);
   }
   return seen;
 }
