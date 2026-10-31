@@ -6,7 +6,9 @@
 // A pointer's trailing `()` is no argument either, as a closure's (ADR 0441);
 // a unit struct's, `undefined` too, is a value given. The crate's own
 // function's call leaves them out too, `shown()`, `done()`, but where a
-// dictionary comes after them, a generic one's.
+// dictionary comes after them, a generic one's. A closure that gives
+// such a call one argument less is no `map`'s function: JS's `map` would
+// give the index for the `None` left out.
 fn shown(x: Option<u32>) -> String {
     match x {
         Some(n) => format!("some {n}"),
@@ -53,8 +55,15 @@ fn labelled<T: Label>(x: Option<T>) -> String {
     x.map_or("unlabelled".to_string(), |x| x.label())
 }
 
+fn plus(n: u32, tag: Option<u32>) -> u32 {
+    n + tag.unwrap_or(100)
+}
+
 fn main() {
     println!("{} {}", shown(None), shown(Some(7)));
+    println!("{:?}", [1u32, 2].map(|n| plus(n, None)));
+    let tagged = |n: u32, tag: Option<u32>| n + tag.unwrap_or(200);
+    println!("{:?}", [3u32, 4].map(|n| tagged(n, None)));
     done(());
     println!("{} {}", labelled::<u32>(None), labelled(Some(8)));
     let named = |x: Option<u32>| x.map_or(0, |n| n + 1);

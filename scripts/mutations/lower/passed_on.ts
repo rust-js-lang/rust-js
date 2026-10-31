@@ -331,4 +331,20 @@ export const mutations: Mutation[] = [
     replace: "                ty::FnDef(..) => false,\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
   },
+  {
+    name: "passed-on-closure-of-a-left-out-none",
+    breaks: "a closure that calls a closure with a trailing `None`, `|n| tagged(n, None)`, is that closure, `[3, 4].map(tagged)`, which JS's `map` gives the index for the `None`: a wrong answer",
+    file: "src/lower/passed_on.rs",
+    find: "                    ExprKind::Tuple { ref fields } if leaves_out(fields) => return None,\n",
+    replace: "                    ExprKind::Tuple { ref fields } if false && leaves_out(fields) => return None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+  },
+  {
+    name: "passed-on-function-of-a-left-out-none",
+    breaks: "a closure that calls the crate's function with a trailing `None`, `|n| plus(n, None)`, is that function, `[1, 2].map(plus)`, which JS's `map` gives the index for the `None`: a wrong answer",
+    file: "src/lower/passed_on.rs",
+    find: "                && !leaves_out(args)\n",
+    replace: "                && !(false && leaves_out(args))\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+  },
 ];

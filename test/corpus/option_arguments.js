@@ -42,8 +42,15 @@ function labelled(x, TLabel) {
   return x != null ? TLabel.label(x) : "unlabelled";
 }
 
+function plus(n, tag) {
+  return (n + (tag ?? 100)) >>> 0;
+}
+
 function main() {
   console.log(`${shown()} ${shown(7)}`);
+  console.log(`[${[1, 2].map((n) => plus(n)).join(", ")}]`);
+  const tagged = (n, tag) => (n + (tag ?? 200)) >>> 0;
+  console.log(`[${[3, 4].map((n) => tagged(n)).join(", ")}]`);
   done();
   console.log(`${labelled(undefined, u32Label)} ${labelled(8, u32Label)}`);
   const named = (x) => (x != null ? (x + 1) >>> 0 : 0);

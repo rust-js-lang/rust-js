@@ -247,3 +247,26 @@ the crate's, whose Rust reads no `arguments.length`, so it can't tell.
 Held by the corpus's `option_arguments` (against native Rust) and
 mutations `own-call-none-given` and
 `own-call-none-before-dictionary-left-out` (`mir/calls.ts`).
+
+## Amendment: a closure that leaves one out is no function passed on (2026-10-31)
+
+A wrong answer since rd271: a closure that calls a closure with a
+trailing `None`, `[3, 4].map(|n| tagged(n, None))`, printed
+`(n) => tagged(n)`, which "passed on" (ADR 0605) took for `tagged`
+itself, `[3, 4].map(tagged)`: JS's `map` gives `tagged` the index as its
+`tag`, `4` and `6` where Rust has `203` and `204`. Leaving out the crate's
+own function's `None` above would have done the same of `|lanes|
+fiber(lanes, None, None)`.
+
+**A closure whose call's last argument is one JS leaves out, a `None` or
+a `()`, is no function it passes on** (`passed_on::left_out`, read in
+`forwarded_to` of the crate's function and of a closure's, a pointer's or
+a `dyn Fn`'s call): it stays an arrow, `(n) => tagged(n)`, whose
+caller's extra arguments go nowhere. `|x, _| shown(x)` is still `shown`,
+which reads one. A host function's call keeps the user's rd158 exception
+(ADR 0262): `|callback| js::set_timeout(callback, None)` is `setTimeout`.
+
+Case: third ([0262](0262-when-rust-and-js-disagree.md)), results change:
+Rust's. Held by the corpus's `option_arguments`, against native Rust, and
+mutations `passed-on-closure-of-a-left-out-none` and
+`passed-on-function-of-a-left-out-none` (`passed_on.ts`).

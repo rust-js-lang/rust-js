@@ -224,6 +224,18 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
+/// Whether `e`, a call's argument, is one its JS leaves out where it's
+/// last (ADRs 0443, 0441): a `None` or a `()`.
+fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middle::thir::ExprId) -> bool {
+    match thir[super::body_queries::strip(thir, e)].kind {
+        ExprKind::Tuple { ref fields } => fields.is_empty(),
+        ExprKind::Adt(ref adt) => {
+            Some(adt.adt_def.variant(adt.variant_index).def_id) == tcx.lang_items().option_none_variant()
+        }
+        _ => false,
+    }
+}
+
 /// Whether `f`, a closure the program wrote, `(x, ..) => g(a, .., x, ..)`,
 /// as it's made, passes on what it captured by value, `moved`, one at
 /// least, or a constant, then each of its own parameters, in order, to
@@ -395,6 +407,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if statement && !super::bindings::is_binding(self.tcx, def_id) {
             return None;
         }
+        // A call whose last argument is one its JS leaves out, a `None` or a
+        // `()`, `fiber(lanes, None)`'s `fiber(lanes)`, isn't the function,
+        // whose JS caller would fill it, `[5].map(fiber)`'s index (ADR 0443,
+        // amended); but a host function's, the user's rd158 exception.
+        let leaves_out =
+            |args: &[rustc_middle::thir::ExprId]| args.last().is_some_and(|&last| left_out(self.tcx, thir, last));
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
                 // What it calls, a variable it captured, not its own
@@ -415,6 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => return None,
                 };
                 let given = match thir[super::body_queries::strip(thir, args[1])].kind {
+                    ExprKind::Tuple { ref fields } if leaves_out(fields) => return None,
                     ExprKind::Tuple { ref fields } => fields.is_empty(),
                     _ => false,
                 };
@@ -448,6 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // closure gathers them all too, and the arrow's shape then
             // says it spreads them all (`js::passes_on`).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
+                && !leaves_out(args)
                 && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))
             .then(|| Forwarding {
                 span,
