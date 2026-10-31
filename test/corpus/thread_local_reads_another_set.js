@@ -18,11 +18,7 @@ function double(n) {
 
 let tries = 0;
 const names = [];
-let made;
-if (tries === 0) {
-  made = 1;
-}
-
+const made = tries === 0 ? 1 : undefined;
 const taken = names.splice(0);
 const LIMITED = (LIMIT * 10) >>> 0;
 const COUNTED = (HITS + 1) >>> 0;

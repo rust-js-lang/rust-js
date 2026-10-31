@@ -7,7 +7,8 @@ below: a chain whose every arm is a plain value is one nested conditional
 the chain's too (the user's decision of 2026-10-28, rd23); and a
 conditional in a written `then` stays there (rd217); and a module's
 static's or thread-local's initializer of a chain is one nested
-conditional whatever its arms (the user's decision, rd234).
+conditional whatever its arms (the user's decision, rd234), a private
+one's `None` arm too (rd247).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: an `if` chain and a conditional give the same value, each test
@@ -363,3 +364,46 @@ Held by `test/lowering-returned-chains.test.ts`' "a value's chain of five
 arms or more is one form" (five and seven plain arms, five with a
 template, against values Rust gives, `NaN` too) and mutation
 `one-assignment-through-temporary-unseen` (`mir/tidy/branches.ts`).
+
+## Amendment: a private initializer's `None` arm is `undefined` too (rd247)
+
+The rd234 amendment kept a private thread-local's chain with an arm of
+`None`, or one that ends with nothing, for ADR 0704's `let` assigned only
+where it's something: `let localPromise; if (typeof Promise ===
+"function") { localPromise = Promise; }`, where upstream React DOM writes
+`const localPromise = typeof Promise === 'function' ? Promise :
+undefined;` and `localRequestAnimationFrame` likewise. That exception was
+rust-js's own, against the user's rule "whatever its arms". The
+coordinator decided (rd247, option a): **a module's initializer of an
+`if` chain is one nested conditional whatever its arms, exported or not,
+`None`'s `undefined`** (`prepare/initializers.rs`' `chained`, which no
+longer asks whether the item is exported). ADR 0704's `let` stays for a
+chain whose arm does more than give its value.
+
+The port's componentFrameCache, `if __DEV__ { Some(if js::is_defined(..)
+{ weak_map::new() } else { map::new(None) }) } else { None }`, is
+`const componentFrameCache = __DEV__ ? (typeof WeakMap !== "undefined" ?
+new WeakMap() : new Map()) : undefined;`. Upstream's form, `const
+PossiblyWeakMap = typeof WeakMap === 'function' ? WeakMap : Map;
+componentFrameCache = new PossiblyWeakMap();`, needs constructing through
+a class the program holds, which rust-js doesn't offer yet (the names and
+bindings owner's: `class.call_static` of a constructor); written so, its
+`const` first, the arm does more than give its value and ADR 0704's `let`
+is upstream's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: `let x;` is `undefined` until assigned, so `x = t ? v :
+undefined` gives each path the same value as the `if` did, its test run
+once, as the module loads.
+
+Alternative: keep the exception (option b), `let localPromise; if (..)
+{..}`, two forms of one rule.
+
+Held by `test/lowering-returned-chains.test.ts`' "whatever its arms"
+(`const MAYBE = level() > 5 ? double : level() > 1 ? triple :
+undefined;`), `test/lowering-is-function.test.ts`' localPromise,
+`test/lowering-cells.test.ts`' "a thread-local of a build global's if is
+one nested conditional", the guide's `jsxDev`/`checkTag`; mutations
+`initialized-chain-private-none-kept` and `initialized-chain-end-unvalued`
+(`prepare/initializers.ts`), which replace `valued-guard-unexported` and
+`initialized-chain-none-arm-folded`.

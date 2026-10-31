@@ -240,9 +240,8 @@ pub fn is_fallback(instance: &Comment) -> bool {
 // where the chain's statements would be an arrow called in place (rd234, the
 // user's decision; ADR 0969, amended). An arm that does more than give its
 // value keeps it so, as one whose arm goes on past its tests does; a guard
-// MIR turned is as written; a private one's of an arm of `None` is assigned
-// where it's something (ADR 0704); a function's chain keeps the rule of its
-// arms.
+// MIR turned is as written; an arm of `None` is `undefined`, a private
+// one's too (rd247); a function's chain keeps the rule of its arms.
 test("a thread-local's initializer of an if chain is one nested conditional, whatever its arms", async () => {
   const { js, lib } = await compiled("initialized-chains", `fn double(x: u32) -> u32 {
     x * 2
@@ -363,7 +362,7 @@ pub fn chosen(n: u32) -> fn(u32) -> u32 {
   expect(js).toContain(
     'export const NAME =\n  level() > 5 ? "big" : level() > 1 ? (level() === 2 ? `level ${level()}` : "odd") : "";\n',
   );
-  expect(js).toContain("let MAYBE;\nif (level() > 5) {\n  MAYBE = double;\n} else if (level() > 1) {\n  MAYBE = triple;\n}\n");
+  expect(js).toContain("const MAYBE = level() > 5 ? double : level() > 1 ? triple : undefined;\n");
   expect(js).toContain("export const TURNED = level() > 1 ? (level() > 5 ? double : triple) : (x) => (x + 1) >>> 0;\n");
   expect(js).toContain("export const GUARDED = (() => {\n  if (level() > 1) {\n    if (level() > 5) {\n");
   expect(js).toContain("export const OPTIONAL = level() > 5 ? double : level() > 3 ? triple : undefined;\n");

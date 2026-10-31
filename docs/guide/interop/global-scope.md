@@ -1101,13 +1101,18 @@ export function count() {
 }
 ```
 
-One of a value where a test holds and `None` where it doesn't is assigned
-only where it's something, `let componentFrameCache; if (__DEV__) {
-componentFrameCache = ..; }`, as React's is
-([ADR 0704](../../decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md));
-exported, which no `let` the `if` assigns is, it's the conditional, as
-`__DEV__.then_some(f)` is and React's ReactJSX writes it
-([ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md), amended):
+One of a value where a test holds and `None` where it doesn't is the
+conditional, `undefined` where it's `None`, exported or not, as React's
+ReactJSX writes `const jsxDEV = __DEV__ ? _jsxDEV : undefined;` and React
+DOM `const localPromise = typeof Promise === 'function' ? Promise :
+undefined;`, and as `__DEV__.then_some(f)` is
+([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended).
+One whose branch does more than give its value is assigned only where
+it's something, `let componentFrameCache; if (__DEV__) { const
+PossiblyWeakMap = ..; componentFrameCache = new PossiblyWeakMap(); }`, as
+React's is
+([ADR 0704](../../decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md);
+[ADR 0870](../../decisions/0870-a-let-chains-value-reads-its-binding-first.md), amended):
 
 ```rust
 unsafe extern "Rust" {
@@ -1136,10 +1141,7 @@ export function jsxDevChecked(tag) {
 }
 
 export const jsxDev = __DEV__ ? jsxDevChecked : undefined;
-let checkTag;
-if (__DEV__) {
-  checkTag = jsxDevChecked;
-}
+const checkTag = __DEV__ ? jsxDevChecked : undefined;
 
 export function checked(tag) {
   return checkTag != null ? checkTag(tag) : undefined;

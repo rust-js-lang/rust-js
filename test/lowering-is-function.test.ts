@@ -516,7 +516,7 @@ pub fn resolved() -> Option<Promise<Option<&'static Unknown>>> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('if (typeof Promise === "function") {\n  localPromise = Promise;\n}');
+  expect(js).toContain('const localPromise = typeof Promise === "function" ? Promise : undefined;\n');
   expect(js).toContain(".resolve(null)");
   expect(js).not.toContain("Promise.resolve");
   const lib = await import(join(dir, "lib.js"));

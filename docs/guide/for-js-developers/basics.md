@@ -1166,10 +1166,10 @@ export function reason(blocking, snapshot) {
 ```
 
 A thread-local's or a static's initializer of an `if` chain is one nested
-conditional whatever its arms, an arrow or a call among them, as a JS
-module writes one `export const`; one whose arm does more than give its
-value, a `let` first, is that chain run as its module loads, and a private
-one with a `None` arm is assigned only where it's something
+conditional whatever its arms, an arrow or a call among them, a `None`
+`undefined`, as a JS module writes one `const`; one whose arm does more
+than give its value, a `let` first, is that chain run as its module
+loads, a `None` arm's variable assigned only where it's something
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended;
 [ADR 0704](../../decisions/0704-a-module-variable-is-assigned-only-what-isnt-undefined.md)):
 

@@ -58,7 +58,7 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
 
 /// A module's `const` a closure called where it's made makes, whose body
 /// is its value alone, of a test too, `if (t) { return a; }`: that value,
-/// `export const jsxDEV = __DEV__ ? _jsxDev : undefined;`, as `then_some`'s
+/// `const jsxDEV = __DEV__ ? _jsxDev : undefined;`, as `then_some`'s
 /// is (ADR 0870, amended). One of `const`s before its value stays the
 /// closure, its names its own, the item's comment above it (#407):
 ///
@@ -81,12 +81,10 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
         if !params.is_empty() || !args.is_empty() {
             continue;
         }
-        // An exported one's value of a test, which no `let` the test
-        // assigns can be (`assigned_in_place`), a conditional; one of an
-        // `if` chain, one nested conditional.
+        // One of an `if` chain, one nested conditional.
         let value = match valued(body) {
             Some(([], value)) => value,
-            _ => match chained(body, constant.export) {
+            _ => match chained(body) {
                 Some(value) => value,
                 None => continue,
             },
@@ -100,8 +98,8 @@ pub(super) fn declared_at_top(module: &mut js::Module) {
 
 /// What a closure's `body` gives, of `const`s and then one value: the
 /// value it returns at its end, with the `const`s before it. One of a
-/// test, `if (t) { return a; }`, is `chained`'s: an exported one's `t ? a
-/// : undefined`, as `__DEV__.then_some(f)` is (ADR 0870, amended).
+/// test, `if (t) { return a; }`, is `chained`'s: `t ? a : undefined`, as
+/// `__DEV__.then_some(f)` is (ADR 0870, amended).
 fn valued(body: &[Stmt]) -> Option<(&[Stmt], Expr)> {
     match body {
         [
@@ -120,35 +118,31 @@ fn valued(body: &[Stmt]) -> Option<(&[Stmt], Expr)> {
 /// nested conditional, `t ? a : b ? c : d`, which runs each test in turn
 /// and then the one arm, as the chain did, as React DOM's scheduleMicrotask
 /// is written (rd234, the user's decision; ADR 0969, amended), a guard of a
-/// test MIR turned, `!t`, its arms the other way round. Not where an
-/// arm does more than give its value; nor, not `exported`, where one gives
-/// `undefined`, or the chain ends with nothing, which `assigned_in_place`
-/// leaves unassigned, `let cache; if (__DEV__) { cache = .. }` (ADR 0704).
-fn chained(body: &[Stmt], exported: bool) -> Option<Expr> {
+/// test MIR turned, `!t`, its arms the other way round. An arm of `None`,
+/// or a chain that ends with nothing, is `undefined` there, exported or
+/// not, as React DOM's `const localPromise = typeof Promise === "function"
+/// ? Promise : undefined;` (rd247). Not where an arm does more than give
+/// its value, which `assigned_in_place` runs as the module loads.
+fn chained(body: &[Stmt]) -> Option<Expr> {
     // The value of `list`, whose end, where `end`, is the body's, where
     // its function gives `undefined`; and otherwise falls through to what
     // follows, which no arm may.
-    fn value(list: &[Stmt], end: bool, exported: bool) -> Option<Expr> {
+    fn value(list: &[Stmt], end: bool) -> Option<Expr> {
         let cond = |t: &Expr, yes: Expr, no: Expr, at: js::Span| Expr::cond(t.clone(), yes, no).or_at(at);
         match list {
-            [] => (end && exported).then(Expr::undefined),
+            [] => end.then(Expr::undefined),
             [
                 Stmt {
                     kind: StmtKind::Return(Some(v)),
                     ..
                 },
-            ] => (exported || !matches!(v.kind, ExprKind::Undefined)).then(|| v.clone()),
+            ] => Some(v.clone()),
             [
                 Stmt {
                     kind: StmtKind::If(t, then, Some(otherwise)),
                     span,
                 },
-            ] => Some(cond(
-                t,
-                value(then, end, exported)?,
-                value(otherwise, end, exported)?,
-                *span,
-            )),
+            ] => Some(cond(t, value(then, end)?, value(otherwise, end)?, *span)),
             [
                 Stmt {
                     kind: StmtKind::If(t, then, None),
@@ -156,7 +150,7 @@ fn chained(body: &[Stmt], exported: bool) -> Option<Expr> {
                 },
                 rest @ ..,
             ] => {
-                let (yes, no) = (value(then, false, exported)?, value(rest, end, exported)?);
+                let (yes, no) = (value(then, false)?, value(rest, end)?);
                 // A guard MIR turned, `if (!t) { return a; } return b;`,
                 // as the program wrote it, `t ? b : a`.
                 Some(match &t.kind {
@@ -168,7 +162,7 @@ fn chained(body: &[Stmt], exported: bool) -> Option<Expr> {
         }
     }
     match body.first()?.kind {
-        StmtKind::If(..) => value(body, true, exported),
+        StmtKind::If(..) => value(body, true),
         _ => None,
     }
 }
