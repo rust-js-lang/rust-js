@@ -77,3 +77,34 @@ export function resolved() {
   mutations `static-call-given-itself` (`binding_calls.ts`),
   `static-form-a-method` (`bindings/forms.ts`),
   `is-function-of-a-class-refused` (`mir/calls.ts`).
+
+## Amendment: a held class's constructor (2026-10-31)
+
+React's componentFrameCache and React DOM's instance maps hold `const
+PossiblyWeakMap = typeof WeakMap === 'function' ? WeakMap : Map;` and
+make `new PossiblyWeakMap()` of it. `class.call_static(js::weak_map::new,
+())` was refused, "not a binding's static method", so the port wrote
+`unsafe { js::cast(Some(js::new(class, ()))) }`: a value of any shape
+cast to what it makes.
+
+**`Class::call_static` takes a constructor's binding too**, one whose
+link name is `new C`, `js::weak_map::new`'s `new WeakMap`: `new
+PossiblyWeakMap()`, of the class held, what it makes typed by the
+binding's signature, as a static's result is. One form for what a class
+held makes or gives: its binding names it. A trailing `None` given an
+optional parameter of the binding's, a static's or a constructor's, is no
+argument, as the binding's own call leaves it (ADR 0443):
+`class.call_static(js::map::new, (None,))` is `new PossiblyWeakMap()`.
+
+`js::new(value, arguments)` stays what it is, `new` of a class the
+program makes, `Class<fn(A) -> T>`, typed, or of a value of any shape,
+which makes one; a class held of a binding's is made by the binding's
+constructor, so the guide's `AbortControllerLocal` is
+`class.call_static(webapi::abort_controller::new, ())`, no cast.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)'s first): `new` of
+the class held, as upstream's. Held by
+`test/lowering-is-function.test.ts`'s "a held class is constructed by its
+constructor's binding", which runs it with WeakMap and, loaded again
+where the host has none, with Map; mutations `static-constructor-refused`,
+`static-constructor-called` and `static-none-given`.

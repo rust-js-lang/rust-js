@@ -257,15 +257,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Null, None) if args.is_empty() => Expr::null(),
             // A static method of the class `this` is, called on it,
             // `localPromise.resolve(null)`: the static's own name, of its
-            // binding, `Promise.resolve`'s (rd235). Its own value, the
-            // first argument, is no argument JS is given.
+            // binding, `Promise.resolve`'s (rd235); or its constructor's,
+            // `new WeakMap`'s, `new PossiblyWeakMap()`. Its own value, the
+            // first argument, is no argument JS is given, and a trailing
+            // `None` of an optional parameter of its is none (ADR 0443).
             (JsForm::Static, Some(this)) if !args.is_empty() => {
-                let Some(name) = static_member(self.tcx, generic_args) else {
-                    let what = "`Class::call_static` of what isn't a binding's static method, `js::promise::resolve`,";
+                let Some((f, member)) = static_member(self.tcx, generic_args) else {
+                    let what = "`Class::call_static` of what isn't a binding's static method or constructor, `js::promise::resolve` or `js::weak_map::new`,";
                     return Err(self.unsupported(span, what));
                 };
                 args.remove(0);
-                Expr::call(Expr::member(this, name).or_at(fun_span), args)
+                while args
+                    .last()
+                    .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
+                    && is_optional_param(self.tcx, f, args.len() - 1)
+                {
+                    args.pop();
+                }
+                match member {
+                    Some(name) => Expr::call(Expr::member(this, name).or_at(fun_span), args),
+                    None => Expr::new_(this, args),
+                }
             }
             (JsForm::Class, None) if args.is_empty() => {
                 let ty = generic_args.types().next();
@@ -615,10 +627,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// The member a static's binding names of its class, `resolve` of
-/// `Promise.resolve`, the function `Class::call_static` is given: a
-/// binding's, no method's, of a class's member.
-fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Option<String> {
+/// The binding `Class::call_static` is given, and the member it names of
+/// its class, `resolve` of `Promise.resolve`; none of a constructor's, `new
+/// WeakMap`: a binding's, no method's, of a class's member or of a class.
+fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Option<(DefId, Option<String>)> {
     let f = generic_args.types().find_map(|ty| match *ty.kind() {
         ty::FnDef(f, _) => Some(f),
         _ => None,
@@ -629,8 +641,9 @@ fn static_member<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>
     match js_form(tcx, f) {
         JsForm::Call(name) if !name.contains('#') => {
             let (class, member) = name.rsplit_once('.')?;
-            (!class.is_empty() && crate::names::is_identifier(member)).then(|| member.to_string())
+            (!class.is_empty() && crate::names::is_identifier(member)).then(|| (f, Some(member.to_string())))
         }
+        JsForm::New(name) if !name.contains('#') => Some((f, None)),
         _ => None,
     }
 }

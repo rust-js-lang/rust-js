@@ -550,9 +550,7 @@ thread_local! {
 }
 
 pub fn controller() -> &'static AbortController {
-    let controller = ABORT_CONTROLLER_LOCAL.with(|class| js::new(*class, ()));
-    // Safety: each class makes an `AbortController`, or what React uses of one.
-    unsafe { js::cast(Some(controller)) }
+    ABORT_CONTROLLER_LOCAL.with(|class| class.call_static(webapi::abort_controller::new, ()))
 }
 ```
 
@@ -567,9 +565,7 @@ const AbortControllerLocal =
   typeof AbortController !== "undefined" ? AbortController : AbortControllerShim;
 
 export function controller() {
-  const controller = new AbortControllerLocal();
-  // Safety: each class makes an `AbortController`, or what React uses of one.
-  return controller;
+  return new AbortControllerLocal();
 }
 ```
 
@@ -586,6 +582,13 @@ export function controller() {
   (js::null::<&Unknown>(),))`. The binding is the static's,
   `Promise.resolve`; what's no binding's static is refused
   ([ADR 1027](../../decisions/1027-a-held-classs-static-is-called-on-it.md)).
+- **A class held is made by its constructor's binding**,
+  `class.call_static(js::weak_map::new, ())`, `new PossiblyWeakMap()`,
+  what it makes typed by the binding, as `controller` above is: React's
+  `typeof WeakMap === 'function' ? WeakMap : Map`, held, and `new
+  PossiblyWeakMap()` of it. A trailing `None` of the binding's optional
+  parameter is left out, `class.call_static(js::map::new, (None,))`
+  ([ADR 1027](../../decisions/1027-a-held-classs-static-is-called-on-it.md), amended).
 
 ## What a value is: `typeof`
 

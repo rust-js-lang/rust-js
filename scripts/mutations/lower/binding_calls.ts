@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "static-constructor-refused",
+    breaks: "`class.call_static(js::weak_map::new, ())` of a held class is refused, where React writes `new PossiblyWeakMap()`",
+    file: "src/lower/binding_calls.rs",
+    find: "        JsForm::New(name) if !name.contains('#') => Some((f, None)),\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+  },
+  {
+    name: "static-constructor-called",
+    breaks: "a held class's constructor is called, `PossiblyWeakMap()`, which throws of a class",
+    file: "src/lower/binding_calls.rs",
+    find: "                    None => Expr::new_(this, args),\n",
+    replace: "                    None => Expr::call(this, args),\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+  },
+  {
+    name: "static-none-given",
+    breaks: "a trailing `None` given a held class's static or constructor is an argument, `new PossiblyWeakMap(undefined)` (ADR 0443)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    && is_optional_param(self.tcx, f, args.len() - 1)\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+  },
+  {
     name: "this-alias-kept",
     breaks: "a variable that only holds a with_this function's `this` stays, `const state = this; state.count--;`, where upstream reads `this.count--` (rd196)",
     file: "src/lower/binding_calls.rs",
@@ -543,8 +567,8 @@ export const mutations: Mutation[] = [
     name: "static-call-given-itself",
     breaks: "a class's static called on it is given its own binding first, `localPromise.resolve(Promise.resolve, null)` (rd235)",
     file: "src/lower/binding_calls.rs",
-    find: "                args.remove(0);\n                Expr::call(Expr::member(this, name).or_at(fun_span), args)\n",
-    replace: "                Expr::call(Expr::member(this, name).or_at(fun_span), args)\n",
+    find: "                    return Err(self.unsupported(span, what));\n                };\n                args.remove(0);\n",
+    replace: "                    return Err(self.unsupported(span, what));\n                };\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
   },
 ];

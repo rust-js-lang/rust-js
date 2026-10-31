@@ -544,3 +544,53 @@ pub fn call(class: &js::Class) -> u32 {
   const p = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 60_000);
   expect([p.code === 0, p.stderr]).toEqual([false, expect.stringContaining("`Class::call_static` of what isn't a binding's static method")]);
 });
+
+// React's componentFrameCache and React DOM's instance maps: `const
+// PossiblyWeakMap = typeof WeakMap === 'function' ? WeakMap : Map;` held as
+// the module loads, and `new PossiblyWeakMap()` of the class it holds. A
+// held class's constructor is its binding's, `new WeakMap`, given what its
+// own parameters take, a trailing `None` left out (ADR 1027, amended).
+test("a held class is constructed by its constructor's binding", async () => {
+  const dir = fixture("class-static-new");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Class, JsObject, Map, WeakMap};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "PossiblyWeakMap")]
+    static POSSIBLY_WEAK_MAP: &'static Class = if js::is_function(js::class::<WeakMap<JsObject, f64>>) {
+        js::class::<WeakMap<JsObject, f64>>()
+    } else {
+        js::class::<Map<JsObject, f64>>()
+    };
+    static WEAK: &'static WeakMap<JsObject, f64> = POSSIBLY_WEAK_MAP.with(|class| class.call_static(js::weak_map::new, ()));
+    static STRONG: &'static Map<JsObject, f64> = POSSIBLY_WEAK_MAP.with(|class| class.call_static(js::map::new, (None,)));
+}
+
+pub fn kept(key: &JsObject) -> Option<f64> {
+    WEAK.with(|weak| weak.set(key, 1.0));
+    STRONG.with(|strong| strong.set(key, 2.0));
+    Some(WEAK.with(|weak| weak.get(key))? + STRONG.with(|strong| strong.get(key))?)
+}
+
+pub fn held() -> &'static WeakMap<JsObject, f64> {
+    WEAK.with(|weak| *weak)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const weak = new PossiblyWeakMap();");
+  expect(js).toContain("const strong = new PossiblyWeakMap();");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.kept({})).toBe(3);
+  expect(lib.held()).toBeInstanceOf(WeakMap);
+  // A host without WeakMap: the module, loaded again, holds Map.
+  const g = globalThis as Record<string, unknown>;
+  const saved = g.WeakMap;
+  try {
+    delete g.WeakMap;
+    const fallen = await import(`${join(dir, "lib.js")}?no-weak-map`);
+    expect(fallen.held()).toBeInstanceOf(Map);
+    expect(fallen.kept({})).toBe(3);
+  } finally {
+    g.WeakMap = saved;
+  }
+});
