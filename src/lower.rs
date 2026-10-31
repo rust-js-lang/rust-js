@@ -1062,18 +1062,18 @@ fn path_read(path: &str, required: &HashSet<Export>, import: impl FnOnce(&Export
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => {
             let module = Expr::call(Expr::var("require"), vec![Expr::str(&export.0)]);
-            format!("{}{rest}", export.1).split('.').fold(module, Expr::member)
+            bindings::read_path(Expr::member(module, export.1), rest)
         }
         Some((export, rest)) => global(&format!("{}{rest}", import(&export))),
         None => global(path),
     }
 }
 
-/// A JS global, like `document`, or a path from one, like `console.log`.
+/// A JS global, like `document`, or a path from one, like `console.log`
+/// or `window['$RT']` (ADR 1033).
 fn global(name: &str) -> Expr {
-    let mut parts = name.split('.');
-    let first = Expr::var(parts.next().unwrap_or_default());
-    parts.fold(first, Expr::member)
+    let first = bindings::first_name(name);
+    bindings::read_path(Expr::var(first), &name[first.len()..])
 }
 
 /// A fieldless enum's variants, each its name and its discriminant, in the

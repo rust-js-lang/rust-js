@@ -130,8 +130,7 @@ pub(super) fn js_uses<'tcx>(
                             ),
                         );
                     }
-                    uses.globals
-                        .insert(path.split('.').next().unwrap_or_default().to_string());
+                    uses.globals.insert(bindings::first_name(path).to_string());
                 }
                 None => {}
             }

@@ -210,7 +210,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // = 1`, `EventEmitter.captureRejections = true`. Not an import
             // itself, which JS can't assign.
             (JsForm::Set(name), None)
-                if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>
+                if args.len() == 1 && name.rsplit('#').next().is_some_and(super::bindings::has_steps) =>
             {
                 let value = args.remove(0);
                 let property = self.js_ref(&name).or_at(fun_span).answered_by_a_setter();

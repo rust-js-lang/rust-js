@@ -16,11 +16,11 @@ pub(in crate::lower) type Export = (String, String);
 pub(in crate::lower) fn js_import(path: &str) -> Option<(Export, &str)> {
     let (from, path) = path.rsplit_once('#')?;
     if let Some(named) = path.strip_prefix("* as ") {
-        let name = named.split('.').next().unwrap_or_default();
+        let name = super::first_name(named);
         return (!from.is_empty() && !name.is_empty())
             .then(|| ((from.to_string(), "*".to_string()), &named[name.len()..]));
     }
-    let export = path.split('.').next().unwrap_or_default();
+    let export = super::first_name(path);
     (!from.is_empty() && !export.is_empty()).then(|| ((from.to_string(), export.to_string()), &path[export.len()..]))
 }
 
@@ -29,7 +29,7 @@ pub(in crate::lower) fn js_import(path: &str) -> Option<(Export, &str)> {
 pub(in crate::lower) fn namespace_name(path: &str) -> Option<&str> {
     let (_, path) = path.rsplit_once('#')?;
     let named = path.strip_prefix("* as ")?;
-    named.split('.').next().filter(|name| !name.is_empty())
+    Some(super::first_name(named)).filter(|name| !name.is_empty())
 }
 
 /// What a default or namespace import is called: after its module, as in

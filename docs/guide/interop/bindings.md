@@ -215,6 +215,15 @@ are properties ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 | `"scheduler#*.unstable_now"` | `import * as Scheduler from "scheduler"`, then `Scheduler.unstable_now` |
 | `"react-dom#* as ReactDOM.flushSync"` | `import * as ReactDOM from "react-dom"`, then `ReactDOM.flushSync` |
 | `"chart.js#Chart.register"` | `import { Chart } from "chart.js"`, then `Chart.register` |
+| `"window['$RT']"` | `window["$RT"]`, a property by a quoted key |
+
+A property is `.name`, by its name, or `['key']`, by a quoted key, as JS
+writes one. Quote a property another script reads by its name: a minifier
+that renames properties, Closure's ADVANCED mode, renames `window.$RT` but
+never `window["$RT"]`, which React's Fizz runtime shares with the server's
+inline scripts. A key that isn't a JS name is quoted too, `['worker-bundle']`.
+A method's property is its name, never quoted
+([ADR 1033](../../decisions/1033-a-bindings-path-may-quote-a-key.md)).
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
 each module that imports it gets the path from its own directory. The

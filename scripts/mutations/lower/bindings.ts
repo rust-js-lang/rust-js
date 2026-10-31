@@ -466,4 +466,28 @@ export const mutations: Mutation[] = [
     replace: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) {\n",
     tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional OnceCell field"],
   },
+  {
+    name: "binding-path-unchecked",
+    breaks: "a binding's path that isn't JS's, `window.$R-T`, is taken and printed as a subtraction, not refused naming its quoted key",
+    file: "src/lower/bindings.rs",
+    find: "        if let Some(message) = path_refused(tcx, def.to_def_id()) {\n",
+    replace: "        if let Some(message) = path_refused(tcx, def.to_def_id()).filter(|_| false) {\n",
+    tests: ["test/lowering-binding-paths.test.ts"],
+  },
+  {
+    name: "method-path-quoted",
+    breaks: "a method's quoted key, `['matchMedia']`, is taken as its property's name and printed `this[\"['matchMedia']\"]`",
+    file: "src/lower/bindings.rs",
+    find: "        true => path.contains(['[', '\\'']).then(|| {\n",
+    replace: "        true => path.contains(['\\0']).then(|| {\n",
+    tests: ["test/lowering-binding-paths.test.ts"],
+  },
+  {
+    name: "import-path-unchecked",
+    breaks: "an import's path past its export, `./shell.js#times.shell-time`, isn't checked, and prints a subtraction",
+    file: "src/lower/bindings.rs",
+    find: "            Some((_, rest)) => paths::steps(rest).err(),\n",
+    replace: "            Some(_) => None,\n",
+    tests: ["test/lowering-binding-paths.test.ts"],
+  },
 ];

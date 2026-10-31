@@ -316,6 +316,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Which `rev()`, `enumerate()`, `map()` or `inspect()` is stepped where it's made, the recognizers', and which is held, std's compiled struct (ADR 0871) | `body_queries.rs`; `mir/iter.rs`; `iterators.rs` | `in_place_adapters`; `compiled_struct_at`; `made_in_place` |
 | An index or a slice's range in bounds, the test a `bool` variable holds, and a `OnceCell` still empty where it's set | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`, `made_empty`; `indexes_in_bounds` |
 | Which `const` names a value a pattern tests, where its `match` or `let` tests it (ADR 0590, amended) | `body_queries/constants.rs` | `ConstantPatterns`, `pattern_places` |
+| A binding's path, the global it starts from and each property by its name or a quoted key, `window['$RT']`, which a minifier keeps; a path that isn't JS's refused where it's declared (ADR 1033) | `bindings/paths.rs`; `bindings.rs` | `first_name`, `steps`, `read`; `path_refused` |
 | The whole numbers a binding's `f64` is, a WebIDL integer's, `#[rust_js::whole]`; which cast of an `f64` to an integer is the number as it is; and that a call's `f64` is whole, which `{}` shows as JS does (ADRs 0302, 0994, amended) | `bindings/whole.rs`; `body_queries/whole_casts.rs`; `calls.rs` | `whole_range`; `whole_casts`; `given_by` |
 | A binding's read of a property, which a getter may be, and a chain's test of one | `binding_calls.rs`; `mir/tidy/logicals.rs` | `answered_by_a_getter`, `Known`; `bound_into` |
 

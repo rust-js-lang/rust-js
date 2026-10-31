@@ -997,11 +997,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         // Each part of its path, `typeof console !== "undefined" && typeof
         // console.log !== "undefined"`: a host may lack any of them.
-        let parts: Vec<&str> = global
-            .as_deref()
-            .map(|path| path.split('.').collect())
-            .unwrap_or_default();
-        if parts.is_empty() || !parts.iter().all(|part| crate::names::is_identifier(part)) {
+        // Its first a name, each after it a name or a quoted key,
+        // `window['$RT']` (ADR 1033).
+        let parts = global.as_deref().and_then(|path| {
+            let first = bindings::first_name(path);
+            let steps = bindings::steps(&path[first.len()..]).ok()?;
+            crate::names::is_identifier(first).then(|| {
+                std::iter::once(bindings::Step::Named(first))
+                    .chain(steps)
+                    .collect::<Vec<_>>()
+            })
+        });
+        let Some(parts) = parts else {
             return Err(self.unsupported(
                 span,
                 &format!(
@@ -1009,20 +1016,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     asked.function()
                 ),
             ));
-        }
+        };
         let from_value = base.is_some();
-        let mut read = base.unwrap_or_else(|| self.js_ref(parts[0]));
+        let first = global.as_deref().map(bindings::first_name).unwrap_or_default();
+        let mut read = base.unwrap_or_else(|| self.js_ref(first));
         let mut tests = Vec::new();
-        for (k, part) in parts.iter().enumerate() {
+        for (k, &part) in parts.iter().enumerate() {
             if k > 0 || from_value {
-                read = Expr::member(read, part.to_string());
+                read = part.of(read);
             }
             let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
             if let Some(kind) = asked.type_of() {
                 if k + 1 == parts.len() {
                     tests.push(Expr::bin(Op::Eq, typeof_, Expr::str(kind)));
                 }
-            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(part)) {
+            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {
                 tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
             }
         }

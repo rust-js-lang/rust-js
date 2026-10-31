@@ -18,6 +18,7 @@ mod given_before;
 mod given_names;
 mod imports;
 mod nullable;
+mod paths;
 mod rest_values;
 mod whole;
 
@@ -35,6 +36,7 @@ pub(super) use nullable::{
     nullable_result, nullable_tuple_item, nullable_values, of_type_parameter, optional_result, reads_a_nullable_value,
     reject_nullable_held, takes_nullable, takes_nullable_entries,
 };
+pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 use whole::whole_refused;
 pub(in crate::lower) use whole::{whole_output, whole_range};
@@ -142,6 +144,12 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         // `#[rust_js::whole]` is a range of whole numbers a binding's `f64`
         // is in (ADR 0302, amended); `position` was one, `indexOf`'s.
         if let Some(message) = whole_refused(tcx, def.to_def_id()) {
+            tcx.dcx().span_err(tcx.def_span(def), message);
+            valid = false;
+        }
+        // A binding's path is JS's, each property by its name or a quoted
+        // key, `window['$RT']` (ADR 1033).
+        if let Some(message) = path_refused(tcx, def.to_def_id()) {
             tcx.dcx().span_err(tcx.def_span(def), message);
             valid = false;
         }
@@ -254,6 +262,37 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         }
     }
     valid
+}
+
+/// Why a binding's path isn't one (ADR 1033): a static's, or a function's
+/// it calls, reads, writes, constructs or asks `instanceof` of, starts from
+/// a JS name, each property after it `.name` or a quoted key, `['$RT']`; a
+/// method's names its property, never quoted.
+fn path_refused(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    let path = match tcx.def_kind(def_id) {
+        DefKind::Static { .. } if tcx.is_foreign_item(def_id) => js_name(tcx, def_id),
+        DefKind::Fn | DefKind::AssocFn if tool_link_name(tcx, def_id).is_some() => match js_form(tcx, def_id) {
+            JsForm::Call(path)
+            | JsForm::Get(path)
+            | JsForm::Set(path)
+            | JsForm::New(path)
+            | JsForm::InstanceOf(path) => path,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    let why = match is_method(tcx, def_id) {
+        true => path.contains(['[', '\'']).then(|| {
+            "a method's property is named, `matchMedia`; a quoted key, `['$RT']`, is a global's path's".to_string()
+        }),
+        // An import's, past its module and its export, `react#`, `* as
+        // Scheduler` or `*`, which `js_import` reads.
+        false => match js_import(&path) {
+            Some((_, rest)) => paths::steps(rest).err(),
+            None => paths::global_refused(&path),
+        },
+    };
+    why.map(|why| format!("rust-js: `{path}` isn't a binding's path: {why} (ADR 1033)"))
 }
 
 /// What a JS function or global declared in an `extern` block is called:

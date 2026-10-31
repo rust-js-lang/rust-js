@@ -509,4 +509,12 @@ export const mutations: Mutation[] = [
     replace: "        let export = (false && exported(def_id) && owner.is_none() && name != own_name).then_some(own_name);\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "global-name-of-quoted-path",
+    breaks: "`window['$RT']`'s global is taken to be that whole text, so a local `window` isn't renamed and `window[\"$RT\"] = window + 1` writes to the number",
+    file: "src/lower/analysis/naming.rs",
+    find: ".insert(bindings::first_name(path).to_string());",
+    replace: ".insert(path.split('.').next().unwrap_or_default().to_string());",
+    tests: ["test/lowering-binding-paths.test.ts"],
+  },
 ];
