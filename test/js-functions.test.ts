@@ -729,3 +729,38 @@ pub fn shown() -> bool {
   const { defaultIndicator } = await import(join(dir, "indicator.js"));
   expect([lib.indicator() === defaultIndicator, lib.shown()]).toEqual([true, true]);
 });
+
+// React's noop renderer's bindToConsole, `Function.prototype.bind.apply(
+// console[methodName], [console].concat(args))`: a JS function of any shape,
+// `Kind::Function`'s, bound to a slice or a `Vec` of arguments, spread, as
+// `bind` binds a tuple, `method.bind(console, ...args)`, the function JS's
+// `bind.apply` makes too (rd294).
+test("a JS function of any shape is bound to a slice of arguments, spread", async () => {
+  const { js, lib } = await compiled("bind-slice", `use js::{Kind, Unknown, function};
+
+pub fn bound(target: &'static Unknown, method_name: &str, args: &[Option<&'static Unknown>]) -> &'static Unknown {
+    let Kind::Function(method) = js::classify(js::get(target, method_name)) else {
+        panic!("{method_name} is no function");
+    };
+    js::unknown_of(function::bind(method, Some(&target), args))
+}
+
+pub fn bound_vec(method: &'static dyn Fn() -> Option<&'static Unknown>, args: Vec<u32>) -> &'static Unknown {
+    js::unknown_of(function::bind(method, None, &args))
+}
+`);
+  expect(js).toContain("  return method.bind(target, ...args);\n");
+  expect(js).toContain("method.bind(undefined, ...args)");
+  const logger = {
+    badge: "!",
+    log(...given: unknown[]) {
+      return [this.badge, ...given].join(" ");
+    },
+  };
+  const f = lib.bound(logger, "log", ["a", "b"]);
+  expect(f("c")).toBe("! a b c");
+  const g = lib.boundVec(function (this: unknown, ...given: number[]) {
+    return [this === undefined, ...given];
+  }, [1, 2]);
+  expect(g(3)).toEqual([true, 1, 2, 3]);
+});

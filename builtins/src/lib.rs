@@ -461,6 +461,11 @@ pub mod function {
     /// dispatch(&fiber, action)` lends what it keeps. React's
     /// `dispatchSetState.bind(null, fiber, queue)` of
     /// `function::bind(dispatch_set_state, Some(&Kind::Null), (fiber, queue))`.
+    /// A JS function of any shape, a [`super::Kind::Function`], is bound to
+    /// a slice or a `Vec` of arguments too, spread: React's noop renderer's
+    /// `Function.prototype.bind.apply(console[methodName],
+    /// [console].concat(args))` of `function::bind(method, Some(&console),
+    /// args)`, `method.bind(console, ...args)`.
     #[cfg_attr(rust_js, rust_js::link_name = "bind")]
     #[cfg_attr(rust_js, rust_js::variadic)]
     // It makes a function of what it's given, run only where it's called.
@@ -545,7 +550,7 @@ pub mod function {
     /// parameters and each count of them bound. No program names it.
     #[diagnostic::on_unimplemented(
         message = "`{L}` aren't the first arguments a function `{Self}` takes",
-        note = "a function's first arguments are bound as a tuple, `(a, b)`, `(a,)` of one and `()` of none, each of a `Copy` type or what its parameter borrows; bound of none, the function is `Copy`"
+        note = "a function's first arguments are bound as a tuple, `(a, b)`, `(a,)` of one and `()` of none, each of a `Copy` type or what its parameter borrows; bound of none, the function is `Copy`; a JS function of any shape, a `Kind::Function`, is bound to a slice or a `Vec` of `Copy` values too, `&args`"
     )]
     pub trait Bound<'l, L> {
         /// The function bound.
@@ -554,6 +559,19 @@ pub mod function {
 
     impl<F: Copy, M> Bound<'_, ()> for (F, M) {
         type Rest = F;
+    }
+
+    /// A JS function of any shape, TypeScript's `Function`, called of
+    /// nothing and giving any value ([`super::Kind::Function`]'s), bound to
+    /// a slice or a `Vec` of its first arguments, spread, as many as it's
+    /// given, `method.bind(console, ...args)`: a function of that shape,
+    /// which keeps a copy of each (rd294).
+    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a [T]> for (F, fn() -> Option<&'static super::Unknown>) {
+        type Rest = &'l (dyn Fn() -> Option<&'static super::Unknown> + 'l);
+    }
+
+    impl<'l, 'a, F: 'l, T: Copy + 'l> Bound<'l, &'a Vec<T>> for (F, fn() -> Option<&'static super::Unknown>) {
+        type Rest = &'l (dyn Fn() -> Option<&'static super::Unknown> + 'l);
     }
 
     /// What a bound function keeps of an argument it's given first for a

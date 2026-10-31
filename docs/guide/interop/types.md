@@ -2465,6 +2465,34 @@ export function logMeasure(task, name, start, end) {
   task.run(performance.measure.bind(performance, name, options));
 }
 ```
+- **A JS function of any shape is bound to a slice or a `Vec` of
+  arguments**, as many as it's given, spread: a `Kind::Function`, called of
+  nothing and giving any value, bound to `&args`, each of a `Copy` type, is
+  a function of that shape. React's noop renderer's bindToConsole,
+  upstream's `Function.prototype.bind.apply(console[methodName],
+  [console].concat(args))`, the same function:
+
+```rust
+use js::{Kind, Unknown, function};
+use webapi::console;
+
+pub fn bind_to_console(method_name: &str, args: &[Option<&'static Unknown>]) -> &'static Unknown {
+    let Kind::Function(method) = js::classify(js::get(console, method_name)) else {
+        panic!("console.{method_name} is no function");
+    };
+    js::unknown_of(function::bind(method, Some(&console), args))
+}
+```
+
+```js
+export function bindToConsole(methodName, args) {
+  const method = console[methodName];
+  if (typeof method !== "function") {
+    throw new Error(`console.${methodName} is no function`);
+  }
+  return method.bind(console, ...args);
+}
+```
 - **A function that reads its `this` is `function::with_this`'s**, of a
   closure given that `this`, `Option<&'static Unknown>`, and a tuple of
   what it's called with, `(a, b)`, `()` of nothing: a JS `function (a, b)

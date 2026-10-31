@@ -5,7 +5,8 @@ Status: Accepted. Extends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-bor
 rust-js can't see". Amended: a fn pointer type of a `dyn` from outside
 leaves the other types as they are, below; and (2026-10-27, the user's
 decision) `function::bind` binds a function's first arguments too, its
-`this` a binding's function itself, below.
+`this` a binding's function itself, below; and (rd294) a JS function of
+any shape is bound to a slice or a `Vec` of arguments, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet: a fn pointer only
@@ -433,3 +434,31 @@ the function. `Rc::from(function::bind(..))` still shares it, an
 itself where nothing else needs an `Rc`. Held by `test/js-functions.test.ts`'s
 "a function bound to fifteen arguments" (its return type migrated) and
 `test/js-object.test.ts`'s bind tests. No mutation: a binding's signature.
+
+## Amendment: a JS function of any shape bound to a slice of arguments (rd294)
+
+React's noop renderer binds a console method to its badge's arguments,
+as many as there are: `Function.prototype.bind.apply(console[methodName],
+[console].concat(args))`. `bind`'s arguments were a tuple, each a first
+parameter of the function's known signature. **The one `bind` now binds a
+JS function of any shape, TypeScript's `Function`, a `Kind::Function`'s
+`&dyn Fn() -> Option<&'static Unknown>`, to a slice or a `Vec` of
+arguments too, each of a `Copy` type, which it keeps a copy of: a
+function of that shape, `method.bind(console, ...args)`.** A function
+of a known signature takes a tuple still, as rustc can count what's left
+of it; a slice bound to one is a type error, whose note says what to
+write. No second API: `Bound` has two more impls, and `bind`'s rest
+parameter, a `#[rust_js::variadic]` binding's, spreads a slice as every
+such one does (ADR 0640).
+
+Upstream's form, `Function.prototype.bind.apply(f, [this].concat(args))`,
+needs `Function.prototype.bind` as a value, which no program writes in
+Rust; `f.bind(this, ...args)` is the same function, as `apply` spreads an
+array into the arguments `bind` takes. Case
+([0262](0262-when-rust-and-js-disagree.md)): none.
+
+Held by `test/js-functions.test.ts`'s "a JS function of any shape is
+bound to a slice of arguments, spread" (run: an object's method bound to
+its object and two arguments, called with a third; a `Vec`'s, `this`
+`undefined`), and the guide's bindToConsole. No mutation: a binding's
+signature, whose JS is the variadic spread's.
