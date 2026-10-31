@@ -229,7 +229,7 @@ pub fn named(names: &Map<str, Option<&str>>) {
   // it's held where it's made, is JS's read itself (ADR 0884, amended).
   expect(js).toContain('const map = new Map([\n    ["none", null],\n    ["one", 1],\n  ]);\n  map.set("zero", 0);\n  map.set("later", null);');
   expect(js).toContain("  map.set(key, null);\n  const other = {};\n  const held = new Map([[key, null]]);\n  return [map.get(key) === null, map.get(other) === undefined, held.get(key) === null];");
-  expect(dts).toContain("export function given(map: Map<string, unknown | null>, key: string): string;");
+  expect(dts).toContain("export function given(map: Map<string, unknown | null | undefined>, key: string): string;");
   expect(dts).toContain("export function named(names: Map<string, string | null>): void;");
   const out = ran(dir, `const lib = await import("./lib.js");
 const given = new Map([["null", null], ["zero", 0]]);
@@ -239,6 +239,77 @@ console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["null", "ze
 `);
   expect(out).toBe(
     '[false,["none Some(None) true","one Some(Some(1)) true","zero Some(Some(0)) true","later Some(None) true","absent None false"],["nullish","value","absent"],[true,true,true],[["none",null]]]\n',
+  );
+});
+
+// #443 (rd275): a map of any value, React's `Cache.data: Map<() => mixed,
+// mixed>`, `Map<K, Option<&Unknown>>`, holds what it's given as it is: a
+// `None` of a value of any shape is `undefined` or `null`, each its own,
+// which `js::classify` tells apart, so it's never written `null`. React's
+// getCacheForType calls a resource that gives `undefined` each time, as
+// upstream's does (ADR 0884, amended).
+test("a Map of any value holds undefined as it is", () => {
+  const { dir, js, dts } = compiled("js-map-any-value", `use js::{Dict, Kind, Map, Unknown, WeakMap};
+
+pub fn get_or_make(
+    data: &Map<str, Option<&'static Unknown>>,
+    key: &str,
+    make: &dyn Fn() -> Option<&'static Unknown>,
+) -> Option<&'static Unknown> {
+    let mut value = data.get(key).flatten();
+    if matches!(js::classify(value), Kind::Undefined) {
+        value = make();
+        data.set(key, value);
+    }
+    value
+}
+
+fn kind(value: Option<&Unknown>) -> &'static str {
+    match js::classify(value) {
+        Kind::Undefined => "undefined",
+        Kind::Null => "null",
+        _ => "value",
+    }
+}
+
+pub fn kinds(given: Option<&'static Unknown>) -> Vec<&'static str> {
+    let made: &Map<str, Option<&Unknown>> = js::map::new(Some(&[("none", None)]));
+    made.set("given", given);
+    let weak: &WeakMap<Dict<u32>, Option<&Unknown>> = js::weak_map::new();
+    let key = js::dict::new();
+    weak.set(key, given);
+    ["none", "given", "absent"]
+        .iter()
+        .map(|key| made.get(key).map_or("absent", kind))
+        .chain([weak.get(key).map_or("absent", kind)])
+        .collect()
+}
+
+pub fn present(data: &Map<str, Option<&'static Unknown>>, key: &str) -> (bool, bool) {
+    let held = data.get(key);
+    (matches!(held, Some(None)), held.is_none())
+}
+
+pub fn made_before() -> &'static str {
+    let entries = vec![("a", None::<&Unknown>)];
+    let made: &Map<str, Option<&Unknown>> = js::map::new(Some(&entries));
+    made.get("a").map_or("absent", kind)
+}
+`);
+  expect(js).toContain("data.set(key, value);");
+  expect(js).not.toContain("?? null");
+  expect(dts).toContain("data: Map<string, unknown | null | undefined>");
+  const out = ran(dir, `const lib = await import("./lib.js");
+const data = new Map();
+let made = 0;
+const make = () => { made++; return undefined; };
+const a = lib.getOrMake(data, "k", make), b = lib.getOrMake(data, "k", make);
+console.log(JSON.stringify({ a: String(a), b: String(b), made, has: data.has("k"), held: String(data.get("k")) }));
+console.log(JSON.stringify([lib.kinds(undefined), lib.kinds(null), lib.madeBefore(), lib.present(data, "k"), lib.present(data, "x")]));
+`);
+  expect(out).toBe(
+    '{"a":"undefined","b":"undefined","made":2,"has":true,"held":"undefined"}\n' +
+      '[["undefined","undefined","absent","undefined"],["undefined","null","absent","null"],"undefined",[true,false],[false,true]]\n',
   );
 });
 

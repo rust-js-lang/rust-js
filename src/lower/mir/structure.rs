@@ -618,8 +618,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Expr(e)
                         if destination.projection.is_empty()
                             && state.facts.options().nested.contains(&destination.local)
-                            && fn_def(func.ty(&state.body.local_decls, self.tcx))
-                                .is_some_and(|(def_id, _)| bindings::reads_a_nullable_value(self.tcx, def_id)) =>
+                            && fn_def(func.ty(&state.body.local_decls, self.tcx)).is_some_and(|(def_id, args)| {
+                                bindings::reads_a_nullable_value(self.tcx, def_id, args)
+                            }) =>
                     {
                         Value::Expr(crate::lower::binding_calls::held_read(e))
                     }

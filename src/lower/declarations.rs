@@ -268,7 +268,7 @@ fn param_name(ty: &Value) -> String {
 /// Whether `did` is a JS value of any shape, TypeScript's `unknown` or
 /// `any`, `js::Unknown`: what may be `0` or `""`, compared by `===` (ADR
 /// 0612).
-pub(super) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
+pub(in crate::lower) fn any_shape(tcx: TyCtxt<'_>, did: DefId) -> bool {
     matches!(
         written_types(tcx, did).as_ref().and_then(Written::keyword),
         Some("unknown" | "any")
@@ -479,7 +479,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let given = args.type_at(param.index as usize);
                 match given.kind() {
                     ty::Adt(adt, of)
-                        if nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>
+                        if nullable.contains(&param.index)
+                            && out.tcx.is_lang_item(adt.did(), LangItem::Option)
+                            && super::bindings::holds_none_as_null(out.tcx, of.type_at(0)) =>
                     {
                         Given::Is(json!({ "kind": "union", "types": [out.ts(of.type_at(0)), keyword("null")] }))
                     }

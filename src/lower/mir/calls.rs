@@ -547,7 +547,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
             // type parameter, where it's given an `Option` (ADR 0586,
             // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
-            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_some() => {
+            () if bindings::takes_nullable(tcx, def_id, i)
+                && self
+                    .option_of(ty)
+                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>
+            {
                 js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)
             }
             // Entries written where they're given of such a value, an
@@ -579,9 +583,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn entries_of_options(&self, ty: Ty<'tcx>) -> bool {
         ty.walk().any(|part| {
             part.as_type().is_some_and(|t| match t.kind() {
-                ty::Tuple(items) if items.len() == 2 => self
-                    .option_of(items[1])
-                    .is_some_and(|payload| !self.boxed_payload(payload)),
+                ty::Tuple(items) if items.len() == 2 => self.option_of(items[1]).is_some_and(|payload| {
+                    !self.boxed_payload(payload) && crate::lower::bindings::holds_none_as_null(self.tcx, payload)
+                }),
                 _ => false,
             })
         })

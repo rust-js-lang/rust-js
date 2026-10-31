@@ -390,8 +390,8 @@ export const mutations: Mutation[] = [
     name: "nested-option-keyed-read-out",
     breaks: "a keyed read of a value a collection holds `None` of as `null` doesn't write a local held as its payload, so it's `$someGet`'s box, `$eq(.., { $someNone: 0 })` (ADR 0884, amended)",
     file: "src/lower/mir/patterns.rs",
-    find: "                && bindings::reads_a_nullable_value(self.tcx, def_id)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
-    replace: "                && bindings::reads_a_nullable_value(self.tcx, def_id)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+    find: "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+    replace: "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "any-value-none-nulled",
+    breaks: "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    !matches!(payload.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()))\n",
+    replace: "    let _ = (tcx, payload);\n    true\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
+    name: "any-value-read-held",
+    breaks: "a map of any value's `get` is JS's read alone, which can't tell a key it lacks from one whose value is `undefined` (#443)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "                holds_none_as_null(tcx, of.type_at(0))\n",
+    replace: "                true\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
+    name: "any-value-entries-refused",
+    breaks: "a map of any value made of entries made before is refused, though it holds them as they are (#443)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "                            && holds_none_as_null(tcx, args.type_at(0))\n",
+    replace: "",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
     name: "optional-field-made-null",
     breaks: "an optional nullable field's read, which may be absent, is taken for `null` or a value, so a nullable field given it stores `undefined` (ADR 0810, amended)",
     file: "src/lower/bindings/nullable.rs",
@@ -126,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "nullable-value-read-boxed",
     breaks: "a keyed read of a value a collection holds `None` of as `null` isn't JS's read held where it's made, `appearing.get(name) === null`, but `$someGet`'s box (ADR 0884, amended)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && matches!(held.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index))",
-    replace: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && matches!(held.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index))\n        && false",
+    find: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n",
+    replace: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n        && false\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {

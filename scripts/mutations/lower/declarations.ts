@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "any-value-declared-null",
+    breaks: "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
+    file: "src/lower/declarations.rs",
+    find: "                            && super::bindings::holds_none_as_null(out.tcx, of.type_at(0)) =>\n",
+    replace: " =>\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
     name: "bound-methods-undeclared",
     breaks: "a struct's methods its impl binds of the JS object, `isPersistent()`, aren't in its interface, narrower than upstream's type (rd144)",
     file: "src/lower/declarations.rs",
@@ -810,8 +818,8 @@ export const mutations: Mutation[] = [
     name: "nullable-value-declared-undefined",
     breaks: "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
     file: "src/lower/declarations.rs",
-    find: "                        if nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>\n",
-    replace: "                        if false && nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>\n",
+    find: "                        if nullable.contains(&param.index)\n",
+    replace: "                        if false && nullable.contains(&param.index)\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

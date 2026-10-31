@@ -242,3 +242,34 @@ a temporary before the call. The call can't write that temporary's values
 `null`, as it writes an array written in place. So a `Dict<Option<_>>`
 stays as it was: `None` is `undefined`, and `get` is `$dictGet`, which reads
 its own key by `Object.hasOwn`. JSON's `null` is `Some(None)` there already.
+
+## Amendment: a value of any shape is held as it is (#443, rd275)
+
+The amendment above wrote every `Option` a nullable collection is given
+`null` for `None`, `data.set(key, value ?? null)`. Of a value of any
+shape, `Option<&Unknown>`, TypeScript's `mixed`, that's a wrong answer:
+its `None` is `undefined` or `null`, two values `js::classify` tells
+apart, so an `undefined` came back `null`. React's getCacheForType,
+`Cache.data: Map<() => mixed, mixed>`, cached a resource that gives
+`undefined` as `null` and never called it again; refreshCache's seed the
+same.
+
+**A collection holds a `None` as `null` only of an `Option` whose `None`
+is one value**: not of a value of any shape, a `#[rust_js::types =
+"unknown"]` type's (`declarations::any_shape`), through references
+(`bindings::holds_none_as_null`, the one answer). Such a map's `set`
+gives its value as it is, `data.set(key, value)`; entries written in
+place hold `undefined`, and ones made before aren't refused; its `get`
+is `$someGet`'s box, which tells a key it lacks from one whose value is
+`undefined`; and its declaration is `Map<K, unknown | null | undefined>`.
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)'s third): results
+changed, Rust's kept. Held by `test/js-collections.test.ts`'s "a Map of any
+value holds undefined as it is", which runs React's getCacheForType (a
+resource giving `undefined` made each time, as upstream's), a `WeakMap`
+too, entries made before, and a held `get`; mutations
+`any-value-none-nulled`, `any-value-read-held`, `any-value-entries-refused`
+(`bindings/nullable.ts`), `any-value-set-nulled`, `any-value-entries-nulled`
+(`mir/calls.ts`) and `any-value-declared-null` (`declarations.ts`). No
+corpus case: a value of any shape is the js crate's, which native Rust
+doesn't run; the test compares with upstream's JS.

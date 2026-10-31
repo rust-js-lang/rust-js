@@ -600,7 +600,8 @@ Of a collection that holds its value's `None` as `null`, a type
 and `WeakMap` do, each binding given a `V` writes `None` `null`,
 `map.set(key, null)`, and its read held where it's made is JS's read
 itself, `map.get(key)`, `undefined` of a key it lacks and `null` of a
-`None` (ADR 0884, amended).
+`None` (ADR 0884, amended); but a value of any shape's, `Option<&Unknown>`,
+whose `None` is `undefined` or `null`, each its own, is given as it is.
 
 A getter runs once for each call of its binding, as Rust calls it: a
 property an `if let` chain tests and binds, `let Some(Kind::String(url)) =

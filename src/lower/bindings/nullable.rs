@@ -358,6 +358,15 @@ pub(in crate::lower) fn nullable_values(tcx: TyCtxt<'_>, adt: DefId) -> Vec<u32>
         .collect()
 }
 
+/// Whether a collection whose value's `None` it holds as `null` holds a
+/// `None` of `payload`'s `Option` so: not of a value of any shape,
+/// `Option<&Unknown>`, TypeScript's `mixed`, whose `None` is `undefined`
+/// or `null`, each a value of its own that `js::classify` tells apart,
+/// which it holds as it is (rd275, #443; ADR 0884, amended).
+pub(in crate::lower) fn holds_none_as_null(tcx: TyCtxt<'_>, payload: Ty<'_>) -> bool {
+    !matches!(payload.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()))
+}
+
 /// The type parameters of binding `def_id` that are a collection's values
 /// it holds `None` of as `null` (`nullable_values`), where its signature
 /// names the collection: `V` of `Map<K, V>::set(&self, key, value: V)`
@@ -428,7 +437,11 @@ fn holds_in_a_tuple(ty: Ty<'_>, params: &[u32]) -> bool {
 /// reference to it, being one `#[rust_js::nullable(..)]` names: JS's read
 /// alone tells a key it lacks, `undefined`, from one whose value is
 /// `None`, `null` (ADR 0884, amended).
-pub(in crate::lower) fn reads_a_nullable_value(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub(in crate::lower) fn reads_a_nullable_value<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    generic_args: ty::GenericArgsRef<'tcx>,
+) -> bool {
     if !super::reads_a_key(tcx, def_id) {
         return false;
     }
@@ -440,8 +453,19 @@ pub(in crate::lower) fn reads_a_nullable_value(tcx: TyCtxt<'_>, def_id: DefId) -
         ty::Ref(_, held, _) => *held,
         _ => args.type_at(0),
     };
+    // Of the value it's given, an `Option` it holds `None` of as `null`.
+    let ty::Param(p) = held.kind() else {
+        return false;
+    };
+    let given = generic_args.type_at(p.index as usize);
     tcx.is_lang_item(adt.did(), LangItem::Option)
-        && matches!(held.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index))
+        && nullable_type_params(tcx, def_id).contains(&p.index)
+        && match given.kind() {
+            ty::Adt(option, of) if tcx.is_lang_item(option.did(), LangItem::Option) => {
+                holds_none_as_null(tcx, of.type_at(0))
+            }
+            _ => true,
+        }
 }
 
 /// Report each value given a binding's parameter that holds, in a tuple,
@@ -480,6 +504,7 @@ pub(in crate::lower) fn reject_nullable_held<'tcx>(
                 .filter(|&p| match generic_args.skip_binder().type_at(p as usize).kind() {
                     ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => {
                         !crate::lower::representation::may_look_like_none(recognition, args.type_at(0))
+                            && holds_none_as_null(tcx, args.type_at(0))
                     }
                     _ => false,
                 })

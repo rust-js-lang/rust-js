@@ -410,7 +410,10 @@ export function named(map) {
   null` (ADR 1017); given on or shown, it's `$someGet(map, key)`'s box,
   as a `HashMap`'s `get` of an `Option` is. Entries made before `new Map`, which hold `None` as
   `undefined`, are refused: make it of none and `set` each. JS's `null` of
-  any value is `js::Kind::Null`
+  any value is `js::Kind::Null`. A value of any shape, `Option<&Unknown>`,
+  TypeScript's `mixed`, is held as it is, its `None` `undefined` or `null`,
+  each its own, as `js::classify` tells: `data.set(key, value)`, as React's
+  cache holds a resource's `undefined`
   ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md), amended):
 
 ```rust

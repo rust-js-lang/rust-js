@@ -845,8 +845,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let mir::TerminatorKind::Call { func, destination, .. } = &data.terminator().kind
                 && let Some(to) = destination.as_local()
                 && nested.contains(&to)
-                && let Some((def_id, _)) = func.const_fn_def()
-                && bindings::reads_a_nullable_value(self.tcx, def_id)
+                && let Some((def_id, args)) = func.const_fn_def()
+                && bindings::reads_a_nullable_value(self.tcx, def_id, args)
             {
                 allowed.insert((body.terminator_loc(block), to));
             }

@@ -5,6 +5,22 @@ const isFunctionValue = ["test/lowering-is-function.test.ts", "-t", "value of a 
 
 export const mutations: Mutation[] = [
   {
+    name: "any-value-set-nulled",
+    breaks: "a map of any value's `set` writes `value ?? null` (#443)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
+    replace: "                    .is_some() =>\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
+    name: "any-value-entries-nulled",
+    breaks: "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    !self.boxed_payload(payload) && crate::lower::bindings::holds_none_as_null(self.tcx, payload)\n",
+    replace: "                    !self.boxed_payload(payload)\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+  },
+  {
     name: "nullable-any-given-its-pair",
     breaks: "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
     file: "src/lower/mir/calls.rs",
@@ -322,8 +338,8 @@ export const mutations: Mutation[] = [
     name: "nullable-type-parameter-of-any",
     breaks: "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
     file: "src/lower/mir/calls.rs",
-    find: "            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_some() => {\n",
-    replace: "            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_none() => {\n",
+    find: "                    .option_of(ty)\n                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
+    replace: "                    .option_of(ty)\n                    .is_none() =>\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
   },
   {
