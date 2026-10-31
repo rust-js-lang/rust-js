@@ -749,4 +749,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|const_param_drop_cells).rs$"],
     snapshots: true,
   },
+  {
+    name: "looped-drops-run-unreachable-kept",
+    breaks: "the `break` to the exit that `loops` puts after a `for`'s body, after its `continue`, stays: tidy's \"nothing after a jump\" contract refuses it, a crash of a `for` over a borrow whose inner loop leaves the outer one (#441)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "        js::statement_lists(run, &mut unreachable_after);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^borrow_loop_inner_break_outer.rs$"],
+  },
 ];

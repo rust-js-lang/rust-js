@@ -408,3 +408,17 @@ out too and kept MIR's `while ((i = $rangeNext(iter)) != null)`s, is one
 Held by `test/corpus/drop_reassigned_in_inner_loop.rs` against native
 Rust, and mutations `looped-drop-inner-continue-leaves` and
 `looped-drop-inner-loop-labels-unseen` (`tidy/unwinds.ts`).
+
+## Amendment: a looped drop's run leaves nothing after a jump (2026-10-31, #441)
+
+"looped drops" makes its run a `for` by `loops`, which leaves the `break`
+to the loop's exit after what leaves already, a `continue`, for the
+`unreachable` pass after it to take. In the `scopes` stage no such pass
+followed, so a `for` over a borrow whose inner loop leaves the outer one,
+`'outer: for &x in items.borrow().iter() { if !keep(x) { continue; } ..
+break 'outer; .. }`, ended its body `continue; break;`, and the stage's
+contract, nothing after a jump, refused it: a debug build's crash, the
+release's JS right. **The run is tidied as `loops` and then `unreachable`
+leave a body** (`looped_drops_of_made`), in both stages. Held by
+`test/corpus/borrow_loop_inner_break_outer.rs` against native Rust and
+the mutation `looped-drops-run-unreachable-kept` (`tidy/stages.ts`).
