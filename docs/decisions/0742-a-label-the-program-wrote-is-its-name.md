@@ -308,3 +308,50 @@ Held by `test/lowering-early-exits.test.ts`' "a unit function's written
 guards joined to its end are each where written", run on each path, and
 the mutations `returns-past-blocks-unspanned-test-past-branch` and
 `returns-past-blocks-left-block-one-place` (`mir/tidy/jumps/tails.ts`).
+
+## Amendment: a `return` joined past a block inside another is the inner block's (2026-10-31)
+
+React DOM's preload is a let chain's `if` around everything it does, its
+body's `if … else if` two early `return`s, each under its comment:
+
+```rust
+if let Some(owner_document) = owner_document && !href.is_empty() && !r#as.is_empty() {
+    ..
+            if r#as == "style" && .. {
+                // We already have a stylesheet for this key. We don't need to preload it.
+                return;
+            } else if r#as == "script" && .. {
+                // We already have a script for this key. We don't need to preload it.
+                return;
+            }
+    ..
+}
+```
+
+MIR joins the chain's failing links and the two `return`s into the one
+return, so a block it made around the chain, `bb53: { if (owner != null)
+{ .. break bb53; } break bb53; } return;`, has two `break`s and two
+written `return`s in it, and `joined_returns` took them as the block's:
+the JS was `if (!href) { // We already have a stylesheet .. return; } if
+(!as) { return; } ..`, each comment on a link of the chain, the chain
+gone to guards. The two `return`s are a block's inside it, `bb55: { ..
+break bb55; .. break bb55; } return;`, which MIR joined them past.
+
+So a `return` written in a block inside the one asked about, which a
+`return;` MIR joined follows too, is that block's, not one of the outer
+block's joined ones. The chain's `break`s then have no written `return`
+and stay the chain's: `if (owner != null && href && as) { .. }`, each
+comment on its own `return`, as upstream writes it.
+
+Alternatives: running `returns past blocks` innermost first, so an inner
+block took its `return`s before the outer counted them, says the same,
+but changes where `returned_as_written` places other blocks' `return`s,
+which reads statements outermost first: diffHydratedStyles' two guards
+and DOMPluginEventSystem's `while` came back nested and labeled.
+
+The corpus is as before; of React's port, only preload changes.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+Held by the corpus case `let_chain_around_early_returns` and the
+mutation `joined-returns-inner-taken` (`mir/tidy/jumps/tails.ts`).

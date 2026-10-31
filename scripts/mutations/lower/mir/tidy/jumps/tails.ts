@@ -755,6 +755,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "joined-returns-inner-taken",
+    breaks: "a block MIR made around a let chain's `if` takes the `return`s written in a block inside it, which a `return;` MIR joined follows too, as its own: React DOM's preload is `if (!href) { // We already have a stylesheet ..\n return; } if (!as) { return; } ..`, not `if (owner != null && href && as) { .. }` with each comment on its own `return`",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        .filter(|r| !inner.iter().any(|&(lo, hi)| lo <= r.lo && r.hi <= hi))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_around_early_returns.rs$"],
+    snapshots: true,
+  },
+  {
     name: "returns-past-blocks-unplaced",
     breaks:
       "a `return` MIR joined, given back to each branch, has no place, so it's taken for one MIR made: the playground's guards one after another, `if (!test) { ..; return; } if (has) { ..; return; }`, become `} else if (!has) { .. } else { .. }` (rd98)",

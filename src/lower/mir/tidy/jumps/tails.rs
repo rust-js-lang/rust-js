@@ -183,21 +183,48 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
 /// before it, `target.blocked_on.set(Some(n)); // We don't .. return;`, is
 /// then its own (rd108).
 fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u32]) -> Option<Vec<js::Span>> {
-    let (mut lo, mut hi, mut breaks) = (u32::MAX, 0, 0);
+    let ((lo, hi), mut breaks) = (placed(body), 0);
+    // The places of the blocks inside it a `return;` MIR joined follows,
+    // whose own the `return`s written in them are.
+    let mut inner = Vec::new();
     js::each_list(body, &mut |list| {
-        for stmt in list.iter() {
-            if !stmt.span.is_none() {
-                (lo, hi) = (lo.min(stmt.span.lo), hi.max(stmt.span.hi));
-            }
+        for (i, stmt) in list.iter().enumerate() {
             breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label));
+            if let StmtKind::Labeled(_, block) = &stmt.kind
+                && list
+                    .get(i + 1)
+                    .is_some_and(|s| matches!(s.kind, StmtKind::Return(None)) && s.span.is_none())
+            {
+                inner.push(placed(block));
+            }
         }
     });
     let hi = (starts.iter().copied())
         .filter(|&at| at >= hi)
         .min()
         .unwrap_or(u32::MAX);
-    let written: Vec<_> = (returns.iter()).filter(|r| lo <= r.lo && r.hi <= hi).copied().collect();
+    // Not one an inner block's `break`s are: a let chain's `if let Some(o)
+    // = o && !href.is_empty() { .. }` whose body's `if` returns early is
+    // gone on from past its end, not by those `return`s, which MIR joined
+    // past a block inside it (preload's `// We already have a stylesheet
+    // ..`).
+    let written: Vec<_> = (returns.iter())
+        .filter(|r| lo <= r.lo && r.hi <= hi)
+        .filter(|r| !inner.iter().any(|&(lo, hi)| lo <= r.lo && r.hi <= hi))
+        .copied()
+        .collect();
     (breaks > 0 && written.len() >= breaks).then_some(written)
+}
+
+/// Where `stmts` are written, from the first written to the furthest.
+fn placed(stmts: &[Stmt]) -> (u32, u32) {
+    let (mut lo, mut hi) = (u32::MAX, 0);
+    js::each_list(stmts, &mut |list| {
+        for stmt in list.iter().filter(|s| !s.span.is_none()) {
+            (lo, hi) = (lo.min(stmt.span.lo), hi.max(stmt.span.hi));
+        }
+    });
+    (lo, hi)
 }
 
 /// Each `break label` of `stmts`, however deep, `returned`, at the place
