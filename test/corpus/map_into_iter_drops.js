@@ -10,7 +10,6 @@ import {
   $iter,
   $lent,
   $next,
-  $rangeInclusiveNext,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
@@ -49,23 +48,7 @@ function firstOver(map, limit) {
 function main() {
   const map = new $BTreeMap();
   let map$live = true;
-  const iter = { start: 1, end: 4 };
-  while (true) {
-    let tmp;
-    try {
-      tmp = $rangeInclusiveNext(iter);
-    } catch (error) {
-      if (map$live) {
-        for (const [, value] of $sortedEntries(map, $cmp)) {
-          loudDrop_drop(value);
-        }
-      }
-      throw error;
-    }
-    if (tmp == null) {
-      break;
-    }
-    const n = tmp;
+  for (let n = 1; n <= 4; n++) {
     let insert;
     try {
       insert = $insert(map, n, [n * 10]);

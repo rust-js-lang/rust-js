@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-loops-kept",
     breaks: "`const iter = $iter(xs); while (true) { const t = $next(iter); … }` stays, not `for (const x of xs)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            stmts.splice(i..i + 2, made);\n",
-    replace: "            let _ = made;\n",
+    find: "            stmts.splice(i..i + 2, held.into_iter().chain(made));\n",
+    replace: "            let _ = (held, made);\n",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
@@ -397,5 +397,22 @@ export const mutations: Mutation[] = [
     find: "    {\n        exit.pop();\n    }\n",
     replace: "    {}\n",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|take_destructors|loop_drops).rs$"],
+  },
+  {
+    name: "held-range-end-kept",
+    breaks: "a range whose end is a call that may panic, made in a `try` of its own, stays `while ((k = $rangeNext(iter)) != null)`, not `let end; try { end = id(n); } catch ..` then `for (let k = 0; k < end; k++)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if start_key != \"start\" || end_key != \"end\" || !start.is_constant() || !end.has_effects() {\n",
+    replace: "    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-range-end-named-end",
+    breaks: "a range's end held first is named `end` where the program has an `end` of its own, which it then reads in its place",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        .find(|n| !mentions.contains_key(n))\n        .expect(\"a name\");\n    let read = ",
+    replace: "        .find(|_| true)\n        .expect(\"a name\");\n    let read = ",
+    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
   },
 ];

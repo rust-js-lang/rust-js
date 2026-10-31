@@ -13,18 +13,76 @@ use super::*;
 pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>, numbers: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions, numbers) {
+        // A range whose end is held first, in a `try` of its own: its
+        // statements before the loop's.
+        let held = held_end(&stmts[i], mentions)
+            .and_then(|(held, range)| Some((held, for_of(&range, &stmts[i + 1], &stmts[i + 2..], mentions, numbers)?)));
+        let (held, made) = match held {
+            Some((held, made)) => (held, Some(made)),
+            None => (
+                Vec::new(),
+                for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions, numbers),
+            ),
+        };
+        if let Some(made) = made {
             // What it names, its loop's `end` held say, taken: another
             // loop's is another name.
-            for stmt in &made {
-                if let StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind {
+            for stmt in held.iter().chain(&made) {
+                if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind {
                     *mentions.entry(name.clone()).or_default() += 1;
                 }
             }
-            stmts.splice(i..i + 2, made);
+            let count = held.len();
+            stmts.splice(i..i + 2, held.into_iter().chain(made));
+            i += count;
         }
         i += 1;
     }
+}
+
+/// A range made in a `try` of its own, `try { iter = { start: 0, end:
+/// id(n) }; } catch (error) { drop(d); throw error; }`, as MIR makes it
+/// where reading its end may panic and what's held is dropped then: its
+/// end held first in that `try`, `let end; try { end = id(n); } catch ..`,
+/// and the range of it, `iter = { start: 0, end }`, which `for_of` makes a
+/// `for (let k = 0; k < end; k++)` of. The statements that hold it, and the
+/// range. Of a constant start, which reads the same after the end as
+/// before, where Rust reads it.
+fn held_end(stmt: &Stmt, mentions: &HashMap<String, usize>) -> Option<(Vec<Stmt>, Stmt)> {
+    let StmtKind::TryCatch(body, error, handler) = &stmt.kind else {
+        return None;
+    };
+    let [made] = body.as_slice() else {
+        return None;
+    };
+    let StmtKind::Assign(target, source) = &made.kind else {
+        return None;
+    };
+    let mut range = source.clone();
+    let ExprKind::Object(props, ..) = &mut range.kind else {
+        return None;
+    };
+    let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_mut_slice() else {
+        return None;
+    };
+    if start_key != "start" || end_key != "end" || !start.is_constant() || !end.has_effects() {
+        return None;
+    }
+    let name = std::iter::once("end".to_string())
+        .chain((1..).map(|k| format!("end${k}")))
+        .find(|n| !mentions.contains_key(n))
+        .expect("a name");
+    let read = std::mem::replace(end, Expr::var(&name));
+    let held = vec![
+        StmtKind::Let(name.clone(), None).at(js::Span::NONE),
+        StmtKind::TryCatch(
+            vec![StmtKind::Assign(Expr::var(&name), read).at(made.span)],
+            error.clone(),
+            handler.clone(),
+        )
+        .at(stmt.span),
+    ];
+    Some((held, StmtKind::Assign(target.clone(), range).at(made.span)))
 }
 
 /// Of `body`, a function's, each `let` of no value its own statements

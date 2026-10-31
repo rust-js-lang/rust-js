@@ -1,7 +1,7 @@
 # 0036. An iterator is a JS array; `Ordering` is -1, 0 or 1
 
 Status: Accepted; a chain whose stages do what can be seen is lazy ([0139](0139-lazy-chains.md)). Extends [0025](0025-vec-loops-refcell-mut.md), where a
-`Vec` is a JS array and `for` loops over one. Amended: a fallible `collect()` of any collection (below). Amended by
+`Vec` is a JS array and `for` loops over one. Amended: a fallible `collect()` of any collection (below); a range whose end may panic, beside a drop, is a `for` (below). Amended by
 [0986](0986-len-of-an-iterator-made-in-place.md): `len()` of a chain whose
 closures do what can be seen is its source's, counted through its
 adapters, which runs none of them.
@@ -219,3 +219,23 @@ only variables and the end has no effects, which leaves them as they are
 before the loop). Held by `lowering-written-loops.test.ts`'s "a range
 from arithmetic is a counting for" and the mutations
 `range-of-arithmetic-uncounted` and `held-end-of-computed-start-refused`.
+
+## Amendment: a range whose end may panic, beside a drop
+
+`for k in 0..id(n)` where a value is held whose drop runs if `id(n)`
+panics, a value reassigned in the loop say, stayed `let iter; try { iter =
+{ start: 0, end: id(n) }; } catch (error) { drop; throw error; }` then
+`while ((k = $rangeNext(iter)) != null)`: MIR makes the range in the
+`try` of the call's cleanup, which `loops` didn't read as a range made.
+Now its end is held first in that `try`, `let end; try { end = id(n); }
+catch (error) { drop; throw error; }`, and the range of it is counted, `for
+(let k = 0; k < end; k++)`: the same calls, in the same order, the same
+drop where the end panics. Of a constant start only, which reads the same
+after the end as before. The held end's name is one the function doesn't
+use, so a program's own `end` keeps its own. An inclusive range's step,
+`$rangeInclusiveNext` and `$rangeInclusiveNextBack`, never throws, as
+`$rangeNext` doesn't (ADR 0901's `NEVER_THROW`), so its loop's step needs
+no `try` of its own either. No observable difference (ADR 0262, case A).
+Held by the corpus case `drop_reassigned_in_inner_loop`, run against
+native Rust, and the mutations `held-range-end-kept`,
+`held-range-end-named-end` and `inclusive-range-step-may-throw`.
