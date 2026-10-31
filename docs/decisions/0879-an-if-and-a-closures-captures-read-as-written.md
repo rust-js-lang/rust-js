@@ -868,3 +868,29 @@ The branch order rd262 also names, `if let Kind::Number(t) = .. { a } else
 upstream tests `!== 'number'` first, is the order the Rust wrote, as this
 ADR keeps every `if`: the port writes upstream's order with a `let …
 else`, whose guard returns first.
+
+## Amendment: a written `!` of an `if` of a `bool` literal branch is a written negation (2026-10-31, rd240)
+
+React's processImg excludes data URIs with `!(typeof src === 'string' &&
+src[4] === ':' && (src[0] === 'd' || ..) ..)`. Its port writes `!(if let
+Kind::String(src) = js::classify(src) { string::get(src, 4.0) ==
+Some(":") && .. } else { false })`, which printed De Morgan's, `(typeof
+src !== "string" || src[4] !== ":" || (src[0] !== "d" && ..))`: the rule
+above keeps a `!( .. )` whose operand is the innermost `&&` or `||`
+written around the chain's tests, and the `typeof` test, the `if let`'s,
+is outside the `&&` its `then` writes, so the innermost was the `&&`
+around the whole `if` condition, no negation's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+- **A `!` the program wrote of an `if` of a `bool` whose `else` is
+  `false` negates its `&&`; of one whose `then` is `true`, its `||`**
+  (`hints/negations.rs`, `Written::negations`), as the bool-literal branch
+  rule reads such an `if` (ADR 0879, amended, 2026-10-28). `written_negation`
+  takes each negation's operand as written around the tests too, as it
+  takes a written `&&`.
+
+Held by `test/lowering-bool-ternaries.test.ts`' "a written negation of an
+if of a bool literal branch stays one", run in JS, and mutations
+`negation-of-an-if-and-unwritten`, `negation-of-an-if-or-unwritten`
+(`mir/hints.ts`) and `written-negation-of-an-if-unseen` (`tidy/logicals.ts`).

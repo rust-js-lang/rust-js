@@ -7,6 +7,7 @@
 use super::*;
 use crate::lower::body_queries::{self, PatternValue};
 
+mod negations;
 mod present_breaks;
 
 /// Where the program writes what tidy reads a body's JS by.
@@ -344,21 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .map(|e| self.js_span(e.span))
             .collect();
-        // Where each `!( .. )` of an `&&` or `||` is, `!(a && b)`'s `a && b`.
-        let negations: Vec<(js::Span, bool)> = (self.frame.thir.exprs.iter())
-            .filter_map(|e| {
-                let thir::ExprKind::Unary { op: UnOp::Not, arg } = e.kind else {
-                    return None;
-                };
-                let arg = &self.frame.thir[crate::lower::body_queries::strip(self.frame.thir, arg)];
-                match arg.kind {
-                    thir::ExprKind::LogicalOp { op, .. } => {
-                        Some((self.js_span(arg.span), matches!(op, thir::LogicalOp::And)))
-                    }
-                    _ => None,
-                }
-            })
-            .collect();
+        let negations = self.negations();
         let continue_of = |kind: &thir::ExprKind<'tcx>| matches!(kind, thir::ExprKind::Continue { .. });
         let continues = self.jump_ifs(&continue_of, false);
         let else_continues = self.jump_ifs(&continue_of, true);

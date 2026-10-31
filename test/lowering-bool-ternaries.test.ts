@@ -132,3 +132,40 @@ pub mod plugin {
   const { inputSupported } = await import(join(dir, "plugin.js"));
   expect([inputSupported(true, "input", 0), inputSupported(true, "in", 0), inputSupported(true, "input", 5)]).toEqual([true, false, false]);
 });
+
+// React's processImg excludes data URIs with `!(typeof src === 'string' &&
+// src[4] === ':' && ..)`; its port writes `!(if let Kind::String(src) =
+// js::classify(src) { .. } else { false })`, which printed De Morgan's,
+// `typeof src !== "string" || src[4] !== ":" || ..`: the `if`'s test isn't
+// inside the `&&` its `then` writes. A `!` the program wrote of an `if`
+// whose `else` is `false` is a written negation of its `&&`, of one whose
+// `then` is `true` of its `||` (rd240; ADR 0879, amended).
+test("a written negation of an if of a bool literal branch stays one", async () => {
+  const { js, lib } = await compiled(
+    "negated-if-lets",
+    `use js::{Kind, Unknown, string};
+
+pub fn plain(src: Option<&Unknown>, lazy: bool) -> bool {
+    !lazy
+        && !(if let Kind::String(src) = js::classify(src) {
+            string::get(src, 4.0) == Some(":")
+                && (string::get(src, 0.0) == Some("d") || string::get(src, 0.0) == Some("D"))
+        } else {
+            false
+        })
+}
+
+pub fn ored(src: Option<&Unknown>, lazy: bool) -> bool {
+    !lazy && !(if let Kind::Number(_) = js::classify(src) { true } else { src.is_none() || js::truthy(src) })
+}
+`,
+  );
+  expect(js).toContain(
+    '!lazy && !(typeof src === "string" && src[4] === ":" && (src[0] === "d" || src[0] === "D"))',
+  );
+  expect(js).toContain("!lazy && !(typeof src === \"number\" || src == null || src)");
+  const plain = (src: unknown) => lib.plain(src as never, false as never);
+  expect([plain("data:x"), plain("Data:x"), plain("http:"), plain(4), plain(undefined)]).toEqual([false, false, true, true, true]);
+  const ored = (src: unknown) => lib.ored(src as never, false as never);
+  expect([ored(4), ored(undefined), ored("x"), ored(""), ored(lib.plain("x" as never, true as never))]).toEqual([false, false, false, true, true]);
+});

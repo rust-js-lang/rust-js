@@ -978,12 +978,14 @@ fn negated_as_written(test: &mut Expr, negations: &[(js::Span, bool)], logicals:
 /// Whether `parts`, joined with `&&` where `and`, else `||`, are of a
 /// negation the program wrote of the other operator, `!(a || b)` of `!a
 /// && !b`: each written inside the operand of a `!` the program wrote, the
-/// innermost `&&` or `||` written around them (`Written::negations`).
+/// innermost `&&` or `||` written around them (`Written::negations`), or
+/// `if` of a `bool` that's one, `if let Some(n) = x { n > 3 } else { false
+/// }` (rd240).
 fn written_negation(parts: &[Expr], and: bool, negations: &[(js::Span, bool)], logicals: &[js::Span]) -> bool {
     let mut spans = Vec::new();
     let within = |outer: js::Span, s: &js::Span| outer.lo <= s.lo && s.hi <= outer.hi;
     parts.iter().all(|part| tests_of(part, &mut spans))
-        && (logicals.iter())
+        && (logicals.iter().chain(negations.iter().map(|(operand, _)| operand)))
             .filter(|&&l| spans.iter().all(|s| within(l, s)))
             .min_by_key(|l| l.hi - l.lo)
             .is_some_and(|&inner| negations.contains(&(inner, and)))

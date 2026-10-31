@@ -540,4 +540,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returned_chains_in_cases.rs$"],
   },
+  {
+    name: "written-negation-of-an-if-unseen",
+    breaks: "a written `!` of an `if let .. { a && b } else { false }` finds no `&&` written around all its tests, the pattern's outside the `then`'s, so it's De Morgan's (rd240)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        && (logicals.iter().chain(negations.iter().map(|(operand, _)| operand)))\n",
+    replace: "        && (logicals.iter())\n",
+    tests: ["test/lowering-bool-ternaries.test.ts", "-t", "a written negation of an if of a bool literal branch stays one"],
+  },
 ];
