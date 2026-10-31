@@ -334,4 +334,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts"],
   },
+  {
+    name: "held-keyed-read-boxed",
+    breaks: "a keyed read whose local is held as its payload is `$someGet`'s box, which the local's reads take for the value itself: `Some(None)` read as `Some(Some(box))` (ADR 0884, amended)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        Value::Expr(crate::lower::binding_calls::held_read(e))\n",
+    replace: "                        Value::Expr(e)\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_none_held_as_null.rs$"],
+  },
 ];

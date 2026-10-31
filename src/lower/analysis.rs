@@ -713,6 +713,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     if !super::bindings::reject_made_in_place(tcx, &all_bodies) {
         return None;
     }
+    if !super::bindings::reject_nullable_held(&classes_recognition, &all_bodies) {
+        return None;
+    }
     // The impls that get a dictionary: not `From`'s (ADR 0052), nor serde's,
     // whose evidence is a codec (ADR 0081), nor a JS object's `Deref` to the
     // class it extends, which is never lowered: its dictionary is std's,

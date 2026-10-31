@@ -396,6 +396,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
+/// A keyed read `binding_values` made of a value whose `None` its
+/// collection holds as `null` (`bindings::reads_a_nullable_value`), held
+/// where it's made as its payload (ADR 1017): JS's read itself, `undefined`
+/// of a key it lacks, `null` of one whose value is `None`, as upstream's
+/// `map.get(key) === null` reads it (ADR 0884, amended). Its box,
+/// `$someGet(map, key)`, is what reads it anywhere else, which tells the
+/// two by `has`.
+pub(in crate::lower) fn held_read(boxed: Expr) -> Expr {
+    match &boxed.kind {
+        js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$someGet")
+                && let [map, key] = args.as_slice() =>
+        {
+            Expr::call(Expr::member(map.clone(), "get").binding(), vec![key.clone()])
+        }
+        _ => boxed,
+    }
+}
+
 /// `this[key]`, or `this.name` of a key written that's a name, as a person
 /// writes it (ADR 0225): `js::get(value, "name")` is `value.name`.
 pub(super) fn keyed(this: Expr, key: Expr) -> Expr {

@@ -547,8 +547,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `None` is `null`, and a `Some(..)` its value (ADR 0275); of a
             // type parameter, where it's given an `Option` (ADR 0586,
             // amended); a `Some` of a `&dyn Any` its value, as below (rd170).
-            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_some() => {
+            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_some() => {
                 js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)
+            }
+            // Entries written where they're given of such a value, an
+            // `Option` of what never looks like `None`: each `null` for
+            // `None`, `new Map([[key, null]])`, as `set` writes it (ADR
+            // 0884, amended); `bindings::reject_nullable_held` refuses
+            // entries made before.
+            () if bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {
+                self.nulled_entries(self.any_given_to_js(value, ty))
             }
             // A parameter it names `#[rust_js::lazy(..)]`, a function JS
             // calls once for the value: a closure whose body does nothing
@@ -563,6 +571,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match crate::lower::passed_on::Taker::parameter(tcx, def_id, i) {
             Some(taker) => crate::lower::passed_on::passed_on(&given, taker, self.forwarding()).unwrap_or(given),
             None => given,
+        }
+    }
+
+    /// Whether `ty`, entries given a binding, holds pairs whose value is an
+    /// `Option` of what never looks like `None`.
+    fn entries_of_options(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk().any(|part| {
+            part.as_type().is_some_and(|t| match t.kind() {
+                ty::Tuple(items) if items.len() == 2 => self
+                    .option_of(items[1])
+                    .is_some_and(|payload| !self.boxed_payload(payload)),
+                _ => false,
+            })
+        })
+    }
+
+    /// Entries written where they're given, `[[key, value], ..]`, each
+    /// value `null` for `None`; `undefined`, of none, as it is. Any other
+    /// is refused before (`bindings::reject_nullable_held`).
+    fn nulled_entries(&self, entries: Expr) -> Expr {
+        match entries.kind {
+            js::ExprKind::Array(items) => {
+                let items = (items.into_iter())
+                    .map(|item| match item.kind {
+                        js::ExprKind::Array(mut pair) if pair.len() == 2 => {
+                            let value = pair.pop().expect("a pair's value");
+                            pair.push(js::Storage::NullForNone.written(value, false));
+                            Expr {
+                                kind: js::ExprKind::Array(pair),
+                                ..item
+                            }
+                        }
+                        kind => Expr { kind, ..item },
+                    })
+                    .collect();
+                Expr {
+                    kind: js::ExprKind::Array(items),
+                    ..entries
+                }
+            }
+            js::ExprKind::Undefined => entries,
+            _ => {
+                self.tcx.dcx().err("rust-js: entries of `Option` values, which a collection holds as `null`, not written where they're given (ADR 0884, amended)");
+                entries
+            }
         }
     }
 

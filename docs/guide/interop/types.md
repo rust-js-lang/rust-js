@@ -401,11 +401,17 @@ export function named(map) {
 
 - **A `js::Map`'s or a `js::WeakMap`'s value is any value**, as
   TypeScript's `Map<K, V>` takes any `V` and a `js::Dict`'s is. An
-  `Option`'s `None` is `undefined`, as it is everywhere, and `get` tells
-  a key whose value is `None` from a key the map lacks, `Some(None)` from
-  `None`, as `map.has(key)` does: `$someGet(map, key)`, as a `HashMap`'s
-  `get` of an `Option` is. JS's `null` is `js::Kind::Null`
-  ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md)):
+  `Option`'s `None` it holds as `null`, TypeScript's `Map<K, V | null>`:
+  `map.set(key, None)` is `map.set(key, null)`, and entries written where
+  they're given, `map::new(Some(&[(key, None)]))`, `new Map([[key,
+  null]])`. So `get`, where its value is held where it's made, is JS's
+  read itself, `undefined` of a key the map lacks and `null` of one whose
+  value is `None`: `map.get(key) == Some(None)` is `map.get(key) ===
+  null` (ADR 1017); given on or shown, it's `$someGet(map, key)`'s box,
+  as a `HashMap`'s `get` of an `Option` is. Entries made before `new Map`, which hold `None` as
+  `undefined`, are refused: make it of none and `set` each. JS's `null` of
+  any value is `js::Kind::Null`
+  ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md), amended):
 
 ```rust
 use js::{Kind, Map};
@@ -427,8 +433,6 @@ pub fn counted(counts: &Map<str, Option<u32>>, key: &str) -> &'static str {
 ```
 
 ```js
-import { $someGet, $someValue } from "@rust-js/runtime";
-
 export function hasBadMapPolyfill() {
   const frozenObject = Object.freeze({});
   new Map([[frozenObject, null]]);
@@ -437,9 +441,9 @@ export function hasBadMapPolyfill() {
 }
 
 export function counted(counts, key) {
-  const get = $someGet(counts, key);
-  if (get != null) {
-    if ($someValue(get) != null) {
+  const get = counts.get(key);
+  if (get !== undefined) {
+    if (get != null) {
       return "counted";
     }
     return "not counted yet";

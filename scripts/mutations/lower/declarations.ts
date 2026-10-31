@@ -136,8 +136,8 @@ export const mutations: Mutation[] = [
     name: "written-param-unsubstituted",
     breaks: "a name in a `types` that's the Rust type's parameter isn't what it's given: `Dict<f64>`, `{ [key: string]: T }`, isn't `{ [key: string]: number }`",
     file: "src/lower/declarations.rs",
-    find: "            Some(param) if (param.index as usize) < args.len() => Given::Is(out.ts(args.type_at(param.index as usize))),",
-    replace: "            Some(param) if false => Given::Is(out.ts(args.type_at(param.index as usize))),",
+    find: "            Some(param) if (param.index as usize) < args.len() => {\n",
+    replace: "            Some(param) if false => {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
   {
@@ -805,5 +805,13 @@ export const mutations: Mutation[] = [
     find: "                json!({ \"kind\": \"intersection\", \"types\": types })\n",
     replace: "                union(types)\n",
     tests: ["test/compiler.test.ts", "-t", "an untagged enum's js::RegExpMatch is an array"],
+  },
+  {
+    name: "nullable-value-declared-undefined",
+    breaks: "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
+    file: "src/lower/declarations.rs",
+    find: "                        if nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>\n",
+    replace: "                        if false && nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>\n",
+    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

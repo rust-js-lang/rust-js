@@ -470,9 +470,22 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // is what it's given: `Map<string, T>` of a `Dict<f64>` is
         // `Map<string, number>`, `{ [key: string]: T }` `{ [key: string]:
         // number }`.
+        // A collection's value whose `None` it holds as `null`, a `Map`'s
+        // `V`, is `T | null` of an `Option` (ADR 0884, amended).
         let params = &self.tcx.generics_of(did).own_params;
+        let nullable = super::bindings::nullable_values(self.tcx, did);
         let mut param = |out: &mut Self, name: &str| match params.iter().find(|p| p.name.as_str() == name) {
-            Some(param) if (param.index as usize) < args.len() => Given::Is(out.ts(args.type_at(param.index as usize))),
+            Some(param) if (param.index as usize) < args.len() => {
+                let given = args.type_at(param.index as usize);
+                match given.kind() {
+                    ty::Adt(adt, of)
+                        if nullable.contains(&param.index) && out.tcx.is_lang_item(adt.did(), LangItem::Option) =>
+                    {
+                        Given::Is(json!({ "kind": "union", "types": [out.ts(of.type_at(0)), keyword("null")] }))
+                    }
+                    _ => Given::Is(out.ts(given)),
+                }
+            }
             Some(_) => Given::Unknown,
             None => Given::NotParam,
         };

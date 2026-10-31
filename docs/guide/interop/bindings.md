@@ -595,6 +595,12 @@ A keyed read whose result is an `Option` of what may be `None` itself, an
 alone can't: a method `"get"`, a `Map`'s, by `this.has(key)`,
 `$someGet(this, key)`; `"get []"`, a `Dict`'s, by its own key,
 `$dictGet(this, key)` ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md)).
+Of a collection that holds its value's `None` as `null`, a type
+`#[rust_js::nullable(V)]` names its value of, as the js crate's `Map`
+and `WeakMap` do, each binding given a `V` writes `None` `null`,
+`map.set(key, null)`, and its read held where it's made is JS's read
+itself, `map.get(key)`, `undefined` of a key it lacks and `null` of a
+`None` (ADR 0884, amended).
 
 A getter runs once for each call of its binding, as Rust calls it: a
 property an `if let` chain tests and binds, `let Some(Kind::String(url)) =
@@ -1148,7 +1154,7 @@ See [Components and props](../react/components.md).
 
 | Attribute | Says |
 |---|---|
-| `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null` |
+| `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null`; of a collection's type, `#[rust_js::nullable(V)]`, its value's, which each binding given a `V` writes `null` and its `get` reads by JS's read alone, TypeScript's `Map<K, V \| null>` ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md), amended) |
 | `#[rust_js::optional]` | its result's `None` is `undefined`, TypeScript's `T \| undefined`, never `null` |
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |

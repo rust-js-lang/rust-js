@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "null-none-param-ungiven",
     breaks: "`let owner = None;` given to a binding's nullable parameter is `undefined` where it's made (ADR 0781)",
     file: "src/lower/mir/patterns.rs",
-    find: ".is_some_and(|ident| nullable.contains(&ident.name));\n",
-    replace: ".is_some_and(|ident| nullable.contains(&ident.name) && false);\n",
+    find: "                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i);\n",
+    replace: "                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i) && false;\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a None only nullable fields and parameters read"],
   },
   {
@@ -385,5 +385,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^subject_of_a_struct_js_made_read_once.rs$"],
     snapshots: true,
+  },
+  {
+    name: "nested-option-keyed-read-out",
+    breaks: "a keyed read of a value a collection holds `None` of as `null` doesn't write a local held as its payload, so it's `$someGet`'s box, `$eq(.., { $someNone: 0 })` (ADR 0884, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                && bindings::reads_a_nullable_value(self.tcx, def_id)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+    replace: "                && bindings::reads_a_nullable_value(self.tcx, def_id)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

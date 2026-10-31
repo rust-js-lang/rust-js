@@ -144,8 +144,8 @@ export const mutations: Mutation[] = [
     name: "nullable-param-some-coalesced",
     breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
-    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
-    replace: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // A parameter it names `#[rust_js::lazy(..)]`",
+    find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n            }\n            // Entries written where they're given",
+    replace: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // Entries written where they're given",
     tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
   },
   {
@@ -322,8 +322,8 @@ export const mutations: Mutation[] = [
     name: "nullable-type-parameter-of-any",
     breaks: "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
     file: "src/lower/mir/calls.rs",
-    find: "            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_some() => {\n",
-    replace: "            () if named(bindings::nullable_params(tcx, def_id)) && self.option_of(ty).is_none() => {\n",
+    find: "            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_some() => {\n",
+    replace: "            () if bindings::takes_nullable(tcx, def_id, i) && self.option_of(ty).is_none() => {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
   },
   {
@@ -654,5 +654,13 @@ export const mutations: Mutation[] = [
     find: "            if !matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null) {\n                fields.push(Prop::Spread(value));\n            }\n",
     replace: "            fields.push(Prop::Spread(value));\n",
     tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
+  },
+  {
+    name: "nullable-entries-undefined",
+    breaks: "entries written where they're given of a map of `Option` values keep `undefined` for `None`, `new Map([[\"none\", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)",
+    file: "src/lower/mir/calls.rs",
+    find: "            () if bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
+    replace: "            () if false && bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
+    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

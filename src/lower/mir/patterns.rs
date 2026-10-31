@@ -155,11 +155,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if nullable.is_empty() && !made {
                 continue;
             }
-            let idents = self.tcx.fn_arg_idents(def_id);
             let inputs = self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs();
             let binding = bindings::is_binding(self.tcx, def_id);
             for (i, arg) in args.iter().enumerate() {
-                let named = (idents.get(i).copied().flatten()).is_some_and(|ident| nullable.contains(&ident.name));
+                let named = !nullable.is_empty() && bindings::takes_nullable(self.tcx, def_id, i);
                 let of_a_type_parameter =
                     made && inputs.get(i).is_some_and(|input| matches!(input.kind(), ty::Param(_)));
                 if let Some(read) = arg.node.place()
@@ -839,6 +838,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(reference) = tested {
                     allowed.insert((body.terminator_loc(block), reference));
                 }
+            }
+            // A keyed read of a value whose `None` its collection holds as
+            // `null`, `map.get(key)`: JS's read tells the three apart (ADR
+            // 0884, amended).
+            if let mir::TerminatorKind::Call { func, destination, .. } = &data.terminator().kind
+                && let Some(to) = destination.as_local()
+                && nested.contains(&to)
+                && let Some((def_id, _)) = func.const_fn_def()
+                && bindings::reads_a_nullable_value(self.tcx, def_id)
+            {
+                allowed.insert((body.terminator_loc(block), to));
             }
             // An `==` of two of them, each through a reference.
             if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind

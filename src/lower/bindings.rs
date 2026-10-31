@@ -32,7 +32,8 @@ pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace
 pub(super) use nullable::{
     is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_bindings, nullable_const_refused,
     nullable_init, nullable_items, nullable_local, nullable_option, nullable_params, nullable_result,
-    nullable_tuple_item, of_type_parameter, optional_result,
+    nullable_tuple_item, nullable_values, of_type_parameter, optional_result, reads_a_nullable_value,
+    reject_nullable_held, takes_nullable, takes_nullable_entries,
 };
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 use whole::whole_refused;

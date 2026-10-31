@@ -218,17 +218,43 @@ pub fn weak(key: &Dict<u32>) -> (bool, bool, bool) {
     let held: &Map<Dict<u32>, Option<&str>> = js::map::new(Some(&[(key, None)]));
     (map.get(key) == Some(None), map.get(other).is_none(), held.get(key) == Some(None))
 }
+
+pub fn named(names: &Map<str, Option<&str>>) {
+    names.set("none", None);
+}
 `);
   expect(js).toContain("  new Map([[frozenObject, null]]);\n  new Set([frozenObject]);\n");
   expect(js).toContain("$someGet(map, key)");
-  expect(dts).toContain("export function given(map: Map<string, unknown | null | undefined>, key: string): string;");
+  // A `None` it holds is `null`, TypeScript's `V | null`, so `get`, where
+  // it's held where it's made, is JS's read itself (ADR 0884, amended).
+  expect(js).toContain('const map = new Map([\n    ["none", null],\n    ["one", 1],\n  ]);\n  map.set("zero", 0);\n  map.set("later", null);');
+  expect(js).toContain("  map.set(key, null);\n  const other = {};\n  const held = new Map([[key, null]]);\n  return [map.get(key) === null, map.get(other) === undefined, held.get(key) === null];");
+  expect(dts).toContain("export function given(map: Map<string, unknown | null>, key: string): string;");
+  expect(dts).toContain("export function named(names: Map<string, string | null>): void;");
   const out = ran(dir, `const lib = await import("./lib.js");
-const given = new Map([["undefined", undefined], ["null", null], ["zero", 0]]);
-console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["undefined", "null", "zero", "absent"].map((key) => lib.given(given, key)), lib.weak({})]));
+const given = new Map([["null", null], ["zero", 0]]);
+const names = new Map();
+lib.named(names);
+console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["null", "zero", "absent"].map((key) => lib.given(given, key)), lib.weak({}), [...names]]));
 `);
   expect(out).toBe(
-    '[false,["none Some(None) true","one Some(Some(1)) true","zero Some(Some(0)) true","later Some(None) true","absent None false"],["nullish","nullish","value","absent"],[true,true,true]]\n',
+    '[false,["none Some(None) true","one Some(Some(1)) true","zero Some(Some(0)) true","later Some(None) true","absent None false"],["nullish","value","absent"],[true,true,true],[["none",null]]]\n',
   );
+});
+
+// ADR 0884, amended: a map of `Option` values holds `None` as `null`, so
+// entries made before `new Map`, which hold it as `undefined`, are refused;
+// entries written where they're given are each written `null` for `None`.
+test("a Map of Option values made of entries made before is refused", () => {
+  const dir = fixture("js-map-option-entries");
+  writeFileSync(join(dir, "lib.rs"), `pub fn made(key: &'static str) -> &'static js::Map<str, Option<u32>> {
+    let entries = [(key, None)];
+    js::map::new(Some(&entries))
+}
+`);
+  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], { cwd: root, stderr: "pipe", timeout: 60_000 });
+  expect(p.exitCode).not.toBe(0);
+  expect(p.stderr.toString()).toContain("rust-js: `new` of `Option` values made before it is refused");
 });
 
 // ADR 0875, amended: a `Set`'s `forEach` of a closure that borrows what's around it,

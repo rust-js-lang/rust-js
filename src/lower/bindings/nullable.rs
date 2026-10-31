@@ -340,3 +340,200 @@ fn nullable_alone(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(in crate::lower) fn is_js_null(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     super::is_binding(tcx, def_id) && matches!(super::js_form(tcx, def_id), super::JsForm::Null)
 }
+
+/// The type parameters of a collection, a struct `#[rust_js::nullable(..)]`
+/// names, whose `None` it holds as `null`: a `js::Map`'s `V`, TypeScript's
+/// `Map<K, V | null>` (ADR 0884, amended, the user's decision). Their
+/// indexes.
+pub(in crate::lower) fn nullable_values(tcx: TyCtxt<'_>, adt: DefId) -> Vec<u32> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
+    let names: Vec<Symbol> = (tcx.get_attrs_by_path(adt, &path))
+        .filter_map(|attr| attr.meta_item_list())
+        .flatten()
+        .filter_map(|item| item.ident().map(|ident| ident.name))
+        .collect();
+    (tcx.generics_of(adt).own_params.iter())
+        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name))
+        .map(|param| param.index)
+        .collect()
+}
+
+/// The type parameters of binding `def_id` that are a collection's values
+/// it holds `None` of as `null` (`nullable_values`), where its signature
+/// names the collection: `V` of `Map<K, V>::set(&self, key, value: V)`
+/// and of `map::new(..) -> &Map<K, V>`.
+fn nullable_type_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<u32> {
+    if !super::is_binding(tcx, def_id) {
+        return Vec::new();
+    }
+    let sig = tcx.fn_sig(def_id).skip_binder().skip_binder();
+    let mut found = Vec::new();
+    for ty in sig.inputs_and_output.iter() {
+        for part in ty.walk() {
+            if let Some(ty::Adt(adt, args)) = part.as_type().map(|t| *t.kind()) {
+                for at in nullable_values(tcx, adt.did()) {
+                    if let ty::Param(p) = args.type_at(at as usize).kind()
+                        && !found.contains(&p.index)
+                    {
+                        found.push(p.index);
+                    }
+                }
+            }
+        }
+    }
+    found
+}
+
+/// Whether binding `def_id`'s `i`th parameter takes `null` for `None`:
+/// one `#[rust_js::nullable(..)]` names, or one of a collection's value it
+/// holds `None` of as `null`, `set(key, value: V)` of a `Map<K, V>` (ADR
+/// 0884, amended).
+pub(in crate::lower) fn takes_nullable(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> bool {
+    let names = nullable_params(tcx, def_id);
+    let named = (tcx.fn_arg_idents(def_id).get(i).copied().flatten()).is_some_and(|ident| names.contains(&ident.name));
+    let input = tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i).copied();
+    named
+        || input.is_some_and(
+            |input| matches!(input.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index)),
+        )
+}
+
+/// Whether binding `def_id`'s `i`th parameter holds, in a tuple, a type
+/// parameter its `#[rust_js::nullable(..)]` names: a `Map`'s entries,
+/// `new Map([[key, value]])`, each value of which is written `null` for
+/// `None`, as `set` writes it (ADR 0884, amended).
+pub(in crate::lower) fn takes_nullable_entries(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> bool {
+    let params = nullable_type_params(tcx, def_id);
+    if params.is_empty() {
+        return false;
+    }
+    let input = tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i).copied();
+    input.is_some_and(|input| holds_in_a_tuple(input, &params))
+}
+
+/// Whether `ty` holds one of type parameters `params` in a tuple.
+fn holds_in_a_tuple(ty: Ty<'_>, params: &[u32]) -> bool {
+    ty.walk().any(|part| {
+        part.as_type().is_some_and(|t| {
+            matches!(t.kind(), ty::Tuple(items) if items.iter().any(|item| {
+                item.walk().any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Param(p)) if params.contains(&p.index)))
+            }))
+        })
+    })
+}
+
+/// Whether binding `def_id` is a keyed read, a `Map`'s `get(key)`, of a
+/// value whose `None` its collection holds as
+/// `null`, the type parameter its `Option` result holds, of itself or a
+/// reference to it, being one `#[rust_js::nullable(..)]` names: JS's read
+/// alone tells a key it lacks, `undefined`, from one whose value is
+/// `None`, `null` (ADR 0884, amended).
+pub(in crate::lower) fn reads_a_nullable_value(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    if !super::reads_a_key(tcx, def_id) {
+        return false;
+    }
+    let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
+    let ty::Adt(adt, args) = output.kind() else {
+        return false;
+    };
+    let held = match args.type_at(0).kind() {
+        ty::Ref(_, held, _) => *held,
+        _ => args.type_at(0),
+    };
+    tcx.is_lang_item(adt.did(), LangItem::Option)
+        && matches!(held.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index))
+}
+
+/// Report each value given a binding's parameter that holds, in a tuple,
+/// a type parameter its `#[rust_js::nullable(..)]` names, where that's an
+/// `Option` of what never looks like `None`: `map::new(Some(&entries))`
+/// of a `Map<K, Option<&T>>`, whose entries, made before the call, hold a
+/// `None` as `undefined`,
+/// where the map holds it as `null`, and its `get` would read `None` of a
+/// key whose value is `None` (ADR 0884, amended). `None`, of nothing, is
+/// given, and entries written where they're given, `Some(&[(key, None)])`,
+/// whose values are each written `null` for `None` there. False if there
+/// was one.
+pub(in crate::lower) fn reject_nullable_held<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    bodies: &[&crate::lower::Body<'tcx>],
+) -> bool {
+    use crate::lower::body_queries::strip;
+    use rustc_middle::thir::ExprKind;
+    let tcx = recognition.tcx;
+    let mut valid = true;
+    for body in bodies {
+        let thir = &body.thir;
+        for expr in thir.exprs.iter() {
+            let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+                continue;
+            };
+            let ty::FnDef(callee, generic_args) = *thir[strip(thir, fun)].ty.kind() else {
+                continue;
+            };
+            if !super::is_binding(tcx, callee) {
+                continue;
+            }
+            // An `Option` of what never looks like `None`, whose `get` is
+            // JS's read alone, which tells a `None` by its `null`.
+            let of_options: Vec<u32> = (nullable_type_params(tcx, callee).into_iter())
+                .filter(|&p| match generic_args.skip_binder().type_at(p as usize).kind() {
+                    ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => {
+                        !crate::lower::representation::may_look_like_none(recognition, args.type_at(0))
+                    }
+                    _ => false,
+                })
+                .collect();
+            if of_options.is_empty() {
+                continue;
+            }
+            let inputs = tcx.fn_sig(callee).skip_binder().skip_binder().inputs();
+            for (&arg, input) in args.iter().zip(inputs) {
+                // Held in a tuple, an entry's, `(&K, V)`: what the program
+                // made, not the collection itself, whose `V`s are its own.
+                // Of nothing, or entries written where they're given, each
+                // value written `null` for `None` there, `new Map([[key,
+                // null]])`.
+                if holds_in_a_tuple(*input, &of_options) && !written_in_place(thir, arg) {
+                    let name = tcx.item_name(callee);
+                    tcx.dcx()
+                        .struct_span_err(
+                            thir[arg].span,
+                            format!(
+                                "rust-js: `{name}` of `Option` values made before it is refused: the collection holds \
+                                 a `None` as `null`, where what it's given holds it as `undefined`"
+                            ),
+                        )
+                        .with_help("make it of nothing and `set` each value (ADR 0884, amended)")
+                        .emit();
+                    valid = false;
+                }
+            }
+        }
+    }
+    valid
+}
+
+/// Whether `arg` is `None`, or entries written where they're given, an
+/// array of tuples, borrowed, reborrowed, coerced or a `Some`'s.
+fn written_in_place(thir: &rustc_middle::thir::Thir<'_>, mut arg: rustc_middle::thir::ExprId) -> bool {
+    use rustc_middle::thir::ExprKind;
+    loop {
+        arg = crate::lower::body_queries::strip(thir, arg);
+        match &thir[arg].kind {
+            ExprKind::Adt(made) if made.variant_index.as_u32() == 0 && made.fields.is_empty() => return true,
+            ExprKind::Adt(made) if made.fields.len() == 1 => arg = made.fields[0].expr,
+            ExprKind::Borrow { arg: of, .. } | ExprKind::Deref { arg: of } => arg = *of,
+            ExprKind::PointerCoercion { source, .. } => arg = *source,
+            ExprKind::Array { fields } => {
+                return fields.iter().all(|&field| {
+                    matches!(
+                        thir[crate::lower::body_queries::strip(thir, field)].kind,
+                        ExprKind::Tuple { .. }
+                    )
+                });
+            }
+            _ => return false,
+        }
+    }
+}

@@ -611,6 +611,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Expr(e) if self.unwrapped_where_made(state, destination.local) => {
                         Value::Expr(e.uncaught().unwrap_or(e))
                     }
+                    // A keyed read of a value whose `None` its collection
+                    // holds as `null`, held where it's made as its payload
+                    // (ADR 1017): JS's read itself, `map.get(key)` (ADR 0884,
+                    // amended).
+                    Value::Expr(e)
+                        if destination.projection.is_empty()
+                            && state.facts.options().nested.contains(&destination.local)
+                            && fn_def(func.ty(&state.body.local_decls, self.tcx))
+                                .is_some_and(|(def_id, _)| bindings::reads_a_nullable_value(self.tcx, def_id)) =>
+                    {
+                        Value::Expr(crate::lower::binding_calls::held_read(e))
+                    }
                     // An iterator its owner drops, held (#206).
                     Value::Expr(e) if self.holds_dropped_iterator(state, *destination) => {
                         Value::Expr(Expr::call_helper("$held", vec![e]))

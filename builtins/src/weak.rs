@@ -22,6 +22,7 @@ unsafe impl WeakKey for dyn Fn() -> Option<&'static super::Unknown> + '_ {}
 /// a value of each key it holds, the key held weakly, any value, as a
 /// [`Map`]'s is (ADR 0884).
 #[cfg_attr(rust_js, rust_js::types = "WeakMap<K, V>")]
+#[cfg_attr(rust_js, rust_js::nullable(V))]
 pub struct WeakMap<K: WeakKey + ?Sized, V>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
 impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
@@ -81,11 +82,15 @@ pub mod weak_map {
 /// keeps where the host has no `WeakMap`, as React's `typeof WeakMap ===
 /// 'function' ? WeakMap : Map` does (ADR 0699). Its value is any value too,
 /// as TypeScript's `Map<K, V>` takes any `V` and a [`Dict`](super::Dict)'s
-/// is (ADR 0884): an `Option`'s `None` is `undefined`, as it is everywhere,
-/// and JS's `null` is `Kind::Null`, upstream's `new Map([[frozenObject,
-/// null]])` of `map::new(Some(&[(frozen_object, Kind::Null)]))`. A map a
+/// is (ADR 0884): an `Option`'s `None` it holds as `null`, TypeScript's
+/// `Map<K, V | null>`, so `get` tells it from a key it lacks by JS's read
+/// alone, `map.get(key) === null` of `map.get(key) == Some(None)` (ADR
+/// 0884, amended), and JS's `null` of any value is `Kind::Null`, upstream's
+/// `new Map([[frozenObject, null]])` of `map::new(Some(&[(frozen_object,
+/// Kind::Null)]))`. A map a
 /// program keeps of what Rust hashes is a `HashMap`, a `Map` in JS too.
 #[cfg_attr(rust_js, rust_js::types = "Map<K, V>")]
+#[cfg_attr(rust_js, rust_js::nullable(V))]
 pub struct Map<K: ?Sized, V>(PhantomData<JsObject>, PhantomData<(*const K, V)>);
 
 /// A `Map` of what a `WeakMap` keys is a `WeakMap` of what it holds, as
