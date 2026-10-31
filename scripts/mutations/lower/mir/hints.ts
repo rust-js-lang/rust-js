@@ -655,4 +655,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guards_fall_twice.rs$"],
     snapshots: true,
   },
+  {
+    name: "let-else-pattern-no-condition",
+    breaks:
+      "a `let … else` of a tuple of patterns tests each part in an `if` of its own, React's noop dumpTree's `if (root != null) { if (rootContainer != null) { ..the rest..; return; } }` and the `else`'s body after it, not `if (root == null || rootContainer == null) { ..; return; }` (rd299)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    let pattern = self.js_span(pattern.span);\n                    Some((pattern, pattern))\n",
+    replace: "                    let _ = pattern;\n                    None\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
+    snapshots: true,
+  },
 ];

@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-steps-out-of-order",
     breaks: "MIR's loop body tests what's written later first",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("written order steps", |b, _| {\n                js::statement_lists(b, &mut |s| written_order_steps(s))\n            }),\n',
+    find: '            pass("written order steps", |b, h| {\n                js::statement_lists(b, &mut |s| written_order_steps(s, &h.written.let_elses))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
     snapshots: true,

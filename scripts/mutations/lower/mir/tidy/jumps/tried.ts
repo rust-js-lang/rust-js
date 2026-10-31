@@ -151,4 +151,24 @@ export const mutations: Mutation[] = [
     replace: "        _ => s.span,\n    };\n    let first",
     tests: ["test/lowering-written-elses.test.ts", "-t", "guard first"],
   },
+  {
+    name: "let-else-bindings-taken-as-rest",
+    breaks:
+      "a `let … else`'s bindings, written where its pattern is, before its `else`, are taken for the rest's place, so its guard isn't first: `if (root != null && rootContainer != null) { ..the rest.. } else { ..; return; }` (rd299)",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "        first(let_else_bindings(s, at, let_elses)).is_some_and(|s| at < s)\n",
+    replace: "        first(s).is_some_and(|s| at < s)\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "loop-let-else-bindings-taken-as-rest",
+    breaks:
+      "a loop's `let (Some(a), Some(b)) = pair else { ..; continue; };`, its `const [a, b] = pair;` taken for where the rest is written, keeps the rest in the `if`, `if (pair[0] != null && pair[1] != null) { ..; continue; } console.log(\"skipped\");` (rd299)",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "                    .is_some_and(|r| first_written(let_else_bindings(then, r, let_elses)).is_some_and(|a| r < a))\n",
+    replace: "                    .is_some_and(|r| first_written(then).is_some_and(|a| r < a))\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
+    snapshots: true,
+  },
 ];

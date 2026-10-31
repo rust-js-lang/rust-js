@@ -103,7 +103,12 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
         ) if !place(s).is_none() => Some(place(s).lo),
         _ => first_written(list),
     };
-    let written_first = |e: &[Stmt], s: &[Stmt]| matches!((first(e), first(s)), (Some(e), Some(s)) if e < s);
+    // Whether `e`, an `else`, is written before `s`, the rest, past the
+    // bindings of its `let … else` (`let_else_bindings`).
+    let written_first = |e: &[Stmt], s: &[Stmt]| {
+        let Some(at) = first(e) else { return false };
+        first(let_else_bindings(s, at, let_elses)).is_some_and(|s| at < s)
+    };
     // The `let … else`'s `else` each of `exit`'s statements is written in,
     // and none of `then`'s; but its last, a jump MIR placed where the loop
     // or the body ends, which each `else` it ends shares.
@@ -355,6 +360,30 @@ fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
     true
 }
 
+/// `rest` past the bindings of the `let … else` whose `else`'s first
+/// statement is written at `at`, which it begins with, written before that
+/// `else`: `let (Some(root), Some(c)) = (root, c) else { .. };`'s `const
+/// root$1 = root;`, or a loop's `const [a, b] = pair;`, where the pattern
+/// is, not where what the rest does is written (rd299).
+fn let_else_bindings<'a>(rest: &'a [Stmt], at: u32, let_elses: &[js::Span]) -> &'a [Stmt] {
+    let Some(head) = (let_elses.iter())
+        .filter(|written| written.lo <= at && at < written.hi)
+        .map(|written| written.lo)
+        .min()
+    else {
+        return rest;
+    };
+    let read = |e: &Expr| matches!(e.kind, ExprKind::Var(_) | ExprKind::Index(..) | ExprKind::Member(..));
+    let bindings = (rest.iter())
+        .take_while(|b| {
+            matches!(&b.kind, StmtKind::Const(_, value) | StmtKind::Destructure { value, .. } if read(value))
+                && !b.span.is_none()
+                && b.span.hi <= head
+        })
+        .count();
+    &rest[bindings..]
+}
+
 /// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
 /// `a` always leaving and more than one exit, a guard's, and `rest`
 /// leaving or going round again at the body's end: `if (!t) { rest } a`, in
@@ -362,7 +391,7 @@ fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
 /// went round; `a`'s last `continue` goes on anyway. Not of a lone exit,
 /// `if (!value) { return; }` of a `?`, written where the block it shares
 /// is: a guard first, as a person writes it.
-pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
+pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt], let_elses: &[js::Span]) {
     for stmt in stmts {
         let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
         else {
@@ -378,7 +407,8 @@ pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt]) {
             // stage puts it where the program wrote it (#382).
             then.len() != 1
                 && then.last().is_some_and(ends)
-                && matches!((first_written(rest), first_written(then)), (Some(r), Some(a)) if r < a)
+                && first_written(rest)
+                    .is_some_and(|r| first_written(let_else_bindings(then, r, let_elses)).is_some_and(|a| r < a))
         });
         let Some(i) = found else { continue };
         let mut rest = body.split_off(i + 1);

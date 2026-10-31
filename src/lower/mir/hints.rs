@@ -249,6 +249,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => Vec::new(),
             })
+            // And a `let … else`'s pattern, an arm's as a `match`'s is:
+            // `let (Some(a), Some(b)) = (a, b) else { .. }`'s `a != null &&
+            // b != null`, its guard's `a == null || b == null` (rd299).
+            .chain((self.frame.thir.stmts.iter()).filter_map(|stmt| match &stmt.kind {
+                thir::StmtKind::Let {
+                    pattern,
+                    else_block: Some(_),
+                    ..
+                } => {
+                    let pattern = self.js_span(pattern.span);
+                    Some((pattern, pattern))
+                }
+                _ => None,
+            }))
             .collect();
         // Where each `if` with an `else` is written, its condition and each
         // branch; a `while`'s too, `if c { body } else { break }` of its

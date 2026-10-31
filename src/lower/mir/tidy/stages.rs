@@ -641,8 +641,8 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written thens", |b, h| {
                 js::statement_lists(b, &mut |s| written_thens(s, &h.written.thens))
             }),
-            pass("written order steps", |b, _| {
-                js::statement_lists(b, &mut |s| written_order_steps(s))
+            pass("written order steps", |b, h| {
+                js::statement_lists(b, &mut |s| written_order_steps(s, &h.written.let_elses))
             }),
             // A chain of `if`s written without an `else` whose jumps MIR joined
             // after it: each its own (ADR 0879, amended).
