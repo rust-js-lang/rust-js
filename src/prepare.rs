@@ -47,7 +47,30 @@ pub fn module(module: &mut js::Module) {
     stepped(module);
     read_together(module);
     js::each_item_block_mut(&mut module.items, &mut |stmts| declared_functions(stmts));
+    declared_module_functions(&mut module.items);
     js::each_item_block_mut(&mut module.items, &mut |stmts| do_whiles::do_whiles(stmts)); // Last (ADR 0978).
+}
+
+/// A module's `const` of a function made as a value, a thread-local's
+/// `js::function::with_this` function: declared, `function onUnsuspend()
+/// { this.count--; }`, as upstream writes it and as a block's is
+/// (`declared_functions`, ADR 0972, amended). Its declaration's hoisting
+/// changes nothing a `const` reads: no item is set again, and one read
+/// before its `const` threw.
+fn declared_module_functions(items: &mut [js::Item]) {
+    for item in items.iter_mut() {
+        if let js::Item::Const(constant) = item
+            && !constant.mutable
+            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())
+            && let js::Item::Const(constant) = std::mem::replace(item, js::Item::Statements(Vec::new()))
+            && let ExprKind::Function(mut function) = constant.value.kind
+        {
+            function.name = constant.name;
+            function.export = constant.export;
+            function.span = constant.span;
+            *item = js::Item::Function(*function);
+        }
+    }
 }
 
 /// `const deleteChild = (returnFiber, child) => { .. };`, a closure of

@@ -578,6 +578,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => return refuse(self, "is given a closure whose `this` is a pattern, not a name"),
             None => {}
         }
+        // A variable that only holds its `this`, cast to what's bound, `let
+        // state: &SuspendedState = unsafe { js::cast(this) }`, is `this`
+        // where it's read, as upstream's `this.count--` (ADR 0972, amended):
+        // one no function made in it reads. A body lowered names each
+        // variable apart, a shadow too, so a read of its name is of it.
+        let aliases: Vec<String> = (body.iter())
+            .filter_map(|stmt| match &stmt.kind {
+                StmtKind::Const(name, value) if matches!(value.kind, js::ExprKind::This) => Some(name.clone()),
+                _ => None,
+            })
+            .collect();
+        for alias in aliases {
+            if js::read_as_this(&mut body.clone(), &alias) {
+                continue;
+            }
+            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if *name == alias));
+            js::read_as_this(&mut body, &alias);
+        }
         let function = js::Function {
             name: String::new(),
             params: own,

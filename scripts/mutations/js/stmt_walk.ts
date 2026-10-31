@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "this-no-path",
+    breaks: "`this` isn't a path, so `this.count = this.count - 1` isn't `this.count--` (rd196)",
+    file: "src/js/stmt_walk.rs",
+    find: "        (ExprKind::This, ExprKind::This) => true,\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
+  },
+  {
     name: "switch-of-a-case-break-ends",
     breaks: "a `switch` a case's `break` of no label leaves is taken to never go on, so what follows it is moved into its `default`, and a guarded arm that does nothing returns where Rust panics (a wrong answer, cw2)",
     file: "src/js/stmt_walk.rs",

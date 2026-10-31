@@ -284,3 +284,35 @@ migrated), `test/js-constructors.test.ts`,
 "a function of its this is kept as a listener" (`kept_wrapped`,
 `EventListener(function::with_this(..))`, no leak). No mutation: a
 binding's signature.
+
+## Amendment: a thread-local's is declared, its cast `this` read in place (rd196)
+
+React DOM's suspensey resources declare `function onUnsuspend() {
+this.count--; .. }` and bind it to the state, `onUnsuspend.bind(state)`.
+The port holds it in a thread-local, `static ON_UNSUSPEND: &'static dyn
+Fn() = function::with_this(|this, ()| { let state: &SuspendedState =
+unsafe { js::cast(this) }; .. })`, which printed `const onUnsuspend =
+function () { const state = this; state.count--; };`.
+
+- **A module's `const` of a function made as a value is declared**,
+  `function onUnsuspend() { .. }`, as a block's is (`prepare.rs`'s
+  `declared_module_functions`). Its hoisting changes nothing: a read
+  before its `const` threw. One its module sets (ADR 0270), a `let`,
+  stays a variable.
+- **A variable that only holds the function's `this`**, a `const` of it
+  at its body's top, cast to what's bound, **is `this` where it's read**,
+  as the closure's `this` is. One a function made in it reads,
+  `function inner() { return state.count; }`, whose `this` is its own,
+  keeps its `const`. A body lowered names each variable apart, a shadow
+  too, so each read of its name is of it.
+- **`this` is a path, as a variable is** (`js::same_path`), so
+  `this.count = this.count - 1` is `this.count--`, a class's methods'
+  too.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)'s first): the same
+function, its name and its `this`. Held by `test/js-functions.test.ts`'s
+"a with_this thread-local is a function declaration, its cast this read
+in place", which calls each, and the guide's suspensey resources
+(`interop/async.md`); mutations `module-function-const`,
+`module-function-mutable-declared`, `this-alias-kept`,
+`this-alias-nested-read` and `this-no-path`.

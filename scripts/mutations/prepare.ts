@@ -3,6 +3,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-function-const",
+    breaks: "a thread-local's with_this function stays a `const` of a function expression, `const onUnsuspend = function () { .. }`, where upstream declares `function onUnsuspend() { .. }` (rd196)",
+    file: "src/prepare.rs",
+    find: "    declared_module_functions(&mut module.items);\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
+  },
+  {
+    name: "module-function-mutable-declared",
+    breaks: "a thread-local its module sets, a `let`, is declared a function, which the module's assignment would replace as it does a `let`, but which is hoisted",
+    file: "src/prepare.rs",
+    find: "            && !constant.mutable\n            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
+    replace: "            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
+    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
+  },
+  {
     name: "valued-arrow-declared",
     breaks: "a function held as a value, an `Rc`'s or a `Box`'s of a closure, is declared, `function commitHook(n) { .. }` (ADR 0882, amended)",
     file: "src/prepare.rs",

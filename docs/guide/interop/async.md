@@ -452,11 +452,10 @@ pub fn suspend_on(state: &'static SuspendedState, loading: Promise<()>, preload:
 ```
 
 ```js
-const onUnsuspend = function () {
+function onUnsuspend() {
   // Safety: it's only called bound to a suspended state.
-  const state = this;
-  state.count--;
-};
+  this.count--;
+}
 
 export function suspendOn(state, loading, preload) {
   const ping = onUnsuspend.bind(state);
@@ -474,6 +473,10 @@ time, and `addEventListener` given it twice for one event and target
 keeps one listener, where two closures were two. A binding's JS function
 bound, which may read what it's given, keeps its arrow, and so does a
 `with_this` function unbound, which reads the `this` it's called with.
+A thread-local's `with_this` function is declared, and a variable that
+only holds its `this`, cast to what's bound, is `this` where it's read,
+`this.count--`
+([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md), amended).
 
 An array method's callback, `xs.iter().map(|x| double(x))`, is the
 function too, `xs.map(double)` ([ADR 0279](../../decisions/0279-callbacks-passed-on.md)),

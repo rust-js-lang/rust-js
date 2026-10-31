@@ -621,3 +621,80 @@ pub fn bound(f: &'static dyn Fn(Option<f64>) -> f64) -> f64 {
   const count = (...args: unknown[]) => args.length;
   expect([lib.called(count, count), lib.bound(count)]).toEqual([1, 0]);
 });
+
+// React DOM's suspensey resources: `function onUnsuspend() { this.count--;
+// .. }`, bound to the state, `onUnsuspend.bind(state)`. A thread-local's
+// with_this function is declared, and a variable that only holds its
+// `this`, cast to what's bound, is `this` where it's read; one a function
+// made in it reads keeps its `const` (ADR 0972, amended).
+test("a with_this thread-local is a function declaration, its cast this read in place", async () => {
+  const { js, lib } = await compiled("with-this-declared", `use std::cell::Cell;
+
+use js::{Promise, function};
+
+pub struct SuspendedState {
+    pub count: Cell<f64>,
+}
+
+unsafe impl js::Defined for SuspendedState {}
+
+thread_local! {
+    static ON_UNSUSPEND: &'static dyn Fn() = function::with_this(|this, ()| {
+        // Safety: it's only called bound to a suspended state.
+        let state: &SuspendedState = unsafe { js::cast(this) };
+        state.count.set(state.count.get() - 1.0);
+    });
+    pub static ON_DONE: &'static dyn Fn() -> bool = function::with_this(|this, ()| this.is_some());
+    static PICK: Cell<&'static dyn Fn() -> f64> = Cell::new(function::with_this(|_, ()| 1.0));
+}
+
+pub fn swap() -> f64 {
+    let before = PICK.get()();
+    PICK.set(function::with_this(|_, ()| 2.0));
+    before + PICK.get()()
+}
+
+pub fn suspend_on(state: &'static SuspendedState, loading: Promise<()>) {
+    let ping = function::bind(ON_UNSUSPEND.with(|f| *f), Some(state), ());
+    loading.then_with::<(), _, _>(move |_| ping(), move |_| ping());
+}
+
+pub fn nested() -> &'static dyn Fn() -> f64 {
+    function::with_this(|this, ()| {
+        // SAFETY: called on a suspended state.
+        let state: &SuspendedState = unsafe { js::cast(this) };
+        let inner = function::with_this(move |_, ()| state.count.get());
+        inner() + state.count.get()
+    })
+}
+
+pub fn shadowed() -> &'static dyn Fn(bool) -> f64 {
+    function::with_this(|this, (c,): (bool,)| {
+        // SAFETY: called on a suspended state.
+        let state: &SuspendedState = unsafe { js::cast(this) };
+        let n = state.count.get();
+        if c {
+            let state = n * 2.0;
+            return state + 1.0;
+        }
+        n
+    })
+}
+`);
+  expect(js).toContain("const n = this.count;\n    if (c) {\n      const state = n * 2;\n      return state + 1;");
+  expect([lib.shadowed().call({ count: 3 }, true), lib.shadowed().call({ count: 3 }, false)]).toEqual([7, 3]);
+  expect(js).toContain(
+    "function onUnsuspend() {\n  // Safety: it's only called bound to a suspended state.\n  this.count--;\n}\n",
+  );
+  expect(js).toContain("export function onDone() {\n  return this != null;\n}\n");
+  // One its module sets stays a variable.
+  expect(js).toContain("let pick = function () {\n  return 1;\n};\n");
+  expect(lib.swap()).toBe(3);
+  expect(js).toContain("const state = this;\n    function inner() {\n      return state.count;");
+  const state = { count: 2 };
+  lib.suspendOn(state, Promise.resolve());
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(state.count).toBe(1);
+  expect([lib.onDone.call(state), lib.nested().call({ count: 3 })]).toEqual([true, 6]);
+});

@@ -92,7 +92,7 @@ pub(crate) fn taken_place(place: &Expr) -> bool {
     }
 }
 
-/// Are `a` and `b` the same variable or path of one: `s`, `a.b`, `a?.b`, an
+/// Are `a` and `b` the same variable or path of one: `s`, `this`, `a.b`, `a?.b`, an
 /// item by a key that reads the same, `counts[name]`, `files["/a"]`,
 /// `v[0]`, or the runtime's checked item, `$index(v, i).hits`, which names
 /// the same place each time (ADR 0056)? The one answer, for each pass that
@@ -105,6 +105,8 @@ pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
     };
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
+        // A function's `this`, which nothing sets: `this.count--`.
+        (ExprKind::This, ExprKind::This) => true,
         (ExprKind::Member(x, f), ExprKind::Member(y, g)) => f == g && same_path(x, y),
         (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),
         (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_path(x, y) && same_key(i, j),
