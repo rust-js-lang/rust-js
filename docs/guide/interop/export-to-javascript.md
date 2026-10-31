@@ -1238,7 +1238,19 @@ export function updateContainer(n) {
   method is the arrow of that call.
 - **Its value is the module's namespace**, `import * as Reconciler`, a
   library's too, and its type `typeof Reconciler`, imported so: `import
-  type * as Reconciler from "./reconciler.js"`.
+  type * as Reconciler from "./reconciler.js"`. A `use` that renames the
+  struct names the import, `use reconciler::Reconciler as DefaultConfig`
+  `import * as DefaultConfig`, as it names any.
+- **A method that only passes its parameters on, in order, to another
+  module's function is that function**, as upstream's reconciler
+  re-exports the work loop's: `pub fn batched_updates<A, R>(&self, f:
+  impl FnOnce(A) -> R, a: A) -> R { work_loop::batched_updates(f, a) }`
+  is `export { batchedUpdates } from "./work_loop.js"`, a run of them
+  from one module one statement, and its own module calls the function.
+  It must take what JS gives it as the function does: its parameters'
+  types the function's, its generic parameters given as they are, its
+  caller's location and its bounds' dictionaries alike, and no copy its
+  callers need; else it's a function of its own.
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
   too; an impl in another module than its struct's; an item that's no

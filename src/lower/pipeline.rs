@@ -346,6 +346,7 @@ pub fn lower_crate<'tcx>(
     }
 
     let function_bodies = bodies.iter().map(|body| (body.def_id, *body)).collect();
+    let forwarded = reached::forwarded(tcx, &bodies, (given, &js_given), &caller_locations, &foreign);
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
     let no_body = rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit));
@@ -374,7 +375,8 @@ pub fn lower_crate<'tcx>(
             let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
             let default = super::default_exports::module_default(tcx, module, &fns, module_held);
             let from = (default.from, module_held);
-            let reexports = super::reexports::reexports(tcx, module, (&fns, &foreign), &paths, from, &sources);
+            let made = (&fns, &foreign, &forwarded);
+            let reexports = super::reexports::reexports(tcx, module, made, &paths, from, &sources);
             (module, (default, reexports))
         })
         .collect();
@@ -456,6 +458,7 @@ pub fn lower_crate<'tcx>(
         lazy_locals: &lazy_locals,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
+        forwarded: &forwarded,
         local_consts: &local_consts,
         struct_literals: &struct_literals,
         loads_in_cycles: Default::default(),
@@ -475,7 +478,7 @@ pub fn lower_crate<'tcx>(
     let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>, Option<usize>)> = bodies
         .iter()
-        .filter(|b| reached::lowered_here(tcx, &foreign, exports_reachable, b.def_id))
+        .filter(|b| reached::lowered_here(tcx, (&foreign, &forwarded), exports_reachable, b.def_id))
         // Each copy its callers need besides, after it (ADR 0051, amended).
         .flat_map(|b| {
             let copies = js_given.copies(b.def_id).map(|(at, _)| Some(at));
@@ -1304,7 +1307,7 @@ pub fn lower_crate<'tcx>(
                 module,
                 (default_export, default_declared),
                 &paths,
-                &lowered.reexports,
+                (&lowered.reexports, &forwarded),
                 &aliased_items,
                 (ref_cells, &counted, &null_fields),
                 (&fns, module_held, &module_variables),
@@ -1359,7 +1362,7 @@ pub fn lower_crate<'tcx>(
             let through: BTreeMap<&Vec<String>, LocalModId> = targets.map(|to| (&paths[&to], to)).collect();
             let namespaces: Vec<_> = (through.into_values())
                 .map(|target| {
-                    let name = super::analysis::namespace_of(tcx, target);
+                    let name = super::analysis::namespace_in(tcx, module, target);
                     (target, js::NAMESPACE.to_string(), js::NAMESPACE.to_string(), name)
                 })
                 .collect();

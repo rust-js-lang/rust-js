@@ -21,7 +21,7 @@ pub(super) use js_given::{JsGiven, Params, js_facing};
 mod lazy_locals;
 mod mutation;
 mod namespaces;
-pub(super) use namespaces::{Through, module_paths, namespace_of};
+pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
 mod only_called;
 mod plain_locals;

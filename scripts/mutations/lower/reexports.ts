@@ -239,4 +239,22 @@ export const mutations: Mutation[] = [
       "            DefKind::Struct if super::classes::is_class(tcx, id) => {\n",
     tests: ["test/diagnostics.test.ts", "-t", "every name of a module"],
   },
+  {
+    name: "forwarded-methods-unexported",
+    breaks:
+      "a namespace's method that's the function it passes its parameters on to isn't re-exported, so its module has no `batchedUpdates` (rd292b)",
+    file: "src/lower/reexports.rs",
+    find: "    forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);\n",
+    replace: "",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-methods-each-a-statement",
+    breaks:
+      "a run of a namespace's methods each the function it passes its parameters on to, from one module, is a statement each, not one `export { .. } from` as a `pub use` of a list is (rd292b)",
+    file: "src/lower/reexports.rs",
+    find: "                (Some(from), Some(run)) if last == Some(from) => run.push((method, from)),\n",
+    replace: "                (Some(from), Some(run)) if false && last == Some(from) => run.push((method, from)),\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
 ];

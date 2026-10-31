@@ -226,6 +226,49 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
 
 /// Whether `e`, a call's argument, is one its JS leaves out where it's
 /// last (ADRs 0443, 0441): a `None` or a `()`.
+/// Of `method`, a `#[rust_js::namespace]`'s method (ADR 1037), whose body
+/// is `thir`: the function of another of the crate's modules that it only
+/// passes its parameters on to, past its `self`, in order, each as it is,
+/// `react_fiber_work_loop::batched_updates(f, a)`, of its own parameters'
+/// types and generic parameters, and those as it's given them (rd292b, ADR 1037
+/// amended). It's that function, as a closure that only passes on what
+/// it's given is the function it calls (rd196), where the two take what JS
+/// gives them alike (`pipeline::reached::forwarded`): its module re-exports
+/// it by the method's name, `export { batchedUpdates } from
+/// "./ReactFiberWorkLoop.js"`, and a call of it on the namespace is that
+/// function's. Through any other value, `NoopRenderer.batchedUpdates(..)`,
+/// it's what that value has, as any of its methods is.
+pub(in crate::lower) fn forwarded_function<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    method: DefId,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) {
+        return None;
+    }
+    let (target, args) = super::body_queries::forwards_to(thir, 1)?;
+    let module = |id: DefId| id.as_local().map(|local| tcx.parent_module_from_def_id(local));
+    if tcx.def_kind(target) != DefKind::Fn
+        || super::bindings::is_binding(tcx, target)
+        || !target.is_local()
+        || module(target) == module(method)
+    {
+        return None;
+    }
+    // Its own generic parameters, in order, its regions aside.
+    let own = ty::GenericArgs::identity_for_item(tcx, method);
+    let kept = |args: ty::GenericArgsRef<'tcx>| args.iter().filter(|arg| arg.as_region().is_none()).collect::<Vec<_>>();
+    if kept(args) != kept(own) {
+        return None;
+    }
+    // Its parameters, as the function's of its own.
+    let erased =
+        |sig: ty::PolyFnSig<'tcx>| tcx.erase_and_anonymize_regions(tcx.instantiate_bound_regions_with_erased(sig));
+    let mine = erased(tcx.fn_sig(method).instantiate_identity().skip_normalization());
+    let theirs = erased(tcx.fn_sig(target).instantiate(tcx, args).skip_normalization());
+    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))
+}
+
 fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middle::thir::ExprId) -> bool {
     match thir[super::body_queries::strip(thir, e)].kind {
         ExprKind::Tuple { ref fields } => fields.is_empty(),

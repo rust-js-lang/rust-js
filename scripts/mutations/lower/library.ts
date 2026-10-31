@@ -498,4 +498,13 @@ export const mutations: Mutation[] = [
     replace: "    match false && super::recognition::is_std_crate(tcx, id) {",
     tests: ["test/corpus.test.ts", "-t", "^std_peekable.rs$"],
   },
+  {
+    name: "reexported-names-unlisted",
+    breaks:
+      "a library's module's re-exported names aren't what its JS exports, so a namespace's method that's a function it re-exports is in no manifest, and a consumer's call is refused (rd292b)",
+    file: "src/lower/library.rs",
+    find: "            .chain(\n                module\n                    .reexports\n                    .iter()\n                    .flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias)),\n            )\n",
+    replace: "",
+    tests: ["test/namespaces.test.ts", "-t", "library's namespace's method"],
+  },
 ];

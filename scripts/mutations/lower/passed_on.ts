@@ -458,4 +458,40 @@ export const mutations: Mutation[] = [
     replace: "                && !(false && leaves_out(args))\n",
     tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
   },
+  {
+    name: "forwarded-function-self-passed",
+    breaks:
+      "a namespace's method that only passes its parameters on, past its `self`, is no function it calls: a function of its own beside its module's `pub use`-like re-export (rd292b)",
+    file: "src/lower/passed_on.rs",
+    find: "    let (target, args) = super::body_queries::forwards_to(thir, 1)?;\n",
+    replace: "    let (target, args) = super::body_queries::forwards_to(thir, 0)?;\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-function-of-its-own-module",
+    breaks:
+      "a namespace's method that passes its parameters on to its own module's function, which may be private, is that function re-exported from itself, `export { doubleIt as double } from \"./reconciler.js\"` (rd292b)",
+    file: "src/lower/passed_on.rs",
+    find: "        || module(target) == module(method)\n",
+    replace: "",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-function-other-generics",
+    breaks:
+      "a namespace's method that passes its parameters on to a function it gives other generic arguments, `size_of::<u64>`, is that function, which then takes the fact the method knows (rd292b)",
+    file: "src/lower/passed_on.rs",
+    find: "    if kept(args) != kept(own) {\n",
+    replace: "    if false && kept(args) != kept(own) {\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-function-other-parameters",
+    breaks:
+      "a namespace's method of a `&mut` the function takes as a `&` is that function, given the method's handle (rd292b)",
+    file: "src/lower/passed_on.rs",
+    find: "    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))\n",
+    replace: "    Some((target, args))\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
 ];

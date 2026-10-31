@@ -48,7 +48,7 @@ pub(super) fn module<'tcx>(
     module: LocalModId,
     (default_export, default_declared): (Option<DefId>, bool),
     files: &HashMap<LocalModId, Vec<String>>,
-    reexports: &[Reexport],
+    (reexports, forwarded): (&[Reexport], &HashMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
     (ref_cells, counted, null_fields): (
         &super::drops::RefCells<'tcx>,
@@ -108,7 +108,7 @@ pub(super) fn module<'tcx>(
         out.erased = out.erased(def_id);
         // A module's namespace, no type: its module's functions (ADR 1037).
         if super::classes::is_namespace(tcx, def_id) {
-            items.extend(out.namespace_functions(def_id));
+            items.extend(out.namespace_functions(def_id, forwarded));
             continue;
         }
         let declaration = match tcx.def_kind(def_id) {

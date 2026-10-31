@@ -331,10 +331,12 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
 }
 
 /// The function `thir`'s body is a call of, given its parameters as they
-/// are, in order: `ptr::eq(self, other)`, each reborrowed or made a raw
-/// pointer, and its generic arguments (ADR 0864). `None` of a body that
-/// does anything else.
-pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+/// are, in order, those from the `from`th: `ptr::eq(self, other)`, each
+/// reborrowed or made a raw pointer, and its generic arguments (ADR 0864);
+/// a namespace's method's, past its `self`, `batched_updates(f, a)` (rd292b,
+/// `passed_on::forwarded_function`). `None` of a body that does anything
+/// else.
+pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>, from: usize) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
     let mut e = strip(thir, thir.exprs.last_index()?);
     // Its block's value, or of a function of no result, its one statement.
     if let ExprKind::Block { block } = thir[e].kind {
@@ -367,7 +369,7 @@ pub(super) fn forwards_to<'tcx>(thir: &Thir<'tcx>) -> Option<(DefId, ty::Generic
             }
         }
     };
-    let params: Vec<LocalVarId> = (thir.params.iter())
+    let params: Vec<LocalVarId> = (thir.params.iter().skip(from))
         .map(|p| match p.pat.as_deref().map(|pat| &pat.kind) {
             Some(rustc_middle::thir::PatKind::Binding { var, .. }) => Some(*var),
             _ => None,

@@ -56,6 +56,30 @@ pub(in crate::lower) fn namespace_of(tcx: TyCtxt<'_>, module: LocalModId) -> Str
     crate::lower::namespace_name(&crate::lower::module_file_stem(tcx, module))
 }
 
+/// The name a crate's module's namespace is imported by in `module`: the
+/// name a `use` of it gives its `#[rust_js::namespace]` struct there, `use
+/// crate::react_fiber_config_noop::ReactFiberConfigNoop as DefaultConfig`,
+/// `import * as DefaultConfig`, as a `use` names any import (ADR 0202,
+/// amended; rd292b); else its file's (`namespace_of`).
+pub(in crate::lower) fn namespace_in(tcx: TyCtxt<'_>, module: LocalModId, target: LocalModId) -> String {
+    let named = |id: DefId| {
+        matches!(
+            tcx.def_kind(id),
+            rustc_hir::def::DefKind::Ctor(rustc_hir::def::CtorOf::Struct, _)
+        ) && crate::lower::classes::is_namespace(tcx, tcx.parent(id))
+            && tcx
+                .parent(id)
+                .as_local()
+                .map(|local| tcx.parent_module_from_def_id(local))
+                == Some(target)
+    };
+    (super::naming::renamed_in(tcx, module).into_iter())
+        .filter(|&(id, _)| named(id))
+        .map(|(_, alias)| crate::lower::namespace_name(&alias))
+        .min()
+        .unwrap_or_else(|| namespace_of(tcx, target))
+}
+
 /// The name a library's module's namespace is imported by, where the path
 /// in `scope` names `function` through it: the JS file it's imported from,
 /// `Events` of `../dep/events.js`; its root's by its crate's name, `Dep`,

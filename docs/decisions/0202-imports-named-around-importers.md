@@ -155,3 +155,11 @@ rust_js::name names is cased as that name" (in the library and its
 consumer, run) and the mutations `alias-cased-as-own`,
 `alias-pascal-camel` and `alias-screaming-cased`.
 
+## Amendment (2026-10-31): a module namespace's import by its struct's `use`'s name
+
+A `use` that renames a `#[rust_js::namespace]` struct names its module's
+namespace import, `use ..::ReactFiberConfigNoop as DefaultConfig` `import
+* as DefaultConfig from "./ReactFiberConfigNoop.js"` (rd292b,
+[ADR 1037](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md),
+amended).
+

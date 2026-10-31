@@ -9,14 +9,19 @@ use super::{Declarations, documented, keyword, type_name};
 
 impl Declarations<'_, '_> {
     /// Each `pub` method of `adt`, a namespace, its module's function,
-    /// declared without its `self`.
-    pub(super) fn namespace_functions(&mut self, adt: DefId) -> Vec<Value> {
+    /// declared without its `self`; but one that's the function it passes
+    /// its parameters on to, which its module re-exports (rd292b).
+    pub(super) fn namespace_functions(
+        &mut self,
+        adt: DefId,
+        forwarded: &std::collections::HashMap<DefId, DefId>,
+    ) -> Vec<Value> {
         let tcx = self.tcx;
         let mut items = Vec::new();
         let out = self;
         for &imp in tcx.inherent_impls(adt) {
             for &method in tcx.associated_item_def_ids(imp) {
-                if !tcx.visibility(method).is_public() {
+                if !tcx.visibility(method).is_public() || forwarded.contains_key(&method) {
                     continue;
                 }
                 out.erased = out.erased(method);

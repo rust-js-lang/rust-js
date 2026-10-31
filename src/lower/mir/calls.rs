@@ -516,6 +516,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
         }
+        // One that's the function it passes its parameters on to, which its
+        // module re-exports by its name (rd292b, ADR 1037 amended): in that
+        // module, which has no name of its own for it, that function's call.
+        let def_id = match self.krate.forwarded.get(&def_id) {
+            Some(&target)
+                if self
+                    .krate
+                    .fns
+                    .get(&def_id)
+                    .is_some_and(|info| info.module == self.module) =>
+            {
+                target
+            }
+            _ => def_id,
+        };
         let callee = match (copy, named) {
             (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
             (Some(_), None) => self.own_fn_ref(def_id, copy),

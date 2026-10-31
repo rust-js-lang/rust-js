@@ -106,8 +106,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait of classes' method that gives a field is printed as its prototype's method, a handle on the field, `Clicks.prototype.counter = function () { .. }`, though every call reads the field (rd304)",
     file: "src/lower/pipeline/reached.rs",
-    find: "    if super::super::classes::field_accessor(tcx, id).is_some() {\n        return false;\n    }\n",
-    replace: "",
+    find: "    if super::super::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
+    replace: "    if forwarded.contains_key(&id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,
   },
@@ -119,5 +119,41 @@ export const mutations: Mutation[] = [
     find: "    tcx.trait_of_assoc(id).is_none()\n        || foreign.is_instance(id)\n",
     replace: "    tcx.trait_of_assoc(id).is_none()\n",
     tests: ["test/crates.test.ts", "-t", "defaults are what"],
+  },
+  {
+    name: "forwarded-caller-location-unasked",
+    breaks:
+      "a namespace's method that passes its parameters on to a function that tracks its caller is that function, which its callers give no location (rd292b)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "            (caller_locations.contains(&method) == caller_locations.contains(&target)\n                && bounds(method) == theirs\n",
+    replace: "            (bounds(method) == theirs\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-bounds-unasked",
+    breaks:
+      "a namespace's method of a bound more than the function's is that function, given the method's dictionaries (rd292b)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                && bounds(method) == theirs\n",
+    replace: "",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-method-lowered",
+    breaks:
+      "a namespace's method that's the function it passes its parameters on to is its module's function too, beside the re-export of that name (rd292b)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "    if super::super::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {\n",
+    replace: "    if super::super::classes::field_accessor(tcx, id).is_some() {\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "forwarded-copies-unasked",
+    breaks:
+      "a namespace's method its callers need a copy of (ADR 0051) is the function it passes its parameters on to, and the copy they call isn't written (rd292b)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                && js_given.copies(method).next().is_none())\n",
+    replace: ")\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
 ];

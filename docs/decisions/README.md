@@ -221,7 +221,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0199 A component takes no drop of its type parameters](0199-components-take-no-drops.md)
 - [0200 A binding's props borrow their text, and take `aria-label` and the rest](0200-binding-props-borrow.md)
 - [0201 A component takes no dictionary, and an update makes no default it replaces](0201-components-take-no-dictionaries.md)
-- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing; amended: a `use`'s name of an item its `#[rust_js::name]` names is cased as that name)*
+- [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing; amended: a `use`'s name of an item its `#[rust_js::name]` names is cased as that name; by 1037: a module namespace's import too)*
 - [0203 A component's props are as written](0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
 - [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name)*
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
@@ -818,7 +818,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [1035 A trait of classes is each class's prototype's](1035-a-trait-of-classes-is-each-classs-prototypes.md) *(rd283; amended by 1038: a method that gives a field is that field)*
 - [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291)*
-- [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292)*
+- [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292; amended: a method that only passes its parameters on is that function, re-exported; its import named by its `use`, rd292b)*
 - [1038 A trait of classes' method that gives a field is that field](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md) *(rd304)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*

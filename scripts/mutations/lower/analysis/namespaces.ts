@@ -81,4 +81,13 @@ export const mutations: Mutation[] = [
       "a function called through its module is read through its namespace",
     ],
   },
+  {
+    name: "namespace-import-unrenamed",
+    breaks:
+      "a namespace's import is named after its file, not as the `use` that renames its struct names it, `import * as Reconciler` of `use reconciler::Reconciler as DefaultConfig` (rd292b)",
+    file: "src/lower/analysis/namespaces.rs",
+    find: "        .filter(|&(id, _)| named(id))\n",
+    replace: "        .filter(|&(id, _)| named(id) && false)\n",
+    tests: ["test/namespaces.test.ts", "-t", "use renames it"],
+  },
 ];

@@ -446,6 +446,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions written in a function's body, by the block they're
     /// in, each a function declaration there (ADR 0308).
     local_functions: &'a HashMap<DefId, rustc_span::Span>,
+    /// Each namespace's method that's the function it passes its
+    /// parameters on to, by that function (rd292b, ADR 1037 amended).
+    forwarded: &'a HashMap<DefId, DefId>,
     /// The `const`s written in a function's body, each a `const` there,
     /// by the block they're in and the bodies that read them (ADR 0031,
     /// amended).

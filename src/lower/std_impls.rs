@@ -75,7 +75,7 @@ fn identity<'tcx>(
     }
     let calls = |id: DefId, known: super::recognition::Std| {
         (bodies.get(&id))
-            .and_then(|body| super::body_queries::forwards_to(&body.thir))
+            .and_then(|body| super::body_queries::forwards_to(&body.thir, 0))
             .is_some_and(|(callee, args)| recognition.classify(callee, args) == Some(known))
     };
     if !hashed {

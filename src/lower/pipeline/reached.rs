@@ -93,12 +93,55 @@ pub(super) fn written_where_reached<'tcx>(
 /// `Self`, the consumer's own (ADRs 0185, 0914, amended), and std's,
 /// compiled into `@rust-js/std`, its own too (ADR 0561); nor a trait of
 /// classes' method that gives a field, which is that field, read in place
-/// wherever it's called (rd304, ADR 1038).
-pub(super) fn lowered_here(tcx: TyCtxt<'_>, foreign: &Foreign<'_, '_>, exports_reachable: bool, id: DefId) -> bool {
-    if super::super::classes::field_accessor(tcx, id).is_some() {
+/// wherever it's called (rd304, ADR 1038); nor a namespace's method that's
+/// the function it passes its parameters on to (`forwarded`, rd292b).
+pub(super) fn lowered_here(
+    tcx: TyCtxt<'_>,
+    (foreign, forwarded): (&Foreign<'_, '_>, &HashMap<DefId, DefId>),
+    exports_reachable: bool,
+    id: DefId,
+) -> bool {
+    if super::super::classes::field_accessor(tcx, id).is_some() || forwarded.contains_key(&id) {
         return false;
     }
     tcx.trait_of_assoc(id).is_none()
         || foreign.is_instance(id)
         || (exports_reachable && super::super::library::reachable(tcx, id))
+}
+
+/// Each namespace's method of the crate that's the function of another of
+/// its modules it only passes its parameters on to
+/// (`passed_on::forwarded_function`, rd292b, ADR 1037 amended), by that
+/// function: one its module re-exports by the method's name, `export {
+/// batchedUpdates } from "./ReactFiberWorkLoop.js"`, where the two take
+/// what JS gives them alike, their parameters and, as they're of the same
+/// generic parameters, each given alike, what's given of those: its
+/// caller's location of both or neither, and the dictionaries of the same
+/// bounds; a type's facts and drops each asks of what it passes on alike.
+/// Not one its callers need a copy of (ADR 0051), which is its own.
+pub(super) fn forwarded<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &[&Body<'tcx>],
+    (given, js_given): (super::super::traits::Given<'_>, &super::super::analysis::JsGiven),
+    caller_locations: &HashSet<DefId>,
+    foreign: &Foreign<'_, 'tcx>,
+) -> HashMap<DefId, DefId> {
+    let bounds = |id: DefId| super::super::traits::bounds(tcx, foreign, given, id);
+    (bodies.iter())
+        .filter_map(|body| {
+            let method = body.def_id;
+            let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir)?;
+            let theirs: Vec<_> = (bounds(target).into_iter())
+                .map(|bound| {
+                    ty::EarlyBinder::bind(tcx, bound)
+                        .instantiate(tcx, args)
+                        .skip_normalization()
+                })
+                .collect();
+            (caller_locations.contains(&method) == caller_locations.contains(&target)
+                && bounds(method) == theirs
+                && js_given.copies(method).next().is_none())
+            .then_some((method, target))
+        })
+        .collect()
 }

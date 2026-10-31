@@ -28,7 +28,11 @@ use std::collections::HashMap;
 pub(super) fn reexports(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    (fns, foreign, forwarded): (
+        &HashMap<DefId, FnInfo>,
+        &super::library::Foreign<'_, '_>,
+        &HashMap<DefId, DefId>,
+    ),
     paths: &HashMap<LocalModId, Vec<String>>,
     (default_from, held): (Option<(DefId, rustc_span::Span)>, &[super::bindings::HeldBinding]),
     sources: &super::sources::CapturedSources,
@@ -222,6 +226,7 @@ pub(super) fn reexports(
             _ => {}
         }
     }
+    forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);
     // In the order they're written; a statement's names from one module
     // one `export { .. } from` of it, in their order.
     found.sort_by_key(|(at, ..)| at.lo());
@@ -450,4 +455,55 @@ pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
             _ => super::analysis::is_reexport(tcx, item),
         }
     })
+}
+
+/// Of `module`'s namespace's methods, each that's the function it passes
+/// its parameters on to (`forwarded`, rd292b, ADR 1037 amended), that
+/// function by the method's name, `export { batchedUpdates } from
+/// "./ReactFiberWorkLoop.js"`: a run of them of one impl, from one module,
+/// nothing else between, one statement, as a `pub use` of a list is.
+fn forwarded_methods(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    (fns, forwarded): (&HashMap<DefId, FnInfo>, &HashMap<DefId, DefId>),
+    paths: &HashMap<LocalModId, Vec<String>>,
+    found: &mut Vec<(rustc_span::Span, js::ImportFrom, (String, String))>,
+) {
+    let mut imps: Vec<DefId> = (forwarded.keys())
+        .filter(|method| fns.get(method).is_some_and(|info| info.module == module))
+        .map(|&method| tcx.parent(method))
+        .collect();
+    imps.sort_by_key(|&imp| tcx.def_span(imp).lo());
+    imps.dedup();
+    for imp in imps {
+        // Each run, its methods and where each is from.
+        let mut runs: Vec<Vec<(DefId, LocalModId)>> = Vec::new();
+        let mut last: Option<LocalModId> = None;
+        for &method in tcx.associated_item_def_ids(imp) {
+            let from = forwarded.get(&method).and_then(|target| Some(fns.get(target)?.module));
+            match (from, runs.last_mut()) {
+                (Some(from), Some(run)) if last == Some(from) => run.push((method, from)),
+                (Some(from), _) => runs.push(vec![(method, from)]),
+                (None, _) => {}
+            }
+            last = from;
+        }
+        for run in runs {
+            let span = |method: DefId| tcx.hir_span_with_body(tcx.local_def_id_to_hir_id(method.expect_local()));
+            let statement = span(run[0].0).to(span(run[run.len() - 1].0));
+            for (method, from) in run {
+                let target = forwarded[&method];
+                let (Some(path), Some(theirs), Some(mine)) = (paths.get(&from), fns.get(&target), fns.get(&method))
+                else {
+                    continue;
+                };
+                let export = super::default_exports::exported_as(tcx, target, theirs.exported());
+                found.push((
+                    statement,
+                    js::ImportFrom::Module(path.clone()),
+                    (export, mine.exported().to_string()),
+                ));
+            }
+        }
+    }
 }

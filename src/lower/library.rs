@@ -143,9 +143,11 @@ fn own(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// name there (`exported_names`).
 pub(super) type Exported = HashSet<(Vec<String>, String)>;
 
-/// What each of `modules`' JS exports of its own, by its module's path and
-/// its name there: an item `export`ed, its default and those it exports by
-/// another name.
+/// What each of `modules`' JS exports, by its module's path and its name
+/// there: an item `export`ed, its default, those it exports by another
+/// name, and those it re-exports, a namespace's method that's the function
+/// it passes its parameters on to among them, `export { batchedUpdates }
+/// from "./ReactFiberWorkLoop.js"` (rd292b).
 pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
     let mut exported = HashSet::new();
     for module in modules.iter().map(|unlinked| &unlinked.module) {
@@ -162,6 +164,12 @@ pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Expo
             .default_export
             .iter()
             .chain(module.aliases.iter().map(|(local, _)| local))
+            .chain(
+                module
+                    .reexports
+                    .iter()
+                    .flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias)),
+            )
         {
             export(name);
         }

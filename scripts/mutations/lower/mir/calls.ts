@@ -1087,4 +1087,13 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
+  {
+    name: "forwarded-called-in-its-module-by-its-name",
+    breaks:
+      "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    .is_some_and(|info| info.module == self.module) =>\n",
+    replace: "                    .is_some_and(|info| info.module == self.module && false) =>\n",
+    tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
 ];
