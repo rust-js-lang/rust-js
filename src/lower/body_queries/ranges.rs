@@ -10,8 +10,8 @@
 use super::*;
 use crate::lower::bindings::reads_string_length;
 use crate::lower::recognition::{
-    VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_slice_items, once_method, ord_max_or_min,
-    vec_view,
+    VecView, counts_utf16_units, is_iterator_enumerate, is_iterator_rev, is_iterator_step_by, is_slice_items,
+    once_method, ord_max_or_min, vec_view,
 };
 use crate::lower::std_types::once::OnceOp;
 use rustc_middle::middle::region;
@@ -1226,13 +1226,19 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     fn walk_for(&mut self, for_loop: ForLoop<'a, 'tcx>, known: &mut Option<Known>) {
         let thir = self.thir;
         let mut head = strip(thir, for_loop.head);
-        // A range's `rev()`, its items the same, from its end (#356).
-        if let ExprKind::Call { fun, ref args, .. } = thir[head].kind
+        // A range's `rev()`, its items the same, from its end (#356); and
+        // its `step_by(n)`, some of them, each in it (rd260).
+        while let ExprKind::Call { fun, ref args, .. } = thir[head].kind
             && let Some((def_id, _)) = fn_def(thir[strip(thir, fun)].ty)
-            && is_iterator_rev(self.tcx, def_id)
-            && let [range] = args[..]
         {
-            head = strip(thir, range);
+            match args[..] {
+                [range] if is_iterator_rev(self.tcx, def_id) => head = strip(thir, range),
+                [range, n] if is_iterator_step_by(self.tcx, def_id) => {
+                    self.expr(n, known);
+                    head = strip(thir, range);
+                }
+                _ => break,
+            }
         }
         // A slice's items' `enumerate()`, its index below the slice's
         // length, which the slice's `iter()` holds borrowed (#363).

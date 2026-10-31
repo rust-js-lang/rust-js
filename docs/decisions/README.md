@@ -813,7 +813,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1026 A callback of a promise JS resolves gives any value, and a string in an array is a `String`](1026-a-callback-of-a-promise-js-resolves-gives-any-value.md) *(rd206)*
 - [1027 A held class's static is called on it, and whether the host has a class is `js::is_function` of it](1027-a-held-classs-static-is-called-on-it.md) *(rd235; amended: a held class's constructor, `call_static`, the one way to make one)*
 - [1028 A dictionary or a union of `Copy` values is `Copy`, and a narrower union is one of a wider](1028-a-dictionary-of-copy-values-is-copy.md) *(rd208)*
-- [1029 A stepped index to an item is counted to the length](1029-a-stepped-index-to-an-item-is-counted-to-the-length.md) *(rd260)*
+- [1029 A stepped index to an item is counted to the length](1029-a-stepped-index-to-an-item-is-counted-to-the-length.md) *(rd260; amended: a range's `step_by(n)` is a counting `for`, and an item that may be `None` is counted too)*
 - [1033 A binding's path may quote a key, which a minifier keeps](1033-a-bindings-path-may-quote-a-key.md) *(rd273)*
 - [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [1035 A trait of classes is each class's prototype's](1035-a-trait-of-classes-is-each-classs-prototypes.md) *(rd283; amended by 1038: a method that gives a field is that field)*

@@ -670,7 +670,8 @@ pub fn wide(batch: &[u32]) -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  for (let i = 0; i < batch.length; i += 2) {\n    const id = batch[i];\n    const content = batch[i + 1] ?? 0;\n");
   expect(js).toContain("  for (let i = 1; i < batch.length; i++) {\n    const id = batch[i];\n");
-  expect(js).toContain("  for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(0, 4294967295)), 2)) {\n    const get = $someAt(batch, i);\n");
+  // An item that may be `None` itself, as it is, its `None` too (ADR 1029, amended).
+  expect(js).toContain("export function slots(batch) {\n  let sum = 0;\n  for (let i = 0; i < batch.length; i += 2) {\n    const slot = batch[i];\n");
   // A `None` an item may be ends the loop, of `flatten()`, and another
   // index, or a step that may pass `usize`'s most, isn't the loop's count.
   const stepped = (step: number, read: string) =>

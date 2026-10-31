@@ -297,6 +297,21 @@ pub(super) fn for_of(
                 );
                 out.extend(exit);
                 return Some(out);
+            } else if let Some((range, n)) = crate::lower::iterators::stepped_by(&iterable)
+                && let Some(range) = crate::lower::iterators::stepped_range(range).filter(|range| !range.back)
+            {
+                // `(a..b).step_by(n)`'s: `for (let i = a; i < b; i += n)`, a
+                // JS number past `b` by less than `n` not wrapping (rd260).
+                let range = Counted {
+                    start: range.start,
+                    end: range.end,
+                    inclusive: range.inclusive,
+                    step: match n {
+                        1 => js::Step::Up,
+                        n => js::Step::By(Op::Add, Expr::int(n)),
+                    },
+                };
+                return counted_range(range, (label, pattern, mutable, body, exit, span), (numbers, mentions));
             } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, (numbers, mentions)) {
                 let (name, start, test, body) = down;
                 StmtKind::For {
@@ -318,11 +333,7 @@ pub(super) fn for_of(
                 }
             }
         }
-        // A range's end, read once by Rust, is read each step by JS's `for`:
-        // one that reads the same then, a constant or a variable the body
-        // doesn't assign; else a `const end` of it first. An inclusive one's
-        // count passes its end only at the test that ends the loop, a JS
-        // number not wrapping, as `$rangeInclusiveNext`'s doesn't.
+        // A range's numbers, `a..b`'s, `a..=b`'s: a counting `for`.
         _ => {
             let ExprKind::Object(props, ..) = &source.kind else {
                 return None;
@@ -330,71 +341,106 @@ pub(super) fn for_of(
             let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_slice() else {
                 return None;
             };
-            let js::Pattern::Name(name) = pattern else { return None };
-            // Or `v.length` of what the body only reads, by index or its length.
-            let same = end.is_constant()
-                || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v))
-                || matches!(&end.kind, ExprKind::Member(of, length)
-                    if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
-            // JS's `++` steps a number: a `char`'s range, text, steps by
-            // its code point, past the surrogates, as `$rangeNext` does.
-            // Of arithmetic, `i + 1`, an integer's: a `char` has none.
-            let counted = start.as_int().is_some()
-                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
-                || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
-                || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
-                    | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
-            if start_key != "start" || end_key != "end" || mutable || !counted {
+            if start_key != "start" || end_key != "end" {
                 return None;
             }
-            // A count the body doesn't read, Rust's `_`: `i`.
-            let name = match name.as_str() {
-                "_" => std::iter::once("i".to_string())
-                    .chain((1..).map(|k| format!("i${k}")))
-                    .find(|n| !mentions.contains_key(n))
-                    .expect("a name"),
-                _ => name,
-            };
-            let held = (!same).then(|| {
-                let unused = |n: &String| !mentions.contains_key(n);
-                let name = std::iter::once("end".to_string())
-                    .chain((1..).map(|k| format!("end${k}")))
-                    .find(unused)
-                    .expect("a name");
-                (name, end.clone())
-            });
-            // Its end held first, read before its start where Rust reads it
-            // after: of a start that reads only variables, which an end of
-            // no effects leaves as they are.
-            if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {
-                return None;
-            }
-            let test = match &held {
-                Some((held, _)) => Expr::var(held),
-                None => end.clone(),
-            };
-            let looped = StmtKind::For {
-                label: label.clone(),
-                test: Expr::bin(
-                    if step == "$rangeInclusiveNext" { Op::Le } else { Op::Lt },
-                    Expr::var(&name),
-                    test,
-                ),
-                name,
-                start: start.clone(),
+            let range = Counted {
+                start,
+                end,
+                inclusive: step == "$rangeInclusiveNext",
                 step: js::Step::Up,
-                body,
             };
-            let mut out: Vec<Stmt> = held
-                .into_iter()
-                .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
-                .collect();
-            out.push(looped.at(span));
-            out.extend(exit);
-            return Some(out);
+            return counted_range(range, (label, pattern, mutable, body, exit, span), (numbers, mentions));
         }
     };
     let mut out = vec![looped.at(span)];
+    out.extend(exit);
+    Some(out)
+}
+
+/// A range a counting `for` steps through: its bounds, whether its end is
+/// in it, and its step, `i++` or `i += n` of `(a..b).step_by(n)`'s.
+struct Counted<'e> {
+    start: &'e Expr,
+    end: &'e Expr,
+    inclusive: bool,
+    step: js::Step,
+}
+
+/// The loop `for_of` makes of a range's numbers, `range`, bound to
+/// `pattern` by `body`, then `exit`: `for (let i = a; i < b; i++)`.
+/// A range's end, read once by Rust, is read each step by JS's `for`: one
+/// that reads the same then, a constant or a variable the body doesn't
+/// assign; else a `const end` of it first. An inclusive one's count passes
+/// its end only at the test that ends the loop, a JS number not wrapping,
+/// as `$rangeInclusiveNext`'s doesn't.
+fn counted_range(
+    range: Counted<'_>,
+    (label, pattern, mutable, body, exit, span): (&Option<String>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
+    (numbers, mentions): (&HashSet<String>, &HashMap<String, usize>),
+) -> Option<Vec<Stmt>> {
+    let Counted {
+        start,
+        end,
+        inclusive,
+        step,
+    } = range;
+    let js::Pattern::Name(name) = pattern else { return None };
+    // Or `v.length` of what the body only reads, by index or its length.
+    let same = end.is_constant()
+        || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v))
+        || matches!(&end.kind, ExprKind::Member(of, length)
+            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
+    // JS's `++` steps a number: a `char`'s range, text, steps by
+    // its code point, past the surrogates, as `$rangeNext` does.
+    // Of arithmetic, `i + 1`, an integer's: a `char` has none.
+    let counted = start.as_int().is_some()
+        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
+        || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
+        || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
+            | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
+    if mutable || !counted {
+        return None;
+    }
+    // A count the body doesn't read, Rust's `_`: `i`.
+    let name = match name.as_str() {
+        "_" => std::iter::once("i".to_string())
+            .chain((1..).map(|k| format!("i${k}")))
+            .find(|n| !mentions.contains_key(n))
+            .expect("a name"),
+        _ => name,
+    };
+    let held = (!same).then(|| {
+        let unused = |n: &String| !mentions.contains_key(n);
+        let name = std::iter::once("end".to_string())
+            .chain((1..).map(|k| format!("end${k}")))
+            .find(unused)
+            .expect("a name");
+        (name, end.clone())
+    });
+    // Its end held first, read before its start where Rust reads it
+    // after: of a start that reads only variables, which an end of
+    // no effects leaves as they are.
+    if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {
+        return None;
+    }
+    let test = match &held {
+        Some((held, _)) => Expr::var(held),
+        None => end.clone(),
+    };
+    let looped = StmtKind::For {
+        label: label.clone(),
+        test: Expr::bin(if inclusive { Op::Le } else { Op::Lt }, Expr::var(&name), test),
+        name,
+        start: start.clone(),
+        step,
+        body,
+    };
+    let mut out: Vec<Stmt> = held
+        .into_iter()
+        .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
+        .collect();
+    out.push(looped.at(span));
     out.extend(exit);
     Some(out)
 }
@@ -534,8 +580,22 @@ fn counted_to_length(
     let StmtKind::Const(item, read) = &first.kind else {
         return None;
     };
-    let ExprKind::Index(items, index) = &read.kind else {
-        return None;
+    // Of items that may be `None` themselves, boxed where `get` gives them,
+    // `const got = $someAt(v, i); if (got == null) { break; } const x =
+    // $someValue(got);`: `const x = v[i];`, the item as it is (rd260).
+    let (items, index, rest) = match (&read.kind, rest) {
+        (ExprKind::Index(items, index), _) => (&**items, &**index, rest),
+        (ExprKind::Call(callee, args), [unboxed, rest @ ..])
+            if callee.helper_name() == Some("$someAt")
+                && let [items, index] = args.as_slice()
+                && let StmtKind::Const(_, value) = &unboxed.kind
+                && crate::lower::std_types::option::some_value_of(value)
+                    .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
+                && js::mentions_in(rest, item) == 0 =>
+        {
+            (items, index, rest)
+        }
+        _ => return None,
     };
     // The slice read where it's tested, each turn, as `get` reads it.
     let path = |e: &Expr| {
@@ -557,12 +617,24 @@ fn counted_to_length(
     {
         return None;
     }
-    let test = Expr::bin(Op::Lt, Expr::var(name), Expr::member((**items).clone(), "length"));
+    let test = Expr::bin(Op::Lt, Expr::var(name), Expr::member(items.clone(), "length"));
     let step = match n {
         1 => js::Step::Up,
         n => js::Step::By(Op::Add, Expr::int(n)),
     };
-    let mut stepped = vec![first.clone()];
+    let mut stepped = match &first.kind {
+        StmtKind::Const(..) if matches!(read.kind, ExprKind::Index(..)) => vec![first.clone()],
+        _ => {
+            let [_, _, unboxed, ..] = body else {
+                unreachable!("matched")
+            };
+            let StmtKind::Const(x, _) = &unboxed.kind else {
+                unreachable!("matched")
+            };
+            let at = Expr::index(items.clone(), index.clone());
+            vec![StmtKind::Const(x.clone(), at).at(unboxed.span)]
+        }
+    };
     stepped.extend(rest.iter().cloned());
     Some((name.clone(), start.clone(), test, step, stepped))
 }

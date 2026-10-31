@@ -610,6 +610,19 @@ pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
     (s == "start").then_some((start, n))
 }
 
+/// Of `it.step_by(n)`, made where it's stepped, `$stepBy(it, n)`: `it`
+/// and `n`, a whole number from 1 up to `2^31`, which every step adds.
+pub(in crate::lower) fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (Some("$stepBy"), [it, n]) = (callee.helper_name(), &args[..]) else {
+        return None;
+    };
+    let n = n.as_int().filter(|&n| (1..=1 << 31).contains(&n))?;
+    Some((it, n))
+}
+
 pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;

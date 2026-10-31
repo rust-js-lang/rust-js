@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
     file: "src/lower/body_queries/ranges.rs",
-    find: "            && is_iterator_rev(self.tcx, def_id)\n",
-    replace: "            && !is_iterator_rev(self.tcx, def_id)\n",
+    find: "                [range] if is_iterator_rev(self.tcx, def_id) => head = strip(thir, range),\n",
+    replace: "                [range] if !is_iterator_rev(self.tcx, def_id) => head = strip(thir, range),\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
@@ -794,6 +794,15 @@ export const mutations: Mutation[] = [
     find: "                let viewed = self.vec_view(fun).is_some() && self.rows_kept(arg);\n",
     replace: "                let viewed = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^table_rows_kept_by_views.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "stepped-range-index-unknown",
+    breaks: "a range's `step_by(n)`'s index isn't known below the slice's length its end is, `$index(v, i)`, not `v[i]` (rd260)",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                [range, n] if is_iterator_step_by(self.tcx, def_id) => {\n",
+    replace: "                [range, n] if false && is_iterator_step_by(self.tcx, def_id) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
     snapshots: true,
   },
 ];

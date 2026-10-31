@@ -114,3 +114,41 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
 Held by `test/lowering-written-loops.test.ts`' "a stepped index to a slice
 of references is counted to its length" and mutation
 `present-item-peeled-whole` (`body_queries/ranges/present.ts`).
+
+## Amendment: a range's `step_by(n)` is a counting `for`, and an item that may be `None` is counted too (2026-10-31)
+
+Two of the near-misses above:
+
+- **`for i in (a..b).step_by(n)`**, `(0..v.len()).step_by(2)` say,
+  printed `for (const i of $lazyRange(0, v.length, 2)) { .. $index(v, i)
+  .. }`. It's now the counting `for` `a..b`'s is (`loops::counted_range`,
+  the one maker of a range's `for`), `for (let i = 0; i < v.length; i +=
+  2)`, its step `i += n` of a whole `n` from 1 to `2^31`
+  (`iterators::stepped_by`), its end read each turn where it's the same
+  then, held in a `const end` first otherwise, as `a..b`'s; of `a..=b`
+  `i <= b`. Not of a range stepped from its end, `(a..b).rev().step_by(n)`,
+  which keeps `$lazyRangeBack`. And the ranges' owner (ADR 0881) reads a
+  range's `step_by(n)` as the range for what its items are
+  (`ranges::walk_for`): each in it, so below the slice's length its end
+  is, `v[i]`.
+- **An item that may be `None` itself**, `v.get(i)` of a `[Option<T>]`,
+  boxed by `$someAt` where it's got: `const got = $someAt(v, i); if (got
+  == null) { break; } const x = $someValue(got);` is counted to the
+  length too, `const x = v[i];`, the item as it is, a `None` too. The
+  fact is the `let`'s, which holds of such an item as of any.
+
+Why it's the same: JS's numbers don't wrap where `i += n` passes the end,
+as Rust's `StepBy` doesn't step past it either; the step is a constant,
+so no `step_by(0)` panic is left out (a step of `0` keeps the iterator,
+which panics as Rust's does).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by the corpus case `stepped_range_loops` (pairs, a slice changed
+while it's stepped, `a..=b`, a step of 1 and each turn's closure, a range
+stepped from its end, items that may be `None`) and the mutations
+`stepped-range-for-unmade`, `stepped-range-back-counted-up` and
+`counted-some-at-unread` (`mir/tidy/loops.ts`) and
+`stepped-range-index-unknown` (`body_queries/ranges.ts`).
+
+Left: `for i in 0..` with the same `let`, a `while` of `$rangeFromNext`.

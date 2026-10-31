@@ -17,7 +17,7 @@ export function entry() {
 }
 
 function main() {
-  for (const i of $lazyRange(0, 10, 3)) {
+  for (let i = 0; i < 10; i += 3) {
     $print(`${i} `);
   }
   console.log("");

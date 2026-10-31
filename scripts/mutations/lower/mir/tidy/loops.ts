@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's `while (true)` with `$rangeNext` stays, not `for (let i = 0; i < k; i++)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '            if start_key != "start" || end_key != "end" || mutable || !counted {\n',
-    replace: "            if true {\n",
+    find: "    if mutable || !counted {\n",
+    replace: "    if true {\n",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-inclusive-range-exclusive",
     breaks: "`for i in 0..=k` stops before `k`, `i < k`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: 'if step == "$rangeInclusiveNext" { Op::Le } else { Op::Lt },',
-    replace: 'if step == "$rangeInclusiveNext" { Op::Lt } else { Op::Lt },',
+    find: "if inclusive { Op::Le } else { Op::Lt }",
+    replace: "if inclusive { Op::Lt } else { Op::Lt }",
     tests: ["test/corpus.test.ts", "-t", "inclusive_range_loops"],
   },
   {
@@ -55,9 +55,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '                    if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
+    find: '            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
     replace:
-      '                    if false && length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
+      '            if false && length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -69,9 +69,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range loop whose end is a call stays `while (true)` stepping `$rangeNext`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            let held = (!same).then(|| {\n",
+    find: "    let held = (!same).then(|| {\n",
     replace:
-      "            if !same {\n                return None;\n            }\n            let held = (!same).then(|| {\n",
+      "    if !same {\n        return None;\n    }\n    let held = (!same).then(|| {\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-count-underscore",
     breaks: "MIR's range count the body doesn't read is `_`, `_++`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '                "_" => std::iter::once("i".to_string())\n',
-    replace: '                "$never" => std::iter::once("i".to_string())\n',
+    find: '        "_" => std::iter::once("i".to_string())\n',
+    replace: '        "$never" => std::iter::once("i".to_string())\n',
     tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
   },
   {
@@ -162,9 +162,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `char` range's loop is JS's counted `for`, whose `++` of text stops after one",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '            if start_key != "start" || end_key != "end" || mutable || !counted {\n',
-    replace:
-      '            if start_key != "start" || end_key != "end" || mutable {\n',
+    find: "    if mutable || !counted {\n",
+    replace: "    if mutable {\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -176,7 +175,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
+    find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
     replace: "",
     tests: [
       "test/lowering-iterators.test.ts",
@@ -432,9 +431,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`for j in i + 1..m.len()` is a `$rangeNext` while loop, not `for (let j = i + 1; j < m.length; j++)` (#368)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul\n",
+    find: "        || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul\n",
     replace:
-      "                || matches!(&start.kind, ExprKind::Binary(op, ..) if false && matches!(op, Op::Add | Op::Sub | Op::Mul\n",
+      "        || matches!(&start.kind, ExprKind::Binary(op, ..) if false && matches!(op, Op::Add | Op::Sub | Op::Mul\n",
     tests: [
       "test/lowering-written-loops.test.ts",
       "-t",
@@ -446,9 +445,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`for j in i * 2..m.len()` of a body that changes `m` keeps `$rangeNext`, its end not held first (#368)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {\n",
+    find: "    if held.is_some() && !(start.is_constant() || (start.reads_only_vars() && !end.has_effects())) {\n",
     replace:
-      "            if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {\n",
+      "    if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {\n",
     tests: [
       "test/lowering-written-loops.test.ts",
       "-t",
@@ -575,5 +574,31 @@ export const mutations: Mutation[] = [
     replace:
       '        .find(|_| true)\n        .expect("a name");\n    let read = ',
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+  },
+  {
+    name: "stepped-range-for-unmade",
+    breaks: "a range's `step_by(n)` in a `for` stays `for (const i of $lazyRange(0, v.length, 2))`, not `for (let i = 0; i < v.length; i += 2)` (rd260)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            } else if let Some((range, n)) = crate::lower::iterators::stepped_by(&iterable)\n",
+    replace: "            } else if let Some((range, n)) = crate::lower::iterators::stepped_by(&iterable).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "stepped-range-back-counted-up",
+    breaks: "`(0..n).rev().step_by(3)`'s loop counts up from its start, `for (let i = 0; i < n; i += 3)`, not down from its end: `[0, 3, 6, 9]`, not `[9, 6, 3, 0]` (rd260)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                && let Some(range) = crate::lower::iterators::stepped_range(range).filter(|range| !range.back)\n",
+    replace: "                && let Some(range) = crate::lower::iterators::stepped_range(range)\n",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
+  },
+  {
+    name: "counted-some-at-unread",
+    breaks: "a stepped index to a slice of items that may be `None`, `let Some(x) = v.get(i) else { break };`, keeps its iterator and `$someAt`, not `for (let i = 0; i < v.length; i += 2) { const x = v[i]; .. }` (rd260)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            if callee.helper_name() == Some(\"$someAt\")\n",
+    replace: "            if callee.helper_name() == Some(\"$someAt-\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
+    snapshots: true,
   },
 ];

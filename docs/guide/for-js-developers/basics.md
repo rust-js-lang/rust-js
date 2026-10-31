@@ -2395,6 +2395,32 @@ export function completed(batch) {
 }
 ```
 
+- A range's `step_by(n)`, `for i in (0..n).step_by(2)`, is a counting
+  `for`, `for (let i = 0; i < n; i += 2)`, as `0..n` is; its index into
+  a slice whose length its end is, `v[i]`
+  ([ADR 1029](../../decisions/1029-a-stepped-index-to-an-item-is-counted-to-the-length.md),
+  amended):
+
+```rust
+pub fn pairs(v: &[u32]) -> u32 {
+    let mut total = 0;
+    for i in (0..v.len()).step_by(2) {
+        total += v[i] * v.get(i + 1).copied().unwrap_or(1);
+    }
+    total
+}
+```
+
+```js
+export function pairs(v) {
+  let total = 0;
+  for (let i = 0; i < v.length; i += 2) {
+    total = (total + (Math.imul(v[i], v[i + 1] ?? 1) >>> 0)) >>> 0;
+  }
+  return total;
+}
+```
+
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

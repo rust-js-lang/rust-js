@@ -939,6 +939,14 @@ pub(in crate::lower) fn is_iterator_rev(tcx: TyCtxt<'_>, method: DefId) -> bool 
         && tcx.item_name(method).as_str() == "rev"
 }
 
+/// Is `method` `Iterator::step_by`, whose items are some of its
+/// iterator's, every `n`th?
+pub(in crate::lower) fn is_iterator_step_by(tcx: TyCtxt<'_>, method: DefId) -> bool {
+    tcx.trait_of_assoc(method)
+        .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
+        && tcx.item_name(method).as_str() == "step_by"
+}
+
 /// Is `id` core's `ExactSizeIterator`, whose `len()` a JS iterator given for
 /// one knows (ADR 0456)?
 pub(crate) fn is_exact_size(tcx: TyCtxt<'_>, id: DefId) -> bool {
