@@ -35,18 +35,17 @@ function counted(step) {
     value: $dropping(
       (n) => {
         const borrow = $borrow(this$$1.value, true);
-        let andThen;
+        let countdown;
         try {
-          andThen = borrow.value != null ? $upgrade(borrow.value) : undefined;
+          countdown = borrow.value != null ? $upgrade(borrow.value) : undefined;
         } catch (error) {
           $unborrow(borrow);
           throw error;
         }
-        if (andThen == null) {
+        if (countdown == null) {
           $unborrow(borrow);
           throw new Error("called `Option::unwrap()` on a `None` value");
         }
-        const countdown = andThen;
         try {
           $unborrow(borrow);
           if (n < step) {

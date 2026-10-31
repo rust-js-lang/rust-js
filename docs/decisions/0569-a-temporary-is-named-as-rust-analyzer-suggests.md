@@ -1,6 +1,6 @@
 # 0569. A temporary is named as rust-analyzer suggests
 
-Status: Accepted. Amends [0364](0364-mir-lowering.md), whose tidy named a
+Status: Accepted; amended (#444): a temporary a drop guard's `try` sets. Amends [0364](0364-mir-lowering.md), whose tidy named a
 temporary after the field it reads or else `value`; extends
 [0352](0352-reclaimed-names.md) and [0565](0565-readability-is-a-gate.md),
 whose first number to bring down this is.
@@ -124,3 +124,27 @@ or `tmp` as before.**
   source doesn't write named, a keyword named, a method that names nothing
   named, a reference's call unnamed, the type unused, a `Result` named
   after its `Ok`; and the props', arguments' and temporaries' own, kept.
+
+## Amendment: a temporary a drop guard's `try` sets (#444)
+
+A pattern's name takes the temporary it binds where MIR made it
+`const _3 = e`; inside a drop guard's scope, whose each call is its own
+`try` till the scopes are one, MIR's temporary is `let _8; try { _8 = e;
+} catch ..`, and `if let Some(descriptor) = descriptor_of(name) && ..`
+was `const descriptorOf = ..`, named for its call once the alias was
+gone. A temporary set in the `try` it's first written in, there alone and
+never again, reads one value after it, as a `const`'s, so the pattern's
+name takes it too: `const descriptor = globalThis.descriptorOf(name)`,
+as without the guard (React's describeNativeComponentFrame). So is a
+`for` loop's item where what's live drops as it unwinds, `let word; try {
+word = $next(iter); } ..`, no `const word = tmp;` after it: seventeen of
+the corpus's cases and `@rust-js/std`'s `zip` fold read so now. Not where
+another variable of the name is declared, which the `let`'s wider scope
+would meet, `max$1`. `docs/readability.txt`, blessed with it, counts the
+corpus's `position_index_of` (ADR 1040) too, whose iterator stepped before
+its `position` is the one `$iter` more, 85.1 to 85.2 in 10,000 lines.
+
+Held by `test/lowering-drop-guards.test.ts`'s "a field read of what JS
+made in a guard's scope is in its one try", tidy's unit test
+`set_once_in_a_try` (set again after, or read in the `try` first, keeps
+the temporary), and mutation `temporary-set-in-try-unnamed`.

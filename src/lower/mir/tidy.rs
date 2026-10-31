@@ -610,6 +610,29 @@ mod tests {
         StmtKind::Assign(Expr::var(x), value).at(js::Span::NONE)
     }
 
+    /// A temporary a drop guard's `try` sets, read as a `const` after it
+    /// (#444): not where it's set again, nor read in the `try` first.
+    #[test]
+    fn set_once_in_a_try() {
+        use super::bindings::set_once_in_try;
+        let tried = |body: Vec<Stmt>| {
+            let rethrow = StmtKind::Throw(Expr::var("error")).at(js::Span::NONE);
+            StmtKind::TryCatch(body, Some("error".into()), vec![rethrow]).at(js::Span::NONE)
+        };
+        let read = StmtKind::Expr(Expr::call(Expr::var("g"), vec![Expr::var("_8")])).at(js::Span::NONE);
+        let set = tried(vec![assign("_8", Expr::call(Expr::var("f"), Vec::new()))]);
+        assert!(set_once_in_try(&[set.clone(), read.clone()], "_8"));
+        assert!(!set_once_in_try(
+            &[set.clone(), assign("_8", Expr::num(1)), read.clone()],
+            "_8"
+        ));
+        assert!(!set_once_in_try(
+            &[tried(vec![read.clone(), assign("_8", Expr::num(1))])],
+            "_8"
+        ));
+        assert!(!set_once_in_try(&[read, set], "_8"));
+    }
+
     /// Two arms that assign one variable are one assignment of a
     /// conditional; each reason they aren't, beside the case it refuses
     /// (`branches::one_assignment`).

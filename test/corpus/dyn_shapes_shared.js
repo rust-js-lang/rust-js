@@ -241,9 +241,9 @@ function main() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let s;
     try {
-      tmp = $next(iter);
+      s = $next(iter);
     } catch (error) {
       for (const item of byKind.values()) {
         for (const item$1 of item) {
@@ -258,10 +258,9 @@ function main() {
       }
       throw error;
     }
-    if (tmp == null) {
+    if (s == null) {
       break;
     }
-    const s = tmp;
     let key;
     try {
       key = s.impl.kind(s.value);
@@ -279,26 +278,26 @@ function main() {
       }
       throw error;
     }
+    let tmp;
+    try {
+      tmp = $orInsertWith(byKind, key, () => []);
+    } catch (error) {
+      for (const item of byKind.values()) {
+        for (const item$1 of item) {
+          $rcDrop(item$1);
+        }
+      }
+      for (const item of sorted) {
+        $rcDrop(item);
+      }
+      for (const item of shapes) {
+        $rcDrop(item);
+      }
+      throw error;
+    }
     let tmp$1;
     try {
-      tmp$1 = $orInsertWith(byKind, key, () => []);
-    } catch (error) {
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
-        }
-      }
-      for (const item of sorted) {
-        $rcDrop(item);
-      }
-      for (const item of shapes) {
-        $rcDrop(item);
-      }
-      throw error;
-    }
-    let tmp$2;
-    try {
-      tmp$2 = $rcClone(s);
+      tmp$1 = $rcClone(s);
     } catch (error) {
       for (const item of byKind.values()) {
         for (const item$1 of item) {
@@ -314,7 +313,7 @@ function main() {
       throw error;
     }
     try {
-      tmp$1.push(tmp$2);
+      tmp.push(tmp$1);
     } catch (error) {
       for (const item of byKind.values()) {
         for (const item$1 of item) {

@@ -221,19 +221,18 @@ function main() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let word;
     try {
-      tmp = $next(iter);
+      word = $next(iter);
     } catch (error) {
       if (root$live) {
         $rcDrop(root, dropNode);
       }
       throw error;
     }
-    if (tmp == null) {
+    if (word == null) {
       break;
     }
-    const word = tmp;
     try {
       insert(root, word);
     } catch (error) {

@@ -360,8 +360,13 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
         while next < stmts.len() {
             let i = next;
             next += 1;
-            let StmtKind::Const(a, _) = &stmts[i].kind else {
-                continue;
+            // Or one set once in the `try` it's first written in, a drop
+            // guard's, `let _8; try { _8 = descriptorOf(name); } catch ..`,
+            // and never again: as a `const` from there on (#444).
+            let a = match &stmts[i].kind {
+                StmtKind::Const(a, _) => a,
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a,
+                _ => continue,
             };
             if !is_temporary(a) {
                 continue;
@@ -382,12 +387,21 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             }) {
                 continue;
             }
+            // A `let` set in a `try` takes the name in its own, wider scope:
+            // not where another of that name is declared, `max` of a
+            // destructuring beside it, which would be `max$1` then.
+            let set_in_try = matches!(stmts[i].kind, StmtKind::Let(..));
+            if set_in_try
+                && (declared.keys()).any(|name| base(name) == base(b) && !found.iter().any(|(other, _)| other == name))
+            {
+                continue;
+            }
             let b = b.clone();
             let taken: Vec<String> = found.iter().map(|(name, _)| name.clone()).collect();
             for name in &taken {
                 dropping(stmts, &a, name);
             }
-            let StmtKind::Const(name, _) = &mut stmts[i].kind else {
+            let (StmtKind::Const(name, _) | StmtKind::Let(name, _)) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
             *name = b.clone();
@@ -400,6 +414,24 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             });
         }
     });
+}
+
+/// Whether `a`, declared `let a;` before `stmts`, is first written in a
+/// `try` of them, `try { a = e; } catch ..`, a drop guard's, set there
+/// and mentioned nowhere else in it, and never set again: what's after it
+/// reads one value, as of a `const`.
+pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
+    let mentions = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), a);
+    let Some(j) = stmts.iter().position(|s| mentions(s) > 0) else {
+        return false;
+    };
+    let set = match &stmts[j].kind {
+        StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(
+            |s| matches!(&s.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == a)),
+        ),
+        _ => false,
+    };
+    set && mentions(&stmts[j]) == 1 && !js::Writes::of(&stmts[j + 1..]).may_replace(a)
 }
 
 /// Each `const b = a;` of a name the program gives in the blocks of

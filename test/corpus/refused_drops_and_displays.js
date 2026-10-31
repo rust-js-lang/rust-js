@@ -250,9 +250,9 @@ function splitOff() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let i;
     try {
-      tmp = $next(iter);
+      i = $next(iter);
     } catch (error) {
       if (m$live) {
         for (const [, value] of $sortedEntries(m, $cmp)) {
@@ -261,10 +261,9 @@ function splitOff() {
       }
       throw error;
     }
-    if (tmp == null) {
+    if (i == null) {
       break;
     }
-    const i = tmp;
     let insert;
     try {
       insert = $insert(m, i, [i]);

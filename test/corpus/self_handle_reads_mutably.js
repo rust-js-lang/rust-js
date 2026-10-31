@@ -41,18 +41,17 @@ function hook() {
         let result;
         try {
           const borrow = $borrow(this$$1.value, true);
-          let andThen;
+          let hook;
           try {
-            andThen = borrow.value != null ? $upgrade(borrow.value) : undefined;
+            hook = borrow.value != null ? $upgrade(borrow.value) : undefined;
           } catch (error) {
             $unborrow(borrow);
             throw error;
           }
-          if (andThen == null) {
+          if (hook == null) {
             $unborrow(borrow);
             throw new Error("called `Option::unwrap()` on a `None` value");
           }
-          const hook = andThen;
           try {
             $unborrow(borrow);
             result = (hook.value(n - 1) + 2) >>> 0;

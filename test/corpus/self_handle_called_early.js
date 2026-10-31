@@ -38,18 +38,17 @@ function steps() {
           return 0;
         }
         const borrow = $borrow(this$$1.value, true);
-        let andThen;
+        let steps;
         try {
-          andThen = borrow.value != null ? $upgrade(borrow.value) : undefined;
+          steps = borrow.value != null ? $upgrade(borrow.value) : undefined;
         } catch (error) {
           $unborrow(borrow);
           throw error;
         }
-        if (andThen == null) {
+        if (steps == null) {
           $unborrow(borrow);
           throw new Error("called `Option::unwrap()` on a `None` value");
         }
-        const steps = andThen;
         try {
           $unborrow(borrow);
           return (steps.value(n - 1) + 1) >>> 0;

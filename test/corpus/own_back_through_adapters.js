@@ -106,19 +106,18 @@ function loudDoubleEndedIterator_rfold(loud, init, f, dropB, dropF) {
   try {
     try {
       while (true) {
-        let nextBack;
+        let x;
         try {
-          nextBack = loudDoubleEndedIterator_nextBack(loud);
+          x = loudDoubleEndedIterator_nextBack(loud);
         } catch (error) {
           if (acc$live) {
             dropB?.(acc);
           }
           throw error;
         }
-        if (nextBack == null) {
+        if (x == null) {
           break;
         }
-        const x = nextBack;
         acc$live = false;
         const value = f(acc, x);
         acc$live = true;

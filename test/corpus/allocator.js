@@ -82,19 +82,18 @@ function main() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let w;
     try {
-      tmp = $next(iter);
+      w = $next(iter);
     } catch (error) {
       if (b$live) {
         bufDrop_drop(b, 12, 4);
       }
       throw error;
     }
-    if (tmp == null) {
+    if (w == null) {
       break;
     }
-    const w = tmp;
     try {
       Buf.push(b, w.toUpperCase(), 12, 4);
     } catch (error) {

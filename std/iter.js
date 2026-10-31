@@ -11354,12 +11354,12 @@ export function zipSpecFold_specFold(
   dropAItem,
   dropBItem,
 ) {
-  let tmp$1 = true;
+  let tmp = true;
   let accum = init;
   while (true) {
-    let tmp;
+    let x;
     try {
-      tmp =
+      x =
         ARandomAccess && BRandomAccess
           ? zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
               zip,
@@ -11382,7 +11382,7 @@ export function zipSpecFold_specFold(
               )
             : zipZipImplAB_next(zip, AIterator, BIterator, dropA, dropB, dropAItem, dropBItem);
     } catch (error) {
-      if (tmp$1) {
+      if (tmp) {
         dropAcc?.(accum);
         dropF?.(f);
       } else {
@@ -11391,7 +11391,7 @@ export function zipSpecFold_specFold(
       zip.return();
       throw error;
     }
-    if (tmp == null) {
+    if (x == null) {
       const result = accum;
       try {
         dropF?.(f);
@@ -11400,14 +11400,13 @@ export function zipSpecFold_specFold(
       }
       return result;
     }
-    const x = tmp;
-    tmp$1 = false;
-    let tmp$2;
+    tmp = false;
+    let tmp$1;
     try {
-      tmp$2 = f(accum, x);
-      tmp$1 = true;
+      tmp$1 = f(accum, x);
+      tmp = true;
     } catch (error) {
-      if (tmp$1) {
+      if (tmp) {
         dropAcc?.(accum);
         dropF?.(f);
       } else {
@@ -11416,7 +11415,7 @@ export function zipSpecFold_specFold(
       zip.return();
       throw error;
     }
-    accum = tmp$2;
+    accum = tmp$1;
   }
 }
 

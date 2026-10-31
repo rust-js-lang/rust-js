@@ -267,9 +267,9 @@ function main() {
   }
   let iter$1;
   while (true) {
-    let tmp;
+    let list;
     try {
-      tmp = $next(iter);
+      list = $next(iter);
     } catch (error) {
       for (const item of lists) {
         $rcDrop(item);
@@ -284,10 +284,9 @@ function main() {
       $rcDrop(converted);
       throw error;
     }
-    if (tmp == null) {
+    if (list == null) {
       break;
     }
-    const list = tmp;
     try {
       iter$1 = $iter(list.value);
     } catch (error) {
@@ -305,9 +304,9 @@ function main() {
       throw error;
     }
     while (true) {
-      let tmp;
+      let item;
       try {
-        tmp = $next(iter$1);
+        item = $next(iter$1);
       } catch (error) {
         for (const item of lists) {
           $rcDrop(item);
@@ -322,10 +321,9 @@ function main() {
         $rcDrop(converted);
         throw error;
       }
-      if (tmp == null) {
+      if (item == null) {
         break;
       }
-      const item = tmp;
       total = (total + item) & 255;
     }
   }
@@ -403,9 +401,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  let tmp$6;
+  let owned;
   try {
-    tmp$6 = $unwrapOrClone(shared, (value) => value.slice());
+    owned = $unwrapOrClone(shared, (value) => value.slice());
   } catch (error) {
     $rcDrop(other$1);
     for (const item of lists) {
@@ -421,7 +419,6 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  const owned = tmp$6;
   const value$2 = other$1.value;
   let arg$1;
 
@@ -477,6 +474,69 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
+  let me;
+  try {
+    me = $upgrade(owner.value.me);
+  } catch (error) {
+    $rcDrop(owner, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw error;
+  }
+  if (me == null) {
+    $rcDrop(owner, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw new Error("called `Option::unwrap()` on a `None` value");
+  }
+  console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
+  try {
+    $rcDrop(me, (value) => {
+      $weakDrop(value.me);
+    });
+  } catch (error) {
+    $rcDrop(owner, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(other$1);
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    $rcDrop(other);
+    $rcDrop(converted);
+    throw error;
+  }
+  const strong = owner.strong;
   let upgrade;
   try {
     upgrade = $upgrade(owner.value.me);
@@ -516,73 +576,9 @@ function main() {
     $rcDrop(converted);
     throw new Error("called `Option::unwrap()` on a `None` value");
   }
-  const me = upgrade;
-  console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
+  console.log(`${strong} ${owner === upgrade}`);
   try {
-    $rcDrop(me, (value) => {
-      $weakDrop(value.me);
-    });
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  const strong = owner.strong;
-  let tmp$7;
-  try {
-    tmp$7 = $upgrade(owner.value.me);
-  } catch (error) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw error;
-  }
-  if (tmp$7 == null) {
-    $rcDrop(owner, (value) => {
-      $weakDrop(value.me);
-    });
-    $rcDrop(other$1);
-    for (const item of lists) {
-      $rcDrop(item);
-    }
-    $rcDrop(fresh.title);
-    $rcDrop(fresh.pages);
-    $rcDrop(copy.title);
-    $rcDrop(copy.pages);
-    $rcDrop(doc.title);
-    $rcDrop(doc.pages);
-    $rcDrop(other);
-    $rcDrop(converted);
-    throw new Error("called `Option::unwrap()` on a `None` value");
-  }
-  console.log(`${strong} ${owner === tmp$7}`);
-  try {
-    $rcDrop(tmp$7, (value) => {
+    $rcDrop(upgrade, (value) => {
       $weakDrop(value.me);
     });
   } catch (error) {
@@ -679,9 +675,9 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  let tmp$8;
+  let tmp$6;
   try {
-    tmp$8 = $tryUnwrap(two);
+    tmp$6 = $tryUnwrap(two);
   } catch (error) {
     $rcDrop(also);
     $rcDrop(defaulted);
@@ -702,10 +698,10 @@ function main() {
     $rcDrop(converted);
     throw error;
   }
-  console.log(`${tmp$8.TAG === "Ok" ? `Ok(${tmp$8._0})` : `Err(${tmp$8._0.value})`}`);
+  console.log(`${tmp$6.TAG === "Ok" ? `Ok(${tmp$6._0})` : `Err(${tmp$6._0.value})`}`);
   try {
-    if (tmp$8.TAG === "Err") {
-      $rcDrop(tmp$8._0);
+    if (tmp$6.TAG === "Err") {
+      $rcDrop(tmp$6._0);
     }
   } catch (error) {
     $rcDrop(also);

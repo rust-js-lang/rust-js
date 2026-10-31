@@ -124,9 +124,9 @@ function firsts(i, n, IIntoIterator, dropIItem, dropIIntoIter) {
 
 function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJItem) {
   let b$live = true;
-  let tmp;
+  let iter;
   try {
-    tmp = $intoIter(a);
+    iter = $intoIter(a);
     b$live = false;
   } catch (error) {
     if (b$live) {
@@ -134,7 +134,6 @@ function equal(a, b, IItemPartialEqJItem, dropJ, dropIItem, dropIIntoIter, dropJ
     }
     throw error;
   }
-  const iter = tmp;
   try {
     return $iterEq(
       $closing(iter, dropIIntoIter),

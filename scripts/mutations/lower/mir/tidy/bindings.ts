@@ -659,4 +659,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^given_last_closure_after.rs$"],
   },
+  {
+    name: "temporary-set-in-try-unnamed",
+    breaks:
+      "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a,\n",
+    replace: "",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
+  },
 ];

@@ -22,17 +22,16 @@ function replaced(keys) {
     throw error;
   }
   while (true) {
-    let tmp;
+    let k;
     try {
-      tmp = $next(iter);
+      k = $next(iter);
     } catch (error) {
       console.log(`drop ${x[0]}`);
       throw error;
     }
-    if (tmp == null) {
+    if (k == null) {
       break;
     }
-    const k = tmp;
     const x$1 = [k];
     try {
       check(k);

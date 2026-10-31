@@ -134,9 +134,9 @@ function main() {
   }
   const iter = iterator_fuse(["looped", 3], { next: loudIterator_next }, false, loudDrop_drop);
   while (true) {
-    let tmp;
+    let n;
     try {
-      tmp = $next(iter);
+      n = $next(iter);
     } catch (error) {
       iter.return();
       if (steady$live) {
@@ -147,7 +147,7 @@ function main() {
       }
       throw error;
     }
-    if (tmp == null) {
+    if (n == null) {
       try {
         iter.return();
       } catch (error) {
@@ -161,7 +161,6 @@ function main() {
       }
       break;
     }
-    const n = tmp;
     console.log(`looped ${n}`);
   }
   console.log("after loop");

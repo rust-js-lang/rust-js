@@ -80,9 +80,9 @@ function main() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let shape;
     try {
-      tmp = $next(iter);
+      shape = $next(iter);
     } catch (error) {
       if (all$live) {
         $dropItems(all, (item) => {
@@ -91,13 +91,12 @@ function main() {
       }
       throw error;
     }
-    if (tmp == null) {
+    if (shape == null) {
       break;
     }
-    const shape = tmp;
-    let tmp$1;
+    let tmp;
     try {
-      tmp$1 = shape.impl.name(shape.value);
+      tmp = shape.impl.name(shape.value);
     } catch (error) {
       if (all$live) {
         $dropItems(all, (item) => {
@@ -106,7 +105,7 @@ function main() {
       }
       throw error;
     }
-    console.log(`${tmp$1}`);
+    console.log(`${tmp}`);
   }
   all$live = false;
   $dropItems(all, (item) => {

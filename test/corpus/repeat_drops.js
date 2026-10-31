@@ -77,16 +77,15 @@ function main() {
       }
       throw error;
     }
-    let take;
+    let iter;
     try {
-      take = tmp$1.take(2);
+      iter = tmp$1.take(2);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
       }
       throw error;
     }
-    const iter = take;
     let loud;
     while (true) {
       try {

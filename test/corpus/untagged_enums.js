@@ -205,9 +205,9 @@ function main() {
               throw error;
             }
             while (true) {
-              let tmp;
+              let h;
               try {
-                tmp = $next(iter);
+                h = $next(iter);
               } catch (error) {
                 for (const item of held) {
                   if (Array.isArray(item)) {
@@ -236,10 +236,9 @@ function main() {
                 }
                 throw error;
               }
-              if (tmp == null) {
+              if (h == null) {
                 break;
               }
-              const h = tmp;
               if (typeof h === "number") {
                 console.log(`quiet ${h}`);
               } else if (Array.isArray(h)) {
