@@ -2,11 +2,14 @@
 //! as React's `Children`: a fn pointer type whose signature holds a `dyn Fn`.
 pub struct Children {
     pub for_each: fn(Option<&'static str>, &dyn Fn(u32), Option<&'static str>),
-    pub count: fn(Option<&'static str>) -> u32,
+    pub count: fn(Option<&'static str>, Caller) -> u32,
 }
 
+/// A token of who counts, which is no value: `undefined` in JS.
+pub struct Caller;
+
 fn for_each(children: Option<&'static str>, f: &dyn Fn(u32), context: Option<&'static str>) {
-    for i in 0..count(children) {
+    for i in 0..count(children, Caller) {
         f(i);
     }
     if let Some(context) = context {
@@ -14,7 +17,7 @@ fn for_each(children: Option<&'static str>, f: &dyn Fn(u32), context: Option<&'s
     }
 }
 
-fn count(children: Option<&'static str>) -> u32 {
+fn count(children: Option<&'static str>, _: Caller) -> u32 {
     children.map_or(0, |children| children.len() as u32)
 }
 

@@ -620,13 +620,16 @@ test("a thread-local of a library's flag is made as its module loads", () => {
 // fn pointers may only be its own Rust functions, React's `Children`, is one
 // its contract says so of, and a consumer's call through it leaves out a
 // trailing `undefined`, as of the crate's own: `Children.forEach(children,
-// fn)`. One a consumer may give it keeps it, but a trailing `None` is no
+// fn)`, and a unit struct's `undefined` it's given last, which the function
+// never reads, `Dep.children.count("abc")` of `count(Some("abc"), Caller)`.
+// One a consumer may give it keeps that, but a trailing `None` is no
 // argument of either, `hooks.onEach(1)` (ADR 0443, amended). `two crates:
 // fn_pointer_of_a_library` runs it against native Rust.
 test("a library's field of its own functions is called as the crate's own", () => {
   const out = chain(pairs, "fn_pointer_of_a_library", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain('  Dep.children.forEach("ab", (i) => {\n');
+  expect(app).toContain('${Dep.children.count("abc")}');
   expect(app).toContain("hooks.onEach(1)}");
   expect(contract(out).fields.map((field: { facts: string[] }) => field.facts)).toEqual([["rust_functions"], ["rust_functions"]]);
 }, 300_000);

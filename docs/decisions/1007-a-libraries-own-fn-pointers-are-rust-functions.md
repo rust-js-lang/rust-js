@@ -84,13 +84,17 @@ things made it "anything":
 
 - `test/runtime-package.test.ts`, "an undefined given to JS is an
   argument": a static's field of a `fn(f64, &dyn Fn(f64) -> f64,
-  Option<f64>)`, `CHILDREN.forEach(1, (x) => x * 2)`, and one given by a JS
+  Marker)`, `CHILDREN.forEach(1, (x) => x * 2);`, and one given by a JS
   caller, `f(1, (x) => x, undefined)`, run in node.
 - `test/crates.test.ts`, "a library's field of its own functions is called
   as the crate's own", and `two crates: fn_pointer_of_a_library` against
-  native Rust: `children.forEach("ab", (i) => ..)`, a field given from
-  outside keeping `undefined`, and a consumer's thread-local whose
+  native Rust: `children.forEach("ab", (i) => ..)`, `children.count("abc")`
+  of `count(Some("abc"), Caller)`, and a consumer's thread-local whose
   initializer calls one, made where it's first used.
+- Since ADR 0443's amendment (21f8572f6) a trailing `None` given any
+  function value is no argument, so these tests trail a unit struct's
+  `undefined`, which only a pointer that may come from JS is given
+  (2026-10-31).
 - Mutations `pointer-of-a-dyn-signature-unkeyed`,
   `pointer-given-from-outside-left-out`, `binding-pointer-undefined-left-out`,
   `library-rust-fields-unwritten`, `library-rust-field-read-as-open`,

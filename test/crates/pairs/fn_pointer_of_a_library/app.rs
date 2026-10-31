@@ -15,7 +15,7 @@ pub fn main() {
     dep::CHILDREN.with(|children| {
         (children.for_each)(Some("ab"), &|i| println!("child {i}"), None);
         (children.for_each)(Some("c"), &|i| println!("only {i}"), Some("option"));
-        println!("{}", (children.count)(None));
+        println!("{}", (children.count)(Some("abc"), dep::Caller));
     });
     let hooks = dep::hooks(add);
     println!("{}", (hooks.on_each)(1, None));
