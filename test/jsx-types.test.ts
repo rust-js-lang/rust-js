@@ -899,7 +899,9 @@ pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> JSX::E
 `;
   const built = library(card);
   run(built.args);
-  const jsx = readFileSync(join(built.dir, "lib.jsx"), "utf8");
+  // Past its first line, which names the file it's from, whose path a
+  // checkout's folder might give a "drop" of its own.
+  const jsx = readFileSync(join(built.dir, "lib.jsx"), "utf8").split("\n").slice(1).join("\n");
   expect([jsx.includes("export function Card({ title, children }) {"), jsx.includes("drop")]).toEqual([true, false]);
   const given = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
