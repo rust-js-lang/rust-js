@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "rest-of-trait-method-allowed",
     breaks: "a trait method's parameter marked `#[rust_js::rest]` is gathered by one impl, though a call through its trait gives the slice whole",
     file: "src/lower/analysis/validation.rs",
-    find: "            } else if tcx.trait_of_assoc(def_id).is_some() || tcx.trait_impl_of_assoc(def_id).is_some() {\n",
+    find: "            } else if tcx.trait_impl_of_assoc(def_id).is_some()\n                || tcx\n                    .trait_of_assoc(def_id)\n                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n            {\n",
     replace: "            } else if false {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: a trait method's parameter"],
   },
@@ -193,5 +193,13 @@ export const mutations: Mutation[] = [
     find: "            let default = crate::lower::camel_case(ident.name.as_str());\n",
     replace: "            let default = String::new();\n",
     tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+  },
+  {
+    name: "rest-of-class-trait-refused",
+    breaks: "a trait of classes' default's `#[rust_js::rest]` is refused, where each class's prototype's method takes rest arguments (rd283)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n",
+    replace: "                    .is_some_and(|_| true)\n",
+    tests: ["test/classes-traits.test.ts"],
   },
 ];

@@ -319,7 +319,8 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
 
 /// Report each `#[rust_js::rest]` that isn't JS's rest parameter (ADR
 /// 0664): one of a closure, given what its type says, of a trait's method,
-/// which each impl's call gives alike, or of a component, which React gives
+/// which each impl's call gives alike, but a default of a trait of classes,
+/// each class's prototype's (rd283), or of a component, which React gives
 /// its props; one not the last parameter, not a shared slice's, or not a
 /// name. Each says what to write. False if there was one.
 pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
@@ -335,7 +336,11 @@ pub(super) fn reject_rest_misuse(tcx: TyCtxt<'_>) -> bool {
             };
             let refused = if tcx.is_closure_like(def_id) {
                 "a function's last parameter, not a closure's: a closure takes rest arguments as a value, `args: &dyn js::Rest<T>`, which its type says".to_string()
-            } else if tcx.trait_of_assoc(def_id).is_some() || tcx.trait_impl_of_assoc(def_id).is_some() {
+            } else if tcx.trait_impl_of_assoc(def_id).is_some()
+                || tcx
+                    .trait_of_assoc(def_id)
+                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))
+            {
                 "a function's last parameter, not a trait method's, which each impl's call gives alike".to_string()
             } else if bindings::is_component(tcx, def_id) {
                 "a function's last parameter, not a component's, which React gives its props".to_string()

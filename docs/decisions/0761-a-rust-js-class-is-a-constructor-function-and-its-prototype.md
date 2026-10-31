@@ -422,3 +422,7 @@ T>`, which `js::new(class, (a, b))` is given what it takes of and makes a
 `&'static T` of, and which its declaration is, `new (a: A, b: B) => T`.
 `js::class::<T>()` is the untyped `Class`, as before: a class's
 constructor's own call is `T::new(..)`.
+
+## Amendment: a trait of classes (rd283)
+
+A class implements the crate's trait each impl of which is a class's: each of its methods, the impl's or the trait's default, is the class's prototype's, a default compiled for each class and shared where alike ([ADR 1035](1035-a-trait-of-classes-is-each-classs-prototypes.md)).

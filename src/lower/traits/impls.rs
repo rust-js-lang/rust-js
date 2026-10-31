@@ -792,8 +792,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // value given back. From its MIR, as the trait has it, `Self` the
         // impl's type where it's asked (ADR 0364). Only the drops it uses:
         // most defaults drop nothing of their `Self`.
+        // A trait of classes' default, its class's prototype's method, as
+        // the class has it: `Self` the class, and each method its impl
+        // gives a field by that field, read in place (rd283).
+        let class_default = (body.mir.as_ref())
+            .filter(|_| crate::lower::classes::is_class_trait(self.tcx, self.tcx.parent(id)))
+            .map(|mir| {
+                let tcx = self.tcx;
+                let bodies = &self.krate.bodies;
+                mir.instantiated(tcx, args).fields_read(tcx, &|callee, generic_args| {
+                    let instance =
+                        ty::Instance::try_resolve(tcx, ty::TypingEnv::fully_monomorphized(), callee, generic_args)
+                            .ok()??;
+                    crate::lower::classes::trait_member_class(tcx, instance.def_id())?;
+                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given()
+                })
+            });
         let ((signature, used), hoisted) = self.lowered_in(body, id, nested, |cx| {
-            let signature = match &body.mir {
+            let signature = match class_default.as_ref().or(body.mir.as_ref()) {
                 Some(mir) => cx.mir_signature(body, mir, &mut rest)?,
                 None => return Err(cx.unsupported(span, "this default, without its MIR")),
             };

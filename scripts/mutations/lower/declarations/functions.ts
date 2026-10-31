@@ -66,4 +66,11 @@ export const mutations: Mutation[] = [
     replace: "                let ty = match None {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None"],
   },
-];
+  {
+    name: "class-trait-methods-undeclared",
+    breaks: "a class's `.d.ts` leaves out the methods a trait of classes gives its prototype (rd283)",
+    file: "src/lower/declarations/functions.rs",
+    find: "            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) {\n",
+    replace: "            if true {\n",
+    tests: ["test/classes-traits.test.ts"],
+  },];

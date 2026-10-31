@@ -695,6 +695,13 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
     if crate::lower::classes::shown_class(tcx, def_id).is_some() {
         return "toString".to_owned();
     }
+    // A class's method of a trait of classes, its prototype's, named as the
+    // trait's is (rd283).
+    if crate::lower::classes::trait_member_class(tcx, def_id).is_some()
+        && let Some(item) = tcx.trait_item_of(def_id)
+    {
+        return crate::lower::bindings::fn_name(tcx, item);
+    }
     if tcx.def_kind(def_id) == DefKind::AssocFn && tcx.inherent_impl_of_assoc(def_id).is_none() {
         let parent = tcx.parent(def_id);
         let prefix = if trait_impls.contains(&parent) {
@@ -775,6 +782,8 @@ pub(super) fn name_items(
         });
         // A class's `Display`'s `fmt`, its prototype's `toString` (#358).
         let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));
+        // A method of a trait of classes, its prototype's (rd283).
+        let owner_type = owner_type.or_else(|| crate::lower::classes::trait_member_class(tcx, def_id));
         // An object's method, a function of its module (ADR 0943).
         let owner_type = owner_type
             .filter(|_| crate::lower::classes::member(tcx, def_id) != Some(crate::lower::classes::Member::Own));

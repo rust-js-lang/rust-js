@@ -915,6 +915,112 @@ export function createFiber(tag: number, dev: boolean): FiberNode;
   `{p}` and `p.to_string()` are JS's text of it, `${p}`, so JS's
   `String(p)` gives Rust's text too, and a `T: Display` given it shows it
   by `String`. It's declared `toString(): string`.
+- **The crate's trait each impl of which is a class's is each class's
+  prototype's**, as React DOM's two roots share `render`: each method,
+  the impl's or the trait's default, is a prototype method, a default
+  compiled for each class with `Self` known, where a method its impl
+  gives only a reference to a field is read as that field. Where two
+  classes' copies print alike, one function is assigned to both, the
+  later first. A Rust call is a call on the value, `root.render(..)`;
+  each class declares the trait's methods. A default may take rest
+  arguments, `#[rust_js::rest]`, which a class's impl then takes as it
+  gives them
+  ([ADR 1035](../../decisions/1035-a-trait-of-classes-is-each-classs-prototypes.md)):
+
+```rust
+use std::cell::Cell;
+
+pub trait Counter {
+    fn counter(&self) -> &Cell<u32>;
+
+    fn step(&self, by: u32) -> u32 {
+        self.counter().set(self.counter().get() + by);
+        self.counter().get()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Clicks {
+    pub count: Cell<u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Clicks {
+    pub fn new() -> Self {
+        Clicks { count: Cell::new(0) }
+    }
+}
+
+impl Counter for Clicks {
+    fn counter(&self) -> &Cell<u32> {
+        &self.count
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Keys {
+    pub count: Cell<u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Keys {
+    pub fn new() -> Self {
+        Keys { count: Cell::new(0) }
+    }
+}
+
+impl Counter for Keys {
+    fn counter(&self) -> &Cell<u32> {
+        &self.count
+    }
+}
+```
+
+```js
+export function Clicks() {
+  this.count = 0;
+}
+
+Clicks.prototype.counter = function () {
+  const clicks = this;
+  return {
+    get value() {
+      return clicks.count;
+    },
+    set value(value) {
+      clicks.count = value;
+    },
+  };
+};
+
+Keys.prototype.step = Clicks.prototype.step = function (by) {
+  this.count = (this.count + by) >>> 0;
+  return this.count;
+};
+
+export function Keys() {
+  this.count = 0;
+}
+
+Keys.prototype.counter = function () {
+  const keys = this;
+  return {
+    get value() {
+      return keys.count;
+    },
+    set value(value) {
+      keys.count = value;
+    },
+  };
+};
+```
+
+  Refused, each saying what to write: such a trait bounding a type
+  parameter or a `dyn`'s, which no dictionary is made for; of type
+  parameters, supertraits, or items that aren't methods of `&self` or
+  `&mut self`; a method named as a field; an impl outside its class's
+  module; and an impl's own method of a default that takes rest
+  arguments.
 - **Its `PartialEq` of `std::ptr::eq` and `Hash` of `std::ptr::hash`**,
   equal only to itself, as React's fibers in a `Set` are, have no JS of
   their own: `a == b` is `a === b`, and a `HashSet` of them a `Set` of
@@ -938,9 +1044,9 @@ export function createFiber(tag: number, dev: boolean): FiberNode;
   which the attribute, where Rust meets JS, says.
 - **Refused, each with what to write**: a tuple or unit struct; a generic
   one; a struct literal of it outside its `new`, which would be no
-  instance; a trait impl of it with items but `Display`'s and those of
-  its address, a `derive(Clone)` among them, whose methods would be a
-  dictionary's, not the prototype's; a constructor's instance set again; a
+  instance; a trait impl of it with items but `Display`'s, those of
+  its address and a trait of classes', a `derive(Clone)` among them,
+  whose methods would be a dictionary's, not the prototype's; a constructor's instance set again; a
   method of
   `self` by value; a method or constant named as a field, which
   `this.name` would hide; a class of no `new`; and the attribute on one

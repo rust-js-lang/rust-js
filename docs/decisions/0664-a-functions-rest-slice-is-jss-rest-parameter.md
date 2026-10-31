@@ -157,3 +157,7 @@ export default function formatProdErrorMessage(code, ...args) {
   (the function as a value), `mir/dispatch.ts` (a variable's call),
   `binding_calls.ts` (an import), `declarations.ts` (declared an array),
   `library.ts` (the manifest's) and `bindings.ts` (the attribute read).
+
+## Amendment: a trait of classes (rd283)
+
+A trait of classes' default may take rest arguments, each class's prototype's method's `...args`; an impl's own method of it is refused ([ADR 1035](1035-a-trait-of-classes-is-each-classs-prototypes.md)).

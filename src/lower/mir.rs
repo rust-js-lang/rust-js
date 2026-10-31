@@ -21,6 +21,7 @@ mod closures;
 mod dispatch;
 mod drops;
 mod entries;
+mod fields_read;
 mod hints;
 mod iter;
 mod jsx_props;

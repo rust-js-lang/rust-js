@@ -623,4 +623,7 @@ export const mutations: Mutation[] = [
     replace: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters.take(0));\n",
     tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
   },
+
+
+
 ];

@@ -156,6 +156,36 @@ pub(crate) fn has_to_string(tcx: TyCtxt<'_>, class: DefId) -> bool {
     })
 }
 
+/// Whether `trait_id` is a trait of classes, the crate's, with items, each
+/// impl of which is a class's (rd283): each of its methods, an impl's or
+/// the trait's default, is each class's prototype's, `ReactDOMRoot.prototype
+/// .render = function (children) { .. }`, never a dictionary's.
+pub(crate) fn is_class_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+    let mut impls = tcx.all_impls(trait_id).peekable();
+    trait_id.is_local()
+        && tcx.def_kind(trait_id) == DefKind::Trait
+        && !tcx.associated_item_def_ids(trait_id).is_empty()
+        && impls.peek().is_some()
+        && impls.all(|imp| class_of_impl(tcx, imp).is_some())
+}
+
+/// The class `imp` is an impl of a trait of classes of (rd283).
+pub(crate) fn trait_impl_class(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    let DefKind::Impl { of_trait: true } = tcx.def_kind(imp) else {
+        return None;
+    };
+    let class = class_of_impl(tcx, imp)?;
+    is_class_trait(tcx, tcx.impl_trait_id(imp)).then_some(class)
+}
+
+/// The class whose prototype's method `def_id` is, a method of its impl
+/// of a trait of classes (rd283); `None` of any other item.
+pub(crate) fn trait_member_class(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
+    (tcx.def_kind(def_id) == DefKind::AssocFn)
+        .then(|| trait_impl_class(tcx, tcx.trait_impl_of_assoc(def_id)?))
+        .flatten()
+}
+
 /// The class an impl is of, if it's a class's.
 fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
@@ -171,7 +201,7 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
         return None;
     }
     // Its `Display`'s `fmt`, the prototype's `toString` (#358).
-    if shown_class(tcx, def_id).is_some() {
+    if shown_class(tcx, def_id).is_some() || trait_member_class(tcx, def_id).is_some() {
         return Some(Member::Method);
     }
     let imp = tcx.inherent_impl_of_assoc(def_id)?;
@@ -195,7 +225,8 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
 /// of any other item.
 pub(crate) fn class_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
     member(tcx, def_id)?;
-    shown_class(tcx, def_id).or_else(|| class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?))
+    (shown_class(tcx, def_id).or_else(|| trait_member_class(tcx, def_id)))
+        .or_else(|| class_of_impl(tcx, tcx.inherent_impl_of_assoc(def_id)?))
 }
 
 /// The constructor of `adt`, a class: its `fn new(..) -> Self`; `None` of
@@ -370,6 +401,104 @@ pub(super) fn reject_misuse<'tcx>(
                     }
                 }
             }
+            // A trait of classes' impl, in its class's module, where its
+            // methods are the prototype's (rd283).
+            DefKind::Impl { of_trait: true } if let Some(class) = trait_impl_class(tcx, id) => {
+                if home(tcx, class) != Some(tcx.parent_module_from_def_id(def_id)) {
+                    refuse(
+                        span,
+                        "implements the crate's trait in the module its constructor is in, where its prototype is",
+                    );
+                }
+                // An instance's own property hides its prototype's: a
+                // method named as a field is never called.
+                let fields: Vec<String> = (tcx.adt_def(class).non_enum_variant().fields.iter())
+                    .map(|field| crate::lower::bindings::field_key(tcx, field))
+                    .collect();
+                for &item in tcx.associated_item_def_ids(tcx.impl_trait_id(id)) {
+                    let named = crate::lower::bindings::fn_name(tcx, item);
+                    if fields.contains(&named) {
+                        refuse(
+                            span,
+                            &format!(
+                                "has no method or constant named as its field, `{named}`, which `this.{named}` would hide: name one otherwise"
+                            ),
+                        );
+                    }
+                }
+                // A default that takes rest arguments is called so on each
+                // class: its own method would be given them spread.
+                for &own in tcx.associated_item_def_ids(id) {
+                    if tcx
+                        .trait_item_of(own)
+                        .is_some_and(|item| crate::lower::bindings::takes_rest(tcx, item))
+                    {
+                        refuse(
+                            tcx.def_span(own),
+                            "takes a trait's method that takes rest arguments as the trait's default gives it, not its own",
+                        );
+                    }
+                }
+            }
+            DefKind::Trait if is_class_trait(tcx, id) => {
+                let name = tcx.item_name(id);
+                let generics = tcx.generics_of(id);
+                let own = generics.own_params.iter().skip(usize::from(generics.has_self));
+                if own.clone().any(|p| p.kind.is_ty_or_const()) {
+                    refuse(
+                        span,
+                        &format!(
+                            "implements `{name}`, a trait of no type or const parameters: a prototype's method is one for every value"
+                        ),
+                    );
+                }
+                let sizedness = |t: DefId| {
+                    [
+                        rustc_hir::attrs::lang_items::LangItem::Sized,
+                        rustc_hir::attrs::lang_items::LangItem::MetaSized,
+                        rustc_hir::attrs::lang_items::LangItem::PointeeSized,
+                    ]
+                    .into_iter()
+                    .any(|item| tcx.is_lang_item(t, item))
+                };
+                let supertraits = tcx.explicit_super_clauses_of(id).skip_binder();
+                if (supertraits.iter())
+                    .any(|(clause, _)| clause.as_trait_clause().is_none_or(|t| !sizedness(t.def_id())))
+                {
+                    refuse(
+                        span,
+                        &format!(
+                            "implements `{name}`, a trait of no supertraits: its methods are its prototype's alone"
+                        ),
+                    );
+                }
+                for &item in tcx.associated_item_def_ids(id) {
+                    let item_span = tcx.def_span(item);
+                    let method = tcx.def_kind(item) == DefKind::AssocFn && tcx.associated_item(item).is_method();
+                    let receiver = method.then(|| {
+                        tcx.fn_sig(item)
+                            .instantiate_identity()
+                            .skip_normalization()
+                            .skip_binder()
+                            .inputs()[0]
+                    });
+                    if !receiver.is_some_and(|receiver| matches!(receiver.kind(), ty::Ref(..))) {
+                        refuse(
+                            item_span,
+                            &format!(
+                                "implements `{name}`, whose items are methods of `&self` or `&mut self`, its prototype's"
+                            ),
+                        );
+                    } else if tcx.generics_of(item).own_params.iter().any(|p| p.kind.is_ty_or_const()) {
+                        refuse(
+                            item_span,
+                            &format!(
+                                "implements `{name}`, whose methods have no type or const parameters, as a prototype's method is one"
+                            ),
+                        );
+                    }
+                }
+            }
             // A trait's methods would be a dictionary's, given the value,
             // not the prototype's: only a marker's, of no items, `unsafe
             // impl js::Defined`, and `Display`'s, its `toString` (#358); and
@@ -398,6 +527,55 @@ pub(super) fn reject_misuse<'tcx>(
                 }
             }
             _ => {}
+        }
+    }
+    // A trait of classes bounds no type parameter and is no `dyn`'s: its
+    // methods are each class's prototype's, called on the value, with no
+    // dictionary for generic code (rd283).
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        let id = def_id.to_def_id();
+        if matches!(tcx.def_kind(id), DefKind::Trait | DefKind::Impl { of_trait: true })
+            || tcx
+                .opt_parent(id)
+                .is_some_and(|parent| tcx.def_kind(parent) == DefKind::Trait)
+            || !matches!(
+                tcx.def_kind(id),
+                DefKind::Fn | DefKind::AssocFn | DefKind::Struct | DefKind::Enum | DefKind::Impl { .. }
+            )
+        {
+            continue;
+        }
+        for (clause, span) in tcx.clauses_of(id).clauses {
+            if let Some(bound) = clause.as_trait_clause()
+                && is_class_trait(tcx, bound.def_id())
+                && !matches!(bound.self_ty().skip_binder().kind(), ty::Adt(adt, _) if is_class(tcx, adt.did()))
+            {
+                let name = tcx.item_name(bound.def_id());
+                refuse(
+                    *span,
+                    &format!(
+                        "implements `{name}`, a trait of classes, which bounds no type parameter: call its methods on a class's value, `root.render(..)`"
+                    ),
+                );
+            }
+        }
+    }
+    for body in bodies {
+        for expr in body.thir.exprs.iter() {
+            let dyn_of = expr.ty.walk().find_map(|part| match part.as_type()?.kind() {
+                ty::Dynamic(predicates, ..) => predicates.principal_def_id().filter(|&t| is_class_trait(tcx, t)),
+                _ => None,
+            });
+            if let Some(trait_id) = dyn_of {
+                let name = tcx.item_name(trait_id);
+                refuse(
+                    expr.span,
+                    &format!(
+                        "implements `{name}`, a trait of classes, of no `dyn`: call its methods on a class's value, `root.render(..)`"
+                    ),
+                );
+                break;
+            }
         }
     }
     // Made by its constructor alone: a struct literal anywhere else is a
@@ -839,4 +1017,90 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
         *list = out;
     });
     fine
+}
+
+/// Each default a class takes of a trait of classes, of its impl's
+/// dictionary lowered, `body`, which returns its object: a function of
+/// each default's arrow, its prototype's method, `this` its `self`; the
+/// impl's own methods are its prototype's already (rd283, ADR 1035).
+pub(super) fn prototype_defaults(mut body: Vec<Stmt>) -> Vec<js::Function> {
+    let Some(Stmt {
+        kind: StmtKind::Return(Some(Expr {
+            kind: ExprKind::Object(props, _),
+            ..
+        })),
+        ..
+    }) = body.pop()
+    else {
+        unreachable!("a dictionary given nothing returns its object")
+    };
+    let mut defaults = Vec::new();
+    for prop in props {
+        let Prop::Field(name, value) = prop else { continue };
+        let (is_async, span) = (matches!(value.kind, ExprKind::AsyncArrow(..)), value.span);
+        let (ExprKind::Arrow(mut params, mut body) | ExprKind::AsyncArrow(mut params, mut body)) = value.kind else {
+            continue;
+        };
+        if let Some(Pattern::Name(receiver)) = (!params.is_empty()).then(|| params.remove(0))
+            && js::read_as_this(&mut body, &receiver)
+        {
+            body.insert(0, StmtKind::Const(receiver, Expr::this()).at(js::Span::NONE));
+        }
+        defaults.push(js::Function {
+            name,
+            params,
+            body,
+            export: false,
+            is_async,
+            noinline: false,
+            span,
+            name_span: js::Span::NONE,
+            param_spans: Vec::new(),
+        });
+    }
+    defaults
+}
+
+/// `function`, a default the class `owner` of a module of `namespaces`
+/// takes, its prototype's method beside its own; or, where a class of the
+/// module took one alike before, that class's function, assigned to each
+/// (rd283, ADR 1035). `Err` of one named as a method the class has.
+pub(super) fn take_default(
+    namespaces: &mut [js::Namespace],
+    owner: &str,
+    function: js::Function,
+) -> Result<(), String> {
+    let Some(at) = namespaces.iter().position(|n| n.name == owner) else {
+        return Ok(());
+    };
+    if namespaces[at].methods.iter().any(|f| f.name == function.name) {
+        return Err(format!(
+            "a class's method named as a method its trait gives it, `{}`, which one prototype holds one of",
+            function.name
+        ));
+    }
+    let alike = namespaces.iter_mut().find(|n| {
+        n.name != owner
+            && n.class
+                .as_ref()
+                .is_some_and(|class| class.prototype.contains(&function.name))
+            && n.methods
+                .iter()
+                .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)
+    });
+    if let Some(first) = alike
+        && let Some(class) = &mut first.class
+    {
+        match class.shared.iter_mut().find(|(method, _)| *method == function.name) {
+            Some((_, others)) => others.push(owner.to_owned()),
+            None => class.shared.push((function.name.clone(), vec![owner.to_owned()])),
+        }
+        return Ok(());
+    }
+    let namespace = &mut namespaces[at];
+    if let Some(class) = &mut namespace.class {
+        class.prototype.push(function.name.clone());
+    }
+    namespace.methods.push(function);
+    Ok(())
 }

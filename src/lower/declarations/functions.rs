@@ -8,7 +8,7 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
-use super::{Declarations, keyword};
+use super::{Declarations, documented, keyword};
 
 impl<'tcx> Declarations<'_, 'tcx> {
     pub(super) fn function(&mut self, def_id: DefId) -> Value {
@@ -94,5 +94,39 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "params": params,
             "returns": returns,
         })
+    }
+
+    /// Each method of a trait of classes `class` implements, its
+    /// prototype's, the impl's or the trait's default, as a class's
+    /// method is declared (rd283, ADR 1035).
+    pub(super) fn class_trait_methods(&mut self, class: DefId) -> Vec<Value> {
+        let mut members = Vec::new();
+        for imp in self.tcx.hir_crate_items(()).definitions() {
+            let imp = imp.to_def_id();
+            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) {
+                continue;
+            }
+            let trait_id = self.tcx.impl_trait_id(imp);
+            if !self.tcx.visibility(trait_id).is_public() {
+                continue;
+            }
+            for &item in self.tcx.associated_item_def_ids(trait_id) {
+                let function = self.function(item);
+                let mut params = function["params"].as_array().cloned().unwrap_or_default();
+                if !params.is_empty() {
+                    params.remove(0);
+                }
+                let declared = json!({
+                    "kind": "method",
+                    "name": crate::lower::bindings::fn_name(self.tcx, item),
+                    "static": false,
+                    "typeParameters": function["typeParameters"],
+                    "params": params,
+                    "returns": function["returns"],
+                });
+                members.push(documented(declared, self.tcx, item));
+            }
+        }
+        members
     }
 }

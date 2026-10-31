@@ -194,12 +194,25 @@ impl<'a> Cx<'a> {
             let mut function = f.clone();
             function.name = String::new();
             function.export = false;
-            let value = js::Expr {
+            let mut value = js::Expr {
                 kind: js::ExprKind::Function(Box::new(function)),
                 span: f.span,
                 facts: js::Facts::NONE,
             };
-            assigned.push(js::StmtKind::Assign(js::Expr::member(of, f.name.clone()), value).at(f.span));
+            // Each other class that shares it assigned the same function,
+            // the later first, as upstream chains them,
+            // `ReactDOMHydrationRoot.prototype.render =
+            // ReactDOMRoot.prototype.render = function (..) { .. }` (rd283).
+            let mut target = js::Expr::member(of, f.name.clone());
+            let shared = class.shared.iter().find(|(method, _)| *method == f.name);
+            for other in shared.into_iter().flat_map(|(_, others)| others) {
+                value = js::Expr {
+                    span: f.span,
+                    ..js::Expr::assigned(target, value)
+                };
+                target = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.clone());
+            }
+            assigned.push(js::StmtKind::Assign(target, value).at(f.span));
         }
         out.extend(self.stmts(&assigned));
         out

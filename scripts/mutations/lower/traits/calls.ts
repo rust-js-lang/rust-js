@@ -398,4 +398,12 @@ export const mutations: Mutation[] = [
     replace: "                Slot::Drop(index) if false && let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "class-trait-call-through-dictionary",
+    breaks: "a method of a trait of classes is called through a dictionary no class has, `reactDOMRootRootType.render(a, 1)`, not `a.render(1)` (rd283)",
+    file: "src/lower/traits/calls.rs",
+    find: "        if crate::lower::classes::is_class_trait(self.tcx, trait_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/classes-traits.test.ts"],
+  },
 ];

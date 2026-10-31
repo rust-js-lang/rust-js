@@ -203,16 +203,42 @@ pub struct Namespace {
     pub class: Option<Class>,
 }
 
+impl Namespace {
+    /// The namespace `name` of a module's `namespaces`, made of nothing
+    /// where there's none yet.
+    pub fn of<'n>(namespaces: &'n mut Vec<Namespace>, name: &str) -> &'n mut Namespace {
+        match namespaces.iter().position(|n| n.name == name) {
+            Some(at) => &mut namespaces[at],
+            None => {
+                namespaces.push(Namespace {
+                    name: name.to_owned(),
+                    constants: Vec::new(),
+                    methods: Vec::new(),
+                    export: false,
+                    class: None,
+                });
+                namespaces.last_mut().expect("just pushed")
+            }
+        }
+    }
+}
+
 /// A JS class's methods (ADR 0761): which is its constructor, `function
 /// Component(props) { this.props = props; }`, and which its prototype's,
 /// `Component.prototype.setState = function (..) { .. }`; the rest are
 /// the constructor's own, its statics. Its constants are its prototype's.
+#[derive(Default)]
 pub struct Class {
     pub constructor: String,
     pub prototype: Vec<String>,
     /// Its prototype's getters, `Object.defineProperty(QueenPosition.prototype,
     /// "leftDiagonal", { get() { .. } })` (#357).
     pub getters: Vec<String>,
+    /// Each prototype method other classes of its module share, by its
+    /// name, and theirs: one function assigned to each,
+    /// `ReactDOMHydrationRoot.prototype.render =
+    /// ReactDOMRoot.prototype.render = function (children) { .. };` (rd283).
+    pub shared: Vec<(String, Vec<String>)>,
     /// Where its struct is declared: the comments before it, its `///`
     /// doc, are the constructor function's (ADR 0761).
     pub declared: Span,

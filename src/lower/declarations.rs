@@ -832,6 +832,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 members.push(documented(declared, self.tcx, item));
             }
         }
+        // Each method of a trait of classes it implements (rd283).
+        members.extend(self.class_trait_methods(def_id));
         // Its `Display`, its prototype's `toString` (#358).
         if crate::lower::classes::has_to_string(self.tcx, def_id) {
             let returns = keyword("string");

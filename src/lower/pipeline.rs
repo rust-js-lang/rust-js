@@ -48,6 +48,9 @@ struct Pass {
     /// Each copy of a function another module calls, by its index (ADR
     /// 0051, amended).
     copy_references: HashSet<(LocalModId, DefId, usize)>,
+    /// Each method a class takes of a trait of classes' default, its
+    /// prototype's, by the class (rd283).
+    class_defaults: Vec<(DefId, js::Function)>,
 }
 
 /// How the crate is built, as its command asks.
@@ -699,6 +702,16 @@ pub fn lower_crate<'tcx>(
         // amended).
         let mut copies = copies_of.remove(&def_id).unwrap_or_default();
         copies::gather(&mut pass, (module, &mut lowered), &mut copies);
+        // A class's trait of classes' impl: its defaults the prototype's (rd283).
+        if dictionaries.contains(&def_id)
+            && let Some(class) = super::classes::trait_impl_class(tcx, def_id)
+        {
+            let defaults = super::classes::prototype_defaults(std::mem::take(&mut lowered.function.body));
+            pass.class_defaults
+                .extend(defaults.into_iter().map(|function| (class, function)));
+            pass.jsx.extend(lowered.jsx.then_some(module));
+            continue;
+        }
         // A dictionary given nothing is its module's `const`, what its entries
         // share beside it; one given something, its function, its cache a
         // `const` beside it (ADR 0592).
@@ -818,28 +831,13 @@ pub fn lower_crate<'tcx>(
                 match &fns[&def_id].owner {
                     // Its type's object is exported if any of its methods is.
                     Some(owner) => {
-                        let module_namespaces = pass.namespaces.entry(module).or_default();
-                        let namespace = match module_namespaces.iter().position(|n| n.name == *owner) {
-                            Some(at) => &mut module_namespaces[at],
-                            None => {
-                                module_namespaces.push(js::Namespace {
-                                    name: owner.clone(),
-                                    constants: Vec::new(),
-                                    methods: Vec::new(),
-                                    export: false,
-                                    class: None,
-                                });
-                                module_namespaces.last_mut().expect("just pushed")
-                            }
-                        };
+                        let namespace = js::Namespace::of(pass.namespaces.entry(module).or_default(), owner);
                         namespace.export |= lowered.function.export;
                         if let Some(member) = member {
                             let class = namespace.class.get_or_insert_with(|| js::Class {
-                                constructor: String::new(),
-                                prototype: Vec::new(),
-                                getters: Vec::new(),
                                 declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))
                                     .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
+                                ..Default::default()
                             });
                             super::classes::place(member, class, &lowered.function.name);
                         }
@@ -874,6 +872,20 @@ pub fn lower_crate<'tcx>(
                     }
                 }
             }
+        }
+    }
+    // Each default a class takes of a trait of classes, its prototype's
+    // method beside its own (rd283).
+    for (class, function) in std::mem::take(&mut pass.class_defaults) {
+        let Some(constructor) = super::classes::constructor_of(tcx, class) else {
+            continue;
+        };
+        let info = &fns[&constructor];
+        let namespaces = pass.namespaces.entry(info.module).or_default();
+        let owner = info.owner.as_deref().unwrap_or_default();
+        if let Err(what) = super::classes::take_default(namespaces, owner, function) {
+            super::refusal::refuse(tcx, tcx.def_span(class), super::refusal::Refused::Feature(&what));
+            failed = true;
         }
     }
     if failed {
@@ -915,20 +927,9 @@ pub fn lower_crate<'tcx>(
             continue;
         };
         let constant = items.remove(at);
-        let module_namespaces = pass.namespaces.entry(info.module).or_default();
-        match module_namespaces.iter_mut().find(|n| n.name == *owner) {
-            Some(namespace) => {
-                namespace.export |= constant.export;
-                namespace.constants.push(constant);
-            }
-            None => module_namespaces.push(js::Namespace {
-                name: owner.clone(),
-                export: constant.export,
-                constants: vec![constant],
-                methods: Vec::new(),
-                class: None,
-            }),
-        }
+        let namespace = js::Namespace::of(pass.namespaces.entry(info.module).or_default(), owner);
+        namespace.export |= constant.export;
+        namespace.constants.push(constant);
     }
     // Each function a block makes and gives, where its block was (ADR 0296).
     let holes = &mut pass.holes;

@@ -478,4 +478,13 @@ export const mutations: Mutation[] = [
     replace: "            export: self.tcx.visibility(tr.def_id).is_public(),\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
+  {
+    name: "class-default-fields-unread",
+    breaks: "a trait default on a class's prototype calls the method that gives a field, `this.counter().value`, not the field (rd283)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given()\n",
+    replace: "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given().filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
+    snapshots: true,
+  },
 ];

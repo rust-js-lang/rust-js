@@ -329,6 +329,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.tcx.fn_trait_kind_from_def_id(trait_id).is_some() {
             return Ok(None);
         }
+        // A method of a trait of classes, each class's prototype's: called
+        // on its value, `root.render(children)` (rd283).
+        if crate::lower::classes::is_class_trait(self.tcx, trait_id) {
+            let mut values = values;
+            if self.takes_rest(id) {
+                crate::lower::calls::spread_rest(&mut values);
+            }
+            let this = values.remove(0);
+            let method = Expr::member(this, bindings::fn_name(self.tcx, id));
+            return Ok(Some(Expr::call(method, values)));
+        }
         // `x.to_string()` is std's, as its `Display` shows it, or a generic
         // `T: ToString`'s dictionary's, which the string call decides: of a
         // `dyn ToString` too, which has no pair to call through.
